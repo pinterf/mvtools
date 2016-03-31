@@ -50,8 +50,9 @@ void BitBlt(unsigned char* dstp, int dst_pitch, const unsigned char* srcp, int s
   if ( (!height)|| (!row_size)) return;
   if (isse) {
     if (height == 1 || (src_pitch == dst_pitch && dst_pitch == row_size)) {
-      memcpy_amd(dstp, srcp, row_size*height);
-    } else {
+//      memcpy_amd(dstp, srcp, row_size*height);
+		memcpy(dstp, srcp, row_size*height); // P.F. no memcpy_amd here
+	} else {
       asm_BitBlt_ISSE(dstp,dst_pitch,srcp,src_pitch,row_size,height);
     }
     return;
