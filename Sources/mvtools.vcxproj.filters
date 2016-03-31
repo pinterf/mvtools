@@ -1,0 +1,465 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Doc">
+      <UniqueIdentifier>{2d25c354-364a-4c81-8234-ac9d23ae7d34}</UniqueIdentifier>
+      <Extensions>txt;html</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{dca97128-99c4-4a3a-8565-7f6ce9212b23}</UniqueIdentifier>
+      <Extensions>ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe</Extensions>
+    </Filter>
+    <Filter Include="Assembler">
+      <UniqueIdentifier>{475d8411-8145-47ad-acbc-c6cea359e5ec}</UniqueIdentifier>
+      <Extensions>asm</Extensions>
+    </Filter>
+    <Filter Include="Filters">
+      <UniqueIdentifier>{e56b4475-8ea9-42cb-a2da-99b507e34f1e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="threading">
+      <UniqueIdentifier>{14a59ebe-e9df-495a-963e-eceb4a2f828a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="threading\conc">
+      <UniqueIdentifier>{a0831445-0ff4-437b-bcbb-14c3f120ab27}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Documentation\mvtools2-rus.html">
+      <Filter>Doc</Filter>
+    </None>
+    <None Include="..\Documentation\mvtools2.html">
+      <Filter>Doc</Filter>
+    </None>
+    <None Include="resource" />
+    <None Include="asm\nasm.inc">
+      <Filter>Assembler</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="mvtools.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <YASM Include="asm\const-a.asm">
+      <Filter>Assembler</Filter>
+    </YASM>
+    <YASM Include="asm\cpu-a.asm">
+      <Filter>Assembler</Filter>
+    </YASM>
+    <YASM Include="asm\pixel-a.asm">
+      <Filter>Assembler</Filter>
+    </YASM>
+    <YASM Include="asm\sad-a.asm">
+      <Filter>Assembler</Filter>
+    </YASM>
+    <YASM Include="asm\include\x86inc.asm">
+      <Filter>Assembler</Filter>
+    </YASM>
+    <YASM Include="asm\include\x86util.asm">
+      <Filter>Assembler</Filter>
+    </YASM>
+    <YASM Include="asm\Interpolation-a.asm">
+      <Filter>Assembler</Filter>
+    </YASM>
+    <YASM Include="asm\CopyCode-a.asm">
+      <Filter>Assembler</Filter>
+    </YASM>
+    <YASM Include="asm\Overlap-a.asm">
+      <Filter>Assembler</Filter>
+    </YASM>
+    <YASM Include="asm\Variance-a.asm">
+      <Filter>Assembler</Filter>
+    </YASM>
+    <YASM Include="asm\MVDegrains-a.asm">
+      <Filter>Assembler</Filter>
+    </YASM>
+    <YASM Include="asm\SAD_iSSE.asm">
+      <Filter>Assembler</Filter>
+    </YASM>
+    <YASM Include="asm\SAD_iSSE_x64.asm">
+      <Filter>Assembler</Filter>
+    </YASM>
+    <YASM Include="asm\Bilinear.asm">
+      <Filter>Assembler</Filter>
+    </YASM>
+    <YASM Include="asm\Bilinear_x64.asm">
+      <Filter>Assembler</Filter>
+    </YASM>
+    <YASM Include="asm\fdct_mmx.asm">
+      <Filter>Assembler</Filter>
+    </YASM>
+    <YASM Include="asm\fdct_mmx_x64.asm">
+      <Filter>Assembler</Filter>
+    </YASM>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="MDegrainN.cpp">
+      <Filter>Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="MVDegrain1.cpp">
+      <Filter>Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="MVDegrain2.cpp">
+      <Filter>Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="MVDegrain3.cpp">
+      <Filter>Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="MVDepan.cpp">
+      <Filter>Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="MVFinest.cpp">
+      <Filter>Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="MVFlow.cpp">
+      <Filter>Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="MVFlowBlur.cpp">
+      <Filter>Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="MVFlowFps.cpp">
+      <Filter>Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="MVFlowInter.cpp">
+      <Filter>Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="MVMask.cpp">
+      <Filter>Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="MVRecalculate.cpp">
+      <Filter>Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="MVSCDetection.cpp">
+      <Filter>Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="MVShow.cpp">
+      <Filter>Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="MVSuper.cpp">
+      <Filter>Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="AvstpFinder.cpp">
+      <Filter>threading</Filter>
+    </ClCompile>
+    <ClCompile Include="AvstpWrapper.cpp">
+      <Filter>threading</Filter>
+    </ClCompile>
+    <ClCompile Include="ClipFnc.cpp" />
+    <ClCompile Include="CopyCode.cpp" />
+    <ClCompile Include="cpu.cpp" />
+    <ClCompile Include="DCTFactory.cpp" />
+    <ClCompile Include="DCTFFTW.cpp" />
+    <ClCompile Include="DCTINT.cpp" />
+    <ClCompile Include="FakeBlockData.cpp" />
+    <ClCompile Include="FakeGroupOfPlanes.cpp" />
+    <ClCompile Include="FakePlaneOfBlocks.cpp" />
+    <ClCompile Include="GroupOfPlanes.cpp" />
+    <ClCompile Include="info.cpp" />
+    <ClCompile Include="Interpolation.cpp" />
+    <ClCompile Include="MaskFun.cpp" />
+    <ClCompile Include="MVClip.cpp" />
+    <ClCompile Include="MVFilter.cpp" />
+    <ClCompile Include="MVFrame.cpp" />
+    <ClCompile Include="MVGroupOfFrames.cpp" />
+    <ClCompile Include="MVPlane.cpp" />
+    <ClCompile Include="overlap.cpp" />
+    <ClCompile Include="Padding.cpp" />
+    <ClCompile Include="PlaneOfBlocks.cpp" />
+    <ClCompile Include="SADFunctions.cpp" />
+    <ClCompile Include="SimpleResize.cpp" />
+    <ClCompile Include="Variance.cpp" />
+    <ClCompile Include="yuy2planes.cpp" />
+    <ClCompile Include="Interlocked.cpp" />
+    <ClCompile Include="Interface.cpp">
+      <Filter>Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="MRestoreVect.cpp">
+      <Filter>Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="MScaleVect.cpp">
+      <Filter>Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="MStoreVect.cpp">
+      <Filter>Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="MVAnalyse.cpp">
+      <Filter>Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="MVBlockFps.cpp">
+      <Filter>Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="MVCompensate.cpp">
+      <Filter>Filters</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="MDegrainN.h">
+      <Filter>Filters</Filter>
+    </ClInclude>
+    <ClInclude Include="MRestoreVect.h">
+      <Filter>Filters</Filter>
+    </ClInclude>
+    <ClInclude Include="MScaleVect.h">
+      <Filter>Filters</Filter>
+    </ClInclude>
+    <ClInclude Include="MStoreVect.h">
+      <Filter>Filters</Filter>
+    </ClInclude>
+    <ClInclude Include="MVAnalyse.h">
+      <Filter>Filters</Filter>
+    </ClInclude>
+    <ClInclude Include="MVBlockFps.h">
+      <Filter>Filters</Filter>
+    </ClInclude>
+    <ClInclude Include="MVCompensate.h">
+      <Filter>Filters</Filter>
+    </ClInclude>
+    <ClInclude Include="MVDegrain1.h">
+      <Filter>Filters</Filter>
+    </ClInclude>
+    <ClInclude Include="MVDegrain2.h">
+      <Filter>Filters</Filter>
+    </ClInclude>
+    <ClInclude Include="MVDegrain3.h">
+      <Filter>Filters</Filter>
+    </ClInclude>
+    <ClInclude Include="MVDepan.h">
+      <Filter>Filters</Filter>
+    </ClInclude>
+    <ClInclude Include="MVFinest.h">
+      <Filter>Filters</Filter>
+    </ClInclude>
+    <ClInclude Include="MVFlow.h">
+      <Filter>Filters</Filter>
+    </ClInclude>
+    <ClInclude Include="MVFlowBlur.h">
+      <Filter>Filters</Filter>
+    </ClInclude>
+    <ClInclude Include="MVFlowFps.h">
+      <Filter>Filters</Filter>
+    </ClInclude>
+    <ClInclude Include="MVFlowInter.h">
+      <Filter>Filters</Filter>
+    </ClInclude>
+    <ClInclude Include="MVMask.h">
+      <Filter>Filters</Filter>
+    </ClInclude>
+    <ClInclude Include="MVRecalculate.h">
+      <Filter>Filters</Filter>
+    </ClInclude>
+    <ClInclude Include="MVSCDetection.h">
+      <Filter>Filters</Filter>
+    </ClInclude>
+    <ClInclude Include="MVShow.h">
+      <Filter>Filters</Filter>
+    </ClInclude>
+    <ClInclude Include="MVSuper.h">
+      <Filter>Filters</Filter>
+    </ClInclude>
+    <ClInclude Include="avstp.h">
+      <Filter>threading</Filter>
+    </ClInclude>
+    <ClInclude Include="AvstpFinder.h">
+      <Filter>threading</Filter>
+    </ClInclude>
+    <ClInclude Include="AvstpWrapper.h">
+      <Filter>threading</Filter>
+    </ClInclude>
+    <ClInclude Include="MTFlowGraphSched.h">
+      <Filter>threading</Filter>
+    </ClInclude>
+    <ClInclude Include="MTFlowGraphSched.hpp">
+      <Filter>threading</Filter>
+    </ClInclude>
+    <ClInclude Include="MTFlowGraphSimple.h">
+      <Filter>threading</Filter>
+    </ClInclude>
+    <ClInclude Include="MTFlowGraphSimple.hpp">
+      <Filter>threading</Filter>
+    </ClInclude>
+    <ClInclude Include="MTSlicer.h">
+      <Filter>threading</Filter>
+    </ClInclude>
+    <ClInclude Include="MTSlicer.hpp">
+      <Filter>threading</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\AioAdd.h">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\AioAdd.hpp">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\AioMax.h">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\AioMax.hpp">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\AioSub.h">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\AioSub.hpp">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\Array.h">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\Array.hpp">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\AtomicInt.h">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\AtomicInt.hpp">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\AtomicIntOp.h">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\AtomicIntOp.hpp">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\AtomicMem.h">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\AtomicMem.hpp">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\AtomicPtr.h">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\AtomicPtr.hpp">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\AtomicPtrIntPair.h">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\AtomicPtrIntPair.hpp">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\CellPool.h">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\CellPool.hpp">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\CritSec.h">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\CritSec.hpp">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\def.h">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\fnc.h">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\fnc.hpp">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\Interlocked.h">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\LockFreeCell.h">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\LockFreeQueue.h">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\LockFreeQueue.hpp">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\LockFreeStack.h">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\LockFreeStack.hpp">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\Mutex.h">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\Mutex.hpp">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\ObjFactoryDef.h">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\ObjFactoryDef.hpp">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\ObjFactoryInterface.h">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\ObjFactoryInterface.hpp">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\ObjPool.h">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="conc\ObjPool.hpp">
+      <Filter>threading\conc</Filter>
+    </ClInclude>
+    <ClInclude Include="AllocAlign.h" />
+    <ClInclude Include="AllocAlign.hpp" />
+    <ClInclude Include="AnaFlags.h" />
+    <ClInclude Include="avisynth.h" />
+    <ClInclude Include="ClipFnc.h" />
+    <ClInclude Include="commonfunctions.h" />
+    <ClInclude Include="CopyCode.h" />
+    <ClInclude Include="DCTClass.h" />
+    <ClInclude Include="DCTFactory.h" />
+    <ClInclude Include="DCTFFTW.h" />
+    <ClInclude Include="DCTINT.h" />
+    <ClInclude Include="debugprintf.h" />
+    <ClInclude Include="def.h" />
+    <ClInclude Include="FakeBlockData.h" />
+    <ClInclude Include="FakeGroupOfPlanes.h" />
+    <ClInclude Include="FakePlaneOfBlocks.h" />
+    <ClInclude Include="fftwlite.h" />
+    <ClInclude Include="GroupOfPlanes.h" />
+    <ClInclude Include="info.h" />
+    <ClInclude Include="Interpolation.h" />
+    <ClInclude Include="MaskFun.h" />
+    <ClInclude Include="MaskFun.hpp" />
+    <ClInclude Include="MVAnalysisData.h" />
+    <ClInclude Include="MVClip.h" />
+    <ClInclude Include="MVFilter.h" />
+    <ClInclude Include="MVFrame.h" />
+    <ClInclude Include="MVGroupOfFrames.h" />
+    <ClInclude Include="MVInterface.h" />
+    <ClInclude Include="MVPlane.h" />
+    <ClInclude Include="MVPlaneSet.h" />
+    <ClInclude Include="overlap.h" />
+    <ClInclude Include="Padding.h" />
+    <ClInclude Include="PlaneOfBlocks.h" />
+    <ClInclude Include="profile.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="SADFunctions.h" />
+    <ClInclude Include="SearchType.h" />
+    <ClInclude Include="SharedPtr.h" />
+    <ClInclude Include="SharedPtr.hpp" />
+    <ClInclude Include="SimpleResize.h" />
+    <ClInclude Include="SuperParams64Bits.h" />
+    <ClInclude Include="Time256ProviderCst.h" />
+    <ClInclude Include="Time256ProviderPlane.h" />
+    <ClInclude Include="types.h" />
+    <ClInclude Include="Variance.h" />
+    <ClInclude Include="VECTOR.h" />
+    <ClInclude Include="version.h" />
+    <ClInclude Include="yuy2planes.h" />
+    <ClInclude Include="conc\Interlocked.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="cpu.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <MASM Include="asm\memcpy_amd_asm.asm">
+      <Filter>Assembler</Filter>
+    </MASM>
+    <MASM Include="asm\memcpy_amd_asm_x64.asm">
+      <Filter>Assembler</Filter>
+    </MASM>
+  </ItemGroup>
+</Project>

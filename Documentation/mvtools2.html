@@ -1,0 +1,2997 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang='en' xml:lang='en' xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>MVTools</title>
+<link rel="stylesheet" type="text/css" href="avisynth-new.css" />
+</head>
+
+<body><div class="global">
+
+<h1>MVTools</h1>
+
+<h2>Abstract</h2>
+
+<table class="n">
+<tr><td class="n"><b>Authors:     </b></td><td class="n">&nbsp;</td><td class="n">Manao, Tsp, TSchniede, SEt, Fizick (Alexander Balakhnin), Vit, Firesledge</td></tr>
+<tr><td class="n"><b>Version:     </b></td><td class="n">&nbsp;</td><td class="n">2.6.0.5</td></tr>
+<tr><td class="n"><b>Download:    </b></td><td class="n">&nbsp;</td><td class="n">Contained in the Dither package, <a href="http://ldesoras.free.fr/prod.html#src_ditheravsi">http://ldesoras.free.fr/prod.html</a></td></tr>
+<tr><td class="n"><b>Category:    </b></td><td class="n">&nbsp;</td><td class="n">Misc Plugins</td></tr>
+<tr><td class="n"><b>Requirements:</b></td><td class="n">&nbsp;</td><td class="n">YV12 or YUY2 Color format</td></tr>
+<tr><td class="n"><b>License:     </b></td><td class="n">&nbsp;</td><td class="n">GPL</td></tr>
+</table>
+
+
+
+<h2>Table of contents</h2>
+
+<ol>
+	<li><a href="#mvtools">About MVTools</a></li>
+	<li><a href="#version2">About MVTools version 2</a></li>
+	<li><a href="#functions">Function descriptions</a></li>
+	<li><a href="#examples">Examples</a></li>
+	<li><a href="#disclaimer">Disclaimer (don't skip that part, but we
+don't force you to learn it either)</a></li>
+	<li><a href="#revisions">Revisions</a></li>
+	<li><a href="#download">Download</a></li>
+</ol>
+
+
+
+<h2><a name="MVTools"></a>I) About MVTools</h2>
+
+<p>MVTools plugin for AviSynth 2.5 is collection of functions for estimation
+and compensation of objects motion in video clips.
+Motion compensation may be used for strong temporal denoising, advanced
+framerate conversions, image restoration and other tasks.</p>
+
+<p>The plugin contains the motion estimation server-function MAnalyse to find
+the motion vectors and several motion compensation client-functions
+(MCompensate, MMask and others) which use these vectors.</p>
+
+<p>Plugin uses block-matching method of motion estimation (similar methods are
+used in MPEG2, MPEG4, etc).
+At analysis stage plugin divides frames by small blocks and try to find for
+every block in current frame the most similar (matching) block in second frame
+(previous or next).
+The relative shift of these blocks is motion vector.
+The main measure of block similarity is sum of absolute differences (SAD) of
+all pixels of these two blocks compared.
+SAD is a value which says how good the motion estimation was.</p>
+
+<p>The output of MAnalyse (server) is special clip with motion vector
+information in some format.</p>
+
+<p>At compensation stage the plugin client functions read the motion vectors
+and use them to move blocks and form motion compensated frame (or realize some
+other full or partial motion compensation or interpolation function).
+Every object (block) in this (fully) compensated frame is placed in the same
+position as this object in current frame.
+So, we may (for example) use strong temporal denoising even for quite fast
+moving objects without producing annoying artefactes and ghosting (object's
+features and edges are coincide if compensation is perfect).
+Plugin can create compensated neighbor frames for every current frame, and
+denoise it by internal function.
+Alternatively, you can use compensated and original frames to create
+interleaved clip, denoise it by any external temporal filter, and select
+central cleaned original frames for output (see examples).</p>
+
+<p>Of course, the motion estimation and compensation is not ideal and precise.
+In some complex cases (video with fading, ultra-fast motion, or periodic
+structures) the motion estimation may be completely wrong, and compensated
+frame will be blocky and (or) ugly.
+Severe difficulty is also due to objects mutual screening (occlusion) or
+reverse opening.
+Complex Avisynth scripts with many motion compensation functions may eat huge
+amount of memory and result in very slow processing.
+It is not simple but quite advanced plugin.
+Use it for appropriate cases only, and try tune its parameters.
+There are many discussions about motion compensation using at doom9 Avisynth
+forum.
+In particular see <a href="http://forum.doom9.org/showthread.php?t=76041">old
+MVTools thread</a>,
+<a href="http://forum.doom9.org/showthread.php?t=102071">true motion thread</a>,
+<a href="http://forum.doom9.org/showthread.php?t=84770">new MVTools thread</a>
+and some other.
+Try read postings in addition to this documentation and ask for support there.
+If you really interested in motion estimation and compensation topics, you can
+easy find numerous scientific publications (use WWW search).</p>
+
+<p>Notes: The plugin is still under development.
+Current version has some limitations.
+Only progressive YV12, YUY2 video is supported.
+Use color format conversion and try using (smart) bob-deinterlace for
+interlaced video (<code>SeparateFields</code> may works too with or without
+<code>SelectEven</code>/<code>SelectOdd</code>).
+Some complex scripts (<code>QTGMC</code>, <code>TempGaussMC</code>,
+<code>MVBOB</code>, <code>MCBOB</code>) use MVTools for
+<a href="http://forum.doom9.org/showthread.php?t=84725">motion compensated
+deinterlacing.</a>
+Alternatively you can try to use
+<a href="http://forum.doom9.org/showthread.php?t=101859">Motion plugin</a> by
+mg262.</p>
+
+
+
+<h2><a name="version2"></a>II) About MVTools version 2</h2>
+
+<p>MVTools version 2 is a major internal and external upgrade.
+Main goals of MVTools v2.X branch are clarity and stability
+(in particular for multithreaded environment with multicore CPU) and of course
+performance and memory usage improving.</p>
+
+<p>Main mean for goals achievement is removing MVTools internal buffer
+with mysterious (for many people) index (idx) and some other internal tricks
+(see thread <a href="http://forum.doom9.org/showthread.php?t=131033">MVTools
+without idx</a>).
+To implement this without performance degradance we use normal effective
+Avisynth cache and introduce new mandatory preparation stage (before motion
+estimation by <code>MAnalyse</code>).
+At this stage a new function <code>MSuper</code> will get source clip and
+prepare special "super" clip with multilevel (hierarchical scaled) frames data
+(in previous MVTools versions 0.X-1.X these multilevel datas were prepared,
+saved and cached internally with idx as an index of pseudo-clip of these
+"superframes").
+The super clip is then used by both <code>MAnalyse</code> function and client
+motion compensation functions.</p>
+
+<p>Related syntax change: some <code>MAnalyse</code> parameters (pel, sharp)
+are moved to <code>MSuper</code> function.</p>
+
+<p>Other essential external change is replacing all named clips parameters by
+unnamed (mandatory, without double-quotes in description) for normal work of
+Avisynth implicit "last" clip.</p>
+
+<p>Also faster planar processing for YUY2 is implemented in v2.0.</p>
+
+<p>Since v2.2 <code>MVTools.dll</code> is renamed to
+<code>mvtools2.dll</code>, and since v2.3 all functions are renamed from
+MVxxx to Mxxx (e.g. from <code>MVAnalyse</code> to <code>MAnalyse</code>),
+so you can continue to use old MVTools 1.x with your old scripts, and you
+are able to use / make new scripts with MvTools 2.x without changing the
+dll loading.</p>
+
+<p>I also have an intention to remove (not implement) some obsolete functions
+like MVDenoise, MVFlowFps2 (please, vote).</p>
+
+<p>Full list of changes see at <a href="#revisions">Revisions</a> section.</p>
+
+<p>Generally, new MVTools 2.0 should provide similar results as v1.11.4.
+Algorithm improvements is planned in v2.1 and later.</p>
+
+<p>Note: MVTools v1.x branch is not developed and not supported anymore
+(by Fizick).</p>
+
+<p>To benefit from native multi-threading, you'll have to install the
+latest <code>avstp.dll</code> in your plugin folder.
+This is recommended but not mandatory.</p>
+
+
+
+<h2><a name="functions"></a>III) Function descriptions</h2>
+
+<h3>Common parameters</h3>
+
+<p>Filters that use motion vectors have common parameters.
+Those are the scene-change detection thresholds, and the <var>isse</var> MMX
+flag.
+They also use one or several vectors stream, which are produced by
+<code>MAnalyse</code>.</p>
+
+<p class="var">thSCD1 (int, 400)</p>
+<p>Threshold which decides whether a block has
+changed between the previous frame and the current one.
+When a block has changed, it means that motion estimation for it isn't
+relevant.
+It occurs for example at scene changes.
+So it is one of the thresholds used to tweak the scene changes detection
+engine.
+Raising it will lower the number of blocks detected as changed.
+It may be useful for noisy or flickered video.
+The threshold is compared to the SAD (Sum of Absolute Differences, a value
+which says how bad the motion estimation was ) value.
+For exactly identical blocks we have SAD&nbsp;= 0. But real blocks are always
+different because of objects complex movement (zoom, rotation, deformation),
+discrete pixels sampling, and noise.
+Suppose we have two compared 8&times;8 blocks with every pixel different by 5.
+It this case SAD will be 8&times;8&times;5&nbsp;= 320 (block will not detected
+as changed for <var>thSCD1&nbsp;= 400</var>).
+Actually this parameter is scaled internally in MVTools,
+and it is always relative to 8x8 block size.
+Default is 400 (since v.1.4.1).</p>
+
+<p class="var">thSCD2 (int, 130)</p>
+<p>Threshold which sets how many blocks have to change
+for the frame to be considered as a scene change.
+It is ranged from 0 to 255, 0 meaning 0&nbsp;%, 255 meaning 100&nbsp;%.
+Default is 130 (which means 51&nbsp;%).</p>
+
+<p class="var">isse (bool, true)</p>
+<p>Flag which allows to enable (if set to True) or
+disable ISSE, MMX and other CPU optimizations (for debugging).
+If your processor doesn't support CPU optimizations, it will be disabled
+anyway (and you won't be able to activate them).</p>
+
+<p class="var">planar (bool, false)</p>
+<p>Flag to use special planar color format for YUY2
+clips both for input and output of function.
+It uses special trick for storing of frames with planar color data
+organisation (separate Y, U, V planes in memory) in normal interleaved YUY2
+frames format as a container.
+This way we can avoid numerous internal interleaved to planar conversions and
+increase speed.
+You can convert normal interleaved YUY2 source clip to planar format with
+<code>Interleaved2planar</code> function from
+<a href="http://home.pages.at/kassandro/RemoveGrain/">RemoveGrain plugin by
+kassandro</a>,
+and convert final result by <code>Planar2interleaved</code> function.
+This special planar YUY2 format is also supported by Removegrain plugin by
+Kassandro, MaskTools2 plugin by Manao and some others.
+This trick will not be needed in Avisynth v2.6 with native support of planar
+YV16 format.
+This paramenter is ignored for YV12 clips. Note: super clip is always planar.</p>
+
+
+
+<h3>MSuper</h3>
+
+<pre class="proto">MSuper (
+	clip,
+	int  hpad (8),
+	int  vpad (8),
+	int  pel (2),
+	int  levels (0),
+	bool chroma (true),
+	int  sharp (2),
+	int  rfilter (2),
+	clip pelclip (undefined),
+	bool isse,
+	bool planar,
+	bool mt (true)
+)</pre>
+
+<p>Get source clip and prepare special "super" clip with multilevel
+(hierarchical scaled) frames data.
+The super clip is used by both <code>MAnalyse</code> and motion compensation
+(client) functions.
+For storing and transferring its parameters we use audio properties of super
+clip (specifically, <code>num_audio_samples</code>) as a trick.
+So, audio is killed in super clip.
+That is one of reasons why we additionally use source clip with client
+functions.
+You may have a look to super clip yourself (it has normal format).</p>
+
+<p class="var">hpad</p>
+<p>It is horizontal padding added to source frame (both left and right).
+Small padding is added for more correct motion estimation near frame borders.
+(In MVTools before v2.0 the value of padding = block size was always used
+internally. Now it is not strict but recommended value.)</p>
+
+<p class="var">vpad</p>
+<p>It is vertical padding added to source frame (both top and bottom).</p>
+
+<p class="var">pel</p>
+<p>It is the accuracy of the motion estimation.
+Value can only be 1, 2 or 4.
+1 means a precision to the pixel.
+2 means a precision to half a pixel,
+4 means a precision to quarter a pixel, produced by spatial interpolation
+(more accurate but slower and not always better due to big level scale step).
+Default is 2 since v1.4.10.</p>
+
+<p class="var">levels</p>
+<p>It is the number of hierarchical levels in super clip frames.
+<code>MAnalyse</code> is need in all levels, but for other client functions
+single finest level is enough (coarser levels are not used).
+0&nbsp;= auto, all possible levels are produced.</p>
+
+<p class="var">chroma</p>
+<p>If set to true, it allows to prepare chroma planes too in superclip.
+False means luma only.</p>
+
+<p class="var">sharp</p>
+<p>Subpixel interpolation method for <var>pel</var>&nbsp;= 2 or 4.
+Use:</p>
+<table>
+<tr><td><b>0</b></td><td>for soft interpolation (bilinear),</td></tr>
+<tr><td><b>1</b></td><td>for bicubic interpolation (4 tap Catmull-Rom),</td></tr>
+<tr><td><b>2</b></td><td>for sharper Wiener interpolation (6 tap, similar to Lanczos).</td></tr>
+</table>
+<p>This parameter controls the calculation of the first level only.
+When <var>pel&nbsp;= 4</var>, bilinear interpolation is always used to compute
+the second level.</p>
+
+<p class="var">rfilter</p>
+<p>Hierarchical levels smoothing and reducing (halving) filter.</p>
+<table>
+<tr><td><b>0</b></td><td>Simple 4 pixels averaging like unfiltered SimpleResize (old method),</td></tr>
+<tr><td><b>1</b></td><td>Triangle (shifted) filter like <code>ReduceBy2</code> for more smoothing (decrease aliasing),</td></tr>
+<tr><td><b>2</b></td><td>Triangle filter like <code>BilinearResize</code> for even more smoothing,</td></tr>
+<tr><td><b>3</b></td><td>Quadratic filter for even more smoothing,</li>
+<tr><td><b>4</b></td><td>Cubic filter like <code>BicubicResize(b=1, c=0)</code> for even more smoothing.</td></tr>
+</table>
+<p>Default is 2 (since v2.3.1).
+You may also try to apply some external filter to superclip or its coarse
+bottom part (by appropriate crop and overlay).</p>
+
+<p class="var">pelclip</p>
+<p>Optional upsampled source clip for using instead of internal subpixel
+interpolation (for <var>pel&nbsp;&gt; 1</var>).
+Pixels at rows and colunms positions multiple to pel (0, 2, 4,… for
+<var>pel&nbsp;= 2</var>) (without padding) must be original source pixels,
+other pixels must be interpolated.
+Example for <var>pel&nbsp;= 2</var>:<p>
+
+<pre class="src">LanczosResize (width*2, height*2, src_left=0.25, src_top=0.25)</pre>
+
+<p>Recent note: it is true for luma, but it doesn't correspond to chroma
+pixels positions of internal MVTools interpolation.
+Nevertheless vectors and motion compensation are quite similar for usual
+clips, same chroma would be with <code>src_left&nbsp;= 0.5</code> for YUY2 and
+additionally <code>src_top&nbsp;= 0.5</code> for YV12.</p>
+<p>Other useful example is EEDI2 edge-directed resampler.</p>
+
+<p class="var">mt</p>
+<p>Enables multi-threading.</p>
+
+
+
+<h3>MAnalyse</h3>
+
+<pre class="proto">MAnalyse (
+	clip   super,
+	int    blksize (8),
+	int    blksizeV (blksize),
+	int    levels (0),
+	int    search (4),
+	int    searchparam (2),
+	int    pelsearch (pel),
+	bool   isb (false),
+	int    lambda (0 | 1000*blksize*blksizeV/64),
+	bool   chroma (true),
+	int    delta (1),
+	bool   truemotion (true),
+	int    lsad (400 | 1200),
+	int    plevel (0 | 1),
+	bool   global (truemotion),
+	int    pnew (0 | 50),
+	int    pzero (pnew),
+	int    pglobal (0),
+	int    overlap (0),
+	int    overlapV (overlap),
+	string outfile (""),
+	int    dct (0),
+	int    divide (0),
+	int    sadx264 (0),
+	int    badSAD (10000),
+	int    badrange (24),
+	bool   isse,
+	bool   meander (true),
+	bool   temporal (false),
+	bool   trymany (false),
+	bool   multi (false),
+	bool   mt (true)
+)</pre>
+
+<p>Get prepared multilevel super clip, estimate motion by block-matching
+method and produce special output clip with motion vectors data (used by other
+functions).</p>
+
+<p>Some hierarchical multi-level search methods are implemented (from coarse
+image scale to finest).
+Function uses zero vector and neighbors blocks vectors as a predictors for
+current block.
+Firstly difference (SAD) are estimated for predictors, then candidate vector
+changed by some values to some direction, SAD is estimated, and so on.
+The accepted new vector is the vector with minimal SAD value (with some
+penalty for motion coherence).</p>
+
+<p>Try using <code>MShow</code> function to check estimated motion field and
+tune parameters.</p>
+
+<p>Note: <code>MAnalyse</code> (if <var>pel&nbsp;&ge; 2</var>) detects fieldbased
+video flag (after <code>SeparateFields</code>) and automatically makes
+correction of motion vectors according to verticlal shift of fields with
+different parity.
+Try using AssumeFrameBased if you do not need in it.</p>
+
+<p>Technical note: MAnalyse does not generate a regular clip that can be
+displayed.
+Don't try to modify its content or it will get corrupted.
+It is made of a single long line, actually containing binary data (vectors,
+block SAD, misc. information…) instead of pixel values.
+It also alters the audio descriptor to pass additional data to other
+filters before any frame request.
+Therefore, in the current state, a vector clip cannot be saved to a lossless
+file and reloaded later for processing.
+If you want to do so, you have to transcode it first with
+<code>MStoreVect</code> and <code>MRestoreVect</code>.
+Furthermore, joining vector clips generated with different parameters may
+lead to unexpected results, because the aforementioned additional data is
+global to the whole clip and is not updated on each frame.
+When the MAnalyse filter is destructed (removed from the memory), the
+additional data is lost too, and an attempt to using the produced vectors
+may crash the application or give wrong results.
+For this reason, avoid using MAnalyse in <code>ScriptClip</code> and other
+functions of the Avisynth runtime subsystem.</p>
+
+<p class="var">super</p>
+<p>This is multilevel super clip prepared by MSuper function.
+Mandatory.</p>
+
+<p class="var">blksize</p>
+<p>Size of a block (horizontal).
+It's either 4, 8 or 16.
+Larger blocks are less sensitive to noise, are faster, but also less
+accurate.</p>
+
+<p class="var">blksizeV</p>
+<p>Vertical size of a block.
+Default is equal to horizontal size.
+Additional options: 4 for <var>blksize&nbsp;= 8</var> and 8 or 2 for
+<var>blksize&nbsp;= 16</var>.</p>
+
+<p class="var">levels</p>
+<p>A positive value is the number of levels used in the hierarchical
+analysis made while searching for motion vectors.</p>
+
+<p>Negative or zero value is the number of coarse levels NOT used in the
+hierarchical analysis made while searching for motion vectors.
+The lower the usually better (vectors with any length can be found).
+It is kept variable for study's purposes mostly.
+Sometimes <var>levels</var> is useful to prevent large (false) vectors
+(computer graphics, etc).
+Default = 0 since v.2.5 (all levels are used).</p>
+
+<p class="var">search, searchparam, pelsearch</p>
+<p><var>search</var> decides the type of search at every level,
+<var>searchparam</var> is an additional parameter (step, radius) for this
+search, and <var>pelsearch</var> is the radius parameter at finest (pel)
+level.
+Below are the possible values for the <var>search</var> type:</p>
+<table>
+<tr><td><b>0</b></td><td>'OneTimeSearch'. <var>searchparam</var> is the step between each vectors tried (if <var>searchparam</var> is superior to 1, step will be progressively refined).</td></tr>
+<tr><td><b>1</b></td><td>'NStepSearch'. N is set by <var>searchparam</var>. It's the most well known of the MV search algorithm.</td></tr>
+<tr><td><b>2</b></td><td>Logarithmic search, also named Diamond Search. <var>searchparam</var> is the initial step search, there again, it is refined progressively.</td></tr>
+<tr><td><b>3</b></td><td>Exhaustive search, <var>searchparam</var> is the radius (square side is 2*radius+1). It is slow, but it gives the best results, SAD-wise.</td></tr>
+<tr><td><b>4</b></td><td>Hexagon search, <var>searchparam</var> is the range. (similar to x264).</td></tr>
+<tr><td><b>5</b></td><td>Uneven Multi Hexagon (UMH) search, <var>searchparam</var> is the range. (similar to x264).</td></tr>
+<tr><td><b>6</b></td><td>pure Horizontal exhaustive search, <var>searchparam</var> is the radius (width is 2*radius+1).</td></tr>
+<tr><td><b>7</b></td><td>pure Vertical exhaustive search, <var>searchparam</var> is the radius (height is 2*radius+1).</td></tr>
+</table>
+
+<p class="var">isb</p>
+<p>Allows to choose between a forward search (motion from the previous frame
+to current one) for <var>isb&nbsp;=false</var> and a backward search (motion
+from following frame to the current one) for <var>isb&nbsp;=true</var> (isb
+stands for "IS Backward", it is implemented and named exactly as written here,
+do not ask :-).</p>
+
+<p class="var">chroma</p>
+<p>Set to true, it allows to take chroma into account when
+doing the motion estimation (false: luma only).</p>
+
+<p class="var">delta</p>
+<p>Set the frame interval between the reference frame and the current frame.
+By default, it's 1, which means that the motion vectors are searched between
+the current frame and the previous (or next) frame.
+Setting it to 2 will allow you to search mvs between the frame n and n-2 or
+n+2 (depending on the <var>isb</var> setting).
+If delta is negative or null, -delta is the absolute index of a fixed
+reference frame.
+In this case, the <var>isb</var> value is ignored.
+Only a few functions are compatible with fixed reference frames
+(<code>MCompensate</code>, <code>MFlow</code> and <code>MDegrain*</code>).</p>
+
+<p class="var">pzero</p>
+<p>relative penalty (scaled to 256) to SAD cost for zero vector.
+It prevent replacing of quite good predictor by zero vector with a little
+better SAD (<var>lambda</var> is not used for zero vector).
+Default is equal to <var>pnew</var> since v1.11.</p>
+
+<p class="var">pglobal</p>
+<p>Relative penalty (scaled to 256) to SAD cost for global predictor vector.
+(<var>lambda</var> is not used for global vector).</p>
+
+<p class="var">overlap</p>
+<p>block overlap value (horizontal).
+Must be even and less than block size (up to <var>blksize/2</var> for
+<code>MCompensate</code>).
+The step between blocks for motion estimation is equal to
+(<var>blksize</var> &minus;&nbsp;<var>overlap</var>).
+N blocks cover the size
+((<var>blksize</var> &minus;&nbsp;<var>overlap</var>) *&nbsp;N +&nbsp;<var>overlap</var>)
+on frame.
+Try using overlap value from <var>blksize/4</var> to b<var>blksize/2</var>.
+The greater overlap, the more blocks number, and the lesser the processing
+speed.
+However the default value 0 may cause blocking-like artefacts.
+Functions with overlap support are:
+<code>MFlow</code>, <code>MFlowInter</code>, <code>MFlowFps</code>,
+<code>MShow</code>, <code>MMask</code>, <code>MCompensate</code> and all the
+<code>MDeGrain*</code>.</p>
+
+<p class="var">overlapv</p>
+<p>Vertical block overlap value.
+Default is equal to horizontal.
+Must be even for YV12 and less than block size.</p>
+
+<p class="var">outfile</p>
+<p>Name of file to write motion vectors data, or an empty string (nothing
+written).
+This data may be used by some external program or may be by next MVTools
+versions for second pass coding, etc.
+Produced binary file has a header (<code>MVAnalysisData</code> structure,
+see <code>MVInterface.h</code> source code), and the data sequence:</p>
+<ul>
+<li>Frame number,</li>
+<li>vector data (Vx, Vy, SAD) of every block,</li>
+<li>next valid frame number,</li>
+<li>this frame vector data,</li>
+<li>and so on…</li>
+</ul>
+<p>Important: using <var>outfile</var> in a multi-threaded context (MT modes
+1, 2 and 4) has an undefined behaviour and will generate a corrupted file.</p>
+
+<p class="var">dct</p>
+<p>Using of block DCT (frequency spectrum) for blocks difference (SAD)
+calculation.
+In particular it can improve motion vector estimation at luma flicker and fades.</p>
+<table>
+<tr><td><b>0</b></td><td>Usual spatial blocks, do not use DCT.</td></tr>
+<tr><td><b>1</b></td><td>Use block DCT instead of spatial data (slow for block size 8x8 and very slow for other sizes).</td></tr>
+<tr><td><b>2</b></td><td>Mixed spatial and DCT data; weight is dependent on mean frame luma difference.</td></tr>
+<tr><td><b>3</b></td><td>Adaptive per-block switching from spatial to equal-weighted mixed mode (experimental, a little faster).</td></tr>
+<tr><td><b>4</b></td><td>Adaptive per-block switching from spatial to mixed mode with more weight of DCT (experimental, a little faster).</td></tr>
+<tr><td><b>5</b></td><td>SATD instead of SAD for luma.</td></tr>
+<tr><td><b>6</b></td><td>Same as 2 only use SATD.</td></tr>
+<tr><td><b>7</b></td><td>Same as 3 only use SATD.</td></tr>
+<tr><td><b>8</b></td><td>Same as 4 only use SATD.</td></tr>
+<tr><td><b>9</b></td><td>Similar to 2, use SATD and weight ranges from SAD only to equal SAD & SATD.</td></tr>
+<tr><td><b>10</b></td><td>Similar to 3/4,use SATD weight is on SAD, only on strong luma changes.</td></tr>
+</table>
+<p>Modes 5 to 10 were added in v1.9.5.3.</p>
+
+<p class="var">divide</p>
+<p>post-processing motion vectors by dividing every block into 4 subblocks.</p>
+<table>
+<tr><td><b>0</b></td><td>Do not divide</td></tr>
+<tr><td><b>1</b></td><td>Divide blocks and assign the original vector to all 4 subblocks</td></tr>
+<tr><td><b>2</b></td><td>Divide blocks and assign median (with 2 neighbors) vectors to subblocks</td></tr>
+</table>
+<p>Block size and overlap values must be selected to be acceptable after
+internal dividing.</p>
+
+<p class="var">sadx264</p>
+<p>Use SAD functions from x264 codec if available for the blocksize</p>
+<table>
+<tr><td><b>0</b></td><td>Autodetect CPU and select best function</td></tr>
+<tr><td><b>1</b></td><td>use MMX 16x16, 16x8, 8x8, 8x4, 4x4 (8x16, 4x8 used on chroma only)</td></tr>
+<tr><td><b>2</b></td><td>use MMX 16x16, 16x8, 8x8, 8x4 (8x16, used on chroma only) aligned to 32 Byte blocks</td></tr>
+<tr><td><b>3</b></td><td>use MMX 16x16, 16x8, 8x8, 8x4 (8x16, used on chroma only) aligned to 64 Byte blocks, best for Pentium M</td></tr>
+<tr><td><b>4</b></td><td>use SSE2 16x16, 16x8 (no special alignment)</td></tr>
+<tr><td><b>5</b></td><td>use SSE2 16x16, 16x8, aligned to 64 Byte blocks (good option on Core)</td></tr>
+<tr><td><b>6</b></td><td>use SSE3 16x16, 16x8 (seems only to work faster on Pentium 4E & Core1)</td></tr>
+<tr><td><b>7</b></td><td>use SSSES3 16x16, 16x8, aligned to 64 Byte blocks (good option on Core2)</td></tr>
+<tr><td><b>8</b></td><td>use SSD mmx, works on any mode as 1</td></tr>
+<tr><td><b>9</b></td><td>use SATD mmx, works on any mode as 1</td></tr>
+<tr><td><b>10</b></td><td>use SATD SSE2, works ony any mode like 2</td></tr>
+<tr><td><b>11</b></td><td>use SATD SSSE3, works ony any mode like 2</td></tr>
+<tr><td><b>12</b></td><td>use SATD SSSE3 with PHADD on 8xY, works ony any mode like 2</td></tr>
+</table>
+<p>Modes 8-12 are meant for debug testing only, use
+<var>dct&nbsp;&gt; 4</var> instead.
+Using sadx264&nbsp;&gt; 7 means: use selected instead of SAD for any luma and
+chroma SAD where possible!
+For SAD and SATD mix and luma only use <var>dct</var>.
+Use -1 or &ge; 13 to use old v1.9.4 SAD algo and completely deactivate the
+x264 SAD functions.</p>
+
+<p class="var">badSAD</p>
+<p>SAD threshold to make more wide second search for bad vectors.
+Value is scaled to block size 8x8.
+Default is 10000 (disabled), recommended is about 1000&ndash;2000.</p>
+
+<p class="var">badrange</p>
+<p>The range (radius in image pixel units) of wide search for bad blocks.
+Use positive value for UMH search and negative for Exhaustive search.</p>
+
+<p class="var">meander</p>
+<p>Alternate blocks scan in rows from left to right and from right to left.
+Default is True since v2.5.1.</p>
+
+<p class="var">temporal</p>
+<p>Use temporal predictors from previous frame motion vectors.
+Not compatible with <code>SetMTMode</code>, and requires a linear access to
+work correctly.</p>
+
+<p class="var">trymany</p>
+<p>Try to start searches around many predictors (besides finest level).</p>
+
+<p class="var">multi</p>
+<p>When set to true, MAnalyse generates the motion vectors for all the
+reference frames &minus;delta…&minus;1 and +1…+delta.
+The resulting clip is made of single MAnalyse results interleaved in the delta
+order &minus;1, +1, &minus;2, +2, …, &minus;delta, +delta, where negative
+values indicate backward searchs.
+This order is similar to the motion vector parameters in
+<code>MDegrain3</code>.
+The output clip is intended to be used directly in <code>MDegrainN</code>.
+Single motion vector clips can be extracted with a
+<code>SelectEvery(delta*2, n)</code>.</p>
+
+<p class="var">mt</p>
+<p>Enables multi-threading.</p>
+
+<h4>Truemotion parameters</h4>
+
+<p>There are few advanced parameters which set coherence of motion vectors
+for so called true motion estimation.
+Some matched blocks from other frame may be most similar to sample blocks of
+current frame by intensity criterion (SAD), but not correspond to true object
+motion.
+For example, they may belong to other similar object in different corner of
+the frame or belong to some periodic structure.
+"True motion" parameters try maintain the motion field more coherent, instead
+of some random vectors distribution.
+It is especially important for partial motion compensation and interpolation.
+Some parameters are experimental and may be removed (replaced) in next
+versions after testing.
+Please report your conclusions.</p>
+
+<p class="var">truemotion</p>
+<p>This is a preset of these parameters values.
+It allows easy to switch default values of all "true motion" parameters at once.
+Set it <var>true</var> for true motion search (high vector coherence),
+set it <var>false</var> to search motion vectors with best SAD.
+Default is true since v1.4.10.
+In any case you can tune each parameter individually.</p>
+
+<p class="var">lambda</p>
+<p>Set the coherence of the field of vectors.
+The higher, the more coherent.
+However, if set too high, some best motion vectors can be missed.
+Values around 400&ndash;2000 (for block size 8) are strongly recommended.
+Internally it is coefficient for SAD penalty of vector squared difference
+from predictor (neighbors), scaled by 256.
+Default is 0 for <var>truemotion&nbsp;= false</var> and
+1000*<var>blksize</var>*<var>blksizeV</var>/64
+for <var>truemotion&nbsp;= true</var>.</p>
+
+<p class="var">lsad</p>
+<p>SAD limit for <var>lambda</var> using. Local <var>lambda</var> is decreased
+(smoothly since v1.10.2) if SAD value of vector predictor (formed from
+neighbor blocks) is greater than the limit.
+It prevents bad predictors using but decreases the motion coherence.
+Values above 1000 are recommended for true motion.
+Scaled to 8x8 blocksize internally (since v2.0.11).
+Default is 400 for <var>truemotion&nbsp;= false</var> and 1200 for
+<var>truemotion&nbsp;= true</var>.</p>
+
+<p class="var">pnew</p>
+<p>Relative penalty (scaled to 256) to SAD cost for new candidate vector.
+New candidate vector must be better will be accepted as new vector only if its
+SAD with penalty (SAD + SAD*pnew/256) is lower then predictor cost (old SAD).
+It prevent replacing of quite good predictors by new vector with a little
+better SAD but different length and direction.
+Default is 0 for <var>truemotion&nbsp;= false</var> and 50 for
+<var>truemotion&nbsp;= true</var>.</p>
+
+<p class="var">plevel</p>
+<p>Penalty factor <var>lambda</var> level scaling mode.
+Dependence from hierarchical level size:</p>
+<table>
+<tr><td><b>0</b></td><td>No scaling</td></tr>
+<tr><td><b>1</b></td><td>Linear</td></tr>
+<tr><td><b>2</b></td><td>Quadratic</td></tr>
+</table>
+<p>Note that vector length is smaller at lower level.
+Default is 0 for <var>truemotion&nbsp;= false</var> and 1 for
+<var>truemotion&nbsp;= true</var>.</p>
+
+<p class="var">global</p>
+<p>Estimate global motion (at every level) and use it as an additional
+predictor.
+Only pan shift is estimated (no zoom and rotation).
+Use false to disable, use true to enable.
+Default is like <var>truemotion</var>.</p>
+
+
+
+<h3>MCompensate</h3>
+
+<pre class="proto">MCompensate (
+	clip  source,
+	clip  super,
+	clip  vectors,
+	bool  scbehavior (true),
+	float recursion (0),
+	int   thSAD (10000),
+	bool  fields (false),
+	int   thSCD1,
+	int   thSCD2,
+	bool  isse,
+	bool  planar,
+	bool  mt (true),
+	int   tr (0),
+	bool  center (true),
+	clip  cclip (undefined),
+	int   thSAD2 (undefined)
+)</pre>
+
+<p>Do a full motion compensation of the frame.
+It means that the blocks pointed by the motion vectors in the reference frame
+will be moved along the vectors to reach their places in the current
+frame.</p>
+
+<p>Overlapped blocks processing is implemented as window block summation
+(like FFT3DFilter, overlap value up to <var>blksize&nbsp;/ 2</var>) for
+blocking artefactes decreasing.</p>
+
+<p class="var">super</p>
+<p>This is multilevel super clip prepared by <code>MSuper</code> function.
+Mandatory.</p>
+
+<p class="var">vectors</p>
+<p>This is clip with motion vectors data produced by <code>MAnalyse</code>
+function.
+Mandatory.</p>
+
+<p class="var">scbehavior</p>
+<p>Decide which frame will be kept on a scene change.
+If true, the frame is left unchanged.
+Else, the reference frame is copied into the current one.
+Same for right and bottom padded area.</p>
+
+<p class="var">recursion</p>
+<p>This is percent weight of previously compensated frames used for new
+compensation in special recursive mode.
+Rest weight is taken (uniformly) from given reference frame (used in ordinary
+mode).
+<var>recursion&nbsp;= 100</var> is full recursion similar to in-loop
+<var>mode&nbsp;= 2</var> of old MVTools v0.9.x.
+Do not use recursive mode unless you know what do you do.</p>
+
+<p class="var">thSAD</p>
+<p>This is the SAD threshold for safe (dummy) compensation.
+If block SAD is above thSAD, the block is bad, and we use source block instead
+of the compensated block. Default value of 10000 means it is practically
+disabled.</p>
+
+<p class="var">fields</p>
+<p>if set to true and <var>pel&nbsp;= 2, 4</var>, then we add appropriate
+vertical shift (by halfpixel) of fields for fieldbased video.
+Try using it for deinterlacing (not for denoising).</p>
+
+<p class="var">mt</p>
+<p>Enables multi-threading.</p>
+
+<p class="var">tr</p>
+<p>Allows generating multiple compensations using a multi-vector clip.
+Set <var>tr</var> to the temporal radius (same as <var>delta</var> used in
+<code>MAnalyse</code> with <var>multi&nbsp;= true</var>). A value of 0
+indicates that normal compensation should be used.</p>
+
+<p>Number, order and content of frames generated with
+<var>tr&nbsp;&gt; 0</var> depend on the <var>center</var> and <var>cclip</var>
+values.</p>
+
+<p class="var">center</p>
+<p>In multi-compensation mode (<var>tr&nbsp;&gt; 0</var>), indicates that the
+compensated frames should be centered around the original frame, or actually
+the frame from <var>cclip</var>.
+This arrangement is dedicated to temporal filters needing the
+motion-compensated previous and next frames.
+Therefore the output frames are arranged this way:</p>
+
+<table>
+<tr><th>center</th><th style="text-align: center;" colspan="2">true</th><th style="text-align: center;" colspan="2">false</th></tr>
+<tr><th>Output rate</th><td style="text-align: center;" colspan="2">tr&nbsp;&times; 2&nbsp;+ 1</td><td style="text-align: center;" colspan="2">tr&nbsp;&times; 2</td></tr>
+<tr><th style="vertical-align:middle;" rowspan="9">Result for<br />input frame N</th><td>Compensated</td><td>N&nbsp;+ tr</td><td>Compensated</td><td>N&nbsp;+ 1</td></tr>
+<tr><td>Compensated</td><td>N&nbsp;+ tr&nbsp;&minus; 1</td><td>Compensated</td><td>N&nbsp;&minus; 1</td></tr>
+<tr><td>Compensated</td><td>…</td><td>Compensated</td><td>…</td></tr>
+<tr><td>Compensated</td><td>N&nbsp;+ 1</td><td>Compensated</td><td>…</td></tr>
+<tr><td>Original or <var>cclip</var></td><td>N</td><td>Compensated</td><td>N&nbsp;+ tr&nbsp;&minus; 1</td></tr>
+<tr><td>Compensated</td><td>N&nbsp;&minus; 1</td><td>Compensated</td><td>N&nbsp;&minus; tr&nbsp;+ 1</td></tr>
+<tr><td>Compensated</td><td>…</td><td>Compensated</td><td>N&nbsp;+ tr</td></tr>
+<tr><td>Compensated</td><td>N&nbsp;&minus; tr&nbsp;+ 1</td><td>Compensated</td><td>N&nbsp;&minus; tr</td></tr>
+<tr><td>Compensated</td><td>N&nbsp;&minus; tr</td><td style="text-align: center;" colspan="2">&mdash;</td></tr>
+</table>
+
+<p>Where &ldquo;Compensated N&nbsp;+ x&rdquo; indicates a backward compensation,
+using picture data from the next frames,
+and &ldquo;Compensated N&nbsp;&minus; x&rdquo; denotes forward compensation,
+using picture data from the previous frames.</p>
+
+<p class="var">cclip</p>
+<p>When multi-compensation mode is activated (<var>tr&nbsp;&gt; 0</var>) and
+<var>center&nbsp;= true</var>, the center frames are taken from this clip.
+If <var>cclip</var> is undefined, frames are taken from the source clip.</p>
+
+<p class="var">thSAD2</p>
+<p>Define the SAD soft threshold for the furthest frames.
+The actual SAD threshold for each reference frame is a smooth interpolation
+between the original <var>thSAD</var> (close to the current frame) and
+<var>thSAD2</var>.
+Setting <var>thSAD2</var> lower than <var>thSAD</var> allows large temporal
+radii and good compensation for low SAD blocks while reducing the global error
+and the risk of bluring when the result of <code>MCompensate</code> is passed
+to a temporal denoising filter.</p>
+
+
+
+<h3>MFlow</h3>
+
+<pre class="proto">MFlow (
+	clip  source,
+	clip  super,
+	clip  vectors,
+	float time (100.0),
+	int   mode (0),
+	bool  fields (false),
+	int   thSCD1,
+	int   thSCD2,
+	bool  isse,
+	bool  planar,
+	clip  tclip (undefined)
+)</pre>
+
+<p>Do a motion compensation of the frame not by blocks (like
+<code>MCompensate</code>), but by pixels.
+Motion vector for every pixel is calculated by bilinear interpolation of
+motion vectors of current and neighbor blocks (according to pixel position).
+It means that the pixels pointed by the vector in the reference frame
+will be moved (flow) along the vectors to reach their places in the current
+frame.
+This flow motion compensation method does not produce any blocking artefactes,
+and is good for denoising, but sometimes can create very strange deformed
+pictures.
+True motion estimation is strongly recommended for this function.
+Motion compensation may be full or partial (at intermediate time).
+Important limitation: vectors with components above 127 will be reset to zero
+length.</p>
+
+<p class="var">super</p>
+<p>Multilevel super clip prepared by MSuper function.
+Mandatory.</p>
+
+<p class="var">vectors</p>
+<p>Clip with motion vectors data produced by MAnalyse function.
+Mandatory.</p>
+
+<p class="var">time</p>
+<p>Percent of motion compensation.
+Defines time moment between reference and current frame.
+A value of 100 means full compensation.</p>
+
+<p class="var">mode</p>
+<table>
+<tr><td><b>0</b></td><td>Fetch pixels to every place of destination. It is main producing mode.</td></tr>
+<tr><td><b>1</b></td><td>Shift pixels from every place of source (reference).</td></tr>
+</table>
+<p>It is debug (learning) mode with some empty spaces (with null intensity).
+It can be used for occlusion mask creation.</p>
+
+<p class="var">fields</p>
+<p>If set to true and <var>pel&nbsp;= 2, 4</var>, then we add appropriate
+vertical shifts (by halfpixel) of fields for fieldbased video.
+Try using it for deinterlacing (not for denoising).</p>
+
+<p class="var">tclip</p>
+<p>If set, the <var>time</var> parameter is ignored.
+Then the time for the motion composation is applied pixel-wise.
+Each component of each pixel of tclip gives the time to be applied to the
+corresponding <var>source</var> clip pixel.
+The time scale is 256, meaning that 0 doesn't compensate anything,
+and 255 is an almost full compensation.</p>
+
+
+
+<h3>MMask</h3>
+
+<pre class="proto">MMask (
+	clip  source,
+	clip  vectors,
+	float ml (100),
+	float gamma (1.0),
+	int   kind (0),
+	int   Ysc (0),
+	int   thSCD1,
+	int   thSCD2,
+	bool  isse,
+	bool  planar
+)</pre>
+
+<p>Creates mask clip from source clip with motion vectors data.
+Mask is defined by blocks data, but is interpolated to fit full frame size.
+The mask is created both on the luma and on chroma planes.
+Mask values may be from 0 (min) to 255 (max).</p>
+
+<p class="var">kind</p>
+<p>Defines kind of mask:</p>
+<table>
+<tr><td><b>0</b></td><td><b>Motion</b><br />Creates motion mask from the motion vectors length. It builds a better mask than <code>MotionMask</code> function of MaskTools plugin because motion vectors are a lot more reliable than the algorithm of MotionMask. Mask value 0 means no motion at all (the length of the motion vector is null). The longer vector length, the larger mask value (saturated to 255), the scale is defined by <var>ml</var>.</td></tr>
+<tr><td><b>1</b></td><td><b>SAD</b><br />Allows to build a mask of the SAD (sum of absolute differences) values instead of the vectors' length. It can be useful to find problem areas with bad motion estimation. Internal factor <var>blksize</var>*<var>blksizeV</var>/4 is used for normalization of scale <var>ml</var>.</td></tr>
+<tr><td><b>2</b></td><td><b>Occlusion</b><br />Allows to build a occlusion mask (bad blocks due to rupture, tensile). Currently, some normalized sum of positive blocks motion differences is used. It can be scaled with <var>ml</var>.</td></tr>
+<tr><td><b>3</b></td><td><b>Horizontal</b><br />Allows to build a mask of horizontal component of motion vector in pel units plus 128. Scaled factors are not used.</td></tr>
+<tr><td><b>4</b></td><td><b>Vertical</b><br />Allows to build a mask of vertical component of motion vector in pel units plus 128. Scaled factors are not used.</td></tr>
+<tr><td><b>5</b></td><td><b>Colormap</b><br />Motion colormap as x, y components of motion vector shown in U, V color planes (in pel units plus 128, scaled factors are not used).</td></tr>
+</table>
+
+<p class="var">ml</p>
+<p>Defines the scale of motion mask.
+When the vector's length (or other kind value) is superior or equal to
+<var>ml</var>, the output value is saturated to 255.
+The lesser value results to lesser output.</p>
+
+<p class="var">gamma</p>
+<p>Defines the exponent of relation output to input.
+1.0 implies a linear relation, whereas 2.0 gives a quadratic relation.</p>
+
+<p class="var">Ysc</p>
+<p>This is the value taken by the mask on scene change.</p>
+
+
+
+<h3>MSCDetection</h3>
+
+<pre class="proto">MSCDetection (
+	clip source,
+	clip vectors,
+	int  Ysc (255),
+	int  thSCD1,
+	int  thSCD2,
+	bool isse
+)</pre>
+
+<p>Creates scene detection mask clip from motion vectors data.
+The mask is created both on the luma and on chroma planes.
+Output without scene change is 0.</p>
+
+<p class="var">Ysc</p>
+<p>This is the value taken by the mask on scene change.</p>
+
+
+
+<h3>MShow</h3>
+
+<pre class="proto">MShow (
+	clip super,
+	clip vectors,
+	int  scale (1),
+	int  sil (0),
+	int  tol (20000),
+	bool showsad (false),
+	int  number (-1),
+	int  thSCD1,
+	int  thSCD2,
+	bool isse,
+	bool planar
+)</pre>
+
+<p>Shows the motion vectors on padded source by super clip opening
+(since v2.0.11).</p>
+
+<p class="var">scale</p>
+<p>Allows to enlarge the motion vectors, in order for example to gain in
+accuracy (when <var>pel&nbsp;&gt; 1</var> and <var>scale&nbsp;= 1</var>, you
+can't see a variation of less than one pixel).</p>
+
+<p class="var">sil</p>
+<p>Allows to see a different level of analysis (when searching for motion
+vectors, a hierarchical analysis is done, and it may be interesting to see
+what happens at higher levels).</p>
+
+<p class="var">tol</p>
+<p>This is a tolerance threshold.
+If the distortion induced by the motion vector is over <var>tol</var> the
+vector isn't shown.</p>
+
+<p class="var">showsad</p>
+<p>Allows to show the mean (scaled to block 8x8) SAD after compensating the
+picture and quantity (<var>thSCD2</var>) of bad (<var>thSCD1</var>) blocks.
+False shows all vectors.</p>
+
+<p class="var">number</p>
+<p>Allows to mark given block (with this number) as white.
+&minus;1 means the feature is disabled.</p>
+
+
+
+<h3>MDepan</h3>
+
+<pre class="proto">MDepan (
+	clip,
+	clip   vectors,
+	clip   mask (undefined),
+	bool   zoom (true),
+	bool   rot (true),
+	float  pixaspect (1.0),
+	float  error (15.0),
+	bool   info (false),
+	string log (undefined),
+	float  wrong (10),
+	float  zerow (0.05),
+	int    range (0),
+	int    thSCD1,
+	int    thSCD2,
+	bool   isse,
+	bool   planar
+)</pre>
+
+<p>Get the motion vectors, estimate global motion and put data to output frame
+in special format for <code>DePan</code> plugin (by Fizick).</p>
+
+<p>Inter-frame global motion (pan, zoom, rotation) is estimated by iterative
+procedure, with good blocks only.</p>
+
+<p>Blocks are rejected if they fill at least one of the following conditions:
+1) near frame borders or by mask;
+2) with big SAD (by <var>thSCD1</var> parameter);
+3) with motion different from neighbors or global.</p>
+
+<p>For global motion estimation of interlaced source, you must separate fields
+(for both MAnalyse and MDepan).</p>
+
+<p class="var">mask</p>
+<p>This clip, if defined, is used to set weight of blocks vectors equal to
+correspondent mask frame pixels values (use deep black to reject block).
+If the mask clip is not defined, then 4 blocks at every border are rejected
+(old pre v2.4.3 algorithm.)</p>
+
+<p class="var">zoom, rot</p>
+<p>Switch zoom and rotation estimation.</p>
+
+<p class="var">pixaspect</p>
+</p>Pixel aspect ratio (1.091 for standard PAL 4:3, 0.909 for standard
+NTSC 4:3).</p>
+
+<p class="var">error</p>
+<p>is maximum mean motion difference.
+The frame estimated global motion is switched to null for big motion error or
+at scene change (by <var>thSCD1, thSCD2</var> parameters).</p>
+
+<p class="var">info</p>
+<p>Allows to type global motion info for debug.</p>
+
+<p class="var">log</p>
+<p>Allows to set log file name in <code>DeShaker</code> and <code>Depan</code>
+format.</p>
+
+<p class="var">wrong</p>
+<p>Defines limit to disable blocks very different from neighbors.</p>
+
+<p class="var">zerow</p>
+<p>Defines weight of zero motion vectors (to decrease its influence).</p>
+
+<p class="var">range</p>
+<p>Number of previous (and also next) frames (fields) near requested frame to
+estimate their motion.</p>
+
+
+
+<h3>MFlowInter</h3>
+
+<pre class="proto">MFlowInter (
+	clip  source,
+	clip  super,
+	clip  mvbw,
+	clip  mvfw,
+	float time (50.0),
+	float mL (100.0),
+	bool  blend (true),
+	int   thSCD1,
+	int   thSCD2,
+	bool  isse,
+	bool  planar,
+	clip  tclip (undefined)
+)</pre>
+
+<p>Motion interpolation function.
+It is not the same (but similar) as <code>MVInterpolate</code> function of
+older MVTools version.
+It uses backward <var>mvbw</var> and forward <var>mvfw</var> motion vectors
+to create picture at some intermediate time moment between current and next
+(by delta) frame.
+It uses pixel-based (by <code>MFlow</code> method) motion compensation from
+both frames.
+Internal forward and backward occlusion masks (<code>MMask</code>
+<var>kind&nbsp;= 2</var> method) and time weighted factors are used to produce
+the output image with minimal artefacts.
+True motion estimation is strongly recommended for this function.</p>
+
+<p class="var">super</p>
+<p>Multilevel super clip prepared by MSuper function.
+Mandatory</p>
+
+<p class="var">mvbw, mvfw</p>
+<p>Clips with backward and forward motion vectors data produced by
+the <code>MAnalyse</code> function.
+Mandatory.</p>
+
+<p class="var">time</p>
+<p>Interpolation time position between frames, in percent.
+Default value of 50.0 is half-way.</p>
+
+<p class="var">mL</p>
+<p>Mask scale parameter.
+Lower values are corresponded to more strong occlusion mask (as in
+<code>MMask</code> function, use it to tune and debug).</p>
+
+<p class="var">blend</p>
+<p>Blend frames at scane change like <code>ConvertFps</code> if true, or
+repeat last frame like <code>ChangeFps</code> if false.</p>
+
+<p class="var">tclip</p>
+<p>If set, the <var>time</var> parameter is ignored.
+Then the time for the motion interpolation is applied pixel-wise.
+Each component of each pixel of <var>tclip</var> gives the time to be applied
+to the corresponding <var>source</var> clip pixel.
+The time scale is 256, meaning that 0 corresponds to the current frame,
+and 255 is an almost the next frame (128 is exactly half-way).
+A single occlusion mask is calculated with the luma-time only,
+therefore it is recommended to keep the chroma-time synchronized
+with the luma.</p>
+
+
+
+<h3>MFlowFps</h3>
+
+<pre class="proto">MFlowFps (
+	clip  source,
+	clip  super,
+	clip  mvbw,
+	clip  mvfw,
+	int   num (25),
+	int   den (1),
+	int   mask (2),
+	float ml (100.0),
+	bool  blend (true),
+	int   thSCD1,
+	int   thSCD2,
+	bool  isse,
+	bool  planar
+)</pre>
+
+<p>Will change the framerate (fps) of the clip (and number of frames).
+The function can be use for framerate conversion, slow-motion effect, etc.
+It uses backward <var>mvbw</var> and forward <var>mvfw</var> motion vectors
+to create interpolated pictures at some intermediate time moments between
+frames.
+The function uses pixel-based motion compensation (as <code>MFlow</code>,
+<code>MFlowInter</code>).
+Internal forward and backward occlusion masks (<code>MMask</code>
+<var>kind&nbsp;= 2</var> method) and time weighted factors are used to produce
+the output image with minimal artefacts.
+True motion estimation is strongly recommended for this function.</p>
+
+<p class="var">super</p>
+<p>Multilevel super clip prepared by <code>MSuper</code> function.
+Mandatory</p>
+
+<p class="var">mvbw, mvfw</p>
+<p>Clips with backward and forward motion vectors data produced by
+the <code>MAnalyse</code> function.
+Mandatory.</p>
+
+<p class="var">num, den</p>
+<p>Output clip fps numerator and denominator.
+Resultant fps&nbsp;= num&nbsp;/ den.
+In particular for doubled NTSC fps=2*29.97 use <var>num&nbsp;= 60000</var> and
+<var>den&nbsp;= 1001</var>, and for doubled NTSC FILM fps=2*23.976 use
+<var>num&nbsp;= 48000</var> and <var>den&nbsp;= 1001</var>.
+When <var>num</var> or <var>den</var> is equal to 0, then doubled fps of input
+clip is assumed for output (since v1.8.1).</p>
+
+<p class="var">mask</p>
+<p>Processing mask mode:</p>
+<table>
+<tr><td><b>0</b></td><td>Simple backward and forward occlusion masks (used in versions up to 1.4.x, fastest)</td></tr>
+<tr><td><b>1</b></td><td>Similar masks with additional switching to static zero vectors at occlusion areas (similar to v1.5.x)</td></tr>
+<tr><td><b>2</b></td><td>For using extra vectors from adjacent frames for decreasing objects halo at occlusion areas (v1.8, slowest).</td></tr>
+</table>
+
+<p class="var">ml</p>
+<p>Mask scale parameter.
+The greater values are corresponded to more weak occlusion mask (as in
+<code>MMask</code> function, use it to tune and debug).</p>
+
+<p class="var">blend</var></p>
+<p>Blend frames at scane change like <code>ConvertFps</code> if true, or
+repeat last frame like <code>ChangeFps</code> if false.</p>
+
+
+
+<h3>MBlockFps</h3>
+
+<pre class="proto">MBlockFps (
+	clip,
+	clip  super,
+	clip  mvbw,
+	clip  mvfw,
+	int   num (25),
+	int   den (1),
+	int   mode (0),
+	float thres (0),
+	bool  blend (true),
+	int   thSCD1,
+	int   thSCD2,
+	bool  isse,
+	bool  planar
+)</pre>
+
+<p>The function uses block-based partial motion compensation to change the
+framerate (fps) of the clip (and number of frames).
+It uses backward <var>mvbw</var> and forward <var>mvfw</var> motion vectors
+to create interpolated pictures at some intermediate time moments between
+frames.
+Some internal forward and backward masks
+and time weighted factors are used to produce the output image.
+(Algorithm is based on <code>MVInter</code> function of old MVTools v1.9.12).
+It is usually faster than <code>MFlowFps</code> but may produce blocking and
+other artefacts.
+True motion estimation is strongly recommended for this function.
+Some pixels at right and bottom which are not entirely covered by blocks will
+be produced by frames blending.</p>
+
+<p class="var">super</p>
+<p>Multilevel super clip prepared by <code>MSuper</code> function.
+Mandatory</p>
+
+<p class="var">mvbw, mvfw</p>
+<p>Clips with backward and forward motion vectors data produced by
+the <code>MAnalyse</code> function.
+Mandatory.</p>
+
+<p class="var">num, den</p>
+<p>Output clip fps numerator and denominator.
+Resultant fps&nbsp;= num&nbsp;/ den.
+In particular for doubled NTSC fps=2*29.97 use <var>num&nbsp;= 60000</var> and
+<var>den&nbsp;= 1001</var>, and for doubled NTSC FILM fps=2*23.976 use
+<var>num&nbsp;= 48000</var> and <var>den&nbsp;= 1001</var>.
+When <var>num</var> or <var>den</var> is equal to 0, then doubled fps of input
+clip is assumed for output.</p>
+
+<p class="var">mode</p>
+<p>Processing mode:</p>
+<table>
+<tr><td><b>0</b></td><td>Average of fetched forward and backward partial motion compensation (fastest).</td></tr>
+<tr><td><b>1</b></td><td>Static median.</td></tr>
+<tr><td><b>2</b></td><td>Dynamic median.</td></tr>
+<tr><td><b>3</b></td><td>Time weigthed combination of fetched forward blocks masked by shifted backward and fetched backward masked by shifted forward.</td></tr>
+<tr><td><b>4</b></td><td>Mode 3 mixed with simple static time average by occlusion mask of shifted blocks.</td></tr>
+<tr><td><b>5</b></td><td>Occlusion mask (for debug).</td></tr>
+</table>
+
+<p class="var">thres</p>
+<p>Threshold for count of occlusions per block for mask binarization.
+A value of 0 is internally <var>blksize</var>*<var>blksizeV</var>/4.</p>
+
+<p class="var">blend</var></p>
+<p>Blend frames at scane change like <code>ConvertFps</code> if true, or
+repeat last frame like <code>ChangeFps</code> if false.</p>
+
+
+
+<h3>MFlowBlur</h3>
+
+<pre class="proto">MFlowBlur (
+	clip,
+	clip  super,
+	clip  mvbw,
+	clip  mvfw,
+	float blur (50.0),
+	int   prec (1),
+	int   thSCD1,
+	int   thSCD2,
+	bool  isse,
+	bool  planar
+)</pre>
+
+<p>Experimental simple motion blur function.
+It may be used for FILM-effect (to simulate finite shutter time).
+It uses backward <var>mvbw</var> and forward <var>mvfw</var> motion vectors
+to create and overlay many copies of partially compensated pixels at
+intermediate time moments in some blurring interval around current frame.
+It uses pixel-based motion compensation (as <code>MFlow</code>).
+True motion estimation is strongly recommended for this function.</p>
+
+<p class="var">super</p>
+<p>Multilevel super clip prepared by <code>MSuper</code> function.
+Mandatory</p>
+
+<p class="var">mvbw, mvfw</p>
+<p>Clips with backward and forward motion vectors data produced by
+the <code>MAnalyse</code> function.
+Mandatory.</p>
+
+<p class="var">blur</p>
+<p>Blur time interval between frames, open shutter time in percent.</p>
+
+<p class="var">prec</p>
+<p>Blur precision in pixel units.
+Maximal step between compensated blurred pixels.
+1 is the most precise.</p>
+
+
+
+<h3>MDeGrain1, MDeGrain2, MDegrain3 and MDegrainN</h3>
+
+<table class="n" width="100%">
+<tr>
+<td class="n"><pre class="proto">MDeGrain1 (
+	clip,
+	clip super,
+	clip mvbw,
+	clip mvfw,
+
+
+	int  thSAD (400),
+	int  thSADC (thSAD),
+	int  plane (4),
+	int  limit (255),
+	int  limitC (limit),
+	int  thSCD1,
+	int  thSCD2,
+	bool isse,
+	bool planar,
+	bool lsb (false)
+)</pre></td>
+<td class="n"><pre class="proto">MDeGrain2 (
+	clip,
+	clip super,
+	clip mvbw,
+	clip mvfw,
+	clip mvbw2,
+	clip mvfw2,
+	int  thSAD (400),
+	int  thSADC (thSAD),
+	int  plane (4),
+	int  limit (255),
+	int  limitC (limit),
+	int  thSCD1,
+	int  thSCD2,
+	bool isse,
+	bool planar,
+	bool lsb (false)
+)</pre></td>
+</tr>
+<tr>
+<td class="n"><pre class="proto">MDeGrain3 (
+	clip,
+	clip super,
+	clip mvbw,
+	clip mvfw,
+	clip mvbw2,
+	clip mvfw2,
+	clip mvbw3,
+	clip mvfw3,
+	int  thSAD (400),
+	int  thSADC (thSAD),
+	int  plane (4),
+	int  limit (255),
+	int  limitC (limit),
+	int  thSCD1,
+	int  thSCD2,
+	bool isse,
+	bool planar,
+	bool lsb (false)
+
+
+
+)</pre></td>
+<td class="n"><pre class="proto">MDeGrainN (
+	clip,
+	clip super,
+	clip mvmulti,
+	int  tr,
+
+
+
+
+	int  thSAD (400),
+	int  thSADC (thSAD),
+	int  plane (4),
+	int  limit (255),
+	int  limitC (limit),
+	int  thSCD1,
+	int  thSCD2,
+	bool isse,
+	bool planar,
+	bool lsb (false),
+	int  thSAD2 (thSAD),
+	int  thSADC2 (thSADC),
+	bool mt (true)
+)</pre></td>
+</tr>
+</table>
+
+<p>Makes a temporal denoising with motion compensation.
+Blocks of previous and next frames are motion compensated and then averaged
+with current frame with weigthing factors depended on block differences from
+current (SAD).
+Functions support overlapped blocks mode.</p>
+
+<p>Overlaped blocks processing is implemented as window block summation
+(like <code>FFT3DFilter</code>, overlap value up to
+<var>blksize&nbsp;/ 2</var>) for blocking artefactes reduction.</p>
+
+<p><code>MDeGrain1</code> has temporal radius of 1 and uses vectors of previous
+<var>mvfw</var> and next <var>mvbw</var> frames.</p>
+
+<p><code>MDeGrain2</code> has temporal radius of 2 and uses vectors of two previous
+<var>mvfw2, mvfw</var> and two next <var>mvbw, mvbw2</var> frames.</p>
+
+<p><code>MDeGrain3</code> has temporal radius of 3 and uses vectors of three previous
+<var>mvfw3, mvfw2, mvfw</var> and three next <var>mvbw, mvbw2, mvbw3</var>
+frames.
+It is slower, but produces a little better results (stronger denoising).</p>
+
+<p><code>MDeGrainN</code> has a temporal radius given by the <var>tr</var>
+parameter, and uses a special motion vector clip.</p>
+
+<p class="var">super</p>
+<p>Multilevel super clip prepared by <code>MSuper</code> function.
+Mandatory</p>
+
+<p class="var">mvbw, mvfw, mvbw2, mvfw2, mvbw3, mvfw3, mvmulti</p>
+<p>Clips with backward and forward motion vectors data produced by
+the <code>MAnalyse</code> function.
+<var>mvmulti</var> is a multi-vector clip generated in
+<var>multi&nbsp;= true</var> mode.
+Mandatory.</p>
+
+<p class="var">thSAD</p>
+<p>Defines the soft threshold of block sum absolute differences.
+Block with SAD above threshold <var>thSAD</var> have a zero weight for
+averaging (denoising).
+Block with low SAD has highest weight.
+Rest of weight is taken from pixels of source clip.
+The provided <var>thSAD</var> value is scaled to a 8x8 blocksize.
+Low values can result in staggered denoising, large values can rezult in
+ghosting and artefacts.</p>
+
+<p class="var">thSADC</p>
+<p>Threshold for chroma planes.
+If not defined, the <var>thSAD</var> value is used for chroma.
+If defined then <var>thSADC</var>is used for chroma and <var>thSAD</var>
+is used for luma.</p>
+
+<p class="var">plane</p>
+<p>parameter set procesed color plane:</p>
+<table>
+<tr><td><b>0</b></td><td>Luma</td></tr>
+<tr><td><b>1</b></td><td>Chroma U</td></tr>
+<tr><td><b>2</b></td><td>Chroma V</td></tr>
+<tr><td><b>3</b></td><td>Both chromas</td></tr>
+<tr><td><b>4</b></td><td>All</td></tr>
+</table>
+
+<p class="var">limit</p>
+<p>Maximal change of pixel luma. This is a post-processing like the
+<code>DeGrainMedian</code> plugin and <code>LimitChange</code> function
+from the SSETools plugin, to prevent some artefacts).</p>
+
+<p class="var">limitC</p>
+<p>Maximal change of pixel chroma.</p>
+
+<p class="var">lsb</p>
+<p>Generates 16-bit data when set to true.
+The picture made of the most siginificant bytes (MSB) is stacked
+on the top of the least significant byte (LSB) block.
+Hence a twice taller resulting picture.
+You can extract the MSB or the LSB with a simple Crop() call.
+This mode helps recovering the full bitdepth of temporally dithered data.</p>
+
+<p class="var">tr</p>
+<p>Temporal radius, &gt; 0.
+Must match the <var>mvmulti</var> content, i.e. the <var>delta</var>
+parameter in <code>MAnalyse</code>.</p>
+
+<p class="var">thSAD2, thSADC2</p>
+<p>Define the SAD soft threshold for the furthest frames.
+The actual SAD threshold for each reference frame is a smooth interpolation
+between the original <var>thSAD</var> (close to the current frame) and
+<var>thSAD2</var>.
+Setting <var>thSAD2</var> lower than <var>thSAD</var> allows large temporal
+radii and good efficiency for low SAD blocks while reducing the risk of
+bluring.</p>
+
+<p class="var">mt</p>
+<p>Enables multi-threading.</p>
+
+
+
+<h3>MRecalculate</h3>
+
+<pre class="proto">MRecalculate (
+	clip super,
+	clip vectors,
+	int  thSAD (200),
+	int  smooth (1),
+	int  blksize,
+	int  blksizeV,
+	int  search,
+	int  searchparam,
+	int  lambda,
+	bool chroma,
+	bool truemotion,
+	int  pnew,
+	int  overlap,
+	int  overlapV,
+	string outfile,
+	int  dct,
+	int  divide,
+	int  sadx264,
+	bool isse,
+	int  tr
+)</pre>
+
+<p>Refines and recalculates motion data of previously estimated (by
+<code>MAnalyse</code>) motion <var>vectors</var> with different
+<var>super</var> clip or new parameters set (e.g. lesser block size), after
+divide, etc.
+The two-stage method may be also useful for more stable (robust) motion
+estimation.
+The refining is at finest hierarchical level only.
+Interpolated vectors of old blocks are used as predictors for new vectors,
+with recalculation of SAD.
+Only bad quality new vectors with SAD above threshold <var>thSAD</var> will be
+re-estimated by search.
+<var>thSAD</var> value is scaled to 8x8 block size.
+Good vectors are not changed, but their SAD will be re-calculated and
+updated.</p>
+
+<p>You must set the <var>tr</var> variable if you process "multi" motion
+vector clips.</p>
+
+<p>Parameters not described below have the same meaning as in
+<code>MAnalyse</code>, but you can use other values.
+Their default settings are same as in <code>MAnalyse</code>.</p>
+
+<p class="var">smooth</p>
+<p>This is method for dividing coarse blocks into smaller ones.
+<table>
+<tr><td><b>0</b></td><td>Use motion of nearest block.</td></tr>
+<tr><td><b>1</b></td><td>Bilinear interpolation of 4 neighbors.</td></tr>
+</table>
+
+<p class="var">tr</p>
+<p>This is the temporal radius for motion vector clips generated by
+<code>MAnalyse</code> with <var>multi&nbsp;= true</var>.
+Default 0 (normal vector clip).</p>
+
+
+
+<h3>MScaleVect</h3>
+
+<pre class="proto">MScaleVect (
+	clip  vectors,
+	float scale (2),
+	float scaleV (scale),
+	int   mode (0),
+	bool  flip (scale &lt; 0 &amp;&amp; scale == scaleV)
+	bool  adjustSubPel (false)
+)</pre>
+
+<p>Rescales motion vectors / blocksize.
+Main purpose is to allows vectors to be used on a differently sized clip than
+they were analyzed from.</p>
+
+<p>Example steps:</p>
+
+<ol>
+<li>Use <code>MAnalyze</code> on a half-sized clip at block size 16</li>
+<li>Use this plugin to scale the vectors by 2 to block size 32</li>
+<li>Use resulting vectors for <code>MFlowFPS</code>, <code>MDegrain</code>,…
+on the full sized frame.</li>
+</ol>
+
+<p>Saves doing the <code>MAnalyze</code> on the full size frame, which may be
+faster and saves memory (good for multi-threading).
+Note that you need a super clip for each frame size.
+The padding (hpad, vpad) on each super clip must be manually scaled to match
+the vector scaling (can be easier to set <var>hpad&nbsp;= 0</var> and
+<var>vpad&nbsp;= 0</var> everywhere).
+See the example below.
+Similar functionality was available in MVTools through the function
+<code>MVIncrease<code>, but it was removed.</p>
+
+<p>The function returns a new motion vector clip.</p>
+
+<p class="var">vectors</p>
+<p>Motion vectors returned from <code>MAnalyse</code> or
+<code>MRecalculate</code>, in multi mode or not.
+Mandatory.</p>
+
+<p class="var">scale, scaleV</p>
+<p>The amount to scale the vectors, <var>scale</var> is the horizontal
+scaling, <var>scaleV</var> is the vertical scaling.
+Exact meaning depends on mode.</p>
+
+<p class="var">mode</p>
+<table>
+<tr><td><b>0</b></td><td>Increase scale of vectors and blocksize. Only scale values of 1, 2, 4 or 8 are allowed. Mode 0 allows you to <code>MAnalyze</code> at a smaller size, then process (<code>MDeGrain</code>, <code>MFlowFPS</code>, whatever) at full size.</td></tr>
+<tr><td><b>1</b></td><td>Decrease scale of vectors and blocksize. Only scale values of 1, 2, 4 or 8 are allowed. Mode 1 allows you to <code>MAnalyze</code> at full size, but have some subsequent processes run at a smaller size.</td></tr>
+<tr><td><b>2</b></td><td>Only scale vectors, leave blocksize unchanged. Any floating point scale value is allowed (including negative). Mode 2 is for esoteric uses, for example approximating backward vectors from forward ones, or for extrapolation.</td></tr>
+</table>
+
+<p class="var">flip</p>
+<p>Whether to flag forward vectors as backward vectors, and vice versa.
+Only applies to <var>mode&nbsp;= 2</var>.
+Default is true if scale is negative and equal to <var>scaleV</var>.
+I.e. if you reverse the vectors it will default to flip their direction.</p>
+
+<p class="var">adjustSubPel</p>
+<p>Set to true in <var>mode&nbsp;= 0, 1</var> to perform scaling by adjusting
+subpel rather than scaling vectors.
+<var>scale</var> must be equal to <var>scaleV</var>.
+Experimental.</p>
+
+<h4>Example</h4>
+
+<pre class="src">clip = YourSource( "Your\Video" )
+
+# Half size clip
+clipScaled = clip.BicubicResize( clip.Width()/2, clip.Height()/2 )
+
+# Half size padding (may be easier to always set hpad and vpad to 0)
+superScaled = clipScaled.MSuper( pel=2, hpad=16/2,vpad=16/2 )
+
+# Analyze half-size clip - faster, uses less memory
+bVecScaled  = superScaled.MAnalyse( blksize=8, isb=true )
+fVecScaled  = superScaled.MAnalyse( blksize=8, isb=false )
+
+# Scale vectors increasing block size to 16 for use on full size clip
+bVec = bVecScaled.MScaleVect( 2 )
+fVec = fVecScaled.MScaleVect( 2 )
+
+# Full size clip, full size padding
+super = clip.MSuper( pel=2, hpad=16,vpad=16 )
+
+# Use scaled vectors to operate on full size clip
+clip.MFlowFPS( super, bVec, fVec, den=0 )</pre>
+
+
+
+<h3>MStoreVect</h3>
+
+<pre class="proto">MStoreVect (
+	clip   vectors, ...,
+	string vccs ("")
+)</pre>
+
+<p>Stores (multiple) motion vectors in a encodable clip.
+Allows you to encode vectors to a file (must use a lossless format, suggest
+Lagarith for RGBA).
+Convenient for splitting up very slow scripts (e.g. calculate vectors and save
+in pass 1, load vectors and process in stage 2).
+Can also use to process the same footage in multiple ways.
+Use <code>MRestoreVect</code> to get the motion vectors back out of the
+clip.</p>
+
+<p>You can store as many sets of vectors as you wish in a single clip, as long
+as the clips have the same length.
+It's possible to store a multi-vector clip too.
+The clip can be in any of the supported colorspaces;
+its width and height will vary depending on the contained clips, but the
+height will always be divisible by 2.</p>
+
+<p>The function returns a clip that contains the provided motion vectors.</p>
+
+<p class="var">vectors</p>
+<p>MVTools vectors clip, you may pass as many clips as you wish.</p>
+
+<p class="var">vccs</p>
+<p>Colorspace of the output clip.
+Only "RGB32", "RGB24" and "YUY2" are currently supported.
+Default (empty string) is RGB32.</p>
+
+<h4>Example</h4>
+
+<pre class="src">clip = YourSource( "Your\Video" )
+super = clip.MSuper()
+bVec1 = super.MAnalyse( isb=true )
+fVec1 = super.MAnalyse( isb=false )
+vectors = MStoreVect( bVec1, fVec1 )
+# Losslessly encode the 'vectors' clip to a file (e.g. Lagarith)</pre>
+
+
+
+<h3>MRestoreVect</h3>
+
+<pre class="proto">MRestoreVect (
+	clip store,
+	int  index (0)
+)</pre>
+
+<p>Fetches a single motion vector clip from a special clip prepared earlier
+by <code>MStoreVect</code> (see above).
+Call multiple times if there are several clips stored.</p>
+
+<p>The function returns a single motion vectors clip.</p>
+
+<p class="var">store</p>
+<p>A clip created by <code>MStoreVect</code>.</p>
+
+<p class="var">index</p>
+<p>The zero-based index of the vectors to restore, used when multiple vector
+clips were stored.
+I.e. index 0 recovers the first vectors stored in the clip, index 1 the
+second, etc.</p>
+
+<h4>Example</h4>
+
+<pre class="src">clip = YourSource( "Your\Video" )
+
+# Created using MStoreVectors above, losslessly encoded
+vectors = AviSource( "MotionVectors.avi" )
+
+# See example above for MStoreVectors, gets the first of the two stored vector clips
+bVec1 = vectors.MRestoreVect( 0 )
+fVec1 = vectors.MRestoreVect( 1 )
+clip.MFlowFPS( super, bVec1, fVec1, den=0 )</pre>
+
+
+
+<h2><a name="examples"></a>IV) Examples</h2>
+
+<p>To show the motion vectors ( forward ) :
+</p>
+<pre class="src">AVISource("c:\test.avi") # or MPEG2Source, DirectShowSource, some previous filter, etc
+vectors = MSuper().MAnalyse(isb = false)
+MShow(vectors) # implicit last works properly</pre>
+
+<p>To show the backward one :
+</p>
+<pre class="src">AVISource("c:\test.avi") # or MPEG2Source, DirectShowSource, some previous filter, etc
+vectors = MSuper().MAnalyse(isb = true)
+MShow(vectors)</pre>
+
+<p>To use MMask :
+</p>
+<pre class="src">AVISource("c:\test.avi") # or MPEG2Source, DirectShowSource, some previous filter, etc
+vectors = MSuper().MAnalyse(isb = false)
+MMask(vectors)</pre>
+
+<p>To use MDepan with <a href="depan.htm">Depan</a> plugin for interlaced source
+ (DepanStabilize function example):</p>
+<pre class="src">AVISource("c:\test.avi") # or MPEG2Source, DirectShowSource, some previous filter, etc
+AssumeTFF().SeparateFields() # set correct fields order
+vectors = MSuper().MAnalyse(isb = false)
+globalmotion = MDepan(vectors, pixaspect=1.094, thSCD1=400)
+DepanStabilize(data=globalmotion, cutoff=2.0, mirror=15, pixaspect=1.094)
+Weave()
+</pre>
+
+<p>To blur problem (blocky) areas of compensated frame with occlusion mask:</p>
+<pre class="src">AVISource("c:\test.avi") # or MPEG2Source, DirectShowSource, some previous filter, etc
+super = MSuper()
+vectors = MAnalyse(super, isb = false)
+compensation = MCompensate(super,vectors) # or use MFlow function here
+# prepare blurred frame with some strong blur or deblock function:
+blurred = compensation.DeBlock(quant=51) # Use DeBlock function here
+badmask = MMask(vectors, kind = 2, ml=50)
+overlay(compensation,blurred,mask=badmask) # or use faster MaskedMerge function of MaskTools
+</pre>
+
+<p>To recreate bad frames by interpolation with MFlowInter:</p>
+<pre class="src">AVISource("c:\test.avi") # or MPEG2Source, DirectShowSource, some previous filter, etc
+super = MSuper()
+backward_vectors = MAnalyse(super, isb = true, delta=2)
+forward_vectors = MAnalyse(super, isb = false, delta=2)
+inter = MFlowInter(super, backward_vectors, forward_vectors, time=50, ml=70)
+# Assume bad frames are 50 and 60
+trim(0,49) ++ inter.trim(49,-1) \
+ ++ trim(51,59) ++ inter.trim(59,-1) ++ trim(61,0)
+</pre>
+
+<p>To change fps with MFlowFps:</p>
+<pre class="src">AVISource("c:\test.avi") # or MPEG2Source, DirectShowSource, some previous filter, etc
+# assume progressive PAL 25 fps source
+super = MSuper(pel=2)
+backward_vec = MAnalyse(super, isb = true)
+forward_vec = MAnalyse(super, isb = false)
+MFlowFps(super, backward_vec, forward_vec, num=50, den=1, ml=100) # get 50 fps
+</pre>
+
+<p>To double fps with MFlowFps for fastest (almost) real-time playing:</p>
+<pre class="src">AVISource("c:\test.avi") # or MPEG2Source, DirectShowSource, some previous filter, etc
+# assume progressive PAL 25 fps or NTSC Film 23.976 source
+super = MSuper(pel=1,hpad=0,vpad=0,chroma=false)
+backward_vec = MAnalyse(super, blksize=32, isb = true, chroma=false, searchparam=1,search=0)
+forward_vec = MAnalyse(super, blksize=32, isb = false, chroma=false, searchparam=1,search=0)
+MFlowFps(super, backward_vec, forward_vec, num=2*FramerateNumerator(last), \
+   den=FramerateDenominator(last), mask=0)
+</pre>
+
+<p>To double fps with MFlowFps for 'best' results (but slower processing):</p>
+<pre class="src">AVISource("c:\test.avi") # or MPEG2Source, DirectShowSource, some previous filter, etc
+# assume progressive PAL 25 fps or NTSC Film 23.976 source
+super = MSuper(pel=2)
+backward_vec = MAnalyse(super, overlap=4, isb = true, search=3)
+# Use block overlap, halfpixel accuracy and Exhaustive search
+forward_vec = MAnalyse(super, overlap=4, isb = false, search=3)
+MFlowFps(super, backward_vec, forward_vec, num=2*FramerateNumerator(last), \
+   den=FramerateDenominator(last))
+</pre>
+
+<p>To generate nice motion blur with MFlowBlur:</p>
+<pre class="src">AVISource("c:\test.avi") # or MPEG2Source, DirectShowSource, some previous filter, etc
+super = MSuper()
+backward_vectors = MAnalyse(super, isb = true)
+forward_vectors = MAnalyse(super, isb = false)
+MFlowBlur(super, backward_vectors, forward_vectors, blur=15)
+</pre>
+
+<p>To denoise with some external denoiser filter (which uses 3 frames: prev, cur, next):</p>
+<pre class="src">AVISource("c:\test.avi") # or MPEG2Source, DirectShowSource, some previous filter, etc
+super = MSuper()
+backward_vectors = MAnalyse(super, isb = true)
+forward_vectors = MAnalyse(super, isb = false)
+forward_compensation = MFlow(super, forward_vectors, thSCD1=500) # or use MCompensate
+backward_compensation = MFlow(super, backward_vectors, thSCD1=500)
+# create interleaved 3 frames sequences
+interleave(forward_compensation, last, backward_compensation)
+
+DeGrainMedian() # place your preferred temporal (spatial-temporal) denoiser here
+
+selectevery(3,1) # return filtered central (not-compensated) frames only
+</pre>
+
+<p>To use prefiltered clip for more reliable motion estimation,
+but compensate motion of not-prefiltered clip (denoising example)</p>
+
+<pre class="src">AVISource("c:\test.avi") # or MPEG2Source, DirectShowSource, some previous filter, etc
+# Use some denoiser (blur) or deflicker for prefiltering
+prefiltered = blur(1.0)
+super = MSuper(levels=1) # one level is enough for MCompensate
+superfilt = MSuper(prefiltered) # all levels for MAnalyse
+backward_vectors = MAnalyse(superfilt, isb = true)
+forward_vectors = MAnalyse(superfilt, isb = false)
+# use not-prefiltered (super) clip for motion compensation
+forward_compensation = MCompensate(super, forward_vectors)
+backward_compensation = MCompensate(super, backward_vectors)
+# create interleaved 3 frames sequences
+interleave(forward_compensation, last, backward_compensation)
+
+DeGrainMedian() # place your preferred temporal (spatial-temporal) denoiser here
+
+selectevery(3,1) # return filtered central (not-compensated) frames only
+</pre>
+
+<p>To denoise by MDegrain2 with overlapped blocks (blksize=8) and subpixel precision:</p>
+<pre class="src">AVISource("c:\test.avi") # or MPEG2Source, DirectShowSource, some previous filter, etc
+super = MSuper(pel=2, sharp=1)
+backward_vec2 = MAnalyse(super, isb = true, delta = 2, overlap=4)
+backward_vec1 = MAnalyse(super, isb = true, delta = 1, overlap=4)
+forward_vec1 = MAnalyse(super, isb = false, delta = 1, overlap=4)
+forward_vec2 = MAnalyse(super, isb = false, delta = 2, overlap=4)
+MDegrain2(super, backward_vec1,forward_vec1,backward_vec2,forward_vec2,thSAD=400)</pre>
+
+<p>To denoise by MDegrainN with a large radius:</p>
+<pre class="src">AVISource("c:\test.avi") # or MPEG2Source, DirectShowSource, some previous filter, etc
+tr = 6 # Temporal radius
+super = MSuper ()
+multi_vec = MAnalyse (super, multi=true, delta=tr)
+MDegrainN (super, multi_vec, tr, thSAD=400, thSAD2=150)
+</pre>
+
+<p>To denoise interlaced source by MDegrain1 with overlapped blocks (blksize=8) and subpixel precision:</p>
+<pre class="src">AVISource("c:\test.avi") # or MPEG2Source, DirectShowSource, some previous filter, etc
+fields=AssumeTFF().SeparateFields() # or AssumeBFF
+super = MSuper(fields)
+backward_vec2 = MAnalyse(super, isb = true, delta = 2, overlap=2)
+forward_vec2 = MAnalyse(super, isb = false, delta = 2, overlap=2)
+MDegrain1(fields, super, backward_vec2,forward_vec2,thSAD=400)
+Weave()</pre>
+
+<p>To denoise interlaced source with function MDegrain2i2:</p>
+<pre class="src">function MDegrain2i2(clip source, int "overlap", int "dct")
+{
+overlap=default(overlap,0) # overlap value (0 to 4 for blksize=8)
+dct=default(dct,0) # use dct=1 for clip with light flicker
+fields=source.SeparateFields() # separate by fields
+super = fields.MSuper()
+backward_vec2 = super.MAnalyse(isb = true, delta = 2, overlap=overlap, dct=dct)
+forward_vec2 = super.MAnalyse(isb = false, delta = 2, overlap=overlap, dct=dct)
+backward_vec4 = super.MAnalyse(isb = true, delta = 4, overlap=overlap, dct=dct)
+forward_vec4 = super.MAnalyse(isb = false, delta = 4, overlap=overlap, dct=dct)
+fields.MDegrain2(super, backward_vec2,forward_vec2,backward_vec4,forward_vec4,thSAD=400)
+Weave()
+}
+
+AVISource("video.avi")
+mdegrain2i2(4,0)
+</pre>
+
+<p>How to use external subpixel interpolation clip:</p>
+<pre class="src"># Load Eedi2 plugin (<a href="http://bengal.missouri.edu/~kes25c/">by tritical</a>) with edge-directed interpolation function
+LoadPlugin("Eedi2.dll")
+AVISource("c:\test.avi") # or MPEG2Source, DirectShowSource, some previous filter, etc
+# create upsampled clip of source
+ups = EEDI2(field=1).LanczosResize(2*width(last), 2*height(last), src_left=0.25)
+super = MSuper(pel=2, pelclip=ups)
+bv = MAnalyse(super, isb = true, overlap=4)
+MCompensate(super, bv)
+</pre>
+
+<p>How to use with MT filter and special <a href="http://forum.doom9.org/showthread.php?t=94996">multithreaded AviSynth</a>:</p>
+<pre class="src"># Load MT plugin by TSP
+LoadPlugin("MT.dll")
+avisource("some.avi")
+MT("""
+super = MSuper(pel=2, sharp=1)
+backward_vec2 = super.MAnalyse(isb = true, delta = 2, overlap=4)
+backward_vec1 = super.MAnalyse(isb = true, delta = 1, overlap=4)
+forward_vec1 = super.MAnalyse(isb = false, delta = 1, overlap=4)
+forward_vec2 = super.MAnalyse(isb = false, delta = 2, overlap=4)
+MDegrain2(super, backward_vec1,forward_vec1,backward_vec2,forward_vec2,thSAD=400)
+""",2) # two threads
+</pre>
+<p>Note: SetMTMode(2) mode of multithreaded AviSynth is also supported since MVTools v.1.8.4.1 (beta testing).
+MVtools version 2 should works more stable.
+Same example with SetMTMode:</p>
+<pre class="src">SetMTMode(5)
+FFmpegSource("some.avi") # avisource doesn't work with SetMTMode on my machines - TSchniede
+
+SetMTMode(2)
+super = MSuper(pel=2)
+backward_vec2 = MAnalyse(super, isb = true, delta = 2, overlap=4)
+backward_vec1 = MAnalyse(super, isb = true, delta = 1, overlap=4)
+forward_vec1 = MAnalyse(super, isb = false, delta = 1, overlap=4)
+forward_vec2 = MAnalyse(super, isb = false, delta = 2, overlap=4)
+MDegrain2(super, backward_vec1,forward_vec1,backward_vec2,forward_vec2,thSAD=400)
+</pre>
+
+<p>How to use prefiltered clip and recalculate motion data with original source (MFlowFPS example)</p>
+<pre class="src">AVISource("c:\test.avi") # or MPEG2Source, DirectShowSource, some previous filter, etc
+prefiltered = DeGrainMedian() # some smoothing
+super = MSuper(hpad=16, vpad=16, levels=1) # one level is enough for MRecalculate
+superfilt = MSuper(prefiltered, hpad=16, vpad=16) # all levels for MAnalyse
+backward = MAnalyse(superfilt, isb = true, blksize=16)
+forward = MAnalyse(superfilt, isb = false, blksize=16)
+# recalculate for original source clip and other block size
+forward_re = MRecalculate(super, forward, blksize=8, thSAD=100)
+backward_re = MRecalculate(super, backward, blksize=8, thSAD=100)
+MFlowFps(super, backward_re, forward_re, num=50, den=1)</pre>
+
+<p>How to use planar option for faster processing of YUY2 (MDegrain3 example):</p>
+<pre class="src">LoadPlugin("SSEToolsS.dll") # for conversion functions
+AVISource("c:\test.avi") # or MPEG2Source, DirectShowSource, some previous filter, etc
+Interleaved2Planar() # convert clip to planar
+super = MSuper(planar=true)
+bv1 = MAnalyse(super, isb = true, delta = 1, overlap=4)
+fv1 = MAnalyse(super, isb = false, delta = 1, overlap=4)
+bv2 = MAnalyse(super, isb = true, delta = 2, overlap=4)
+fv2 = MAnalyse(super, isb = false, delta = 2, overlap=4)
+bv3 = MAnalyse(super, isb = true, delta = 3, overlap=4)
+fv3 = MAnalyse(super, isb = false, delta = 3, overlap=4)
+MDegrain3(super,bv1,fv1,bv2,fv2,bv3,fv3,thSAD=400,planar=true)
+Planar2Interleaved() # convert back to normal interleave YUY2
+</pre>
+
+
+
+<h2><a name="disclaimer"></a>V) Disclaimer</h2>
+
+<p>This plugin is distributed under terms of the GNU GPL license, without any
+warranty.
+See <code>gpl.txt</code>.
+Some parts of the code are under the WTFPL, too.</p>
+
+<p>Documentation is distributed under
+<a href="http://creativecommons.org/licenses/by-sa/3.0/">CreativeCommons BY-SA
+3.0 license.</a></p>
+
+<p>MVTools uses portions of code from the following projects:</p>
+<ul>
+<li>Resizer (<code>SimpleResize.cpp</code>) is from <code>SimpleResize</code> Avisynth plugin by Tom Barry.<br /><a href="http://www.trbarry.com">http://www.trbarry.com</a></li>
+</ul><ul>
+<li>Fast DCT (<code>fdct_mmx.asm</code>) is from XVID MPEG-4 VIDEO CODEC.<br /><a href="http://www.xvid.org">http://www.xvid.org</a></li>
+</ul><ul>
+<li>DCT general transform (see <code>fftwlite.h</code>) is from FFTW library (as DLL call).<br /><a href="http://www.fftw.org">http://www.fftw.org</a></li>
+</ul><ul>
+<li>SATD (<code>pixel-32.asm, pixel.asm</code>) and alternative SADx264 (<code>sad-a.asm, x86inc.asm, x86inc-32.asm, cpu-32.asm</code>) are from x264 project (Loren Merritt, Laurent Aimar, Alex Izvorski et al).<br /><a href="http://www.videolan.org/developers/x264.html">http://www.videolan.org/developers/x264.html</a></li>
+</ul>
+
+
+
+<h2><a name="revisions"></a>VI) Revisions</h2>
+
+<p>2.6.0.5 (2012.07.17 by Firesledge)</p>
+<ul>
+<li>MCompensate, MDegrainN: fixed a bug causing occasionally horizontal magenta stripes in multithreading mode.</li>
+</ul>
+
+<p>2.6.0.4 (2012.06.14 by Firesledge)</p>
+<ul>
+<li>MCompensate: fixed artifacts related to overlap with tr &gt; 3 in multithreading mode.</li>
+</ul>
+
+<p>2.6.0.3 (2012.05.13 by Firesledge)</p>
+<ul>
+<li>MDegrainN: fixed artifacts related to overlap with tr &gt; 3 in multithreading mode.</li>
+</ul>
+
+<p>2.6.0.2 (2012.05.01 by Firesledge)</p>
+<ul>
+<li>MAnalyse: fixed a threading issue when using FFTW.</li>
+</ul>
+
+<p>2.6.0.1 (2012.03.12 by Firesledge)</p>
+<ul>
+<li>MAnalyse: fixed potential crash in multithreading mode.</li>
+<li>MDegrainN: fixed systematic crash in multithreading mode.</li>
+<li>All MDegrain functions: fixed potential crash when thSAD is set to 0.</li>
+</ul>
+
+<p>2.6.0.0 (2012.03.11 by Firesledge)</p>
+<ul>
+<li>MDegrainN: internally uses MDegrain1/2/3 when tr &le; 3, for optimal speed.</li>
+<li>MCompensate: added multi-compensation mode for easy use with temporal filters.</li>
+<li>MAnalyse, MSuper, MCompensate, MDegrainN: added multithreading (but partially, not for all code paths) using AVSTP.</li>
+<li>MAnalyse: fixed a corruption of the global motion vector.</li>
+<li>Improved page setting for this documentation.</li>
+</ul>
+
+<p>2.5.14.2 (2012.01.10 by Firesledge)</p>
+<ul>
+<li>Fixed MScaleVect with multi-vector clips.</li>
+</ul>
+
+<p>2.5.14.1 (2011.12.13 by Firesledge)</p>
+<ul>
+<li>Fixed crashes in the MDegrain functions when using both planar=true and lsb=true.</li>
+</ul>
+
+<p>2.5.14.0 (2011.11.28 by Firesledge and Vit)</p>
+<ul>
+<li>Added MStoreVect, MRestoreVect and MScaleVect from the Vit's MVExtras plugin.</li>
+</ul>
+
+<p>2.5.13.1 (2011.11.09 by Firesledge)</p>
+<ul>
+<li>MAnalyse, MRecalculate: added an SATD approximation for blksize > 16 and dct &ge; 5. Previously, the SATD calculation was silently bypassed and always returned a null SAD value.</li>
+<li>Functions now check that the pel setting is the same in the superclip and the motion vectors, instead of crashing if not.</li>
+</ul>
+
+<p>2.5.13.0 beta (2011.09.11 by Firesledge)</p>
+<ul>
+<li>MRecalculate: Can now process multi-vector clips.</li>
+<li>All functions: Added the -Vit-'s fix that could improve the multithreading stability.</li>
+</ul>
+
+<p>2.5.12.1 beta (2011.09.10 by Firesledge)</p>
+<ul>
+<li>MAnalyse: Fixed the ghosting bug introduced in the previous version.</li>
+</ul>
+
+<p>2.5.12.0 beta (2011.09.10 by Firesledge)</p>
+<ul>
+<li>MDegrainN added.</li>
+<li>MAnalyse: Added the "multi" mode for MDegrainN.</li>
+<li>MAnalyse: Documented the negative delta values and fixed some functions accordingly.</li>
+<li>MFlowInter: Fixed the YUY2 planar mode.</li>
+</ul>
+
+<p>2.5.11.2 beta mod16b (2011.05.11 by Firesledge)</p>
+<ul>
+<li>Fixed a regression in MDegrain1/2/3, related to the mod16 versions.
+thSADC is now taken into account correctly (instead of using thSAD).</li>
+</ul>
+<p>2.5.11.2 beta mod16a (2011.04.10 by Firesledge)</p>
+<ul>
+<li>Merged 2.5.11.2 and 2.5.11 mod16a versions.</li>
+</ul>
+<p>2.5.11.2 beta (2011.03.20 by Fizick)</p>
+<ul>
+<li>MCompensate: fixed crash with too small npad, vpad (thanks to '-Vit-').
+</li>
+</ul>
+<p>2.5.11.1 beta (2010.12.22 by Fizick)</p>
+<ul>
+<li>MAnalyse, MRecalculate: fixed pure Horizontal and Vertical search types (fix by 'Firesledge').
+</li>
+</ul>
+<p>2.5.11 beta mod16a (2010.12.18 by Firesledge)</p>
+<ul>
+<li>Merged 2.5.11 and 2.5.10.1 mod16b versions.</li>
+<li>Fixed the new horizontal and vertical search recalculations.</li>
+</ul>
+<p>2.5.11 beta (2010.10.17 by Fizick)</p>
+<ul>
+<li>MAnalyse, MRecalculate: added pure Horizontal and Vertical search types (requested by 'Null Null').
+</li>
+<li>MRecalculate: Fixed Hexagon and UMH search types (was processed as Logarithmic).
+</li>
+</ul>
+<p>2.5.10.1 beta mod16a (2010.06.27 by Firesledge)</p>
+<ul>
+<li>Merged 2.5.10.1 and 2.5.10 mod16b versions.</li>
+</ul>
+<p>2.5.10.1 beta (2010.06.25 by Fizick)</p>
+<ul>
+<li>MFlowInter: Fixed incorrect transmission of last parameters (blend, etc).
+Thanks to Laurent de Soras 'Firesledge'.
+Other interesting updates from his MVTools v2.5.10 beta mod16b
+(http://ldesoras.free.fr/src/dither-avsi-1.2.zip) are under consideration.
+</li>
+<li>MDepan: Fixed bug : if range=1 in MDepan, the debug text (with info=true)
+was only displayed in the first frame when loading the script.
+Thanks Boulder for report.
+</li>
+<li>MRecalculate: Fixed bug if pel values are different. Thanks Boulder for report.</li>
+</ul>
+<p>2.5.10 beta mod16b (2010.06.20 by Firesledge)</p>
+<ul>
+<li>MFlow, MFlowInter: Added the "tclip" parameter.</li>
+<li>MDegrain1: Added the "lsb" parameter.</li>
+<li>MFlowInter: Fixed incorrect transmission of the last parameters.</li>
+</ul>
+<p>2.5.10 beta mod16a (2010.04.04 by Firesledge)</p>
+<ul>
+<li>MDegrain2,3: Added the "lsb" parameter.</li>
+</ul>
+<p>2.5.10 beta (2009.11.08 by Fizick)</p>
+<ul>
+<li>MAnalyse: try many predictors</li>
+<li>MAnalyse: replace third right-top predictor by right-bottom</li>
+<li>MAnalyse: exhaustive search at all coarse levels (always), removed <var>full</var> parameter</li>
+</ul>
+<p>2.5.9 (2009.11.04 by Fizick)</p>
+<ul>
+<li>MAnalyse: restored lambda for coarsest level)</li>
+<li>MAnalyse: fixed full=0 default according to doc</li>
+</ul>
+<p>2.5.8.1 (2009.10.26 by Fizick)</p>
+<ul>
+<li>MDegrain2: fixed limitC (thanks Terranigma for bug report)</li>
+</ul>
+<p>2.5.8 (2009.10.18 by Fizick)</p>
+<ul>
+<li>MAnalyse: fixed some wrong vectors (thanks to shon26 for bug report)</li>
+</ul>
+<p>2.5.7 (2009.10.09 by Fizick)</p>
+<ul>
+<li>MAnalyse: fix bug (crash for some frame sizes) (thanks to Mark bug report)</li>
+</ul>
+<p>2.5.6 (2009.10.08 by Fizick)</p>
+<ul>
+<li>MAnalyse: fix bug (crash for pad>0 and some frame sizes) with levels (thanks to Mark bug report)</li>
+</ul>
+<p>2.5.5 (2009.09.28 by Fizick)</p>
+<ul>
+<li>MAnalyse: fix bug (crash for hpad=0) with levels (thanks to Boulder and LaTo for bug report)</li>
+<li>MSuper: corrected interpolation at planes borders</li>
+<li>MDegrain1,2,3: added limitC parameter</li>
+</ul>
+<p>2.5.4 (2009.09.27 by Fizick)</p>
+<ul>
+<li>MAnalyse: set default temporal=false according to doc (some problem with SetMTMode(2) was reported by MAG79)</li>
+</ul>
+<p>2.5.3 (2009.09.08 by Fizick)</p>
+<ul>
+<li>MAnalyse: added temporal predictor of motion vector</li>
+<li>MRecalculate: fixed broken v2.5.2</li>
+</ul>
+<p>2.5.2 (2009.08.11 by Fizick)</p>
+<ul>
+<li>MSuper: separable width and height reducing with assembler iSSE optimization</li>
+<li>MAnalyse: limit levels value</li>
+</ul>
+<p>2.5.1 (2009.08.07 by Fizick)</p>
+<ul>
+<li>MAnalyse: Added <var>meander</var> parameter for blocks scan in rows from left to right and from right to left</li>
+<li>Small optimization of YUY2 conversion</li>
+</ul>
+<p>2.5.0 (2009.08.01 by Fizick)</p>
+<ul>
+<li>MSuper: More full size of sublevels</li>
+<li>MAnalyse: Increased number of sublevels (for more long vectors)</li>
+<li>MAnalyse: Replaced parameter name <var>level</var> by <var>levels</var>, changed meaning of its positive and negative values</li>
+<li>MAnalyse: Disabled <var>lambda</var> for most coarse level</li>
+<li>MAnalyse: Full search with large radius at smallest level</li>
+</ul>
+<p>2.4.7 (2009.07.28 by Fizick)</p>
+<ul>
+<li>MBlockFPS: finally fixed bug for non-zero pad, non-integer  number of blocks</li>
+</ul>
+<p>2.4.6 (2009.07.26 by Fizick)</p>
+<ul>
+<li>MBlockFPS: fixed bug (at right and bottom, repored by Shon26) for non-zero pad, non-integer  number of blocks</li>
+<li>Fixed possible bug with pixels interpolation at low hierarhical  levels</li>
+<li>More correct size of sublevels (even luma  for YV12)</li>
+<li>MShow: change draw vector style to gradient</li>
+</ul>
+<p>2.4.5 (2009.07.11 by Fizick)</p>
+<ul>
+<li>Added block size 32x32</li>
+<li>Replaced avisynth.h with v2.5.8MT by SEt</li>
+</ul>
+<p>2.4.4 (2009.07.08 by Fizick)</p>
+<ul>
+<li>Merged all code mods by SEt, but:</li>
+<li>Replaced avisynth.h v2.5.5 by v2.5.8</li>
+</ul>
+<p>2.4.2_mod2 (2009.06.30 by Pavel Skakov aka SEt)</p>
+<ul>
+<li>Corrected threading problems, minor optimizations
+(avisynth.h from avisynth2.5.8MT beta, init vectors as 0)</li>
+</ul>
+<p>2.4.2_mod (2009.06.22 by Pavel Skakov aka SEt)</p>
+<ul>
+Some source/project settings cleanup and optimized primary for MDegrain1/2/3 -
+depending on your settings you'll probably see 2-15% speedup, results are bit-identical to original 2.4.2:
+<li>added Average2 iSSE version for pel=4,</li>
+<li>Degrain1/2/3 MMX and SSE2 versions,</li>
+<li>small optimization of copy8x8 mmx and Horizontal_Wiener SSE,</li>
+<li>fixed cpu detection</li>
+</ul>
+<p>2.4.3 beta (2009.04.26 by Fizick)</p>
+<ul>
+<li>MDepan: added mask (requested by djonline) and planar parameters.</li>
+</ul>
+<p>2.4.2 (2009.04.07 by Fizick)</p>
+<ul>
+<li>MAnalyze: Fixed valid vector range for case of padding lesser than block size, with program crash (thanks to FuPP for bug report).</li>
+</ul>
+<p>2.4.1 beta (2009.01.24 by Fizick)</p>
+<ul>
+<li>MDegrain: Fixed weight for high threshold and big block size.</li>
+</ul>
+<p>2.4.0 beta (2009.01.09 by Fizick)</p>
+<ul>
+<li>MDegrain: Changed degrain weight method to more strong, some internal rewriting.</li>
+<li>Fixed documentation.</li>
+</ul>
+<p>2.3.1 (2008.12.14 by Fizick)</p>
+<ul>
+<li>MSuper: added more smoothing reducing filters rfilter=2,3,4, by default 2.</li>
+<li>MAnalyse: fixed bug with plevel parameter (version 2.3.0).</li>
+</ul>
+<p>2.3.0 (2008.12.06 by Fizick)</p>
+<ul>
+<li>Renamed all functions from MVxxx to Mxxx (some renaming was requested by LaTo, Mystery Keeper, Sagekilla).
+Error messages is still not updated.</li>
+<li>MAnalyse: added pglobal parameter (with small changes), changed default level=1.</li>
+</ul>
+<p>2.2.2 (2008.11.30 by Fizick)</p>
+<ul>
+<li>MVShow: changes SAD by reduced to block size 8x8, added quantity of bad blocks.</li>
+<li>MVCompensate: fixed bug at scene changes (thanks to AVIL for bug report about YUY2).</li>
+<li>MVAnalyse: fixed chroma=false (thanks to LaTo for bug report).</li>
+<li>Renamed to mvtools2.dll (requested by Naito).</li>
+</ul>
+<p>2.2.1 (2008.11.27 by Fizick)</p>
+<ul>
+<li>MVAnalyse: fixed wrong scaling of LSAD to block size (thanks to Shon for bug report).</li>
+<li>MVCompensate: removed mode parameter, added recursion.</li>
+</ul>
+<p>2.1.2 (2008.11.23 by Fizick)</p>
+<ul>
+<li>MVAnalyse: removed option mc. Reduced size of block data (increment version of vector stream).</li>
+<li>MVDegrain: fixed bug with block size 32x16</li>
+</ul>
+<p>2.1.1 (2008.11.18 by Fizick)</p>
+<ul>
+<li>MVBlockFps: fixed left border bug</li>
+</ul>
+<p>2.1.0 (2008.11.08 by Fizick)</p>
+<ul>
+<li>MVFlowFps, MVBlockFps, MVFlowInter: added blend parameter for ChangeFps-like mode at scene changes</li>
+<li>MVFlowFps, MVBlockFps: more safe for big nominator and denominator.</li>
+</ul>
+<p>2.0.11.2 (2008.11.06 by Fizick)</p>
+<ul>
+<li>MVDegrain2,3: fixed crashes at scene changes for YUY2</li>
+</ul>
+<p>2.0.11.1 (2008.11.05 by Fizick)</p>
+<ul>
+<li>MVAnalyse: added second wide search for bad blocks (badSAD, badrange parameters).</li>
+<li>MVAnalyse: added Hexagon and Uneven Multi Hexagon (UMH) search types.
+Changed (not intentionally :) the default method from Logarithmic to Hexagon.</li>
+<li>MVAnalyse: fixed exhaustive search to static center.</li>
+<li>MVAnalyse: lsad is now scaled to blksize 8.</li>
+<li>MVShow: use super clip, padded output, added number block option.</li>
+</ul>
+<p>2.0.9.2 (2008.11.03 by Fizick)</p>
+<ul>
+<li>Some performance improving</li>
+</ul>
+<p>2.0.9.1 (2008.10.20 by Fizick)</p>
+<ul>
+<li>More memory-optimal MVFlowXXX functions for pel=1</li>
+<li>Disabled plugin debug mode</li>
+<li>Added Russian documentation</li>
+</ul>
+<p>2.0.9.0 alpha (2008.10.13 by Fizick)</p>
+<ul>
+<li>Implemented more functions without idx: MVSCDetection, MVDepan, MVFlowInter, MVBlockFps, MVFlowBlur, MVDegrain3, MVRecalculate</li>
+<li>Fixed crashes with MVSuper(chroma=false)</li>
+<li>Some small changes and fixes for v2.0 of course :)</li>
+<li>Documentation for v2.0</li>
+</ul>
+<p>2.0.7.0 alpha (2008.10.02 by Fizick)</p>
+<ul>
+<li>Implemented functions without idx: MVSuper, MVAnalyse, MVFlowFps, MVFlow,
+MVCompensate, MVShow, MVMask, MVDegrain1, MVDegrain2</li>
+<li>All functions (besides MVAnalyse) got planar parameter for YUY2 planar input and output.
+Default = false (i.e. normal interleaved YUY2), slower.</li>
+<li>All (mandatory) clip parameters lost their names, and mvbw=vb is not correct syntax now.
+Use unnamed syntax instead. </li>
+</ul>
+<p>2.0.0.3 alpha (2008.09.28 by Fizick)</p>
+<ul>
+<li>First 2.0 branch public alpha with MVSuper function to kill idx.</li>
+<li>MVAnalyse and MVDegrain1 are implemented only.</li>
+</ul>
+<small>
+<p>1.11.4.4 (2008.10.15 by Fizick)</p>
+<ul>
+<li>Restore old internal cache size growing as before v1.11.4.2 (some crashes reported).</li>
+</ul>
+<p>1.11.4.3 (2008.10.08 by Fizick)</p>
+<ul>
+<li>MVDenoise: fixed error of v.1.11.4 with luma correction.</li>
+<li>MVCompensate: fix potential memory leakage (in constructor).</li>
+</ul>
+<p>1.11.4.2 (2008.09.26 by Fizick)</p>
+<ul>
+<li>MVAnalyse: cut unused compensation memory space from vector clip (mc parameter).</li>
+<li>Decreased internal cache size growing.</li>
+<li>All MVFlow functions: fixed old bug with pixels for pel=4.</li>
+<li>MVAnalyse: added rfilter parameter (smooth method).</li>
+<li>MVBlockFps: added YUY2 and pelclip support.</li>
+<li>Tiny stability fixes for MT.</li>
+</ul>
+<p>1.11.0.1 beta (2008.09.08 by Fizick)</p>
+<ul>
+<li>New MVBlockFps for simple fps change (almost realtime :-).</li>
+<li>MVAnalyse: more smooth method of frame hierarchical level reducing (like ReduceBy2) for smoothing at every level.</li>
+<li>MVAnalyse: Added pzero parameter of zero vector cost for more coherent motion vectors (now switched ON by default, set to 0 if you need in old algo).</li>
+<li>MVAnalyse: Decreased pelsearch internal clipping from pel to 1 (asked by somebody for speed).</li>
+<li>MVFlowFps,MVFlowFps2, MVFlowInter: removed thSAD parameter.</li>
+<li>All functions: Removed mmx parameter.</li>
+</ul>
+<p>1.10.2.1 (2008.08.28 by Fizick)</p>
+<ul>
+<li>MVDegrain1-3: fixed old rounding error resulted in some chroma tint
+(some thanks to Didee for bugreport, but it could be more persevering in official MVTools forum thread :)</li>
+<li>Made doc about pelclip more accurate (hopely).</li>
+</ul>
+<p>1.10.2.0 beta (2008.08.27 by Fizick)</p>
+<ul>
+<li>Debugged and renamed MVRefine back to new MVRecalculate :).</li>
+<li>MVAnalyse: changed LSAD threshold from hard by soft for a little more coherent motion at bad areas.</li>
+<li>MVAnalyse: fixed old bug for (rarely used) different horizontal and vertical overlap sizes.</li>
+</ul>
+<p>1.10.1.0 not public (2008.08.22 by Fizick)</p>
+<ul>
+<li>Change MVRecalculate by more general function (MVRefine) which can re-estimate vectors.</li>
+</ul>
+<p>1.10.0.0 not public (2008.08.18 by Fizick)</p>
+<ul>
+<li>Added MVRecalculate function to update SAD (as requested by Didee).</li>
+<li>Fixed possible memory leaks (thanks to josey_wells for note)</li>
+<li>Other changes of v1.9.6-1.9.7 branch by josey_wells are still not merged -
+ too many work to analyse new code and numerous cosmetic rewriting,
+ so based on v1.9.5.7</li>
+</ul>
+<p>1.9.6.x-1.9.7.x series branch (2008.08.01-2008.08.26 by josey_wells)</p>
+<ul>
+<li>Added MVAnalyseMulti, MVDegrain, MVMultiExtract functions with internal multitheading
+(that does not require any special AviSynth, SetMTMode or MT) </li>
+<li>Some bug fixes (memory leaks), code consolidation (rewriting) for stability and performance improvements.
+Also there is a multitude of changes due to the addition of threading class,
+semaphore class, critical section class, thread files for MVDegrain, MVAnalyseMulti
+as well as factoring out common code for MVDegrain into a single base class moving out common code etc.
+There are no changes of algorithms.
+See <a href="http://forum.doom9.org/showthread.php?t=84770">messages at forum</a> since August 2008 for download, syntax and discussion.</li>
+</ul>
+<p>1.9.5.7 public beta (2008.07.03 by Fizick)</p>
+<ul>
+<li>Fixed Overlap_2xY_mmx</li>
+<li>Added (incomplete?) list of used projects to doc.</li>
+</ul>
+<p>1.9.5.6 (2008.07.02 by TSchniede)</p>
+<ul>
+<li>Improved my, added Overlap_2xY_mmx, optimized CheckMV2 and LumaSAD.</li>
+</ul>
+<p>1.9.5.5 (2008.06.28 by TSchniede)</p>
+<ul>
+<li>Improved default 2xY SAD and added new faster 2xY SAD.</li>
+</ul>
+<p>1.9.5.4 (2008.06.27 by TSchniede)</p>
+<ul>
+<li>Ported CPU detection from x264.</li>
+<li>Now using x264 SAD autoddetect is default</li>
+<li>Merge with 1.9.5.1, re-enabled 32x16 mode (only default functions)</li>
+</ul>
+<p>1.9.5.3 (2008.06.26 by TSchniede)</p>
+<ul>
+<li>Imported SSD and SATD functions.</li>
+<li>access using sadx264 > 7 or dct > 4.</li>
+</ul>
+<p>1.9.5.2 (2008.06.24 by TSchniede)</p>
+<ul>
+<li>Buffered source block in aligned area before calculating SAD.</li>
+<li>This fixes crashes if source block was unaligned due to overlaped blocks.</li>
+<li>Worst case was &lt; 1% slower, most of the time it further increases performance.</li>
+</ul>
+<p>1.9.5.1 public beta (2008.06.21 by Fizick)</p>
+<ul>
+<li>Merge v.1.9.5 changes by TSchniede.</li>
+</ul>
+<p>1.9.5 (2008.06.21 by TSchniede), based on v.1.9.3</p>
+<ul>
+<li>MVAnalyse: added sadx264 option.</li>
+<li>Internal modifications - aligned memory of luma&chroma planes and modified MVTools to the interface of the SAD functions used in x264.</li>
+<li>minor bugfix (deactivate DebugPrint possible)</li>
+</ul>
+<p>1.9.4.1 beta (2008.06.12 by Fizick, released 21.06.2008)</p>
+<ul>
+<li>Fixed bug for pel=4 with sharp=2 (thanks to Pustovetov for report and fix).</li>
+<li>MVCompensate: added block size 16x2 (bug reported by AVIL).</li>
+</ul>
+<p>1.9.4 not public beta (2008.06.08 by Fizick)</p>
+<ul>
+<li>MVAnalyse and other: added block size 32x16 (requested by MAG79).</li>
+</ul>
+<p>1.9.3.1 (2008.06.05 by Fizick)</p>
+<ul>
+<li>MVIncrease: was broken (as noted by MAG79).</li>
+</ul>
+<p>1.9.3 (2008.04.20 by Fizick)</p>
+<ul>
+<li>MVAnalyse: fixed bug for pelclip (broken since v1.8.5).</li>
+<li>MVDegrain: added thSADC as chroma threshold (request by Terranigma).</li>
+</ul>
+<p>1.9.2 (2008.01.29, all bugs were found by josey_wells)</p>
+<ul>
+<li>MVDegrain3: fixed bug in code for 16x8 block; fix typo (MVDegrain2 instead of MVDegrain3).</li>
+<li>MVAnalyse: fixed old bug in NStepSearch.</li>
+</ul>
+<p>1.9.1 beta (2007.12.15 by Fizick)</p>
+<ul>
+<li>MVAnalyse: Increased speed (by 20%) of global motion estimation (other algo).</li>
+<li>MVAnalyse: Added assembler optimization for small blocksizes SAD (speed by 50%).</li>
+<li>MVMask: Added kind=5 motion colormap as x,y components of motion vector shown in U, V color planes.</li>
+</ul>
+<p>1.9.0 (2007.12.04 by Fizick)</p>
+<ul>
+<li>Added MVDegrain3.</li>
+</ul>
+<p>1.8.6 (2007.12.02 by Fizick)</p>
+<ul>
+<li>Added components x,y motion vector mask kind=3,4 to MVMask (requested by Terka).</li>
+</ul>
+<p>1.8.5.1 (2007.11.12 by we:)</p>
+<ul>
+<li>Merge v1.8.4.3 and v1.8.5 changes, added MT example.</li>
+</ul>
+<p>1.8.4.3 (2007.10.05 by Tsp)</p>
+<ul>
+<li>Implemented internal cache buffer miss detection with buffer growing (as suggested by IanB).</li>
+</ul>
+<p>1.8.5 (2007.11.05 by Fizick)</p>
+<ul>
+<li>Added pelsearch parameter as search parameter (radius) at finest level (request by Terranigma).</li>
+<li>Decreased internal buffer to decrease memory usage, with some changes in critical sections.</li>
+<li>Added block size 16x2 (requested by ab_99).</li>
+</ul>
+<p>1.8.4.2 (2007.10.25 by Tsp)</p>
+<ul>
+<li>Added critical section in frame refining to fix rare bug in multi-threaded processing.</li>
+</ul>
+<p>1.8.4.1 (2007.10.23 by Tsp)</p>
+<ul>
+<li>Implemented thread-safe internal buffer access
+for correct multithreaded processing with SetMTmode(2) in Avisynth MT version (for multi CPU).</li>
+</ul>
+<p>1.8.4 (2007.08.22 by Fizick)</p>
+<ul>
+<li>"divide" now works with "overlap".</li>
+</ul>
+<p>1.8.3 (2007.08.17-20 by Fizick)</p>
+<ul>
+<li>MVFlowFps: renamed "mode" parameter to "mask".</li>
+<li>MVFlowFps2: added "mask" parameter.</li>
+<li>MVFlowFPS, MVFlowFPS2: Restored default values num=25, den=1 (as was in version 1.7 and early)</li>
+<li>MVDegrain1, MVGegrain2 - added "limit" parameter.</li>
+</ul>
+<p>1.8.2 beta (2007.07.30 by Fizick)</p>
+<ul>
+<li>MVAnalyse: corrected (increased) search radius at finest level for pel>1.</li>
+<li>Added pel=4 option for quarter pixel precision.</li>
+<li>Renamed clip2x parameter to pelclip.</li>
+</ul>
+<p>1.8.1 beta (2007.06.28 by Fizick)</p>
+<ul>
+<li>MVAnalyse: added postrocessing motion vectores by dividing blocks into subblocks to decrease zone of motion vectors interpolation.</li>
+<li>MVFlowFps: added "mode" parameter to select processing method at occlusion areas (and speed).</li>
+<li>Some internal changes (padding in MVAnalysisData, header to vector stream frames, etc).</li>
+</ul>
+<p>1.8.0 beta (2007.06.22 by Fizick)</p>
+<ul>
+<li>MVFlowInter, MVFlowFPS, MVFlowFPS2, MVMask: improved occlusion mask by extent</li>
+<li>MVFlowInter, MVFlowFPS: decreased objects halo at occlusion areas by using motion vectors of adjacent frames</li>
+<li>MVFlowInter, MVFlowFPS: disabled SAD mask and thSAD parameter</li>
+<li>MVShow: fixed drawn positon of vectors</li>
+<li>MVFlowFPS, MVFlowFPS2: Changed default output fps to double of input (default num, den = 0) </li>
+<li>Added error messages on missed vector clips</li>
+</ul>
+<p>1.7.0 beta (2007.06.05 by Fizick)</p>
+<ul>
+<li>MVAnalyse: added blksizeV and overlapV parameters for non-square blocks 8x4 and 16x8.</li>
+</ul>
+<p>1.6.4 (2007.05.30 by Fizick)</p>
+<ul>
+<li>MVAnalyse: modified vectors order for Enhausted search (expanding squares).</li>
+<li>MVAnalyse: fixed bug with dct=3.</li>
+<li>MVFlowFps, MVFlowFPS2, MVFlowInter: now blend frames with bad motion estimaton (at scenechanges, flashes).</li>
+<li>MVFlowFps, MVFlowFPS2: fixed bug with thSAD parameter (and correspondent mask).</li>
+</ul>
+<p>1.6.3 (2007.05.06 by Fizick)</p>
+<ul>
+<li>MVDepan: more compatible with DepanEstimate (range parameter, etc).</li>
+</ul>
+<p>1.6.2 (2006.11.11 by Fizick)</p>
+<ul>
+<li>MVAnalyse: changed DCT=2 mode to global luma dependent.</li>
+</ul>
+<p>1.6.1 beta (2006.10.25 by Fizick)</p>
+<ul>
+<li>MVAnalyse: added experimental DCT mode to improve motion estimation at luma flicker and fades (fast for blksize=8 only).</li>
+</ul>
+<p>1.5.8 beta (2006.10.14 by Fizick)</p>
+<ul>
+<li>Many functions: added <var>clip2x</var> parameter to use 2X upsampled clip instead of internal subpixel interpolation for pel=2</li>
+<li>MVFlowFps, MVFlowFps2: added <var>thSAD</var> parameter; use local blending of neighbour frames pixels
+ in regions with bad motion vectors</li>
+<li>MVFlowFps, MVFlowFps2: may use motion vectors for any frames <var>delta</var></li>
+<li>MVFlowFps, MVFlowFps2: fixed a bug for video with big nominators and denominators (thanks to Trixter for report)</li>
+<li>MVCompensate: added experimental <var>fields</var> parameter
+ to compensate fields shift of fieldbased video for pel=2</li>
+<li>MVAnalyse: changed pnew parameter to relative of SAD</li>
+</ul>
+<p>1.5.3 beta (2006.10.01 by Fizick)</p>
+<ul>
+<li>MVAnalyse: improved zero motion estimation for fieldbased video for pel=2</li>
+<li>Merged v1.4.12-1.4.13 changes</li>
+<li>Temporary restored MVIncrease, MVChangeCompensation, MVDenoise (with compensation stored in vector clip)</li>
+</ul>
+<p>1.5.1 beta (2006.09.05 by Fizick)</p>
+<ul>
+<li>Merged v1.4.11 changes</li>
+</ul>
+<p>1.5.0 beta (2006.08.23 by Fizick)</p>
+<ul>
+<li>Corrected vector predictors interpolation (from coarse to fine scale) for overlap>0.</li>
+<li>MVFlowInter: added thSAD parameter.</li>
+<li>MVFlowInter: local blending of neighbour frames pixels
+ in regions with bad motion vectors.</li>
+<li>Removed compensation storage in vector clip</li>
+<li>Removed functions MVIncrease, MVChangeCompensation, MVDenoise
+(it used compensation in vector clip, and did not support overlapping).</li>
+<li>Removed  mode=2 loop option of MVCompensation, mode=0 is processed as mode=1 now.</li>
+<li>Added thSAD parameter to MVCompensation for safe (dummy) compensation as requested by Didee</li>
+</ul>
+<p>1.4.13 (2006.09.28 by Fizick)</p>
+<ul>
+<li>Fixed bug with possible wrong frames pointers in core (MVClip.Update),
+hided by caching (thanks to IanB for advice)</li>
+</ul>
+<p>1.4.12 (2006.09.25 by Fizick)</p>
+<ul>
+<li>Seems fixed bug with frames caching in MVDenoise (and possible in MVDegrain) (thanks to il9ad for report)</li>
+</ul>
+<p>1.4.11 (2006.09.06 by Fizick)</p>
+<ul>
+<li>Corrected vector predictors interpolation (from coarse to fine scale) for overlap>0.</li>
+<li>Fixed bug with pitch for overlap=0, YV12 in MVDegrain1 (thanks to Boulder for report)</li>
+</ul>
+<p>1.4.10 (2006.08.18 by Fizick)</p>
+<ul>
+<li>Corrected right and bottom borders processing in MVCompensate for arbitrary frame sizes.</li>
+<li>Changed defaults in MVAnalyse: pel=2, truemotion=true, sharp=2.</li>
+</ul>
+<p>1.4.9 (2006.08.14 by Fizick)</p>
+<ul>
+<li>Fixes a bug in MMX optimization of overlap mode in MVDeGrain, MVCompensate for YUY2 with blksize=8
+ (thanks to TSchniede for report).</li>
+</ul>
+<p>1.4.8 (2006.07.31 by Fizick)</p>
+<ul>
+<li>Added some MMX optimization of overlap mode in MVDeGrain, MVCompensate.</li>
+<li>Fixed a bug with last (not processed) rows in MVDeGrain.</li>
+</ul>
+<p>1.4.7 (2006.07.25 by Fizick)</p>
+<ul>
+<li>Decreased overlap gridness in MVDeGrain1, MVDeGrain2, MVCompensate.</li>
+<li>Added example with MVDeGrain1 for interlaced.</li>
+</ul>
+<p>1.4.6 (2006.07.24 by Fizick)</p>
+<ul>
+<li>Decreased denoising in MVDeGrain1, MVDeGrain2.</li>
+<li>Plane parameter in MVDeGrain1, MVDeGrain2 now works :)</li>
+</ul>
+<p>1.4.5 (2006.07.22 by Fizick)</p>
+<ul>
+<li>Added plane parameter to MVDeGrain1, MVDeGrain2.</li>
+</ul>
+<p>1.4.4 (2006.07.19 by Fizick)</p>
+<ul>
+<li>Corrected default thSAD=400 in MVDeGrain1, MVDeGrain2.</li>
+<li>Fixed a bug with V color plane in MVChangeCompensate.</li>
+</ul>
+<p>1.4.3 (2006.07.17 by Fizick)</p>
+<ul>
+<li>Decrease overlap gridness in MVDeGrain1, MVDeGrain2.</li>
+</ul>
+<p>1.4.2 (2006.07.16 by Fizick)</p>
+<ul>
+<li>Fixed a memory access bug in MVDeGrain1, MVDeGrain2. Thanks to krieger2005 for report.</li>
+</ul>
+<p>1.4.1 (2006.06.23 by Fizick)</p>
+<ul>
+<li>Changed MVDeGrain1, MVDeGrain2 mode to SAD weigthing.</li>
+<li>Chanded thSCD1 default from 300 to 400.</li>
+</ul>
+<p>1.4.0 (2006.06.19 by Fizick)</p>
+<ul>
+<li>Added MVDeGrain1, MVDeGrain2 limited averaging denoisers.</li>
+<li>Corrected thSAD scale in MVDenoise.</li>
+<li>Corrected documentation about SAD.</li>
+</ul>
+<p>1.3.1 (2006.06.11 by Fizick)</p>
+<ul>
+<li>Added bicubic subpixel interpolation method for pel=2 (with iSSE optinization for sharp=1,2).</li>
+<li>Assembler iSSE speed optimization for overlapped block compensation.</li>
+</ul>
+<p>1.3.0 (2006.06.05 by Fizick)</p>
+<ul>
+<li>Implemented overlapped block motion compensation to MVCompensation(mode=1).</li>
+<li>Changed default to mode=1 in MVCompensation as the most universal.</li>
+<li>Added sharp subpixel interpolation method for pel=2.</li>
+<li>Fixed bug for blksize=16 with YUY2.</li>
+<li>(To-do list: assembler SSE speed optimization for new compensation and interpolation methods.)</li>
+</ul>
+<p>1.2.6 beta (2006.05.21 by Fizick)</p>
+<ul>
+<li>Added option to write motion vectors data to log file as requested by Endre.</li>
+</ul>
+<p>1.2.5 (2006.05.08 by Fizick)</p>
+<ul>
+<li>Decreased zero vector weight, iteration accuracy in MVDepan</li>
+</ul>
+<p>1.2.4 (2006.04.07 by Fizick)</p>
+<ul>
+<li>Fixed bug v.1.2.3 with info mode in MVDepan</li>
+</ul>
+<p>1.2.3 (2006.03.31 by Fizick)</p>
+<ul>
+<li>Implemented MVDepan for interlaced source separated by fields;</li>
+<li>added optional MVDepan log file.</li>
+</ul>
+<p>1.2.2 beta (2006.03.01 by Fizick)</p>
+<ul>
+<li>Fixed frame shift bug of v1.2.1 with mmx YUY2 conversion (thanks to <b>WorBry</b> for bug report)</li>
+</ul>
+<p>1.2.1 beta (2006.02.20 by Fizick)</p>
+<ul>
+<li>Fixed bug of v1.2,</li>
+<li>Speed restored,</li>
+<li>mmx YUY2 conversion (from avisynth 2.6 function by sh0dan) </li>
+<li>But it seems, overlap mode still does not work properly</li>
+</ul>
+<p>1.2 beta (2006.02.17 by Fizick)</p>
+<ul>
+<li>YUY2 format support (besides MVIncrease), no optimization</li>
+</ul>
+<p>1.1.1 (2006.02.16 by Fizick)</p>
+<ul>
+<li>Removed DeBlock and Corrector filters (will be separate plugins)</li>
+<li>Documented old MVSCDetection function.</li>
+<li>Cleaned project from unused source files.</li>
+</ul>
+<p>1.1 (non-public build 2006.01.09 by Fizick)</p>
+<ul>
+<li>Quite large revision (beta). New option for overlapped block motion estimation in MVAnalyse
+for usage in MVFlow, MVFlowInter, MVFlowFps for improved motion compensation.</li>
+<li>Lookup tables for motion interpolation.</li>
+<li>Small correction of  displacement value in MVFlowFps2.</li>
+</ul>
+<p>1.0.3 (Released 2005.12.30 by Fizick)</p>
+<ul>
+<li>Fixed bug with displacement in MVFlowInter, MVFlowFps (introduced in v1.0.2).</li>
+</ul>
+<p>1.0.2 (Released 2005.12.28 by Fizick)</p>
+<ul>
+<li>Corrected value of displacement in MVFlow (a little).</li>
+</ul>
+<p>1.0.1 (Released 2005.12.24 by Fizick)</p>
+<ul>
+<li>Fixed memory leakage bug in MVAnalyse with global motion (thanks to <b>AI</b> for report).</li>
+<li>Removed penalty for zero vector predictor in MVAnalyse (was introduced in v1.0).</li>
+<li>Changed chroma=true as default in MVAnalyse.</li>
+</ul>
+<p>1.0 (Released 2005.11.29 by Fizick)</p>
+<ul>
+<li>I'm tired of long version numbers :). But the plugin is stil experimental :(.</li>
+<li>Restored zero vector predictor in MVAnalyse.</li>
+<li>Changed blur time scale in MVFlowBlur (100 is fully open shutter now) as <b>Mug Funky</b> requested.</li>
+</ul>
+<p>0.9.13.3 (Released 2005.11.27 by Fizick)</p>
+<ul>
+<li>Added global motion (simple method) vector predictor to MVAnalyse.</li>
+<li>Vector search is skipped (for speed) if good predictor was found (with SAD &lt; pnew).</li>
+<li>Parameter <var>scale</var> in MVShow works properly now.</li>
+<li>Disabled some debug and profiling info output (for speed increasing).</li>
+<li>Changed default <var>prec</var>=1 (was 2) in MVFlowBlur.</li>
+</ul>
+<p>0.9.13.2 (Released 2005.11.22 by Fizick)</p>
+<ul>
+<li>Fixed bug in MVFlowFps, MVFlowFps2 for non-integer fps.</li>
+</ul>
+<p>0.9.13.1 (Released 2005.11.21 by Fizick)</p>
+<ul>
+<li>Fixed bug in MVFlowFps, MVFlowFps2, MVFlowInter, MVFlowBlur (introduced in v0.9.13).</li>
+<li>Removed <var>plen</var> parameter from MVAnalyse as not useful.</li>
+</ul>
+<p>0.9.13 (Released 2005.11.20 by Fizick)</p>
+<ul>
+<li>Added <var>truemotion</var> preset to MVAnalyse.</li>
+<li>Added experimental MVFlowFps2.</li>
+<li>Change interpolated vector rounding method in all MVFLow... functions.</li>
+<li>Edited documentation a little.</li>
+</ul>
+<p>0.9.12.4 (Released 2005.11.15 by Fizick)</p>
+<ul>
+<li>Changed type of <var>ml</var> parameter in MVMask, MVFlowInter, MVFlowFps from int to float.</li>
+<li>Added bound check of <var>ml, time, blur</var> parameters.</li>
+<li>Small possible bug fixed (emms).</li>
+<li>Partially updated documentation. But I am not sure that <b>sh0dan</b> requested <b>exactly such</b> updating :).
+It is still not user guide but functions reference.</li>
+</ul>
+<p>0.9.12.3 (Released 2005.11.14 by Fizick)</p>
+<ul>
+<li>Fixed bug for chroma for width not divisible by 16 in MVMask (introduced in v0.9.11).</li>
+<li>Some speed optimizing of MVFlowFps.</li>
+<li>Reset size of internal frames buffer to original value 10. Try various versions.</li>
+</ul>
+<p>0.9.12.2 (Released 2005.11.13 by Fizick)</p>
+<ul>
+<li>Added experimental precise but slow MVFlowBlur function as <b>scharfis_brain</b> requested.</li>
+<li>Temporary changed size of internal frames buffer to 5.</li>
+</ul>
+<p>0.9.12.1 (Released 2005.11.12 by Fizick)</p>
+<ul>
+<li>Added experimental MVFlowFps function.</li>
+<li>Disabled MVInter function.</li>
+<li>Temporary changed size of internal frames buffer from 10 to 3 for memory usage decreasing.
+Speed must be tested for complex scripts.</li>
+</ul>
+<p>0.9.12 (Released 2005.11.09 by Fizick)</p>
+<ul>
+<li>Added MVFlowInter function. MVInter function will be removed in next release (it is worse).</li>
+<li>Changed scale of <var>ml</var> parameter for kind=2 of MVMask to more optimal default.</li>
+<li>Fixed small bug in Bilinear.asm (strange pixels near right border for pel=2).</li>
+</ul>
+<p>0.9.11.1 (Released 2005.11.06 by Fizick)</p>
+<ul>
+<li>Added half-pel support to MVFlow.</li>
+<li>Increased max <var>quant</var> from 51 to 60 in DeBlock for very strong deblocking .</li>
+<li>Corrected documentation.</li>
+</ul>
+<p>0.9.11 (Released 2005.11.04 by Fizick)</p>
+<ul>
+<li>Improved MVMask: Replaced boolean <var>showsad</var> parameter to integer <var>kind</var>,
+added occlusion mask option. Changed bilinear resize code to more correct and fast SimpleResize.</li>
+</ul>
+<p>0.9.10.1 (Released 2005.11.01 by Fizick)</p>
+<ul>
+<li>Fixed bug with chroma and luma small changes in MVInter (rounding error).</li>
+<li>Vector interpolation in MVFlow and mask in MVInter are correct now (due to fixing bug in SimpleResize).</li>
+</ul>
+<p>0.9.10 (Released 2005.10.31 by Fizick)</p>
+<ul>
+<li>Added some true motion (smoothed) estimation options to MVAnalyse</li>
+<li>Added function MVFlow for per-pixel motion compensation</li>
+<li>Added function MVInter for motion interpolation (very experimental)</li>
+</ul>
+<p>0.9.9.1 (Released 2005.01.20 by Manao)</p>
+<ul>
+<li>No need anymore of stlport_vcxxxx.dll</li>
+</ul>
+<p>0.9.9</p>
+<ul>
+<li>Filter added : Corrector</li>
+<li>Filter added : MVIncrease</li>
+<li>New available blocksize : 16</li>
+<li>New parameter in MVAnalyse : <var>chroma</var></li>
+<li>Changes in the core</li>
+</ul>
+<p>0.9.8.5</p>
+<ul><li><code>MVCompensate</code> changed : a new parameter, idx, which works as idx in <code>MVAnalyse</code>,
+and which allows speed up when compensating the same frames several times.</li>
+</ul>
+<p>0.9.8.4</p>
+<ul><li>ME takes into account the chroma now, as requested by tsp.</li>
+</ul>
+<p>0.9.8.3</p>
+<ul><li>Added <code>Corrector</code> function, as requested by scharfi.</li>
+</ul>
+<p>0.9.8.2</p>
+<ul><li>New function <code>MVDepan</code> (added by Fizick) for Depan plugin.</li>
+</ul>
+<p>0.9.8.1</p>
+<ul><li>Several bugfixes</li>
+</ul>
+<p>0.9.8</p>
+<ul><li>Yet another little changes in the filters' syntax. The core changed a lot,
+in order to gain speed were it was possible. However, by default, the speed gain won't be
+visible, you'll need to configure correctly the analysis filter through its "idx"
+parameter in order to gain speed ( in the mode "pel" = 2 ).</li>
+<li>Bugfixes in MVDenoise, and chroma denoising in MVDenoise.</li>
+<li>Now, the filters down the filter's chain tell to the analysis filter if they need
+the compensation, so you don't have to worry about that at the analysis stage.</li>
+</ul>
+<p>0.9.7</p>
+<ul><li>Yet again, a lot of rewriting. Interpolating filters are disabled ( for the moment ),
+all the other filters work and should be considered as stable. Syntax has changed a lot,
+and will change again before reaching 1.0 ( if it's reached one day ). Changes mainly affect
+<code>MVAnalyse</code>. New filter :  <code>MVChangeCompensate</code>.
+</li></ul>
+<p>0.9.6.2</p>
+<ul>
+<li> Fixed bug in <code>MVMask</code> parameters.</li>
+</ul>
+
+<p>0.9.6.1</p>
+<ul>
+<li>Lot of bugfixes for the existing filters. MVMask, MVShow, MVCompensate, MVDenoise and MVSCDetection, and MVAnalyse should work .
+Other may crash unexpectedly.</li>
+<li>Now, for the three new filters. Two have nothing to do with motion compensation,
+but I didn't want to put them in separate binaries, since they'll mainly be used with filters from this package.
+The third one uses vectors, and integrates somehow the two others.</li>
+<li>QDeQuant(clip c, int quant, int level) : takes a clip and quantizes it, using an approximation of the H264 DCT.
+It filters the three planes ( 4x4 blocks for each of them, so the chroma isn't processed as in H264 ).
+It's not exactly the H264 DCT because at q1, it's lossless, and a q51 it's not that bad, but you can raise quant over 51.
+Level is the reference level of the picture.
+By default it's zero, but it can be set, for example, to 128.
+The picture is then treates as if pixels were ranging from -128 to 127, hence avoiding errors around 128.</li>
+<li>Deblock(clip c, int quant, int aOffset, int bOffset ) : takes a clip, and deblock it using H264 deblocking,
+as if the picture was made only of inter blocks. This time, quant ranges from 0 to 51 as in H264, and has the same impact.
+aOffset and bOffset allow to raise / lower the quant when deciding for some internal thresholds.
+They are set by default to 0. Be warned that the filter should do nothing at quant lesser 16, if aOffset and bOffset are both zero.
+It's a wanted behavior ( thus it respect the partially the norm ).</li>
+<li>EncDenoise(clip c, clip vectors, bool scbehavior, int quant, int aOffset, int bOffset, int thSCD1, int thSCD2) :
+it merges Deblock, QDeQuant and MVCompensate, taking from them the name and behavior of their parameters.
+It basically does a h264 encode as if all blocks were 8x8 inter blocks.
+Reference frame is the previous frame output by the filter ( if it is the correct one, else it's the previous frame of the source ),
+mvs are those given by mvanalyse on the source. The reference frame is compensated by the vectors,
+then the residual difference is quantized / dequantized and added to the result of the motion compensation.
+Finally, the frame is deblocked, and serves as reference for the next one.</li>
+</ul>
+
+<p>0.9.5.3</p>
+<ul>
+<li>Mainly a bugfixe ( several filters were affected by a silly bug , and MVCompensate now do padded motion compensation,
+and compensate also the chroma ( though it rounds the vector to odd coordinates to do so )</li>
+<li>A new feature, as asked by Fizick, for mvcompensate :
+"scbehavior", a boolean set to true by default, will allow you to keep the previous frame over a scenechange if you set it to false.</li>
+</ul>
+
+<p>0.9.5.2</p>
+<ul>
+<li>MVMask has two new parameters : showsad (bool) which allows to build the mask of the SAD values instead of the mask of the vectors' length.
+Ysc allows you to set the value taken by the mask on scene changes</li>
+<li>MVCompensate : behavior modification on scene changes. Now, the current frame is left untouched if a scene change was detected.</li>
+<li>New filter : MVSCDetection, with one parameter, Ysc, which works as previously.</li>
+<li>MVInterpolate, MVConvertFPS and MVBlur are enabled, but may be buggy ( though I wasn't able to make MVConvertFPS crash )</li>
+</ul>
+
+<p>0.9.5
+</p>
+<ul>
+  <li>Huge rewritting of the core engine. Vectors are now searched with a
+   precision up to the pixel ( because no other filters can use yet more
+   precise vectors, except MVShow ). The search engine is now fast ( which
+   doesn't mean necessarily that the filters which use it are fast )</li>
+   <li>A new parameter for MVAnalyse : lambda. See the documentation of the
+   filter to see how it works</li>
+   <li>MVDenoise works better.</li>
+</ul>
+<p>0.9.4
+</p>
+<ul>
+  <li>Vectors can be saved to a file. In order to do so, add the parameter
+filename="C:\foo.bar" to the filter MVAnalyse. If the file doesn't exist,
+vectors will be saved into it. If it exists, vectors will be read from it. But,
+be warned :
+    <ul>
+      <li>The file for a whole movie will be around 500 MB</li>
+      <li>Saving / reading from a file need for the moment a linear access to
+the frames, so it has to be used only when encoding the movie, not when doing
+random access in it.</li>
+      <li>The speed gain is not as great as one may hope, because SADs can't be
+saved ( it would take too much space ) and so have to be recomputed.</li>
+    </ul>
+  </li>
+  <li>The filter MVDenoise now works on 5 frames, and its parameters are now
+"thT" and "sadT" ( have a look in the documentation to see how they work ). It
+works nice ( very good for heavy denoising )</li>
+  <li>The scene change detection thresholds have slightly changed. Now, a block
+has changed if its SAD it over thSCD1. The default for thSCD1 is 300, and for
+thSCD2 it is 130. It orks well ( better than the previous SCD engine ).<br>
+  </li>
+</ul>
+<p>0.9.3</p>
+<ul>
+  <li>Last cleanings in the search of the motion vectors. It should be slightly
+faster</li>
+  <li>More search parameters can be set by the user, especially the search
+algorithm. See the documentation</li>
+  <li>Server / client implemented. You now first have to use MVAnalyse, and
+then the filter you want. Look at the documentation and at the examples I'll
+give alter.</li>
+  <li>MVCompensate is separated from MVShow ( it's more logic that way ). For
+the moment, it doesn't move the chroma ( same behavior as MVShow in the latest
+releases )</li>
+  <li>Some cleaning in MVBlur / MVInterpolate / MVConvertFPS, but still some
+work to do. Now, MVBlur blurs around the frame, not between the frame and the
+previous one.</li>
+  <li>Half of the work is done for writing vectors to a file. But the resulting
+file will be large ( around 500 MB - 1 GB I guess ).</li>
+  <li>MVDenoise is slightly faster ( at least it should )</li>
+  <li>Copies are optimized inside the filter, thanks to avisynth's copy
+functions.</li>
+  <li>MVShow can display the mean SAD of the compensation ( using showsad =
+true )</li>
+</ul>
+<p>0.9.2.1</p>
+<ul>
+  <li>MVInterpolate makes its come back.</li>
+  <li>MVConvertFPS should work on the last few frames of the clip</li>
+</ul>
+<p>0.9.2</p>
+<ul>
+  <li>MVInterpolate doesn't exist anymore.</li>
+  <li>MVBlur and MVConvertFPS have been improved. They also have got new
+parameters, have a look at the documentation.</li>
+  <li>MVShow gets back its compensate mode ( MVShow(cm = true) )</li>
+</ul>
+<p>0.9.1 - 2004.05.12</p>
+<ul>
+  <li>First version renamed to MVTools. </li>
+</ul>
+<p>0.1-0.6 Released 2004.01.24 - 2004.04.01 by Manao</p>
+<ul>
+  <li>First public versions MotionVectors (Motion.dll). </li>
+</ul>
+</small>
+
+
+
+<h2><a name="download"></a>VII) Download</h2>
+
+<p>This MVTools2 branch can be found in the Dither package, available from
+<a href="http://ldesoras.free.fr/prod.html#src_ditheravsi">http://ldesoras.free.fr/prod.html</a></p>
+
+<p>Older MVTools2 branch can be downloaded at
+<a href="http://avisynth.org.ru/">http://avisynth.org.ru/</a></p>
+
+<p>Older version 1.X documentation and download link are at
+<a href="http://avisynth.org.ru/mvtools/mvtools.html">http://avisynth.org.ru/mvtools/mvtools.html</a></p>
+
+<p>Older MVTools v.0.9.9.1 can be downloaded from <a href="http://manao4.free.fr/">Manao's site</a></p>
+
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+</div></body>
+</html>

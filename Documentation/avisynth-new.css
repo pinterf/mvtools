@@ -1,0 +1,67 @@
+body      { font-family: verdana, arial, helvetica, sans-serif; color: #000000; 
+            line-height: 135%;
+            font-size: 12px; background-color: #C8D4D8; text-align: center; }
+
+.global { min-height: 100%;
+            width: 750px;
+            padding: 0px;
+            margin: 0 auto;
+            text-align: left; }
+
+h1        { font-family: verdana, arial, helvetica, sans-serif; font-size: 26px;
+            text-align: center;
+            line-height: 135%; color: #000000;
+            padding: 0.125em 0.4em 0.125em 0.4em;
+            margin-left: 0px; margin-right: 0px; margin-top: 1em; margin-bottom: 2em; }
+
+h2        { font-family: verdana, arial, helvetica, sans-serif; font-size: 22px; 
+            line-height: 135%; color: #000000; 
+            background-color: #A0B0C8;
+            padding:  0.125em 0.4em 0.125em 0.4em;
+            margin-left: 0px; margin-right: 0px; margin-top: 2em; margin-bottom: 1.5em; }
+
+h3        { font-family: verdana, arial, helvetica, sans-serif; font-size: 18px; 
+            line-height: 135%; color: #000000;
+            padding: 0.125em 0.4em 0.125em 0.4em;
+            margin-left: 0px; margin-right: 0px; margin-top: 2em; margin-bottom: 1em;
+            border: #A8B4D8; border-style: solid; border-top-width: 1px; border-right-width: 0px; border-bottom-width: 0px; border-left-width: 1px; }
+
+h4        { font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 15px;
+            font-style: normal; font-weight: bold;
+            margin-left: 0px; margin-right: 0px; margin-top: 1.5em; margin-bottom: 1em; }
+
+p         { margin-left: 2em; margin-right: 0em; text-align: justify; }
+.var { margin-left: 0.6em; font-style: italic; letter-spacing: 0.0833em; color: #660033; }
+
+ul        { margin-left: 2em; margin-right: 0em; text-align: justify; list-style-type: square; }
+.n { margin-left: 2em; margin-right: 0em; text-align: justify; list-style-type: none; }
+
+a         { color: #005090; text-decoration: none; font-family: verdana, arial, helvetica, sans-serif; }
+a:link    { color: #005090; }
+a:visited { color: #005090; }
+a:hover   { background-color: #FF6060; color: #005090; }
+
+table     { margin-left: 2em; margin-top: 1em; margin-bottom: 1em;
+            line-height: 135%; border: 0em; border-collapse:collapse; }
+.n     { margin-left: 0em; margin-top: 0em; margin-bottom: 0em; border: 0em; border-collapse:collapse; }
+th { vertical-align:bottom; padding:1em; padding-top:0em; padding-bottom:0.25em; border-bottom: 1px solid #A8B4D8; font-weight: bold; }
+td { vertical-align:top; padding:1em; padding-top:0.25em; padding-bottom:0.25em; border-top: 1px solid #A8B4D8; border-bottom: 1px solid #A8B4D8; }
+.n { vertical-align:top; padding:0em; border: 0em; }
+
+pre       { font-family: Courier, mono;
+            margin-top: 1.5em; margin-bottom: 1.5em;
+            margin-left: 2em; margin-right: 0em; }
+.src { background-color: #D0D0C0;
+            padding-left: 1em; padding-top: 1em; padding-right: 1em; padding-bottom: 1em;
+            border: #908030; border-style: solid; border-top-width: 0px; border-right-width: 1px; border-bottom-width: 0px; border-left-width: 1px; }
+.proto    { color: #660033; font-weight:bold; background-color: #C0CCD0;
+            padding-left: 1em; padding-top: 1em; padding-right: 1em; padding-bottom: 1em; }
+
+code      { font-family: Courier, mono; font-size: 12px; color: #660033; }
+var       { font-family: Verdana, Arial, Helvetica, sans-serif; font-weight: normal;
+            font-style: italic; letter-spacing: 0.0833em; color: #660033; }
+tt        { font-family: Courier, mono; }
+em        { font-family: Courier, mono; font-weight: normal; color: #FFFFFF; font-style: normal; }
+strong    { font-family: Courier, mono; font-weight: bold; color: #FFFF66; font-style: normal; }
+cite      { border: 1px #3030A0 dotted; padding-left: 4px; padding-right: 4px; padding-top: 2px; padding-bottom: 2px; }
+kbd       { color: #808000; font-family: Verdana, Arial, Helvetica, sans-serif; font-weight: normal; font-size: 10px; font-style: normal; }
