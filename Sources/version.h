@@ -1,3 +1,3 @@
-#define FILEVERSION_VAL 2,6,0,5
-#define FILEVERSION_STR "2.6.0.5"
+#define FILEVERSION_VAL 2,6,1,0
+#define FILEVERSION_STR "2.6.1.0"
 
