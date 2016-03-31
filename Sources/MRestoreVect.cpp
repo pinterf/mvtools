@@ -72,6 +72,7 @@ MRestoreVect::MRestoreVect (::PClip src, int clip_index, ::IScriptEnvironment &e
 #if !defined(_WIN64)
 	vi.nchannels = reinterpret_cast <uintptr_t> (&_mad);
 #else
+	// hack!
 	uintptr_t p = reinterpret_cast <uintptr_t> (&_mad);
 	vi.nchannels = 0x80000000L | (int)(p >> 32);
 	vi.sample_type = (int)(p & 0xffffffffUL);

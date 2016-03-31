@@ -108,7 +108,7 @@ MVCompensate::MVCompensate(
 		const int		thsadn  = thsad  * thscd1 / nSCD1;
 		const int		thsadn2 = thsad2 * thscd1 / nSCD1;
 		const int		d       = k / 2 + 1;
-		c_info._thsad = ClipFnc::interpolate_thsad (thsadn, thsadn2, d, _trad);
+		c_info._thsad = ClipFnc::interpolate_thsad (thsadn, thsadn2, d, _trad); // P.F. when testing, d=0, _trad=1, will assert inside.
 	}
 
 	if (isse2)

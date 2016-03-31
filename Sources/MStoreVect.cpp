@@ -64,7 +64,8 @@ MStoreVect::MStoreVect (std::vector <::PClip> clip_arr, const char *vccs_0, ::IS
 		const MVAnalysisData &	mad =
 			*reinterpret_cast <MVAnalysisData *> (vd_vi.nchannels);
 #else
-        uintptr_t p = (((uintptr_t)(unsigned int)vi.nchannels ^ 0x80000000) << 32) | (uintptr_t)(unsigned int)vi.sample_type;
+		// hack!
+		uintptr_t p = (((uintptr_t)(unsigned int)vi.nchannels ^ 0x80000000) << 32) | (uintptr_t)(unsigned int)vi.sample_type;
 		const MVAnalysisData &	mad = *reinterpret_cast <MVAnalysisData *> (p);
 #endif
 		if (mad.GetMagicKey () != MVAnalysisData::MOTION_MAGIC_KEY)

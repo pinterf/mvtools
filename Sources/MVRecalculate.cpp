@@ -92,6 +92,7 @@ MVRecalculate::MVRecalculate (
 	MVAnalysisData *	pAnalyseFilter =
 		reinterpret_cast <MVAnalysisData *> (_vectors->GetVideoInfo().nchannels);
 #else
+	  // hack! 
     uintptr_t p = (((uintptr_t)(unsigned int)_vectors->GetVideoInfo().nchannels ^ 0x80000000) << 32) | (uintptr_t)(unsigned int)_vectors->GetVideoInfo().sample_type;
     MVAnalysisData *pAnalyseFilter = reinterpret_cast<MVAnalysisData *>(p);
 #endif

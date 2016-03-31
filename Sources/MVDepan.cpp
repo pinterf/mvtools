@@ -181,21 +181,21 @@ void MVDepan::write_depan_data(unsigned char *dstp, int framefirst, int framelas
 void MVDepan::write_deshakerlog1(FILE *logfile, int IsFieldBased, int IsTFF, int ndest, float motionx, float motiony, float motionzoom, float rotation)
 {
 
-//	float rotation = 0.0; // no rotation estimation in current version
+	//	float rotation = 0.0; // no rotation estimation in current version
 
 
-		// write frame number, dx, dy, rotation and zoom in Deshaker log format
-		if (IsFieldBased) { // fields from interlaced clip, A or B ( A is time first in Deshaker log )
-			if ( (ndest%2 == 0 )) { // even TFF or BFF fields
-				fprintf(logfile," %5dA %7.2f %7.2f %7.3f %7.5f\n",ndest/2,motionx,motiony, rotation, motionzoom);
-			}
-			else { // odd TFF or BFF fields
-				fprintf(logfile," %5dB %7.2f %7.2f %7.3f %7.5f\n",ndest/2,motionx,motiony, rotation, motionzoom);
-			}
+			// write frame number, dx, dy, rotation and zoom in Deshaker log format
+	if (IsFieldBased) { // fields from interlaced clip, A or B ( A is time first in Deshaker log )
+		if ((ndest % 2 == 0)) { // even TFF or BFF fields
+			fprintf(logfile, " %5dA %7.2f %7.2f %7.3f %7.5f\n", ndest / 2, motionx, motiony, rotation, motionzoom);
 		}
-		else { // progressive
-			fprintf(logfile," %6d %7.2f %7.2f %7.3f %7.5f\n",ndest,motionx,motiony, rotation, motionzoom);
+		else { // odd TFF or BFF fields
+			fprintf(logfile, " %5dB %7.2f %7.2f %7.3f %7.5f\n", ndest / 2, motionx, motiony, rotation, motionzoom);
 		}
+	}
+	else { // progressive
+		fprintf(logfile, " %6d %7.2f %7.2f %7.3f %7.5f\n", ndest, motionx, motiony, rotation, motionzoom);
+	}
 }
 
 //----------------------------------------------------------------
@@ -223,90 +223,90 @@ void MVDepan::write_deshakerlog1(FILE *logfile, int IsFieldBased, int IsTFF, int
 //
 
 //--------------------------------------------------------------------------
-void MVDepan::motion2transform (float dx1, float dy1, float rot, float zoom1, float pixaspect, float xcenter, float ycenter, int forward, float fractoffset, transform *tr)
+void MVDepan::motion2transform(float dx1, float dy1, float rot, float zoom1, float pixaspect, float xcenter, float ycenter, int forward, float fractoffset, transform *tr)
 {
-  const float PI=3.1415926535897932384626433832795f;
-  float rotradian, sinus, cosinus, dx, dy, zoom;
+	const float PI = 3.1415926535897932384626433832795f;
+	float rotradian, sinus, cosinus, dx, dy, zoom;
 
-  // fractoffset > 0 for forward, <0 for backward
+	// fractoffset > 0 for forward, <0 for backward
 	dx = fractoffset*dx1;
-    dy = fractoffset*dy1;
-    rotradian = fractoffset*rot*PI/180;   // from degree to radian
-	if (fabs(rotradian) < 1e-6) rotradian = 0 ;  // for some stability of rounding precision
-    zoom = exp(fractoffset*log(zoom1));         // zoom**(fractoffset) = exp(fractoffset*ln(zoom))
-	if (fabs(zoom-1.)< 1e-6) zoom = 1.;			// for some stability of rounding precision
+	dy = fractoffset*dy1;
+	rotradian = fractoffset*rot*PI / 180;   // from degree to radian
+	if (fabs(rotradian) < 1e-6) rotradian = 0;  // for some stability of rounding precision
+	zoom = exp(fractoffset*log(zoom1));         // zoom**(fractoffset) = exp(fractoffset*ln(zoom))
+	if (fabs(zoom - 1.) < 1e-6) zoom = 1.;			// for some stability of rounding precision
 
 	sinus = sin(rotradian);
-    cosinus = cos(rotradian);
+	cosinus = cos(rotradian);
 
-//	xcenter = row_size_p*(1+uv)/2.0;      //  middle x
-//    ycenter = height_p*(1+uv)/2.0;       //  middle y
+	//	xcenter = row_size_p*(1+uv)/2.0;      //  middle x
+	//    ycenter = height_p*(1+uv)/2.0;       //  middle y
 
-	if (forward !=0) {         //  get coefficients for forward
-        tr->dxc = xcenter + (-xcenter*cosinus + ycenter/pixaspect*sinus)*zoom + dx;// dxc            /(1+uv);
-      	tr->dxx = cosinus*zoom; // dxx
-      	tr->dxy = -sinus/pixaspect*zoom;  // dxy
+	if (forward != 0) {         //  get coefficients for forward
+		tr->dxc = xcenter + (-xcenter*cosinus + ycenter / pixaspect*sinus)*zoom + dx;// dxc            /(1+uv);
+		tr->dxx = cosinus*zoom; // dxx
+		tr->dxy = -sinus / pixaspect*zoom;  // dxy
 
-      	tr->dyc = ycenter + ( ((-ycenter)/pixaspect*cosinus + (-xcenter)*sinus)*zoom + dy )*pixaspect;// dyc      /(1+uv);
-      	tr->dyx = sinus*zoom*pixaspect; // dyx
-      	tr->dyy = cosinus*zoom ;  // dyy
-      }
-      else {					// coefficients for backward
-		tr->dxc = xcenter + ( (-xcenter + dx)*cosinus - ((-ycenter)/pixaspect + dy)*sinus )*zoom;//     /(1+uv);
+		tr->dyc = ycenter + (((-ycenter) / pixaspect*cosinus + (-xcenter)*sinus)*zoom + dy)*pixaspect;// dyc      /(1+uv);
+		tr->dyx = sinus*zoom*pixaspect; // dyx
+		tr->dyy = cosinus*zoom;  // dyy
+	}
+	else {					// coefficients for backward
+		tr->dxc = xcenter + ((-xcenter + dx)*cosinus - ((-ycenter) / pixaspect + dy)*sinus)*zoom;//     /(1+uv);
 		tr->dxx = cosinus*zoom;
-		tr->dxy = -sinus/pixaspect*zoom;
+		tr->dxy = -sinus / pixaspect*zoom;
 
-		tr->dyc = ycenter + ( ((-ycenter)/pixaspect +dy)*cosinus + (-xcenter + dx)*sinus )*zoom*pixaspect; //      /(1+uv);
+		tr->dyc = ycenter + (((-ycenter) / pixaspect + dy)*cosinus + (-xcenter + dx)*sinus)*zoom*pixaspect; //      /(1+uv);
 		tr->dyx = sinus*zoom*pixaspect;
 		tr->dyy = cosinus*zoom;
-      }
+	}
 }
 
 //-----------------------------------------------------------------------------
 //void transform2motion (float tr[], int forward, float xcenter, float ycenter, float pixaspect, float *dx, float *dy, float *rot, float *zoom)
-void MVDepan::transform2motion (transform tr, int forward, float xcenter, float ycenter, float pixaspect, float *dx, float *dy, float *rot, float *zoom)
+void MVDepan::transform2motion(transform tr, int forward, float xcenter, float ycenter, float pixaspect, float *dx, float *dy, float *rot, float *zoom)
 {
-  const float PI=3.1415926535897932384626433832795f;
-  float rotradian, sinus, cosinus;
+	const float PI = 3.1415926535897932384626433832795f;
+	float rotradian, sinus, cosinus;
 
-	if (forward !=0) {         //  get motion for forward
-		rotradian = - atan(pixaspect*tr.dxy/tr.dxx);
-		*rot = rotradian*180/PI;
+	if (forward != 0) {         //  get motion for forward
+		rotradian = -atan(pixaspect*tr.dxy / tr.dxx);
+		*rot = rotradian * 180 / PI;
 		sinus = sin(rotradian);
-	    cosinus = cos(rotradian);
-		*zoom = tr.dxx/cosinus;
-		*dx = tr.dxc - xcenter - (-xcenter*cosinus + ycenter/pixaspect*sinus)*(*zoom);
-		*dy = tr.dyc/pixaspect - ycenter/pixaspect - ((-ycenter)/pixaspect*cosinus + (-xcenter)*sinus)*(*zoom) ;// dyc
+		cosinus = cos(rotradian);
+		*zoom = tr.dxx / cosinus;
+		*dx = tr.dxc - xcenter - (-xcenter*cosinus + ycenter / pixaspect*sinus)*(*zoom);
+		*dy = tr.dyc / pixaspect - ycenter / pixaspect - ((-ycenter) / pixaspect*cosinus + (-xcenter)*sinus)*(*zoom);// dyc
 
-     }
-      else {					// coefficients for backward
-		rotradian = - atan(pixaspect*tr.dxy/tr.dxx);
-		*rot = rotradian*180/PI;
+	}
+	else {					// coefficients for backward
+		rotradian = -atan(pixaspect*tr.dxy / tr.dxx);
+		*rot = rotradian * 180 / PI;
 		sinus = sin(rotradian);
-	    cosinus = cos(rotradian);
-		*zoom = tr.dxx/cosinus;
+		cosinus = cos(rotradian);
+		*zoom = tr.dxx / cosinus;
 
 
-//		tr.dxc/(*zoom) = xcenter/(*zoom) + (-xcenter + dx)*cosinus - ((-ycenter)/pixaspect + dy)*sinus ;
-//		tr.dyc/(*zoom)/pixaspect = ycenter/(*zoom)/pixaspect +  ((-ycenter)/pixaspect +dy)*cosinus + (-xcenter + dx)*sinus ;
-// *cosinus:
-//		tr.dxc/(*zoom)*cosinus = xcenter/(*zoom)*cosinus + (-xcenter + dx)*cosinus*cosinus - ((-ycenter)/pixaspect + dy)*sinus*cosinus ;
-// *sinus:
-//		tr.dyc/(*zoom)/pixaspect*sinus = ycenter/(*zoom)/pixaspect*sinus +  ((-ycenter)/pixaspect +dy)*cosinus*sinus + (-xcenter + dx)*sinus*sinus ;
-// summa:
-//		tr.dxc/(*zoom)*cosinus + tr.dyc/(*zoom)/pixaspect*sinus = xcenter/(*zoom)*cosinus + (-xcenter + dx) + ycenter/(*zoom)/pixaspect*sinus   ;
-		*dx = tr.dxc/(*zoom)*cosinus + tr.dyc/(*zoom)/pixaspect*sinus - xcenter/(*zoom)*cosinus  + xcenter - ycenter/(*zoom)/pixaspect*sinus   ;
+		//		tr.dxc/(*zoom) = xcenter/(*zoom) + (-xcenter + dx)*cosinus - ((-ycenter)/pixaspect + dy)*sinus ;
+		//		tr.dyc/(*zoom)/pixaspect = ycenter/(*zoom)/pixaspect +  ((-ycenter)/pixaspect +dy)*cosinus + (-xcenter + dx)*sinus ;
+		// *cosinus:
+		//		tr.dxc/(*zoom)*cosinus = xcenter/(*zoom)*cosinus + (-xcenter + dx)*cosinus*cosinus - ((-ycenter)/pixaspect + dy)*sinus*cosinus ;
+		// *sinus:
+		//		tr.dyc/(*zoom)/pixaspect*sinus = ycenter/(*zoom)/pixaspect*sinus +  ((-ycenter)/pixaspect +dy)*cosinus*sinus + (-xcenter + dx)*sinus*sinus ;
+		// summa:
+		//		tr.dxc/(*zoom)*cosinus + tr.dyc/(*zoom)/pixaspect*sinus = xcenter/(*zoom)*cosinus + (-xcenter + dx) + ycenter/(*zoom)/pixaspect*sinus   ;
+		*dx = tr.dxc / (*zoom)*cosinus + tr.dyc / (*zoom) / pixaspect*sinus - xcenter / (*zoom)*cosinus + xcenter - ycenter / (*zoom) / pixaspect*sinus;
 
-// *sinus:
-//		tr.dxc/(*zoom)*sinus = xcenter/(*zoom)*sinus + (-xcenter + dx)*cosinus*sinus - ((-ycenter)/pixaspect + dy)*sinus*sinus ;
-// *cosinus:
-//		tr.dyc/(*zoom)/pixaspect*cosinus = ycenter/(*zoom)/pixaspect*cosinus +  ((-ycenter)/pixaspect +dy)*cosinus*cosinus + (-xcenter + dx)*sinus*cosinus ;
-// diff:
-//		tr.dxc/(*zoom)*sinus - tr.dyc/(*zoom)/pixaspect*cosinus = xcenter/(*zoom)*sinus - (-ycenter/pixaspect + dy) - ycenter/(*zoom)/pixaspect*cosinus   ;
-		*dy = - tr.dxc/(*zoom)*sinus + tr.dyc/(*zoom)/pixaspect*cosinus + xcenter/(*zoom)*sinus - (-ycenter/pixaspect) - ycenter/(*zoom)/pixaspect*cosinus;
+		// *sinus:
+		//		tr.dxc/(*zoom)*sinus = xcenter/(*zoom)*sinus + (-xcenter + dx)*cosinus*sinus - ((-ycenter)/pixaspect + dy)*sinus*sinus ;
+		// *cosinus:
+		//		tr.dyc/(*zoom)/pixaspect*cosinus = ycenter/(*zoom)/pixaspect*cosinus +  ((-ycenter)/pixaspect +dy)*cosinus*cosinus + (-xcenter + dx)*sinus*cosinus ;
+		// diff:
+		//		tr.dxc/(*zoom)*sinus - tr.dyc/(*zoom)/pixaspect*cosinus = xcenter/(*zoom)*sinus - (-ycenter/pixaspect + dy) - ycenter/(*zoom)/pixaspect*cosinus   ;
+		*dy = -tr.dxc / (*zoom)*sinus + tr.dyc / (*zoom) / pixaspect*cosinus + xcenter / (*zoom)*sinus - (-ycenter / pixaspect) - ycenter / (*zoom) / pixaspect*cosinus;
 
 
-      }
+	}
 }
 
 //------------------------------------------------------------
@@ -441,11 +441,11 @@ PVideoFrame __stdcall MVDepan::GetFrame(int ndest, IScriptEnvironment* env)
 //	float error = 15;
 //	bool info = true;
 
-
 	int nFields = (vi.IsFieldBased()) ? 2 : 1;
 
 	PVideoFrame	src = child->GetFrame(ndest, env);
 	PVideoFrame	dst = env->NewVideoFrame(vi);
+
 	PVideoFrame maskf;
 	if (mask)
         maskf = mask->GetFrame(ndest, env);

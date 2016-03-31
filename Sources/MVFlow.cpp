@@ -141,32 +141,32 @@ timeclip (_timeclip)
 
 MVFlow::~MVFlow()
 {
-   if ( (pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2  && !planar)
-   {
-	delete DstPlanes;
-   }
+	if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2  && !planar)
+	{
+		delete DstPlanes;
+	}
 
 	delete upsizer;
 	delete upsizerUV;
 
-	delete [] VXFullY;
-	delete [] VXFullUV;
-	delete [] VYFullY;
-	delete [] VYFullUV;
-	delete [] VXSmallY;
-	delete [] VYSmallY;
-	delete [] VXSmallUV;
-	delete [] VYSmallUV;
+	delete[] VXFullY;
+	delete[] VXFullUV;
+	delete[] VYFullY;
+	delete[] VYFullUV;
+	delete[] VXSmallY;
+	delete[] VYSmallY;
+	delete[] VXSmallUV;
+	delete[] VYSmallUV;
 
-//	 if (nPel>1)
-//	 {
-//		 delete [] pel2PlaneY;
-//		 delete [] pel2PlaneU;
-//		 delete [] pel2PlaneV;
-//	 }
+	//	 if (nPel>1)
+	//	 {
+	//		 delete [] pel2PlaneY;
+	//		 delete [] pel2PlaneU;
+	//		 delete [] pel2PlaneV;
+	//	 }
 
-	 delete [] LUTV;
-//	 delete pRefGOF;
+	delete[] LUTV;
+	//	 delete pRefGOF;
 }
 
 void MVFlow::Create_LUTV(int t256, VectLut plut)
@@ -298,11 +298,11 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
 
 	bool				usable_flag = mvClip.IsUsable();
 	int				nref;
-	mvClip.use_ref_frame (nref, usable_flag, finest, n, env);
+	mvClip.use_ref_frame(nref, usable_flag, finest, n, env);
 
 	PVideoFrame mvn = mvClip.GetFrame(n, env);
-   mvClip.Update(mvn, env);// backward from next to current
-   mvn = 0;
+	mvClip.Update(mvn, env);// backward from next to current
+	mvn = 0;
 
 	if (usable_flag)
 	{
@@ -310,10 +310,10 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
 		dst = env->NewVideoFrame(vi);
 		if (timeclip != 0)
 		{
-			t256 = timeclip->GetFrame (n, env);
+			t256 = timeclip->GetFrame(n, env);
 		}
 
-		if ( (pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 )
+		if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2)
 		{
 			if (!planar)
 			{
@@ -322,24 +322,24 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
 				pDst[0] = DstPlanes->GetPtr();
 				pDst[1] = DstPlanes->GetPtrU();
 				pDst[2] = DstPlanes->GetPtrV();
-				nDstPitches[0]  = DstPlanes->GetPitch();
-				nDstPitches[1]  = DstPlanes->GetPitchUV();
-				nDstPitches[2]  = DstPlanes->GetPitchUV();
+				nDstPitches[0] = DstPlanes->GetPitch();
+				nDstPitches[1] = DstPlanes->GetPitchUV();
+				nDstPitches[2] = DstPlanes->GetPitchUV();
 			}
 			else
 			{
 				// planar data packed to interleaved format (same as interleved2planar by kassandro) - v2.0.0.5
 				pDst[0] = dst->GetWritePtr();
-				pDst[1] = pDst[0] + dst->GetRowSize()/2;
-				pDst[2] = pDst[1] + dst->GetRowSize()/4;
+				pDst[1] = pDst[0] + dst->GetRowSize() / 2;
+				pDst[2] = pDst[1] + dst->GetRowSize() / 4;
 				nDstPitches[0] = dst->GetPitch();
 				nDstPitches[1] = nDstPitches[0];
 				nDstPitches[2] = nDstPitches[0];
 			}
 
 			pRef[0] = ref->GetReadPtr();
-			pRef[1] = pRef[0] + ref->GetRowSize()/2;
-			pRef[2] = pRef[1] + ref->GetRowSize()/4;
+			pRef[1] = pRef[0] + ref->GetRowSize() / 2;
+			pRef[2] = pRef[1] + ref->GetRowSize() / 4;
 			nRefPitches[0] = ref->GetPitch();
 			nRefPitches[1] = nRefPitches[0];
 			nRefPitches[2] = nRefPitches[0];
@@ -347,8 +347,8 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
 			if (timeclip != 0)
 			{
 				pt256[0] = t256->GetReadPtr();
-				pt256[1] = pt256[0] + t256->GetRowSize()/2;
-				pt256[2] = pt256[1] + t256->GetRowSize()/4;
+				pt256[1] = pt256[0] + t256->GetRowSize() / 2;
+				pt256[2] = pt256[1] + t256->GetRowSize() / 4;
 				nt256Pitches[0] = t256->GetPitch();
 				nt256Pitches[1] = nt256Pitches[0];
 				nt256Pitches[2] = nt256Pitches[0];
@@ -393,27 +393,27 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
 		MakeVectorSmallMasks(mvClip, nBlkX, nBlkY, VXSmallY, nBlkXP, VYSmallY, nBlkXP);
 		if (nBlkXP > nBlkX) // fill right
 		{
-			for (int j=0; j<nBlkY; j++)
+			for (int j = 0; j < nBlkY; j++)
 			{
-				VXSmallY[j*nBlkXP + nBlkX] = std::min(VXSmallY[j*nBlkXP + nBlkX-1], uint8_t (128));
-				VYSmallY[j*nBlkXP + nBlkX] = VYSmallY[j*nBlkXP + nBlkX-1];
+				VXSmallY[j*nBlkXP + nBlkX] = std::min(VXSmallY[j*nBlkXP + nBlkX - 1], uint8_t(128));
+				VYSmallY[j*nBlkXP + nBlkX] = VYSmallY[j*nBlkXP + nBlkX - 1];
 			}
 		}
 		if (nBlkYP > nBlkY) // fill bottom
 		{
-			for (int i=0; i<nBlkXP; i++)
+			for (int i = 0; i < nBlkXP; i++)
 			{
-				VXSmallY[nBlkXP*nBlkY +i] = VXSmallY[nBlkXP*(nBlkY-1) +i];
-				VYSmallY[nBlkXP*nBlkY +i] = std::min(VYSmallY[nBlkXP*(nBlkY-1) +i], uint8_t (128));
+				VXSmallY[nBlkXP*nBlkY + i] = VXSmallY[nBlkXP*(nBlkY - 1) + i];
+				VYSmallY[nBlkXP*nBlkY + i] = std::min(VYSmallY[nBlkXP*(nBlkY - 1) + i], uint8_t(128));
 			}
 		}
 
 		const int		fieldShift =
-			ClipFnc::compute_fieldshift (finest, fields, nPel, n, nref);
+			ClipFnc::compute_fieldshift(finest, fields, nPel, n, nref);
 
-		for (int j=0; j<nBlkYP; j++)
+		for (int j = 0; j < nBlkYP; j++)
 		{
-			for (int i=0; i<nBlkXP; i++)
+			for (int i = 0; i < nBlkXP; i++)
 			{
 				VYSmallY[j*nBlkXP + i] += fieldShift;
 			}
@@ -430,7 +430,7 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
 		upsizerUV->SimpleResizeDo(VXFullUV, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUV, nBlkXP, nBlkXP, dummyplane);
 		upsizerUV->SimpleResizeDo(VYFullUV, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUV, nBlkXP, nBlkXP, dummyplane);
 
-		if (mode==1)
+		if (mode == 1)
 		{
 			MemZoneSet(pDst[0], 0, nWidth, nHeight, 0, 0, nDstPitches[0]);
 			MemZoneSet(pDst[1], 0, nWidthUV, nHeightUV, 0, 0, nDstPitches[1]);
@@ -440,14 +440,14 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
 		// Time as a script parameter
 		if (timeclip == 0)
 		{
-			const Time256ProviderCst	t256_prov_cst (time256, LUTV [0], LUTV [0]);
-			if (mode==0) // fetch mode
+			const Time256ProviderCst	t256_prov_cst(time256, LUTV[0], LUTV[0]);
+			if (mode == 0) // fetch mode
 			{
 				Fetch(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, nRefPitches[0], VXFullY, VPitchY, VYFullY, VPitchY, nWidth, nHeight, t256_prov_cst); //padded
 				Fetch(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, nRefPitches[1], VXFullUV, VPitchUV, VYFullUV, VPitchUV, nWidthUV, nHeightUV, t256_prov_cst);
 				Fetch(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, nRefPitches[2], VXFullUV, VPitchUV, VYFullUV, VPitchUV, nWidthUV, nHeightUV, t256_prov_cst);
 			}
-			else if (mode==1) // shift mode
+			else if (mode == 1) // shift mode
 			{
 				Shift(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, nRefPitches[0], VXFullY, VPitchY, VYFullY, VPitchY, nWidth, nHeight, t256_prov_cst);
 				Shift(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, nRefPitches[1], VXFullUV, VPitchUV, VYFullUV, VPitchUV, nWidthUV, nHeightUV, t256_prov_cst);
@@ -458,44 +458,44 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
 		// Time as a clip
 		else
 		{
-			if (mode==0) // fetch mode
+			if (mode == 0) // fetch mode
 			{
 				Fetch(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, nRefPitches[0],
 					VXFullY, VPitchY, VYFullY, VPitchY, nWidth, nHeight,
-					Time256ProviderPlane (pt256 [0], nt256Pitches [0], LUTV, LUTV)); //padded
+					Time256ProviderPlane(pt256[0], nt256Pitches[0], LUTV, LUTV)); //padded
 				Fetch(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, nRefPitches[1],
 					VXFullUV, VPitchUV, VYFullUV, VPitchUV, nWidthUV, nHeightUV,
-					Time256ProviderPlane (pt256 [1], nt256Pitches [1], LUTV, LUTV));
+					Time256ProviderPlane(pt256[1], nt256Pitches[1], LUTV, LUTV));
 				Fetch(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, nRefPitches[2],
 					VXFullUV, VPitchUV, VYFullUV, VPitchUV, nWidthUV, nHeightUV,
-					Time256ProviderPlane (pt256 [2], nt256Pitches [2], LUTV, LUTV));
+					Time256ProviderPlane(pt256[2], nt256Pitches[2], LUTV, LUTV));
 			}
-			else if (mode==1) // shift mode
+			else if (mode == 1) // shift mode
 			{
 				Shift(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, nRefPitches[0],
 					VXFullY, VPitchY, VYFullY, VPitchY, nWidth, nHeight,
-					Time256ProviderPlane (pt256 [0], nt256Pitches [0], LUTV, LUTV));
+					Time256ProviderPlane(pt256[0], nt256Pitches[0], LUTV, LUTV));
 				Shift(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, nRefPitches[1],
 					VXFullUV, VPitchUV, VYFullUV, VPitchUV, nWidthUV, nHeightUV,
-					Time256ProviderPlane (pt256 [1], nt256Pitches [1], LUTV, LUTV));
+					Time256ProviderPlane(pt256[1], nt256Pitches[1], LUTV, LUTV));
 				Shift(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, nRefPitches[2],
 					VXFullUV, VPitchUV, VYFullUV, VPitchUV, nWidthUV, nHeightUV,
-					Time256ProviderPlane (pt256 [2], nt256Pitches [2], LUTV, LUTV));
+					Time256ProviderPlane(pt256[2], nt256Pitches[2], LUTV, LUTV));
 			}
 		}
 
-		if ( (pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
+		if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
 		{
 			YUY2FromPlanes(pDstYUY2, nDstPitchYUY2, nWidth, nHeight,
-			               pDst[0], nDstPitches[0], pDst[1], pDst[2], nDstPitches[1], isse);
+				pDst[0], nDstPitches[0], pDst[1], pDst[2], nDstPitches[1], isse);
 		}
 		return dst;
-   }
+	}
 
-   else
-   {
-		PVideoFrame	src	= child->GetFrame(n, env);
+	else
+	{
+		PVideoFrame	src = child->GetFrame(n, env);
 
-	   return src;
-   }
+		return src;
+	}
 }
