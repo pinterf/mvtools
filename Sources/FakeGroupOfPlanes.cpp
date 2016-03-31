@@ -49,12 +49,13 @@ void FakeGroupOfPlanes::Create(int nBlkSizeX, int nBlkSizeY, int nLevelCount, in
 	    nBlkY1 = ((nHeight_B>>i) - nOverlapY)/(nBlkSizeY-nOverlapY);
 		planes[i] = new FakePlaneOfBlocks(nBlkSizeX, nBlkSizeY, i, 1, nOverlapX, nOverlapY, nBlkX1, nBlkY1); // fixed bug with nOverlapX in v1.10.2
 	}
-   InitializeCriticalSection(&cs);
+//   InitializeCriticalSection(&cs); P.F.16.03.08 caused 0xC0000005! moved to the constructor!
 }
 
 FakeGroupOfPlanes::FakeGroupOfPlanes()
 {
-   planes = 0;
+	InitializeCriticalSection(&cs); // 16.03.08 moved here from ::Create
+	planes = 0;
 }
 
 FakeGroupOfPlanes::~FakeGroupOfPlanes()
@@ -66,7 +67,7 @@ FakeGroupOfPlanes::~FakeGroupOfPlanes()
 	   delete[] planes;
 	   planes = 0; //v1.2.1
    }
-   DeleteCriticalSection(&cs);
+   DeleteCriticalSection(&cs); 
 }
 
 // data_size = available data, in 32-bit words
