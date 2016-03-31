@@ -12,10 +12,10 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// French (France) resources
+// English resources
 
-#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_FRA)
-LANGUAGE LANG_FRENCH, SUBLANG_FRENCH
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+LANGUAGE LANG_ENGLISH, SUBLANG_NEUTRAL
 #pragma code_page(1252)
 
 /////////////////////////////////////////////////////////////////////////////
@@ -57,6 +57,16 @@ BEGIN
     END
 END
 
+#endif    // English resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// French (France) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_FRA)
+LANGUAGE LANG_FRENCH, SUBLANG_FRENCH
+#pragma code_page(1252)
 
 #ifdef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////
