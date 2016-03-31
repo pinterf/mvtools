@@ -24,7 +24,7 @@
 #include "MVPlane.h"
 #include "profile.h"
 #include "SuperParams64Bits.h"
-
+#define __INTEL_COMPILER_USE_INTRINSIC_PROTOTYPES 1 // P.F. https://software.intel.com/en-us/articles/visual-studio-intellisense-stopped-recognizing-many-of-the-avx-avx2-intrinsics
 #include	<mmintrin.h>
 
 
