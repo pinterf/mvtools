@@ -1,7 +1,7 @@
 # mvtools
 Motion estimation and compensation plugin for Avisynth v2.6 family. 
 
-File: mvtools2.dll
+File: mvtools2.dll (both 32 and 64 bit Windows DLLs)
 
 Credits: 
 - Manao, Fizick, Tsp, TSchniede, SEt, cretindesalpes 
