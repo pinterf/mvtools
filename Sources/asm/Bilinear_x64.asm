@@ -1430,7 +1430,8 @@ proc_frame	RB2BilinearFilteredVerticalLine_SSE
                 movd mm3, edx
                 pshufw mm3, mm3, 0
 
-                sub esi, eax ; prepare for valid addresation
+;                sub esi, eax ; prepare for valid addresation  !!!! P.F. 16.03.31
+                sub rsi, rax ; prepare for valid addresation
 
                 xor edx, edx
             .loopw:
