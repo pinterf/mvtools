@@ -755,10 +755,22 @@ AVSValue __cdecl Create_MScaleVect (AVSValue args, void* user_data, IScriptEnvir
 }
 
 
+#ifdef AVISYNTH_PLUGIN_25
+extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit2(IScriptEnvironment* env) {
+#else
+/* New 2.6 requirement!!! */
+// Declare and initialise server pointers static storage.
+const AVS_Linkage *AVS_linkage = 0;
 
+/* New 2.6 requirement!!! */
+// DLL entry point called from LoadPlugin() to setup a user plugin.
 extern "C" __declspec(dllexport) const char* __stdcall
-AvisynthPluginInit2(IScriptEnvironment* env)
-{
+AvisynthPluginInit3(IScriptEnvironment* env, const AVS_Linkage* const vectors) {
+
+	/* New 2.6 requirment!!! */
+	// Save the server pointers.
+	AVS_linkage = vectors;
+#endif
 	env->AddFunction("MShow",        "cc[scale]i[sil]i[tol]i[showsad]b[number]i[thSCD1]i[thSCD2]i[isse]b[planar]b", Create_MVShow, 0);
 	env->AddFunction("MAnalyse",     "c[blksize]i[blksizeV]i[levels]i[search]i[searchparam]i[pelsearch]i[isb]b[lambda]i[chroma]b[delta]i[truemotion]b[lsad]i[plevel]i[global]b[pnew]i[pzero]i[pglobal]i[overlap]i[overlapV]i[outfile]s[dct]i[divide]i[sadx264]i[badSAD]i[badrange]i[isse]b[meander]b[temporal]b[trymany]b[multi]b[mt]b", Create_MVAnalyse, 0);
 	env->AddFunction("MMask",        "cc[ml]f[gamma]f[kind]i[Ysc]i[thSCD1]i[thSCD2]i[isse]b[planar]b", Create_MVMask, 0);
