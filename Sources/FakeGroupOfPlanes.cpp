@@ -23,7 +23,6 @@
 #include "FakePlaneOfBlocks.h"
 
 
-
 void FakeGroupOfPlanes::Create(int nBlkSizeX, int nBlkSizeY, int nLevelCount, int nPel, int nOverlapX, int nOverlapY, int _yRatioUV, int _nBlkX, int _nBlkY)
 {
    nLvCount_ = nLevelCount;

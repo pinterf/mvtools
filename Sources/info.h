@@ -23,17 +23,11 @@
 #ifndef __INFO___H__
 #define __INFO___H__
 
-
-
 class PVideoFrame;
-
-
 
 void	DrawDigit(PVideoFrame &dst, int x, int y, int num);
 void	DrawString(PVideoFrame &dst, int x, int y, const char *s);
 void	DrawDigitYUY2(PVideoFrame &dst, int x, int y, int num);
 void	DrawStringYUY2(PVideoFrame &dst, int x, int y, const char *s);
-
-
 
 #endif	// __INFO___H__
