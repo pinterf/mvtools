@@ -24,8 +24,10 @@
 #include "MVShow.h"
 #include	"SuperParams64Bits.h"
 
+#include <stdlib.h>
 #include <cstdio>
 #include <intrin.h>
+
 
 MVShow::MVShow(PClip _super, PClip vectors, int _scale, int _plane, int _tol, bool _showsad, int _number,
                int nSCD1, int nSCD2, bool _isse, bool _planar, IScriptEnvironment* env) :
