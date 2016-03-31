@@ -24,25 +24,35 @@
 
 
 MVClip::MVClip(const PClip &vectors, int _nSCD1, int _nSCD2, IScriptEnvironment *env, int group_len, int group_ofs)
-:	GenericVideoFilter(vectors)
+:	GenericVideoFilter(vectors) 
 ,	_group_len (group_len)
 ,	_group_ofs (group_ofs)
 ,	_frame_update_flag (true)
 {
 	vi.num_frames = (vi.num_frames - group_ofs + group_len - 1) / group_len;
 	vi.MulDivFPS (1, group_len);
-
+/* Memo: filled up with hack:
+#if !defined(_WIN64)
+	vi.nchannels = reinterpret_cast <uintptr_t> (&_mad);
+#else
+	uintptr_t p = reinterpret_cast <uintptr_t> (&_mad);
+	vi.nchannels = 0x80000000L | (int)(p >> 32);
+	vi.sample_type = (int)(p & 0xffffffffUL);
+#endif
+*/
    // we fetch the handle on the analyze filter
+   // hacked into vi.nchannels and vi.sample_type
+
 #if !defined(_WIN64)
     MVAnalysisData *pAnalyseFilter = reinterpret_cast<MVAnalysisData *>(vi.nchannels);
 #else
     uintptr_t p = (((uintptr_t)(unsigned int)vi.nchannels ^ 0x80000000) << 32) | (uintptr_t)(unsigned int)vi.sample_type;
-    MVAnalysisData *pAnalyseFilter = reinterpret_cast<MVAnalysisData *>(p);
+    MVAnalysisData *pAnalyseFilter = reinterpret_cast<MVAnalysisData *>(p); 
 #endif
 	if (vi.nchannels >= 0 &&  vi.nchannels < 9) // seems some normal clip instead of vectors
 	     env->ThrowError("MVTools: invalid vector stream");
 
-   // 'magic' key, just to check :
+	// 'magic' key, just to check :
 	if ( pAnalyseFilter->GetMagicKey() != MVAnalysisData::MOTION_MAGIC_KEY )
       env->ThrowError("MVTools: invalid vector stream");
 
@@ -59,8 +69,6 @@ MVClip::MVClip(const PClip &vectors, int _nSCD1, int _nSCD2, IScriptEnvironment 
    // FakeGroupOfPlane creation
    FakeGroupOfPlanes::Create(nBlkSizeX, nBlkSizeY, nLvCount, nPel, nOverlapX, nOverlapY, yRatioUV, nBlkX, nBlkY);
 }
-
-
 
 MVClip::~MVClip()
 {
