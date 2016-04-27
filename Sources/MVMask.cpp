@@ -31,7 +31,7 @@
 
 
 MVMask::MVMask(
-	PClip _child, PClip vectors, double ml, double gm, int _kind, int Ysc,
+	PClip _child, PClip vectors, double ml, double gm, int _kind, double _time100, int Ysc,
 	int nSCD1, int nSCD2, bool _isse, bool _planar, IScriptEnvironment* env
 )
 :	GenericVideoFilter(_child)
@@ -50,6 +50,10 @@ MVMask::MVMask(
     fHalfGamma = fGamma*0.5f;
 
 	kind = _kind; // inplace of showsad
+
+  if (_time100 <0 || _time100 > 100)
+    env->ThrowError("MMask: time must be 0.0 to 100.0");
+  time256 = int(256 * _time100 / 100);
 
    nSceneChangeValue = (Ysc < 0) ? 0 : ((Ysc > 255) ? 255 : Ysc);
    planar = _planar;
@@ -104,13 +108,14 @@ unsigned char MVMask::Length(VECTOR v, unsigned char pel)
 	return (unsigned char)((l > 255) ? 255 : l) ;
 }
 
+/*
 unsigned char MVMask::SAD(unsigned int s)
 {
 //	double l = 255 * pow(s, nGamma) / nLengthMax);
 	double l = 255 * pow((s*4*fMaskNormFactor)/(nBlkSizeX*nBlkSizeY), fGamma); // Fizick - now linear for gm=1
 	return (unsigned char)((l > 255) ? 255 : l);
 }
-
+*/
 PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
 {
 	PVideoFrame	src = child->GetFrame(n, env);
@@ -193,30 +198,36 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
 		}
 		else if (kind==1) // SAD mask
 		{
-			for ( int j = 0; j < nBlkCount; j++)
-				smallMask[j] = SAD(mvClip.GetBlock(0, j).GetSAD());
-		}
+			//for ( int j = 0; j < nBlkCount; j++)
+			//	smallMask[j] = SAD(mvClip.GetBlock(0, j).GetSAD());
+      MakeSADMaskTime(mvClip, nBlkX, nBlkY, 4.0*fMaskNormFactor / (nBlkSizeX*nBlkSizeY), fGamma, nPel, smallMask, nBlkX, time256, nBlkSizeX - nOverlapX, nBlkSizeY - nOverlapY);
+    }
 		else if (kind==2) // occlusion mask
 		{
-			MakeVectorOcclusionMaskTime(mvClip, nBlkX, nBlkY, fMaskNormFactor, fGamma, nPel, smallMask, nBlkX, 256, nBlkSizeX - nOverlapX, nBlkSizeY - nOverlapY) ;
-		}
+			//MakeVectorOcclusionMaskTime(mvClip, nBlkX, nBlkY, fMaskNormFactor, fGamma, nPel, smallMask, nBlkX, 256, nBlkSizeX - nOverlapX, nBlkSizeY - nOverlapY) ;
+      MakeVectorOcclusionMaskTime(mvClip, nBlkX, nBlkY, 1.0 / fMaskNormFactor, fGamma, nPel, smallMask, nBlkX, time256, nBlkSizeX - nOverlapX, nBlkSizeY - nOverlapY);
+    }
 		else if (kind==3) // vector x mask
 		{
 			for ( int j = 0; j < nBlkCount; j++)
-				smallMask[j] = mvClip.GetBlock(0, j).GetMV().x + 128; // shited by 128 for signed support
+        smallMask[j] = std::max(int(0), std::min(255, int(mvClip.GetBlock(0, j).GetMV().x * fMaskNormFactor * 100 + 128))); // shited by 128 for signed support
+      //smallMask[j] = mvClip.GetBlock(0, j).GetMV().x + 128; // shited by 128 for signed support
 		}
 		else if (kind==4) // vector y mask
 		{
 			for ( int j = 0; j < nBlkCount; j++)
-				smallMask[j] = mvClip.GetBlock(0, j).GetMV().y + 128; // shited by 128 for signed support
+        smallMask[j] = std::max(int(0), std::min(255, int(mvClip.GetBlock(0, j).GetMV().y * fMaskNormFactor * 100 + 128))); // shited by 128 for signed support
+      //smallMask[j] = mvClip.GetBlock(0, j).GetMV().y + 128; // shited by 128 for signed support
 		}
 		else if (kind==5) // vector x mask in U, y mask in V
 		{
 			for ( int j = 0; j < nBlkCount; j++) {
 			    VECTOR v = mvClip.GetBlock(0, j).GetMV();
-				smallMask[j] = v.x + 128; // shited by 128 for signed support
-				smallMaskV[j] = v.y + 128; // shited by 128 for signed support
-			}
+				//smallMask[j] = v.x + 128; // shited by 128 for signed support
+				//smallMaskV[j] = v.y + 128; // shited by 128 for signed support
+        smallMask[j] = std::max(0, std::min(255, int(v.x * fMaskNormFactor * 100 + 128))); // shifted by 128 for signed support
+        smallMaskV[j] = std::max(0, std::min(255, int(v.y * fMaskNormFactor * 100 + 128))); // shifted by 128 for signed support
+      }
 		}
 
       if (kind == 5) { // do not change luma for kind=5

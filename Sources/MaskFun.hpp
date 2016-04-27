@@ -100,8 +100,11 @@ void MakeVectorOcclusionMaskTimePlane (MVClip &mvClip, int nBlkX, int nBlkY, dou
 
 
 // time-weihted blend src with ref frames (used for interpolation for poor motion estimation)
-template <class T256P>
+/*template <class T256P>
 void Blend(uint8_t * pdst, const uint8_t * psrc, const uint8_t * pref, int height, int width, int dst_pitch, int src_pitch, int ref_pitch, T256P &t256_provider, bool isse)
+*/
+/* no template, went into *.cpp
+void Blend(uint8_t * pdst, const uint8_t * psrc, const uint8_t * pref, int height, int width, int dst_pitch, int src_pitch, int ref_pitch, int time256, bool isse)
 {
 	// add isse
 	int h, w;
@@ -109,16 +112,16 @@ void Blend(uint8_t * pdst, const uint8_t * psrc, const uint8_t * pref, int heigh
 	{
 		for (w=0; w<width; w++)
 		{
-			const int		time256 = t256_provider.get_t (w);
+			//const int		time256 = t256_provider.get_t (w);
 			pdst[w] = (psrc[w]*(256 - time256) + pref[w]*time256)>>8;
 		}
 		pdst += dst_pitch;
 		psrc += src_pitch;
 		pref += ref_pitch;
-		t256_provider.jump_to_next_row ();
+		//t256_provider.jump_to_next_row ();
 	}
 }
-
+*/
 
 
 // FIND MEDIAN OF 3 ELEMENTS
@@ -151,28 +154,40 @@ inline int Median3r (int a, int b, int c)
 
 
 
+/*
 template <class T256P, int NPELL2>
 static void FlowInter_NPel(
 	uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
 	uint8_t *VXFullB, uint8_t *VXFullF, uint8_t *VYFullB, uint8_t *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
-	int VPitch, int width, int height, T256P &t256_provider)
+  int VPitch, int width, int height, T256P &t256_provider)
+*/  
+template <int NPELL2>
+static void FlowInter_NPel(
+  uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
+  short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
+  int VPitch, int width, int height, int time256)
 {
 	for (int h=0; h<height; h++)
 	{
 		for (int w=0; w<width; w++)
 		{
-			const int		time256 = t256_provider.get_t (w);
+			// const int		time256 = t256_provider.get_t (w);
 
 //			int vxF = ((VXFullF[w]-128)*time256)/256;
 //			int vyF = ((VYFullF[w]-128)*time256)/256;
-			int vxF = t256_provider.get_vect_f (time256, VXFullF[w]);
-			int vyF = t256_provider.get_vect_f (time256, VYFullF[w]);
+      int vxF = (VXFullF[w] * time256) >> 8; // 2.5.11.22
+      int vyF = (VYFullF[w] * time256) >> 8; // 2.5.11.22
+      //int vxF = t256_provider.get_vect_f (time256, VXFullF[w]); 2.6.0.5
+			//int vyF = t256_provider.get_vect_f (time256, VYFullF[w]); 2.6.0.5
 			int dstF = prefF[vyF*ref_pitch + vxF + (w<<NPELL2)];
 			int dstF0 = prefF[(w<<NPELL2)]; // zero
 //			int vxB = ((VXFullB[w]-128)*(256-time256))/256;
 //			int vyB = ((VYFullB[w]-128)*(256-time256))/256;
-			int vxB = t256_provider.get_vect_b (time256, VXFullB[w]);
-			int vyB = t256_provider.get_vect_b (time256, VYFullB[w]);
+      int vxB = (VXFullB[w] * (256 - time256)) >> 8; // 2.5.11.22
+      int vyB = (VYFullB[w] * (256 - time256)) >> 8; // 2.5.11.22
+      
+//      int vxB = t256_provider.get_vect_b (time256, VXFullB[w]); 2.6.0.5
+//			int vyB = t256_provider.get_vect_b (time256, VYFullB[w]); 2.6.0.5
 			int dstB = prefB[vyB*ref_pitch + vxB + (w<<NPELL2)];
 			int dstB0 = prefB[(w<<NPELL2)]; // zero
 			pdst[w] = ( ( (dstF*(255-MaskF[w]) + ((MaskF[w]*(dstB*(255-MaskB[w])+MaskB[w]*dstF0)+255)>>8) + 255)>>8 )*(256-time256) +
@@ -183,7 +198,7 @@ static void FlowInter_NPel(
 		pdst += dst_pitch;
 		prefB += ref_pitch<<NPELL2;
 		prefF += ref_pitch<<NPELL2;
-		t256_provider.jump_to_next_row ();
+		//t256_provider.jump_to_next_row ();
 		VXFullB += VPitch;
 		VYFullB += VPitch;
 		VXFullF += VPitch;
@@ -193,70 +208,55 @@ static void FlowInter_NPel(
 	}
 }
 
-template <class T256P>
-void FlowInter(
-	uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
-	uint8_t *VXFullB, uint8_t *VXFullF, uint8_t *VYFullB, uint8_t *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
-	int VPitch, int width, int height, int nPel, T256P &t256_provider)
-{
-	if (nPel==1)
-	{
-		FlowInter_NPel <T256P, 0> (
-			pdst, dst_pitch, prefB, prefF, ref_pitch,
-		   VXFullB, VXFullF, VYFullB, VYFullF, MaskB, MaskF,
-		   VPitch, width, height, t256_provider
-		);
-	}
-	else if (nPel==2)
-	{
-		FlowInter_NPel <T256P, 1> (
-			pdst, dst_pitch, prefB, prefF, ref_pitch,
-		   VXFullB, VXFullF, VYFullB, VYFullF, MaskB, MaskF,
-		   VPitch, width, height, t256_provider
-		);
-	}
-	else if (nPel==4)
-	{
-		FlowInter_NPel <T256P, 2> (
-			pdst, dst_pitch, prefB, prefF, ref_pitch,
-		   VXFullB, VXFullF, VYFullB, VYFullF, MaskB, MaskF,
-		   VPitch, width, height, t256_provider
-		);
-	}
-}
 
 
 
+/*
 template <class T256P, int NPELL2>
 static void FlowInterExtra_NPel(
 	uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
 	uint8_t *VXFullB, uint8_t *VXFullF, uint8_t *VYFullB, uint8_t *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
 	int VPitch, int width, int height, T256P &t256_provider,
 	uint8_t *VXFullBB, uint8_t *VXFullFF, uint8_t *VYFullBB, uint8_t *VYFullFF)
+*/  
+template <int NPELL2>
+static void FlowInterExtra_NPel(
+  uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
+  short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
+  int VPitch, int width, int height, int time256,
+  short *VXFullBB, short *VXFullFF, short *VYFullBB, short *VYFullFF)
 {
 	for (int h=0; h<height; h++)
 	{
 		for (int w=0; w<width; w++)
 		{
-			const int		time256 = t256_provider.get_t (w);
+			//const int		time256 = t256_provider.get_t (w);
 
-			int vxF = t256_provider.get_vect_f (time256, VXFullF[w]);
-			int vyF = t256_provider.get_vect_f (time256, VYFullF[w]);
-			int adrF = vyF*ref_pitch + vxF + (w<<NPELL2);
+			//int vxF = t256_provider.get_vect_f (time256, VXFullF[w]); 2.6.0.5
+			//int vyF = t256_provider.get_vect_f (time256, VYFullF[w]); 2.6.0.5
+      int vxF = (VXFullF[w] * time256) >> 8; // 2.5.11.22
+      int vyF = (VYFullF[w] * time256) >> 8; // 2.5.11.22
+      int adrF = vyF*ref_pitch + vxF + (w<<NPELL2);
 			int dstF = prefF[adrF];
 //			int dstF0 = prefF[(w<<NPELL2)]; // zero
-			int vxFF = t256_provider.get_vect_f (time256, VXFullFF[w]);
-			int vyFF = t256_provider.get_vect_f (time256, VYFullFF[w]);
-			int adrFF = vyFF*ref_pitch + vxFF + (w<<NPELL2);
+			//int vxFF = t256_provider.get_vect_f (time256, VXFullFF[w]); 2.6.0.5
+			//int vyFF = t256_provider.get_vect_f (time256, VYFullFF[w]); 2.6.0.5
+      int vxFF = (VXFullFF[w] * time256) >> 8; // is it correct time?
+      int vyFF = (VYFullFF[w] * time256) >> 8;  // 2.5.11.22
+      int adrFF = vyFF*ref_pitch + vxFF + (w<<NPELL2);
 			int dstFF = prefF[adrFF];
-			int vxB = t256_provider.get_vect_b (time256, VXFullB[w]);
-			int vyB = t256_provider.get_vect_b (time256, VYFullB[w]);
-			int adrB = vyB*ref_pitch + vxB + (w<<NPELL2);
+			//int vxB = t256_provider.get_vect_b (time256, VXFullB[w]); 2.6.0.5
+			//int vyB = t256_provider.get_vect_b (time256, VYFullB[w]); 2.6.0.5
+      int vxB = (VXFullB[w] * (256 - time256)) >> 8; // 2.5.11.22
+      int vyB = (VYFullB[w] * (256 - time256)) >> 8; // 2.5.11.22
+      int adrB = vyB*ref_pitch + vxB + (w<<NPELL2);
 			int dstB = prefB[adrB];
 //			int dstB0 = prefB[(w<<NPELL2)]; // zero
-			int vxBB = t256_provider.get_vect_b (time256, VXFullBB[w]);
-			int vyBB = t256_provider.get_vect_b (time256, VYFullBB[w]);
-			int adrBB = vyBB*ref_pitch + vxBB + (w<<NPELL2);
+			//int vxBB = t256_provider.get_vect_b (time256, VXFullBB[w]); 2.6.0.5
+			//int vyBB = t256_provider.get_vect_b (time256, VYFullBB[w]); 2.6.0.5
+      int vxBB = (VXFullBB[w] * (256 - time256)) >> 8;
+      int vyBB = (VYFullBB[w] * (256 - time256)) >> 8;
+      int adrBB = vyBB*ref_pitch + vxBB + (w<<NPELL2);
 			int dstBB = prefB[adrBB];
 //			pdst[w] = ( ( (dstF*(255-MaskF[w]) + ((MaskF[w]*(dstB*(255-MaskB[w])+MaskB[w]*dstF0)+255)>>8) + 255)>>8 )*(256-time256) +
 //			            ( (dstB*(255-MaskB[w]) + ((MaskB[w]*(dstF*(255-MaskF[w])+MaskF[w]*dstB0)+255)>>8) + 255)>>8 )*time256 )>>8;
@@ -277,7 +277,7 @@ static void FlowInterExtra_NPel(
 		pdst += dst_pitch;
 		prefB += ref_pitch<<NPELL2;
 		prefF += ref_pitch<<NPELL2;
-		t256_provider.jump_to_next_row ();
+		//t256_provider.jump_to_next_row ();
 		VXFullB += VPitch;
 		VYFullB += VPitch;
 		VXFullF += VPitch;
@@ -291,51 +291,16 @@ static void FlowInterExtra_NPel(
 	}
 }
 
-template <class T256P>
-void FlowInterExtra(
-	uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
-	uint8_t *VXFullB, uint8_t *VXFullF, uint8_t *VYFullB, uint8_t *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
-	int VPitch, int width, int height, int nPel, T256P &t256_provider,
-	uint8_t *VXFullBB, uint8_t *VXFullFF, uint8_t *VYFullBB, uint8_t *VYFullFF)
-{
- 	if (nPel==1)
-	{
-		FlowInterExtra_NPel <T256P, 0> (
-			pdst, dst_pitch, prefB, prefF, ref_pitch,
-		   VXFullB, VXFullF, VYFullB, VYFullF, MaskB, MaskF,
-		   VPitch, width, height, t256_provider,
-		   VXFullBB, VXFullFF, VYFullBB, VYFullFF
-		);
-	}
-	else if (nPel==2)
-	{
-		FlowInterExtra_NPel <T256P, 1> (
-			pdst, dst_pitch, prefB, prefF, ref_pitch,
-		   VXFullB, VXFullF, VYFullB, VYFullF, MaskB, MaskF,
-		   VPitch, width, height, t256_provider,
-		   VXFullBB, VXFullFF, VYFullBB, VYFullFF
-		);
-	}
-	else if (nPel==4)
-	{
-		FlowInterExtra_NPel <T256P, 2> (
-			pdst, dst_pitch, prefB, prefF, ref_pitch,
-		   VXFullB, VXFullF, VYFullB, VYFullF, MaskB, MaskF,
-		   VPitch, width, height, t256_provider,
-		   VXFullBB, VXFullFF, VYFullBB, VYFullFF
-		);
-	}
-}
 
 
 
-template <class T256P, int NPELL2>
+template </*class T256P,*/ int NPELL2>
 static void FlowInterSimple_NPel(
 	uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
-	uint8_t *VXFullB, uint8_t *VXFullF, uint8_t *VYFullB, uint8_t *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
-	int VPitch, int width, int height, T256P &t256_provider)
+	short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
+	int VPitch, int width, int height, int time256 /* T256P &t256_provider*/)
 {
-	if (t256_provider.is_half ()) // special case double fps - fastest
+	if (time256 == 128 /*t256_provider.is_half ()*/) // special case double fps - fastest
 	{
 		for (int h=0; h<height; h++)
 		{
@@ -343,15 +308,19 @@ static void FlowInterSimple_NPel(
 			{
 //				const int		time256 = t256_provider.get_t (w);
 
-				int vxF = (VXFullF[w]-128)>>1;
-				int vyF = (VYFullF[w]-128)>>1;
-//				int vxF = t256_provider.get_vect_f (time256, VXFullF[w]);
+				//int vxF = (VXFullF[w]-128)>>1;
+				//int vyF = (VYFullF[w]-128)>>1;
+        int vxF = (VXFullF[w]) >> 1; // 2.5.11.22
+        int vyF = (VYFullF[w]) >> 1; // 2.5.11.22
+        //				int vxF = t256_provider.get_vect_f (time256, VXFullF[w]);
 //				int vyF = t256_provider.get_vect_f (time256, VYFullF[w]);
 				int adrF = vyF*ref_pitch + vxF + (w<<NPELL2);
 				int dstF = prefF[adrF];
-				int vxB = (VXFullB[w]-128)>>1;
-				int vyB = (VYFullB[w]-128)>>1;
-//				int vxB = t256_provider.get_vect_b (time256, VXFullB[w]);
+				//int vxB = (VXFullB[w]-128)>>1;
+				//int vyB = (VYFullB[w]-128)>>1;
+        int vxB = (VXFullB[w]) >> 1; // 2.5.11.22
+        int vyB = (VYFullB[w]) >> 1; // 2.5.11.22
+        //				int vxB = t256_provider.get_vect_b (time256, VXFullB[w]);
 //				int vyB = t256_provider.get_vect_b (time256, VYFullB[w]);
 				int adrB = vyB*ref_pitch + vxB + (w<<NPELL2);
 				int dstB = prefB[adrB];
@@ -376,17 +345,21 @@ static void FlowInterSimple_NPel(
 		{
 			for (int w=0; w<width; w+=1)
 			{
-				const int		time256 = t256_provider.get_t (w);
+				//const int		time256 = t256_provider.get_t (w);
 
 //				int vxF = ((VXFullF[w]-128)*time256)/256;
 //				int vyF = ((VYFullF[w]-128)*time256)/256;
-				int vxF = t256_provider.get_vect_f (time256, VXFullF[w]);
-				int vyF = t256_provider.get_vect_f (time256, VYFullF[w]);
-				int adrF = vyF*ref_pitch + vxF + (w<<NPELL2);
+				//int vxF = t256_provider.get_vect_f (time256, VXFullF[w]); 2.6.0.5
+				//int vyF = t256_provider.get_vect_f (time256, VYFullF[w]); 2.6.0.5
+        int vxF = (VXFullF[w] * time256) >> 8; // 2.5.11.22
+        int vyF = (VYFullF[w] * time256) >> 8; // 2.5.11.22
+        int adrF = vyF*ref_pitch + vxF + (w<<NPELL2);
 				int dstF = prefF[adrF];
-				int vxB = t256_provider.get_vect_b (time256, VXFullB[w]);
-				int vyB = t256_provider.get_vect_b (time256, VYFullB[w]);
-				int adrB = vyB*ref_pitch + vxB + (w<<NPELL2);
+				//int vxB = t256_provider.get_vect_b (time256, VXFullB[w]); 2.6.0.5
+				//int vyB = t256_provider.get_vect_b (time256, VYFullB[w]); 2.6.0.5
+        int vxB = (VXFullB[w] * (256 - time256)) >> 8; // 2.5.11.22
+        int vyB = (VYFullB[w] * (256 - time256)) >> 8; // 2.5.11.22
+        int adrB = vyB*ref_pitch + vxB + (w<<NPELL2);
 				int dstB = prefB[adrB];
 				pdst[w] = ( ( (dstF*(255-MaskF[w]) + dstB*MaskF[w] + 255)>>8 )*(256-time256) +
 				            ( (dstB*(255-MaskB[w]) + dstF*MaskB[w] + 255)>>8 )*     time256   )>>8;
@@ -394,7 +367,7 @@ static void FlowInterSimple_NPel(
 			pdst += dst_pitch;
 			prefB += ref_pitch<<NPELL2;
 			prefF += ref_pitch<<NPELL2;
-			t256_provider.jump_to_next_row ();
+			//t256_provider.jump_to_next_row ();
 			VXFullB += VPitch;
 			VYFullB += VPitch;
 			VXFullF += VPitch;
@@ -405,26 +378,30 @@ static void FlowInterSimple_NPel(
 	}
 }
 
-template <class T256P>
+//template <class T256P>
 static void FlowInterSimple_Pel1 (
 	uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
-	uint8_t *VXFullB, uint8_t *VXFullF, uint8_t *VYFullB, uint8_t *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
-	int VPitch, int width, int height, T256P &t256_provider)
+	short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
+	int VPitch, int width, int height, int time256 /*T256P &t256_provider*/)
 {
-	if (t256_provider.is_half ()) // special case double fps - fastest
+	if (time256 == 128 /*t256_provider.is_half ()*/) // special case double fps - fastest
 	{
 		for (int h=0; h<height; h++)
 		{
 			for (int w=0; w<width; w+=2) // paired for speed
 			{
-				int vxF = (VXFullF[w]-128)>>1;
-				int vyF = (VYFullF[w]-128)>>1;
-				int addrF = vyF*ref_pitch + vxF + w;
+				//int vxF = (VXFullF[w]-128)>>1;
+				//int vyF = (VYFullF[w]-128)>>1;
+        int vxF = (VXFullF[w]) >> 1; // 2.5.11.22
+        int vyF = (VYFullF[w]) >> 1; // 2.5.11.22
+        int addrF = vyF*ref_pitch + vxF + w;
 				int dstF = prefF[addrF];
 				int dstF1 = prefF[addrF+1]; // approximation for speed
-				int vxB = (VXFullB[w]-128)>>1;
-				int vyB = (VYFullB[w]-128)>>1;
-				int addrB = vyB*ref_pitch + vxB + w;
+				//int vxB = (VXFullB[w]-128)>>1;
+				//int vyB = (VYFullB[w]-128)>>1;
+        int vxB = (VXFullB[w]) >> 1; // 2.5.11.22
+        int vyB = (VYFullB[w]) >> 1; // 2.5.11.22
+        int addrB = vyB*ref_pitch + vxB + w;
 				int dstB = prefB[addrB];
 				int dstB1 = prefB[addrB+1];
 				pdst[w  ] = ( ((dstF  + dstB )<<8) + (dstB  - dstF )*(MaskF[w  ] - MaskB[w  ]) )>>9;
@@ -448,16 +425,20 @@ static void FlowInterSimple_Pel1 (
 		{
 			for (int w=0; w<width; w+=2) // paired for speed
 			{
-				const int		time256 = t256_provider.get_t (w);
+				//const int		time256 = t256_provider.get_t (w);
 
-				int vxF = t256_provider.get_vect_f (time256, VXFullF[w]);
-				int vyF = t256_provider.get_vect_f (time256, VYFullF[w]);
-				int addrF = vyF*ref_pitch + vxF + w;
+				//int vxF = t256_provider.get_vect_f (time256, VXFullF[w]);
+				//int vyF = t256_provider.get_vect_f (time256, VYFullF[w]);
+        int vxF = (VXFullF[w]) >> 1; // 2.5.11.22
+        int vyF = (VYFullF[w]) >> 1; // 2.5.11.22
+        int addrF = vyF*ref_pitch + vxF + w;
 				int dstF = prefF[addrF];
 				int dstF1 = prefF[addrF+1]; // approximation for speed
-				int vxB = t256_provider.get_vect_b (time256, VXFullB[w]);
-				int vyB = t256_provider.get_vect_b (time256, VYFullB[w]);
-				int addrB = vyB*ref_pitch + vxB + w;
+				//int vxB = t256_provider.get_vect_b (time256, VXFullB[w]);
+				//int vyB = t256_provider.get_vect_b (time256, VYFullB[w]);
+        int vxB = (VXFullB[w] * (256 - time256)) >> 8; // 2.5.11.22
+        int vyB = (VYFullB[w] * (256 - time256)) >> 8; // 2.5.11.22
+        int addrB = vyB*ref_pitch + vxB + w;
 				int dstB = prefB[addrB];
 				int dstB1 = prefB[addrB+1];
 				pdst[w  ] = ( ( (dstF *255 + (dstB -dstF )*MaskF[w  ] + 255) )*(256-time256) +
@@ -468,7 +449,7 @@ static void FlowInterSimple_Pel1 (
 			pdst += dst_pitch;
 			prefB += ref_pitch;
 			prefF += ref_pitch;
-			t256_provider.jump_to_next_row ();
+			//t256_provider.jump_to_next_row ();
 			VXFullB += VPitch;
 			VYFullB += VPitch;
 			VXFullF += VPitch;
@@ -479,35 +460,4 @@ static void FlowInterSimple_Pel1 (
 	}
 }
 
-template <class T256P>
-void FlowInterSimple(
-	uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
-	uint8_t *VXFullB, uint8_t *VXFullF, uint8_t *VYFullB, uint8_t *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
-	int VPitch, int width, int height, int nPel, T256P &t256_provider)
-{
-	if (nPel==1)
-	{
-		FlowInterSimple_Pel1 (
-			pdst, dst_pitch, prefB, prefF, ref_pitch,
-			VXFullB, VXFullF, VYFullB, VYFullF, MaskB, MaskF,
-			VPitch, width, height, t256_provider
-		);
-	}
-	else if (nPel==2)
-	{
-		FlowInterSimple_NPel <T256P, 1> (
-			pdst, dst_pitch, prefB, prefF, ref_pitch,
-		   VXFullB, VXFullF, VYFullB, VYFullF, MaskB, MaskF,
-		   VPitch, width, height, t256_provider
-		);
-	}
-	else if (nPel==4)
-	{
-		FlowInterSimple_NPel <T256P, 2> (
-			pdst, dst_pitch, prefB, prefF, ref_pitch,
-		   VXFullB, VXFullF, VYFullB, VYFullF, MaskB, MaskF,
-		   VPitch, width, height, t256_provider
-		);
-	}
-}
 

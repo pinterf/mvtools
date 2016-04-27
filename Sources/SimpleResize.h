@@ -32,23 +32,23 @@ class SimpleResize
 	int oldheight;
 	unsigned int* hControl;		// weighting masks, alternating dwords for Y & UV
 								// 1 qword for mask, 1 dword for src offset, 1 unused dword
-	unsigned int* hControlUV;	// added by Fizick
 	unsigned int* vOffsets;		// Vertical offsets of the source lines we will use
 	unsigned int* vWeights;		// weighting masks, alternating dwords for Y & UV
-	unsigned int* vOffsetsUV;		// Vertical offsets of the source lines we will use
-	unsigned int* vWeightsUV;		// weighting masks, alternating dwords for Y & UV
-	unsigned int* vWorkY;		// weighting masks 0Y0Y 0Y0Y...
-	unsigned int* vWorkUV;		// weighting masks UVUV UVUV...
-	bool SSE2enabled; 
+  unsigned char* vWorkY;		// weighting masks 0Y0Y 0Y0Y...
+  short* vWorkY2;		//  work array
+  bool SSE2enabled;
 	bool SSEMMXenabled; 
 
-	void InitTables_YV12(void);
+  void InitTables(void);
 
 public:
 	SimpleResize(int _newwidth, int _newheight, int _oldwidth, int _oldheight, long CPUFlags);
 	~SimpleResize();
 	void SimpleResizeDo(uint8_t *dstp,  int dst_row_size, int dst_height, int dst_pitch, 
 						  const uint8_t* srcp, int src_row_size, int src_pitch, int Plane_Type); 
+  void SimpleResizeDo(short *dstp, int dst_row_size, int dst_height, int dst_pitch,
+    const short* srcp, int src_row_size, int src_pitch);
+
 };
 
 

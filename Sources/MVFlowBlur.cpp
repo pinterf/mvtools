@@ -38,7 +38,11 @@ mvClipF(_mvfw, nSCD1, nSCD2, env, 1, 0)
 
    CheckSimilarity(mvClipB, "mvbw", env);
    CheckSimilarity(mvClipF, "mvfw", env);
-	SuperParams64Bits params;
+   
+   if (mvClipB.GetDeltaFrame() <= 0 || mvClipB.GetDeltaFrame() <= 0)
+     env->ThrowError("MFlowBlur: cannot use motion vectors with absolute frame references.");
+
+   SuperParams64Bits params;
 	memcpy(&params, &super->GetVideoInfo().num_audio_samples, 8);
 	int nHeightS = params.nHeight;
 	int nSuperHPad = params.nHPad;
@@ -78,33 +82,33 @@ mvClipF(_mvfw, nSCD1, nSCD2, env, 1, 0)
 	VPitchY = nWidth;
 	VPitchUV= nWidthUV;
 
-	VXFullYB = new BYTE [nHeight*VPitchY];
-	VXFullUVB = new BYTE [nHeightUV*VPitchUV];
-	VYFullYB = new BYTE [nHeight*VPitchY];
-	VYFullUVB = new BYTE [nHeightUV*VPitchUV];
+  VXFullYB = (short*)_aligned_malloc(2 * nHeight*VPitchY + 128, 128);
+  VXFullUVB = (short*)_aligned_malloc(2 * nHeightUV*VPitchUV + 128, 128);
+  VYFullYB = (short*)_aligned_malloc(2 * nHeight*VPitchY + 128, 128);
+  VYFullUVB = (short*)_aligned_malloc(2 * nHeightUV*VPitchUV + 128, 128);
 
-	VXFullYF = new BYTE [nHeight*VPitchY];
-	VXFullUVF = new BYTE [nHeightUV*VPitchUV];
-	VYFullYF = new BYTE [nHeight*VPitchY];
-	VYFullUVF = new BYTE [nHeightUV*VPitchUV];
+  VXFullYF = (short*)_aligned_malloc(2 * nHeight*VPitchY + 128, 128);
+  VXFullUVF = (short*)_aligned_malloc(2 * nHeightUV*VPitchUV + 128, 128);
+  VYFullYF = (short*)_aligned_malloc(2 * nHeight*VPitchY + 128, 128);
+  VYFullUVF = (short*)_aligned_malloc(2 * nHeightUV*VPitchUV + 128, 128);
 
-	VXSmallYB = new BYTE [nBlkX*nBlkY];
-	VYSmallYB = new BYTE [nBlkX*nBlkY];
-	VXSmallUVB = new BYTE [nBlkX*nBlkY];
-	VYSmallUVB = new BYTE [nBlkX*nBlkY];
+  VXSmallYB = (short*)_aligned_malloc(2 * nBlkX*nBlkY + 128, 128);
+  VYSmallYB = (short*)_aligned_malloc(2 * nBlkX*nBlkY + 128, 128);
+  VXSmallUVB = (short*)_aligned_malloc(2 * nBlkX*nBlkY + 128, 128);
+  VYSmallUVB = (short*)_aligned_malloc(2 * nBlkX*nBlkY + 128, 128);
 
-	VXSmallYF = new BYTE [nBlkX*nBlkY];
-	VYSmallYF = new BYTE [nBlkX*nBlkY];
-	VXSmallUVF = new BYTE [nBlkX*nBlkY];
-	VYSmallUVF = new BYTE [nBlkX*nBlkY];
+  VXSmallYF = (short*)_aligned_malloc(2 * nBlkX*nBlkY + 128, 128);
+  VYSmallYF = (short*)_aligned_malloc(2 * nBlkX*nBlkY + 128, 128);
+  VXSmallUVF = (short*)_aligned_malloc(2 * nBlkX*nBlkY + 128, 128);
+  VYSmallUVF = (short*)_aligned_malloc(2 * nBlkX*nBlkY + 128, 128);
 
-	MaskSmallB = new BYTE [nBlkX*nBlkY];
-	MaskFullYB = new BYTE [nHeight*VPitchY];
-	MaskFullUVB = new BYTE [nHeightUV*VPitchUV];
+  MaskSmallB = (unsigned char*)_aligned_malloc(nBlkX*nBlkY + 128, 128);
+  MaskFullYB = (unsigned char*)_aligned_malloc(nHeight*VPitchY + 128, 128);
+  MaskFullUVB = (unsigned char*)_aligned_malloc(nHeightUV*VPitchUV + 128, 128);
 
-	MaskSmallF = new BYTE [nBlkX*nBlkY];
-	MaskFullYF = new BYTE [nHeight*VPitchY];
-	MaskFullUVF = new BYTE [nHeightUV*VPitchUV];
+  MaskSmallF = (unsigned char*)_aligned_malloc(nBlkX*nBlkY + 128, 128);
+  MaskFullYF = (unsigned char*)_aligned_malloc(nHeight*VPitchY + 128, 128);
+  MaskFullUVF = (unsigned char*)_aligned_malloc(nHeightUV*VPitchUV + 128, 128);
 
 	int CPUF_Resize = env->GetCPUFlags();
 	if (!isse) CPUF_Resize = (CPUF_Resize & !CPUF_INTEGER_SSE) & !CPUF_SSE2;
@@ -128,36 +132,36 @@ MVFlowBlur::~MVFlowBlur()
 	delete upsizer;
 	delete upsizerUV;
 
-	delete [] VXFullYB;
-	delete [] VXFullUVB;
-	delete [] VYFullYB;
-	delete [] VYFullUVB;
-	delete [] VXSmallYB;
-	delete [] VYSmallYB;
-	delete [] VXSmallUVB;
-	delete [] VYSmallUVB;
-	delete [] VXFullYF;
-	delete [] VXFullUVF;
-	delete [] VYFullYF;
-	delete [] VYFullUVF;
-	delete [] VXSmallYF;
-	delete [] VYSmallYF;
-	delete [] VXSmallUVF;
-	delete [] VYSmallUVF;
+  _aligned_free(VXFullYB);
+  _aligned_free(VXFullUVB);
+  _aligned_free(VYFullYB);
+  _aligned_free(VYFullUVB);
+  _aligned_free(VXSmallYB);
+  _aligned_free(VYSmallYB);
+  _aligned_free(VXSmallUVB);
+  _aligned_free(VYSmallUVB);
+  _aligned_free(VXFullYF);
+  _aligned_free(VXFullUVF);
+  _aligned_free(VYFullYF);
+  _aligned_free(VYFullUVF);
+  _aligned_free(VXSmallYF);
+  _aligned_free(VYSmallYF);
+  _aligned_free(VXSmallUVF);
+  _aligned_free(VYSmallUVF);
+  _aligned_free(MaskSmallB);
+  _aligned_free(MaskFullYB);
+  _aligned_free(MaskFullUVB);
+  _aligned_free(MaskSmallF);
+  _aligned_free(MaskFullYF);
+  _aligned_free(MaskFullUVF);
 
-	delete [] MaskSmallB;
-	delete [] MaskFullYB;
-	delete [] MaskFullUVB;
-	delete [] MaskSmallF;
-	delete [] MaskFullYF;
-	delete [] MaskFullUVF;
 
 }
 
 
 void MVFlowBlur::FlowBlur(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch,
-			   BYTE *VXFullB, BYTE *VXFullF, BYTE *VYFullB, BYTE *VYFullF,
-			   int VPitch, int width, int height, int blur256, int prec)
+  short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF,
+  int VPitch, int width, int height, int blur256, int prec)
 {
 	// very slow, but precise motion blur
 	if (nPel==1)
@@ -167,8 +171,8 @@ void MVFlowBlur::FlowBlur(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_
 			for (int w=0; w<width; w++)
 			{
 				int bluredsum = pref[w];
-				int vxF0 = ((VXFullF[w]-128)*blur256);
-				int vyF0 = ((VYFullF[w]-128)*blur256);
+        int vxF0 = (VXFullF[w] * blur256);
+        int vyF0 = (VYFullF[w] * blur256);
 				int mF = (std::max(abs(vxF0), abs(vyF0))/prec)>>8;
 				if (mF>0)
 				{
@@ -184,9 +188,9 @@ void MVFlowBlur::FlowBlur(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_
 						vyF += vyF0;
 					}
 				}
-				int vxB0 = ((VXFullB[w]-128)*blur256);
-				int vyB0 = ((VYFullB[w]-128)*blur256);
-				int mB = (std::max(abs(vxB0), abs(vyB0))/prec)>>8;
+				int vxB0 = (VXFullB[w] * blur256);
+        int vyB0 = (VYFullB[w] * blur256);
+        int mB = (std::max(abs(vxB0), abs(vyB0))/prec)>>8;
 				if (mB>0)
 				{
 					vxB0 /= mB;
@@ -218,8 +222,8 @@ void MVFlowBlur::FlowBlur(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_
 			for (int w=0; w<width; w++)
 			{
 				int bluredsum = pref[w<<1];
-				int vxF0 = ((VXFullF[w]-128)*blur256);
-				int vyF0 = ((VYFullF[w]-128)*blur256);
+        int vxF0 = (VXFullF[w] * blur256);
+        int vyF0 = (VYFullF[w] * blur256);
 				int mF = (std::max(abs(vxF0), abs(vyF0))/prec)>>8;
 				if (mF>0)
 				{
@@ -235,9 +239,9 @@ void MVFlowBlur::FlowBlur(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_
 						vyF += vyF0;
 					}
 				}
-				int vxB0 = ((VXFullB[w]-128)*blur256);
-				int vyB0 = ((VYFullB[w]-128)*blur256);
-				int mB = (std::max(abs(vxB0), abs(vyB0))/prec)>>8;
+        int vxB0 = (VXFullB[w] * blur256);
+        int vyB0 = (VYFullB[w] * blur256);
+        int mB = (std::max(abs(vxB0), abs(vyB0))/prec)>>8;
 				if (mB>0)
 				{
 					vxB0 /= mB;
@@ -269,9 +273,9 @@ void MVFlowBlur::FlowBlur(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_
 			for (int w=0; w<width; w++)
 			{
 				int bluredsum = pref[w<<2];
-				int vxF0 = ((VXFullF[w]-128)*blur256);
-				int vyF0 = ((VYFullF[w]-128)*blur256);
-				int mF = (std::max(abs(vxF0), abs(vyF0))/prec)>>8;
+        int vxF0 = (VXFullF[w] * blur256);
+        int vyF0 = (VYFullF[w] * blur256);
+        int mF = (std::max(abs(vxF0), abs(vyF0))/prec)>>8;
 				if (mF>0)
 				{
 					vxF0 /= mF;
@@ -286,9 +290,9 @@ void MVFlowBlur::FlowBlur(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_
 						vyF += vyF0;
 					}
 				}
-				int vxB0 = ((VXFullB[w]-128)*blur256);
-				int vyB0 = ((VYFullB[w]-128)*blur256);
-				int mB = (std::max(abs(vxB0), abs(vyB0))/prec)>>8;
+				int vxB0 = (VXFullB[w] * blur256);
+        int vyB0 = (VYFullB[w] * blur256);
+        int mB = (std::max(abs(vxB0), abs(vyB0))/prec)>>8;
 				if (mB>0)
 				{
 					vxB0 /= mB;
@@ -398,9 +402,6 @@ PVideoFrame __stdcall MVFlowBlur::GetFrame(int n, IScriptEnvironment* env)
 
 
 	  // make  vector vx and vy small masks
-	 // 1. ATTENTION: vectors are assumed SHORT (|vx|, |vy| < 127) !
-	 // 2. they will be zeroed if not
-	// 3. added 128 to all values
 	MakeVectorSmallMasks(mvClipB, nBlkX, nBlkY, VXSmallYB, nBlkX, VYSmallYB, nBlkX);
 	VectorSmallMaskYToHalfUV(VXSmallYB, nBlkX, nBlkY, VXSmallUVB, 2);
 	VectorSmallMaskYToHalfUV(VYSmallYB, nBlkX, nBlkY, VYSmallUVB, yRatioUV);
@@ -415,15 +416,16 @@ PVideoFrame __stdcall MVFlowBlur::GetFrame(int n, IScriptEnvironment* env)
 
 
 	  int dummyplane = PLANAR_Y; // use luma plane resizer code for all planes if we resize from luma small mask
-	  upsizer->SimpleResizeDo(VXFullYB, nWidth, nHeight, VPitchY, VXSmallYB, nBlkX, nBlkX, dummyplane);
-	  upsizer->SimpleResizeDo(VYFullYB, nWidth, nHeight, VPitchY, VYSmallYB, nBlkX, nBlkX, dummyplane);
-	  upsizerUV->SimpleResizeDo(VXFullUVB, nWidthUV, nHeightUV, VPitchUV, VXSmallUVB, nBlkX, nBlkX, dummyplane);
-	  upsizerUV->SimpleResizeDo(VYFullUVB, nWidthUV, nHeightUV, VPitchUV, VYSmallUVB, nBlkX, nBlkX, dummyplane);
+    upsizer->SimpleResizeDo(VXFullYB, nWidth, nHeight, VPitchY, VXSmallYB, nBlkX, nBlkX);
+    upsizer->SimpleResizeDo(VYFullYB, nWidth, nHeight, VPitchY, VYSmallYB, nBlkX, nBlkX);
+    upsizerUV->SimpleResizeDo(VXFullUVB, nWidthUV, nHeightUV, VPitchUV, VXSmallUVB, nBlkX, nBlkX);
+    upsizerUV->SimpleResizeDo(VYFullUVB, nWidthUV, nHeightUV, VPitchUV, VYSmallUVB, nBlkX, nBlkX);
 
-	  upsizer->SimpleResizeDo(VXFullYF, nWidth, nHeight, VPitchY, VXSmallYF, nBlkX, nBlkX, dummyplane);
-	  upsizer->SimpleResizeDo(VYFullYF, nWidth, nHeight, VPitchY, VYSmallYF, nBlkX, nBlkX, dummyplane);
-	  upsizerUV->SimpleResizeDo(VXFullUVF, nWidthUV, nHeightUV, VPitchUV, VXSmallUVF, nBlkX, nBlkX, dummyplane);
-	  upsizerUV->SimpleResizeDo(VYFullUVF, nWidthUV, nHeightUV, VPitchUV, VYSmallUVF, nBlkX, nBlkX, dummyplane);
+    upsizer->SimpleResizeDo(VXFullYF, nWidth, nHeight, VPitchY, VXSmallYF, nBlkX, nBlkX);
+    upsizer->SimpleResizeDo(VYFullYF, nWidth, nHeight, VPitchY, VYSmallYF, nBlkX, nBlkX);
+    upsizerUV->SimpleResizeDo(VXFullUVF, nWidthUV, nHeightUV, VPitchUV, VXSmallUVF, nBlkX, nBlkX);
+    upsizerUV->SimpleResizeDo(VYFullUVF, nWidthUV, nHeightUV, VPitchUV, VYSmallUVF, nBlkX, nBlkX);
+
 
 
 			FlowBlur(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, nRefPitches[0],

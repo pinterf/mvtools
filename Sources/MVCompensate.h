@@ -28,7 +28,7 @@ public:
 
 	MVCompensate(
 		PClip _child, PClip _super, PClip vectors, bool sc, double _recursionPercent,
-		int thsad, bool _fields, int nSCD1, int nSCD2, bool isse2, bool _planar,
+		int thsad, bool _fields, double _time100, int nSCD1, int nSCD2, bool isse2, bool _planar,
 		bool mt_flag, int trad, bool center_flag, PClip cclip_sptr, int thsad2,
 		IScriptEnvironment* env_ptr
 	);
@@ -60,6 +60,7 @@ private:
 	PClip super;
 	bool isse2;
 	bool planar;
+  int time256;
 
 	COPYFunction *BLITLUMA;
 	COPYFunction *BLITCHROMA;

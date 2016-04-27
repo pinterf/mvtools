@@ -28,17 +28,17 @@ private:
    bool planar;
 
    PClip finest; // v2.0
-	PClip	timeclip;
+// 	PClip	timeclip; P.F. commented out (2.6.0.5?), could not resolve with 2.5.11.22 intended changes
 
-   BYTE *VXFullY; // fullframe vector mask
-   BYTE *VXFullUV;
-   BYTE *VYFullY;
-   BYTE *VYFullUV;
+  short *VXFullY; // fullframe vector mask
+  short *VXFullUV;
+  short *VYFullY;
+  short *VYFullUV;
 
-   BYTE *VXSmallY; // Small vector mask
-   BYTE *VXSmallUV;
-   BYTE *VYSmallY;
-   BYTE *VYSmallUV;
+  short *VXSmallY; // Small vector mask
+  short *VXSmallUV;
+  short *VYSmallY;
+  short *VYSmallUV;
 
 	int nBlkXP;
 	int nBlkYP;
@@ -56,23 +56,31 @@ private:
 	int nHPaddingUV;
 	int nVPaddingUV;
 
-	typedef	short	VectLut [VECT_AMP];
-   VectLut	*LUTV; // [time256] [v] lookup table for v
-
+	/* 2.5.11.22
+    typedef	short	VectLut [VECT_AMP];
+    VectLut	*LUTV; // [time256] [v] lookup table for v
+   */
    SimpleResize *upsizer;
    SimpleResize *upsizerUV;
 
-	template <class T256P>
-	void Fetch(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch,  BYTE *VXFull, int VXPitch,  BYTE *VYFull, int VYPitch, int width, int height, T256P &t256_provider);
+/*	template <class T256P> does not fit to 2.5.11.22 logic
+	void Fetch(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch,  short *VXFull, int VXPitch,  short *VYFull, int VYPitch, int width, int height, T256P &t256_provider);
 	template <class T256P, int NPELL2>
-	void Fetch_NPel(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch,  BYTE *VXFull, int VXPitch,  BYTE *VYFull, int VYPitch, int width, int height, T256P &t256_provider);
-
-	template <class T256P>
-	void Shift(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch,  BYTE *VXFull, int VXPitch,  BYTE *VYFull, int VYPitch, int width, int height, T256P &t256_provider);
+	void Fetch_NPel(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch,  short *VXFull, int VXPitch,  short *VYFull, int VYPitch, int width, int height, T256P &t256_provider);
+*/
+  void Fetch(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch, short *VXFull, int VXPitch, short *VYFull, int VYPitch, int width, int height, int time256);
+  template <int NPELL2>
+  void Fetch_NPel(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch, short *VXFull, int VXPitch, short *VYFull, int VYPitch, int width, int height, int time256);
+/*
+	template <class T256P> does not fit to 2.5.11.22 logic
+	void Shift(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch,  short *VXFull, int VXPitch,  short *VYFull, int VYPitch, int width, int height, T256P &t256_provider);
 	template <class T256P, int NPELL2>
-	void Shift_NPel(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch,  BYTE *VXFull, int VXPitch,  BYTE *VYFull, int VYPitch, int width, int height, T256P &t256_provider);
-
-	void Create_LUTV(int time256, VectLut plut);
+	void Shift_NPel(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch,  short *VXFull, int VXPitch,  short *VYFull, int VYPitch, int width, int height, T256P &t256_provider);
+*/
+  void Shift(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch, short *VXFull, int VXPitch, short *VYFull, int VYPitch, int width, int height, int time256);
+  template <int NPELL2>
+  void Shift_NPel(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch, short *VXFull, int VXPitch, short *VYFull, int VYPitch, int width, int height, int time256);
+  // 2.5.11.22	void Create_LUTV(int time256, VectLut plut);
 
 	YUY2Planes * DstPlanes;
 

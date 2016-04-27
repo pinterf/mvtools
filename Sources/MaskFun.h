@@ -29,19 +29,25 @@
 class MVClip;
 
 
+void MakeVectorOcclusionMaskTime(MVClip &mvClip, int nBlkX, int nBlkY, double dMaskNormDivider, double fGamma, int nPel, uint8_t * occMask, int occMaskPitch, int time256, int nBlkStepX, int nBlkStepY);
 
-void MakeVectorOcclusionMaskTime(MVClip &mvClip, int nBlkX, int nBlkY, double dMaskNormFactor, double fGamma, int nPel, uint8_t * occMask, int occMaskPitch, int time256, int blkSizeX, int blkSizeY);
+// not in 2.5.11.22
+/*
 template <class OP>
 void MakeVectorOcclusionMaskTimePlane (MVClip &mvClip, int nBlkX, int nBlkY, double dMaskNormFactor, int nPel, uint8_t * occMask, int occMaskPitch, const uint8_t *pt256, int t256_pitch, int blkSizeX, int blkSizeY);
+*/
+// not in 2.5.11.22 void VectorMasksToOcclusionMaskTime(uint8_t *VXMask, uint8_t *VYMask, int nBlkX, int nBlkY, double dMaskNormFactor, double fGamma, int nPel, uint8_t * occMask, int occMaskPitch, int time256, int blkSizeX, int blkSizeY);
 
-void VectorMasksToOcclusionMaskTime(uint8_t *VXMask, uint8_t *VYMask, int nBlkX, int nBlkY, double dMaskNormFactor, double fGamma, int nPel, uint8_t * occMask, int occMaskPitch, int time256, int blkSizeX, int blkSizeY);
+// not in 2.5.11.22 void MakeVectorOcclusionMask(MVClip &mvClip, int nBlkX, int nBlkY, double dMaskNormFactor, double fGamma, int nPel, uint8_t * occMask, int occMaskPitch);
 
-void MakeVectorOcclusionMask(MVClip &mvClip, int nBlkX, int nBlkY, double dMaskNormFactor, double fGamma, int nPel, uint8_t * occMask, int occMaskPitch);
-
-void VectorMasksToOcclusionMask(uint8_t *VX, uint8_t *VY, int nBlkX, int nBlkY, double fMaskNormFactor, double fGamma, int nPel, uint8_t * smallMask);
-
-void MakeVectorSmallMasks(MVClip &mvClip, int nX, int nY, uint8_t *VXSmallY, int pitchVXSmallY, uint8_t *VYSmallY, int pitchVYSmallY);
-void VectorSmallMaskYToHalfUV(uint8_t * VSmallY, int nBlkX, int nBlkY, uint8_t *VSmallUV, int ratioUV);
+// not in 2.5.11.22 void VectorMasksToOcclusionMask(uint8_t *VX, uint8_t *VY, int nBlkX, int nBlkY, double fMaskNormFactor, double fGamma, int nPel, uint8_t * smallMask);
+// new in 2.5.11.22:
+void MakeSADMaskTime(MVClip &mvClip, int nBlkX, int nBlkY, double dMaskNormDivider, double fGamma, int nPel, uint8_t * Mask, int MaskPitch, int time256, int nBlkStepX, int nBlkStepY);
+// in 2.5.11.22 BYTE * (uint_8*) -> short *
+void MakeVectorSmallMasks(MVClip &mvClip, int nX, int nY, short *VXSmallY, int pitchVXSmallY, short *VYSmallY, int pitchVYSmallY);
+void VectorSmallMaskYToHalfUV(short * VSmallY, int nBlkX, int nBlkY, short *VSmallUV, int ratioUV);
+//void MakeVectorSmallMasks(MVClip &mvClip, int nX, int nY, uint8_t *VXSmallY, int pitchVXSmallY, uint8_t *VYSmallY, int pitchVYSmallY);
+//void VectorSmallMaskYToHalfUV(uint8_t * VSmallY, int nBlkX, int nBlkY, uint8_t *VSmallUV, int ratioUV);
 
 void Merge4PlanesToBig(uint8_t *pel2Plane, int pel2Pitch, const uint8_t *pPlane0, const uint8_t *pPlane1,
 					  const uint8_t *pPlane2, const uint8_t * pPlane3, int width, int height, int pitch, bool isse);
@@ -57,29 +63,44 @@ void Merge16PlanesToBig(
 
 unsigned char SADToMask(unsigned int sad, unsigned int sadnorm1024);
 
-template <class T256P>
-void Blend(uint8_t * pdst, const uint8_t * psrc, const uint8_t * pref, int height, int width, int dst_pitch, int src_pitch, int ref_pitch, T256P &t256_provider, bool isse);
-
+// 2.6.0.5 template <class T256P>
+// void Blend(uint8_t * pdst, const uint8_t * psrc, const uint8_t * pref, int height, int width, int dst_pitch, int src_pitch, int ref_pitch, T256P &t256_provider, bool isse);
+// back to 2.5.11.22
+void Blend(uint8_t * pdst, const uint8_t * psrc, const uint8_t * pref, int height, int width, int dst_pitch, int src_pitch, int ref_pitch, int time256, bool isse);
+// in *.hpp
 
 // lookup table size 256
 void Create_LUTV(int time256, short *LUTVB, short *LUTVF);
 
-template <class T256P>
-void FlowInter(uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
-			   uint8_t *VXFullB, uint8_t *VXFullF, uint8_t *VYFullB, uint8_t *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
-			   int VPitch, int width, int height, int nPel, T256P &t256_provider);
-
-template <class T256P>
+//template <class T256P>
 void FlowInterSimple(uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
-			   uint8_t *VXFullB, uint8_t *VXFullF, uint8_t *VYFullB, uint8_t *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
-			   int VPitch, int width, int height, int nPel, T256P &t256_provider);
+  short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
+  int VPitch, int width, int height, int time256 /*T256P &t256_provider*/, int nPel );
 
-template <class T256P>
+//template <class T256P>
+void FlowInter(uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
+  short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
+	int VPitch, int width, int height, int time256 /*T256P &t256_provider*/, int nPel );
+
+//template <class T256P>
 void FlowInterExtra(uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
-			   uint8_t *VXFullB, uint8_t *VXFullF, uint8_t *VYFullB, uint8_t *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
-			   int VPitch, int width, int height, int nPel, T256P &t256_provider,
-			   uint8_t *VXFullBB, uint8_t *VXFullFF, uint8_t *VYFullBB, uint8_t *VYFullFF);
+  short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
+	int VPitch, int width, int height, int time256 /*T256P &t256_provider*/, int nPel,
+  short *VXFullBB, short *VXFullFF, short *VYFullBB, short *VYFullFF);
+/* in 2 5.11.22 
+void FlowInterSimple(BYTE * pdst, int dst_pitch, const BYTE *prefB, const BYTE *prefF, int ref_pitch,
+  short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, BYTE *MaskB, BYTE *MaskF,
+  int VPitch, int width, int height, int time256, int nPel);
 
+void FlowInter(BYTE * pdst, int dst_pitch, const BYTE *prefB, const BYTE *prefF, int ref_pitch,
+  short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, BYTE *MaskB, BYTE *MaskF,
+  int VPitch, int width, int height, int time256, int nPel);
+
+  void FlowInterExtra(BYTE * pdst, int dst_pitch, const BYTE *prefB, const BYTE *prefF, int ref_pitch,
+  short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, BYTE *MaskB, BYTE *MaskF,
+  int VPitch, int width, int height, int time256, int nPel,
+  short *VXFullBB, short *VXFullFF, short *VYFullBB, short *VYFullFF);
+*/
 
 
 // Template function definition

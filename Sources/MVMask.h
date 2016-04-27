@@ -40,7 +40,8 @@ private:
 	double fMaskNormFactor2;
 //	bool showsad;
 	int kind; // new param instead of showsad - Fizick
-   unsigned char nSceneChangeValue;
+  int time256;
+  unsigned char nSceneChangeValue;
 
 //	unsigned char *LUTBilinear;
 	unsigned char *smallMask;
@@ -73,7 +74,7 @@ private:
 	bool planar;
 
 public:
-	MVMask(::PClip _child, ::PClip mvs, double _maxlength, double _gamma, int _kind,
+	MVMask(::PClip _child, ::PClip mvs, double _maxlength, double _gamma, int _kind, double _time100,
 		int _scvalue, int nSCD1, int nSCD2, bool isse, bool _planar, ::IScriptEnvironment* env);
 	~MVMask();
 	::PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);

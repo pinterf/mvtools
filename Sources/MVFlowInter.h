@@ -25,40 +25,40 @@ private:
    bool blend;
 
    // fullframe vector mask
-   BYTE *VXFullYB; //backward
-   BYTE *VXFullUVB;
-   BYTE *VYFullYB;
-   BYTE *VYFullUVB;
-   BYTE *VXFullYF;  // forward
-   BYTE *VXFullUVF;
-   BYTE *VYFullYF;
-   BYTE *VYFullUVF;
-   BYTE *VXFullYBB; //backward backward
-   BYTE *VXFullUVBB;
-   BYTE *VYFullYBB;
-   BYTE *VYFullUVBB;
-   BYTE *VXFullYFF; // forward forward
-   BYTE *VXFullUVFF;
-   BYTE *VYFullYFF;
-   BYTE *VYFullUVFF;
+   short *VXFullYB; //backward
+   short *VXFullUVB;
+   short *VYFullYB;
+   short *VYFullUVB;
+   short *VXFullYF;  // forward
+   short *VXFullUVF;
+   short *VYFullYF;
+   short *VYFullUVF;
+   short *VXFullYBB; //backward backward
+   short *VXFullUVBB;
+   short *VYFullYBB;
+   short *VYFullUVBB;
+   short *VXFullYFF; // forward forward
+   short *VXFullUVFF;
+   short *VYFullYFF;
+   short *VYFullUVFF;
 
    // Small vector mask
-   BYTE *VXSmallYB;
-   BYTE *VXSmallUVB;
-   BYTE *VYSmallYB;
-   BYTE *VYSmallUVB;
-   BYTE *VXSmallYF;
-   BYTE *VXSmallUVF;
-   BYTE *VYSmallYF;
-   BYTE *VYSmallUVF;
-   BYTE *VXSmallYBB;
-   BYTE *VXSmallUVBB;
-   BYTE *VYSmallYBB;
-   BYTE *VYSmallUVBB;
-   BYTE *VXSmallYFF;
-   BYTE *VXSmallUVFF;
-   BYTE *VYSmallYFF;
-   BYTE *VYSmallUVFF;
+   short *VXSmallYB;
+   short *VXSmallUVB;
+   short *VYSmallYB;
+   short *VYSmallUVB;
+   short *VXSmallYF;
+   short *VXSmallUVF;
+   short *VYSmallYF;
+   short *VYSmallUVF;
+   short *VXSmallYBB;
+   short *VXSmallUVBB;
+   short *VYSmallYBB;
+   short *VYSmallUVBB;
+   short *VXSmallYFF;
+   short *VXSmallUVFF;
+   short *VYSmallYFF;
+   short *VYSmallUVFF;
 
    BYTE *MaskSmallB;
    BYTE *MaskFullYB;

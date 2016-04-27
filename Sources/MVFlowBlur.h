@@ -23,24 +23,24 @@ private:
 //    bool usePelClipHere;
 
   // fullframe vector mask
-   BYTE *VXFullYB; //backward
-   BYTE *VXFullUVB;
-   BYTE *VYFullYB;
-   BYTE *VYFullUVB;
-   BYTE *VXFullYF;
-   BYTE *VXFullUVF;
-   BYTE *VYFullYF;
-   BYTE *VYFullUVF;
+   short *VXFullYB; //backward
+   short *VXFullUVB;
+   short *VYFullYB;
+   short *VYFullUVB;
+   short *VXFullYF;
+   short *VXFullUVF;
+   short *VYFullYF;
+   short *VYFullUVF;
 
    // Small vector mask
-   BYTE *VXSmallYB;
-   BYTE *VXSmallUVB;
-   BYTE *VYSmallYB;
-   BYTE *VYSmallUVB;
-   BYTE *VXSmallYF;
-   BYTE *VXSmallUVF;
-   BYTE *VYSmallYF;
-   BYTE *VYSmallUVF;
+   short *VXSmallYB;
+   short *VXSmallUVB;
+   short *VYSmallYB;
+   short *VYSmallUVB;
+   short *VXSmallYF;
+   short *VXSmallUVF;
+   short *VYSmallYF;
+   short *VYSmallUVF;
 
    BYTE *MaskSmallB;
    BYTE *MaskFullYB;
@@ -58,9 +58,9 @@ private:
 
    SimpleResize *upsizer;
    SimpleResize *upsizerUV;
-	void FlowBlur(BYTE * pdst, int dst_pitch, const BYTE *prefB, int ref_pitch,
-			   BYTE *VXFullB, BYTE *VXFullF, BYTE *VYFullB, BYTE *VYFullF,
-			   int VPitch, int width, int height, int time256, int nb);
+   void FlowBlur(BYTE * pdst, int dst_pitch, const BYTE *prefB, int ref_pitch,
+     short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF,
+     int VPitch, int width, int height, int time256, int nb);
 
 	YUY2Planes * DstPlanes;
 

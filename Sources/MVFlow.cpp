@@ -28,9 +28,9 @@ MVFlow::MVFlow(PClip _child, PClip super, PClip _mvec, int _time256, int _mode, 
                            int nSCD1, int nSCD2, bool _isse, bool _planar, PClip _timeclip, IScriptEnvironment* env) :
 GenericVideoFilter(_child),
 MVFilter(_mvec, "MFlow", env, 1, 0),
-mvClip(_mvec, nSCD1, nSCD2, env, 1, 0),
-timeclip (_timeclip)
-{
+mvClip(_mvec, nSCD1, nSCD2, env, 1, 0)
+// P.F. commented out 2.5.11.22 ,timeclip (_timeclip)
+{/*
 	if (_timeclip != 0)
 	{
 		const ::VideoInfo &	vi_tst = timeclip->GetVideoInfo ();
@@ -43,7 +43,7 @@ timeclip (_timeclip)
 			env->ThrowError("MFlow: tclip format is different from the main clip.");
 		}
 	}
-
+  */
 	time256 = _time256;
 	mode = _mode;
 
@@ -102,16 +102,16 @@ timeclip (_timeclip)
 //	wsprintf(debugbuf,"MVFlow: nBlkX=%d, nOverlap=%d, nBlkXP=%d, nWidth=%d, nWidthP=%d, VPitchY=%d",nBlkX, nOverlap, nBlkXP, nWidth, nWidthP, VPitchY);
 //	OutputDebugString(debugbuf);
 
-	VXFullY = new BYTE [nHeightP*VPitchY];
-	VXFullUV = new BYTE [nHeightPUV*VPitchUV];
+  VXFullY = (short*)_aligned_malloc(2 * nHeightP*VPitchY + 128, 128);
+  VXFullUV = (short*)_aligned_malloc(2 * nHeightPUV*VPitchUV + 128, 128);
 
-	VYFullY = new BYTE [nHeightP*VPitchY];
-	VYFullUV = new BYTE [nHeightPUV*VPitchUV];
+  VYFullY = (short*)_aligned_malloc(2 * nHeightP*VPitchY + 128, 128);
+  VYFullUV = (short*)_aligned_malloc(2 * nHeightPUV*VPitchUV + 128, 128);
 
-	VXSmallY = new BYTE [nBlkXP*nBlkYP];
-	VYSmallY = new BYTE [nBlkXP*nBlkYP];
-	VXSmallUV = new BYTE [nBlkXP*nBlkYP];
-	VYSmallUV = new BYTE [nBlkXP*nBlkYP];
+  VXSmallY = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
+  VYSmallY = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
+  VXSmallUV = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
+  VYSmallUV = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
 
 	int CPUF_Resize = env->GetCPUFlags();
 	if (!isse) CPUF_Resize = (CPUF_Resize & !CPUF_INTEGER_SSE) & !CPUF_SSE2;
@@ -119,6 +119,7 @@ timeclip (_timeclip)
 	upsizer = new SimpleResize(nWidthP, nHeightP, nBlkXP, nBlkYP, CPUF_Resize);
 	upsizerUV = new SimpleResize(nWidthPUV, nHeightPUV, nBlkXP, nBlkYP, CPUF_Resize);
 
+  /* 2.5.11.22 no LUT
 	if (timeclip == 0)
 	{
 		LUTV = new VectLut [1];
@@ -132,6 +133,7 @@ timeclip (_timeclip)
 			Create_LUTV(t256, LUTV [t256]);
 		}
 	}
+  */
 
    if ( (pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
    {
@@ -149,72 +151,81 @@ MVFlow::~MVFlow()
 	delete upsizer;
 	delete upsizerUV;
 
-	delete[] VXFullY;
-	delete[] VXFullUV;
-	delete[] VYFullY;
-	delete[] VYFullUV;
-	delete[] VXSmallY;
-	delete[] VYSmallY;
-	delete[] VXSmallUV;
-	delete[] VYSmallUV;
+  _aligned_free(VXFullY);
+  _aligned_free(VXFullUV);
+  _aligned_free(VYFullY);
+  _aligned_free(VYFullUV);
+  _aligned_free(VXSmallY);
+  _aligned_free(VYSmallY);
+  _aligned_free(VXSmallUV);
+  _aligned_free(VYSmallUV);
 
-	//	 if (nPel>1)
-	//	 {
-	//		 delete [] pel2PlaneY;
-	//		 delete [] pel2PlaneU;
-	//		 delete [] pel2PlaneV;
-	//	 }
-
-	delete[] LUTV;
-	//	 delete pRefGOF;
 }
 
+/* not any more 2.5.11.22
 void MVFlow::Create_LUTV(int t256, VectLut plut)
 {
 	for (int v=0; v<VECT_AMP; v++)
 		plut [v] = ((v-128)*t256)/256;
 }
+*/
+
+// 2.5.11.22 
+//void MVFlow::Shift(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch, short *VXFull, int VXPitch, short *VYFull, int VYPitch, int width, int height, int time256)
+// 
+// old:
+// int vx = -((VXFull[w] - 128)*time256) / 256;
+// int vy = -((VYFull[w] - 128)*time256) / 256;
+// new:
+// int vx = (-VXFull[w] * time256 + 128) >> 8;
+// int vy = (-VYFull[w] * time256 + 128) >> 8;
 
 
-
-template <class T256P>
-void MVFlow::Shift(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch,  BYTE *VXFull, int VXPitch,  BYTE *VYFull, int VYPitch, int width, int height, T256P &t256_provider)
+// 2.6.0.5 nice templates
+// but does not fit into 2.5.11.22 logic
+//template <class T256P>
+//void MVFlow::Shift(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch,  short *VXFull, int VXPitch,  short *VYFull, int VYPitch, int width, int height, T256P &t256_provider)
+void MVFlow::Shift(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch, short *VXFull, int VXPitch, short *VYFull, int VYPitch, int width, int height, int time256)
 {
 	// shift mode
 	if (nPel==1)
 	{
-		Shift_NPel <T256P, 0> (pdst, dst_pitch, pref, ref_pitch, VXFull, VXPitch, VYFull, VYPitch, width, height, t256_provider);
+		Shift_NPel </*T256P,*/0> (pdst, dst_pitch, pref, ref_pitch, VXFull, VXPitch, VYFull, VYPitch, width, height, time256/*t256_provider*/);
 	}
 	else if (nPel==2)
 	{
-		Shift_NPel <T256P, 1> (pdst, dst_pitch, pref, ref_pitch, VXFull, VXPitch, VYFull, VYPitch, width, height, t256_provider);
+		Shift_NPel </*T256P,*/ 1> (pdst, dst_pitch, pref, ref_pitch, VXFull, VXPitch, VYFull, VYPitch, width, height, time256/*t256_provider*/);
 	}
 	else if (nPel==4)
 	{
-		Shift_NPel <T256P, 2> (pdst, dst_pitch, pref, ref_pitch, VXFull, VXPitch, VYFull, VYPitch, width, height, t256_provider);
+		Shift_NPel </*T256P,*/ 2> (pdst, dst_pitch, pref, ref_pitch, VXFull, VXPitch, VYFull, VYPitch, width, height, time256/*t256_provider*/);
 	}
 }
 
-template <class T256P, int NPELL2>
-void MVFlow::Shift_NPel(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch,  BYTE *VXFull, int VXPitch,  BYTE *VYFull, int VYPitch, int width, int height, T256P &t256_provider)
+template <int NPELL2>
+void MVFlow::Shift_NPel(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch, short *VXFull, int VXPitch, short *VYFull, int VYPitch, int width, int height, int time256)
+//template <class T256P, int NPELL2>
+//void MVFlow::Shift_NPel(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch,  short *VXFull, int VXPitch,  short *VYFull, int VYPitch, int width, int height, T256P &t256_provider)
 {
 	for (int h=0; h<height; h++)
 	{
 		for (int w=0; w<width; w++)
 		{
-			const int		time256 = t256_provider.get_t (w);
+			// time provider 2.6.0.5 const int		time256 = t256_provider.get_t (w);
 
 			// very simple half-pixel using,  must be by image interpolation really (later)
-			int vx = -((VXFull[w]-128)*time256) / (256 << NPELL2);
-			int vy = -((VYFull[w]-128)*time256) / (256 << NPELL2);
-			int href = h + vy;
+			// pre 2.5.11.22 int vx = -((VXFull[w]-128)*time256) / (256 << NPELL2);
+			// pre 2.5.11.22 int vy = -((VYFull[w]-128)*time256) / (256 << NPELL2);
+      int vx = (-VXFull[w]*time256 + (128 << NPELL2)) / (256 << NPELL2);
+      int vy = (-VYFull[w]*time256 + (128 << NPELL2)) / (256 << NPELL2);
+      int href = h + vy;
 			int wref = w + vx;
 			if (href>=0 && href<height && wref>=0 && wref<width)// bound check if not padded
-				pdst[vy*dst_pitch + vx + w] = pref[w];
+				pdst[vy*dst_pitch + vx + w] = pref[w] << NPELL2; // 2.5.11.22 
 		}
-		pref += ref_pitch;
+		pref += ref_pitch << NPELL2; // 2.5.11.22
 		pdst += dst_pitch;
-		t256_provider.jump_to_next_row ();
+		// time provider 2.6.0.5 t256_provider.jump_to_next_row ();
 		VXFull += VXPitch;
 		VYFull += VYPitch;
 	}
@@ -222,61 +233,62 @@ void MVFlow::Shift_NPel(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pi
 
 
 
-template <class T256P>
-void MVFlow::Fetch(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch,  BYTE *VXFull, int VXPitch,  BYTE *VYFull, int VYPitch, int width, int height, T256P &t256_provider)
-{
+
+void MVFlow::Fetch(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch, short *VXFull, int VXPitch, short *VYFull, int VYPitch, int width, int height, int time256)
+/*template <class T256P>
+void MVFlow::Fetch(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch,  short *VXFull, int VXPitch,  short *VYFull, int VYPitch, int width, int height, T256P &t256_provider)
+*/{
 	if (nPel==1)
 	{
-		Fetch_NPel <T256P, 0> (pdst, dst_pitch, pref, ref_pitch, VXFull, VXPitch, VYFull, VYPitch, width, height, t256_provider);
+		Fetch_NPel </*T256P,*/ 0> (pdst, dst_pitch, pref, ref_pitch, VXFull, VXPitch, VYFull, VYPitch, width, height, time256 /*t256_provider*/);
 	}
 	else if (nPel==2)
 	{
-		Fetch_NPel <T256P, 1> (pdst, dst_pitch, pref, ref_pitch, VXFull, VXPitch, VYFull, VYPitch, width, height, t256_provider);
+		Fetch_NPel </*T256P,*/ 1> (pdst, dst_pitch, pref, ref_pitch, VXFull, VXPitch, VYFull, VYPitch, width, height, time256 /*t256_provider*/);
 	}
 	else if (nPel==4)
 	{
-		Fetch_NPel <T256P, 2> (pdst, dst_pitch, pref, ref_pitch, VXFull, VXPitch, VYFull, VYPitch, width, height, t256_provider);
+		Fetch_NPel </*T256P, */2> (pdst, dst_pitch, pref, ref_pitch, VXFull, VXPitch, VYFull, VYPitch, width, height, time256 /*t256_provider*/);
 	}
 }
 
-template <class T256P, int NPELL2>
-void MVFlow::Fetch_NPel(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch,  BYTE *VXFull, int VXPitch,  BYTE *VYFull, int VYPitch, int width, int height, T256P &t256_provider)
+//template <class T256P, int NPELL2>
+//void MVFlow::Fetch_NPel(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch,  short *VXFull, int VXPitch,  short *VYFull, int VYPitch, int width, int height, T256P &t256_provider)
+template <int NPELL2>
+void MVFlow::Fetch_NPel(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch, short *VXFull, int VXPitch, short *VYFull, int VYPitch, int width, int height, int time256)
 {
 	for (int h=0; h<height; h++)
 	{
 		for (int w=0; w<width; w++)
 		{
-			const int		time256 = t256_provider.get_t (w);
+			// ex 2.6.0.5 const int		time256 = t256_provider.get_t (w);
 
-			// use interpolated image
-
-//			int vx = ((VXFull[w]-128)*time256)>>8;
-//			int vy = ((VYFull[w]-128)*time256)>>8;
-
-//			int vx = ((VXFull[w]-128)*time256)/256; //correct
-//			int vy = ((VYFull[w]-128)*time256)/256;
-
-/*
-			int vx = VXFull[w]-128;
-			if (vx < 0) //	vx++;
-				vx = -((-vx*time256)>>8);
-			else
-				vx = (vx*time256)>>8;
-
-			int vy = VYFull[w]-128;
-			if (vy < 0) //	vy++;
-				vy = -((-vy*time256)>>8);
-			else
-				vy = (vy*time256)>>8;
-*/
+/*   2.5.11.22:
+     pel==1
+      int vx = ((VXFull[w])*time256 + 128) >> 8;
+      int vy = ((VYFull[w])*time256 + 128) >> 8;
+      pdst[w] = pref[vy*ref_pitch + vx + w];
+     pel==2 use interpolated image
+      int vx = ((VXFull[w])*time256 + 128)>>8;
+      int vy = ((VYFull[w])*time256 + 128)>>8;
+      pdst[w] = pref[vy*ref_pitch + vx + (w<<1)];
+     pel==4
+      int vx = ((VXFull[w])*time256 + 128)>>8;
+      int vy = ((VYFull[w])*time256 + 128)>>8;
+      pdst[w] = pref[vy*ref_pitch + vx + (w<<2)];
+      */
+      /* 2.6.0.5
 			int vx = t256_provider.get_vect_f (time256, VXFull[w]);
 			int vy = t256_provider.get_vect_f (time256, VYFull[w]);
+      */
+      int vx = ((VXFull[w])*time256 + 128) >> 8; // 2.5.11.22
+      int vy = ((VYFull[w])*time256 + 128) >> 8; // 2.5.11.22 
 
 			pdst[w] = pref[vy*ref_pitch + vx + (w<<NPELL2)];
 		}
 		pref += (ref_pitch)<<NPELL2;
 		pdst += dst_pitch;
-		t256_provider.jump_to_next_row ();
+		// do nothing t256_provider.jump_to_next_row ();
 		VXFull += VXPitch;
 		VYFull += VYPitch;
 	}
@@ -291,14 +303,30 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
 	BYTE *pDst[3];
 	const BYTE *pRef[3];
 	int nDstPitches[3], nRefPitches[3];
-	const BYTE *pt256[3];
-	int nt256Pitches[3];
+	//const BYTE *pt256[3];
+	//int nt256Pitches[3];
 	unsigned char *pDstYUY2;
 	int nDstPitchYUY2;
 
-	bool				usable_flag = mvClip.IsUsable();
+	bool				usable_flag = mvClip.IsUsable(); // in 2 5.11.22 later
 	int				nref;
-	mvClip.use_ref_frame(nref, usable_flag, finest, n, env);
+
+
+	// 2.6.0.5 mvClip.use_ref_frame(nref, usable_flag, finest, n, env);
+  int off = mvClip.GetDeltaFrame(); // integer offset of reference frame
+  if (off < 0)
+  {
+    nref = -off;// special static mode
+  }
+  else
+    if (mvClip.IsBackward())
+    {
+      nref = n + off;
+    }
+    else
+    {
+      nref = n - off;
+    }
 
 	PVideoFrame mvn = mvClip.GetFrame(n, env);
 	mvClip.Update(mvn, env);// backward from next to current
@@ -308,10 +336,12 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
 	{
 		ref = finest->GetFrame(nref, env);//  ref for  compensation
 		dst = env->NewVideoFrame(vi);
+    /* comment out. 2.6.0.5 specific? 2.5.11.22
 		if (timeclip != 0)
 		{
 			t256 = timeclip->GetFrame(n, env);
 		}
+    */
 
 		if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2)
 		{
@@ -343,7 +373,7 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
 			nRefPitches[0] = ref->GetPitch();
 			nRefPitches[1] = nRefPitches[0];
 			nRefPitches[2] = nRefPitches[0];
-
+      /* comment oout 2.6.0.5 specific timeclip
 			if (timeclip != 0)
 			{
 				pt256[0] = t256->GetReadPtr();
@@ -353,6 +383,7 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
 				nt256Pitches[1] = nt256Pitches[0];
 				nt256Pitches[2] = nt256Pitches[0];
 			}
+      */
 		}
 		else
 		{
@@ -370,7 +401,8 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
 			nRefPitches[1] = UPITCH(ref);
 			nRefPitches[2] = VPITCH(ref);
 
-			if (timeclip != 0)
+      /* comment oout 2.6.0.5 specific timeclip
+      if (timeclip != 0)
 			{
 				pt256[0] = YRPLAN(t256);
 				pt256[1] = URPLAN(t256);
@@ -379,23 +411,19 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
 				nt256Pitches[1] = UPITCH(t256);
 				nt256Pitches[2] = VPITCH(t256);
 			}
+      */
 		}
 
 
 		int nOffsetY = nRefPitches[0] * nVPadding*nPel + nHPadding*nPel;
 		int nOffsetUV = nRefPitches[1] * nVPaddingUV*nPel + nHPaddingUV*nPel;
 
-
-		// make  vector vx and vy small masks
-		// 1. ATTENTION: vectors are assumed SHORT (|vx|, |vy| < 127) !
-		// 2. they will be zeroed if not
-		// 3. added 128 to all values
 		MakeVectorSmallMasks(mvClip, nBlkX, nBlkY, VXSmallY, nBlkXP, VYSmallY, nBlkXP);
 		if (nBlkXP > nBlkX) // fill right
 		{
 			for (int j = 0; j < nBlkY; j++)
 			{
-				VXSmallY[j*nBlkXP + nBlkX] = std::min(VXSmallY[j*nBlkXP + nBlkX - 1], uint8_t(128));
+        VXSmallY[j*nBlkXP + nBlkX] = std::min(VXSmallY[j*nBlkXP + nBlkX - 1], short(0)); // not positive
 				VYSmallY[j*nBlkXP + nBlkX] = VYSmallY[j*nBlkXP + nBlkX - 1];
 			}
 		}
@@ -404,8 +432,8 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
 			for (int i = 0; i < nBlkXP; i++)
 			{
 				VXSmallY[nBlkXP*nBlkY + i] = VXSmallY[nBlkXP*(nBlkY - 1) + i];
-				VYSmallY[nBlkXP*nBlkY + i] = std::min(VYSmallY[nBlkXP*(nBlkY - 1) + i], uint8_t(128));
-			}
+        VYSmallY[nBlkXP*nBlkY + i] = std::min(VYSmallY[nBlkXP*(nBlkY - 1) + i], short(0)); // not positive
+      }
 		}
 
 		const int		fieldShift =
@@ -425,10 +453,10 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
 		// upsize (bilinear interpolate) vector masks to fullframe size
 
 		int dummyplane = PLANAR_Y; // use luma plane resizer code for all planes if we resize from luma small mask
-		upsizer->SimpleResizeDo(VXFullY, nWidthP, nHeightP, VPitchY, VXSmallY, nBlkXP, nBlkXP, dummyplane);
-		upsizer->SimpleResizeDo(VYFullY, nWidthP, nHeightP, VPitchY, VYSmallY, nBlkXP, nBlkXP, dummyplane);
-		upsizerUV->SimpleResizeDo(VXFullUV, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUV, nBlkXP, nBlkXP, dummyplane);
-		upsizerUV->SimpleResizeDo(VYFullUV, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUV, nBlkXP, nBlkXP, dummyplane);
+    upsizer->SimpleResizeDo(VXFullY, nWidthP, nHeightP, VPitchY, VXSmallY, nBlkXP, nBlkXP);
+    upsizer->SimpleResizeDo(VYFullY, nWidthP, nHeightP, VPitchY, VYSmallY, nBlkXP, nBlkXP);
+    upsizerUV->SimpleResizeDo(VXFullUV, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUV, nBlkXP, nBlkXP);
+    upsizerUV->SimpleResizeDo(VYFullUV, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUV, nBlkXP, nBlkXP);
 
 		if (mode == 1)
 		{
@@ -437,7 +465,8 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
 			MemZoneSet(pDst[2], 0, nWidthUV, nHeightUV, 0, 0, nDstPitches[2]);
 		}
 
-		// Time as a script parameter
+    		// Time as a script parameter
+    /* 2.5.11.22 no timeclip
 		if (timeclip == 0)
 		{
 			const Time256ProviderCst	t256_prov_cst(time256, LUTV[0], LUTV[0]);
@@ -454,12 +483,17 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
 				Shift(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, nRefPitches[2], VXFullUV, VPitchUV, VYFullUV, VPitchUV, nWidthUV, nHeightUV, t256_prov_cst);
 			}
 		}
-
+ 
 		// Time as a clip
 		else
-		{
+    */ 
+    {
 			if (mode == 0) // fetch mode
 			{
+        Fetch(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, nRefPitches[0], VXFullY, VPitchY, VYFullY, VPitchY, nWidth, nHeight, time256); //padded
+        Fetch(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, nRefPitches[1], VXFullUV, VPitchUV, VYFullUV, VPitchUV, nWidthUV, nHeightUV, time256);
+        Fetch(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, nRefPitches[2], VXFullUV, VPitchUV, VYFullUV, VPitchUV, nWidthUV, nHeightUV, time256);
+        /* 
 				Fetch(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, nRefPitches[0],
 					VXFullY, VPitchY, VYFullY, VPitchY, nWidth, nHeight,
 					Time256ProviderPlane(pt256[0], nt256Pitches[0], LUTV, LUTV)); //padded
@@ -469,9 +503,17 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
 				Fetch(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, nRefPitches[2],
 					VXFullUV, VPitchUV, VYFullUV, VPitchUV, nWidthUV, nHeightUV,
 					Time256ProviderPlane(pt256[2], nt256Pitches[2], LUTV, LUTV));
+          */
 			}
 			else if (mode == 1) // shift mode
 			{
+        MemZoneSet(pDst[0], 255, nWidth, nHeight, 0, 0, nDstPitches[0]);
+        MemZoneSet(pDst[1], 255, nWidthUV, nHeightUV, 0, 0, nDstPitches[1]);
+        MemZoneSet(pDst[2], 255, nWidthUV, nHeightUV, 0, 0, nDstPitches[2]);
+        Shift(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, nRefPitches[0], VXFullY, VPitchY, VYFullY, VPitchY, nWidth, nHeight, time256);
+        Shift(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, nRefPitches[1], VXFullUV, VPitchUV, VYFullUV, VPitchUV, nWidthUV, nHeightUV, time256);
+        Shift(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, nRefPitches[2], VXFullUV, VPitchUV, VYFullUV, VPitchUV, nWidthUV, nHeightUV, time256);
+        /*
 				Shift(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, nRefPitches[0],
 					VXFullY, VPitchY, VYFullY, VPitchY, nWidth, nHeight,
 					Time256ProviderPlane(pt256[0], nt256Pitches[0], LUTV, LUTV));
@@ -481,6 +523,7 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
 				Shift(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, nRefPitches[2],
 					VXFullUV, VPitchUV, VYFullUV, VPitchUV, nWidthUV, nHeightUV,
 					Time256ProviderPlane(pt256[2], nt256Pitches[2], LUTV, LUTV));
+          */
 			}
 		}
 

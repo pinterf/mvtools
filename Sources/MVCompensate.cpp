@@ -35,7 +35,7 @@
 
 MVCompensate::MVCompensate(
 	PClip _child, PClip _super, PClip vectors, bool sc, double _recursionPercent,
-	int thsad, bool _fields, int nSCD1, int nSCD2, bool _isse2, bool _planar,
+	int thsad, bool _fields, double _time100, int nSCD1, int nSCD2, bool _isse2, bool _planar,
 	bool mt_flag, int trad, bool center_flag, PClip cclip_sptr, int thsad2,
 	IScriptEnvironment* env_ptr
 )
@@ -89,6 +89,10 @@ MVCompensate::MVCompensate(
 	recursion = std::max (0, std::min (256, int (_recursionPercent/100*256))); // convert to int scaled 0 to 256
 	fields = _fields;
 	planar = _planar;
+
+  if (_time100 <0 || _time100 > 100)
+    env_ptr->ThrowError("MCompensate: time must be 0.0 to 100.0");
+  time256 = int(256 * _time100 / 100);
 
 	if (recursion>0 && nPel>1)
 	{
@@ -489,10 +493,10 @@ PVideoFrame __stdcall MVCompensate::GetFrame(int n, IScriptEnvironment* env_ptr)
 
 		if (recursion>0)
 		{
-			const Time256ProviderCst	t256_prov_cst (256-recursion, 0, 0);
-			Blend(pLoop[0], pLoop[0], pRef[0], nSuperHeight, nSuperWidth, nLoopPitches[0], nLoopPitches[0], nRefPitches[0], t256_prov_cst, isse2);
-			Blend(pLoop[1], pLoop[1], pRef[1], nSuperHeight/yRatioUV, nSuperWidth/2, nLoopPitches[1], nLoopPitches[1], nRefPitches[1], t256_prov_cst, isse2);
-			Blend(pLoop[2], pLoop[2], pRef[2], nSuperHeight/yRatioUV, nSuperWidth/2, nLoopPitches[2], nLoopPitches[2], nRefPitches[2], t256_prov_cst, isse2);
+			// const Time256ProviderCst	t256_prov_cst (256-recursion, 0, 0);
+			Blend(pLoop[0], pLoop[0], pRef[0], nSuperHeight, nSuperWidth, nLoopPitches[0], nLoopPitches[0], nRefPitches[0], time256 /*t256_prov_cst*/, isse2);
+			Blend(pLoop[1], pLoop[1], pRef[1], nSuperHeight/yRatioUV, nSuperWidth/2, nLoopPitches[1], nLoopPitches[1], nRefPitches[1], time256 /*t256_prov_cst*/, isse2);
+			Blend(pLoop[2], pLoop[2], pRef[2], nSuperHeight/yRatioUV, nSuperWidth/2, nLoopPitches[2], nLoopPitches[2], nRefPitches[2], time256 /*t256_prov_cst*/, isse2);
 			pRefGOF->Update(YUVPLANES, (BYTE*)pLoop[0], nLoopPitches[0], (BYTE*)pLoop[1], nLoopPitches[1], (BYTE*)pLoop[2], nLoopPitches[2]);
 		}
 		else
@@ -510,7 +514,17 @@ PVideoFrame __stdcall MVCompensate::GetFrame(int n, IScriptEnvironment* env_ptr)
 		pSrcPlanes[1] = pSrcGOF->GetFrame(0)->GetPlane(UPLANE);
 		pSrcPlanes[2] = pSrcGOF->GetFrame(0)->GetPlane(VPLANE);
 
-		fieldShift = ClipFnc::compute_fieldshift (child, fields, nPel, nsrc, nref);
+    /* 
+    int fieldShift = 0;
+    if (fields && nPel > 1 && ((nref - n) % 2 != 0))
+    {
+      bool paritySrc = child->GetParity(n);
+      bool parityRef = child->GetParity(nref);
+      fieldShift = (paritySrc && !parityRef) ? nPel / 2 : ((parityRef && !paritySrc) ? -(nPel / 2) : 0);
+      // vertical shift of fields for fieldbased video at finest level pel2
+    } more elegantly:
+    */
+    fieldShift = ClipFnc::compute_fieldshift (child, fields, nPel, nsrc, nref);
 
 		PROFILE_START(MOTION_PROFILE_COMPENSATION);
 
@@ -719,8 +733,12 @@ void	MVCompensate::compensate_slice_normal (Slicer::TaskData &td)
 		{
 			int i = by*nBlkX + bx;
 			const FakeBlockData &block = _mv_clip_ptr->GetBlock(0, i);
-			const int      blx = block.GetX() * nPel + block.GetMV().x;
-			const int      bly = block.GetY() * nPel + block.GetMV().y + fieldShift;
+      /*
+      blx = block.GetX() * nPel + block.GetMV().x * time256 / 256;
+      bly = block.GetY() * nPel + block.GetMV().y * time256 / 256 + fieldShift;
+      */
+      const int      blx = block.GetX() * nPel + block.GetMV().x * time256 / 256; // 2.5.11.22
+			const int      bly = block.GetY() * nPel + block.GetMV().y * time256 / 256 + fieldShift; // 2.5.11.22
 			if (block.GetSAD() < _thsad)
 			{
 				// luma
@@ -865,8 +883,12 @@ void	MVCompensate::compensate_slice_overlap (int y_beg, int y_end)
 			int            i = by*nBlkX + bx;
 			const FakeBlockData & block = _mv_clip_ptr->GetBlock(0, i);
 
-			const int      blx = block.GetX() * nPel + block.GetMV().x;
-			const int      bly = block.GetY() * nPel + block.GetMV().y  + fieldShift;
+	     /*
+      blx = block.GetX() * nPel + block.GetMV().x * time256 / 256;
+      bly = block.GetY() * nPel + block.GetMV().y * time256 / 256 + fieldShift;
+      */
+      const int      blx = block.GetX() * nPel + block.GetMV().x * time256 / 256; // 2.5.11.22
+      const int      bly = block.GetY() * nPel + block.GetMV().y * time256 / 256 + fieldShift; // 2.5.11.22
 
 			if (block.GetSAD() < _thsad)
 			{

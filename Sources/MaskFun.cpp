@@ -253,60 +253,95 @@ void VectorMasksToOcclusionMask(uint8_t *VXMask, uint8_t *VYMask, int nBlkX, int
 	}
 }
 
-void MakeVectorSmallMasks(MVClip &mvClip, int nBlkX, int nBlkY, uint8_t *VXSmallY, int pitchVXSmallY, uint8_t*VYSmallY, int pitchVYSmallY)
+unsigned char ByteNorm(unsigned int sad, double dSADNormFactor, double fGamma)
 {
-	// make  vector vx and vy small masks
-	// 1. ATTENTION: vectors are assumed SHORT (|vx|, |vy| < 127) !
-	// 2. they will be zeroed if not
-	// 3. added 128 to all values
-	for (int by=0; by<nBlkY; by++)
-	{
-		for (int bx=0; bx<nBlkX; bx++)
-		{
-			int i = bx + by*nBlkX;
-			const FakeBlockData &block = mvClip.GetBlock(0, i);
-			int vx = block.GetMV().x;
-			int vy = block.GetMV().y;
-			if (vx>127) vx= 127;
-			else if (vx<-127) vx= -127;
-			if (vy>127) vy = 127;
-			else if (vy<-127) vy = -127;
-			VXSmallY[bx+by*pitchVXSmallY] = vx + 128; // luma
-			VYSmallY[bx+by*pitchVYSmallY] = vy + 128; // luma
-		}
-	}
+  //	    double dSADNormFactor = 4 / (dMaskNormFactor*blkSizeX*blkSizeY);
+  double l = 255 * pow(sad*dSADNormFactor, fGamma); // Fizick - now linear for gm=1
+  return (unsigned char)((l > 255) ? 255 : l);
 }
 
-void VectorSmallMaskYToHalfUV(uint8_t * VSmallY, int nBlkX, int nBlkY, uint8_t *VSmallUV, int ratioUV)
+
+void MakeSADMaskTime(MVClip &mvClip, int nBlkX, int nBlkY, double dSADNormFactor, double fGamma, int nPel, BYTE * Mask, int MaskPitch, int time256, int nBlkStepX, int nBlkStepY)
 {
-	if (ratioUV==2)
-	{
-		// YV12 colorformat
-		for (int by=0; by<nBlkY; by++)
-		{
-			for (int bx=0; bx<nBlkX; bx++)
-			{
-				VSmallUV[bx] = ((VSmallY[bx]-128)>>1) + 128; // chroma
-			}
-			VSmallY += nBlkX;
-			VSmallUV += nBlkX;
-		}
-	}
-	else // ratioUV==1
-	{
-		// Height YUY2 colorformat
-		for (int by=0; by<nBlkY; by++)
-		{
-			for (int bx=0; bx<nBlkX; bx++)
-			{
-				VSmallUV[bx] = VSmallY[bx]; // chroma
-			}
-			VSmallY += nBlkX;
-			VSmallUV += nBlkX;
-		}
-	}
+  // Make approximate SAD mask at intermediate time
+  //    double dSADNormFactor = 4 / (dMaskNormDivider*nBlkSizeX*nBlkSizeY);
+  MemZoneSet(Mask, 0, nBlkX, nBlkY, 0, 0, MaskPitch);
+  int time4096X = (256 - time256) * 16 / (nBlkStepX*nPel); // blkstep here is really blksize-overlap
+  int time4096Y = (256 - time256) * 16 / (nBlkStepY*nPel);
+
+  for (int by = 0; by<nBlkY; by++)
+  {
+    for (int bx = 0; bx<nBlkX; bx++)
+    {
+      int i = bx + by*nBlkX; // current block
+      const FakeBlockData &block = mvClip.GetBlock(0, i);
+      int vx = block.GetMV().x;
+      int vy = block.GetMV().y;
+      int bxi = bx - vx*time4096X / 4096; // limits?
+      int byi = by - vy*time4096Y / 4096;
+      if (bxi <0 || bxi >= nBlkX || byi <0 || byi >= nBlkY)
+      {
+        bxi = bx;
+        byi = by;
+      }
+      int i1 = bxi + byi*nBlkX;
+      int sad = mvClip.GetBlock(0, i1).GetSAD();
+      Mask[bx + by*nBlkX] = ByteNorm(sad, dSADNormFactor, fGamma);
+    }
+  }
+}
+
+
+void MakeVectorSmallMasks(MVClip &mvClip, int nBlkX, int nBlkY, short *VXSmallY, int pitchVXSmallY, short *VYSmallY, int pitchVYSmallY)
+{
+  // make  vector vx and vy small masks
+  for (int by = 0; by<nBlkY; by++)
+  {
+    for (int bx = 0; bx<nBlkX; bx++)
+    {
+      int i = bx + by*nBlkX;
+      const FakeBlockData &block = mvClip.GetBlock(0, i);
+      int vx = block.GetMV().x;
+      int vy = block.GetMV().y;
+      VXSmallY[bx + by*pitchVXSmallY] = vx; // luma
+      VYSmallY[bx + by*pitchVYSmallY] = vy; // luma
+    }
+  }
+}
+
+
+
+void VectorSmallMaskYToHalfUV(short * VSmallY, int nBlkX, int nBlkY, short *VSmallUV, int ratioUV)
+{
+  if (ratioUV == 2)
+  {
+    // YV12 colorformat
+    for (int by = 0; by<nBlkY; by++)
+    {
+      for (int bx = 0; bx<nBlkX; bx++)
+      {
+        VSmallUV[bx] = ((VSmallY[bx]) >> 1); // chroma
+      }
+      VSmallY += nBlkX;
+      VSmallUV += nBlkX;
+    }
+  }
+  else // ratioUV==1
+  {
+    // Height YUY2 colorformat
+    for (int by = 0; by<nBlkY; by++)
+    {
+      for (int bx = 0; bx<nBlkX; bx++)
+      {
+        VSmallUV[bx] = VSmallY[bx]; // chroma
+      }
+      VSmallY += nBlkX;
+      VSmallUV += nBlkX;
+    }
+  }
 
 }
+
 
 
 void Merge4PlanesToBig(
@@ -508,3 +543,132 @@ void Create_LUTV(int time256, short *LUTVB, short *LUTVF)
 		LUTVF[v] = ((v-128)*time256)/256;
 	}
 }
+
+/* was: in maskfun.hpp (template)*/
+void Blend(uint8_t * pdst, const uint8_t * psrc, const uint8_t * pref, int height, int width, int dst_pitch, int src_pitch, int ref_pitch, int time256, bool isse)
+{
+  // add isse
+  int h, w;
+  for (h = 0; h<height; h++)
+  {
+    for (w = 0; w<width; w++)
+    {
+      //const int		time256 = t256_provider.get_t (w);
+      pdst[w] = (psrc[w] * (256 - time256) + pref[w] * time256) >> 8;
+    }
+    pdst += dst_pitch;
+    psrc += src_pitch;
+    pref += ref_pitch;
+    //t256_provider.jump_to_next_row ();
+  }
+}
+
+/*template <class T256P>
+void FlowInter(
+uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
+uint8_t *VXFullB, uint8_t *VXFullF, uint8_t *VYFullB, uint8_t *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
+int VPitch, int width, int height, int nPel, T256P &t256_provider)
+*/
+// no template -> goes to cpp
+void FlowInter(
+  uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
+  short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
+  int VPitch, int width, int height, int time256, int nPel) // order change 2.6.0.5: first pel, second time. 2.5.11.22: time,pel
+{
+  if (nPel == 1)
+  {
+    FlowInter_NPel </*T256P,*/ 0>(
+      pdst, dst_pitch, prefB, prefF, ref_pitch,
+      VXFullB, VXFullF, VYFullB, VYFullF, MaskB, MaskF,
+      VPitch, width, height, time256 /*t256_provider*/
+      );
+  }
+  else if (nPel == 2)
+  {
+    FlowInter_NPel </*T256P,*/ 1>(
+      pdst, dst_pitch, prefB, prefF, ref_pitch,
+      VXFullB, VXFullF, VYFullB, VYFullF, MaskB, MaskF,
+      VPitch, width, height, time256 /*t256_provider*/
+      );
+  }
+  else if (nPel == 4)
+  {
+    FlowInter_NPel </*T256P,*/ 2>(
+      pdst, dst_pitch, prefB, prefF, ref_pitch,
+      VXFullB, VXFullF, VYFullB, VYFullF, MaskB, MaskF,
+      VPitch, width, height, time256 /*t256_provider*/
+      );
+  }
+}
+
+//template <class T256P>
+// no template -> from hpp to cpp
+void FlowInterExtra(
+  uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
+  short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
+  int VPitch, int width, int height, int time256, int nPel /*T256P &t256_provider*/, // order change! 2.6.0.5 back to 2.5.11.22
+  short *VXFullBB, short *VXFullFF, short *VYFullBB, short *VYFullFF)
+{
+  if (nPel == 1)
+  {
+    FlowInterExtra_NPel </*T256P,*/ 0>(
+      pdst, dst_pitch, prefB, prefF, ref_pitch,
+      VXFullB, VXFullF, VYFullB, VYFullF, MaskB, MaskF,
+      VPitch, width, height, time256 /*t256_provider*/,
+      VXFullBB, VXFullFF, VYFullBB, VYFullFF
+      );
+  }
+  else if (nPel == 2)
+  {
+    FlowInterExtra_NPel </*T256P,*/ 1>(
+      pdst, dst_pitch, prefB, prefF, ref_pitch,
+      VXFullB, VXFullF, VYFullB, VYFullF, MaskB, MaskF,
+      VPitch, width, height, time256 /*t256_provider*/,
+      VXFullBB, VXFullFF, VYFullBB, VYFullFF
+      );
+  }
+  else if (nPel == 4)
+  {
+    FlowInterExtra_NPel </*T256P,9*/ 2>(
+      pdst, dst_pitch, prefB, prefF, ref_pitch,
+      VXFullB, VXFullF, VYFullB, VYFullF, MaskB, MaskF,
+      VPitch, width, height, time256 /*t256_provider*/,
+      VXFullBB, VXFullFF, VYFullBB, VYFullFF
+      );
+  }
+}
+
+//template <class T256P>
+// no template -> goes from hpp to cpp
+void FlowInterSimple(
+  uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
+  short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
+  int VPitch, int width, int height, int time256, int nPel /*, T256P &t256_provider*/) // 2.6.0.5: order change time256 and nPel
+{
+  if (nPel == 1)
+  {
+    FlowInterSimple_Pel1(
+      pdst, dst_pitch, prefB, prefF, ref_pitch,
+      VXFullB, VXFullF, VYFullB, VYFullF, MaskB, MaskF,
+      VPitch, width, height, time256 /*t256_provider*/
+      );
+  }
+  else if (nPel == 2)
+  {
+    FlowInterSimple_NPel </*T256P, */1>(
+      pdst, dst_pitch, prefB, prefF, ref_pitch,
+      VXFullB, VXFullF, VYFullB, VYFullF, MaskB, MaskF,
+      VPitch, width, height, time256 /* t256_provider*/
+      );
+  }
+  else if (nPel == 4)
+  {
+    FlowInterSimple_NPel </*T256P,*/ 2>(
+      pdst, dst_pitch, prefB, prefF, ref_pitch,
+      VXFullB, VXFullF, VYFullB, VYFullF, MaskB, MaskF,
+      VPitch, width, height, time256 /* t256_provider*/
+      );
+  }
+}
+
+
