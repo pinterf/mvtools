@@ -177,13 +177,14 @@ void SimpleResize::SimpleResizeDo(uint8_t *dstp, int row_size, int height, int d
       _asm
       {
         //emms // added by paranoid Fizick
-        push	ecx						// have to save this?
+        //push	ecx						// have to save this? Intel2017:should be commented out
         mov		ecx, src_row_size
           shr		ecx, 3					// 8 bytes a time
           mov		rsi, srcp1				// top of 2 src lines to get
           mov		rdx, srcp2				// next "
           mov		rdi, vWorkYW			// luma work destination line
-          xor		eax, eax
+          xor		rax, rax                // P.F. 16.04.28 should be rax here not eax (hack! define rax as eax in 32 bit) eax/rax is an indexer 
+		      xor   rbx, rbx                // P.F. 16.04.28 later we use only EBX but index with RBX
 
           // Let's check here to see if we are on a P4 or higher and can use SSE2 instructions.
           // This first loop is not the performance bottleneck anyway but it is trivial to tune
@@ -241,7 +242,7 @@ void SimpleResize::SimpleResizeDo(uint8_t *dstp, int row_size, int height, int d
           packuswb xmm1, xmm2				// pack words to our 16 byte answer
           movntdq	xmmword ptr[rdi + rax], xmm1	// save lumas in our work area
 
-          lea     eax, [eax + 16]
+          lea     rax, [rax + 16]  // P.F. 16.04.28 ?should be rax here not eax (hack! define rax eax in 32 bit)
           dec		ecx						// don
           jg		vLoopSSE2_Fetch			// if not on last one loop, prefetch
           jz		vLoopSSE2				// or just loop, or not
@@ -303,7 +304,7 @@ void SimpleResize::SimpleResizeDo(uint8_t *dstp, int row_size, int height, int d
 
           movntq	qword ptr[rdi + rax], mm1	// save in our work area
 
-          lea     eax, [eax + 8]
+          lea     rax, [rax + 8]      // P.F. 16.04.28 should be rax here not eax (hack! define rax eax in 32 bit)
           dec		ecx
           jg		vLoopSSEMMX_Fetch			// if not on last one loop, prefetch
           jz		vLoopSSEMMX				// or just loop, or not
@@ -340,18 +341,18 @@ void SimpleResize::SimpleResizeDo(uint8_t *dstp, int row_size, int height, int d
 
           movq	qword ptr[rdi + rax], mm1	// save lumas in our work area
 
-          lea     eax, [eax + 8]
+          lea     rax, [rax + 8]            // P.F. 16.04.28 should be rax here not eax (hack! define rax eax in 32 bit)
           loop	vLoopMMX
 
           // Add a little code here to check if we have more pixels to do and, if so, make one
           // more pass thru vLoopMMX. We were processing in multiples of 8 pixels and alway have
           // an even number so there will never be more than 7 left. 
           MoreSpareChange :
-        cmp		eax, src_row_size		// did we get them all
+        cmp		eax, src_row_size		// EAX! did we get them all // P.F. 16.04.28 should be rax here not eax (hack! define rax eax in 32 bit)
           jnl		DoHorizontal			// yes, else have 2 left
           mov		ecx, 1					// jigger loop ct
-          mov		eax, src_row_size
-          sub		eax, 8					// back up to last 8 pixels
+          mov		eax, src_row_size       // EAX! P.F. 16.04.28 should be rax here not eax (hack! define rax eax in 32 bit)
+          sub		rax, 8					// back up to last 8 pixels // P.F. 16.04.28 should be rax here not eax (hack! define rax eax in 32 bit)
           jmp		vLoopMMX
 
 
@@ -373,13 +374,13 @@ void SimpleResize::SimpleResizeDo(uint8_t *dstp, int row_size, int height, int d
           align 16
           hLoopMMXSSE:
         // handle first 2 pixels			
-        mov		eax, [rsi + 16]		// get data offset in pixels, 1st pixel pair
-          mov		ebx, [rsi + 20]		// get data offset in pixels, 2nd pixel pair
+        mov		eax, [rsi + 16]		// EAX! get data offset in pixels, 1st pixel pair 
+          mov		ebx, [rsi + 20]		// EBX! get data offset in pixels, 2nd pixel pair 
           movd	mm0, [rdx + rax]		// copy luma pair 0000xxYY
           punpcklwd mm0, [rdx + rbx]    // 2nd luma pair, now xxxxYYYY
           punpcklbw mm0, mm7		    // make words out of bytes, 0Y0Y0Y0Y
-          mov		eax, [rsi + 16 + 24]	// get data offset in pixels, 3rd pixel pair
-          mov		ebx, [rsi + 20 + 24]	// get data offset in pixels, 4th pixel pair
+          mov		eax, [rsi + 16 + 24]	// EAX! get data offset in pixels, 3rd pixel pair 
+          mov		ebx, [rsi + 20 + 24]	// EBX! get data offset in pixels, 4th pixel pair 
           pmaddwd mm0, [rsi]			// mult and sum lumas by ctl weights
           paddusw	mm0, mm6			// round
           psrlw	mm0, 8				// right just 4 luma pixel value 0Y0Y0Y0Y
@@ -388,8 +389,8 @@ void SimpleResize::SimpleResizeDo(uint8_t *dstp, int row_size, int height, int d
           movd	mm1, [rdx + rax]		// copy luma pair 0000xxYY
           punpcklwd mm1, [rdx + rbx]    // 2nd luma pair, now xxxxYYYY
           punpcklbw mm1, mm7		    // make words out of bytes, 0Y0Y0Y0Y
-          mov		eax, [rsi + 16 + 48]	// get data offset in pixels, 5th pixel pair
-          mov		ebx, [rsi + 20 + 48]	// get data offset in pixels, 6th pixel pair
+          mov		eax, [rsi + 16 + 48]	// EAX! get data offset in pixels, 5th pixel pair 
+          mov		ebx, [rsi + 20 + 48]	// EBX! get data offset in pixels, 6th pixel pair 
           pmaddwd mm1, [rsi + 24]		// mult and sum lumas by ctl weights
           paddusw	mm1, mm6			// round
           psrlw	mm1, 8				// right just 4 luma pixel value 0Y0Y0Y0Y
@@ -398,8 +399,8 @@ void SimpleResize::SimpleResizeDo(uint8_t *dstp, int row_size, int height, int d
           movd	mm2, [rdx + rax]		// copy luma pair 0000xxYY
           punpcklwd mm2, [rdx + rbx]    // 2nd luma pair, now xxxxYYYY
           punpcklbw mm2, mm7		    // make words out of bytes, 0Y0Y0Y0Y
-          mov		eax, [rsi + 16 + 72]	// get data offset in pixels, 7th pixel pair
-          mov		ebx, [rsi + 20 + 72]	// get data offset in pixels, 8th pixel pair
+          mov		eax, [rsi + 16 + 72]	// EAX! get data offset in pixels, 7th pixel pair 
+          mov		ebx, [rsi + 20 + 72]	// EBX! get data offset in pixels, 8th pixel pair 
           pmaddwd mm2, [rsi + 48]			// mult and sum lumas by ctl weights
           paddusw	mm2, mm6			// round
           psrlw	mm2, 8				// right just 4 luma pixel value 0Y0Y0Y0Y
@@ -433,8 +434,8 @@ void SimpleResize::SimpleResizeDo(uint8_t *dstp, int row_size, int height, int d
           align 16
           hLoopMMX:
         // handle first 2 pixels			
-        mov		eax, [rsi + 16]		// get data offset in pixels, 1st pixel pair
-          mov		ebx, [rsi + 20]		// get data offset in pixels, 2nd pixel pair
+        mov		eax, [rsi + 16]		// EAX! get data offset in pixels, 1st pixel pair 
+          mov		ebx, [rsi + 20]		// EBX! get data offset in pixels, 2nd pixel pair 
           movd	mm0, [rdx + rax]		// copy luma pair 0000xxYY
           punpcklwd mm0, [rdx + rbx]    // 2nd luma pair, now xxxxYYYY
           punpcklbw mm0, mm7		    // make words out of bytes, 0Y0Y0Y0Y
@@ -468,8 +469,8 @@ void SimpleResize::SimpleResizeDo(uint8_t *dstp, int row_size, int height, int d
           jl		LastOne				// none, done
 
           // handle 2 more pixels			
-          mov		eax, [rsi + 16]		// get data offset in pixels, 1st pixel pair
-          mov		ebx, [rsi + 20]		// get data offset in pixels, 2nd pixel pair
+          mov		eax, [rsi + 16]		// EAX! get data offset in pixels, 1st pixel pair 
+          mov		ebx, [rsi + 20]		// EBX! get data offset in pixels, 2nd pixel pair 
           movd	mm0, [rdx + rax]		// copy luma pair 0000xxYY
           punpcklwd mm0, [rdx + rbx]    // 2nd luma pair, now xxxxYYYY
           punpcklbw mm0, mm7		    // make words out of bytes, 0Y0Y0Y0Y
@@ -489,7 +490,7 @@ void SimpleResize::SimpleResizeDo(uint8_t *dstp, int row_size, int height, int d
         cmp		ecx, 0				// still more?
           jz		AllDone				// n, done
 
-          mov		eax, [rsi + 16]		// get data offset in pixels, 1st pixel pair
+          mov		eax, [rsi + 16]		// EAX! get data offset in pixels, 1st pixel pair 
           movd	mm0, [rdx + rax]		// copy luma pair 0000xxYY
           punpcklbw mm0, mm7		    // make words out of bytes, xxxx0Y0Y
 
@@ -500,7 +501,7 @@ void SimpleResize::SimpleResizeDo(uint8_t *dstp, int row_size, int height, int d
           mov		byte ptr[rdi], al	// store last one
 
           AllDone :
-        pop		ecx
+        //pop		ecx Intel2017:should be commented out
           emms
       }
     }                               // done with one line
@@ -573,22 +574,23 @@ void SimpleResize::SimpleResizeDo(short *dstp, int row_size, int height, int dst
 
       _asm
       { // MMX resizer code adopted to sized short int
-        push	ecx
+        //push	ecx Intel2017:should be commented out
         mov		ecx, src_row_size // size in words
-          shr		ecx, 2					// 8 bytes = 4 words a time
-          mov		esi, srcp1				// top of 2 src lines to get
-          mov		edx, srcp2				// next "
-          mov		edi, vWorkYW			// luma work destination line
-          xor		eax, eax
+        shr		ecx, 2					// 8 bytes = 4 words a time
+        mov		rsi, srcp1				// top of 2 src lines to get
+        mov		rdx, srcp2				// next "
+        mov		rdi, vWorkYW			// luma work destination line
+        xor		rax, rax                // P.F. 16.04.28 should be rax here not eax (hack! define rax eax in 32 bit)
+        xor       rbx, rbx                // P.F. 16.04.28 leater only ebx used
 
-          movq	mm5, vWeight1
-          movq	mm6, vWeight2
-          movq	mm0, FPround2			// useful rounding constant
-          pxor	mm7, mm7
-          align	16
-          vLoopMMX:
-        movq	mm1, qword ptr[esi + eax * 2] // top of 2 lines to interpolate (4 vectors)
-          movq	mm3, qword ptr[edx + eax * 2] // 2nd of 2 lines (4 vectors)
+        movq	mm5, vWeight1
+        movq	mm6, vWeight2
+        movq	mm0, FPround2			// useful rounding constant
+        pxor	mm7, mm7
+        align	16
+        vLoopMMX:
+        movq	mm1, qword ptr[rsi + rax * 2] // top of 2 lines to interpolate (4 vectors)
+          movq	mm3, qword ptr[rdx + rax * 2] // 2nd of 2 lines (4 vectors)
           movq	mm2, mm1				// copy top bytes
           movq	mm4, mm3				// copy 2nd bytes
 
@@ -616,19 +618,19 @@ void SimpleResize::SimpleResizeDo(short *dstp, int row_size, int height, int dst
 
           packssdw mm1, mm2				// pack into 4 words
 
-          movq	qword ptr[edi + eax * 2], mm1	// save 4 words in our work area
+          movq	qword ptr[rdi + rax * 2], mm1	// save 4 words in our work area 
 
-          lea     eax, [eax + 4]
+          lea     rax, [rax + 4]
           loop	vLoopMMX // decrement ecx
 
-                         // Add a little code here to check if we have more pixels to do and, if so, make one
-                         // more pass thru vLoopMMX. We were processing in multiples of 8 pixels and alway have
-                         // an even number so there will never be more than 7 left.
-                         //	MoreSpareChange:
-          cmp		eax, src_row_size		// did we get them all
+                   // Add a little code here to check if we have more pixels to do and, if so, make one
+                   // more pass thru vLoopMMX. We were processing in multiples of 8 pixels and alway have
+                   // an even number so there will never be more than 7 left.
+                   //	MoreSpareChange:
+          cmp		eax, src_row_size		// EAX! did we get them all
           jnl		DoHorizontal			// yes, else have 2 left
           mov		ecx, 1					// jigger loop ct
-          mov		eax, src_row_size
+          mov		eax, src_row_size       // EAX!
           sub		eax, 4					// back up to last 8 pixels
           jmp		vLoopMMX
 
@@ -637,83 +639,83 @@ void SimpleResize::SimpleResizeDo(short *dstp, int row_size, int height, int dst
           DoHorizontal :
         pxor    mm7, mm7
           movq	mm6, FPround2		// useful rounding constant, dwords
-          mov		esi, pControl		// @ horiz control bytes
+          mov		rsi, pControl		// @ horiz control bytes
           mov		ecx, row_size // size in words
           shr		ecx, 2				// 8 bytes a time, 4 words
-          mov     edx, vWorkYW		// our luma data
-          mov		edi, dstp			// the destination line
+          mov     rdx, vWorkYW		// our luma data
+          mov		rdi, dstp			// the destination line
           align 16
           hLoopMMX:
         // handle first 2 pixels
-        mov		eax, [esi + 16]		// get data offset in pixels, 1st pixel pair. Control[4]=offs
-          mov		ebx, [esi + 20]		// get data offset in pixels, 2nd pixel pair. Control[5]=offsodd
-          movd	mm0, [edx + eax * 2]		// copy luma pair 0000W1W0  work[offs]
-          punpckldq mm0, [edx + ebx * 2]    // 2nd luma pair, now V1V0W1W0
+        mov		eax, [rsi + 16]		// EAX! get data offset in pixels, 1st pixel pair. Control[4]=offs
+          mov		ebx, [rsi + 20]		// EBX! get data offset in pixels, 2nd pixel pair. Control[5]=offsodd
+          movd	mm0, [rdx + rax * 2]		// copy luma pair 0000W1W0  work[offs]
+          punpckldq mm0, [rdx + rbx * 2]    // 2nd luma pair, now V1V0W1W0
 
-          pmaddwd mm0, [esi]			// mult and sum lumas by ctl weights. v1v0 Control[1] and w1w0 Control[0]
+          pmaddwd mm0, [rsi]			// mult and sum lumas by ctl weights. v1v0 Control[1] and w1w0 Control[0]
           paddd	mm0, mm6			// round
           psrad	mm0, 8				// right just 2 luma pixel
 
-                              // handle 3rd and 4th pixel pairs
-          mov		eax, [esi + 16 + 24]	// get data offset in pixels, 3rd pixel pair. Control[4+6}
-          mov		ebx, [esi + 20 + 24]	// get data offset in pixels, 4th pixel pair. Control[5+6}
-          movd	mm1, [edx + eax * 2]		// copy luma pair
-          punpckldq mm1, [edx + ebx * 2]    // 2nd luma pair
-          pmaddwd mm1, [esi + 24]		// mult and sum lumas by ctl weights. Control[6] and Control[7]
+                    // handle 3rd and 4th pixel pairs
+          mov		eax, [rsi + 16 + 24]	// EAX! get data offset in pixels, 3rd pixel pair. Control[4+6}
+          mov		ebx, [rsi + 20 + 24]	// EBX! get data offset in pixels, 4th pixel pair. Control[5+6}
+          movd	mm1, [rdx + rax * 2]		// copy luma pair
+          punpckldq mm1, [rdx + rbx * 2]    // 2nd luma pair
+          pmaddwd mm1, [rsi + 24]		// mult and sum lumas by ctl weights. Control[6] and Control[7]
           paddd	mm1, mm6			// round
           psrad	mm1, 8				// right just 2 luma pixel
 
-                              // combine, store, and loop
+                    // combine, store, and loop
           packssdw mm0, mm1			// pack all 4 into qword, 0Y0Y0Y0Y
-          movq	qword ptr[edi], mm0	// done with 4 pixels
-          lea    esi, [esi + 48]		// bump to next control bytest. Control[12]
-          lea    edi, [edi + 8]			// bump to next output pixel addr
+          movq	qword ptr[rdi], mm0	// done with 4 pixels
+          lea    rsi, [rsi + 48]		// bump to next control bytest. Control[12]
+          lea    rdi, [rdi + 8]			// bump to next output pixel addr
           loop   hLoopMMX				// loop for more
 
-                                // test to see if we have a mod 4 size row, if not then more spare change
-                                //	LessThan4:
+                      // test to see if we have a mod 4 size row, if not then more spare change
+                      //	LessThan4:
           mov		ecx, row_size
           and		ecx, 3				// remainder size mod 4
           cmp		ecx, 2
           jl		LastOne				// none, done
 
-                              // handle 2 more pixels
-          mov		eax, [esi + 16]		// get data offset in pixels, 1st pixel pair
-          mov		ebx, [esi + 20]		// get data offset in pixels, 2nd pixel pair
-          movd	mm0, [edx + eax * 2]		// copy luma pair 0000xxYY
-          punpckldq mm0, [edx + ebx * 2]    // 2nd luma pair, now xxxxYYYY
+                    // handle 2 more pixels
+          mov		eax, [rsi + 16]		// EAX! get data offset in pixels, 1st pixel pair
+          mov		ebx, [rsi + 20]		// EBX! get data offset in pixels, 2nd pixel pair
+          movd	mm0, [rdx + rax * 2]		// copy luma pair 0000xxYY
+          punpckldq mm0, [rdx + rbx * 2]    // 2nd luma pair, now xxxxYYYY
 
-          pmaddwd mm0, [esi]			// mult and sum lumas by ctl weights
+          pmaddwd mm0, [rsi]			// mult and sum lumas by ctl weights
           paddd	mm0, mm6			// round
           psrad	mm0, 8				// right just 2 luma pixel value 000Y,000Y
           packssdw mm0, mm7			// and again into  00000Y0Y
-          movd	dword ptr[edi], mm0	// store, we are guarrenteed room in buffer (8 byte mult)
+          movd	dword ptr[rdi], mm0	// store, we are guarrenteed room in buffer (8 byte mult)
           sub		ecx, 2
-          lea		esi, [esi + 24]		// bump to next control bytest
-          lea		edi, [edi + 4]			// bump to next output pixel addr
+          lea		rsi, [rsi + 24]		// bump to next control bytest
+          lea		rdi, [rdi + 4]			// bump to next output pixel addr
 
-                                    // maybe one last pixel
+                        // maybe one last pixel
           LastOne:
         cmp		ecx, 0				// still more?
           jz		AllDone				// n, done
 
-          mov		eax, [esi + 16]		// get data offset in pixels, 1st pixel pair
-          movd	mm0, [edx + eax * 2]		// copy luma pair 0000xxYY
+          mov		eax, [rsi + 16]		// EAX! get data offset in pixels, 1st pixel pair
+          movd	mm0, [rdx + rax * 2]		// copy luma pair 0000xxYY
           punpckldq mm0, mm7		    // make dwords out of words, xxxx0Y0Y
 
-          pmaddwd mm0, [esi]			// mult and sum lumas by ctl weights
+          pmaddwd mm0, [rsi]			// mult and sum lumas by ctl weights
           paddd	mm0, mm6			// round
           psrad	mm0, 8				// right just 1 luma pixel value xxxx000Y
           movd	eax, mm0
-          mov		word ptr[edi], ax	// store last one
+          mov		word ptr[rdi], ax	// store last one
 
           AllDone :
-        pop		ecx
-          emms
-    }
+        //pop		ecx Intel2017:should be commented out
+        emms
       }
-      dstp += dst_pitch;
     }
+    dstp += dst_pitch;
+  }
 
 }
 
