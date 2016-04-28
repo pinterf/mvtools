@@ -59,6 +59,9 @@ MVDegrain1::MVDegrain1(
 	CheckSimilarity(mvClipF, "mvfw", env);
 	CheckSimilarity(mvClipB, "mvbw", env);
 
+	if (mvClipB.GetDeltaFrame() <= 0 || mvClipB.GetDeltaFrame() <= 0) // 2.5.11.22
+		env->ThrowError("MDegrain1: cannot use motion vectors with absolute frame references.");
+
 	const ::VideoInfo &	vi_super = _super->GetVideoInfo ();
 
 	// get parameters of prepared super clip - v2.0
