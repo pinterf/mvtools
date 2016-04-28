@@ -34,44 +34,44 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <PlatformToolset>Intel C++ Compiler 16.0</PlatformToolset>
+    <PlatformToolset>Intel C++ Compiler 17.0</PlatformToolset>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <BasePlatformToolset>v140_xp</BasePlatformToolset>
+    <BasePlatformToolset>v140</BasePlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <PlatformToolset>Intel C++ Compiler 16.0</PlatformToolset>
+    <PlatformToolset>Intel C++ Compiler 17.0</PlatformToolset>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <BasePlatformToolset>v140_xp</BasePlatformToolset>
+    <BasePlatformToolset>v140</BasePlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <PlatformToolset>Intel C++ Compiler 16.0</PlatformToolset>
+    <PlatformToolset>Intel C++ Compiler 17.0</PlatformToolset>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
-    <BasePlatformToolset>v140_xp</BasePlatformToolset>
+    <BasePlatformToolset>v140</BasePlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <PlatformToolset>Intel C++ Compiler 16.0</PlatformToolset>
+    <PlatformToolset>Intel C++ Compiler 17.0</PlatformToolset>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
-    <BasePlatformToolset>v140_xp</BasePlatformToolset>
+    <BasePlatformToolset>v140</BasePlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <PlatformToolset>Intel C++ Compiler 16.0</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
     <BasePlatformToolset>v140_xp</BasePlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <PlatformToolset>Intel C++ Compiler 16.0</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
     <BasePlatformToolset>v140_xp</BasePlatformToolset>
@@ -185,6 +185,7 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <TargetMachine>MachineX86</TargetMachine>
       <SubSystem>Console</SubSystem>
+      <AdditionalOptions> %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">
@@ -228,6 +229,7 @@
     <Link>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <SubSystem>Console</SubSystem>
+      <AdditionalOptions> %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -264,6 +266,7 @@
       <TargetMachine>MachineX86</TargetMachine>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
+      <AdditionalOptions> %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -295,6 +298,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnableExpandedLineNumberInfo>true</EnableExpandedLineNumberInfo>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <AdditionalOptions>-D__is_assignable=__is_trivially_assignable %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -304,6 +308,7 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
+      <AdditionalOptions> %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -325,7 +330,7 @@
       <HeaderFileName />
     </Midl>
     <ClCompile>
-      <Optimization>MaxSpeedHighLevel</Optimization>
+      <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -343,6 +348,7 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <GenerateAlternateCodePaths>SSE42</GenerateAlternateCodePaths>
+      <AdditionalOptions>-D__is_assignable=__is_trivially_assignable %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -354,6 +360,7 @@
       <TargetMachine>MachineX86</TargetMachine>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
+      <AdditionalOptions> %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -376,7 +383,6 @@
       </HeaderFileName>
     </Midl>
     <ClCompile>
-      <Optimization>MaxSpeedHighLevel</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <OmitFramePointers>true</OmitFramePointers>
       <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -395,6 +401,7 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
+      <AdditionalOptions>-D__is_assignable=__is_trivially_assignable %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -405,6 +412,7 @@
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
+      <AdditionalOptions> %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -642,6 +650,7 @@
     <ClCompile Include="Interpolation.cpp" />
     <ClCompile Include="MaskFun.cpp" />
     <ClCompile Include="MDegrainN.cpp" />
+    <ClCompile Include="memcpy_amd.cpp" />
     <ClCompile Include="MRestoreVect.cpp" />
     <ClCompile Include="MScaleVect.cpp" />
     <ClCompile Include="MStoreVect.cpp" />
@@ -755,6 +764,7 @@
     <ClInclude Include="MaskFun.h" />
     <ClInclude Include="MaskFun.hpp" />
     <ClInclude Include="MDegrainN.h" />
+    <ClInclude Include="memcpy_amd.h" />
     <ClInclude Include="MRestoreVect.h" />
     <ClInclude Include="MScaleVect.h" />
     <ClInclude Include="MStoreVect.h" />
