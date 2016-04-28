@@ -158,7 +158,7 @@ MVRecalculate::MVRecalculate (
 		env->ThrowError ("MRecalculate: overlap must be more even");
 	}
 
-	if (_divide != 0 && (_blksizex < 8 && _blksizey < 8))
+    if (_divide != 0 && (_blksizex < 8 || _blksizey < 8)) // 2.5.11.22 || instead of &&
 	{
 		env->ThrowError (
 			"MRecalculate: Block sizes must be 8 or more for divide mode"
@@ -408,7 +408,27 @@ PVideoFrame __stdcall MVRecalculate::GetFrame(int n, IScriptEnvironment* env)
 
 	srd._analysis_data_divided.nDeltaFrame = srd._analysis_data.nDeltaFrame;
 	srd._analysis_data_divided.isBackward  = srd._analysis_data.isBackward;
-
+/* 2.5.11.3:
+	int minframe = (analysisData.isBackward) ? 0 : analysisData.nDeltaFrame;
+	int maxframe = (analysisData.isBackward) ? vi.num_frames - analysisData.nDeltaFrame : vi.num_frames;
+	int offset = (analysisData.isBackward) ? analysisData.nDeltaFrame : -analysisData.nDeltaFrame;
+   2.5.11.22
+	int nref, minframe, maxframe;
+	int off = analysisData.nDeltaFrame;
+	if (off > 0)
+	{
+		minframe = ( analysisData.isBackward ) ? 0 : off;
+		maxframe = ( analysisData.isBackward ) ? vi.num_frames - off : vi.num_frames;
+		nref = ( analysisData.isBackward ) ? n + off : n - off;
+	}
+	else
+	{
+		minframe = 0;
+		maxframe = vi.num_frames;
+		nref = -off; // static mode
+	}
+*/
+	// PF: seems that 2.6.0.5 already OK, works as 2.5.11.22
 	const int		nbr_src_frames = child->GetVideoInfo ().num_frames;
 	int				minframe;
 	int				maxframe;
