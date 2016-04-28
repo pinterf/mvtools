@@ -13,6 +13,7 @@ http://avisynth.nl/index.php/AviSynth%2B#AviSynth.2B_x64_plugins
 Features
 - Synchronized to Fizick's 2.5.11.22 version
   e.g. fixed: greenish garbage in MFlowInter
+  Dropped tclip support in MFlow, MFlowInter added in 2.5.10 beta by Firesledge
 - 2.6.0.5 x64 capable version ported under Avisynth 2.6 API
 - Fixed access violation in MDepan
 - Fixed access violation in x64 asm code
