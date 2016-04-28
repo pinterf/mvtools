@@ -155,7 +155,7 @@ MVAnalyse::MVAnalyse (
 		env->ThrowError ("MAnalyse: overlap must be more even");
 	}
 
-	if (_divide != 0 && (_blksizex < 8 && _blksizey < 8))
+	if (_divide != 0 && (_blksizex < 8 || _blksizey < 8)) // || instead of && 2.5.11.22 green garbage issue
 	{
 		env->ThrowError (
 			"MAnalyse: Block sizes must be 8 or more for divide mode"
