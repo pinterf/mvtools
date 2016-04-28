@@ -31,7 +31,7 @@ For more information see also documents folder.
 Current build as of April 28, 2016: 
 - 2.7.0.22 (ending number 22 hints to Fizick's 2.5.11.22 version)
 
-Previous build as of March 31, 2016: 
+Previous build (March 31, 2016): 
 - 2.7.0.1 (skipped 2.6.x.x to leave numbering space to the previous authors)
 
 External dependencies: 
@@ -46,3 +46,7 @@ Others
 - For asm compilation use yasm (1.2): http://yasm.tortall.net/Download.html
 
 hint: vsyasm.* files should be renamed to yasm.
+
+Source code:
+https://github.com/pinterf/mvtools
+under mvtools-pfmod branch
