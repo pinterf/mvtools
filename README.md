@@ -4,7 +4,7 @@ Motion estimation and compensation plugin for Avisynth+ and Avisynth v2.6 family
 File: mvtools2.dll (both 32 and 64 bit Windows DLLs)
 
 Credits: 
-- Manao, Fizick, Tsp, TSchniede, SEt, cretindesalpes 
+- Manao, Fizick, Tsp, TSchniede, SEt, Vit, Firesledge, cretindesalpes 
 
 Modification base:
 - mvtools2, 2.6.0.5 64 bit version from
@@ -22,13 +22,13 @@ Features
 
 Links
 - http://avisynth.org.ru/mvtools/mvtools2.html
+- http://avisynth.nl/index.php/External_filters#64-bit_filters 
 - http://ldesoras.free.fr/prod.html (2.6.0.5)
 - http://avisynth.nl/index.php/MVTools
-- http://avisynth.nl/index.php/External_filters#64-bit_filters 
 
 For more information see also documents folder.
 
-Current build as of April 28, 2016: 
+Current build as of April 29, 2016: 
 - 2.7.0.22 (ending number 22 hints to Fizick's 2.5.11.22 version)
 
 Previous build (March 31, 2016): 

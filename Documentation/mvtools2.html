@@ -14,12 +14,13 @@
 <h2>Abstract</h2>
 
 <table class="n">
-<tr><td class="n"><b>Authors:     </b></td><td class="n">&nbsp;</td><td class="n">Manao, Tsp, TSchniede, SEt, Fizick (Alexander Balakhnin), Vit, Firesledge</td></tr>
-<tr><td class="n"><b>Version:     </b></td><td class="n">&nbsp;</td><td class="n">2.6.0.5</td></tr>
-<tr><td class="n"><b>Download:    </b></td><td class="n">&nbsp;</td><td class="n">Contained in the Dither package, <a href="http://ldesoras.free.fr/prod.html#src_ditheravsi">http://ldesoras.free.fr/prod.html</a></td></tr>
-<tr><td class="n"><b>Category:    </b></td><td class="n">&nbsp;</td><td class="n">Misc Plugins</td></tr>
-<tr><td class="n"><b>Requirements:</b></td><td class="n">&nbsp;</td><td class="n">YV12 or YUY2 Color format</td></tr>
-<tr><td class="n"><b>License:     </b></td><td class="n">&nbsp;</td><td class="n">GPL</td></tr>
+<tr><td class="n"><b>Authors:      </b></td><td class="n">&nbsp;</td><td class="n">Manao, Tsp, TSchniede, SEt, Fizick (Alexander Balakhnin), Vit, Firesledge</td></tr>
+<tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.0.22</td></tr>
+<tr><td class="n"><b>Base versions:</b></td><td class="n">&nbsp;</td><td class="n">2.6.0.5 + 2.5.11.22</td></tr>
+<tr><td class="n"><b>Base download:</b></td><td class="n">&nbsp;</td><td class="n">Contained in the Dither package, <a href="http://ldesoras.free.fr/prod.html#src_ditheravsi">http://ldesoras.free.fr/prod.html</a></td></tr>
+<tr><td class="n"><b>Category:     </b></td><td class="n">&nbsp;</td><td class="n">Misc Plugins</td></tr>
+<tr><td class="n"><b>Requirements: </b></td><td class="n">&nbsp;</td><td class="n">YV12 or YUY2 Color format</td></tr>
+<tr><td class="n"><b>License:      </b></td><td class="n">&nbsp;</td><td class="n">GPL</td></tr>
 </table>
 
 
@@ -2000,6 +2001,19 @@ Some parts of the code are under the WTFPL, too.</p>
 
 <h2><a name="revisions"></a>VI) Revisions</h2>
 
+<p>2.7.0.22 (2016.04.29 by pinterf)</p>
+<ul>
+<li>Merge Fizick’s 2.5.11.22 modification and fixes, x64 port of new asm part</li>
+<li>Dropped time clip support (could not resolve 2.5.11.22 changes)</li>
+</ul>
+
+<p>2.7.0.1 (2016.03.31 by pinterf)</p>
+<ul>
+<li>AVS 2.6 API</li>
+<li>Fixed internal criticalsection crash</li>
+<li>Fixed x64 asm code</li>
+</ul>
+
 <p>2.6.0.5 (2012.07.17 by Firesledge)</p>
 <ul>
 <li>MCompensate, MDegrainN: fixed a bug causing occasionally horizontal magenta stripes in multithreading mode.</li>
@@ -2977,10 +2991,15 @@ parameters, have a look at the documentation.</li>
 
 <h2><a name="download"></a>VII) Download</h2>
 
-<p>This MVTools2 branch can be found in the Dither package, available from
-<a href="http://ldesoras.free.fr/prod.html#src_ditheravsi">http://ldesoras.free.fr/prod.html</a></p>
+<p>This MVTools2 branch is available from
+<a href="https://github.com/pinterf/mvtools/tree/mvtools-pfmod">https://github.com/pinterf/mvtools/tree/mvtools-pfmod</a></p>
 
-<p>Older MVTools2 branch can be downloaded at
+<p>The base MVTools2 branch can be found in the Dither package: 
+<a href="http://ldesoras.free.fr/prod.html#src_ditheravsi">http://ldesoras.free.fr/prod.html</a></p>
+<p>with x64 version at 
+<a href="http://avisynth.nl/index.php/External_filters#64-bit_filters">http://avisynth.nl/index.php/External_filters#64-bit_filters</a></p>
+
+<p>Original MVTools2 branch can be downloaded at
 <a href="http://avisynth.org.ru/">http://avisynth.org.ru/</a></p>
 
 <p>Older version 1.X documentation and download link are at
