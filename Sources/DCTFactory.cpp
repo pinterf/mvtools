@@ -55,10 +55,12 @@ DCTFactory::DCTFactory (int dctmode, bool isse, int blksizex, int blksizey, ::IS
 
 	if (_fftw_flag)
 	{
-		_fftw_hnd = ::LoadLibrary ("fftw3.dll"); // delayed loading
-		if (_fftw_hnd == 0)
+    _fftw_hnd = ::LoadLibrary("libfftw3f-3.dll"); // delayed loading, original name
+    if (_fftw_hnd == NULL)
+      _fftw_hnd = ::LoadLibrary ("fftw3.dll"); // delayed loading
+    if (_fftw_hnd == NULL)
 		{
-			env.ThrowError ("MAnalyse: Can not load FFTW3.DLL!");
+			env.ThrowError ("MAnalyse: Can not load libfftw3f-3.dll or fftw3.DLL!");
 		}
 	}
 }
