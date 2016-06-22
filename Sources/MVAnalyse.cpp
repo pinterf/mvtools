@@ -97,7 +97,7 @@ MVAnalyse::MVAnalyse (
 	analysisData.nWidth    = vi.width - nSuperHPad * 2;
 	analysisData.nHeight   = nHeight;
 	analysisData.pixelType = vi.pixel_type;
-	analysisData.yRatioUV  = (vi.IsYV12 ()) ? 2 : 1;
+	analysisData.yRatioUV  = (vi.IsYV12 ()) ? 2 : 1; // PF todo YV12 specific!
 	analysisData.xRatioUV  = 2;	// for YV12 and YUY2, really do not used and assumed to 2
 
 //	env->ThrowError ("MVAnalyse: %d, %d, %d, %d, %d", nPrepHPad, nPrepVPad, nPrepPel, nPrepModeYUV, nPrepLevels);
@@ -282,9 +282,9 @@ MVAnalyse::MVAnalyse (
 
 
 	analysisData.nFlags  = 0;
-	analysisData.nFlags |= (_isse) ? MOTION_USE_ISSE : 0;
+	analysisData.nFlags |= (_isse) ? MOTION_USE_ISSE : 0; // P.F. debug 16.06.20 if zero, still error (a=a.QTGMC(/*Preset="Slower",*/dct=5, ChromaMotion=true))
 	analysisData.nFlags |= (analysisData.isBackward) ? MOTION_IS_BACKWARD : 0;
-	analysisData.nFlags |= (chroma) ? MOTION_USE_CHROMA_MOTION : 0;
+	analysisData.nFlags |= (chroma) ? MOTION_USE_CHROMA_MOTION : 0; // P.F. debug 16.06.20 if zero, no error (a=a.QTGMC(/*Preset="Slower",*/dct = 5, ChromaMotion = true))
 	if (_sadx264 == 0)
 	{
 		analysisData.nFlags |= cpu_detect ();
