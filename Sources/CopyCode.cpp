@@ -48,6 +48,7 @@
 
 void BitBlt(unsigned char* dstp, int dst_pitch, const unsigned char* srcp, int src_pitch, int row_size, int height, bool isse) {
   if ( (!height)|| (!row_size)) return;
+#ifdef X86_32
   if (isse) {
     if (height == 1 || (src_pitch == dst_pitch && dst_pitch == row_size)) {
 //      memcpy_amd(dstp, srcp, row_size*height);
@@ -57,6 +58,7 @@ void BitBlt(unsigned char* dstp, int dst_pitch, const unsigned char* srcp, int s
     }
     return;
   }
+#endif
   if (height == 1 || (dst_pitch == src_pitch && src_pitch == row_size)) {
     memcpy(dstp, srcp, row_size*height); // Fizick: fixed bug
   } else {
