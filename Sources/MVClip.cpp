@@ -59,15 +59,15 @@ MVClip::MVClip(const PClip &vectors, int _nSCD1, int _nSCD2, IScriptEnvironment 
 	update_analysis_data (*pAnalyseFilter);
 
    // SCD thresholds
-   if ( pAnalyseFilter->IsChromaMotion() )
-      nSCD1 = _nSCD1 * (nBlkSizeX * nBlkSizeY) / (8 * 8) * (1 + yRatioUV) / yRatioUV;
+   if ( pAnalyseFilter->IsChromaMotion() ) 
+      nSCD1 = _nSCD1 * (nBlkSizeX * nBlkSizeY) / (8 * 8) * (1 + yRatioUV) / yRatioUV; // PFtodo where is xRatioUV used? (fixed to 2 by the comments in MvAnalyze.h )
    else
       nSCD1 = _nSCD1 * (nBlkSizeX * nBlkSizeY) / (8 * 8);
 
    nSCD2 = _nSCD2 * nBlkCount / 256;
 
    // FakeGroupOfPlane creation
-   FakeGroupOfPlanes::Create(nBlkSizeX, nBlkSizeY, nLvCount, nPel, nOverlapX, nOverlapY, yRatioUV, nBlkX, nBlkY);
+   FakeGroupOfPlanes::Create(nBlkSizeX, nBlkSizeY, nLvCount, nPel, nOverlapX, nOverlapY, yRatioUV, nBlkX, nBlkY);// todo xRatioUV?
 }
 
 MVClip::~MVClip()
@@ -113,7 +113,7 @@ void	MVClip::update_analysis_data (const MVAnalysisData &adata)
    nOverlapX   = adata.GetOverlapX();
    nOverlapY   = adata.GetOverlapY();
    pixelType   = adata.GetPixelType();
-   yRatioUV    = adata.GetYRatioUV();
+   yRatioUV    = adata.GetYRatioUV(); // PFtodo: GetXRatioUV
 //	sharp       = adata.GetSharp();
 //	usePelClip  = adata.UsePelClip();
 	nVPadding   = adata.GetVPadding();
