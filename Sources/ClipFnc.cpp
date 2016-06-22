@@ -174,7 +174,7 @@ int	ClipFnc::interpolate_thsad (int thsad1, int thsad2, int d, int tr)
 	assert (thsad2 >= 0);
 	assert (d >= 0);
 	assert (tr >= 0);
-	assert (d <= tr);
+	//assert (d <= tr); PF 
 
 	int			thsad = thsad1;
 
