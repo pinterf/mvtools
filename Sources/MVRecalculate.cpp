@@ -62,6 +62,8 @@ MVRecalculate::MVRecalculate (
 		);
 	}
 
+    pixelsize = vi.ComponentSize();
+
 	MVAnalysisData &	analysisData        = _srd_arr [0]._analysis_data;
    MVAnalysisData &	analysisDataDivided = _srd_arr [0]._analysis_data_divided;
 
@@ -100,18 +102,20 @@ MVRecalculate::MVRecalculate (
 	analysisData.nWidth    = pAnalyseFilter->GetWidth();
 	analysisData.nHeight   = pAnalyseFilter->GetHeight();
 	analysisData.pixelType = pAnalyseFilter->GetPixelType();
-	analysisData.yRatioUV  = (vi.IsYV12 ()) ? 2 : 1;
-	analysisData.xRatioUV  = 2;	// for YV12 and YUY2, really do not used and assumed to 2
+    analysisData.yRatioUV =  vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U)); // (vi.IsYV12()) ? 2 : 1; // todo
+    analysisData.xRatioUV = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U));  // 2;	// for YV12 and YUY2, really do not used and assumed to 2
+    analysisData.pixelsize = pixelsize;
+
 
 	pSrcGOF = new MVGroupOfFrames (
 		nSuperLevels, analysisData.nWidth, analysisData.nHeight,
 		nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV,
-		_isse, analysisData.yRatioUV, mt_flag
+		_isse, analysisData.xRatioUV, analysisData.yRatioUV, analysisData.pixelsize, mt_flag
 	);
 	pRefGOF = new MVGroupOfFrames (
 		nSuperLevels, analysisData.nWidth, analysisData.nHeight,
 		nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV,
-		_isse, analysisData.yRatioUV, mt_flag
+		_isse, analysisData.xRatioUV, analysisData.yRatioUV, analysisData.pixelsize, mt_flag
 	);
 	const int		nSuperWidth  = child->GetVideoInfo().width;
 	const int		nSuperHeight = child->GetVideoInfo().height;
@@ -153,7 +157,7 @@ MVRecalculate::MVRecalculate (
 		env->ThrowError ("MRecalculate: overlap must be less than block size");
 	}
 
-   if (_overlapx % 2 || (_overlapy % 2 > 0 && vi.IsYV12 ()))
+   if (_overlapx % 2 || (_overlapy % 2 > 0 && (analysisData.yRatioUV != 1) /*vi.IsYV12 ()*/))
 	{
 		env->ThrowError ("MRecalculate: overlap must be more even");
 	}
@@ -164,10 +168,10 @@ MVRecalculate::MVRecalculate (
 			"MRecalculate: Block sizes must be 8 or more for divide mode"
 		);
 	}
-   if (   _divide != 0
-	    && (   (_overlapx % 4                    )
-	        || (_overlapy % 4 > 0 && vi.IsYV12 ())
-	        || (_overlapy % 2 > 0 && vi.IsYUY2 ())))
+   if (   _divide != 0 // todo check here and others too
+	    && (   (_overlapx % 4 > 0 && (analysisData.xRatioUV != 1 || vi.IsYUY2())                   )
+	        || (_overlapy % 4 > 0 && (analysisData.yRatioUV != 1)/*vi.IsYV12 ()*/)
+	        || (_overlapy % 2 > 0 && vi.IsYUY2 ()))) // ? todo
 	{
 		env->ThrowError("MRecalculate: overlap must be more even for divide mode");
 	}
@@ -197,7 +201,7 @@ MVRecalculate::MVRecalculate (
    if (_dctmode != 0)
    {
 		_dct_factory_ptr = std::auto_ptr <DCTFactory> (
-			new DCTFactory (_dctmode, _isse, _blksizex, _blksizey, *env)
+			new DCTFactory (_dctmode, _isse, _blksizex, _blksizey, pixelsize, *env)
 		);
 		_dct_pool.set_factory (*_dct_factory_ptr);
    }
@@ -274,8 +278,10 @@ MVRecalculate::MVRecalculate (
 		analysisData.nOverlapY,
 		analysisData.nBlkX,
 		analysisData.nBlkY,
-		analysisData.yRatioUV,
-		divideExtra,
+		analysisData.xRatioUV,
+        analysisData.yRatioUV,
+        analysisData.pixelsize,
+        divideExtra,
 		(_dct_factory_ptr.get () != 0) ? &_dct_pool : 0,
 		_mt_flag
 	));
@@ -354,21 +360,22 @@ MVRecalculate::MVRecalculate (
 	}
 
 	// normalize threshold to block size
-	if (chroma)
+    // PF _thSAD is originally on 255 scale, for 16 bit we have to scale it.
+    thSAD = _thSAD;
+    if (pixelsize == 2)
+        thSAD = int(thSAD / 255.0 * 65535.0);
+    // luma only
+    thSAD =
+        thSAD
+        * (analysisData.nBlkSizeX * analysisData.nBlkSizeY)
+        / (8 * 8); 
+    if (chroma)
 	{
-		thSAD =
-			  _thSAD
-			* (analysisData.nBlkSizeX * analysisData.nBlkSizeY)
-			/ (8 * 8)
-			* (1 + analysisData.yRatioUV)
-			/      analysisData.yRatioUV;
-	}
-	else
-	{
-		thSAD =
-			  _thSAD
-			* (analysisData.nBlkSizeX * analysisData.nBlkSizeY)
-			/ (8 * 8);
+		/*thSAD = _thSAD * (analysisData.nBlkSizeX * analysisData.nBlkSizeY) / (8 * 8) 
+			* (1 + analysisData.yRatioUV) / analysisData.yRatioUV; // YUY,YV12 assumes xRatioUV=2
+          same as thSAD_orig + thSAD_orig/yRatioUV;
+        */
+        thSAD += thSAD / (analysisData.xRatioUV * analysisData.yRatioUV) * 2; // *2: two additional planes: UV
 	}
 }
 

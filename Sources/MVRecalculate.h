@@ -112,6 +112,8 @@ protected:
 	int            _nbr_srd;
 	bool           _mt_flag;
 
+    int pixelsize; // PF
+
 public :
 
 	MVRecalculate (

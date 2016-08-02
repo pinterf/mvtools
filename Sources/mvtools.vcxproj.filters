@@ -22,6 +22,9 @@
     <Filter Include="threading\conc">
       <UniqueIdentifier>{a0831445-0ff4-437b-bcbb-14c3f120ab27}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Include">
+      <UniqueIdentifier>{69c1474a-c1e7-45c1-8770-0a54c131107d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Documentation\mvtools2-rus.html">
@@ -405,7 +408,6 @@
     <ClInclude Include="AllocAlign.h" />
     <ClInclude Include="AllocAlign.hpp" />
     <ClInclude Include="AnaFlags.h" />
-    <ClInclude Include="avisynth.h" />
     <ClInclude Include="ClipFnc.h" />
     <ClInclude Include="commonfunctions.h" />
     <ClInclude Include="CopyCode.h" />
@@ -452,6 +454,30 @@
     <ClInclude Include="yuy2planes.h" />
     <ClInclude Include="conc\Interlocked.hpp" />
     <ClInclude Include="memcpy_amd.h" />
+    <ClInclude Include="include\avs\alignment.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\avs\capi.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\avs\config.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\avs\cpuid.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\avs\minmax.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\avs\types.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\avs\win.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\avisynth.h">
+      <Filter>Include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="cpu.h" />

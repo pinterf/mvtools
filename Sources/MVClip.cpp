@@ -59,15 +59,19 @@ MVClip::MVClip(const PClip &vectors, int _nSCD1, int _nSCD2, IScriptEnvironment 
 	update_analysis_data (*pAnalyseFilter);
 
    // SCD thresholds
-   if ( pAnalyseFilter->IsChromaMotion() ) 
-      nSCD1 = _nSCD1 * (nBlkSizeX * nBlkSizeY) / (8 * 8) * (1 + yRatioUV) / yRatioUV; // PFtodo where is xRatioUV used? (fixed to 2 by the comments in MvAnalyze.h )
-   else
-      nSCD1 = _nSCD1 * (nBlkSizeX * nBlkSizeY) / (8 * 8);
+    nSCD1 = _nSCD1;
+    if (pixelsize == 2)
+        nSCD1 = int(nSCD1 / 255.0 * 65535.0);
+    nSCD1 = _nSCD1 * (nBlkSizeX * nBlkSizeY) / (8 * 8);
+    if (pAnalyseFilter->IsChromaMotion())
+        nSCD1 += nSCD1 / (xRatioUV * yRatioUV) * 2; // *2: two additional planes: UV
 
    nSCD2 = _nSCD2 * nBlkCount / 256;
+   if (pixelsize == 2)
+       nSCD2 = int(nSCD2 / 255.0 * 65535.0); // todo: check if do we need it here?
 
    // FakeGroupOfPlane creation
-   FakeGroupOfPlanes::Create(nBlkSizeX, nBlkSizeY, nLvCount, nPel, nOverlapX, nOverlapY, yRatioUV, nBlkX, nBlkY);// todo xRatioUV?
+   FakeGroupOfPlanes::Create(nBlkSizeX, nBlkSizeY, nLvCount, nPel, nOverlapX, nOverlapY, xRatioUV, yRatioUV, nBlkX, nBlkY);// todo xRatioUV?
 }
 
 MVClip::~MVClip()

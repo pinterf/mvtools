@@ -37,10 +37,11 @@
 
 #include	<algorithm>
 #include	<stdexcept>
+#include <stdint.h>
 
 
 
-PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSizeY, int _nPel, int _nLevel, int _nFlags, int _nOverlapX, int _nOverlapY, int _yRatioUV, conc::ObjPool <DCTClass> *dct_pool_ptr, bool mt_flag)
+PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSizeY, int _nPel, int _nLevel, int _nFlags, int _nOverlapX, int _nOverlapY, int _xRatioUV, int _yRatioUV, int _pixelsize, conc::ObjPool <DCTClass> *dct_pool_ptr, bool mt_flag)
 :	nBlkX (_nBlkX)
 ,	nBlkY (_nBlkY)
 ,	nBlkSizeX (_nBlkSizeX)
@@ -53,8 +54,11 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
 ,	nFlags (_nFlags)
 ,	nOverlapX (_nOverlapX)
 ,	nOverlapY (_nOverlapY)
+,	xRatioUV (_xRatioUV) // PF
+,	nLogxRatioUV (ilog2 (_xRatioUV))
 ,	yRatioUV (_yRatioUV)
 ,	nLogyRatioUV (ilog2 (_yRatioUV))
+,   pixelsize (_pixelsize) // PF
 ,  _mt_flag (mt_flag)
 ,	SAD (0)
 ,	LUMA (0)
@@ -70,10 +74,10 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
 ,	chroma ((_nFlags & MOTION_USE_CHROMA_MOTION) != 0)
 ,	dctpitch (std::max (_nBlkSizeX, 16))
 ,	_dct_pool_ptr (dct_pool_ptr)
-,	verybigSAD (_nBlkSizeX * _nBlkSizeY * 256)
+,	verybigSAD (_nBlkSizeX * _nBlkSizeY * (1<<(_pixelsize << 3))) // * 256, pixelsize==2 -> 65536
 ,	freqArray ()
 ,	dctmode (0)
-,	_workarea_fact (nBlkSizeX, nBlkSizeY, dctpitch, nLogyRatioUV, yRatioUV)
+,	_workarea_fact (nBlkSizeX, nBlkSizeY, dctpitch, nLogxRatioUV, xRatioUV, nLogyRatioUV, yRatioUV, pixelsize)
 ,	_workarea_pool ()
 ,	_gvect_estim_ptr (0)
 ,	_gvect_result_count (0)
@@ -113,31 +117,69 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
 		BLITLUMA = Copy##blksizex##x##blksizey##_sse2; \
 		if (yRatioUV==2) \
 		{ \
-			BLITCHROMA = Copy##blksizex2##x##blksizey2##_sse2; \
-			SADCHROMA = Sad##blksizex2##x##blksizey2##_iSSE; \
+		    if (xRatioUV==2) \
+		    { \
+			    BLITCHROMA = Copy##blksizex2##x##blksizey2##_sse2; \
+			    SADCHROMA = Sad##blksizex2##x##blksizey2##_iSSE; \
+		    } \
+		    else \
+		    { \
+			    BLITCHROMA = Copy##blksizex##x##blksizey2##_sse2; \
+			    SADCHROMA = Sad##blksizex##x##blksizey2##_iSSE; \
+		    } \
 		} \
 		else \
 		{ \
-			BLITCHROMA = Copy##blksizex2##x##blksizey##_sse2; \
-			SADCHROMA = Sad##blksizex2##x##blksizey##_iSSE; \
+		    if (xRatioUV==2) \
+		    { \
+			    BLITCHROMA = Copy##blksizex2##x##blksizey##_sse2; \
+			    SADCHROMA = Sad##blksizex2##x##blksizey##_iSSE; \
+		    } \
+		    else \
+		    { \
+			    BLITCHROMA = Copy##blksizex##x##blksizey##_sse2; \
+			    SADCHROMA = Sad##blksizex##x##blksizey##_iSSE; \
+		    } \
 		} \
 	} while (false)
 
-#define SET_FUNCPTR_C(blksizex, blksizey, blksizex2, blksizey2)	do \
+// PF xRatioUV + pixel_t for C
+// Sad_C: SadFunction.cpp
+// Var_c: Variance.h   PF nowhere used!!!
+// Luma_c: Variance.h   PF nowhere used!!!
+// Copy_C: CopyCode
+
+#define SET_FUNCPTR_C(blksizex, blksizey, blksizex2, blksizey2, pixel_t)	do \
 	{ \
-		SAD = Sad_C<blksizex , blksizey>; \
-		VAR = Var_C<blksizex , blksizey>; \
-		LUMA = Luma_C<blksizex , blksizey>; \
-		BLITLUMA = Copy_C<blksizex , blksizey>; \
+		SAD = Sad_C<blksizex , blksizey, pixel_t>; \
+		VAR = Var_C<blksizex , blksizey, pixel_t>; \
+		LUMA = Luma_C<blksizex , blksizey, pixel_t>; \
+		BLITLUMA = Copy_C<blksizex , blksizey, pixel_t>; \
 		if (yRatioUV==2) \
 		{ \
-			BLITCHROMA = Copy_C<blksizex2 , blksizey2>; \
-			SADCHROMA = Sad_C<blksizex2 , blksizey2>; \
+		    if (xRatioUV==2) \
+		    { \
+			    BLITCHROMA = Copy_C<blksizex2 , blksizey2, pixel_t>; \
+			    SADCHROMA = Sad_C<blksizex2 , blksizey2, pixel_t>; \
+		    } \
+		    else \
+		    { \
+			    BLITCHROMA = Copy_C<blksizex , blksizey2, pixel_t>; \
+			    SADCHROMA = Sad_C<blksizex , blksizey2, pixel_t>; \
+    		} \
 		} \
 		else \
 		{ \
-			BLITCHROMA = Copy_C<blksizex2 , blksizey>; \
-			SADCHROMA = Sad_C<blksizex2  , blksizey>; \
+		    if (xRatioUV==2) \
+		    { \
+			    BLITCHROMA = Copy_C<blksizex2 , blksizey, pixel_t>; \
+			    SADCHROMA = Sad_C<blksizex2  , blksizey, pixel_t>; \
+		    } \
+		    else \
+		    { \
+			    BLITCHROMA = Copy_C<blksizex , blksizey, pixel_t>; \
+			    SADCHROMA = Sad_C<blksizex  , blksizey, pixel_t>; \
+    		} \
 		} \
 	} while (false)
 
@@ -205,7 +247,7 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
 
 	SATD = SadDummy; //for now disable SATD if default functions are used
 
-	if ( isse )
+	if ( (pixelsize==1) && isse ) // PF
 	{
 		switch (nBlkSizeX)
 		{
@@ -225,17 +267,22 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
 			else if (nBlkSizeY==1)
 			{
 				SAD = Sad16x1_iSSE;
-				VAR = Var_C<16,1>;
-				LUMA = Luma_C<16,1>;
-				BLITLUMA = Copy_C<16,1>;
+				VAR = Var_C<16,1, uint8_t>;
+				LUMA = Luma_C<16,1, uint8_t>;
+				BLITLUMA = Copy_C<16,1, uint8_t>;
 				if (yRatioUV==2)
 				{
 					//error
 				}
 				else	// yRatioUV==1
 				{
-					BLITCHROMA = Copy8x1_sse2;
-					SADCHROMA = Sad8x1_iSSE;
+					if(xRatioUV==2) { // PF
+                        BLITCHROMA = Copy8x1_sse2;
+                        SADCHROMA = Sad8x1_iSSE;
+                    } else {
+                        BLITCHROMA = Copy_C<16,1, uint8_t>;
+                        SADCHROMA = Sad16x1_iSSE;
+                    }
 				}
 			}
 			break;
@@ -275,48 +322,74 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
 
 	else
 	{
+        // pixelsize==2 or not isse
 		switch (nBlkSizeX)
 		{
 		case 16:
 			if (nBlkSizeY==16)
 			{
-				SET_FUNCPTR_C(16, 16, 8, 8);
-			}
+				if(pixelsize==1)
+                    SET_FUNCPTR_C(16, 16, 8, 8, uint8_t);
+                else
+                    SET_FUNCPTR_C(16, 16, 8, 8, uint16_t);
+            }
 			else if (nBlkSizeY==8)
 			{
-				SET_FUNCPTR_C(16, 8, 8, 4);
-			}
+                if(pixelsize==1)
+                    SET_FUNCPTR_C(16, 8, 8, 4, uint8_t);
+                else
+                    SET_FUNCPTR_C(16, 8, 8, 4, uint16_t);
+            }
 			else if (nBlkSizeY==2)
 			{
-				SET_FUNCPTR_C(16, 2, 8, 1);
-			}
+                if(pixelsize==1)
+                    SET_FUNCPTR_C(16, 2, 8, 1, uint8_t);
+                else
+                    SET_FUNCPTR_C(16, 2, 8, 1, uint16_t);
+            }
 			break;
 		case 4:
-			SET_FUNCPTR_C(4, 4, 2, 2);
-			break;
+            if(pixelsize==1)
+                SET_FUNCPTR_C(4, 4, 2, 2, uint8_t);
+            else
+                SET_FUNCPTR_C(4, 4, 2, 2, uint16_t);
+            break;
 		case 32:
 			if (nBlkSizeY==16)
 			{
-				SET_FUNCPTR_C(32, 16, 16, 8);
-			}
+                if(pixelsize==1)
+                    SET_FUNCPTR_C(32, 16, 16, 8, uint8_t);
+                else
+                    SET_FUNCPTR_C(32, 16, 16, 8, uint16_t);
+            }
 			else if (nBlkSizeY==32)
 			{
-				SET_FUNCPTR_C(32, 32, 16, 16);
-			}
+                if(pixelsize==1)
+                    SET_FUNCPTR_C(32, 32, 16, 16, uint8_t);
+                else
+                    SET_FUNCPTR_C(32, 32, 16, 16, uint16_t);
+            }
 			break;
 		case 8:
 		default:
 			if (nBlkSizeY==8)
 			{
-				SET_FUNCPTR_C(8, 8, 4, 4);
-			}
+                if(pixelsize==1)
+                    SET_FUNCPTR_C(8, 8, 4, 4, uint8_t);
+                else
+                    SET_FUNCPTR_C(8, 8, 4, 4, uint16_t);
+            }
 			else if (nBlkSizeY==4)
 			{
-				SET_FUNCPTR_C(8, 4, 4, 2);
-			}
+                if(pixelsize==1)
+                    SET_FUNCPTR_C(8, 4, 4, 2, uint8_t);
+                else
+                    SET_FUNCPTR_C(8, 4, 4, 2, uint16_t);
+            }
 		}
 	}
 
+#if 0
 	if (0&&mmxext) //use new functions from x264
 	{
 		switch (nBlkSizeX)
@@ -438,6 +511,7 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
 			}
 		}//end switch
 	}
+#endif // if 0
 
 	if ( !chroma )
 	{
@@ -2650,19 +2724,47 @@ void	PlaneOfBlocks::recalculate_mv_slice (Slicer::TaskData &td)
 
 
 
-PlaneOfBlocks::WorkingArea::WorkingArea (int nBlkSizeX, int nBlkSizeY, int dctpitch, int nLogyRatioUV, int yRatioUV)
+PlaneOfBlocks::WorkingArea::WorkingArea (int nBlkSizeX, int nBlkSizeY, int dctpitch, int nLogxRatioUV, int xRatioUV, int nLogyRatioUV, int yRatioUV, int pixelsize)
 :	dctSrc (nBlkSizeY*dctpitch)
 ,	dctRef (nBlkSizeY*dctpitch)
 ,	DCT (0)
 {
 #if (ALIGN_SOURCEBLOCK > 1)
-	int blocksize=nBlkSizeX*nBlkSizeY;
-	int sizeAlignedBlock=blocksize+(ALIGN_SOURCEBLOCK-(blocksize%ALIGN_SOURCEBLOCK))+2*((blocksize/2)>>nLogyRatioUV)+(ALIGN_SOURCEBLOCK-(((blocksize/2)/yRatioUV)%ALIGN_SOURCEBLOCK));
-	pSrc_temp_base.resize (sizeAlignedBlock);
+	int blocksize = nBlkSizeX*nBlkSizeY*pixelsize; // for memory allocation pixelsize needed
+    int UVblocksize = blocksize >> (nLogxRatioUV + nLogyRatioUV); // >> nx >> ny
+	int sizeAlignedBlock=blocksize+(ALIGN_SOURCEBLOCK-(blocksize%ALIGN_SOURCEBLOCK))+
+                         2*UVblocksize+(ALIGN_SOURCEBLOCK-(UVblocksize%ALIGN_SOURCEBLOCK));
+   // int sizeAlignedBlock=blocksize+(ALIGN_SOURCEBLOCK-(blocksize%ALIGN_SOURCEBLOCK))+
+   //                         2*((blocksize/2)>>nLogyRatioUV)+(ALIGN_SOURCEBLOCK-(((blocksize/2)/yRatioUV)%ALIGN_SOURCEBLOCK)); // why >>Logy then /y?
+    pSrc_temp_base.resize (sizeAlignedBlock);
 	pSrc_temp[0]=&pSrc_temp_base [0];
 	pSrc_temp[1]=(uint8_t *)((((uintptr_t)pSrc_temp[0]) + blocksize + ALIGN_SOURCEBLOCK - 1)&(~(ALIGN_SOURCEBLOCK - 1)));
-	pSrc_temp[2]=(uint8_t *)(((((uintptr_t)pSrc_temp[1]) + ((blocksize/2)>>nLogyRatioUV) + ALIGN_SOURCEBLOCK - 1)&(~(ALIGN_SOURCEBLOCK - 1))));
+	pSrc_temp[2]=(uint8_t *)(((((uintptr_t)pSrc_temp[1]) + UVblocksize + ALIGN_SOURCEBLOCK - 1)&(~(ALIGN_SOURCEBLOCK - 1))));
 #endif	// ALIGN_SOURCEBLOCK
+    /* VS
+#ifdef ALIGN_SOURCEBLOCK
+    dctpitch = max(nBlkSizeX, 16) * bytesPerSample;
+    dctSrc_base = new uint8_t[nBlkSizeY*dctpitch+ALIGN_PLANES-1];
+    dctRef_base = new uint8_t[nBlkSizeY*dctpitch+ALIGN_PLANES-1];
+    dctSrc = (uint8_t *)(((((intptr_t)dctSrc_base) + ALIGN_PLANES - 1)&(~(ALIGN_PLANES - 1))));//aligned like this means, that it will have optimum fit in the cache
+    dctRef = (uint8_t *)(((((intptr_t)dctRef_base) + ALIGN_PLANES - 1)&(~(ALIGN_PLANES - 1))));
+
+    int blocksize = nBlkSizeX * nBlkSizeY * bytesPerSample;
+    int blocksizeUV = blocksize >> (nLogxRatioUV + nLogyRatioUV);
+    int sizeAlignedBlock = blocksize + (ALIGN_SOURCEBLOCK - (blocksize % ALIGN_SOURCEBLOCK))
+        + 2 * blocksizeUV + (ALIGN_SOURCEBLOCK - (blocksizeUV % ALIGN_SOURCEBLOCK));
+
+    pSrc_temp_base = new uint8_t[sizeAlignedBlock + ALIGN_PLANES - 1];
+    pSrc_temp[0] = (uint8_t *)(((intptr_t)pSrc_temp_base + ALIGN_PLANES - 1) & (~(ALIGN_PLANES - 1)));
+    pSrc_temp[1] = (uint8_t *)(((intptr_t)pSrc_temp[0] + blocksize + ALIGN_SOURCEBLOCK - 1) & (~(ALIGN_SOURCEBLOCK - 1)));
+    pSrc_temp[2] = (uint8_t *)(((intptr_t)pSrc_temp[1] + blocksizeUV + ALIGN_SOURCEBLOCK - 1) & (~(ALIGN_SOURCEBLOCK - 1)));
+#else
+    dctpitch = max(nBlkSizeX, 16) * bytesPerSample;
+    dctSrc = new uint8_t[nBlkSizeY*dctpitch];
+    dctRef = new uint8_t[nBlkSizeY*dctpitch];
+#endif
+*/
+
 }
 
 
@@ -2701,26 +2803,32 @@ int	PlaneOfBlocks::WorkingArea::MotionDistorsion (int vx, int vy) const
 
 
 
-PlaneOfBlocks::WorkingAreaFactory::WorkingAreaFactory (int nBlkSizeX, int nBlkSizeY, int dctpitch, int nLogyRatioUV, int yRatioUV)
+PlaneOfBlocks::WorkingAreaFactory::WorkingAreaFactory (int nBlkSizeX, int nBlkSizeY, int dctpitch, int nLogxRatioUV, int xRatioUV, int nLogyRatioUV, int yRatioUV, int pixelsize)
 :	_blk_size_x (nBlkSizeX)
 ,	_blk_size_y (nBlkSizeY)
 ,	_dctpitch (dctpitch)
+,	_x_ratio_uv_log (nLogxRatioUV)
+,	_x_ratio_uv (xRatioUV)
 ,	_y_ratio_uv_log (nLogyRatioUV)
 ,	_y_ratio_uv (yRatioUV)
+,	_pixelsize (pixelsize)
 {
 	// Nothing
 }
 
 
 
-PlaneOfBlocks::WorkingArea *	PlaneOfBlocks::WorkingAreaFactory::do_create ()
+PlaneOfBlocks::WorkingArea *PlaneOfBlocks::WorkingAreaFactory::do_create ()
 {
 	return (new WorkingArea (
 		_blk_size_x,
 		_blk_size_y,
 		_dctpitch,
-		_y_ratio_uv_log,
-		_y_ratio_uv
+        _x_ratio_uv_log,
+        _x_ratio_uv,
+        _y_ratio_uv_log,
+		_y_ratio_uv,
+        _pixelsize
 	));
 }
 

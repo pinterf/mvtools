@@ -36,25 +36,25 @@ typedef unsigned int (SADFunction)(const uint8_t *pSrc, int nSrcPitch,
 inline unsigned int SADABS(int x) {	return ( x < 0 ) ? -x : x; }
 //inline unsigned int SADABS(int x) {	return ( x < -16 ) ? 16 : ( x < 0 ) ? -x : ( x > 16) ? 16 : x; }
 
-template<int nBlkWidth, int nBlkHeight>
+template<int nBlkWidth, int nBlkHeight, typename pixel_t>
 unsigned int Sad_C(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef,
 					     int nRefPitch)
 {
-	unsigned int sum = 0;
+	unsigned int sum = 0; // int is probably enough for 32x32
 	for ( int y = 0; y < nBlkHeight; y++ )
 	{
 		for ( int x = 0; x < nBlkWidth; x++ )
-			sum += SADABS(pSrc[x] - pRef[x]);
+			sum += SADABS(reinterpret_cast<const pixel_t *>(pSrc)[x] - reinterpret_cast<const pixel_t *>(pRef)[x]);
       pSrc += nSrcPitch;
       pRef += nRefPitch;
 	}
 	return sum;
 }
-template<int nBlkSize>
+template<int nBlkSize, typename pixel_t>
 unsigned int Sad_C(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef,
                     int nRefPitch)
 {
-   return Sad_C<nBlkSize, nBlkSize>(pSrc, pRef, nSrcPitch, nRefPitch);
+   return Sad_C<nBlkSize, nBlkSize, pixel_t>(pSrc, pRef, nSrcPitch, nRefPitch);
 }
 // a litle more fast unrolled (Fizick)
 /* //seems to be dead code (TSchniede)

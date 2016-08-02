@@ -55,7 +55,7 @@ public :
 
 	typedef	MTSlicer <PlaneOfBlocks>	Slicer;
 
-	PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSizeY, int _nPel, int _nLevel, int _nFlags, int _nOverlapX, int _nOverlapY, int _yRatioUV, conc::ObjPool <DCTClass> *dct_pool_ptr, bool mt_flag);
+	PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSizeY, int _nPel, int _nLevel, int _nFlags, int _nOverlapX, int _nOverlapY, int _xRatioUV, int _yRatioUV, int _pixelsize, conc::ObjPool <DCTClass> *dct_pool_ptr, bool mt_flag);
 
 	~PlaneOfBlocks();
 
@@ -101,9 +101,12 @@ private:
    int            nFlags;           /* additionnal flags */
    const int      nOverlapX;        // overlap size
    const int      nOverlapY;        // overlap size
-	const int      yRatioUV;
-	const int      nLogyRatioUV;     // log of yRatioUV (0 for 1 and 1 for 2)
-	const bool     _mt_flag;         // Allows multithreading
+	const int      xRatioUV;        // PF
+	const int      nLogxRatioUV;     // log of xRatioUV (0 for 1 and 1 for 2)
+    const int      yRatioUV;
+    const int      nLogyRatioUV;     // log of yRatioUV (0 for 1 and 1 for 2)
+    const int      pixelsize; // PF
+    const bool     _mt_flag;         // Allows multithreading
 
 	SADFunction *  SAD;              /* function which computes the sad */
    LUMAFunction * LUMA;             /* function which computes the mean luma */
@@ -231,7 +234,7 @@ private:
 		uint8_t* pSrc_temp[3];      //for easy WRITE access to temp block
 #endif	// ALIGN_SOURCEBLOCK
 
-							WorkingArea (int nBlkSizeX, int nBlkSizeY, int dctpitch, int nLogyRatioUV, int yRatioUV);
+							WorkingArea (int nBlkSizeX, int nBlkSizeY, int dctpitch, int nLogxRatioUV, int xRatioUV, int nLogyRatioUV, int yRatioUV, int pixelsize);
 		virtual			~WorkingArea ();
 
 		inline bool IsVectorOK(int vx, int vy) const;
@@ -242,7 +245,7 @@ private:
 	:	public conc::ObjFactoryInterface <WorkingArea>
 	{
 	public:
-							WorkingAreaFactory (int nBlkSizeX, int nBlkSizeY, int dctpitch, int nLogyRatioUV, int yRatioUV);
+							WorkingAreaFactory (int nBlkSizeX, int nBlkSizeY, int dctpitch, int nLogxRatioUV, int xRatioUV, int nLogyRatioUV, int yRatioUV, int pixelsize);
 	protected:
 		// conc::ObjFactoryInterface
 		virtual WorkingArea *
@@ -251,8 +254,11 @@ private:
 		int				_blk_size_x;
 		int				_blk_size_y;
 		int				_dctpitch;
-		int				_y_ratio_uv_log;
+        int				_x_ratio_uv_log; // PF
+        int				_x_ratio_uv; // PF
+        int				_y_ratio_uv_log;
 		int				_y_ratio_uv;
+        int _pixelsize; // PF
 	};
 
 	typedef	conc::ObjPool <WorkingArea>	WorkingAreaPool;

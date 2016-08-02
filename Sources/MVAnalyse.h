@@ -96,6 +96,8 @@ protected:
 	const bool     _temporal_flag;
 	const bool     _mt_flag;
 
+    int pixelsize; // PF
+
 	FILE *outfile;
 	short * outfilebuf;
 

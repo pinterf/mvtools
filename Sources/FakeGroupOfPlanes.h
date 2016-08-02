@@ -36,7 +36,8 @@ class FakeGroupOfPlanes
    int nWidth_B;
    int nHeight_B;
 //   int nOverlap;
-   int yRatioUV_B; // PFtodo: xRatioUV_B
+   int xRatioUV_B; // PF
+   int yRatioUV_B; 
 	FakePlaneOfBlocks **planes;
 //   const unsigned char *compensatedPlane;
 //   const unsigned char *compensatedPlaneU;
@@ -48,8 +49,8 @@ public :
    FakeGroupOfPlanes();
 //	FakeGroupOfPlanes(int w, int h, int size, int lv, int pel);
 	~FakeGroupOfPlanes();
-
-   void Create(int _nBlkSizeX, int _nBlkSizeY, int _nLevelCount, int _nPel, int _nOverlapX, int _nOverlapY, int _yRatioUV, int _nBlkX, int _nBlkY); // PFtodo: xRatioUV
+    // we need for _xRatioUV, but _yRatioUV is not used
+   void Create(int _nBlkSizeX, int _nBlkSizeY, int _nLevelCount, int _nPel, int _nOverlapX, int _nOverlapY, int _xRatioUV, int _yRatioUV, int _nBlkX, int _nBlkY); 
 
 	bool Update(const int *array, int data_size);
 	bool IsSceneChange(int nThSCD1, int nThSCD2) const;
@@ -64,7 +65,7 @@ public :
 //   inline const unsigned char *GetCompensatedPlaneU() const { return compensatedPlaneU; }
 //   inline const unsigned char *GetCompensatedPlaneV() const { return compensatedPlaneV; }
    inline int GetPitch() const { return nWidth_B; }
-   inline int GetPitchUV() const { return nWidth_B / 2; } // PFtodo: YV12 and YUY2 specific
+   inline int GetPitchUV() const { return nWidth_B / xRatioUV_B; } // PFtodo: YV12 and YUY2 specific
 
 	inline const FakePlaneOfBlocks& GetPlane(int i) const { return *(planes[i]); }
 };

@@ -48,6 +48,8 @@ public:
 	Padding(PClip _child, int hPad, int vPad, bool _planar, IScriptEnvironment* env);
 	~Padding();
 	PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
+    
+    template<typename pixel_t>
 	static void PadReferenceFrame(unsigned char *frame, int pitch, int hPad, int vPad, int width, int height);
 
 };

@@ -67,7 +67,9 @@ protected:
    int nOverlapY;
 
    int pixelType;
+   int xRatioUV; // PF
    int yRatioUV;
+   int pixelsize; // PF
 
    /*! \brief Filter's name */
 //   std::string name;

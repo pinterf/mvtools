@@ -21,8 +21,8 @@
 inline unsigned int VARABS(int x) { return x < 0 ? -x : x; }
 
 typedef unsigned int (VARFunction)(const unsigned char *pSrc, int nSrcPitch, int *pLuma);
-
-template<int nBlkWidth, int nBlkHeight>
+// PF: nowhere used
+template<int nBlkWidth, int nBlkHeight, typename pixel_t>
 unsigned int Var_C(const unsigned char *pSrc, int nSrcPitch, int *pLuma)
 {
    const unsigned char *s = pSrc;
@@ -31,7 +31,7 @@ unsigned int Var_C(const unsigned char *pSrc, int nSrcPitch, int *pLuma)
    for ( int j = 0; j < nBlkHeight; j++ )
    {
       for ( int i = 0; i < nBlkWidth; i++ )
-         meanLuma += s[i];
+         meanLuma += reinterpret_cast<const pixel_t *>(s)[i];
       s += nSrcPitch;
    }
    *pLuma = meanLuma;
@@ -40,16 +40,16 @@ unsigned int Var_C(const unsigned char *pSrc, int nSrcPitch, int *pLuma)
    for ( int j = 0; j < nBlkHeight; j++ )
    {
       for ( int i = 0; i < nBlkWidth; i++ )
-         meanVariance += VARABS(s[i] - meanLuma);
+         meanVariance += VARABS(reinterpret_cast<const pixel_t *>(s)[i] - meanLuma);
       s += nSrcPitch;
    }
    return meanVariance;
 }
 
-template<int nBlkSize>
+template<int nBlkSize, typename pixel_t>
 unsigned int Var_C(const unsigned char *pSrc, int nSrcPitch, int *pLuma)
 {
-   return Var_C<nBlkSize, nBlkSize>(pSrc, nSrcPitch, pLuma);
+   return Var_C<nBlkSize, nBlkSize, pixel_t>(pSrc, nSrcPitch, pLuma);
 }
 
 extern "C" unsigned int __cdecl Var32x32_sse2(const unsigned char *pSrc, int nSrcPitch, int *pLuma);
@@ -64,7 +64,8 @@ extern "C" unsigned int __cdecl Var16x2_sse2(const unsigned char *pSrc, int nSrc
 
 typedef unsigned int (LUMAFunction)(const unsigned char *pSrc, int nSrcPitch);
 
-template<int nBlkWidth, int nBlkHeight>
+// PF: nowhere used
+template<int nBlkWidth, int nBlkHeight, typename pixel_t>
 unsigned int Luma_C(const unsigned char *pSrc, int nSrcPitch)
 {
    const unsigned char *s = pSrc;
@@ -72,16 +73,16 @@ unsigned int Luma_C(const unsigned char *pSrc, int nSrcPitch)
    for ( int j = 0; j < nBlkHeight; j++ )
    {
       for ( int i = 0; i < nBlkWidth; i++ )
-         meanLuma += s[i];
+         meanLuma += reinterpret_cast<const pixel_t *>(s)[i];
       s += nSrcPitch;
    }
    return meanLuma;
 }
 
-template<int nBlkSize>
+template<int nBlkSize, typename pixel_t>
 unsigned int Luma_C(const unsigned char *pSrc, int nSrcPitch)
 {
-   return Luma_C<nBlkSize, nBlkSize>(pSrc, nSrcPitch);
+   return Luma_C<nBlkSize, nBlkSize, pixel_t>(pSrc, nSrcPitch);
 }
 
 extern "C" unsigned int __cdecl Luma32x32_sse2(const unsigned char *pSrc, int nSrcPitch);

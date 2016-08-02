@@ -1567,12 +1567,13 @@ static unsigned short font[][20] = {
 	}
 };
 
+/*
 #ifndef Pixel32
 
 typedef unsigned long Pixel32;
 
 #endif
-
+*/
 void DrawDigit(::PVideoFrame &dst, int x, int y, int num) 
 {
 	int tx, ty;

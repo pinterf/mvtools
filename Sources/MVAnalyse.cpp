@@ -63,12 +63,20 @@ MVAnalyse::MVAnalyse (
 		);
 	}
 
+    pixelsize = vi.ComponentSize(); // PF
+
 	MVAnalysisData &	analysisData        = _srd_arr [0]._analysis_data;
 	MVAnalysisData &	analysisDataDivided = _srd_arr [0]._analysis_data_divided;
 
-	if (! vi.IsYV12 () && ! vi.IsYUY2 ())
+    if (pixelsize==4) 
+    {
+        env->ThrowError ("MAnalyse: Clip with float pixel type is not supported");
+    }
+
+    if (!vi.IsYUV() && !vi.IsYUY2 ()) // YUY2 is also YUV but let's see what is supported
+//if (! vi.IsYV12 () && ! vi.IsYUY2 ())
 	{
-		env->ThrowError ("MAnalyse: Clip must be YV12 or YUY2");
+		env->ThrowError ("MAnalyse: Clip must be YUV or YUY2");
 	}
 
 	// get parameters of super clip - v2.0
@@ -97,19 +105,20 @@ MVAnalyse::MVAnalyse (
 	analysisData.nWidth    = vi.width - nSuperHPad * 2;
 	analysisData.nHeight   = nHeight;
 	analysisData.pixelType = vi.pixel_type;
-	analysisData.yRatioUV  = (vi.IsYV12 ()) ? 2 : 1; // PF todo YV12 specific!
-	analysisData.xRatioUV  = 2;	// for YV12 and YUY2, really do not used and assumed to 2
+    analysisData.yRatioUV = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U)); // (vi.IsYV12()) ? 2 : 1; // PF todo YV12 specific!
+	analysisData.xRatioUV  = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U));;// for YV12 and YUY2, really do not used and assumed to 2
+    analysisData.pixelsize = pixelsize;
 
 //	env->ThrowError ("MVAnalyse: %d, %d, %d, %d, %d", nPrepHPad, nPrepVPad, nPrepPel, nPrepModeYUV, nPrepLevels);
 	pSrcGOF = new MVGroupOfFrames (
 		nSuperLevels, analysisData.nWidth, analysisData.nHeight,
 		nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV,
-		_isse, analysisData.yRatioUV, mt_flag
+		_isse, analysisData.xRatioUV, analysisData.yRatioUV, pixelsize, mt_flag
 	);
 	pRefGOF = new MVGroupOfFrames (
 		nSuperLevels, analysisData.nWidth, analysisData.nHeight,
 		nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV,
-		_isse, analysisData.yRatioUV, mt_flag
+		_isse, analysisData.xRatioUV, analysisData.yRatioUV, pixelsize,  mt_flag
 	);
 
 	analysisData.nBlkSizeX = _blksizex;
@@ -164,7 +173,7 @@ MVAnalyse::MVAnalyse (
    if (   _divide != 0
 	    && (   (_overlapx % 4                    )
 	        || (_overlapy % 4 > 0 && vi.IsYV12 ())
-	        || (_overlapy % 2 > 0 && vi.IsYUY2 ())))
+	        || (_overlapy % 2 > 0 && vi.IsYUY2 ()))) // todo check
 	{
 		env->ThrowError("MAnalyse: overlap must be more even for divide mode");
 	}
@@ -236,7 +245,7 @@ MVAnalyse::MVAnalyse (
    if (_dctmode != 0)
    {
 		_dct_factory_ptr = std::auto_ptr <DCTFactory> (
-			new DCTFactory (_dctmode, _isse, _blksizex, _blksizey, *env)
+			new DCTFactory (_dctmode, _isse, _blksizex, _blksizey, pixelsize, *env)
 		);
 		_dct_pool.set_factory (*_dct_factory_ptr);
    }
@@ -323,18 +332,20 @@ MVAnalyse::MVAnalyse (
 		);
 	}
 
-	_vectorfields_aptr = std::auto_ptr <GroupOfPlanes> (new GroupOfPlanes (
-		analysisData.nBlkSizeX,
-		analysisData.nBlkSizeY,
-		analysisData.nLvCount,
-		analysisData.nPel,
-		analysisData.nFlags,
-		analysisData.nOverlapX,
-		analysisData.nOverlapY,
-		analysisData.nBlkX,
-		analysisData.nBlkY,
-		analysisData.yRatioUV,
-		divideExtra,
+    _vectorfields_aptr = std::auto_ptr <GroupOfPlanes>(new GroupOfPlanes(
+        analysisData.nBlkSizeX,
+        analysisData.nBlkSizeY,
+        analysisData.nLvCount,
+        analysisData.nPel,
+        analysisData.nFlags,
+        analysisData.nOverlapX,
+        analysisData.nOverlapY,
+        analysisData.nBlkX,
+        analysisData.nBlkY,
+        analysisData.yRatioUV,
+        analysisData.xRatioUV, // PF
+        analysisData.pixelsize, // PF
+        divideExtra,
 		(_dct_factory_ptr.get () != 0) ? &_dct_pool : 0,
 		_mt_flag
 	));

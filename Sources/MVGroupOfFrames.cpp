@@ -31,7 +31,7 @@
 
 
 
-MVGroupOfFrames::MVGroupOfFrames(int _nLevelCount, int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, int nMode, bool isse, int _yRatioUV, bool mt_flag)
+MVGroupOfFrames::MVGroupOfFrames(int _nLevelCount, int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, int nMode, bool isse, int _xRatioUV, int _yRatioUV, int _pixelsize, bool mt_flag)
 :	nLevelCount (_nLevelCount)
 ,	pFrames (new MVFrame* [_nLevelCount])
 ,	nWidth (_nWidth)
@@ -39,15 +39,17 @@ MVGroupOfFrames::MVGroupOfFrames(int _nLevelCount, int _nWidth, int _nHeight, in
 ,	nPel (_nPel)
 ,	nHPad (_nHPad)
 ,	nVPad (_nVPad)
+,	xRatioUV (_xRatioUV)
 ,	yRatioUV (_yRatioUV)
+,   pixelsize(_pixelsize)
 {
 
-   pFrames[0] = new MVFrame(nWidth, nHeight, nPel, nHPad, nVPad, nMode, isse, yRatioUV, mt_flag);
+   pFrames[0] = new MVFrame(nWidth, nHeight, nPel, nHPad, nVPad, nMode, isse, xRatioUV, yRatioUV, pixelsize, mt_flag);
    for ( int i = 1; i < nLevelCount; i++ )
    {
-      int nWidthi = PlaneWidthLuma(nWidth, i, 2, nHPad);//(nWidthi / 2) - ((nWidthi / 2) % 2); //  even for YV12, YUY2
+      int nWidthi = PlaneWidthLuma(nWidth, i, xRatioUV /*PF instead of 2*/, nHPad);//(nWidthi / 2) - ((nWidthi / 2) % 2); //  even for YV12, YUY2
       int nHeighti = PlaneHeightLuma(nHeight, i, yRatioUV, nVPad);//(nHeighti / 2) - ((nHeighti / 2) % yRatioUV); // even for YV12
-      pFrames[i] = new MVFrame(nWidthi, nHeighti, 1, nHPad, nVPad, nMode, isse, yRatioUV, mt_flag);
+      pFrames[i] = new MVFrame(nWidthi, nHeighti, 1, nHPad, nVPad, nMode, isse, xRatioUV, yRatioUV, pixelsize, mt_flag);
    }
 }
 
@@ -55,7 +57,7 @@ void MVGroupOfFrames::Update(int nMode, uint8_t * pSrcY, int pitchY, uint8_t * p
 {
 	for ( int i = 0; i < nLevelCount; i++ )
 	{
-		unsigned int offY = PlaneSuperOffset(false, nHeight, i, nPel, nVPad, pitchY, yRatioUV);
+		unsigned int offY = PlaneSuperOffset(false, nHeight, i, nPel, nVPad, pitchY, yRatioUV); // no need here xRatioUV and pixelsize
 		unsigned int offU = PlaneSuperOffset(true, nHeight/yRatioUV, i, nPel, nVPad/yRatioUV, pitchU, yRatioUV);
 		unsigned int offV = PlaneSuperOffset(true, nHeight/yRatioUV, i, nPel, nVPad/yRatioUV, pitchV, yRatioUV);
 		pFrames[i]->Update (nMode, pSrcY+offY, pitchY, pSrcU+offU, pitchU, pSrcV+offV, pitchV);

@@ -295,6 +295,7 @@ MDegrainN::MDegrainN (
 ,	_lsb_flag (lsb_flag)
 ,	_mt_flag (mt_flag)
 ,	_height_lsb_mul ((lsb_flag) ? 2 : 1)
+,	_xratiouv_log ((xRatioUV == 2) ? 1 : 0)
 ,	_yratiouv_log ((yRatioUV == 2) ? 1 : 0)
 ,	_nsupermodeyuv (-1)
 ,	_dst_planes (0)
@@ -355,6 +356,10 @@ MDegrainN::MDegrainN (
 
 	const ::VideoInfo &	vi_super = _super->GetVideoInfo ();
 
+    pixelsize = vi.ComponentSize(); // of MVFilter
+    pixelsize_super = vi_super.ComponentSize();
+
+
 	// get parameters of prepared super clip - v2.0
 	SuperParams64Bits params;
 	memcpy (&params, &vi_super.num_audio_samples, 8);
@@ -378,7 +383,9 @@ MDegrainN::MDegrainN (
 			nSuperVPad,
 			_nsupermodeyuv,
 			_isse_flag,
-			yRatioUV,
+            xRatioUV,
+            yRatioUV,
+            pixelsize, // or pixelsize_super or all the same?
 			mt_flag
 		));
 
@@ -418,8 +425,8 @@ MDegrainN::MDegrainN (
 			new OverlapWindows (nBlkSizeX, nBlkSizeY, nOverlapX, nOverlapY)
 		);
 		_overwins_uv = std::auto_ptr <OverlapWindows> (new OverlapWindows (
-			nBlkSizeX / 2, nBlkSizeY >> _yratiouv_log,
-			nOverlapX / 2, nOverlapY >> _yratiouv_log
+			nBlkSizeX >> _xratiouv_log, nBlkSizeY >> _yratiouv_log, // PF 2->xratiouv
+			nOverlapX >> _xratiouv_log, nOverlapY >> _yratiouv_log
 		));
 		if (_lsb_flag)
 		{
@@ -427,7 +434,7 @@ MDegrainN::MDegrainN (
 		}
 		else
 		{
-			_dst_short.resize (_dst_short_pitch * nHeight);
+			_dst_short.resize (_dst_short_pitch * nHeight); // todo pixelsize==2
 		}
    }
 	if (nOverlapY > 0)
@@ -435,161 +442,396 @@ MDegrainN::MDegrainN (
 		_boundary_cnt_arr.resize (nBlkY);
 	}
 
-	switch (nBlkSizeX)
-	{
-	case 32:
-		if (nBlkSizeY==16) {					_oversluma_lsb_ptr   = OverlapsLsb_C<32,16>; 
-			if (yRatioUV==2) {				_overschroma_lsb_ptr = OverlapsLsb_C<16,8>;  }
-			else {								_overschroma_lsb_ptr = OverlapsLsb_C<16,16>; }
-		} else if (nBlkSizeY==32) {		_oversluma_lsb_ptr   = OverlapsLsb_C<32,32>;
-			if (yRatioUV==2) {				_overschroma_lsb_ptr = OverlapsLsb_C<16,16>; }
-			else {								_overschroma_lsb_ptr = OverlapsLsb_C<16,32>; }
-		} break;
-	case 16:
-		if (nBlkSizeY==16) {					_oversluma_lsb_ptr   = OverlapsLsb_C<16,16>; 
-			if (yRatioUV==2) {				_overschroma_lsb_ptr = OverlapsLsb_C<8,8>;   }
-			else {								_overschroma_lsb_ptr = OverlapsLsb_C<8,16>;  }
-		} else if (nBlkSizeY==8) {			_oversluma_lsb_ptr   = OverlapsLsb_C<16,8>;  
-			if (yRatioUV==2) {				_overschroma_lsb_ptr = OverlapsLsb_C<8,4>;   }
-			else {								_overschroma_lsb_ptr = OverlapsLsb_C<8,8>;   }
-		} else if (nBlkSizeY==2) {			_oversluma_lsb_ptr   = OverlapsLsb_C<16,2>;  
-			if (yRatioUV==2) {				_overschroma_lsb_ptr = OverlapsLsb_C<8,1>;   }
-			else {								_overschroma_lsb_ptr = OverlapsLsb_C<8,2>;   }
-		}
-		break;
-	case 4:										_oversluma_lsb_ptr   = OverlapsLsb_C<4,4>;   
-		if (yRatioUV==2) {					_overschroma_lsb_ptr = OverlapsLsb_C<2,2>;   }
-		else {									_overschroma_lsb_ptr = OverlapsLsb_C<2,4>;   }
-		break;
-	case 8:
-	default:
-		if (nBlkSizeY==8) {					_oversluma_lsb_ptr   = OverlapsLsb_C<8,8>;   
-			if (yRatioUV==2) {				_overschroma_lsb_ptr = OverlapsLsb_C<4,4>;   }
-			else {								_overschroma_lsb_ptr = OverlapsLsb_C<4,8>;   }
-		} else if (nBlkSizeY==4) {			_oversluma_lsb_ptr   = OverlapsLsb_C<8,4>;   
-			if (yRatioUV==2) {				_overschroma_lsb_ptr = OverlapsLsb_C<4,2>;   }
-			else {								_overschroma_lsb_ptr = OverlapsLsb_C<4,4>;   }
-		}
-   }
+    // !!! PF check it, fake 16 bit lsb handling
+    // no pixel_t template needed here
+    switch (nBlkSizeX)
+    {
+    case 32:
+        if (nBlkSizeY == 16) {
+            _oversluma_lsb_ptr = OverlapsLsb_C<32, 16>; // nBlkSizeX,nBlkSizeY
+            if (xRatioUV == 2) {
+                if (yRatioUV == 2) { _overschroma_lsb_ptr = OverlapsLsb_C<16, 8>; }      // nBlkSizeX/2, nBlkSizeY/yRatioUV(2)
+                else { _overschroma_lsb_ptr = OverlapsLsb_C<16, 16>; }  // nBlkSizeX/2, nBlkSizeY/yRatioUV(1)
+            }
+            else {
+                if (yRatioUV == 2) { _overschroma_lsb_ptr = OverlapsLsb_C<32, 8>; }      // nBlkSizeX/xRatioUV(1), nBlkSizeY/yRatioUV(2)
+                else { _overschroma_lsb_ptr = OverlapsLsb_C<32, 16>; }  // nBlkSizeX/xRatioUV(1), nBlkSizeY/yRatioUV(1)
+            }
+        }
+        else if (nBlkSizeY == 32) {
+            _oversluma_lsb_ptr = OverlapsLsb_C<32, 32>;
+            if (xRatioUV == 2) {
+                if (yRatioUV == 2) { _overschroma_lsb_ptr = OverlapsLsb_C<16, 16>; }
+                else { _overschroma_lsb_ptr = OverlapsLsb_C<16, 32>; }
+            }
+            else {
+                if (yRatioUV == 2) { _overschroma_lsb_ptr = OverlapsLsb_C<32, 16>; }
+                else { _overschroma_lsb_ptr = OverlapsLsb_C<32, 32>; }
+            }
+        } break;
+    case 16:
+        if (nBlkSizeY == 16) {
+            _oversluma_lsb_ptr = OverlapsLsb_C<16, 16>;
+            if (xRatioUV == 2) {
+                if (yRatioUV == 2) { _overschroma_lsb_ptr = OverlapsLsb_C<8, 8>; }
+                else { _overschroma_lsb_ptr = OverlapsLsb_C<8, 16>; }
+            }
+            else {
+                if (yRatioUV == 2) { _overschroma_lsb_ptr = OverlapsLsb_C<16, 8>; }
+                else { _overschroma_lsb_ptr = OverlapsLsb_C<16, 16>; }
+            }
+        }
+        else if (nBlkSizeY == 8) {
+            _oversluma_lsb_ptr = OverlapsLsb_C<16, 8>;
+            if (xRatioUV == 2) {
+                if (yRatioUV == 2) { _overschroma_lsb_ptr = OverlapsLsb_C<8, 4>; }
+                else { _overschroma_lsb_ptr = OverlapsLsb_C<8, 8>; }
+            }
+            else {
+                if (yRatioUV == 2) { _overschroma_lsb_ptr = OverlapsLsb_C<16, 4>; }
+                else { _overschroma_lsb_ptr = OverlapsLsb_C<16, 8>; }
+            }
+        }
+        else if (nBlkSizeY == 2) {
+            _oversluma_lsb_ptr = OverlapsLsb_C<16, 2>;
+            if (yRatioUV == 2) { _overschroma_lsb_ptr = OverlapsLsb_C<8, 1>; }
+            else { _overschroma_lsb_ptr = OverlapsLsb_C<8, 2>; }
+        }
+        break;
+    case 4:										_oversluma_lsb_ptr = OverlapsLsb_C<4, 4>;
+        if (xRatioUV == 2) {
+            if (yRatioUV == 2) { _overschroma_lsb_ptr = OverlapsLsb_C<2, 2>; }
+            else { _overschroma_lsb_ptr = OverlapsLsb_C<2, 4>; }
+        }
+        else {
+            if (yRatioUV == 2) { _overschroma_lsb_ptr = OverlapsLsb_C<4, 2>; }
+            else { _overschroma_lsb_ptr = OverlapsLsb_C<4, 4>; }
+        }
+        break;
+    case 8:
+    default:
+        if (nBlkSizeY == 8) {
+            _oversluma_lsb_ptr = OverlapsLsb_C<8, 8>;
+            if (xRatioUV == 2) {
+                if (yRatioUV == 2) { _overschroma_lsb_ptr = OverlapsLsb_C<4, 4>; }
+                else { _overschroma_lsb_ptr = OverlapsLsb_C<4, 8>; }
+            }
+            else {
+                if (yRatioUV == 2) { _overschroma_lsb_ptr = OverlapsLsb_C<8, 4>; }
+                else { _overschroma_lsb_ptr = OverlapsLsb_C<8, 8>; }
+            }
+        }
+        else if (nBlkSizeY == 4) {
+            _oversluma_lsb_ptr = OverlapsLsb_C<8, 4>;
+            if (xRatioUV == 2) {
+                if (yRatioUV == 2) { _overschroma_lsb_ptr = OverlapsLsb_C<4, 2>; }
+                else { _overschroma_lsb_ptr = OverlapsLsb_C<4, 4>; }
+            }
+            else {
+                if (yRatioUV == 2) { _overschroma_lsb_ptr = OverlapsLsb_C<8, 2>; }
+                else { _overschroma_lsb_ptr = OverlapsLsb_C<8, 4>; }
+            }
+        }
+    }
 
-	if (((env_ptr->GetCPUFlags () & CPUF_SSE2) != 0) & _isse_flag)
-	{
-		switch (nBlkSizeX)
-		{
-		case 32:
-			if (nBlkSizeY==16) {				_oversluma_ptr   = Overlaps32x16_sse2; _degrainluma_ptr   = DegrainN_sse2<32,16>;
-				if (yRatioUV==2) {			_overschroma_ptr = Overlaps16x8_sse2;  _degrainchroma_ptr = DegrainN_sse2<16,8>;	}
-				else {							_overschroma_ptr = Overlaps16x16_sse2; _degrainchroma_ptr = DegrainN_sse2<16,16>;	}
-			} else if (nBlkSizeY==32) {	_oversluma_ptr   = Overlaps32x32_sse2; _degrainluma_ptr   = DegrainN_sse2<32,32>;
-				if (yRatioUV==2) {			_overschroma_ptr = Overlaps16x16_sse2; _degrainchroma_ptr = DegrainN_sse2<16,16>;	}
-				else {							_overschroma_ptr = Overlaps16x32_sse2; _degrainchroma_ptr = DegrainN_sse2<16,32>;	}
-			} break;
-		case 16:
-			if (nBlkSizeY==16) {          _oversluma_ptr   = Overlaps16x16_sse2; _degrainluma_ptr   = DegrainN_sse2<16,16>;
-				if (yRatioUV==2) {			_overschroma_ptr = Overlaps8x8_sse2;   _degrainchroma_ptr = DegrainN_sse2<8,8>;	}
-				else {							_overschroma_ptr = Overlaps8x16_sse2;  _degrainchroma_ptr = DegrainN_sse2<8,16>;	}
-			} else if (nBlkSizeY==8) {		_oversluma_ptr   = Overlaps16x8_sse2;  _degrainluma_ptr   = DegrainN_sse2<16,8>;
-				if (yRatioUV==2) {			_overschroma_ptr = Overlaps8x4_sse2;   _degrainchroma_ptr = DegrainN_sse2<8,4>;	}
-				else {							_overschroma_ptr = Overlaps8x8_sse2;   _degrainchroma_ptr = DegrainN_sse2<8,8>;	}
-			} else if (nBlkSizeY==2) {		_oversluma_ptr   = Overlaps16x2_sse2;  _degrainluma_ptr   = DegrainN_sse2<16,2>;
-				if (yRatioUV==2) {			_overschroma_ptr = Overlaps8x1_sse2;   _degrainchroma_ptr = DegrainN_sse2<8,1>;	}
-				else {							_overschroma_ptr = Overlaps8x2_sse2;   _degrainchroma_ptr = DegrainN_sse2<8,2>;	}
-			}
-			break;
-		case 4:									_oversluma_ptr   = Overlaps4x4_sse2;   _degrainluma_ptr   = DegrainN_mmx<4,4>;
-			if (yRatioUV==2) {				_overschroma_ptr = Overlaps_C<2,2>;	  _degrainchroma_ptr = DegrainN_C<2,2>;		}
-			else {								_overschroma_ptr = Overlaps_C<2,4>;   _degrainchroma_ptr = DegrainN_C<2,4>;		}
-			break;
-		case 8:
-		default:
-			if (nBlkSizeY==8) {				_oversluma_ptr   = Overlaps8x8_sse2;   _degrainluma_ptr   = DegrainN_sse2<8,8>;
-				if (yRatioUV==2) {			_overschroma_ptr = Overlaps4x4_sse2;   _degrainchroma_ptr = DegrainN_mmx<4,4>;		}
-				else {							_overschroma_ptr = Overlaps4x8_sse2;   _degrainchroma_ptr = DegrainN_mmx<4,8>;		}
-			} else if (nBlkSizeY==4) {		_oversluma_ptr   = Overlaps8x4_sse2;   _degrainluma_ptr   = DegrainN_sse2<8,4>;
-				if (yRatioUV==2) {			_overschroma_ptr = Overlaps4x2_sse2;	  _degrainchroma_ptr = DegrainN_mmx<4,2>;		}
-				else {							_overschroma_ptr = Overlaps4x4_sse2;   _degrainchroma_ptr = DegrainN_mmx<4,4>;		}
-			}
-		}
-	}
-	else if (_isse_flag)
-	{
-		switch (nBlkSizeX)
-		{
-		case 32:
-			if (nBlkSizeY==16) {				_oversluma_ptr   = Overlaps32x16_sse2; _degrainluma_ptr   = DegrainN_mmx<32,16>;
-				if (yRatioUV==2) {			_overschroma_ptr = Overlaps16x8_sse2;  _degrainchroma_ptr = DegrainN_mmx<16,8>;	}
-				else {							_overschroma_ptr = Overlaps16x16_sse2; _degrainchroma_ptr = DegrainN_mmx<16,16>;	}
-			} else if (nBlkSizeY==32) {	_oversluma_ptr   = Overlaps32x32_sse2; _degrainluma_ptr   = DegrainN_mmx<32,32>;
-				if (yRatioUV==2) {			_overschroma_ptr = Overlaps16x16_sse2; _degrainchroma_ptr = DegrainN_mmx<16,16>;	}
-				else {							_overschroma_ptr = Overlaps16x32_sse2; _degrainchroma_ptr = DegrainN_mmx<16,32>;	}
-			} break;
-		case 16:
-			if (nBlkSizeY==16) {				_oversluma_ptr   = Overlaps16x16_sse2; _degrainluma_ptr   = DegrainN_mmx<16,16>;
-				if (yRatioUV==2) {			_overschroma_ptr = Overlaps8x8_sse2;   _degrainchroma_ptr = DegrainN_mmx<8,8>;		}
-				else {							_overschroma_ptr = Overlaps8x16_sse2;  _degrainchroma_ptr = DegrainN_mmx<8,16>;	}
-			} else if (nBlkSizeY==8) {		_oversluma_ptr   = Overlaps16x8_sse2;  _degrainluma_ptr   = DegrainN_mmx<16,8>;
-				if (yRatioUV==2) {			_overschroma_ptr = Overlaps8x4_sse2;   _degrainchroma_ptr = DegrainN_mmx<8,4>;		}
-				else {							_overschroma_ptr = Overlaps8x8_sse2;   _degrainchroma_ptr = DegrainN_mmx<8,8>;		}
-			} else if (nBlkSizeY==2) {		_oversluma_ptr   = Overlaps16x2_sse2;  _degrainluma_ptr   = DegrainN_mmx<16,2>;
-				if (yRatioUV==2) {			_overschroma_ptr = Overlaps8x1_sse2;   _degrainchroma_ptr = DegrainN_mmx<8,1>;		}
-				else {							_overschroma_ptr = Overlaps8x2_sse2;   _degrainchroma_ptr = DegrainN_mmx<8,2>;		}
-			}
-			break;
-		case 4:									_oversluma_ptr   = Overlaps4x4_sse2;   _degrainluma_ptr   = DegrainN_mmx<4,4>;
-			if (yRatioUV==2) {				_overschroma_ptr = Overlaps_C<2,2>;   _degrainchroma_ptr = DegrainN_C<2,2>;		}
-			else {								_overschroma_ptr = Overlaps_C<2,4>;   _degrainchroma_ptr = DegrainN_C<2,4>;		}
-			break;
-		case 8:
-			default:
-			if (nBlkSizeY==8) {				_oversluma_ptr   = Overlaps8x8_sse2;   _degrainluma_ptr   = DegrainN_mmx<8,8>;
-				if (yRatioUV==2) {			_overschroma_ptr = Overlaps4x4_sse2;   _degrainchroma_ptr = DegrainN_mmx<4,4>;		}
-				else {							_overschroma_ptr = Overlaps4x8_sse2;   _degrainchroma_ptr = DegrainN_mmx<4,8>;		}
-			} else if (nBlkSizeY==4) {		_oversluma_ptr   = Overlaps8x4_sse2;	  _degrainluma_ptr   = DegrainN_mmx<8,4>;
-				if (yRatioUV==2) {			_overschroma_ptr = Overlaps4x2_sse2;	  _degrainchroma_ptr = DegrainN_mmx<4,2>;		}
-				else {							_overschroma_ptr = Overlaps4x4_sse2;   _degrainchroma_ptr = DegrainN_mmx<4,4>;		}
-			}
-		}
-	}
-	else
-	{
-		switch (nBlkSizeX)
-		{
-		case 32:
-			if (nBlkSizeY==16) {				_oversluma_ptr   = Overlaps_C<32,16>; _degrainluma_ptr   = DegrainN_C<32,16>;
-				if (yRatioUV==2) {			_overschroma_ptr = Overlaps_C<16,8>;  _degrainchroma_ptr = DegrainN_C<16,8>;		}
-				else {							_overschroma_ptr = Overlaps_C<16,16>; _degrainchroma_ptr = DegrainN_C<16,16>;		}
-			} else if (nBlkSizeY==32) {	_oversluma_ptr   = Overlaps_C<32,32>; _degrainluma_ptr   = DegrainN_C<32,32>;
-				if (yRatioUV==2) {			_overschroma_ptr = Overlaps_C<16,16>; _degrainchroma_ptr = DegrainN_C<16,16>;		}
-				else {							_overschroma_ptr = Overlaps_C<16,32>; _degrainchroma_ptr = DegrainN_C<16,32>;		}
-			} break;
-		case 16:
-			if (nBlkSizeY==16) {				_oversluma_ptr   = Overlaps_C<16,16>; _degrainluma_ptr   = DegrainN_C<16,16>;
-				if (yRatioUV==2) {			_overschroma_ptr = Overlaps_C<8,8>;   _degrainchroma_ptr = DegrainN_C<8,8>;		}
-				else {							_overschroma_ptr = Overlaps_C<8,16>;  _degrainchroma_ptr = DegrainN_C<8,16>;		}
-			} else if (nBlkSizeY==8) {		_oversluma_ptr   = Overlaps_C<16,8>;  _degrainluma_ptr   = DegrainN_C<16,8>;
-				if (yRatioUV==2) {			_overschroma_ptr = Overlaps_C<8,4>;   _degrainchroma_ptr = DegrainN_C<8,4>;		}
-				else {							_overschroma_ptr = Overlaps_C<8,8>;   _degrainchroma_ptr = DegrainN_C<8,8>;		}
-			} else if (nBlkSizeY==2) {		_oversluma_ptr   = Overlaps_C<16,2>;  _degrainluma_ptr   = DegrainN_C<16,2>;
-				if (yRatioUV==2) {			_overschroma_ptr = Overlaps_C<8,1>;   _degrainchroma_ptr = DegrainN_C<8,1>;		}
-				else {							_overschroma_ptr = Overlaps_C<8,2>;   _degrainchroma_ptr = DegrainN_C<8,2>;		}
-			}
-			break;
-		case 4:									_oversluma_ptr   = Overlaps_C<4,4>;   _degrainluma_ptr   = DegrainN_C<4,4>;
-			if (yRatioUV==2) {				_overschroma_ptr = Overlaps_C<2,2>;   _degrainchroma_ptr = DegrainN_C<2,2>;		}
-			else {								_overschroma_ptr = Overlaps_C<2,4>;   _degrainchroma_ptr = DegrainN_C<2,4>;		}
-			break;
-		case 8:
-		default:
-			if (nBlkSizeY==8) {				_oversluma_ptr   = Overlaps_C<8,8>;   _degrainluma_ptr   = DegrainN_C<8,8>;
-				if (yRatioUV==2) {			_overschroma_ptr = Overlaps_C<4,4>;   _degrainchroma_ptr = DegrainN_C<4,4>;		}
-				else {							_overschroma_ptr = Overlaps_C<4,8>;   _degrainchroma_ptr = DegrainN_C<4,8>;		}
-			} else if (nBlkSizeY==4) {		_oversluma_ptr   = Overlaps_C<8,4>;   _degrainluma_ptr   = DegrainN_C<8,4>;
-				if (yRatioUV==2) {			_overschroma_ptr = Overlaps_C<4,2>;   _degrainchroma_ptr = DegrainN_C<4,2>;		}
-				else {							_overschroma_ptr = Overlaps_C<4,4>;   _degrainchroma_ptr = DegrainN_C<4,4>;		}
-			}
-		}
-	}
+    if ((pixelsize == 1) && (((env_ptr->GetCPUFlags() & CPUF_SSE2) != 0) & _isse_flag))
+    {
+        switch (nBlkSizeX)
+        {
+        case 32:
+            if (nBlkSizeY == 16) {
+                _oversluma_ptr = Overlaps32x16_sse2; _degrainluma_ptr = DegrainN_sse2<32, 16>;
+                if (xRatioUV == 2) {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps16x8_sse2;  _degrainchroma_ptr = DegrainN_sse2<16, 8>; }
+                    else { _overschroma_ptr = Overlaps16x16_sse2; _degrainchroma_ptr = DegrainN_sse2<16, 16>; }
+                }
+                else {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps_C<32,8> /* Overlaps32x8_sse2 no such */;  _degrainchroma_ptr = DegrainN_sse2<32, 8>; }
+                    else { _overschroma_ptr = Overlaps16x16_sse2; _degrainchroma_ptr = DegrainN_sse2<16, 16>; }
+                }
+            }
+            else if (nBlkSizeY == 32) {
+                _oversluma_ptr = Overlaps32x32_sse2; _degrainluma_ptr = DegrainN_sse2<32, 32>;
+                if (xRatioUV == 2) {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps16x16_sse2; _degrainchroma_ptr = DegrainN_sse2<16, 16>; }
+                    else { _overschroma_ptr = Overlaps16x32_sse2; _degrainchroma_ptr = DegrainN_sse2<16, 32>; }
+                }
+                else {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps32x16_sse2; _degrainchroma_ptr = DegrainN_sse2<32, 16>; }
+                    else { _overschroma_ptr = Overlaps32x32_sse2; _degrainchroma_ptr = DegrainN_sse2<32, 32>; }
+                }
+            } break;
+        case 16:
+            if (nBlkSizeY == 16) {
+                _oversluma_ptr = Overlaps16x16_sse2; _degrainluma_ptr = DegrainN_sse2<16, 16>;
+                if (xRatioUV == 2) {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps8x8_sse2;   _degrainchroma_ptr = DegrainN_sse2<8, 8>; }
+                    else { _overschroma_ptr = Overlaps8x16_sse2;  _degrainchroma_ptr = DegrainN_sse2<8, 16>; }
+                }
+                else {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps16x8_sse2;   _degrainchroma_ptr = DegrainN_sse2<16, 8>; }
+                    else { _overschroma_ptr = Overlaps16x16_sse2;  _degrainchroma_ptr = DegrainN_sse2<16, 16>; }
+                }
+            }
+            else if (nBlkSizeY == 8) {
+                _oversluma_ptr = Overlaps16x8_sse2;  _degrainluma_ptr = DegrainN_sse2<16, 8>;
+                if (xRatioUV == 2) {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps8x4_sse2;   _degrainchroma_ptr = DegrainN_sse2<8, 4>; }
+                    else { _overschroma_ptr = Overlaps8x8_sse2;   _degrainchroma_ptr = DegrainN_sse2<8, 8>; }
+                }
+                else {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps_C<16,4> /* Overlaps16x4_sse2 no such */;   _degrainchroma_ptr = DegrainN_sse2<16, 4>; }
+                    else { _overschroma_ptr = Overlaps16x8_sse2;   _degrainchroma_ptr = DegrainN_sse2<16, 8>; }
+                }
+            }
+            else if (nBlkSizeY == 2) {
+                _oversluma_ptr = Overlaps16x2_sse2;  _degrainluma_ptr = DegrainN_sse2<16, 2>;
+                if (xRatioUV == 2) {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps8x1_sse2;   _degrainchroma_ptr = DegrainN_sse2<8, 1>; }
+                    else { _overschroma_ptr = Overlaps8x2_sse2;   _degrainchroma_ptr = DegrainN_sse2<8, 2>; }
+                }
+                else {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps_C<16,1> /* Overlaps16x1_sse2 nosuch */;   _degrainchroma_ptr = DegrainN_sse2<16, 1>; }
+                    else { _overschroma_ptr = Overlaps16x2_sse2;   _degrainchroma_ptr = DegrainN_sse2<16, 2>; }
+                }
+            }
+            break;
+        case 4:
+            _oversluma_ptr = Overlaps4x4_sse2;   _degrainluma_ptr = DegrainN_mmx<4, 4>;
+            if (xRatioUV == 2) {
+                if (yRatioUV == 2) { _overschroma_ptr = Overlaps_C<2, 2>;	  _degrainchroma_ptr = DegrainN_C<2, 2>; }
+                else { _overschroma_ptr = Overlaps_C<2, 4>;   _degrainchroma_ptr = DegrainN_C<2, 4>; }
+            }
+            else {
+                if (yRatioUV == 2) { _overschroma_ptr = Overlaps_C<4, 2>;	  _degrainchroma_ptr = DegrainN_C<4, 2>; }
+                else { _overschroma_ptr = Overlaps_C<4, 4>;   _degrainchroma_ptr = DegrainN_C<4, 4>; }
+            }
+            break;
+        case 8:
+        default:
+            if (nBlkSizeY == 8) {
+                _oversluma_ptr = Overlaps8x8_sse2;   _degrainluma_ptr = DegrainN_sse2<8, 8>;
+                if (xRatioUV == 2) {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps4x4_sse2;   _degrainchroma_ptr = DegrainN_mmx<4, 4>; }
+                    else { _overschroma_ptr = Overlaps4x8_sse2;   _degrainchroma_ptr = DegrainN_mmx<4, 8>; }
+                }
+                else {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps8x4_sse2;   _degrainchroma_ptr = DegrainN_mmx<8, 4>; }
+                    else { _overschroma_ptr = Overlaps8x8_sse2;   _degrainchroma_ptr = DegrainN_mmx<8, 8>; }
+                }
+            }
+            else if (nBlkSizeY == 4) {
+                _oversluma_ptr = Overlaps8x4_sse2;   _degrainluma_ptr = DegrainN_sse2<8, 4>;
+                if (xRatioUV == 2) {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps4x2_sse2;	  _degrainchroma_ptr = DegrainN_mmx<4, 2>; }
+                    else { _overschroma_ptr = Overlaps4x4_sse2;   _degrainchroma_ptr = DegrainN_mmx<4, 4>; }
+                }
+                else {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps8x2_sse2;	  _degrainchroma_ptr = DegrainN_mmx<8, 2>; }
+                    else { _overschroma_ptr = Overlaps8x4_sse2;   _degrainchroma_ptr = DegrainN_mmx<8, 4>; }
+                }
+            }
+        }
+    }
+    else if ((pixelsize==1) && _isse_flag)
+    {
+        switch (nBlkSizeX)
+        {
+        case 32:
+            if (nBlkSizeY == 16) {
+                _oversluma_ptr = Overlaps32x16_sse2; _degrainluma_ptr = DegrainN_mmx<32, 16>;
+                if (xRatioUV == 2) {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps16x8_sse2;  _degrainchroma_ptr = DegrainN_mmx<16, 8>; }
+                    else { _overschroma_ptr = Overlaps16x16_sse2; _degrainchroma_ptr = DegrainN_mmx<16, 16>; }
+                }
+                else {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps_C<32,8> /* Overlaps32x8_sse2 no such */;  _degrainchroma_ptr = DegrainN_mmx<32, 8>; }
+                    else { _overschroma_ptr = Overlaps32x16_sse2; _degrainchroma_ptr = DegrainN_mmx<32, 16>; }
+                }
+            }
+            else if (nBlkSizeY == 32) {
+                _oversluma_ptr = Overlaps32x32_sse2; _degrainluma_ptr = DegrainN_mmx<32, 32>;
+                if (xRatioUV == 2) {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps16x16_sse2; _degrainchroma_ptr = DegrainN_mmx<16, 16>; }
+                    else { _overschroma_ptr = Overlaps16x32_sse2; _degrainchroma_ptr = DegrainN_mmx<16, 32>; }
+                }
+                else {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps32x16_sse2; _degrainchroma_ptr = DegrainN_mmx<32, 16>; }
+                    else { _overschroma_ptr = Overlaps32x32_sse2; _degrainchroma_ptr = DegrainN_mmx<32, 32>; }
+                }
+            } break;
+        case 16:
+            if (nBlkSizeY == 16) {
+                _oversluma_ptr = Overlaps16x16_sse2; _degrainluma_ptr = DegrainN_mmx<16, 16>;
+                if (xRatioUV == 2) {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps8x8_sse2;   _degrainchroma_ptr = DegrainN_mmx<8, 8>; }
+                    else { _overschroma_ptr = Overlaps8x16_sse2;  _degrainchroma_ptr = DegrainN_mmx<8, 16>; }
+                }
+                else {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps16x8_sse2;   _degrainchroma_ptr = DegrainN_mmx<16, 8>; }
+                    else { _overschroma_ptr = Overlaps16x16_sse2;  _degrainchroma_ptr = DegrainN_mmx<16, 16>; }
+                }
+            }
+            else if (nBlkSizeY == 8) {
+                _oversluma_ptr = Overlaps16x8_sse2;  _degrainluma_ptr = DegrainN_mmx<16, 8>;
+                if (xRatioUV == 2) {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps8x4_sse2;   _degrainchroma_ptr = DegrainN_mmx<8, 4>; }
+                    else { _overschroma_ptr = Overlaps8x8_sse2;   _degrainchroma_ptr = DegrainN_mmx<8, 8>; }
+                }
+                else {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps_C<16,4> /* Overlaps16x4_sse2 no such*/;   _degrainchroma_ptr = DegrainN_mmx<16, 4>; }
+                    else { _overschroma_ptr = Overlaps16x8_sse2;   _degrainchroma_ptr = DegrainN_mmx<16, 8>; }
+                }
+            }
+            else if (nBlkSizeY == 2) {
+                _oversluma_ptr = Overlaps16x2_sse2;  _degrainluma_ptr = DegrainN_mmx<16, 2>;
+                if (xRatioUV == 2) {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps8x1_sse2;   _degrainchroma_ptr = DegrainN_mmx<8, 1>; }
+                    else { _overschroma_ptr = Overlaps8x2_sse2;   _degrainchroma_ptr = DegrainN_mmx<8, 2>; }
+                }
+                else {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps_C<16,1> /* Overlaps16x1_sse2 no such */;   _degrainchroma_ptr = DegrainN_mmx<16, 1>; }
+                    else { _overschroma_ptr = Overlaps16x2_sse2;   _degrainchroma_ptr = DegrainN_mmx<16, 2>; }
+                }
+            }
+            break;
+        case 4: _oversluma_ptr = Overlaps4x4_sse2;   _degrainluma_ptr = DegrainN_mmx<4, 4>;
+            if (xRatioUV == 2) {
+                if (yRatioUV == 2) { _overschroma_ptr = Overlaps_C<2, 2>;   _degrainchroma_ptr = DegrainN_C<2, 2>; }
+                else { _overschroma_ptr = Overlaps_C<2, 4>;   _degrainchroma_ptr = DegrainN_C<2, 4>; }
+            }
+            else {
+                if (yRatioUV == 2) { _overschroma_ptr = Overlaps_C<4, 2>;   _degrainchroma_ptr = DegrainN_C<4, 2>; }
+                else { _overschroma_ptr = Overlaps_C<4, 4>;   _degrainchroma_ptr = DegrainN_C<4, 4>; }
+            }
+            break;
+        case 8:
+        default:
+            if (nBlkSizeY == 8) {
+                _oversluma_ptr = Overlaps8x8_sse2;   _degrainluma_ptr = DegrainN_mmx<8, 8>;
+                if (xRatioUV == 2) {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps4x4_sse2;   _degrainchroma_ptr = DegrainN_mmx<4, 4>; }
+                    else { _overschroma_ptr = Overlaps4x8_sse2;   _degrainchroma_ptr = DegrainN_mmx<4, 8>; }
+                }
+                else {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps8x4_sse2;   _degrainchroma_ptr = DegrainN_mmx<8, 4>; }
+                    else { _overschroma_ptr = Overlaps8x8_sse2;   _degrainchroma_ptr = DegrainN_mmx<8, 8>; }
+                }
+            }
+            else if (nBlkSizeY == 4) {
+                _oversluma_ptr = Overlaps8x4_sse2;	  _degrainluma_ptr = DegrainN_mmx<8, 4>;
+                if (xRatioUV == 2) {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps4x2_sse2;	  _degrainchroma_ptr = DegrainN_mmx<4, 2>; }
+                    else { _overschroma_ptr = Overlaps4x4_sse2;   _degrainchroma_ptr = DegrainN_mmx<4, 4>; }
+                }
+                else {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps8x2_sse2;	  _degrainchroma_ptr = DegrainN_mmx<8, 2>; }
+                    else { _overschroma_ptr = Overlaps8x4_sse2;   _degrainchroma_ptr = DegrainN_mmx<8, 4>; }
+                }
+            }
+        }
+    }
+    else
+    {
+        // pixelsize==1 or 2 todo: _C for template pixel_t
+        switch (nBlkSizeX)
+        {
+        case 32:
+            if (nBlkSizeY == 16) {
+                _oversluma_ptr = Overlaps_C<32, 16>; _degrainluma_ptr = DegrainN_C<32, 16>;
+                if (xRatioUV == 2) {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps_C<16, 8>;  _degrainchroma_ptr = DegrainN_C<16, 8>; }
+                    else { _overschroma_ptr = Overlaps_C<16, 16>; _degrainchroma_ptr = DegrainN_C<16, 16>; }
+                }
+                else {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps_C<32, 8>;  _degrainchroma_ptr = DegrainN_C<32, 8>; }
+                    else { _overschroma_ptr = Overlaps_C<32, 16>; _degrainchroma_ptr = DegrainN_C<32, 16>; }
+                }
+            }
+            else if (nBlkSizeY == 32) {
+                _oversluma_ptr = Overlaps_C<32, 32>; _degrainluma_ptr = DegrainN_C<32, 32>;
+                if (xRatioUV == 2) {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps_C<16, 16>; _degrainchroma_ptr = DegrainN_C<16, 16>; }
+                    else { _overschroma_ptr = Overlaps_C<16, 32>; _degrainchroma_ptr = DegrainN_C<16, 32>; }
+                }
+                else {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps_C<32, 16>; _degrainchroma_ptr = DegrainN_C<32, 16>; }
+                    else { _overschroma_ptr = Overlaps_C<32, 32>; _degrainchroma_ptr = DegrainN_C<32, 32>; }
+                }
+            } break;
+        case 16:
+            if (nBlkSizeY == 16) {
+                _oversluma_ptr = Overlaps_C<16, 16>; _degrainluma_ptr = DegrainN_C<16, 16>;
+                if (xRatioUV == 2) {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps_C<8, 8>;   _degrainchroma_ptr = DegrainN_C<8, 8>; }
+                    else { _overschroma_ptr = Overlaps_C<8, 16>;  _degrainchroma_ptr = DegrainN_C<8, 16>; }
+                }
+                else {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps_C<16, 8>;   _degrainchroma_ptr = DegrainN_C<16, 8>; }
+                    else { _overschroma_ptr = Overlaps_C<16, 16>;  _degrainchroma_ptr = DegrainN_C<16, 16>; }
+                }
+            }
+            else if (nBlkSizeY == 8) {
+                _oversluma_ptr = Overlaps_C<16, 8>;  _degrainluma_ptr = DegrainN_C<16, 8>;
+                if (xRatioUV == 2) {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps_C<8, 4>;   _degrainchroma_ptr = DegrainN_C<8, 4>; }
+                    else { _overschroma_ptr = Overlaps_C<8, 8>;   _degrainchroma_ptr = DegrainN_C<8, 8>; }
+                }
+                else {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps_C<16, 4>;   _degrainchroma_ptr = DegrainN_C<16, 4>; }
+                    else { _overschroma_ptr = Overlaps_C<16, 8>;   _degrainchroma_ptr = DegrainN_C<16, 8>; }
+                }
+            }
+            else if (nBlkSizeY == 2) {
+                _oversluma_ptr = Overlaps_C<16, 2>;  _degrainluma_ptr = DegrainN_C<16, 2>;
+                if (xRatioUV == 2) {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps_C<8, 1>;   _degrainchroma_ptr = DegrainN_C<8, 1>; }
+                    else { _overschroma_ptr = Overlaps_C<8, 2>;   _degrainchroma_ptr = DegrainN_C<8, 2>; }
+                }
+                else {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps_C<16, 1>;   _degrainchroma_ptr = DegrainN_C<16, 1>; }
+                    else { _overschroma_ptr = Overlaps_C<16, 2>;   _degrainchroma_ptr = DegrainN_C<16, 2>; }
+                }
+            }
+            break;
+        case 4: _oversluma_ptr = Overlaps_C<4, 4>;   _degrainluma_ptr = DegrainN_C<4, 4>;
+            if (xRatioUV == 2) {
+                if (yRatioUV == 2) { _overschroma_ptr = Overlaps_C<2, 2>;   _degrainchroma_ptr = DegrainN_C<2, 2>; }
+                else { _overschroma_ptr = Overlaps_C<2, 4>;   _degrainchroma_ptr = DegrainN_C<2, 4>; }
+            }
+            else {
+                if (yRatioUV == 2) { _overschroma_ptr = Overlaps_C<4, 2>;   _degrainchroma_ptr = DegrainN_C<4, 2>; }
+                else { _overschroma_ptr = Overlaps_C<4, 4>;   _degrainchroma_ptr = DegrainN_C<4, 4>; }
+            }
+            break;
+        case 8:
+        default:
+            if (nBlkSizeY == 8) {
+                _oversluma_ptr = Overlaps_C<8, 8>;   _degrainluma_ptr = DegrainN_C<8, 8>;
+                if (xRatioUV == 2) {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps_C<4, 4>;   _degrainchroma_ptr = DegrainN_C<4, 4>; }
+                    else { _overschroma_ptr = Overlaps_C<4, 8>;   _degrainchroma_ptr = DegrainN_C<4, 8>; }
+                }
+                else {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps_C<8, 4>;   _degrainchroma_ptr = DegrainN_C<8, 4>; }
+                    else { _overschroma_ptr = Overlaps_C<8, 8>;   _degrainchroma_ptr = DegrainN_C<8, 8>; }
+                }
+            }
+            else if (nBlkSizeY == 4) {
+                _oversluma_ptr = Overlaps_C<8, 4>;   _degrainluma_ptr = DegrainN_C<8, 4>;
+                if (xRatioUV == 2) {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps_C<4, 2>;   _degrainchroma_ptr = DegrainN_C<4, 2>; }
+                    else { _overschroma_ptr = Overlaps_C<4, 4>;   _degrainchroma_ptr = DegrainN_C<4, 4>; }
+                }
+                else {
+                    if (yRatioUV == 2) { _overschroma_ptr = Overlaps_C<8, 2>;   _degrainchroma_ptr = DegrainN_C<8, 2>; }
+                    else { _overschroma_ptr = Overlaps_C<8, 4>;   _degrainchroma_ptr = DegrainN_C<8, 4>; }
+                }
+            }
+        }
+    }
 
+    // 16 bit output hack
 	if (_lsb_flag)
 	{
 		vi.height <<= 1;
@@ -665,7 +907,7 @@ MDegrainN::~MDegrainN ()
 		{
 			_dst_ptr_arr [0]   = dst->GetWritePtr ();
 			_dst_ptr_arr [1]   = _dst_ptr_arr [0] + nWidth;
-			_dst_ptr_arr [2]   = _dst_ptr_arr [1] + nWidth / 2;
+			_dst_ptr_arr [2]   = _dst_ptr_arr [1] + nWidth / 2; //yuy2 xratio
 			_dst_pitch_arr [0] = dst->GetPitch ();
 			_dst_pitch_arr [1] = _dst_pitch_arr [0];
 			_dst_pitch_arr [2] = _dst_pitch_arr [0];
@@ -694,7 +936,7 @@ MDegrainN::~MDegrainN ()
 	}
 
 	_lsb_offset_arr [0] = _dst_pitch_arr [0] *  nHeight;
-	_lsb_offset_arr [1] = _dst_pitch_arr [1] * (nHeight >> _yratiouv_log);
+	_lsb_offset_arr [1] = _dst_pitch_arr [1] * (nHeight >> _yratiouv_log); // todo pixelsize
 	_lsb_offset_arr [2] = _dst_pitch_arr [2] * (nHeight >> _yratiouv_log);
 
 	if (_lsb_flag)
@@ -878,9 +1120,9 @@ MDegrainN::~MDegrainN ()
 			}
 		}	// overlap - end
 
-		if (_nlimit < 255)
+		if (_nlimit < (pixelsize == 1 ? 255 : 65535))
 		{
-			if (_isse_flag)
+			if ((pixelsize==1) && _isse_flag)
 			{
 				LimitChanges_sse2 (
 					_dst_ptr_arr [0], _dst_pitch_arr [0],
@@ -890,12 +1132,19 @@ MDegrainN::~MDegrainN ()
 			}
 			else
 			{
-				LimitChanges_c (
+				if(pixelsize==1)
+                  LimitChanges_c<uint8_t> (
 					_dst_ptr_arr [0], _dst_pitch_arr [0],
 					_src_ptr_arr [0], _src_pitch_arr [0],
 					nWidth, nHeight, _nlimit
-				);
-			}
+				  );
+                else 
+                    LimitChanges_c<uint16_t> (
+                        _dst_ptr_arr [0], _dst_pitch_arr [0],
+                        _src_ptr_arr [0], _src_pitch_arr [0],
+                        nWidth, nHeight, _nlimit
+                        );
+            }
 		}
 	}
 
@@ -947,7 +1196,7 @@ void	MDegrainN::process_chroma (int plane_mask)
 		BitBlt (
 			_dst_ptr_arr [P], _dst_pitch_arr [P],
 			_src_ptr_arr [P], _src_pitch_arr [P],
-			nWidth >> 1, nHeight >> _yratiouv_log, _isse_flag
+			nWidth >> _xratiouv_log, nHeight >> _yratiouv_log, _isse_flag
 		);
 	}
 
@@ -975,15 +1224,15 @@ void	MDegrainN::process_chroma (int plane_mask)
 			{
 				MemZoneSet (
 					reinterpret_cast <unsigned char *> (pDstInt), 0,
-					_covered_width * 2, _covered_height >> _yratiouv_log,
+					_covered_width * 2 * 2 >>_xratiouv_log, _covered_height >> _yratiouv_log,
 					0, 0, _dst_int_pitch * 4
 				);
 			}
 			else
-			{
+			{  // todo pixel_t
 				MemZoneSet (
 					reinterpret_cast <unsigned char *> (pDstShort), 0,
-					_covered_width, _covered_height >> _yratiouv_log,
+					_covered_width * 2 >> _xratiouv_log, _covered_height >> _yratiouv_log,
 					0, 0, _dst_short_pitch * 2
 				);
 			}
@@ -1012,7 +1261,7 @@ void	MDegrainN::process_chroma (int plane_mask)
 					_dst_ptr_arr [P] + _lsb_offset_arr [P],
 					_dst_pitch_arr [P],
 					&_dst_int [0], _dst_int_pitch,
-					_covered_width >> 1, _covered_height >> _yratiouv_log
+					_covered_width >> _xratiouv_log, _covered_height >> _yratiouv_log
 				);
 			}
 			else
@@ -1020,15 +1269,15 @@ void	MDegrainN::process_chroma (int plane_mask)
 				Short2Bytes (
 					_dst_ptr_arr [P], _dst_pitch_arr [P],
 					&_dst_short [0], _dst_short_pitch,
-					_covered_width >> 1, _covered_height >> _yratiouv_log
+					_covered_width >> _xratiouv_log, _covered_height >> _yratiouv_log
 				);
 			}
 			if (_covered_width < nWidth)
 			{
 				BitBlt (
-					_dst_ptr_arr [P] + (_covered_width >> 1), _dst_pitch_arr [P],
-					_src_ptr_arr [P] + (_covered_width >> 1), _src_pitch_arr [P],
-					(nWidth - _covered_width) >> 1, _covered_height >> _yratiouv_log,
+					_dst_ptr_arr [P] + (_covered_width >> _xratiouv_log), _dst_pitch_arr [P],
+					_src_ptr_arr [P] + (_covered_width >> _xratiouv_log), _src_pitch_arr [P],
+					(nWidth - _covered_width) >> _xratiouv_log, _covered_height >> _yratiouv_log,
 					_isse_flag
 				);
 			}
@@ -1037,32 +1286,40 @@ void	MDegrainN::process_chroma (int plane_mask)
 				BitBlt (
 					_dst_ptr_arr [P] + ((_dst_pitch_arr [P] * _covered_height) >> _yratiouv_log), _dst_pitch_arr [P],
 					_src_ptr_arr [P] + ((_src_pitch_arr [P] * _covered_height) >> _yratiouv_log), _src_pitch_arr [P],
-					nWidth >> 1, ((nHeight - _covered_height) >> _yratiouv_log),
+					nWidth >> _xratiouv_log, ((nHeight - _covered_height) >> _yratiouv_log),
 					_isse_flag
 				);
 			}
 		}	// overlap - end
 
-		if (_nlimitc < 255)
+		if (_nlimitc < (pixelsize == 1 ? 255 : 65535))
 		{
-			if (_isse_flag)
+			if ((pixelsize==1) && _isse_flag)
 			{
 				LimitChanges_sse2 (
 					_dst_ptr_arr [P], _dst_pitch_arr [P],
 					_src_ptr_arr [P], _src_pitch_arr [P],
-					nWidth >> 1, nHeight >> _yratiouv_log,
+					nWidth >> _xratiouv_log, nHeight >> _yratiouv_log,
 					_nlimitc
 				);
 			}
 			else
 			{
-				LimitChanges_c (
-					_dst_ptr_arr [P], _dst_pitch_arr [P],
-					_src_ptr_arr [P], _src_pitch_arr [P],
-					nWidth >> 1, nHeight >> _yratiouv_log,
-					_nlimitc
-				);
-			}
+				if(pixelsize==1)
+                    LimitChanges_c<uint8_t> (
+					    _dst_ptr_arr [P], _dst_pitch_arr [P],
+					    _src_ptr_arr [P], _src_pitch_arr [P],
+					    nWidth >> _xratiouv_log, nHeight >> _yratiouv_log,
+					    _nlimitc
+				    );
+                else
+                    LimitChanges_c<uint16_t> (
+                        _dst_ptr_arr [P], _dst_pitch_arr [P],
+                        _src_ptr_arr [P], _src_pitch_arr [P],
+                        nWidth >> _xratiouv_log, nHeight >> _yratiouv_log,
+                        _nlimitc
+                    );
+            }
 		}
 	}
 }
@@ -1268,8 +1525,8 @@ template <int P>
 void	MDegrainN::process_chroma_normal_slice (Slicer::TaskData &td)
 {
 	assert (&td != 0);
-
-	const int		rowsize = nBlkSizeY >> _yratiouv_log;
+    // todo pixelsize
+	const int		rowsize = nBlkSizeY >> _yratiouv_log; // bad name. it's height really
 	BYTE *			pDstCur = _dst_ptr_arr [P] + td._y_beg * rowsize * _dst_pitch_arr [P];
 	const BYTE *	pSrcCur = _src_ptr_arr [P] + td._y_beg * rowsize * _src_pitch_arr [P];
 
@@ -1279,45 +1536,46 @@ void	MDegrainN::process_chroma_normal_slice (Slicer::TaskData &td)
 		for (int bx = 0; bx < nBlkX; ++bx)
 		{
 			int				i = by * nBlkX + bx;
-			const BYTE *	ref_data_ptr_arr [MAX_TEMP_RAD * 2];
-			int				pitch_arr [MAX_TEMP_RAD * 2];
-			int				weight_arr [1 + MAX_TEMP_RAD * 2];
+			const BYTE *	ref_data_ptr_arr [MAX_TEMP_RAD * 2]; // vs: const uint8_t *pointers[radius * 2]; // Moved by the degrain function. 
+			int				pitch_arr [MAX_TEMP_RAD * 2]; // vs: int strides[radius * 2]; 
+			int				weight_arr [1 + MAX_TEMP_RAD * 2]; // 0th is special. vs:int WSrc, WRefs[radius * 2]; 
 
 			for (int k = 0; k < _trad * 2; ++k)
 			{
 				use_block_uv (
 					ref_data_ptr_arr [k],
 					pitch_arr [k],
-					weight_arr [k + 1],
+					weight_arr [k + 1], // vs: 
 					_usable_flag_arr [k],
 					_mv_clip_arr [k],
 					i,
 					_planes_ptr [k] [P],
 					pSrcCur,
-					xx,
+					xx, // the pointer increment inside knows that xx later here is incremented with nBlkSize and not nBlkSize>>_xRatioUV
 					_src_pitch_arr [P]
-				);
+				); // vs: extra nLogPel, plane, xSubUV, ySubUV, thSAD
 			}
 
-			norm_weights (weight_arr, _trad);
+			norm_weights (weight_arr, _trad); // normaliseWeights<radius>(WSrc, WRefs);
+ 
 
 			// chroma
 			_degrainchroma_ptr (
-				pDstCur + (xx >> 1),
-				pDstCur + (xx >> 1) + _lsb_offset_arr [P], _lsb_flag, _dst_pitch_arr [P],
-				pSrcCur + (xx >> 1),                                  _src_pitch_arr [P],
+				pDstCur + (xx >> _xratiouv_log), // PF: >>1 because of xx+=nBlkSizeX, and nBlkSizeX is double of the chroma BlkSizeX *harcoded for Y12 and YUY2 ouch!
+				pDstCur + (xx >> _xratiouv_log) + _lsb_offset_arr [P], _lsb_flag, _dst_pitch_arr [P],
+				pSrcCur + (xx >> _xratiouv_log),                                  _src_pitch_arr [P],
 				ref_data_ptr_arr, pitch_arr, weight_arr, _trad
 			);
 
-			xx += nBlkSizeX;
+            xx += nBlkSizeX; // blksize of Y plane, that's why there is xx >> xRatioUVlog above
 
 			if (bx == nBlkX - 1 && _covered_width < nWidth) // right non-covered region
 			{
 				// chroma
 				BitBlt (
-					pDstCur + (_covered_width >> 1), _dst_pitch_arr [P],
-					pSrcCur + (_covered_width >> 1), _src_pitch_arr [P],
-					(nWidth - _covered_width) >> 1, rowsize,
+					pDstCur + (_covered_width >> _xratiouv_log)*pixelsize, _dst_pitch_arr [P],
+					pSrcCur + (_covered_width >> _xratiouv_log)*pixelsize, _src_pitch_arr [P],
+					((nWidth - _covered_width) >> _xratiouv_log)*pixelsize /* real row_size */, rowsize /* bad name. it's height = nBlkSizeY >> _yratiouv_log*/,
 					_isse_flag
 				);
 			}
@@ -1332,7 +1590,7 @@ void	MDegrainN::process_chroma_normal_slice (Slicer::TaskData &td)
 			BitBlt (
 				pDstCur, _dst_pitch_arr [P],
 				pSrcCur, _src_pitch_arr [P],
-				nWidth >> 1, (nHeight - _covered_height) >> _yratiouv_log,
+				(nWidth >> _xratiouv_log)*pixelsize, (nHeight - _covered_height) >> _yratiouv_log /* height */,
 				_isse_flag
 			);
 		}
@@ -1391,13 +1649,13 @@ void	MDegrainN::process_chroma_overlap_slice (int y_beg, int y_end)
 {
 	TmpBlock       tmp_block;
 
-	const int		rowsize = (nBlkSizeY - nOverlapY) >> _yratiouv_log;
+	const int		rowsize = (nBlkSizeY - nOverlapY) >> _yratiouv_log; // bad name. it's height really
 	const BYTE *	pSrcCur = _src_ptr_arr [P] + y_beg * rowsize * _src_pitch_arr [P];
 
 	unsigned short *	pDstShort = (_dst_short.empty ()) ? 0 : &_dst_short [0] + y_beg * rowsize * _dst_short_pitch;
 	int *					pDstInt   = (_dst_int.empty ()  ) ? 0 : &_dst_int [0]   + y_beg * rowsize * _dst_int_pitch;
-	const int			tmpPitch  = nBlkSizeX;
-	assert (tmpPitch <= TmpBlock::MAX_SIZE);
+	const int			tmpPitch  = nBlkSizeX * pixelsize; // always full
+	assert (tmpPitch <= TmpBlock::MAX_SIZE * pixelsize);
 
 	for (int by = y_beg; by < y_end; ++by)
 	{
@@ -1412,49 +1670,51 @@ void	MDegrainN::process_chroma_overlap_slice (int y_beg, int y_end)
 			int				i = by * nBlkX + bx;
 			const BYTE *	ref_data_ptr_arr [MAX_TEMP_RAD * 2];
 			int				pitch_arr [MAX_TEMP_RAD * 2];
-			int				weight_arr [1 + MAX_TEMP_RAD * 2];
+			int				weight_arr [1 + MAX_TEMP_RAD * 2]; // 0th is special
 
 			for (int k = 0; k < _trad * 2; ++k)
 			{
 				use_block_uv (
 					ref_data_ptr_arr [k],
 					pitch_arr [k],
-					weight_arr [k + 1],
+					weight_arr [k + 1], // from 1st
 					_usable_flag_arr [k],
 					_mv_clip_arr [k],
 					i,
 					_planes_ptr [k] [P],
 					pSrcCur,
-					xx,
+					xx, //  the pointer increment inside knows that xx later here is incremented with nBlkSize and not nBlkSize>>_xRatioUV
 					_src_pitch_arr [P]
 				);
 			}
 
-			norm_weights (weight_arr, _trad);
+			norm_weights (weight_arr, _trad); // 0th + 1..MAX_TEMP_RAD*2
 
 			// chroma
+            // here we don't pass pixelsize, because _degrainchroma_ptr points already to the uint16_t version
+            // if the clip was 16 bit one
 			_degrainchroma_ptr (
 				&tmp_block._d [0], tmp_block._lsb_ptr, _lsb_flag, tmpPitch,
-				pSrcCur + (xx >> 1),                              _src_pitch_arr [P],
+				pSrcCur + (xx >> _xratiouv_log),                              _src_pitch_arr [P],
 				ref_data_ptr_arr, pitch_arr, weight_arr, _trad
 			);
 			if (_lsb_flag)
 			{
 				_overschroma_lsb_ptr (
-					pDstInt + (xx >> 1),                   _dst_int_pitch,
+					pDstInt + (xx >> _xratiouv_log),                   _dst_int_pitch,
 					&tmp_block._d [0], tmp_block._lsb_ptr, tmpPitch,
-					winOverUV, nBlkSizeX >> 1
+					winOverUV, nBlkSizeX >> _xratiouv_log
 				);
 			}
 			else
 			{
 				_overschroma_ptr (
-					pDstShort + (xx >> 1), _dst_short_pitch,
+					pDstShort + (xx >> _xratiouv_log), _dst_short_pitch,
 					&tmp_block._d [0],     tmpPitch,
-					winOverUV, nBlkSizeX >> 1);
+					winOverUV, nBlkSizeX >> _xratiouv_log);
 			}
 
-			xx += nBlkSizeX - nOverlapX;
+			xx += (nBlkSizeX - nOverlapX) * pixelsize;
 
 		}	// for bx
 
@@ -1501,14 +1761,14 @@ void	MDegrainN::use_block_uv (
 		const FakeBlockData &	block = c_info._clip_sptr->GetBlock (0, i);
 		const int	blx = block.GetX () * nPel + block.GetMV ().x;
 		const int	bly = block.GetY () * nPel + block.GetMV ().y;
-		p    = plane_ptr->GetPointer (blx >> 1, bly >> _yratiouv_log);
+		p    = plane_ptr->GetPointer (blx >> _xratiouv_log, bly >> _yratiouv_log);
 		np   = plane_ptr->GetPitch();
 		const int	block_sad = block.GetSAD();
 		wref = DegrainWeight (c_info._thsadc, block_sad);
 	}
 	else
 	{
-		p    = src_ptr + (xx >> 1);
+		p    = src_ptr + (xx >> _xratiouv_log);
 		np   = src_pitch;
 		wref = 0;
 	}

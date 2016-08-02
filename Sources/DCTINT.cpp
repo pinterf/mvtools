@@ -131,7 +131,7 @@ LoopQ:
 		mov		rsi, pSrcW   
 		lea		rax, [rsi+8]
 		mov		pSrcW, rax					// save for next time
-		mov		ebx, src_pit 
+		mov		ebx, src_pit        // PF todo 160620 rbx??!! in theory, 32 bit operands are zero extended to 64 bit
 		mov		rax, pWorkAreaW
 
 		// expand bytes to words in work area

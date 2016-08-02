@@ -40,7 +40,7 @@ class MVPlane
 {
 public:
 
-   MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, bool _isse, bool mt_flag);
+   MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, int _pixelsize, bool _isse, bool mt_flag);
    ~MVPlane();
 
    void set_interp (int rfilter, int sharp);
@@ -49,7 +49,10 @@ public:
    void Pad();
    void refine_start ();
    void refine_wait ();
-   void RefineExt(const uint8_t *pSrc2x, int nSrc2xPitch, bool isExtPadded); //2.0.08
+
+   template<typename pixel_t>
+   void RefineExt(const uint8_t *pSrc2x_8, int nSrc2xPitch, bool isExtPadded); //2.0.08
+   
    void reduce_start (MVPlane *pReducedPlane);
 	void reduce_wait ();
    void WritePlane(FILE *pFile);
@@ -144,6 +147,8 @@ private:
    int nVPaddingPel;
    int nExtendedWidth;
    int nExtendedHeight;
+
+   int pixelsize; // PF
 
    int nPel;
 	int nSharp;		// Set only from MSuper, used in Refine()

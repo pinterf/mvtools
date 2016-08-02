@@ -39,8 +39,8 @@ boundaries.
 
 
 
-MVPlane::MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, bool _isse, bool mt_flag)
-:	pPlane (new uint8_t* [_nPel * _nPel])
+MVPlane::MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, int _pixelsize, bool _isse, bool mt_flag)
+:	pPlane (new uint8_t* [_nPel * _nPel * _pixelsize])
 ,	nWidth (_nWidth)
 ,	nHeight (_nHeight)
 ,	nPitch (0)
@@ -53,6 +53,7 @@ MVPlane::MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, b
 ,	nExtendedHeight(_nHeight + 2 * _nVPad)
 ,	nPel (_nPel)
 ,	nSharp (2)
+,	pixelsize(_pixelsize)
 ,	isse (_isse)
 ,	_mt_flag (mt_flag)
 ,	isPadded (false)
@@ -166,13 +167,14 @@ void	MVPlane::set_interp (int rfilter, int sharp)
 
 void MVPlane::Update(uint8_t* pSrc, int _nPitch) //v2.0
 {
-	nPitch = _nPitch;
-	nOffsetPadding = nPitch * nVPadding + nHPadding;
+    // npitch is pixelsize aware
+    nPitch = _nPitch;
+	nOffsetPadding = nPitch * nVPadding + nHPadding*pixelsize;
 
 	for ( int i = 0; i < nPel * nPel; i++ )
 	{
 		pPlane[i] = pSrc + i*nPitch * nExtendedHeight;
-	}
+    }
 
 	ResetState();
 }
@@ -183,7 +185,8 @@ void MVPlane::ChangePlane(const uint8_t *pNewPlane, int nNewPitch)
 {
    if (! isFilled)
 	{
-		BitBlt(pPlane[0] + nOffsetPadding, nPitch, pNewPlane, nNewPitch, nWidth, nHeight, isse);
+       // noffsetPadding is pixelsize aware
+		BitBlt(pPlane[0] + nOffsetPadding, nPitch, pNewPlane, nNewPitch, nWidth*pixelsize, nHeight, isse);
 		isFilled = true;
 	}
 }
@@ -192,10 +195,14 @@ void MVPlane::ChangePlane(const uint8_t *pNewPlane, int nNewPitch)
 
 void MVPlane::Pad()
 {
-   if (! isPadded)
+    // npitch is pixelsize aware
+    if (! isPadded)
 	{
-		Padding::PadReferenceFrame(pPlane[0], nPitch, nHPadding, nVPadding, nWidth, nHeight);
-		isPadded = true;
+       if(pixelsize==1)
+		   Padding::PadReferenceFrame<uint8_t>(pPlane[0], nPitch, nHPadding, nVPadding, nWidth, nHeight);
+       else
+           Padding::PadReferenceFrame<uint16_t>(pPlane[0], nPitch, nHPadding, nVPadding, nWidth, nHeight);
+       isPadded = true;
 	}
 }
 
@@ -232,18 +239,21 @@ void MVPlane::refine_wait()
 }
 
 
-
-void MVPlane::RefineExt(const uint8_t *pSrc2x, int nSrc2xPitch, bool isExtPadded) // copy from external upsized clip
+template<typename pixel_t>
+void MVPlane::RefineExt(const uint8_t *pSrc2x_8, int nSrc2xPitch, bool isExtPadded) // copy from external upsized clip
 {
+    const pixel_t *pSrc2x = reinterpret_cast<const pixel_t *>(pSrc2x_8);
+    nSrc2xPitch /= sizeof(pixel_t);
+
 	if (( nPel == 2 ) && ( !isRefined ))
 	{
 		// pel clip may be already padded (i.e. is finest clip)
-		int offset = isExtPadded ? 0 : nPitch*nVPadding + nHPadding;
-		uint8_t* pp1 = pPlane[1] + offset;
-		uint8_t* pp2 = pPlane[2] + offset;
-		uint8_t* pp3 = pPlane[3] + offset;
+		int offset = isExtPadded ? 0 : nPitch*nVPadding/sizeof(pixel_t) + nHPadding;
+		pixel_t* pp1 = reinterpret_cast<pixel_t *>(pPlane[1]) + offset;
+		pixel_t* pp2 = reinterpret_cast<pixel_t *>(pPlane[2]) + offset;
+		pixel_t* pp3 = reinterpret_cast<pixel_t *>(pPlane[3]) + offset;
 
-		for (int h=0; h<nHeight; h++) // assembler optimization?
+        for (int h=0; h<nHeight; h++) // assembler optimization?
 		{
 			for (int w=0; w<nWidth; w++)
 			{
@@ -251,38 +261,40 @@ void MVPlane::RefineExt(const uint8_t *pSrc2x, int nSrc2xPitch, bool isExtPadded
 				pp2[w] = pSrc2x[(w<<1) + nSrc2xPitch    ];
 				pp3[w] = pSrc2x[(w<<1) + nSrc2xPitch + 1];
 			}
-			pp1 += nPitch;
-			pp2 += nPitch;
-			pp3 += nPitch;
+			pp1 += nPitch/sizeof(pixel_t);
+			pp2 += nPitch/sizeof(pixel_t);
+			pp3 += nPitch/sizeof(pixel_t);
 			pSrc2x += nSrc2xPitch*2;
 		}
 		if (! isExtPadded)
 		{
-			Padding::PadReferenceFrame(pPlane[1], nPitch, nHPadding, nVPadding, nWidth, nHeight);
-			Padding::PadReferenceFrame(pPlane[2], nPitch, nHPadding, nVPadding, nWidth, nHeight);
-			Padding::PadReferenceFrame(pPlane[3], nPitch, nHPadding, nVPadding, nWidth, nHeight);
+			Padding::PadReferenceFrame<pixel_t>(pPlane[1], nPitch, nHPadding, nVPadding, nWidth, nHeight);
+			Padding::PadReferenceFrame<pixel_t>(pPlane[2], nPitch, nHPadding, nVPadding, nWidth, nHeight);
+			Padding::PadReferenceFrame<pixel_t>(pPlane[3], nPitch, nHPadding, nVPadding, nWidth, nHeight);
 		}
 		isPadded = true;
 	}
 	else if (( nPel == 4 ) && ( !isRefined ))
 	{
-		// pel clip may be already padded (i.e. is finest clip)
-		int offset = isExtPadded ? 0 : nPitch*nVPadding + nHPadding;
-		uint8_t* pp1  = pPlane[ 1] + offset;
-		uint8_t* pp2  = pPlane[ 2] + offset;
-		uint8_t* pp3  = pPlane[ 3] + offset;
-		uint8_t* pp4  = pPlane[ 4] + offset;
-		uint8_t* pp5  = pPlane[ 5] + offset;
-		uint8_t* pp6  = pPlane[ 6] + offset;
-		uint8_t* pp7  = pPlane[ 7] + offset;
-		uint8_t* pp8  = pPlane[ 8] + offset;
-		uint8_t* pp9  = pPlane[ 9] + offset;
-		uint8_t* pp10 = pPlane[10] + offset;
-		uint8_t* pp11 = pPlane[11] + offset;
-		uint8_t* pp12 = pPlane[12] + offset;
-		uint8_t* pp13 = pPlane[13] + offset;
-		uint8_t* pp14 = pPlane[14] + offset;
-		uint8_t* pp15 = pPlane[15] + offset;
+        // PF todo: pixelsize!
+        // pel clip may be already padded (i.e. is finest clip)
+		int offset = isExtPadded ? 0 : nPitch*nVPadding/sizeof(pixel_t) + nHPadding;
+		uint8_t* pp1  = reinterpret_cast<pixel_t *>(pPlane[ 1]) + offset;
+		uint8_t* pp2  = reinterpret_cast<pixel_t *>(pPlane[ 2]) + offset;
+		uint8_t* pp3  = reinterpret_cast<pixel_t *>(pPlane[ 3]) + offset;
+		uint8_t* pp4  = reinterpret_cast<pixel_t *>(pPlane[ 4]) + offset;
+		uint8_t* pp5  = reinterpret_cast<pixel_t *>(pPlane[ 5]) + offset;
+		uint8_t* pp6  = reinterpret_cast<pixel_t *>(pPlane[ 6]) + offset;
+		uint8_t* pp7  = reinterpret_cast<pixel_t *>(pPlane[ 7]) + offset;
+		uint8_t* pp8  = reinterpret_cast<pixel_t *>(pPlane[ 8]) + offset;
+		uint8_t* pp9  = reinterpret_cast<pixel_t *>(pPlane[ 9]) + offset;
+		uint8_t* pp10 = reinterpret_cast<pixel_t *>(pPlane[10]) + offset;
+		uint8_t* pp11 = reinterpret_cast<pixel_t *>(pPlane[11]) + offset;
+		uint8_t* pp12 = reinterpret_cast<pixel_t *>(pPlane[12]) + offset;
+		uint8_t* pp13 = reinterpret_cast<pixel_t *>(pPlane[13]) + offset;
+		uint8_t* pp14 = reinterpret_cast<pixel_t *>(pPlane[14]) + offset;
+		uint8_t* pp15 = reinterpret_cast<pixel_t *>(pPlane[15]) + offset;
+        // PF todo: pixelsize!   pp1  += nPitch;
 
 		for (int h=0; h<nHeight; h++) // assembler optimization?
 		{
@@ -304,40 +316,40 @@ void MVPlane::RefineExt(const uint8_t *pSrc2x, int nSrc2xPitch, bool isExtPadded
 				pp14[w] = pSrc2x[(w<<2) + nSrc2xPitch*3 + 2];
 				pp15[w] = pSrc2x[(w<<2) + nSrc2xPitch*3 + 3];
 			}
-			pp1  += nPitch;
-			pp2  += nPitch;
-			pp3  += nPitch;
-			pp4  += nPitch;
-			pp5  += nPitch;
-			pp6  += nPitch;
-			pp7  += nPitch;
-			pp8  += nPitch;
-			pp9  += nPitch;
-			pp10 += nPitch;
-			pp11 += nPitch;
-			pp12 += nPitch;
-			pp13 += nPitch;
-			pp14 += nPitch;
-			pp15 += nPitch;
+			pp1  += nPitch/sizeof(pixel_t);
+			pp2  += nPitch/sizeof(pixel_t);
+			pp3  += nPitch/sizeof(pixel_t);
+			pp4  += nPitch/sizeof(pixel_t);
+			pp5  += nPitch/sizeof(pixel_t);
+			pp6  += nPitch/sizeof(pixel_t);
+			pp7  += nPitch/sizeof(pixel_t);
+			pp8  += nPitch/sizeof(pixel_t);
+			pp9  += nPitch/sizeof(pixel_t);
+			pp10 += nPitch/sizeof(pixel_t);
+			pp11 += nPitch/sizeof(pixel_t);
+			pp12 += nPitch/sizeof(pixel_t);
+			pp13 += nPitch/sizeof(pixel_t);
+			pp14 += nPitch/sizeof(pixel_t);
+			pp15 += nPitch/sizeof(pixel_t);
 			pSrc2x += nSrc2xPitch*4;
 		}
 		if (!isExtPadded)
 		{
-			Padding::PadReferenceFrame(pPlane[ 1], nPitch, nHPadding, nVPadding, nWidth, nHeight);
-			Padding::PadReferenceFrame(pPlane[ 2], nPitch, nHPadding, nVPadding, nWidth, nHeight);
-			Padding::PadReferenceFrame(pPlane[ 3], nPitch, nHPadding, nVPadding, nWidth, nHeight);
-			Padding::PadReferenceFrame(pPlane[ 4], nPitch, nHPadding, nVPadding, nWidth, nHeight);
-			Padding::PadReferenceFrame(pPlane[ 5], nPitch, nHPadding, nVPadding, nWidth, nHeight);
-			Padding::PadReferenceFrame(pPlane[ 6], nPitch, nHPadding, nVPadding, nWidth, nHeight);
-			Padding::PadReferenceFrame(pPlane[ 7], nPitch, nHPadding, nVPadding, nWidth, nHeight);
-			Padding::PadReferenceFrame(pPlane[ 8], nPitch, nHPadding, nVPadding, nWidth, nHeight);
-			Padding::PadReferenceFrame(pPlane[ 9], nPitch, nHPadding, nVPadding, nWidth, nHeight);
-			Padding::PadReferenceFrame(pPlane[10], nPitch, nHPadding, nVPadding, nWidth, nHeight);
-			Padding::PadReferenceFrame(pPlane[11], nPitch, nHPadding, nVPadding, nWidth, nHeight);
-			Padding::PadReferenceFrame(pPlane[12], nPitch, nHPadding, nVPadding, nWidth, nHeight);
-			Padding::PadReferenceFrame(pPlane[13], nPitch, nHPadding, nVPadding, nWidth, nHeight);
-			Padding::PadReferenceFrame(pPlane[14], nPitch, nHPadding, nVPadding, nWidth, nHeight);
-			Padding::PadReferenceFrame(pPlane[15], nPitch, nHPadding, nVPadding, nWidth, nHeight);
+			Padding::PadReferenceFrame<pixel_t>(pPlane[ 1], nPitch, nHPadding, nVPadding, nWidth, nHeight);
+			Padding::PadReferenceFrame<pixel_t>(pPlane[ 2], nPitch, nHPadding, nVPadding, nWidth, nHeight);
+			Padding::PadReferenceFrame<pixel_t>(pPlane[ 3], nPitch, nHPadding, nVPadding, nWidth, nHeight);
+			Padding::PadReferenceFrame<pixel_t>(pPlane[ 4], nPitch, nHPadding, nVPadding, nWidth, nHeight);
+			Padding::PadReferenceFrame<pixel_t>(pPlane[ 5], nPitch, nHPadding, nVPadding, nWidth, nHeight);
+			Padding::PadReferenceFrame<pixel_t>(pPlane[ 6], nPitch, nHPadding, nVPadding, nWidth, nHeight);
+			Padding::PadReferenceFrame<pixel_t>(pPlane[ 7], nPitch, nHPadding, nVPadding, nWidth, nHeight);
+			Padding::PadReferenceFrame<pixel_t>(pPlane[ 8], nPitch, nHPadding, nVPadding, nWidth, nHeight);
+			Padding::PadReferenceFrame<pixel_t>(pPlane[ 9], nPitch, nHPadding, nVPadding, nWidth, nHeight);
+			Padding::PadReferenceFrame<pixel_t>(pPlane[10], nPitch, nHPadding, nVPadding, nWidth, nHeight);
+			Padding::PadReferenceFrame<pixel_t>(pPlane[11], nPitch, nHPadding, nVPadding, nWidth, nHeight);
+			Padding::PadReferenceFrame<pixel_t>(pPlane[12], nPitch, nHPadding, nVPadding, nWidth, nHeight);
+			Padding::PadReferenceFrame<pixel_t>(pPlane[13], nPitch, nHPadding, nVPadding, nWidth, nHeight);
+			Padding::PadReferenceFrame<pixel_t>(pPlane[14], nPitch, nHPadding, nVPadding, nWidth, nHeight);
+			Padding::PadReferenceFrame<pixel_t>(pPlane[15], nPitch, nHPadding, nVPadding, nWidth, nHeight);
 		}
 		isPadded = true;
 	}
@@ -374,9 +386,10 @@ void	MVPlane::reduce_wait ()
 
 void MVPlane::WritePlane(FILE *pFile)
 {
-   for ( int i = 0; i < nHeight; i++ )
+    // noffsetPadding is pixelsize aware
+    for ( int i = 0; i < nHeight; i++ )
 	{
-      fwrite(pPlane[0] + i * nPitch + nOffsetPadding, 1, nWidth, pFile);
+      fwrite(pPlane[0] + i * nPitch + nOffsetPadding, 1, nWidth*pixelsize, pFile);
 	}
 }
 

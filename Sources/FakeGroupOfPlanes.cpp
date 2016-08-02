@@ -22,8 +22,8 @@
 #include "FakeGroupOfPlanes.h"
 #include "FakePlaneOfBlocks.h"
 
-
-void FakeGroupOfPlanes::Create(int nBlkSizeX, int nBlkSizeY, int nLevelCount, int nPel, int nOverlapX, int nOverlapY, int _yRatioUV, int _nBlkX, int _nBlkY)
+// we need for _xRatioUV, but _yRatioUV is not used
+void FakeGroupOfPlanes::Create(int nBlkSizeX, int nBlkSizeY, int nLevelCount, int nPel, int nOverlapX, int nOverlapY, int _xRatioUV, int _yRatioUV, int _nBlkX, int _nBlkY)
 {
    nLvCount_ = nLevelCount;
 //   nOverlap = 2;//_nOverlap;
@@ -35,7 +35,8 @@ void FakeGroupOfPlanes::Create(int nBlkSizeX, int nBlkSizeY, int nLevelCount, in
 //	   nBlkY1++;
    nWidth_B = (nBlkSizeX - nOverlapX)*nBlkX1 + nOverlapX;
    nHeight_B = (nBlkSizeY - nOverlapY)*nBlkY1 + nOverlapY;
-   yRatioUV_B = _yRatioUV;
+   xRatioUV_B = _xRatioUV; // used.
+   yRatioUV_B = _yRatioUV; // PF nowhere used
 
 //   nWidth_ = nWidth;
 //   nHeight_ = nHeight;

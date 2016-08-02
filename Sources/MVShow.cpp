@@ -144,10 +144,10 @@ PVideoFrame __stdcall MVShow::GetFrame(int n, IScriptEnvironment* env)
 		}
 
 	// Copy the frame into the created frame
-   env->BitBlt(pDst[1], nDstPitches[1], pSrc[1], nSrcPitches[1], vi.width >> 1, vi.height /yRatioUV);
-   env->BitBlt(pDst[2], nDstPitches[2], pSrc[2], nSrcPitches[2], vi.width >> 1, vi.height /yRatioUV);
+   env->BitBlt(pDst[1], nDstPitches[1], pSrc[1], nSrcPitches[1], vi.width / xRatioUV * pixelsize, vi.height /yRatioUV);
+   env->BitBlt(pDst[2], nDstPitches[2], pSrc[2], nSrcPitches[2], vi.width / xRatioUV * pixelsize, vi.height /yRatioUV);
 //   if ( !nPlane )
-	   env->BitBlt(pDst[0], nDstPitches[0], pSrc[0], nSrcPitches[0], vi.width, vi.height);
+	   env->BitBlt(pDst[0], nDstPitches[0], pSrc[0], nSrcPitches[0], vi.width*pixelsize, vi.height);
 
    if ( mvClip.IsUsable() )
       DrawMVs(pDst[0] + nDstPitches[0]*nSuperVPad + nHPadding, nDstPitches[0], pSrc[0] + nSrcPitches[0]*nSuperVPad + nHPadding, nSrcPitches[0]);
@@ -195,7 +195,7 @@ PVideoFrame __stdcall MVShow::GetFrame(int n, IScriptEnvironment* env)
          for (int h=0; h<nBlkSizeX; h++)
          {
              for (int w=0; w<nBlkSizeY; w++)
-                pDstWork[w] = 255;
+                pDstWork[w] = 255; // todo pixelsize aware
             pDstWork += nDstPitches[0];
          }
 

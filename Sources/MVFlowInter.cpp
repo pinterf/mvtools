@@ -96,12 +96,12 @@ timeclip (_timeclip)
 	nWidthP = nBlkXP*(nBlkSizeX - nOverlapX) + nOverlapX;
 	nHeightP = nBlkYP*(nBlkSizeY - nOverlapY) + nOverlapY;
 	// for YV12
-	nWidthPUV = nWidthP/2;
+	nWidthPUV = nWidthP/xRatioUV;
 	nHeightPUV = nHeightP/yRatioUV;
 	nHeightUV = nHeight/yRatioUV;
-	nWidthUV = nWidth/2;
+	nWidthUV = nWidth/xRatioUV;
 
-	nHPaddingUV = nHPadding/2;
+	nHPaddingUV = nHPadding/xRatioUV;
 	nVPaddingUV = nVPadding/yRatioUV;
 
 	VPitchY = (nWidthP + 15) & (~15);
@@ -410,9 +410,9 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
         VYSmallYF[nBlkXP*nBlkY + i] = std::min(VYSmallYF[nBlkXP*(nBlkY - 1) + i], short(0)); // 2.5.11.22
       }
 		}
-		VectorSmallMaskYToHalfUV(VXSmallYB, nBlkXP, nBlkYP, VXSmallUVB, 2);
+		VectorSmallMaskYToHalfUV(VXSmallYB, nBlkXP, nBlkYP, VXSmallUVB, xRatioUV);
 		VectorSmallMaskYToHalfUV(VYSmallYB, nBlkXP, nBlkYP, VYSmallUVB, yRatioUV);
-		VectorSmallMaskYToHalfUV(VXSmallYF, nBlkXP, nBlkYP, VXSmallUVF, 2);
+		VectorSmallMaskYToHalfUV(VXSmallYF, nBlkXP, nBlkYP, VXSmallUVF, xRatioUV);
 		VectorSmallMaskYToHalfUV(VYSmallYF, nBlkXP, nBlkYP, VYSmallUVF, yRatioUV);
 
 		// analyse vectors field to detect occlusion
@@ -524,9 +524,9 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
           VYSmallYFF[nBlkXP*nBlkY + i] = std::min(VYSmallYFF[nBlkXP*(nBlkY - 1) + i], short(0)); // 2.5.11.22
         }
 			}
-			VectorSmallMaskYToHalfUV(VXSmallYBB, nBlkXP, nBlkYP, VXSmallUVBB, 2);
+			VectorSmallMaskYToHalfUV(VXSmallYBB, nBlkXP, nBlkYP, VXSmallUVBB, xRatioUV);
 			VectorSmallMaskYToHalfUV(VYSmallYBB, nBlkXP, nBlkYP, VYSmallUVBB, yRatioUV);
-			VectorSmallMaskYToHalfUV(VXSmallYFF, nBlkXP, nBlkYP, VXSmallUVFF, 2);
+			VectorSmallMaskYToHalfUV(VXSmallYFF, nBlkXP, nBlkYP, VXSmallUVFF, xRatioUV);
 			VectorSmallMaskYToHalfUV(VYSmallYFF, nBlkXP, nBlkYP, VYSmallUVFF, yRatioUV);
 
 			// upsize vectors to full frame

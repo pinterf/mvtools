@@ -34,6 +34,7 @@
 
 // vi.num_audio_samples = nHeight + (nHPad<<16) + (nVPad<<24) + ((_int64)(nPel)<<32) + ((_int64)nModeYUV<<40) + ((_int64)nLevels<<48);
 
+// PF: OK
 inline int PlaneHeightLuma(int src_height, int level, int yRatioUV, int vpad)
 {
 	int height = src_height;
@@ -46,6 +47,7 @@ inline int PlaneHeightLuma(int src_height, int level, int yRatioUV, int vpad)
 	return height;
 }
 
+// PF: OK
 inline int PlaneWidthLuma(int src_width, int level, int xRatioUV, int hpad)
 {
 	int width = src_width;
@@ -58,6 +60,7 @@ inline int PlaneWidthLuma(int src_width, int level, int xRatioUV, int hpad)
 	return width;
 }
 
+// PF: OK no need for xRatioUV here
 inline unsigned int PlaneSuperOffset(bool chroma, int src_height, int level, int pel, int vpad, int plane_pitch, int yRatioUV)
 {
 	// storing subplanes in superframes may be implemented by various ways
@@ -84,8 +87,6 @@ inline unsigned int PlaneSuperOffset(bool chroma, int src_height, int level, int
 }
 
 
-
-
 class MVSuper
 :	public GenericVideoFilter
 {
@@ -98,31 +99,34 @@ protected:
 	int            sharp;
 	int            rfilter; // frame reduce filter mode
 	PClip          pelclip; // upsized source clip with doubled frame width and heigth (used for pel=2)
-	bool           isse;
-	bool           planar; //v2.0.0.7
+	bool           isse;   //PF maybe obsolate or debug 160729
+	bool           planar; //v2.0.0.7 PF maybe obsolate 160729
 
 	int            nWidth;
 	int            nHeight;
 
 	int            yRatioUV;
 	int            xRatioUV;
+
+    int pixelsize; // PF
+
 	bool           chroma;
-	int            pixelType;
+	int            pixelType; //PF maybe obsolate 160729 used in YUY decision along with planar flag
 	bool           usePelClip;
 	int            nSuperWidth;
 	int            nSuperHeight;
 
 	MVPlaneSet     nModeYUV;
 
-	YUY2Planes *   SrcPlanes;
+	YUY2Planes *   SrcPlanes;  //PF maybe obsolate 160729 YUY
 //	YUY2Planes *   DstPlanes;
-	YUY2Planes *   SrcPelPlanes;
+	YUY2Planes *   SrcPelPlanes; //PF maybe obsolate 160729 YUY
 
 	MVGroupOfFrames *
 	               pSrcGOF;
 	bool           isPelClipPadded;
 
-	bool           _mt_flag;
+	bool           _mt_flag; // PF maybe 2.6.0.5
 
 public:
 

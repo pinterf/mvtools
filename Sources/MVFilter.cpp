@@ -50,7 +50,9 @@ MVFilter::MVFilter(const PClip &vector, const char *filterName, IScriptEnvironme
    nOverlapX = mvClip.GetOverlapX();
    nOverlapY = mvClip.GetOverlapY();
    pixelType = mvClip.GetPixelType();
+   xRatioUV = mvClip.GetXRatioUV(); // PF
    yRatioUV = mvClip.GetYRatioUV();
+   pixelsize = mvClip.GetPixelSize(); // PF
 
    name = filterName;
 }
@@ -80,4 +82,9 @@ void MVFilter::CheckSimilarity(const MVClip &vector, const char *vectorName, ISc
    if ( yRatioUV != vector.GetYRatioUV() )
       env->ThrowError("Error in %s : %s's Y Ratio UV is incorrect", name, vectorName);
 //      env->ThrowError("Error in %s : %s's Y Ratio UV is incorrect", name.c_str(), vectorName);
+   if ( xRatioUV != vector.GetXRatioUV() )
+       env->ThrowError("Error in %s : %s's X Ratio UV is incorrect", name, vectorName);
+
+   if ( pixelsize != vector.GetPixelSize() )
+       env->ThrowError("Error in %s : %s's pixel size (bit depth) is incorrect", name, vectorName);
 }

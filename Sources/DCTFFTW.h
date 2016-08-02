@@ -46,22 +46,27 @@ class DCTFFTW
 	fftwf_plan dctplan;
 	float * fSrcDCT;
 
+//  members from DCTClass
 //	int sizex;
 //	int sizey;
 //	int dctmode;
+//  int pixelsize
 	int dctshift;
 	int dctshift0;
 
-	void Bytes2Float(const unsigned char * srcp0, int _pitch, float * realdata);
-	void Float2Bytes(unsigned char * srcp0, int _pitch, float * realdata);
+    template<typename pixel_t>
+    void Bytes2Float(const unsigned char * srcp0, int _pitch, float * realdata);
+    
+    template<typename pixel_t>
+    void Float2Bytes(unsigned char * srcp0, int _pitch, float * realdata);
 
-	static conc::Mutex
-						_fftw_mutex;
+	static conc::Mutex _fftw_mutex;
 
 public:
 
-	DCTFFTW(int _sizex, int _sizey, ::HINSTANCE _hFFTW3, int _dctmode);
+	DCTFFTW(int _sizex, int _sizey, ::HINSTANCE _hFFTW3, int _dctmode, int _pixelsize);
 	~DCTFFTW();
+    // works internally by pixelsize:
 	void DCTBytes2D(const unsigned char *srcp0, int _src_pitch, unsigned char *dctp, int _dct_pitch);
 
 };

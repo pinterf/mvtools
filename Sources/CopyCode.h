@@ -18,23 +18,26 @@ extern "C" void MemZoneSet(unsigned char *ptr, unsigned char value, int width,
 typedef void (COPYFunction)(unsigned char *pDst, int nDstPitch,
                             const unsigned char *pSrc, int nSrcPitch);
 
-template<int nBlkWidth, int nBlkHeight>
+template<int nBlkWidth, int nBlkHeight, typename pixel_t>
 void Copy_C (uint8_t *pDst, int nDstPitch, const uint8_t *pSrc, int nSrcPitch)
 {
    for ( int j = 0; j < nBlkHeight; j++ )
    {
 //      for ( int i = 0; i < nBlkWidth; i++ )  //  waste cycles removed by Fizick in v1.2
-         memcpy(pDst, pSrc, nBlkWidth);
+         memcpy(pDst, pSrc, nBlkWidth * sizeof(pixel_t));
       pDst += nDstPitch;
       pSrc += nSrcPitch;
    }
 }
 
-template<int nBlkSize>
+template<int nBlkSize, typename pixel_t>
 void Copy_C(uint8_t *pDst, int nDstPitch, const uint8_t *pSrc, int nSrcPitch)
 {
-   Copy_C<nBlkSize, nBlkSize>(pDst, nDstPitch, pSrc, nSrcPitch);
+   Copy_C<nBlkSize, nBlkSize, typename pixel_t>(pDst, nDstPitch, pSrc, nSrcPitch);
 }
+
+#if 0
+// PF no use
 // even sizes,
 template<int nBlkWidth, int nBlkHeight>
 void Copy_mmx(uint8_t *pDst, int nDstPitch, const uint8_t *pSrc, int nSrcPitch)
@@ -108,6 +111,7 @@ void Copy_mmx(uint8_t *pDst, int nDstPitch, const uint8_t *pSrc, int nSrcPitch)
          *(pDst + i + j * nDstPitch) = *(pSrc + i + j * nSrcPitch);
    }
 }
+#endif
 /*
 extern "C" void __cdecl Copy32x16_mmx(uint8_t *pDst, int nDstPitch,
                                    const uint8_t *pSrc, int nSrcPitch);

@@ -48,7 +48,7 @@ class DCTFactory
 
 public:
 
-	explicit			DCTFactory (int dctmode, bool isse, int blksizex, int blksizey, ::IScriptEnvironment &env);
+	explicit			DCTFactory (int dctmode, bool isse, int blksizex, int blksizey, int pixelsize, ::IScriptEnvironment &env);
 	virtual			~DCTFactory ();
 
 	int				get_dctmode () const;
@@ -76,6 +76,7 @@ private:
 	const int		_blksizey;
 	const bool		_isse;
 	const bool		_fftw_flag;
+    const bool		_pixelsize; // PF
 
 
 

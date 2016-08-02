@@ -98,6 +98,7 @@ private:
 	// Processing variables
 	MVClip *       _mv_clip_ptr;  // Vector clip used to process this frame
 	int            _thsad;
+    const int xSubUV; // PF
 	const int		ySubUV;
 	int            fieldShift;
 	BYTE *         pDst [3];

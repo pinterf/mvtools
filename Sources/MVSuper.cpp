@@ -74,8 +74,9 @@ MVSuper::MVSuper (
 	nModeYUV = chroma ? YUVPLANES : YPLANE;
 
 	pixelType = vi.pixel_type;
-	yRatioUV = (vi.IsYV12()) ? 2 : 1;
-	xRatioUV = 2; // for YV12 and YUY2, really do not used and assumed to 2
+    yRatioUV = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U));
+    xRatioUV = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U)); // for YV12 and YUY2, really do not used and assumed to 2
+    pixelsize = vi.ComponentSize();
 
 	nLevels = _levels;
 	int nLevelsMax = 0;
@@ -139,7 +140,7 @@ MVSuper::MVSuper (
 
 	// LDS: why not nModeYUV?
 //	pSrcGOF = new MVGroupOfFrames(nLevels, nWidth, nHeight, nPel, nHPad, nVPad, nModeYUV, isse, yRatioUV, mt_flag);
-	pSrcGOF = new MVGroupOfFrames(nLevels, nWidth, nHeight, nPel, nHPad, nVPad, YUVPLANES, isse, yRatioUV, mt_flag);
+	pSrcGOF = new MVGroupOfFrames(nLevels, nWidth, nHeight, nPel, nHPad, nVPad, YUVPLANES, isse, xRatioUV, yRatioUV, pixelsize, mt_flag);
 
 	pSrcGOF->set_interp (nModeYUV, rfilter, sharp);
 
@@ -229,7 +230,7 @@ PVideoFrame __stdcall MVSuper::GetFrame(int n, IScriptEnvironment* env)
 		// planer data packed to interleaved format (same as interleved2planar by kassandro) - v2.0.0.5
 		pDstY = dst->GetWritePtr();
 		pDstU = pDstY + nSuperWidth;
-		pDstV = pDstU + nSuperWidth/2;
+		pDstV = pDstU + nSuperWidth/2; // YUY2
 		nDstPitchY = dst->GetPitch();
 		nDstPitchUV = nDstPitchY;
 	}
@@ -270,13 +271,28 @@ PVideoFrame __stdcall MVSuper::GetFrame(int n, IScriptEnvironment* env)
 	if (usePelClip)
 	{
 		MVFrame *srcFrames = pSrcGOF->GetFrame(0);
-		MVPlane *srcPlaneY = srcFrames->GetPlane(YPLANE);
-		if (nModeYUV & YPLANE) srcPlaneY->RefineExt(pSrcPelY, nSrcPelPitchY, isPelClipPadded);
-		MVPlane *srcPlaneU = srcFrames->GetPlane(UPLANE);
-		if (nModeYUV & UPLANE) srcPlaneU->RefineExt(pSrcPelU, nSrcPelPitchUV, isPelClipPadded);
-		MVPlane *srcPlaneV = srcFrames->GetPlane(VPLANE);
-		if (nModeYUV & VPLANE) srcPlaneV->RefineExt(pSrcPelV, nSrcPelPitchUV, isPelClipPadded);
-	}
+		
+        MVPlane *srcPlaneY = srcFrames->GetPlane(YPLANE);
+		if (nModeYUV & YPLANE) 
+            if(pixelsize==1)
+                srcPlaneY->RefineExt<uint8_t>(pSrcPelY, nSrcPelPitchY, isPelClipPadded);
+            else
+                srcPlaneY->RefineExt<uint16_t>(pSrcPelY, nSrcPelPitchY, isPelClipPadded);
+
+        MVPlane *srcPlaneU = srcFrames->GetPlane(UPLANE);
+		if (nModeYUV & UPLANE) 
+            if(pixelsize==1)
+                srcPlaneU->RefineExt<uint8_t>(pSrcPelU, nSrcPelPitchUV, isPelClipPadded);
+            else
+                srcPlaneU->RefineExt<uint16_t>(pSrcPelU, nSrcPelPitchUV, isPelClipPadded);
+
+        MVPlane *srcPlaneV = srcFrames->GetPlane(VPLANE);
+		if (nModeYUV & VPLANE) 
+            if(pixelsize==1)
+                srcPlaneV->RefineExt<uint8_t>(pSrcPelV, nSrcPelPitchUV, isPelClipPadded);
+            else
+                srcPlaneV->RefineExt<uint16_t>(pSrcPelV, nSrcPelPitchUV, isPelClipPadded);
+    }
 	else
 	{
 		pSrcGOF->Refine(nModeYUV);

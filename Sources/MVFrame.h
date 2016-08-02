@@ -39,10 +39,12 @@ class MVFrame
 
    int nMode;
    bool isse;
+   int xRatioUV;
    int yRatioUV;
+   int pixelsize;
 
 public:
-   MVFrame(int nWidth, int nHeight, int nPel, int nHPad, int nVPad, int _nMode, bool _isse, int _yRatioUV, bool mt_flag);
+   MVFrame(int nWidth, int nHeight, int nPel, int nHPad, int nVPad, int _nMode, bool _isse, int _xRatioUV, int _yRatioUV, int pixelsize, bool mt_flag);
    ~MVFrame();
 
    void Update(int _nMode, uint8_t * pSrcY, int pitchY, uint8_t * pSrcU, int pitchU, uint8_t *pSrcV, int pitchV);

@@ -31,24 +31,26 @@
 
 
 
-MVFrame::MVFrame(int nWidth, int nHeight, int nPel, int nHPad, int nVPad, int _nMode, bool _isse, int _yRatioUV, bool mt_flag)
+MVFrame::MVFrame(int nWidth, int nHeight, int nPel, int nHPad, int nVPad, int _nMode, bool _isse, int _xRatioUV, int _yRatioUV, int _pixelsize, bool mt_flag)
 {
    nMode = _nMode;
    isse = _isse;
+   xRatioUV = _xRatioUV;
    yRatioUV = _yRatioUV;
+   pixelsize = _pixelsize;
 
    if ( nMode & YPLANE )
-      pYPlane = new MVPlane(nWidth, nHeight, nPel, nHPad, nVPad, isse, mt_flag);
+      pYPlane = new MVPlane(nWidth, nHeight, nPel, nHPad, nVPad, pixelsize, isse, mt_flag);
    else
       pYPlane = 0;
 
    if ( nMode & UPLANE )
-      pUPlane = new MVPlane(nWidth / 2, nHeight / yRatioUV, nPel, nHPad / 2, nVPad / yRatioUV, isse, mt_flag);
+      pUPlane = new MVPlane(nWidth / xRatioUV, nHeight / yRatioUV, nPel, nHPad / xRatioUV, nVPad / yRatioUV, pixelsize, isse, mt_flag);
    else
       pUPlane = 0;
 
    if ( nMode & VPLANE )
-      pVPlane = new MVPlane(nWidth / 2, nHeight / yRatioUV, nPel, nHPad / 2, nVPad / yRatioUV, isse, mt_flag);
+      pVPlane = new MVPlane(nWidth / xRatioUV, nHeight / yRatioUV, nPel, nHPad / xRatioUV, nVPad / yRatioUV, pixelsize, isse, mt_flag);
    else
       pVPlane = 0;
 }

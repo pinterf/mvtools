@@ -28,6 +28,7 @@ public:
 	int sizex;
 	int sizey;
 	int dctmode;
+    int pixelsize; // PF
 
 //	DCTClass(int _sizex, int _sizey, int _dctshift0extra);
 //	~DCTClass();

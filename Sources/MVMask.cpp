@@ -65,9 +65,9 @@ MVMask::MVMask(
 	nHeightB = nBlkY*(nBlkSizeY - nOverlapY) + nOverlapY;
 
 	nHeightUV = nHeight/yRatioUV;
-	nWidthUV = nWidth/2;// for YV12
+	nWidthUV = nWidth/xRatioUV;// for YV12
 	nHeightBUV = nHeightB/yRatioUV;
-	nWidthBUV = nWidthB/2;
+	nWidthBUV = nWidthB/xRatioUV;
 
 	 int CPUF_Resize = env->GetCPUFlags();
 	 if (!isse) CPUF_Resize = (CPUF_Resize & !CPUF_INTEGER_SSE) & !CPUF_SSE2;
@@ -164,7 +164,7 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
 			nSrcPitches[2] = nSrcPitches[0];
 			pDst[0] = dst->GetWritePtr();
 			pDst[1] = pDst[0] + nWidth;
-			pDst[2] = pDst[1] + nWidth/2;
+			pDst[2] = pDst[1] + nWidth/2; // YUY2
 			nDstPitches[0] = dst->GetPitch();
 			nDstPitches[1] = nDstPitches[0];
 			nDstPitches[2] = nDstPitches[0];

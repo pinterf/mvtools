@@ -48,8 +48,10 @@ GenericVideoFilter(_super)
 	nSuperHeight = _super->GetVideoInfo().height;
 	int nWidth = nSuperWidth - 2*nSuperHPad;
 	int nHeight = nHeightS;
-	int yRatioUV = vi.IsYUY2() ? 1 : 2;
-	pRefGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse, yRatioUV, true);
+    int xRatioUV = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U));
+    int yRatioUV = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U));;
+    int pixelsize = _super->GetVideoInfo().ComponentSize();
+	pRefGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse, xRatioUV, yRatioUV, pixelsize, true);
 
 //	if (nHeight != nHeightS || nHeight != vi.height || nWidth != nSuperWidth-nSuperHPad*2 || nWidth != vi.width)
 //		env->ThrowError("MVFinest : different frame sizes of input clips");

@@ -86,13 +86,13 @@ mvClip(_mvec, nSCD1, nSCD2, env, 1, 0)
 	nWidthP = nBlkXP*(nBlkSizeX - nOverlapX) + nOverlapX;
 	nHeightP = nBlkYP*(nBlkSizeY - nOverlapY) + nOverlapY;
 	// for YV12
-	nWidthPUV = nWidthP/2;
+	nWidthPUV = nWidthP/xRatioUV;
 	nHeightPUV = nHeightP/yRatioUV;
 
 	nHeightUV = nHeight/yRatioUV;
-	nWidthUV = nWidth/2;
+	nWidthUV = nWidth/xRatioUV;
 
-	nHPaddingUV = nHPadding/2;
+	nHPaddingUV = nHPadding/xRatioUV;
 	nVPaddingUV = nVPadding/yRatioUV;
 
 
@@ -447,7 +447,7 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
 			}
 		}
 
-		VectorSmallMaskYToHalfUV(VXSmallY, nBlkXP, nBlkYP, VXSmallUV, 2);
+		VectorSmallMaskYToHalfUV(VXSmallY, nBlkXP, nBlkYP, VXSmallUV, xRatioUV);
 		VectorSmallMaskYToHalfUV(VYSmallY, nBlkXP, nBlkYP, VYSmallUV, yRatioUV);
 
 		// upsize (bilinear interpolate) vector masks to fullframe size

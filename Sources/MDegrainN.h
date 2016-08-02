@@ -73,7 +73,7 @@ private:
 		enum {         MAX_SIZE = 32                  };
 		enum {         AREA     = MAX_SIZE * MAX_SIZE };
 		               TmpBlock () : _lsb_ptr (&_d [AREA]) {}
-		unsigned char  _d [MAX_SIZE * MAX_SIZE * 2];	// * 2 for MSB and LSB parts
+		unsigned char  _d [MAX_SIZE * MAX_SIZE * 2];	// * 2 for MSB and LSB parts, or for one uint16_t
 		unsigned char* _lsb_ptr;	// Not allocated, it's just a reference to a part of the _d area
 	};
 
@@ -118,9 +118,13 @@ private:
 	const bool		_lsb_flag;
 	const bool		_mt_flag;
 	int				_height_lsb_mul;
+    //int pixelsize; // in MVFilter
+    int pixelsize_super; // PF not param, from create
 
-	const int		_yratiouv_log;
+    const int		_xratiouv_log; // PF
+    const int		_yratiouv_log;
 	int				_nsupermodeyuv;
+
 
 	std::auto_ptr <YUY2Planes>
 						_dst_planes;

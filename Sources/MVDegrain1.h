@@ -39,6 +39,8 @@ private:
    bool planar;
 	bool lsb_flag;
 	int height_lsb_mul;
+    //int pixelsize; // in MVFilter
+    int pixelsize_super; // PF not param, from create
 
    PClip super; // v2.0
 	MVGroupOfFrames *pRefBGOF, *pRefFGOF;
