@@ -99,8 +99,10 @@ inline unsigned int Sad2x4_C(const uint8_t *pSrc, const uint8_t *pRef,int nSrcPi
 SAD_ISSE(32,32);
 SAD_ISSE(16,32);
 SAD_ISSE(32,16);
+SAD_ISSE(32,8);
 SAD_ISSE(16,16);
 SAD_ISSE(16,8);
+SAD_ISSE(16,4);
 SAD_ISSE(16,2);
 SAD_ISSE(16,1);
 SAD_ISSE(8,16);
