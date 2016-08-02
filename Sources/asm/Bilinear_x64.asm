@@ -79,7 +79,10 @@ w14:
                 pshufw mm3, mm3, 0
 
 
-                mov eax, 1 ; very first (left) is skipped
+                mov rax, 1 ; very first (left) is skipped
+				             ; eax->rax PF160620 (jpsdr)
+							 ; problem or not? not really
+							 ; "When loading a value into a 32-bit register (but not an 8- or 16-bit register), the upper 32 bits of the corresponding 64-bit register are set to zero."
 
             .loopw:
                 cmp eax, ecx
