@@ -158,9 +158,12 @@ extern "C" void __cdecl Copy8x1_mmx(uint8_t *pDst, int nDstPitch,
 MK_CFUNC(Copy32x32_sse2);
 MK_CFUNC(Copy16x32_sse2);
 MK_CFUNC(Copy32x16_sse2);
+MK_CFUNC(Copy32x8_sse2);
 MK_CFUNC(Copy16x16_sse2);
 MK_CFUNC(Copy16x8_sse2);
+MK_CFUNC(Copy16x4_sse2);
 MK_CFUNC(Copy16x2_sse2);
+MK_CFUNC(Copy16x1_sse2);
 MK_CFUNC(Copy8x16_sse2);
 MK_CFUNC(Copy8x8_sse2);
 MK_CFUNC(Copy8x4_sse2);

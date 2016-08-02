@@ -4,6 +4,7 @@
 
 ; Addition: Sad4x2_iSSE, Sad16x8_iSSE, Sad16x2_iSSE, Sad8x2_iSSE, Sad8x1_iSSE, Sad2x2_iSSE, Sad2x4_iSSE, sad32x16
 ; (c) 2006-2007 Fizick
+; Sad16x4_iSSE, Sad32x8_iSSE 2016 pinterf
 ; swapped 2nd and 3rd parameter, added SadDummy by TSchniede
 
 ; See legal notice in Copying.txt for more information
@@ -136,9 +137,11 @@ SECTION .text
 cglobal Sad32x32_iSSE
 cglobal Sad16x32_iSSE
 cglobal Sad32x16_iSSE
+cglobal Sad32x8_iSSE
 cglobal Sad16x16_iSSE
 cglobal Sad16x8_iSSE
-cglobal Sad16x2_iSSE
+cglobal Sad16x8_iSSE
+cglobal Sad16x4_iSSE
 cglobal Sad16x1_iSSE
 cglobal Sad8x8_iSSE
 cglobal Sad8x16_iSSE
@@ -166,6 +169,7 @@ SadDummy:
 SAD16xY 32
 SAD16xY 16
 SAD16xY 8
+SAD16xY 4
 SAD16xY 2
 SAD16xY 1
 
@@ -845,6 +849,40 @@ Sad32x32_iSSE:
     SAD32x1
     SAD32x1
     SAD32x1
+
+    SAD32x1
+    SAD32x1
+    SAD32x1
+    SAD32x1
+    SAD32x1
+    SAD32x1
+    SAD32x1
+    SAD32x1
+
+	paddd  mm0, mm1
+	movd   eax, mm0
+
+	ret
+
+;-----------------------------------------------------------------------------
+;
+; unsigned int Sad32x8_iSSE(const unsigned char * cur,
+;							 const unsigned int cpitch,
+;							 const unsigned char * ref,
+;							 const unsigned int rpitch);
+;
+;-----------------------------------------------------------------------------
+
+ALIGN 16
+Sad32x8_iSSE:
+
+    mov rax, rcx			; cur
+    movsxd rcx, edx			; cpitch
+;   mov r8, r8				; ref
+    movsxd rdx, r9d			; dpitch
+
+    pxor mm0, mm0
+    pxor mm1, mm1
 
     SAD32x1
     SAD32x1
