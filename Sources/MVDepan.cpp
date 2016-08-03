@@ -461,7 +461,7 @@ PVideoFrame __stdcall MVDepan::GetFrame(int ndest, IScriptEnvironment* env)
 	int mask_height;
 	int mask_pitch;
 
-	if (vi.IsYV12())
+	if (vi.IsYUV() && !vi.IsYUY2())
 	{
 	// copy U
 	srcp= src->GetReadPtr(PLANAR_U);

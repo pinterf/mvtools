@@ -54,10 +54,11 @@ MVSuper::MVSuper (
 
 	nHeight = vi.height;
 
-	if (!vi.IsYV12() && !vi.IsYUY2())
-	{
-		env->ThrowError("MSuper: Clip must be YV12 or YUY2");
-	}
+    if (!vi.IsYUV() && !vi.IsYUY2 ()) // YUY2 is also YUV but let's see what is supported
+                                      //if (! vi.IsYV12 () && ! vi.IsYUY2 ())
+    {
+        env->ThrowError ("MSuper: Clip must be YUV or YUY2");
+    }
 
 	nPel = _pel;
 	if (( nPel != 1 ) && ( nPel != 2 ) && ( nPel != 4 ))

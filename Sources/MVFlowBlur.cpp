@@ -75,7 +75,7 @@ mvClipF(_mvfw, nSCD1, nSCD2, env, 1, 0)
 
 
 	nHeightUV = nHeight/yRatioUV;
-	nWidthUV = nWidth/2;// for YV12
+	nWidthUV = nWidth/xRatioUV;// orig: /2 for YV12
 	nHPaddingUV = nHPadding/2;
 	nVPaddingUV = nHPadding/yRatioUV;
 
