@@ -31,7 +31,7 @@
 #include "SuperParams64Bits.h"
 #include "Time256ProviderCst.h"
 
-#include <intrin.h>
+//#include <intrin.h>
 #include "math.h"
 
 MVBlockFps::MVBlockFps(
@@ -114,6 +114,24 @@ MVBlockFps::MVBlockFps(
     env->ThrowError("MBlockFps : wrong source or super frame size");
   }
 
+  // in overlaps.h
+  // OverlapsLsbFunction
+  // OverlapsFunction
+  // in M(V)DegrainX: DenoiseXFunction
+  arch_t arch;
+  if ((pixelsize == 1) && (((env->GetCPUFlags() & CPUF_SSE2) != 0) & isse2))
+      arch = USE_SSE2;
+  else if ((pixelsize == 1) && isse2)
+      arch = USE_MMX;
+  else
+      arch = NO_SIMD;
+
+  OVERSLUMA   = get_overlaps_function(nBlkSizeX, nBlkSizeY, pixelsize, arch);
+  OVERSCHROMA = get_overlaps_function(nBlkSizeX/xRatioUV, nBlkSizeY/yRatioUV, pixelsize, arch);
+  BLITLUMA = get_copy_function(nBlkSizeX, nBlkSizeY, pixelsize, arch);
+  BLITCHROMA = get_copy_function(nBlkSizeX/xRatioUV, nBlkSizeY/yRatioUV, pixelsize, arch);
+
+#if 0
   // todo generic function fill xRatioUV-aware
   if (isse2)
   {
@@ -329,6 +347,7 @@ MVBlockFps::MVBlockFps(
       }
     }
   }
+#endif
 
   // may be padded for full frame cover
   nBlkXP = (nBlkX*(nBlkSizeX - nOverlapX) + nOverlapX < nWidth) ? nBlkX + 1 : nBlkX;

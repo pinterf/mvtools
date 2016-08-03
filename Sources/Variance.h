@@ -18,10 +18,13 @@
 #ifndef __VARIANCE_H__
 #define __VARIANCE_H__
 
+#include <stdint.h>
+#include <CopyCode.h> // arch_t
+
 inline unsigned int VARABS(int x) { return x < 0 ? -x : x; }
 
 typedef unsigned int (VARFunction)(const unsigned char *pSrc, int nSrcPitch, int *pLuma);
-// PF: nowhere used
+// PF: VAR is not used
 template<int nBlkWidth, int nBlkHeight, typename pixel_t>
 unsigned int Var_C(const unsigned char *pSrc, int nSrcPitch, int *pLuma)
 {
@@ -63,27 +66,13 @@ extern "C" unsigned int __cdecl Var16x8_sse2(const unsigned char *pSrc, int nSrc
 extern "C" unsigned int __cdecl Var16x2_sse2(const unsigned char *pSrc, int nSrcPitch, int *pLuma);
 
 typedef unsigned int (LUMAFunction)(const unsigned char *pSrc, int nSrcPitch);
+LUMAFunction* get_luma_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
 
-// PF: nowhere used
 template<int nBlkWidth, int nBlkHeight, typename pixel_t>
-unsigned int Luma_C(const unsigned char *pSrc, int nSrcPitch)
-{
-   const unsigned char *s = pSrc;
-   int meanLuma = 0;
-   for ( int j = 0; j < nBlkHeight; j++ )
-   {
-      for ( int i = 0; i < nBlkWidth; i++ )
-         meanLuma += reinterpret_cast<const pixel_t *>(s)[i];
-      s += nSrcPitch;
-   }
-   return meanLuma;
-}
+unsigned int Luma_C(const unsigned char *pSrc, int nSrcPitch);
 
 template<int nBlkSize, typename pixel_t>
-unsigned int Luma_C(const unsigned char *pSrc, int nSrcPitch)
-{
-   return Luma_C<nBlkSize, nBlkSize, pixel_t>(pSrc, nSrcPitch);
-}
+unsigned int Luma_C(const unsigned char *pSrc, int nSrcPitch);
 
 extern "C" unsigned int __cdecl Luma32x32_sse2(const unsigned char *pSrc, int nSrcPitch);
 extern "C" unsigned int __cdecl Luma16x32_sse2(const unsigned char *pSrc, int nSrcPitch);

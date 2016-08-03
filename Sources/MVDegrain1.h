@@ -9,13 +9,6 @@
 
 
 
-typedef void (Denoise1Function) (
-	BYTE *pDst, BYTE *pDstLsb, bool lsb_flag, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
-	const BYTE *pRefB, int BPitch, const BYTE *pRefF, int FPitch,
-	int WSrc, int WRefB, int WRefF
-);
-
-
 
 class MVGroupOfFrames;
 class MVPlane;
@@ -27,6 +20,11 @@ class MVDegrain1
 ,	public MVFilter
 {
 private:
+    typedef void (Denoise1Function) (
+        BYTE *pDst, BYTE *pDstLsb, bool lsb_flag, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
+        const BYTE *pRefB, int BPitch, const BYTE *pRefF, int FPitch,
+        int WSrc, int WRefB, int WRefF
+        );
 
    MVClip mvClipB;
    MVClip mvClipF;
@@ -35,7 +33,7 @@ private:
    int YUVplanes;
    int nLimit;
    int nLimitC;
-   bool isse;
+   bool isse2;
    bool planar;
 	bool lsb_flag;
 	int height_lsb_mul;
@@ -70,7 +68,7 @@ public:
 	MVDegrain1(
 		PClip _child, PClip _super, PClip _mvbw, PClip _mvfw,
 		int _thSAD, int _thSADC, int _YUVplanes, int nLimit, int nLimitC,
-		int nSCD1, int nSCD2, bool _isse, bool _planar, bool _lsb_flag,
+		int nSCD1, int nSCD2, bool _isse2, bool _planar, bool _lsb_flag,
 		bool mt_flag, IScriptEnvironment* env
 	);
 	~MVDegrain1();
@@ -81,6 +79,8 @@ private:
 	inline void	use_block_y (const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch);
 	inline void	use_block_uv (const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch);
 	static inline void	norm_weights (int &WSrc, int &WRefB, int &WRefF);
+    Denoise1Function* get_denoise1_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
+
 };
 
 template <int width, int height>

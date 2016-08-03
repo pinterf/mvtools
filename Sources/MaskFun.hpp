@@ -23,7 +23,7 @@
 #include	<algorithm>
 
 #include <cmath>
-#include <intrin.h>
+#include <emmintrin.h>
 
 
 

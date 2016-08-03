@@ -53,6 +53,8 @@ private:
 		int Wall [], int trad
 	);
 
+    DenoiseNFunction* get_denoiseN_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
+
 	class MvClipInfo
 	{
 	public:

@@ -28,13 +28,82 @@
 #include	<mmintrin.h>
 
 
+MVDegrain1::Denoise1Function* MVDegrain1::get_denoise1_function(int BlockX, int BlockY, int pixelsize, arch_t arch)
+{
+    // 8 bit only (pixelsize==1)
+    //---------- DENOISE/DEGRAIN
+    // BlkSizeX, BlkSizeY, pixelsize, arch_t
+    std::map<std::tuple<int, int, int, arch_t>, Denoise1Function*> func_degrain;
+    using std::make_tuple;
+
+    func_degrain[make_tuple(32, 32, 1, NO_SIMD)] = Degrain1_C<32, 32>;
+    func_degrain[make_tuple(32, 16, 1, NO_SIMD)] = Degrain1_C<32, 16>;
+    func_degrain[make_tuple(32, 8 , 1, NO_SIMD)] = Degrain1_C<32, 8>;
+    func_degrain[make_tuple(16, 32, 1, NO_SIMD)] = Degrain1_C<16, 32>;
+    func_degrain[make_tuple(16, 16, 1, NO_SIMD)] = Degrain1_C<16, 16>;
+    func_degrain[make_tuple(16, 8 , 1, NO_SIMD)] = Degrain1_C<16, 8>;
+    func_degrain[make_tuple(16, 4 , 1, NO_SIMD)] = Degrain1_C<16, 4>;
+    func_degrain[make_tuple(16, 2 , 1, NO_SIMD)] = Degrain1_C<16, 2>;
+    func_degrain[make_tuple(8 , 16, 1, NO_SIMD)] = Degrain1_C<8 , 16>;
+    func_degrain[make_tuple(8 , 8 , 1, NO_SIMD)] = Degrain1_C<8 , 8>;
+    func_degrain[make_tuple(8 , 4 , 1, NO_SIMD)] = Degrain1_C<8 , 4>;
+    func_degrain[make_tuple(8 , 2 , 1, NO_SIMD)] = Degrain1_C<8 , 2>;
+    func_degrain[make_tuple(8 , 1 , 1, NO_SIMD)] = Degrain1_C<8 , 1>;
+    func_degrain[make_tuple(4 , 8 , 1, NO_SIMD)] = Degrain1_C<4 , 8>;
+    func_degrain[make_tuple(4 , 4 , 1, NO_SIMD)] = Degrain1_C<4 , 4>;
+    func_degrain[make_tuple(4 , 2 , 1, NO_SIMD)] = Degrain1_C<4 , 2>;
+    func_degrain[make_tuple(2 , 4 , 1, NO_SIMD)] = Degrain1_C<2 , 4>;
+    func_degrain[make_tuple(2 , 2 , 1, NO_SIMD)] = Degrain1_C<2 , 2>;
+
+    func_degrain[make_tuple(32, 32, 1, USE_MMX)] = Degrain1_mmx<32, 32>;
+    func_degrain[make_tuple(32, 16, 1, USE_MMX)] = Degrain1_mmx<32, 16>;
+    func_degrain[make_tuple(32, 8 , 1, USE_MMX)] = Degrain1_mmx<32, 8>;
+    func_degrain[make_tuple(16, 32, 1, USE_MMX)] = Degrain1_mmx<16, 32>;
+    func_degrain[make_tuple(16, 16, 1, USE_MMX)] = Degrain1_mmx<16, 16>;
+    func_degrain[make_tuple(16, 8 , 1, USE_MMX)] = Degrain1_mmx<16, 8>;
+    func_degrain[make_tuple(16, 4 , 1, USE_MMX)] = Degrain1_mmx<16, 4>;
+    func_degrain[make_tuple(16, 2 , 1, USE_MMX)] = Degrain1_mmx<16, 2>;
+    func_degrain[make_tuple(8 , 16, 1, USE_MMX)] = Degrain1_mmx<8 , 16>;
+    func_degrain[make_tuple(8 , 8 , 1, USE_MMX)] = Degrain1_mmx<8 , 8>;
+    func_degrain[make_tuple(8 , 4 , 1, USE_MMX)] = Degrain1_mmx<8 , 4>;
+    func_degrain[make_tuple(8 , 2 , 1, USE_MMX)] = Degrain1_mmx<8 , 2>;
+    func_degrain[make_tuple(8 , 1 , 1, USE_MMX)] = Degrain1_mmx<8 , 1>;
+    func_degrain[make_tuple(4 , 8 , 1, USE_MMX)] = Degrain1_mmx<4 , 8>;
+    func_degrain[make_tuple(4 , 4 , 1, USE_MMX)] = Degrain1_mmx<4 , 4>;
+    func_degrain[make_tuple(4 , 2 , 1, USE_MMX)] = Degrain1_mmx<4 , 2>;
+    func_degrain[make_tuple(2 , 4 , 1, USE_MMX)] = Degrain1_mmx<2 , 4>;
+    func_degrain[make_tuple(2 , 2 , 1, USE_MMX)] = Degrain1_mmx<2 , 2>;
+
+    func_degrain[make_tuple(32, 32, 1, USE_SSE2)] = Degrain1_sse2<32, 32>;
+    func_degrain[make_tuple(32, 16, 1, USE_SSE2)] = Degrain1_sse2<32, 16>;
+    func_degrain[make_tuple(32, 8 , 1, USE_SSE2)] = Degrain1_sse2<32, 8>;
+    func_degrain[make_tuple(16, 32, 1, USE_SSE2)] = Degrain1_sse2<16, 32>;
+    func_degrain[make_tuple(16, 16, 1, USE_SSE2)] = Degrain1_sse2<16, 16>;
+    func_degrain[make_tuple(16, 8 , 1, USE_SSE2)] = Degrain1_sse2<16, 8>;
+    func_degrain[make_tuple(16, 4 , 1, USE_SSE2)] = Degrain1_sse2<16, 4>;
+    func_degrain[make_tuple(16, 2 , 1, USE_SSE2)] = Degrain1_sse2<16, 2>;
+    func_degrain[make_tuple(8 , 16, 1, USE_SSE2)] = Degrain1_sse2<8 , 16>;
+    func_degrain[make_tuple(8 , 8 , 1, USE_SSE2)] = Degrain1_sse2<8 , 8>;
+    func_degrain[make_tuple(8 , 4 , 1, USE_SSE2)] = Degrain1_sse2<8 , 4>;
+    func_degrain[make_tuple(8 , 2 , 1, USE_SSE2)] = Degrain1_sse2<8 , 2>;
+    func_degrain[make_tuple(8 , 1 , 1, USE_SSE2)] = Degrain1_sse2<8 , 1>;
+    func_degrain[make_tuple(4 , 8 , 1, USE_SSE2)] = Degrain1_sse2<4 , 8>;
+    func_degrain[make_tuple(4 , 4 , 1, USE_SSE2)] = Degrain1_sse2<4 , 4>;
+    func_degrain[make_tuple(4 , 2 , 1, USE_SSE2)] = Degrain1_sse2<4 , 2>;
+    func_degrain[make_tuple(2 , 4 , 1, USE_SSE2)] = Degrain1_sse2<2 , 4>;
+    func_degrain[make_tuple(2 , 2 , 1, USE_SSE2)] = Degrain1_sse2<2 , 2>;
+
+    return func_degrain[make_tuple(BlockX, BlockY, pixelsize, arch)];
+}
+
+
 
 //-------------------------------------------------------------------------
 
 MVDegrain1::MVDegrain1(
 	PClip _child, PClip _super, PClip mvbw, PClip mvfw,
 	int _thSAD, int _thSADC, int _YUVplanes, int _nLimit, int _nLimitC,
-	int _nSCD1, int _nSCD2, bool _isse, bool _planar, bool _lsb_flag,
+	int _nSCD1, int _nSCD2, bool _isse2, bool _planar, bool _lsb_flag,
 	bool mt_flag, IScriptEnvironment* env
 )
 :	GenericVideoFilter(_child)
@@ -53,7 +122,7 @@ MVDegrain1::MVDegrain1(
 	nLimit = _nLimit;
 	nLimitC = _nLimitC;
 
-	isse = _isse;
+	isse2 = _isse2;
 	planar = _planar;
 
 	CheckSimilarity(mvClipF, "mvfw", env);
@@ -77,8 +146,8 @@ MVDegrain1::MVDegrain1(
 	nSuperModeYUV = params.nModeYUV;
 	int nSuperLevels = params.nLevels;
 
-	pRefBGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse, xRatioUV, yRatioUV, pixelsize_super, mt_flag);
-	pRefFGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse, xRatioUV, yRatioUV, pixelsize_super, mt_flag);
+	pRefBGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse2, xRatioUV, yRatioUV, pixelsize_super, mt_flag);
+	pRefFGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse2, xRatioUV, yRatioUV, pixelsize_super, mt_flag);
 	int nSuperWidth  = vi_super.width;
 	int nSuperHeight = vi_super.height;
 
@@ -115,6 +184,29 @@ MVDegrain1::MVDegrain1(
 		}
    }
 
+   // in overlaps.h
+   // OverlapsLsbFunction
+   // OverlapsFunction
+   // in M(V)DegrainX: DenoiseXFunction
+   arch_t arch;
+   if ((pixelsize == 1) && (((env->GetCPUFlags() & CPUF_SSE2) != 0) & isse2))
+       arch = USE_SSE2;
+   else if ((pixelsize == 1) && isse2)
+       arch = USE_MMX;
+   else
+       arch = NO_SIMD;
+
+   // C only -> NO_SIMD
+   OVERSLUMALSB   = get_overlaps_lsb_function(nBlkSizeX, nBlkSizeY, sizeof(uint8_t), NO_SIMD);
+   OVERSCHROMALSB = get_overlaps_lsb_function(nBlkSizeX/xRatioUV, nBlkSizeY/yRatioUV, sizeof(uint8_t), NO_SIMD);
+
+   OVERSLUMA   = get_overlaps_function(nBlkSizeX, nBlkSizeY, pixelsize, arch);
+   OVERSCHROMA = get_overlaps_function(nBlkSizeX/xRatioUV, nBlkSizeY/yRatioUV, pixelsize, arch);
+
+   DEGRAINLUMA = get_denoise1_function(nBlkSizeX, nBlkSizeY, pixelsize, arch);
+   DEGRAINCHROMA = get_denoise1_function(nBlkSizeX/xRatioUV, nBlkSizeY/yRatioUV, pixelsize, arch);
+   
+#if 0
    // todo
 	switch (nBlkSizeX)
       {
@@ -274,6 +366,7 @@ MVDegrain1::MVDegrain1(
       }
       }
    }
+#endif
 
 	const int		tmp_size = 32 * 32;
 	tmpBlock = new BYTE[tmp_size * height_lsb_mul]; // * pixelsize
@@ -368,7 +461,7 @@ PVideoFrame __stdcall MVDegrain1::GetFrame(int n, IScriptEnvironment* env)
 			nSrcPitches[1]  = SrcPlanes->GetPitchUV();
 			nSrcPitches[2]  = SrcPlanes->GetPitchUV();
 			YUY2ToPlanes(pSrcYUY2, nSrcPitchYUY2, nWidth, nHeight,
-			pSrc[0], nSrcPitches[0], pSrc[1], pSrc[2], nSrcPitches[1], isse);
+			pSrc[0], nSrcPitches[0], pSrc[1], pSrc[2], nSrcPitches[1], isse2);
 		}
 		else
 		{
@@ -508,7 +601,7 @@ PVideoFrame __stdcall MVDegrain1::GetFrame(int n, IScriptEnvironment* env)
 
 	if (!(YUVplanes & YPLANE))
 	{
-		BitBlt(pDstCur[0], nDstPitches[0], pSrcCur[0], nSrcPitches[0], nWidth*pixelsize, nHeight, isse);
+		BitBlt(pDstCur[0], nDstPitches[0], pSrcCur[0], nSrcPitches[0], nWidth*pixelsize, nHeight, isse2);
 	}
 
 	else
@@ -540,7 +633,7 @@ PVideoFrame __stdcall MVDegrain1::GetFrame(int n, IScriptEnvironment* env)
 					{
 						// luma
 						BitBlt(pDstCur[0] + nWidth_B*pixelsize, nDstPitches[0],
-							pSrcCur[0] + nWidth_B*pixelsize, nSrcPitches[0], (nWidth-nWidth_B)*pixelsize, nBlkSizeY, isse);
+							pSrcCur[0] + nWidth_B*pixelsize, nSrcPitches[0], (nWidth-nWidth_B)*pixelsize, nBlkSizeY, isse2);
 					}
 				}	// for bx
 
@@ -550,7 +643,7 @@ PVideoFrame __stdcall MVDegrain1::GetFrame(int n, IScriptEnvironment* env)
 				if (by == nBlkY-1 && nHeight_B < nHeight) // bottom uncovered region
 				{
 					// luma
-					BitBlt(pDstCur[0], nDstPitches[0], pSrcCur[0], nSrcPitches[0], nWidth*pixelsize, nHeight-nHeight_B, isse);
+					BitBlt(pDstCur[0], nDstPitches[0], pSrcCur[0], nSrcPitches[0], nWidth*pixelsize, nHeight-nHeight_B, isse2);
 				}
 			}	// for by
 		}	// nOverlapX==0 && nOverlapY==0
@@ -624,19 +717,19 @@ PVideoFrame __stdcall MVDegrain1::GetFrame(int n, IScriptEnvironment* env)
 			{
 				BitBlt(pDst[0] + nWidth_B*pixelsize, nDstPitches[0],
 					pSrc[0] + nWidth_B*pixelsize, nSrcPitches[0],
-					(nWidth-nWidth_B) * pixelsize, nHeight_B, isse);
+					(nWidth-nWidth_B) * pixelsize, nHeight_B, isse2);
 			}
 			if (nHeight_B < nHeight) // bottom noncovered region
 			{
 				BitBlt(pDst[0] + nHeight_B*nDstPitches[0], nDstPitches[0],
 					pSrc[0] + nHeight_B*nSrcPitches[0], nSrcPitches[0],
-					nWidth, nHeight-nHeight_B, isse);
+					nWidth, nHeight-nHeight_B, isse2);
 			}
 		}	// overlap - end
 
 		if (nLimit < (pixelsize == 1 ? 255 : 65535))
 		{
-			if ((pixelsize==1) && isse)
+			if ((pixelsize==1) && isse2)
 			{
 				LimitChanges_sse2(pDst[0], nDstPitches[0], pSrc[0], nSrcPitches[0], nWidth, nHeight, nLimit);
 			}
@@ -682,7 +775,7 @@ PVideoFrame __stdcall MVDegrain1::GetFrame(int n, IScriptEnvironment* env)
 	if ( (pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
 	{
 		YUY2FromPlanes(pDstYUY2, nDstPitchYUY2, nWidth, nHeight * height_lsb_mul,
-					  pDst[0], nDstPitches[0], pDst[1], pDst[2], nDstPitches[1], isse);
+					  pDst[0], nDstPitches[0], pDst[1], pDst[2], nDstPitches[1], isse2);
 	}
    return dst;
 }
@@ -693,7 +786,7 @@ void	MVDegrain1::process_chroma (int plane_mask, BYTE *pDst, BYTE *pDstCur, int 
 {
 	if (!(YUVplanes & plane_mask))
 	{
-		BitBlt(pDstCur, nDstPitch, pSrcCur, nSrcPitch, nWidth/xRatioUV * pixelsize, nHeight/yRatioUV, isse);
+		BitBlt(pDstCur, nDstPitch, pSrcCur, nSrcPitch, nWidth/xRatioUV * pixelsize, nHeight/yRatioUV, isse2);
 	}
 
 	else
@@ -725,7 +818,7 @@ void	MVDegrain1::process_chroma (int plane_mask, BYTE *pDst, BYTE *pDstCur, int 
 					{
 						// chroma
 						BitBlt(pDstCur + (nWidth_B/xRatioUV)*pixelsize, nDstPitch,
-							pSrcCur + (nWidth_B/xRatioUV)*pixelsize, nSrcPitch, (nWidth-nWidth_B)/xRatioUV*pixelsize, (nBlkSizeY)/yRatioUV, isse);
+							pSrcCur + (nWidth_B/xRatioUV)*pixelsize, nSrcPitch, (nWidth-nWidth_B)/xRatioUV*pixelsize, (nBlkSizeY)/yRatioUV, isse2);
 					}
 				}	// for bx
 
@@ -735,7 +828,7 @@ void	MVDegrain1::process_chroma (int plane_mask, BYTE *pDst, BYTE *pDstCur, int 
 				if (by == nBlkY-1 && nHeight_B < nHeight) // bottom uncovered region
 				{
 					// chroma
-					BitBlt(pDstCur, nDstPitch, pSrcCur, nSrcPitch, nWidth/xRatioUV*pixelsize, (nHeight-nHeight_B)/yRatioUV, isse);
+					BitBlt(pDstCur, nDstPitch, pSrcCur, nSrcPitch, nWidth/xRatioUV*pixelsize, (nHeight-nHeight_B)/yRatioUV, isse2);
 				}
 			}	// for by
 		}	// nOverlapX==0 && nOverlapY==0
@@ -811,19 +904,19 @@ void	MVDegrain1::process_chroma (int plane_mask, BYTE *pDst, BYTE *pDstCur, int 
 			{
 				BitBlt(pDst + (nWidth_B/xRatioUV)*pixelsize, nDstPitch,
 					pSrc + (nWidth_B/xRatioUV)*pixelsize, nSrcPitch,
-					(nWidth-nWidth_B)/xRatioUV*pixelsize, nHeight_B/yRatioUV, isse);
+					(nWidth-nWidth_B)/xRatioUV*pixelsize, nHeight_B/yRatioUV, isse2);
 			}
 			if (nHeight_B < nHeight) // bottom noncovered region
 			{
 				BitBlt(pDst + nDstPitch*nHeight_B/yRatioUV, nDstPitch,
 					pSrc + nSrcPitch*nHeight_B/yRatioUV, nSrcPitch,
-					nWidth/xRatioUV*pixelsize, (nHeight-nHeight_B)/yRatioUV, isse);
+					nWidth/xRatioUV*pixelsize, (nHeight-nHeight_B)/yRatioUV, isse2);
 			}
 		}	// overlap - end
 
 		if (nLimitC < (pixelsize == 1 ? 255 : 65535))
 		{
-			if ((pixelsize==1) && isse)
+			if ((pixelsize==1) && isse2)
 			{
 				LimitChanges_sse2(pDst, nDstPitch, pSrc, nSrcPitch, nWidth/xRatioUV, nHeight/yRatioUV, nLimitC);
 			}

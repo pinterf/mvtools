@@ -25,8 +25,9 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 #include	"conc/def.h"
 #include	"conc/fnc.h"
 #include	"conc/Interlocked.h"
-
 #include	<intrin.h>
+#include <stdint.h>
+
 
 #include	<cassert>
 

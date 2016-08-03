@@ -140,8 +140,8 @@ cglobal Sad32x16_iSSE
 cglobal Sad32x8_iSSE
 cglobal Sad16x16_iSSE
 cglobal Sad16x8_iSSE
-cglobal Sad16x8_iSSE
 cglobal Sad16x4_iSSE
+cglobal Sad16x2_iSSE
 cglobal Sad16x1_iSSE
 cglobal Sad8x8_iSSE
 cglobal Sad8x16_iSSE

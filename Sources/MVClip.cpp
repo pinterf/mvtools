@@ -117,7 +117,9 @@ void	MVClip::update_analysis_data (const MVAnalysisData &adata)
    nOverlapX   = adata.GetOverlapX();
    nOverlapY   = adata.GetOverlapY();
    pixelType   = adata.GetPixelType();
-   yRatioUV    = adata.GetYRatioUV(); // PFtodo: GetXRatioUV
+   xRatioUV    = adata.GetXRatioUV(); // PF
+   yRatioUV    = adata.GetYRatioUV(); 
+   pixelsize = adata.pixelsize;
 //	sharp       = adata.GetSharp();
 //	usePelClip  = adata.UsePelClip();
 	nVPadding   = adata.GetVPadding();

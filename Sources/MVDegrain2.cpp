@@ -28,6 +28,74 @@
 #include "profile.h"
 #include "SuperParams64Bits.h"
 
+MVDegrain2::Denoise2Function* MVDegrain2::get_denoise2_function(int BlockX, int BlockY, int pixelsize, arch_t arch)
+{
+    // 8 bit only (pixelsize==1)
+    //---------- DENOISE/DEGRAIN
+    // BlkSizeX, BlkSizeY, pixelsize, arch_t
+    std::map<std::tuple<int, int, int, arch_t>, Denoise2Function*> func_degrain;
+    using std::make_tuple;
+
+    func_degrain[make_tuple(32, 32, 1, NO_SIMD)] = Degrain2_C<32, 32>;
+    func_degrain[make_tuple(32, 16, 1, NO_SIMD)] = Degrain2_C<32, 16>;
+    func_degrain[make_tuple(32, 8 , 1, NO_SIMD)] = Degrain2_C<32, 8>;
+    func_degrain[make_tuple(16, 32, 1, NO_SIMD)] = Degrain2_C<16, 32>;
+    func_degrain[make_tuple(16, 16, 1, NO_SIMD)] = Degrain2_C<16, 16>;
+    func_degrain[make_tuple(16, 8 , 1, NO_SIMD)] = Degrain2_C<16, 8>;
+    func_degrain[make_tuple(16, 4 , 1, NO_SIMD)] = Degrain2_C<16, 4>;
+    func_degrain[make_tuple(16, 2 , 1, NO_SIMD)] = Degrain2_C<16, 2>;
+    func_degrain[make_tuple(8 , 16, 1, NO_SIMD)] = Degrain2_C<8 , 16>;
+    func_degrain[make_tuple(8 , 8 , 1, NO_SIMD)] = Degrain2_C<8 , 8>;
+    func_degrain[make_tuple(8 , 4 , 1, NO_SIMD)] = Degrain2_C<8 , 4>;
+    func_degrain[make_tuple(8 , 2 , 1, NO_SIMD)] = Degrain2_C<8 , 2>;
+    func_degrain[make_tuple(8 , 1 , 1, NO_SIMD)] = Degrain2_C<8 , 1>;
+    func_degrain[make_tuple(4 , 8 , 1, NO_SIMD)] = Degrain2_C<4 , 8>;
+    func_degrain[make_tuple(4 , 4 , 1, NO_SIMD)] = Degrain2_C<4 , 4>;
+    func_degrain[make_tuple(4 , 2 , 1, NO_SIMD)] = Degrain2_C<4 , 2>;
+    func_degrain[make_tuple(2 , 4 , 1, NO_SIMD)] = Degrain2_C<2 , 4>;
+    func_degrain[make_tuple(2 , 2 , 1, NO_SIMD)] = Degrain2_C<2 , 2>;
+
+    func_degrain[make_tuple(32, 32, 1, USE_MMX)] = Degrain2_mmx<32, 32>;
+    func_degrain[make_tuple(32, 16, 1, USE_MMX)] = Degrain2_mmx<32, 16>;
+    func_degrain[make_tuple(32, 8 , 1, USE_MMX)] = Degrain2_mmx<32, 8>;
+    func_degrain[make_tuple(16, 32, 1, USE_MMX)] = Degrain2_mmx<16, 32>;
+    func_degrain[make_tuple(16, 16, 1, USE_MMX)] = Degrain2_mmx<16, 16>;
+    func_degrain[make_tuple(16, 8 , 1, USE_MMX)] = Degrain2_mmx<16, 8>;
+    func_degrain[make_tuple(16, 4 , 1, USE_MMX)] = Degrain2_mmx<16, 4>;
+    func_degrain[make_tuple(16, 2 , 1, USE_MMX)] = Degrain2_mmx<16, 2>;
+    func_degrain[make_tuple(8 , 16, 1, USE_MMX)] = Degrain2_mmx<8 , 16>;
+    func_degrain[make_tuple(8 , 8 , 1, USE_MMX)] = Degrain2_mmx<8 , 8>;
+    func_degrain[make_tuple(8 , 4 , 1, USE_MMX)] = Degrain2_mmx<8 , 4>;
+    func_degrain[make_tuple(8 , 2 , 1, USE_MMX)] = Degrain2_mmx<8 , 2>;
+    func_degrain[make_tuple(8 , 1 , 1, USE_MMX)] = Degrain2_mmx<8 , 1>;
+    func_degrain[make_tuple(4 , 8 , 1, USE_MMX)] = Degrain2_mmx<4 , 8>;
+    func_degrain[make_tuple(4 , 4 , 1, USE_MMX)] = Degrain2_mmx<4 , 4>;
+    func_degrain[make_tuple(4 , 2 , 1, USE_MMX)] = Degrain2_mmx<4 , 2>;
+    func_degrain[make_tuple(2 , 4 , 1, USE_MMX)] = Degrain2_mmx<2 , 4>;
+    func_degrain[make_tuple(2 , 2 , 1, USE_MMX)] = Degrain2_mmx<2 , 2>;
+
+    func_degrain[make_tuple(32, 32, 1, USE_SSE2)] = Degrain2_sse2<32, 32>;
+    func_degrain[make_tuple(32, 16, 1, USE_SSE2)] = Degrain2_sse2<32, 16>;
+    func_degrain[make_tuple(32, 8 , 1, USE_SSE2)] = Degrain2_sse2<32, 8>;
+    func_degrain[make_tuple(16, 32, 1, USE_SSE2)] = Degrain2_sse2<16, 32>;
+    func_degrain[make_tuple(16, 16, 1, USE_SSE2)] = Degrain2_sse2<16, 16>;
+    func_degrain[make_tuple(16, 8 , 1, USE_SSE2)] = Degrain2_sse2<16, 8>;
+    func_degrain[make_tuple(16, 4 , 1, USE_SSE2)] = Degrain2_sse2<16, 4>;
+    func_degrain[make_tuple(16, 2 , 1, USE_SSE2)] = Degrain2_sse2<16, 2>;
+    func_degrain[make_tuple(8 , 16, 1, USE_SSE2)] = Degrain2_sse2<8 , 16>;
+    func_degrain[make_tuple(8 , 8 , 1, USE_SSE2)] = Degrain2_sse2<8 , 8>;
+    func_degrain[make_tuple(8 , 4 , 1, USE_SSE2)] = Degrain2_sse2<8 , 4>;
+    func_degrain[make_tuple(8 , 2 , 1, USE_SSE2)] = Degrain2_sse2<8 , 2>;
+    func_degrain[make_tuple(8 , 1 , 1, USE_SSE2)] = Degrain2_sse2<8 , 1>;
+    func_degrain[make_tuple(4 , 8 , 1, USE_SSE2)] = Degrain2_sse2<4 , 8>;
+    func_degrain[make_tuple(4 , 4 , 1, USE_SSE2)] = Degrain2_sse2<4 , 4>;
+    func_degrain[make_tuple(4 , 2 , 1, USE_SSE2)] = Degrain2_sse2<4 , 2>;
+    func_degrain[make_tuple(2 , 4 , 1, USE_SSE2)] = Degrain2_sse2<2 , 4>;
+    func_degrain[make_tuple(2 , 2 , 1, USE_SSE2)] = Degrain2_sse2<2 , 2>;
+
+    return func_degrain[make_tuple(BlockX, BlockY, pixelsize, arch)];
+}
+
 
 
 // If mvfw is null, mvbw is assumed to be a radius-2 multi-vector clip.
@@ -116,6 +184,30 @@ MVDegrain2::MVDegrain2(
 			DstShort = new unsigned short[dstShortPitch*nHeight];
 		}
    }
+
+   // in overlaps.h
+   // OverlapsLsbFunction
+   // OverlapsFunction
+   // in M(V)DegrainX: DenoiseXFunction
+   arch_t arch;
+   if ((pixelsize == 1) && (((env->GetCPUFlags() & CPUF_SSE2) != 0) & isse2))
+       arch = USE_SSE2;
+   else if ((pixelsize == 1) && isse2)
+       arch = USE_MMX;
+   else
+       arch = NO_SIMD;
+
+   // C only -> NO_SIMD
+   OVERSLUMALSB   = get_overlaps_lsb_function(nBlkSizeX, nBlkSizeY, sizeof(uint8_t), NO_SIMD);
+   OVERSCHROMALSB = get_overlaps_lsb_function(nBlkSizeX/xRatioUV, nBlkSizeY/yRatioUV, sizeof(uint8_t), NO_SIMD);
+
+   OVERSLUMA   = get_overlaps_function(nBlkSizeX, nBlkSizeY, pixelsize, arch);
+   OVERSCHROMA = get_overlaps_function(nBlkSizeX/xRatioUV, nBlkSizeY/yRatioUV, pixelsize, arch);
+
+   DEGRAINLUMA = get_denoise2_function(nBlkSizeX, nBlkSizeY, pixelsize, arch);
+   DEGRAINCHROMA = get_denoise2_function(nBlkSizeX/xRatioUV, nBlkSizeY/yRatioUV, pixelsize, arch);
+
+#if 0
    // todo function fill and xRatioUV
 	switch (nBlkSizeX)
       {
@@ -275,6 +367,7 @@ MVDegrain2::MVDegrain2(
       }
       }
    }
+#endif
 
 	const int		tmp_size = 32 * 32;
 	tmpBlock = new BYTE[tmp_size * height_lsb_mul];

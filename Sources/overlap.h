@@ -18,6 +18,10 @@
 #ifndef __OVERLAP__
 #define __OVERLAP__
 
+#include <map>
+#include <tuple>
+#include "copycode.h"
+
 // top, middle, botom and left, middle, right windows
 #define OW_TL 0
 #define OW_TM 1
@@ -61,8 +65,12 @@ typedef void (OverlapsFunction)(unsigned short *pDst, int nDstPitch,
 							short *pWin, int nWinPitch);
 typedef void (OverlapsLsbFunction)(int *pDst, int nDstPitch, const unsigned char *pSrc, const unsigned char *pSrcLsb, int nSrcPitch, short *pWin, int nWinPitch);
 
+OverlapsFunction* get_overlaps_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
+OverlapsLsbFunction* get_overlaps_lsb_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
+
 //=============================================================
 // short
+
 template <int blockWidth, int blockHeight>
 void Overlaps_C(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch)
 {
@@ -102,6 +110,7 @@ void OverlapsLsb_C(int *pDst, int nDstPitch, const unsigned char *pSrc, const un
 extern "C" void __cdecl  Overlaps32x32_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
 extern "C" void __cdecl  Overlaps16x32_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
 extern "C" void __cdecl  Overlaps32x16_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps32x8_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
 extern "C" void __cdecl  Overlaps16x16_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
 extern "C" void __cdecl  Overlaps8x16_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
 extern "C" void __cdecl  Overlaps8x8_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
@@ -112,6 +121,7 @@ extern "C" void __cdecl  Overlaps2x2_sse2(unsigned short *pDst, int nDstPitch, c
 extern "C" void __cdecl  Overlaps8x4_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
 extern "C" void __cdecl  Overlaps4x2_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
 extern "C" void __cdecl  Overlaps16x8_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps16x4_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
 extern "C" void __cdecl  Overlaps16x2_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
 extern "C" void __cdecl  Overlaps8x2_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
 extern "C" void __cdecl  Overlaps8x1_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
@@ -121,6 +131,7 @@ void Short2BytesLsb(unsigned char *pDst, unsigned char *pDstLsb, int nDstPitch, 
 
 template<typename pixel_t>
 void LimitChanges_c(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, int nLimit);
+
 extern "C" void  __cdecl  LimitChanges_sse2(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, int nLimit);
 
 // Not really related to overlap, but common to MDegrainX functions

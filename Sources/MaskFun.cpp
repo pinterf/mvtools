@@ -20,7 +20,7 @@
 
 
 #include "MaskFun.h"
-#include <intrin.h>
+#include <emmintrin.h>
 
 #if !defined(_M_X64)
 #define rax	eax

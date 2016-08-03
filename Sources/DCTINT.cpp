@@ -26,7 +26,9 @@
 #include "types.h"
 
 #include "malloc.h"
-#include <intrin.h>
+//#include <intrin.h>
+#include <emmintrin.h>
+#include <stdint.h>
 
 #if !defined(_M_X64)
 #define rax	eax

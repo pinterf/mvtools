@@ -21,7 +21,7 @@
 #define __SIMPLERESIZE__
 
 #include	"types.h"
-
+#include <stdint.h>
 
 
 class SimpleResize 

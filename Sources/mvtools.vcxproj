@@ -273,7 +273,7 @@
     <Link>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <TargetMachine>MachineX86</TargetMachine>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>Debug</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <AdditionalOptions> %(AdditionalOptions)</AdditionalOptions>
     </Link>
@@ -357,7 +357,7 @@
       <WarningLevel>Level3</WarningLevel>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <GenerateAlternateCodePaths>None</GenerateAlternateCodePaths>
+      <GenerateAlternateCodePaths>SSE41</GenerateAlternateCodePaths>
       <AdditionalOptions>
       </AdditionalOptions>
       <Parallelization>false</Parallelization>

@@ -23,11 +23,17 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 	#pragma warning (4 : 4250) // "Inherits via dominance."
 #endif
 
+// function tables
+enum arch_t {
+    NO_SIMD,
+    USE_MMX,
+    USE_SSE2
+};
 
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
-
+/* no need for it in 2016
 
 typedef signed char			int8_t;
 typedef unsigned char		uint8_t;
@@ -38,10 +44,10 @@ typedef unsigned int			uint32_t;
 typedef unsigned __int64	uint64_t;
 typedef __int64				int64_t;
 
+*/
 
 
 #endif	// types_HEADER_INCLUDED
-
 
 
 /*\\\ EOF \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/

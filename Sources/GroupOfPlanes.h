@@ -49,7 +49,7 @@ class GroupOfPlanes
 public :
 	GroupOfPlanes (
 		int _nBlkSizeX, int _nBlkSizeY, int _nLevelCount, int _nPel, int _nFlags,
-		int _nOverlapX, int _nOverlapY, int _nBlkX, int _nBlkY, int _yRatioUV, int _xRatioUV, int _pixelsize,
+		int _nOverlapX, int _nOverlapY, int _nBlkX, int _nBlkY, int _xRatioUV, int _yRatioUV, int _pixelsize,
 		int _divideExtra, conc::ObjPool <DCTClass> *dct_pool_ptr, bool mt_flag);
 	~GroupOfPlanes ();
 	void           SearchMVs (

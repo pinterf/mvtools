@@ -40,7 +40,6 @@
 #include <stdint.h>
 
 
-
 PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSizeY, int _nPel, int _nLevel, int _nFlags, int _nOverlapX, int _nOverlapY, int _xRatioUV, int _yRatioUV, int _pixelsize, conc::ObjPool <DCTClass> *dct_pool_ptr, bool mt_flag)
 :	nBlkX (_nBlkX)
 ,	nBlkY (_nBlkY)
@@ -109,6 +108,12 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
 
 	// function's pointers initialization
 
+#if 0
+    // Sad_C: SadFunction.cpp
+    // Var_c: Variance.h   PF nowhere used!!!
+    // Luma_c: Variance.h   PF nowhere used!!!
+    // Copy_C: CopyCode
+
 #define SET_FUNCPTR(blksizex, blksizey, blksizex2, blksizey2)	do \
 	{ \
 		SAD = Sad##blksizex##x##blksizey##_iSSE; \
@@ -143,12 +148,6 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
 		} \
 	} while (false)
 
-// PF xRatioUV + pixel_t for C
-// Sad_C: SadFunction.cpp
-// Var_c: Variance.h   PF nowhere used!!!
-// Luma_c: Variance.h   PF nowhere used!!!
-// Copy_C: CopyCode
-
 #define SET_FUNCPTR_C(blksizex, blksizey, blksizex2, blksizey2, pixel_t)	do \
 	{ \
 		SAD = Sad_C<blksizex , blksizey, pixel_t>; \
@@ -182,6 +181,7 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
     		} \
 		} \
 	} while (false)
+#endif
 
 //#define NEWBLIT
 
@@ -247,6 +247,23 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
 
 	SATD = SadDummy; //for now disable SATD if default functions are used
 
+                     // in overlaps.h
+                     // OverlapsLsbFunction
+                     // OverlapsFunction
+                     // in M(V)DegrainX: DenoiseXFunction
+    arch_t arch;
+    if ((pixelsize == 1) && isse)
+        arch = USE_SSE2;
+    else
+        arch = NO_SIMD;
+
+    SAD        = get_sad_function(nBlkSizeX, nBlkSizeY, pixelsize, arch);
+    SADCHROMA  = get_sad_function(nBlkSizeX/xRatioUV, nBlkSizeY/yRatioUV, pixelsize, arch);
+    BLITLUMA   = get_copy_function(nBlkSizeX, nBlkSizeY, pixelsize, arch);
+    BLITCHROMA = get_copy_function(nBlkSizeX/xRatioUV, nBlkSizeY/yRatioUV, pixelsize, arch);
+    LUMA       = get_luma_function(nBlkSizeX/xRatioUV, nBlkSizeY/yRatioUV, pixelsize, arch); // variance.h
+
+#if 0
 	if ( (pixelsize==1) && isse ) // PF
 	{
 		switch (nBlkSizeX)
@@ -388,7 +405,7 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
             }
 		}
 	}
-
+#endif
 #if 0
 	if (0&&mmxext) //use new functions from x264
 	{

@@ -29,9 +29,11 @@
 #define __SAD_FUNC__
 
 #include "types.h"
+#include <stdint.h>
 
 typedef unsigned int (SADFunction)(const uint8_t *pSrc, int nSrcPitch,
 								    const uint8_t *pRef, int nRefPitch);
+SADFunction* get_sad_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
 
 inline unsigned int SADABS(int x) {	return ( x < 0 ) ? -x : x; }
 //inline unsigned int SADABS(int x) {	return ( x < -16 ) ? 16 : ( x < 0 ) ? -x : ( x > 16) ? 16 : x; }

@@ -33,6 +33,7 @@
 #include	"Windows.h"
 
 #include	<cstdio>
+#include <stdint.h>
 
 
 

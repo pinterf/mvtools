@@ -36,7 +36,7 @@ boundaries.
 #include "Interpolation.h"
 #include	"MVPlane.h"
 #include "Padding.h"
-
+#include <stdint.h>
 
 
 MVPlane::MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, int _pixelsize, bool _isse, bool mt_flag)
@@ -239,6 +239,10 @@ void MVPlane::refine_wait()
 }
 
 
+// if a non-static template function is in cpp, we have to instantiate it
+template void MVPlane::RefineExt<uint8_t>(const uint8_t *pSrc2x_8, int nSrc2xPitch, bool isExtPadded);
+template void MVPlane::RefineExt<uint16_t>(const uint8_t *pSrc2x_8, int nSrc2xPitch, bool isExtPadded);
+
 template<typename pixel_t>
 void MVPlane::RefineExt(const uint8_t *pSrc2x_8, int nSrc2xPitch, bool isExtPadded) // copy from external upsized clip
 {
@@ -279,21 +283,21 @@ void MVPlane::RefineExt(const uint8_t *pSrc2x_8, int nSrc2xPitch, bool isExtPadd
         // PF todo: pixelsize!
         // pel clip may be already padded (i.e. is finest clip)
 		int offset = isExtPadded ? 0 : nPitch*nVPadding/sizeof(pixel_t) + nHPadding;
-		uint8_t* pp1  = reinterpret_cast<pixel_t *>(pPlane[ 1]) + offset;
-		uint8_t* pp2  = reinterpret_cast<pixel_t *>(pPlane[ 2]) + offset;
-		uint8_t* pp3  = reinterpret_cast<pixel_t *>(pPlane[ 3]) + offset;
-		uint8_t* pp4  = reinterpret_cast<pixel_t *>(pPlane[ 4]) + offset;
-		uint8_t* pp5  = reinterpret_cast<pixel_t *>(pPlane[ 5]) + offset;
-		uint8_t* pp6  = reinterpret_cast<pixel_t *>(pPlane[ 6]) + offset;
-		uint8_t* pp7  = reinterpret_cast<pixel_t *>(pPlane[ 7]) + offset;
-		uint8_t* pp8  = reinterpret_cast<pixel_t *>(pPlane[ 8]) + offset;
-		uint8_t* pp9  = reinterpret_cast<pixel_t *>(pPlane[ 9]) + offset;
-		uint8_t* pp10 = reinterpret_cast<pixel_t *>(pPlane[10]) + offset;
-		uint8_t* pp11 = reinterpret_cast<pixel_t *>(pPlane[11]) + offset;
-		uint8_t* pp12 = reinterpret_cast<pixel_t *>(pPlane[12]) + offset;
-		uint8_t* pp13 = reinterpret_cast<pixel_t *>(pPlane[13]) + offset;
-		uint8_t* pp14 = reinterpret_cast<pixel_t *>(pPlane[14]) + offset;
-		uint8_t* pp15 = reinterpret_cast<pixel_t *>(pPlane[15]) + offset;
+        pixel_t* pp1  = reinterpret_cast<pixel_t *>(pPlane[ 1]) + offset;
+        pixel_t* pp2  = reinterpret_cast<pixel_t *>(pPlane[ 2]) + offset;
+        pixel_t* pp3  = reinterpret_cast<pixel_t *>(pPlane[ 3]) + offset;
+        pixel_t* pp4  = reinterpret_cast<pixel_t *>(pPlane[ 4]) + offset;
+        pixel_t* pp5  = reinterpret_cast<pixel_t *>(pPlane[ 5]) + offset;
+        pixel_t* pp6  = reinterpret_cast<pixel_t *>(pPlane[ 6]) + offset;
+        pixel_t* pp7  = reinterpret_cast<pixel_t *>(pPlane[ 7]) + offset;
+        pixel_t* pp8  = reinterpret_cast<pixel_t *>(pPlane[ 8]) + offset;
+        pixel_t* pp9  = reinterpret_cast<pixel_t *>(pPlane[ 9]) + offset;
+        pixel_t* pp10 = reinterpret_cast<pixel_t *>(pPlane[10]) + offset;
+        pixel_t* pp11 = reinterpret_cast<pixel_t *>(pPlane[11]) + offset;
+        pixel_t* pp12 = reinterpret_cast<pixel_t *>(pPlane[12]) + offset;
+        pixel_t* pp13 = reinterpret_cast<pixel_t *>(pPlane[13]) + offset;
+        pixel_t* pp14 = reinterpret_cast<pixel_t *>(pPlane[14]) + offset;
+        pixel_t* pp15 = reinterpret_cast<pixel_t *>(pPlane[15]) + offset;
         // PF todo: pixelsize!   pp1  += nPitch;
 
 		for (int h=0; h<nHeight; h++) // assembler optimization?

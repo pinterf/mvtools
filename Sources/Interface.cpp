@@ -54,6 +54,9 @@
 #include "MScaleVect.h"
 #include "MStoreVect.h"
 
+#include <avisynth.h>
+#include <stdint.h>
+
 
 
 AVSValue __cdecl Create_Padding(AVSValue args, void* user_data, IScriptEnvironment* env)

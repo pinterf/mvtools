@@ -26,7 +26,8 @@
 
 #include <stdlib.h>
 #include <cstdio>
-#include <intrin.h>
+#include "emmintrin.h"
+//#include <intrin.h>
 
 
 MVShow::MVShow(PClip _super, PClip vectors, int _scale, int _plane, int _tol, bool _showsad, int _number,

@@ -23,6 +23,7 @@
 
 #include	"types.h"
 #include	"MVPlaneSet.h"
+#include <stdint.h>
 
 
 

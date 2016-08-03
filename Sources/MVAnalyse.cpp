@@ -342,11 +342,11 @@ MVAnalyse::MVAnalyse (
         analysisData.nOverlapY,
         analysisData.nBlkX,
         analysisData.nBlkY,
-        analysisData.yRatioUV,
         analysisData.xRatioUV, // PF
-        analysisData.pixelsize, // PF
+        analysisData.yRatioUV,
         divideExtra,
-		(_dct_factory_ptr.get () != 0) ? &_dct_pool : 0,
+        analysisData.pixelsize, // PF
+        (_dct_factory_ptr.get () != 0) ? &_dct_pool : 0,
 		_mt_flag
 	));
 

@@ -22,7 +22,7 @@
 #include	"conc/CritSec.h"
 #include "DCTFFTW.h"
 
-#define __INTEL_COMPILER_USE_INTRINSIC_PROTOTYPES 1
+//#define __INTEL_COMPILER_USE_INTRINSIC_PROTOTYPES 1
 #include <mmintrin.h>
 
 #include	<algorithm>

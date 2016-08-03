@@ -27,6 +27,7 @@
 #include "MVSuper.h"
 #include	"profile.h"
 #include "SuperParams64Bits.h"
+#include <stdint.h>
 
 #include <cmath>
 

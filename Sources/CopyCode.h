@@ -6,35 +6,23 @@
 #include "types.h"
 
 #include <cstring>
-
-
+#include <stdint.h>
 
 void BitBlt(unsigned char* dstp, int dst_pitch, const unsigned char* srcp, int src_pitch, int row_size, int height, bool isse);
-void asm_BitBlt_ISSE(unsigned char* dstp, int dst_pitch, const unsigned char* srcp, int src_pitch, int row_size, int height);
+//void asm_BitBlt_ISSE(unsigned char* dstp, int dst_pitch, const unsigned char* srcp, int src_pitch, int row_size, int height);
 extern "C" void memcpy_amd(void *dest, const void *src, size_t n);
 extern "C" void MemZoneSet(unsigned char *ptr, unsigned char value, int width,
 				int height, int offsetX, int offsetY, int pitch);
 
-typedef void (COPYFunction)(unsigned char *pDst, int nDstPitch,
-                            const unsigned char *pSrc, int nSrcPitch);
+typedef void (COPYFunction)(uint8_t *pDst, int nDstPitch,
+                            const uint8_t *pSrc, int nSrcPitch);
+COPYFunction* get_copy_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
 
 template<int nBlkWidth, int nBlkHeight, typename pixel_t>
-void Copy_C (uint8_t *pDst, int nDstPitch, const uint8_t *pSrc, int nSrcPitch)
-{
-   for ( int j = 0; j < nBlkHeight; j++ )
-   {
-//      for ( int i = 0; i < nBlkWidth; i++ )  //  waste cycles removed by Fizick in v1.2
-         memcpy(pDst, pSrc, nBlkWidth * sizeof(pixel_t));
-      pDst += nDstPitch;
-      pSrc += nSrcPitch;
-   }
-}
+void Copy_C(uint8_t *pDst, int nDstPitch, const uint8_t *pSrc, int nSrcPitch);
 
 template<int nBlkSize, typename pixel_t>
-void Copy_C(uint8_t *pDst, int nDstPitch, const uint8_t *pSrc, int nSrcPitch)
-{
-   Copy_C<nBlkSize, nBlkSize, typename pixel_t>(pDst, nDstPitch, pSrc, nSrcPitch);
-}
+void Copy_C(uint8_t *pDst, int nDstPitch, const uint8_t *pSrc, int nSrcPitch);
 
 #if 0
 // PF no use
@@ -174,7 +162,6 @@ MK_CFUNC(Copy4x4_sse2);
 MK_CFUNC(Copy4x2_sse2);
 MK_CFUNC(Copy2x4_sse2);
 MK_CFUNC(Copy2x2_sse2);
-MK_CFUNC(Copy2x1_sse2);
 
 /*
 //new functions derived from x264

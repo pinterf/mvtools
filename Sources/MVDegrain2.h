@@ -9,13 +9,6 @@
 
 
 
-typedef void (Denoise2Function) (
-	BYTE *pDst, BYTE *pDstLsb, bool lsb_flag, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
-	const BYTE *pRefB, int BPitch, const BYTE *pRefF, int FPitch,
-	const BYTE *pRefB2, int B2Pitch, const BYTE *pRefF2, int F2Pitch,
-	int WSrc, int WRefB, int WRefF, int WRefB2, int WRefF2
-);
-
 
 
 class MVGroupOfFrames;
@@ -28,6 +21,12 @@ class MVDegrain2
 ,	public MVFilter
 {
 private:
+    typedef void (Denoise2Function) (
+        BYTE *pDst, BYTE *pDstLsb, bool lsb_flag, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
+        const BYTE *pRefB, int BPitch, const BYTE *pRefF, int FPitch,
+        const BYTE *pRefB2, int B2Pitch, const BYTE *pRefF2, int F2Pitch,
+        int WSrc, int WRefB, int WRefF, int WRefB2, int WRefF2
+        );
 
    MVClip mvClipB;
    MVClip mvClipF;
@@ -85,6 +84,7 @@ private:
 	inline void	use_block_y (const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch);
 	inline void	use_block_uv (const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch);
 	static inline void	norm_weights (int &WSrc, int &WRefB, int &WRefF, int &WRefB2, int &WRefF2);
+    Denoise2Function* get_denoise2_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
 };
 
 template<int blockWidth, int blockHeight>

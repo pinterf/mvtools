@@ -280,9 +280,9 @@ MVRecalculate::MVRecalculate (
 		analysisData.nBlkY,
 		analysisData.xRatioUV,
         analysisData.yRatioUV,
-        analysisData.pixelsize,
         divideExtra,
-		(_dct_factory_ptr.get () != 0) ? &_dct_pool : 0,
+        analysisData.pixelsize,
+        (_dct_factory_ptr.get () != 0) ? &_dct_pool : 0,
 		_mt_flag
 	));
 

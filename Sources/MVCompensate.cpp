@@ -116,6 +116,24 @@ MVCompensate::MVCompensate(
 		c_info._thsad = ClipFnc::interpolate_thsad (thsadn, thsadn2, d, _trad); // P.F. when testing, d=0, _trad=1, will assert inside.
 	}
 
+    // in overlaps.h
+    // OverlapsLsbFunction
+    // OverlapsFunction
+    // in M(V)DegrainX: DenoiseXFunction
+    arch_t arch;
+    if ((pixelsize == 1) && (((env_ptr->GetCPUFlags() & CPUF_SSE2) != 0) & isse2))
+        arch = USE_SSE2;
+    else if ((pixelsize == 1) && isse2)
+        arch = USE_MMX;
+    else
+        arch = NO_SIMD;
+
+    OVERSLUMA   = get_overlaps_function(nBlkSizeX, nBlkSizeY, pixelsize, arch);
+    OVERSCHROMA = get_overlaps_function(nBlkSizeX/xRatioUV, nBlkSizeY/yRatioUV, pixelsize, arch);
+    BLITLUMA = get_copy_function(nBlkSizeX, nBlkSizeY, pixelsize, arch);
+    BLITCHROMA = get_copy_function(nBlkSizeX/xRatioUV, nBlkSizeY/yRatioUV, pixelsize, arch);
+
+#if 0
     // PF todo: function fill to function + xRatioUV
 	if (isse2)
 	{
@@ -285,7 +303,7 @@ MVCompensate::MVCompensate(
 			}
 		}
 	}
-
+#endif
 
 	// get parameters of prepared super clip - v2.0
 	SuperParams64Bits params;

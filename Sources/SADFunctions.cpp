@@ -1,4 +1,7 @@
 #include "SADFunctions.h"
+#include "overlap.h"
+#include <map>
+#include <tuple>
 /*
 A change in interface can be covered like this at least until release
 
@@ -22,6 +25,84 @@ MK_CPPWRAP(2,4);
 MK_CPPWRAP(2,2);
 #undef MK_CPPWRAP
 */
+
+SADFunction* get_sad_function(int BlockX, int BlockY, int pixelsize, arch_t arch)
+{
+    // 8 bit only (pixelsize==1)
+    //---------- DENOISE/DEGRAIN
+    // BlkSizeX, BlkSizeY, pixelsize, arch_t
+    std::map<std::tuple<int, int, int, arch_t>, SADFunction*> func_sad;
+    using std::make_tuple;
+
+    func_sad[make_tuple(32, 32, 1, NO_SIMD)] = Sad_C<32, 32,uint8_t>;
+    func_sad[make_tuple(32, 16, 1, NO_SIMD)] = Sad_C<32, 16,uint8_t>;
+    func_sad[make_tuple(32, 8 , 1, NO_SIMD)] = Sad_C<32, 8,uint8_t>;
+    func_sad[make_tuple(16, 32, 1, NO_SIMD)] = Sad_C<16, 32,uint8_t>;
+    func_sad[make_tuple(16, 16, 1, NO_SIMD)] = Sad_C<16, 16,uint8_t>;
+    func_sad[make_tuple(16, 8 , 1, NO_SIMD)] = Sad_C<16, 8,uint8_t>;
+    func_sad[make_tuple(16, 4 , 1, NO_SIMD)] = Sad_C<16, 4,uint8_t>;
+    func_sad[make_tuple(16, 2 , 1, NO_SIMD)] = Sad_C<16, 2,uint8_t>;
+    func_sad[make_tuple(16, 1 , 1, NO_SIMD)] = Sad_C<16, 1,uint8_t>;
+    func_sad[make_tuple(8 , 16, 1, NO_SIMD)] = Sad_C<8 , 16,uint8_t>;
+    func_sad[make_tuple(8 , 8 , 1, NO_SIMD)] = Sad_C<8 , 8,uint8_t>;
+    func_sad[make_tuple(8 , 4 , 1, NO_SIMD)] = Sad_C<8 , 4,uint8_t>;
+    func_sad[make_tuple(8 , 2 , 1, NO_SIMD)] = Sad_C<8 , 2,uint8_t>;
+    func_sad[make_tuple(8 , 1 , 1, NO_SIMD)] = Sad_C<8 , 1,uint8_t>;
+    func_sad[make_tuple(4 , 8 , 1, NO_SIMD)] = Sad_C<4 , 8,uint8_t>;
+    func_sad[make_tuple(4 , 4 , 1, NO_SIMD)] = Sad_C<4 , 4,uint8_t>;
+    func_sad[make_tuple(4 , 2 , 1, NO_SIMD)] = Sad_C<4 , 2,uint8_t>;
+    func_sad[make_tuple(4 , 1 , 1, NO_SIMD)] = Sad_C<4 , 1,uint8_t>;
+    func_sad[make_tuple(2 , 4 , 1, NO_SIMD)] = Sad_C<2 , 4,uint8_t>;
+    func_sad[make_tuple(2 , 2 , 1, NO_SIMD)] = Sad_C<2 , 2,uint8_t>;
+    func_sad[make_tuple(2 , 1 , 1, NO_SIMD)] = Sad_C<2 , 1,uint8_t>;
+
+    func_sad[make_tuple(32, 32, 2, NO_SIMD)] = Sad_C<32, 32,uint16_t>;
+    func_sad[make_tuple(32, 16, 2, NO_SIMD)] = Sad_C<32, 16,uint16_t>;
+    func_sad[make_tuple(32, 8 , 2, NO_SIMD)] = Sad_C<32, 8,uint16_t>;
+    func_sad[make_tuple(16, 32, 2, NO_SIMD)] = Sad_C<16, 32,uint16_t>;
+    func_sad[make_tuple(16, 16, 2, NO_SIMD)] = Sad_C<16, 16,uint16_t>;
+    func_sad[make_tuple(16, 8 , 2, NO_SIMD)] = Sad_C<16, 8,uint16_t>;
+    func_sad[make_tuple(16, 4 , 2, NO_SIMD)] = Sad_C<16, 4,uint16_t>;
+    func_sad[make_tuple(16, 2 , 2, NO_SIMD)] = Sad_C<16, 2,uint16_t>;
+    func_sad[make_tuple(16, 1 , 2, NO_SIMD)] = Sad_C<16, 1,uint16_t>;
+    func_sad[make_tuple(8 , 16, 2, NO_SIMD)] = Sad_C<8 , 16,uint16_t>;
+    func_sad[make_tuple(8 , 8 , 2, NO_SIMD)] = Sad_C<8 , 8,uint16_t>;
+    func_sad[make_tuple(8 , 4 , 2, NO_SIMD)] = Sad_C<8 , 4,uint16_t>;
+    func_sad[make_tuple(8 , 2 , 2, NO_SIMD)] = Sad_C<8 , 2,uint16_t>;
+    func_sad[make_tuple(8 , 1 , 2, NO_SIMD)] = Sad_C<8 , 1,uint16_t>;
+    func_sad[make_tuple(4 , 8 , 2, NO_SIMD)] = Sad_C<4 , 8,uint16_t>;
+    func_sad[make_tuple(4 , 4 , 2, NO_SIMD)] = Sad_C<4 , 4,uint16_t>;
+    func_sad[make_tuple(4 , 2 , 2, NO_SIMD)] = Sad_C<4 , 2,uint16_t>;
+    func_sad[make_tuple(4 , 1 , 2, NO_SIMD)] = Sad_C<4 , 1,uint16_t>;
+    func_sad[make_tuple(2 , 4 , 2, NO_SIMD)] = Sad_C<2 , 4,uint16_t>;
+    func_sad[make_tuple(2 , 2 , 2, NO_SIMD)] = Sad_C<2 , 2,uint16_t>;
+    func_sad[make_tuple(2 , 1 , 2, NO_SIMD)] = Sad_C<2 , 1,uint16_t>;
+
+    func_sad[make_tuple(32, 32, 1, USE_SSE2)] = Sad32x32_iSSE;
+    func_sad[make_tuple(32, 16, 1, USE_SSE2)] = Sad32x16_iSSE;
+    func_sad[make_tuple(32, 8 , 1, USE_SSE2)] = Sad32x8_iSSE;
+    func_sad[make_tuple(16, 32, 1, USE_SSE2)] = Sad16x32_iSSE;
+    func_sad[make_tuple(16, 16, 1, USE_SSE2)] = Sad16x16_iSSE;
+    func_sad[make_tuple(16, 8 , 1, USE_SSE2)] = Sad16x8_iSSE;
+    func_sad[make_tuple(16, 4 , 1, USE_SSE2)] = Sad16x4_iSSE;
+    func_sad[make_tuple(16, 2 , 1, USE_SSE2)] = Sad16x2_iSSE;
+    func_sad[make_tuple(8 , 16, 1, USE_SSE2)] = Sad8x16_iSSE;
+    func_sad[make_tuple(8 , 8 , 1, USE_SSE2)] = Sad8x8_iSSE;
+    func_sad[make_tuple(8 , 4 , 1, USE_SSE2)] = Sad8x4_iSSE;
+    func_sad[make_tuple(8 , 2 , 1, USE_SSE2)] = Sad8x2_iSSE;
+    func_sad[make_tuple(8 , 1 , 1, USE_SSE2)] = Sad8x1_iSSE;
+    func_sad[make_tuple(4 , 8 , 1, USE_SSE2)] = Sad4x8_iSSE;
+    func_sad[make_tuple(4 , 4 , 1, USE_SSE2)] = Sad4x4_iSSE;
+    func_sad[make_tuple(4 , 2 , 1, USE_SSE2)] = Sad4x2_iSSE;
+    func_sad[make_tuple(2 , 4 , 1, USE_SSE2)] = Sad2x4_iSSE;
+    func_sad[make_tuple(2 , 2 , 1, USE_SSE2)] = Sad2x2_iSSE;
+
+    SADFunction *result = func_sad[make_tuple(BlockX, BlockY, pixelsize, arch)];
+    if (result == nullptr)
+        result = func_sad[make_tuple(BlockX, BlockY, pixelsize, NO_SIMD)]; // fallback to C
+    return result;
+}
+
 
 
 // SATD functions for blocks over 16x16 are not defined in pixel-a.asm,
