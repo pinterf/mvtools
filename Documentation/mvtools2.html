@@ -14,12 +14,12 @@
 <h2>Abstract</h2>
 
 <table class="n">
-<tr><td class="n"><b>Authors:      </b></td><td class="n">&nbsp;</td><td class="n">Manao, Tsp, TSchniede, SEt, Fizick (Alexander Balakhnin), Vit, Firesledge</td></tr>
-<tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.0.22</td></tr>
+<tr><td class="n"><b>Authors:      </b></td><td class="n">&nbsp;</td><td class="n">Manao, Tsp, TSchniede, SEt, Fizick (Alexander Balakhnin), Vit, Firesledge, pinterf</td></tr>
+<tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.0.22c</td></tr>
 <tr><td class="n"><b>Base versions:</b></td><td class="n">&nbsp;</td><td class="n">2.6.0.5 + 2.5.11.22</td></tr>
 <tr><td class="n"><b>Base download:</b></td><td class="n">&nbsp;</td><td class="n">Contained in the Dither package, <a href="http://ldesoras.free.fr/prod.html#src_ditheravsi">http://ldesoras.free.fr/prod.html</a></td></tr>
 <tr><td class="n"><b>Category:     </b></td><td class="n">&nbsp;</td><td class="n">Misc Plugins</td></tr>
-<tr><td class="n"><b>Requirements: </b></td><td class="n">&nbsp;</td><td class="n">YV12 or YUY2 Color format</td></tr>
+<tr><td class="n"><b>Requirements: </b></td><td class="n">&nbsp;</td><td class="n">YV12, YV16, YV24 or YUY2 Color format</td></tr>
 <tr><td class="n"><b>License:      </b></td><td class="n">&nbsp;</td><td class="n">GPL</td></tr>
 </table>
 
@@ -2000,6 +2000,12 @@ Some parts of the code are under the WTFPL, too.</p>
 
 
 <h2><a name="revisions"></a>VI) Revisions</h2>
+
+<p>2.7.0.22c (2016.08.04 by pinterf)</p>
+<ul>
+<li>Support for other planar YUV formats than YV12: YV16, YV24</li>
+<li>Some more SSE2 for blockX/Y combinations required by the new color spaces</li>
+</ul>
 
 <p>2.7.0.22 (2016.04.29 by pinterf)</p>
 <ul>
