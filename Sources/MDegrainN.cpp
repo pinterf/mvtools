@@ -426,8 +426,13 @@ MDegrainN::MDegrainN (
 
 	const ::VideoInfo &	vi_super = _super->GetVideoInfo ();
 
-    pixelsize = vi.ComponentSize(); // of MVFilter
+#ifdef AVS16
+    pixelsize = vi.ComponentSize();
     pixelsize_super = vi_super.ComponentSize();
+#else
+    pixelsize = 1; // of MVFilter
+    pixelsize_super = 1;
+#endif
 
 
 	// get parameters of prepared super clip - v2.0

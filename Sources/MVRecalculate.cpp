@@ -62,7 +62,11 @@ MVRecalculate::MVRecalculate (
 		);
 	}
 
+#ifdef AVS16
     pixelsize = vi.ComponentSize();
+#else
+    pixelsize = 1;
+#endif
 
 	MVAnalysisData &	analysisData        = _srd_arr [0]._analysis_data;
    MVAnalysisData &	analysisDataDivided = _srd_arr [0]._analysis_data_divided;

@@ -78,7 +78,11 @@ MVSuper::MVSuper (
 	pixelType = vi.pixel_type;
     yRatioUV = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U));
     xRatioUV = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U)); // for YV12 and YUY2, really do not used and assumed to 2
+#ifdef AVS16
     pixelsize = vi.ComponentSize();
+#else
+    pixelsize = 1;
+#endif
 
 	nLevels = _levels;
 	int nLevelsMax = 0;
