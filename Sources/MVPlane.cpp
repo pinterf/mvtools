@@ -59,21 +59,37 @@ MVPlane::MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, i
 ,	isPadded (false)
 ,	isRefined (false)
 ,	isFilled (false)
-,	_bilin_hor_ptr   (_isse ? HorizontalBilin_iSSE  : HorizontalBilin  )
-,	_bilin_ver_ptr   (_isse ? VerticalBilin_iSSE    : VerticalBilin    )
-,	_bilin_dia_ptr   (_isse ? DiagonalBilin_iSSE    : DiagonalBilin    )
-,	_bicubic_hor_ptr (_isse ? HorizontalBicubic_iSSE: HorizontalBicubic)
-,	_bicubic_ver_ptr (_isse ? VerticalBicubic_iSSE  : VerticalBicubic  )
-,	_wiener_hor_ptr  (_isse ? HorizontalWiener_iSSE : HorizontalWiener )
-,	_wiener_ver_ptr  (_isse ? VerticalWiener_iSSE   : VerticalWiener   )
-,	_average_ptr     (_isse ? Average2_iSSE         : Average2         )
-,	_reduce_ptr (&RB2BilinearFiltered)
 ,	_sched_refine (mt_flag)
 ,	_plan_refine ()
 ,	_slicer_reduce (mt_flag)
 ,	_redp_ptr (0)
 {
-	// Nothing
+    if(pixelsize==1) {
+        _bilin_hor_ptr = _isse ? HorizontalBilin_iSSE : HorizontalBilin<uint8_t>;
+        _bilin_ver_ptr = _isse ? VerticalBilin_iSSE : VerticalBilin<uint8_t>;
+        _bilin_dia_ptr = _isse ? DiagonalBilin_iSSE : DiagonalBilin<uint8_t>;
+        _bicubic_hor_ptr = _isse ? HorizontalBicubic_iSSE : HorizontalBicubic<uint8_t>;
+        _bicubic_ver_ptr = _isse ? VerticalBicubic_iSSE : VerticalBicubic<uint8_t>;
+        _wiener_hor_ptr = _isse ? HorizontalWiener_iSSE : HorizontalWiener<uint8_t>;
+        _wiener_ver_ptr = _isse ? VerticalWiener_iSSE : VerticalWiener<uint8_t>;
+        _average_ptr = _isse ? Average2_iSSE : Average2<uint8_t>;
+        _reduce_ptr = &RB2BilinearFiltered<uint8_t>;
+    }
+    else if (pixelsize==2) {
+        _bilin_hor_ptr = HorizontalBilin<uint16_t>;
+        _bilin_ver_ptr = VerticalBilin<uint16_t>;
+        _bilin_dia_ptr = DiagonalBilin<uint16_t>;
+        _bicubic_hor_ptr = HorizontalBicubic<uint16_t>;
+        _bicubic_ver_ptr = VerticalBicubic<uint16_t>;
+        _wiener_hor_ptr = HorizontalWiener<uint16_t>;
+        _wiener_ver_ptr = VerticalWiener<uint16_t>;
+        _average_ptr = Average2<uint16_t>;
+        _reduce_ptr = &RB2BilinearFiltered<uint16_t>;
+    }
+    else {
+        // float? not supported
+    }
+        // Nothing
 }
 
 
@@ -93,11 +109,11 @@ void	MVPlane::set_interp (int rfilter, int sharp)
 
 	switch (rfilter)
 	{
-	case	0:	_reduce_ptr = &RB2F;                break;
-	case	1:	_reduce_ptr = &RB2Filtered;         break;
-	case	2:	_reduce_ptr = &RB2BilinearFiltered; break;
-	case	3:	_reduce_ptr = &RB2Quadratic;        break;
-	case	4:	_reduce_ptr = &RB2Cubic;            break;
+    case	0:	_reduce_ptr = (pixelsize==1) ? &RB2F<uint8_t> : &RB2F<uint16_t>; break;
+	case	1:	_reduce_ptr = (pixelsize==1) ? &RB2Filtered<uint8_t> : &RB2Filtered<uint16_t>; break;
+	case	2:	_reduce_ptr = (pixelsize==1) ? &RB2BilinearFiltered<uint8_t> : &RB2BilinearFiltered<uint16_t>; break;
+	case	3:	_reduce_ptr = (pixelsize==1) ? &RB2Quadratic<uint8_t> : &RB2Quadratic<uint16_t> ; break;
+	case	4:	_reduce_ptr = (pixelsize==1) ? &RB2Cubic<uint8_t> : &RB2Cubic<uint16_t>; break;
 	default:
 		assert (false);
 		break;
