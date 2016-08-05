@@ -34,7 +34,7 @@ void PadCorner(pixel_t *p, pixel_t v, int hPad, int vPad, int refPitch)
             for (int j = 0; j < hPad; j++)
                 p[j] = v;
             */
-            std::fill_n(p, hPad, v); // PF todo check syntax
+            std::fill_n(p, hPad, v); 
         }
 //		for ( int j = 0; j < hPad; j++ )
 //		{
@@ -149,24 +149,24 @@ PVideoFrame __stdcall Padding::GetFrame(int n, IScriptEnvironment *env)
 		}
 
 
-	env->BitBlt(pDst[0] + horizontalPadding + verticalPadding * nDstPitches[0], nDstPitches[0],
-		pSrc[0], nSrcPitches[0], width, height);
+	env->BitBlt(pDst[0] + horizontalPadding*pixelsize + verticalPadding * nDstPitches[0], nDstPitches[0],
+		pSrc[0], nSrcPitches[0], width*pixelsize, height);
     if(pixelsize==1)
         PadReferenceFrame<uint8_t>(pDst[0], nDstPitches[0], horizontalPadding, verticalPadding, width, height);
     else
         PadReferenceFrame<uint16_t>(pDst[0], nDstPitches[0], horizontalPadding, verticalPadding, width, height);
 
 
-	env->BitBlt(pDst[1] + horizontalPadding/xRatioUV + verticalPadding/yRatioUV * nDstPitches[1],
-		nDstPitches[1],	pSrc[1], nSrcPitches[1], width/xRatioUV, height/yRatioUV);
+	env->BitBlt(pDst[1] + horizontalPadding/xRatioUV*pixelsize + verticalPadding/yRatioUV * nDstPitches[1],
+		nDstPitches[1],	pSrc[1], nSrcPitches[1], width/xRatioUV*pixelsize, height/yRatioUV);
     if(pixelsize==1)
         PadReferenceFrame<uint8_t>(pDst[1], nDstPitches[1], horizontalPadding/xRatioUV, verticalPadding/yRatioUV, width/xRatioUV, height/yRatioUV);
     else
         PadReferenceFrame<uint16_t>(pDst[1], nDstPitches[1], horizontalPadding/xRatioUV, verticalPadding/yRatioUV, width/xRatioUV, height/yRatioUV);
 
 
-	env->BitBlt(pDst[2] + horizontalPadding/xRatioUV + verticalPadding/yRatioUV * nDstPitches[2],
-		nDstPitches[2],	pSrc[2], nSrcPitches[2], width/xRatioUV, height/yRatioUV);
+	env->BitBlt(pDst[2] + horizontalPadding/xRatioUV*pixelsize + verticalPadding/yRatioUV * nDstPitches[2],
+		nDstPitches[2],	pSrc[2], nSrcPitches[2], width/xRatioUV*pixelsize, height/yRatioUV);
     if(pixelsize==1)
         PadReferenceFrame<uint8_t>(pDst[2], nDstPitches[2], horizontalPadding/xRatioUV, verticalPadding/yRatioUV, width/xRatioUV, height/yRatioUV);
     else
@@ -183,9 +183,9 @@ PVideoFrame __stdcall Padding::GetFrame(int n, IScriptEnvironment *env)
 }
 
 template<typename pixel_t>
-void Padding::PadReferenceFrame(unsigned char *refFrame0, int refPitch, int hPad, int vPad, int width, int height)
+void Padding::PadReferenceFrame(unsigned char *refFrame8, int refPitch, int hPad, int vPad, int width, int height)
 {
-    pixel_t *refFrame = reinterpret_cast<pixel_t *>(refFrame0);
+    pixel_t *refFrame = reinterpret_cast<pixel_t *>(refFrame8);
     refPitch /= sizeof(pixel_t);
 
 	pixel_t *pfoff = refFrame + vPad * refPitch + hPad;

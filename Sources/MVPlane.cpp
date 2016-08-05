@@ -508,7 +508,7 @@ void	MVPlane::reduce_slice (SlicerReduce::TaskData &td)
 {
 	assert (&td != 0);
 	assert (_redp_ptr != 0);
-
+    // noffsetPadding is pixelsize aware
 	MVPlane &		red = *_redp_ptr;
 	_reduce_ptr (
 		red.pPlane[0] + red.nOffsetPadding, pPlane[0] + nOffsetPadding,
