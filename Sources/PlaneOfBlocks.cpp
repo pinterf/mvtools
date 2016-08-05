@@ -503,9 +503,9 @@ void PlaneOfBlocks::SearchMVs (
 		nSrcPitch_plane[1] = pSrcFrame->GetPlane(UPLANE)->GetPitch();
 		nSrcPitch_plane[2] = pSrcFrame->GetPlane(VPLANE)->GetPitch();
 	}
-	nSrcPitch[0] = nBlkSizeX;
-	nSrcPitch[1] = nBlkSizeX/2;
-	nSrcPitch[2] = nBlkSizeX/2;
+	nSrcPitch[0] = pixelsize * nBlkSizeX;
+    nSrcPitch[1] = pixelsize * nBlkSizeX / xRatioUV; // PF xRatio instead of /2: after 2.7.0.22c;
+    nSrcPitch[2] = pixelsize * nBlkSizeX / xRatioUV;
 #else	// ALIGN_SOURCEBLOCK
 	nSrcPitch[0] = pSrcFrame->GetPlane(YPLANE)->GetPitch();
 	if (chroma)
@@ -613,9 +613,9 @@ void PlaneOfBlocks::RecalculateMVs (
 		nSrcPitch_plane[1] = pSrcFrame->GetPlane(UPLANE)->GetPitch();
 		nSrcPitch_plane[2] = pSrcFrame->GetPlane(VPLANE)->GetPitch();
 	}
-	nSrcPitch[0] = nBlkSizeX;
-	nSrcPitch[1] = nBlkSizeX/2;
-	nSrcPitch[2] = nBlkSizeX/2;
+	nSrcPitch[0] = pixelsize * nBlkSizeX;
+	nSrcPitch[1] = pixelsize * nBlkSizeX/xRatioUV; // PF after 2.7.0.22c
+	nSrcPitch[2] = pixelsize * nBlkSizeX/xRatioUV; // PF after 2.7.0.22c
 #else	// ALIGN_SOURCEBLOCK
 	nSrcPitch[0] = pSrcFrame->GetPlane(YPLANE)->GetPitch();
 	if (chroma)
@@ -1784,7 +1784,7 @@ int	PlaneOfBlocks::LumaSADx (WorkingArea &workarea, const unsigned char *pRef0)
 		}
 		break;
 	case 5: // dct SAD (SATD)
-		sad = SATD(workarea.pSrc[0], nSrcPitch[0], pRef0, nRefPitch[0]);
+		sad = SATD(workarea.pSrc[0], nSrcPitch[0], pRef0, nRefPitch[0]); // buggy? PF QTGMC(dct=5)
 		break;
 	case 6: //  globally (lumaChange) weighted spatial and DCT (better estimate)
 		sad = SAD(workarea.pSrc[0], nSrcPitch[0], pRef0, nRefPitch[0]);
@@ -2096,8 +2096,8 @@ void	PlaneOfBlocks::search_mv_slice (Slicer::TaskData &td)
 			workarea.x[0] = pSrcFrame->GetPlane(YPLANE)->GetHPadding() + (nBlkSizeX-nOverlapX)*(nBlkX-1);
 			if (chroma)
 			{
-				workarea.x[1] = pSrcFrame->GetPlane(UPLANE)->GetHPadding()+ ((nBlkSizeX-nOverlapX)/2)*(nBlkX-1);
-				workarea.x[2] = pSrcFrame->GetPlane(VPLANE)->GetHPadding()+ ((nBlkSizeX-nOverlapX)/2)*(nBlkX-1);
+				workarea.x[1] = pSrcFrame->GetPlane(UPLANE)->GetHPadding()+ ((nBlkSizeX-nOverlapX)/xRatioUV)*(nBlkX-1);  // PF after 2.7.0.22c
+				workarea.x[2] = pSrcFrame->GetPlane(VPLANE)->GetHPadding()+ ((nBlkSizeX-nOverlapX)/xRatioUV)*(nBlkX-1);
 			}
 		}
 
@@ -2199,8 +2199,8 @@ void	PlaneOfBlocks::search_mv_slice (Slicer::TaskData &td)
 			if ( iblkx < nBlkX-1 )
 			{
 				workarea.x[0] += (nBlkSizeX - nOverlapX)*workarea.blkScanDir;
-				workarea.x[1] += ((nBlkSizeX - nOverlapX)*workarea.blkScanDir /2);
-				workarea.x[2] += ((nBlkSizeX - nOverlapX)*workarea.blkScanDir /2);
+                workarea.x[1] += ((nBlkSizeX - nOverlapX)*workarea.blkScanDir / xRatioUV); // PF after 2.7.0.22c);
+				workarea.x[2] += ((nBlkSizeX - nOverlapX)*workarea.blkScanDir / xRatioUV);
 			}
 		}	// for iblkx
 
@@ -2309,8 +2309,8 @@ void	PlaneOfBlocks::recalculate_mv_slice (Slicer::TaskData &td)
 			workarea.x[0] = pSrcFrame->GetPlane(YPLANE)->GetHPadding() + (nBlkSizeX-nOverlapX)*(nBlkX-1);
 			if (chroma)
 			{
-				workarea.x[1] = pSrcFrame->GetPlane(UPLANE)->GetHPadding()+ ((nBlkSizeX-nOverlapX)/2)*(nBlkX-1);
-				workarea.x[2] = pSrcFrame->GetPlane(VPLANE)->GetHPadding()+ ((nBlkSizeX-nOverlapX)/2)*(nBlkX-1);
+				workarea.x[1] = pSrcFrame->GetPlane(UPLANE)->GetHPadding()+ ((nBlkSizeX-nOverlapX)/xRatioUV)*(nBlkX-1);
+				workarea.x[2] = pSrcFrame->GetPlane(VPLANE)->GetHPadding()+ ((nBlkSizeX-nOverlapX)/xRatioUV)*(nBlkX-1);
 			}
 		}
 
@@ -2558,8 +2558,8 @@ void	PlaneOfBlocks::recalculate_mv_slice (Slicer::TaskData &td)
 			if ( iblkx < nBlkX-1 )
 			{
 				workarea.x[0] += (nBlkSizeX - nOverlapX)*workarea.blkScanDir;
-				workarea.x[1] += ((nBlkSizeX - nOverlapX)*workarea.blkScanDir /2);
-				workarea.x[2] += ((nBlkSizeX - nOverlapX)*workarea.blkScanDir /2);
+                workarea.x[1] += ((nBlkSizeX - nOverlapX)*workarea.blkScanDir / xRatioUV);// PF after 2.7.0.22c);
+				workarea.x[2] += ((nBlkSizeX - nOverlapX)*workarea.blkScanDir / xRatioUV);
 			}
 		}	// for workarea.blkx
 
@@ -2570,7 +2570,7 @@ void	PlaneOfBlocks::recalculate_mv_slice (Slicer::TaskData &td)
 		}
 
 		workarea.y[0] += (nBlkSizeY - nOverlapY);
-		workarea.y[1] += ((nBlkSizeY - nOverlapY) >> nLogyRatioUV );
+		workarea.y[1] += ((nBlkSizeY - nOverlapY) >> nLogyRatioUV ); // same as /yRatioUV
 		workarea.y[2] += ((nBlkSizeY - nOverlapY) >> nLogyRatioUV );
 	}	// for workarea.blky
 
