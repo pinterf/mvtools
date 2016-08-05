@@ -57,6 +57,7 @@ void MVGroupOfFrames::Update(int nMode, uint8_t * pSrcY, int pitchY, uint8_t * p
 {
 	for ( int i = 0; i < nLevelCount; i++ )
 	{
+        // offsets are pixelsize-aware because pitch is in bytes
 		unsigned int offY = PlaneSuperOffset(false, nHeight, i, nPel, nVPad, pitchY, yRatioUV); // no need here xRatioUV and pixelsize
 		unsigned int offU = PlaneSuperOffset(true, nHeight/yRatioUV, i, nPel, nVPad/yRatioUV, pitchU, yRatioUV);
 		unsigned int offV = PlaneSuperOffset(true, nHeight/yRatioUV, i, nPel, nVPad/yRatioUV, pitchV, yRatioUV);

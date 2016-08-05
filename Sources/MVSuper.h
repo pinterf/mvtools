@@ -62,6 +62,7 @@ inline int PlaneWidthLuma(int src_width, int level, int xRatioUV, int hpad)
 }
 
 // PF: OK no need for xRatioUV here
+// returned offset is pixelsize-aware because plane_pitch is in bytes
 inline unsigned int PlaneSuperOffset(bool chroma, int src_height, int level, int pel, int vpad, int plane_pitch, int yRatioUV)
 {
 	// storing subplanes in superframes may be implemented by various ways

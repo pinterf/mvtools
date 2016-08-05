@@ -115,7 +115,7 @@ MVSuper::MVSuper (
 	}
 
 	nSuperWidth = nWidth + 2*nHPad;
-	nSuperHeight = PlaneSuperOffset(false, nHeight, nLevels, nPel, nVPad, nSuperWidth, yRatioUV)/nSuperWidth;
+	nSuperHeight = PlaneSuperOffset(false, nHeight, nLevels, nPel, nVPad, nSuperWidth*pixelsize, yRatioUV)/(nSuperWidth*pixelsize);
 	if (yRatioUV==2 && nSuperHeight&1) nSuperHeight++; // even
 	vi.width = nSuperWidth;
 	vi.height = nSuperHeight;
