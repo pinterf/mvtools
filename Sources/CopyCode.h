@@ -10,7 +10,7 @@
 
 void BitBlt(unsigned char* dstp, int dst_pitch, const unsigned char* srcp, int src_pitch, int row_size, int height, bool isse);
 //void asm_BitBlt_ISSE(unsigned char* dstp, int dst_pitch, const unsigned char* srcp, int src_pitch, int row_size, int height);
-extern "C" void memcpy_amd(void *dest, const void *src, size_t n);
+//extern "C" void memcpy_amd(void *dest, const void *src, size_t n);
 extern "C" void MemZoneSet(unsigned char *ptr, unsigned char value, int width,
 				int height, int offsetX, int offsetY, int pitch);
 
