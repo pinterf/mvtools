@@ -95,7 +95,7 @@ MVAnalyse::MVAnalyse (
 
 	if (   nHeight       <= 0
 	    || nSuperHPad    <  0
-	    || nSuperHPad    >= vi.width / 2
+	    || nSuperHPad    >= vi.width / 2 // PF: intentional /2
 	    || nSuperVPad    <  0
 	    || nSuperPel     <  1
 	    || nSuperPel     >  4
@@ -109,8 +109,18 @@ MVAnalyse::MVAnalyse (
 	analysisData.nWidth    = vi.width - nSuperHPad * 2;
 	analysisData.nHeight   = nHeight;
 	analysisData.pixelType = vi.pixel_type;
-    analysisData.yRatioUV = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U)); // (vi.IsYV12()) ? 2 : 1; // PF todo YV12 specific!
-	analysisData.xRatioUV  = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U));;// for YV12 and YUY2, really do not used and assumed to 2
+#ifdef AVS16
+    if(!vi.IsY()) {
+#else
+    if(!vi.IsY8()) {
+#endif
+        analysisData.yRatioUV = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U)); // (vi.IsYV12()) ? 2 : 1; // PF todo YV12 specific!
+        analysisData.xRatioUV  = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U)); // for YV12 and YUY2, really do not used and assumed to 2
+    }
+    else {
+        analysisData.yRatioUV = 1; // n/a
+        analysisData.xRatioUV = 1; // n/a
+    }
     analysisData.pixelsize = pixelsize;
 
 //	env->ThrowError ("MVAnalyse: %d, %d, %d, %d, %d", nPrepHPad, nPrepVPad, nPrepPel, nPrepModeYUV, nPrepLevels);
@@ -163,9 +173,10 @@ MVAnalyse::MVAnalyse (
 		env->ThrowError ("MAnalyse: overlap must be less than block size");
 	}
 
-   if (_overlapx % 2 || (_overlapy % 2 > 0 && vi.IsYV12 ()))
+   //if (_overlapx % 2 || (_overlapy % 2 > 0 && vi.IsYV12 ())) // was: _overlapx % 2
+    if (_overlapx % analysisData.xRatioUV || _overlapy % analysisData.yRatioUV) // PF subsampling-aware
 	{
-		env->ThrowError ("MAnalyse: overlap must be more even");
+		env->ThrowError ("MAnalyse: wrong overlap for the colorspace subsampling");
 	}
 
 	if (_divide != 0 && (_blksizex < 8 || _blksizey < 8)) // || instead of && 2.5.11.22 green garbage issue
@@ -174,12 +185,27 @@ MVAnalyse::MVAnalyse (
 			"MAnalyse: Block sizes must be 8 or more for divide mode"
 		);
 	}
+
+#ifdef AVS16
+    if(vi.IsY() && chroma)
+#else
+    if (vi.IsY8() && chroma)
+#endif
+    {
+        chroma = false; // PF 22d silent fallback
+        //env->ThrowError ("MAnalyse: chroma is not allowed for greyscale mode");
+    }
+    /*
    if (   _divide != 0
 	    && (   (_overlapx % 4                    )
 	        || (_overlapy % 4 > 0 && vi.IsYV12 ())
 	        || (_overlapy % 2 > 0 && vi.IsYUY2 ()))) // todo check
-	{
-		env->ThrowError("MAnalyse: overlap must be more even for divide mode");
+  */
+    if (   _divide != 0
+        && (   (_overlapx % (2*analysisData.xRatioUV)) || (_overlapy % (2*analysisData.yRatioUV)) ) // PF subsampling-aware
+        )
+    {
+		env->ThrowError("MAnalyse: wrong overlap for the colorspace subsampling for divide mode");
 	}
 
 	divideExtra = _divide;
