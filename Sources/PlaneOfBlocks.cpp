@@ -111,7 +111,7 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
 #if 0
     // Sad_C: SadFunction.cpp
     // Var_c: Variance.h   PF nowhere used!!!
-    // Luma_c: Variance.h   PF nowhere used!!!
+    // Luma_c: Variance.h 
     // Copy_C: CopyCode
 
 #define SET_FUNCPTR(blksizex, blksizey, blksizex2, blksizey2)	do \
@@ -263,6 +263,9 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
     BLITCHROMA = get_copy_function(nBlkSizeX/xRatioUV, nBlkSizeY/yRatioUV, pixelsize, arch);
     //VAR        = get_var_function(nBlkSizeX/xRatioUV, nBlkSizeY/yRatioUV, pixelsize, arch); // variance.h PF: no VAR
     LUMA       = get_luma_function(nBlkSizeX/xRatioUV, nBlkSizeY/yRatioUV, pixelsize, arch); // variance.h
+    SATD       = get_satd_function(nBlkSizeX, nBlkSizeY, pixelsize, arch); // P.F. 2.7.0.22d SATD made live
+    if(SATD == nullptr)
+        SATD = SadDummy;
 
 #if 0
 	if (0&&mmxext) //use new functions from x264
@@ -1726,17 +1729,19 @@ const uint8_t *	PlaneOfBlocks::GetRefBlock(WorkingArea &workarea, int nVx, int n
 const uint8_t *	PlaneOfBlocks::GetRefBlockU(WorkingArea &workarea, int nVx, int nVy)
 {
 //	return pRefFrame->GetPlane(UPLANE)->GetAbsolutePointer((workarea.x[1]<<nLogPel) + (nVx >> 1), (workarea.y[1]<<nLogPel) + (yRatioUV==1 ? nVy : nVy>>1) ); //v.1.2.1
-	return (nPel==2) ? pRefFrame->GetPlane(UPLANE)->GetAbsolutePointerPel <1> ((workarea.x[1]<<1) + (nVx >> 1), (workarea.y[1]<<1) + (yRatioUV==1 ? nVy : nVy>>1) ) :
-	       (nPel==1) ? pRefFrame->GetPlane(UPLANE)->GetAbsolutePointerPel <0> ((workarea.x[1]   ) + (nVx >> 1), (workarea.y[1]   ) + (yRatioUV==1 ? nVy : nVy>>1) ) :
-	                   pRefFrame->GetPlane(UPLANE)->GetAbsolutePointerPel <2> ((workarea.x[1]<<2) + (nVx >> 1), (workarea.y[1]<<2) + (yRatioUV==1 ? nVy : nVy>>1) );
+	return (nPel==2) ? pRefFrame->GetPlane(UPLANE)->GetAbsolutePointerPel <1> ((workarea.x[1]<<1) + (xRatioUV == 1 ? nVx : nVx >> 1), (workarea.y[1]<<1) + (yRatioUV==1 ? nVy : nVy>>1) ) :
+	       (nPel==1) ? pRefFrame->GetPlane(UPLANE)->GetAbsolutePointerPel <0> ((workarea.x[1]   ) + (xRatioUV == 1 ? nVx : nVx >> 1), (workarea.y[1]   ) + (yRatioUV==1 ? nVy : nVy>>1) ) :
+	                   pRefFrame->GetPlane(UPLANE)->GetAbsolutePointerPel <2> ((workarea.x[1]<<2) + (xRatioUV == 1 ? nVx : nVx >> 1), (workarea.y[1]<<2) + (yRatioUV==1 ? nVy : nVy>>1) );
+    // xRatioUV fix after 2.7.0.22c
 }
 
 const uint8_t *	PlaneOfBlocks::GetRefBlockV(WorkingArea &workarea, int nVx, int nVy)
 {
 //	return pRefFrame->GetPlane(VPLANE)->GetAbsolutePointer((workarea.x[2]<<nLogPel) + (nVx >> 1), (workarea.y[2]<<nLogPel) + (yRatioUV==1 ? nVy : nVy>>1) );
-	return (nPel==2) ? pRefFrame->GetPlane(VPLANE)->GetAbsolutePointerPel <1> ((workarea.x[2]<<1) + (nVx >> 1), (workarea.y[2]<<1) + (yRatioUV==1 ? nVy : nVy>>1) ) :
-	       (nPel==1) ? pRefFrame->GetPlane(VPLANE)->GetAbsolutePointerPel <0> ((workarea.x[2]   ) + (nVx >> 1), (workarea.y[2]   ) + (yRatioUV==1 ? nVy : nVy>>1) ) :
-	                   pRefFrame->GetPlane(VPLANE)->GetAbsolutePointerPel <2> ((workarea.x[2]<<2) + (nVx >> 1), (workarea.y[2]<<2) + (yRatioUV==1 ? nVy : nVy>>1) );
+	return (nPel==2) ? pRefFrame->GetPlane(VPLANE)->GetAbsolutePointerPel <1> ((workarea.x[2]<<1) + (xRatioUV == 1 ? nVx : nVx >> 1), (workarea.y[2]<<1) + (yRatioUV==1 ? nVy : nVy>>1) ) :
+	       (nPel==1) ? pRefFrame->GetPlane(VPLANE)->GetAbsolutePointerPel <0> ((workarea.x[2]   ) + (xRatioUV == 1 ? nVx : nVx >> 1), (workarea.y[2]   ) + (yRatioUV==1 ? nVy : nVy>>1) ) :
+	                   pRefFrame->GetPlane(VPLANE)->GetAbsolutePointerPel <2> ((workarea.x[2]<<2) + (xRatioUV == 1 ? nVx : nVx >> 1), (workarea.y[2]<<2) + (yRatioUV==1 ? nVy : nVy>>1) );
+    // xRatioUV fix after 2.7.0.22c
 }
 
 const uint8_t *	PlaneOfBlocks::GetSrcBlock(int nX, int nY)
@@ -1784,7 +1789,8 @@ int	PlaneOfBlocks::LumaSADx (WorkingArea &workarea, const unsigned char *pRef0)
 		}
 		break;
 	case 5: // dct SAD (SATD)
-		sad = SATD(workarea.pSrc[0], nSrcPitch[0], pRef0, nRefPitch[0]); // buggy? PF QTGMC(dct=5)
+		sad = SATD(workarea.pSrc[0], nSrcPitch[0], pRef0, nRefPitch[0]); 
+        // buggy? PF QTGMC(dct=5). 20160816 No! SATD function was linked to Dummy, did nothing. Made live again from 2.7.0.22d
 		break;
 	case 6: //  globally (lumaChange) weighted spatial and DCT (better estimate)
 		sad = SAD(workarea.pSrc[0], nSrcPitch[0], pRef0, nRefPitch[0]);
