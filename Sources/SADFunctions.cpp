@@ -28,8 +28,6 @@ MK_CPPWRAP(2,2);
 
 SADFunction* get_sad_function(int BlockX, int BlockY, int pixelsize, arch_t arch)
 {
-    // 8 bit only (pixelsize==1)
-    //---------- DENOISE/DEGRAIN
     // BlkSizeX, BlkSizeY, pixelsize, arch_t
     std::map<std::tuple<int, int, int, arch_t>, SADFunction*> func_sad;
     using std::make_tuple;
@@ -77,7 +75,7 @@ SADFunction* get_sad_function(int BlockX, int BlockY, int pixelsize, arch_t arch
     func_sad[make_tuple(2 , 4 , 2, NO_SIMD)] = Sad_C<2 , 4,uint16_t>;
     func_sad[make_tuple(2 , 2 , 2, NO_SIMD)] = Sad_C<2 , 2,uint16_t>;
     func_sad[make_tuple(2 , 1 , 2, NO_SIMD)] = Sad_C<2 , 1,uint16_t>;
-
+    
     func_sad[make_tuple(32, 32, 1, USE_SSE2)] = Sad32x32_iSSE;
     func_sad[make_tuple(32, 16, 1, USE_SSE2)] = Sad32x16_iSSE;
     func_sad[make_tuple(32, 8 , 1, USE_SSE2)] = Sad32x8_iSSE;
@@ -103,10 +101,44 @@ SADFunction* get_sad_function(int BlockX, int BlockY, int pixelsize, arch_t arch
     return result;
 }
 
+SADFunction* get_satd_function(int BlockX, int BlockY, int pixelsize, arch_t arch)
+{
+    // 8 bit only (pixelsize==1)
+    // BlkSizeX, BlkSizeY, pixelsize, arch_t
+    std::map<std::tuple<int, int, int, arch_t>, SADFunction*> func_satd;
+    using std::make_tuple;
+
+    //x264_pixel_satd_##blksizex##x##blksizey##_sse2
+
+    func_satd[make_tuple(32, 32, 1, USE_SSE2)] = x264_pixel_satd_32x32_sse2;
+    func_satd[make_tuple(32, 16, 1, USE_SSE2)] = x264_pixel_satd_32x16_sse2;
+    //func_satd[make_tuple(32, 8 , 1, USE_SSE2)] = x264_pixel_satd_32x8_sse2;
+    //func_satd[make_tuple(16, 32, 1, USE_SSE2)] = x264_pixel_satd_16x32_sse2;
+    func_satd[make_tuple(16, 16, 1, USE_SSE2)] = x264_pixel_satd_16x16_sse2;
+    func_satd[make_tuple(16, 8 , 1, USE_SSE2)] = x264_pixel_satd_16x8_sse2;
+    //func_satd[make_tuple(16, 4 , 1, USE_SSE2)] = x264_pixel_satd_16x4_sse2;
+    //func_satd[make_tuple(16, 2 , 1, USE_SSE2)] = x264_pixel_satd_16x2_sse2;
+    func_satd[make_tuple(8 , 16, 1, USE_SSE2)] = x264_pixel_satd_8x16_sse2;
+    func_satd[make_tuple(8 , 8 , 1, USE_SSE2)] = x264_pixel_satd_8x8_sse2;
+    func_satd[make_tuple(8 , 4 , 1, USE_SSE2)] = x264_pixel_satd_8x4_sse2;
+    //func_satd[make_tuple(8 , 2 , 1, USE_SSE2)] = x264_pixel_satd_8x2_sse2;
+    //func_satd[make_tuple(8 , 1 , 1, USE_SSE2)] = x264_pixel_satd_8x1_sse2;
+    //func_satd[make_tuple(4 , 8 , 1, USE_SSE2)] = x264_pixel_satd_4x8_sse2;
+    //func_satd[make_tuple(4 , 4 , 1, USE_SSE2)] = x264_pixel_satd_4x4_sse2;
+    //func_satd[make_tuple(4 , 2 , 1, USE_SSE2)] = x264_pixel_satd_4x2_sse2;
+    //func_satd[make_tuple(2 , 4 , 1, USE_SSE2)] = x264_pixel_satd_2x4_sse2;
+    //func_satd[make_tuple(2 , 2 , 1, USE_SSE2)] = x264_pixel_satd_2x2_sse2;
+
+    SADFunction *result = func_satd[make_tuple(BlockX, BlockY, pixelsize, arch)];
+    if (result == nullptr)
+        result = func_satd[make_tuple(BlockX, BlockY, pixelsize, NO_SIMD)]; // fallback to C (not available yet)
+    return result;
+}
 
 
 // SATD functions for blocks over 16x16 are not defined in pixel-a.asm,
 // so as a poor man's substitute, we use a sum of smaller SATD functions.
+// 8 bit only
 #define	SATD_REC_FUNC(blsizex, blsizey, sblx, sbly, type)	extern "C" unsigned int __cdecl	x264_pixel_satd_##blsizex##x##blsizey##_##type (const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)	\
 {	\
 	const int		sum =	\
