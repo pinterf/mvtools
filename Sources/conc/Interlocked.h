@@ -27,9 +27,9 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
+#include <stdint.h>
 #include	"conc/def.h"
 #include	"types.h"
-#include <stdint.h>
 
 
 namespace conc
