@@ -76,8 +76,17 @@ MVSuper::MVSuper (
 	nModeYUV = chroma ? YUVPLANES : YPLANE;
 
 	pixelType = vi.pixel_type;
-    yRatioUV = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U));
-    xRatioUV = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U)); // for YV12 and YUY2, really do not used and assumed to 2
+#ifdef AVS16
+    if(!vi.IsY()) {
+#else
+    if(!vi.IsY8()) {
+#endif
+        yRatioUV = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U));
+        xRatioUV = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U)); // for YV12 and YUY2, really do not used and assumed to 2
+    } else {
+        yRatioUV = 1; // n/a
+        xRatioUV = 1; // n/a
+    }
 #ifdef AVS16
     pixelsize = vi.ComponentSize();
 #else

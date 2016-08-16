@@ -106,8 +106,18 @@ MVRecalculate::MVRecalculate (
 	analysisData.nWidth    = pAnalyseFilter->GetWidth();
 	analysisData.nHeight   = pAnalyseFilter->GetHeight();
 	analysisData.pixelType = pAnalyseFilter->GetPixelType();
-    analysisData.yRatioUV =  vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U)); // (vi.IsYV12()) ? 2 : 1; // todo
-    analysisData.xRatioUV = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U));  // 2;	// for YV12 and YUY2, really do not used and assumed to 2
+#ifdef AVS16
+    if(!vi.IsY()) {
+#else
+    if(!vi.IsY8()) {
+#endif
+        analysisData.yRatioUV =  vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U)); // (vi.IsYV12()) ? 2 : 1; // todo
+        analysisData.xRatioUV = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U));  // 2;	// for YV12 and YUY2, really do not used and assumed to 2
+    }
+    else {
+        analysisData.yRatioUV = 1; // n/a
+        analysisData.xRatioUV = 1; // n/a
+    }
     analysisData.pixelsize = pixelsize;
 
 
