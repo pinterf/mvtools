@@ -38,10 +38,19 @@ conc::Mutex	DCTFFTW::_fftw_mutex;
 DCTFFTW::DCTFFTW(int _sizex, int _sizey, HINSTANCE hinstFFTW3, int _dctmode, int _pixelsize) 
 {
 	fftwf_free_addr = (fftwf_free_proc) GetProcAddress(hinstFFTW3, "fftwf_free"); 
-	fftwf_malloc_addr = (fftwf_malloc_proc)GetProcAddress(hinstFFTW3, "fftwf_malloc"); 
-	fftwf_destroy_plan_addr = (fftwf_destroy_plan_proc) GetProcAddress(hinstFFTW3, "fftwf_destroy_plan");
-	fftwf_plan_r2r_2d_addr = (fftwf_plan_r2r_2d_proc) GetProcAddress(hinstFFTW3, "fftwf_plan_r2r_2d");
-	fftwf_execute_r2r_addr = (fftwf_execute_r2r_proc) GetProcAddress(hinstFFTW3, "fftwf_execute_r2r");
+    if(!fftwf_free_addr) fftwf_free_addr = (fftwf_free_proc) GetProcAddress(hinstFFTW3, "fftw_free"); // ffw3 v3.5!!!
+	
+    fftwf_malloc_addr = (fftwf_malloc_proc)GetProcAddress(hinstFFTW3, "fftwf_malloc"); 
+    if(!fftwf_malloc_addr) fftwf_malloc_addr = (fftwf_malloc_proc)GetProcAddress(hinstFFTW3, "fftw_malloc"); 
+    
+    fftwf_destroy_plan_addr = (fftwf_destroy_plan_proc) GetProcAddress(hinstFFTW3, "fftwf_destroy_plan");
+    if(!fftwf_destroy_plan_addr) fftwf_destroy_plan_addr = (fftwf_destroy_plan_proc) GetProcAddress(hinstFFTW3, "fftw_destroy_plan");
+    
+    fftwf_plan_r2r_2d_addr = (fftwf_plan_r2r_2d_proc) GetProcAddress(hinstFFTW3, "fftwf_plan_r2r_2d");
+    if(!fftwf_plan_r2r_2d_addr) fftwf_plan_r2r_2d_addr = (fftwf_plan_r2r_2d_proc) GetProcAddress(hinstFFTW3, "fftw_plan_r2r_2d");
+    
+    fftwf_execute_r2r_addr = (fftwf_execute_r2r_proc) GetProcAddress(hinstFFTW3, "fftwf_execute_r2r");
+    if(!fftwf_execute_r2r_addr) fftwf_execute_r2r_addr = (fftwf_execute_r2r_proc) GetProcAddress(hinstFFTW3, "fftw_execute_r2r");
 
     // members of the DCTClass
 	sizex = _sizex;
@@ -111,6 +120,7 @@ void DCTFFTW::Float2Bytes (unsigned char * dstp0, int dst_pitch, float * realdat
 	int i, j;
 	int integ;
 	float f = realdata[0]*0.5f; // to be compatible with integer DCTINT8
+    /*
     // ?? PF todo in 2016 there must be a better uniform method for this
 #if !defined(_WIN64)
 	_asm fld f; 
@@ -118,6 +128,8 @@ void DCTFFTW::Float2Bytes (unsigned char * dstp0, int dst_pitch, float * realdat
 #else
 	integ = (int)f;
 #endif
+*/
+    integ = (int)(nearbyintf(f)); // thx jackoneill
 
     int maxPixelValue = (1 << (pixelsize << 3)) - 1; // 255/65535
     int middlePixelValue = 1 << ((pixelsize << 3) - 1);   // 128/32768 
@@ -126,12 +138,15 @@ void DCTFFTW::Float2Bytes (unsigned char * dstp0, int dst_pitch, float * realdat
 	for (i = 1; i < sizex; i+=1)
 	{
 		f = realdata[i]*0.707f; // to be compatible with integer DCTINT8
+        /*
 #if !defined(_WIN64)
 		_asm fld f; 
 		_asm fistp integ; // fast conversion
 #else
 		integ = (int)f;
 #endif
+        */
+        integ = (int)(nearbyintf(f));
 		dstp[i] = std::min(maxPixelValue, std::max(0, (integ>>dctshift) + middlePixelValue));
 	}
 	dstp += dst_pitch;
@@ -141,13 +156,16 @@ void DCTFFTW::Float2Bytes (unsigned char * dstp0, int dst_pitch, float * realdat
 		for (i = 0; i < sizex; i+=1)
 		{
 			f = realdata[i]*0.707f; // to be compatible with integer DCTINT8
+            /*
 #if !defined(_WIN64)
 			_asm fld f; 
 			_asm fistp integ; // fast conversion
 #else
 			integ = (int)f;
 #endif
-			dstp[i] = std::min(maxPixelValue, std::max(0, (integ>>dctshift) + middlePixelValue));
+            */
+            integ = (int)(nearbyintf(f));
+            dstp[i] = std::min(maxPixelValue, std::max(0, (integ>>dctshift) + middlePixelValue));
 		}
 		dstp += dst_pitch;
 		realdata += floatpitch;
