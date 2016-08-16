@@ -11,14 +11,14 @@ Modification base:
 http://avisynth.nl/index.php/AviSynth%2B#AviSynth.2B_x64_plugins
 
 Features
-- 2.7.0.22d 
-  Some additional fixes for YV24>
-  Allow greyscale input (Y8)
-  dct modes >= 5 now use SATD again (so far it was in dead code, contrary to 2.5.13.1 remarks)
-  fftw 3.3.5 support (changed function names, 3.3.4 still OK), see http://www.fftw.org/download.html
-  XP support
-  compiled to SSE2 with optional SSE4.2 paths
-  (not new but don't forget: first search for libfftw3f-3.dll, then fftw3.dll)
+- 2.7.0.22d: 
+- Some additional fixes for YV24
+- Allow greyscale input (Y8)
+- dct modes >= 5 now use SATD again (so far it was in dead code, contrary to 2.5.13.1 remarks)
+- fftw 3.3.5 support (changed function names, 3.3.4 still OK), see http://www.fftw.org/download.html
+- XP support (again)
+- compiled to SSE2 with optional SSE4.2 paths
+- (not new but don't forget: first search for libfftw3f-3.dll, then fftw3.dll)
 
 - 2.7.0.22c: test build to support YV16 and YV24, 
   from now there is no need for YUY2 planar hack in scripts. Use ConvertToYV16() and work with it.
