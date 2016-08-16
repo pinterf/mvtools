@@ -43,12 +43,12 @@ BEGIN
             VALUE "Comments", "Motion estimation and compensation"
             VALUE "CompanyName", "A.G.Balakhnin aka Fizick, fizick@avisynth.org.ru"
             VALUE "FileDescription", "MVTools plugin for AviSynth 2.6 API"
-            VALUE "FileVersion", "2.7.0.22"
+            VALUE "FileVersion", "2.7.0.22d"
             VALUE "InternalName", "mvtools"
             VALUE "LegalCopyright", "©2004 Manao, ©2005 Fizick, ©2008 TSchniede under GNU GPL v2"
             VALUE "OriginalFilename", "mvtools.dll"
             VALUE "ProductName", "mvtools"
-            VALUE "ProductVersion", "2.7.0.22"
+            VALUE "ProductVersion", "2.7.0.22d"
         END
     END
     BLOCK "VarFileInfo"
