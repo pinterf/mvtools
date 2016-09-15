@@ -310,12 +310,14 @@ void MakeVectorSmallMasks(MVClip &mvClip, int nBlkX, int nBlkY, short *VXSmallY,
 }
 
 
-
+// simply copies (ratioUV==1) /or halves (ratioUV==2) VSmallY[x,y] to VSmallUV[x,y]
+// x:0..nBlkX,   y:0..nBlkY
+// it can be called with X and Y vectors, ratioUV can be xRatioUV or yRatioUV
 void VectorSmallMaskYToHalfUV(short * VSmallY, int nBlkX, int nBlkY, short *VSmallUV, int ratioUV)
 {
   if (ratioUV == 2)
   {
-    // YV12 colorformat
+    // e.g. YV12 colorformat 
     for (int by = 0; by<nBlkY; by++)
     {
       for (int bx = 0; bx<nBlkX; bx++)
@@ -328,7 +330,7 @@ void VectorSmallMaskYToHalfUV(short * VSmallY, int nBlkX, int nBlkY, short *VSma
   }
   else // ratioUV==1
   {
-    // Height YUY2 colorformat
+    // e.g. Height YUY2 colorformat
     for (int by = 0; by<nBlkY; by++)
     {
       for (int bx = 0; bx<nBlkX; bx++)
@@ -342,37 +344,87 @@ void VectorSmallMaskYToHalfUV(short * VSmallY, int nBlkX, int nBlkY, short *VSma
 
 }
 
+template<typename pixel_t>
+static void Merge4PlanesToBig_c(
+  uint8_t *pel2Plane, int pel2Pitch, const uint8_t *pPlane0, const uint8_t *pPlane1,
+  const uint8_t *pPlane2, const uint8_t * pPlane3, int width, int height, int pitch, int bits_per_pixel)
+{
+  
+  for (int h=0; h<height; h++)
+  {
+    for (int w=0; w<width; w++)
+    {
+      reinterpret_cast<pixel_t *>(pel2Plane)[w<<1] = reinterpret_cast<pixel_t *>(pPlane0)[w];
+      reinterpret_cast<pixel_t *>(pel2Plane)[(w<<1) +1] = reinterpret_cast<pixel_t *>(pPlane1)[w];
+    }
+    pel2Plane += pel2Pitch;
+    for (int w=0; w<width; w++)
+    {
+      reinterpret_cast<pixel_t *>(pel2Plane)[w<<1] = reinterpret_cast<pixel_t *>(pPlane2)[w];
+      reinterpret_cast<pixel_t *>(pel2Plane)[(w<<1) +1] = reinterpret_cast<pixel_t *>(pPlane3)[w];
+    }
+    pel2Plane += pel2Pitch;
+    pPlane0 += pitch;
+    pPlane1 += pitch;
+    pPlane2 += pitch;
+    pPlane3 += pitch;
+  }
+}
 
+// todo, todo, todo, etc..
+template<typename pixel_t>
+static void Merge4PlanesToBig_sse2(
+  uint8_t *pel2Plane, int pel2Pitch, const uint8_t *pPlane0, const uint8_t *pPlane1,
+  const uint8_t *pPlane2, const uint8_t * pPlane3, int width, int height, int pitch, int bits_per_pixel)
+{
+  int mod8width = width
+  for (int h=0; h<height; h++)
+  {
+    for (int w=0; w<width; w++)
+    {
+      reinterpret_cast<pixel_t *>(pel2Plane)[w<<1] = reinterpret_cast<pixel_t *>(pPlane0)[w];
+      reinterpret_cast<pixel_t *>(pel2Plane)[(w<<1) +1] = reinterpret_cast<pixel_t *>(pPlane1)[w];
+    }
+    pel2Plane += pel2Pitch;
+    for (int w=0; w<width; w++)
+    {
+      reinterpret_cast<pixel_t *>(pel2Plane)[w<<1] = reinterpret_cast<pixel_t *>(pPlane2)[w];
+      reinterpret_cast<pixel_t *>(pel2Plane)[(w<<1) +1] = reinterpret_cast<pixel_t *>(pPlane3)[w];
+    }
+    pel2Plane += pel2Pitch;
+    pPlane0 += pitch;
+    pPlane1 += pitch;
+    pPlane2 += pitch;
+    pPlane3 += pitch;
+  }
+}
 
 void Merge4PlanesToBig(
 	uint8_t *pel2Plane, int pel2Pitch, const uint8_t *pPlane0, const uint8_t *pPlane1,
-	const uint8_t *pPlane2, const uint8_t * pPlane3, int width, int height, int pitch, bool isse)
+	const uint8_t *pPlane2, const uint8_t * pPlane3, int width, int height, int pitch, int pixelsize, bool isse)
 {
 	// copy refined planes to big one plane
+  // P =  p0 p1 p0 p1 p0 p1 p0 p1...
+  //      p2 p3 p2 p3 p2 p3 p2 p3
+  // 
+#if defined(_M_X64) && defined(_MSC_VER)
+  isse = false;
+  // todo: Merge4PlanesToBig_sse2
+#endif
+
 	if (!isse)
 	{
-		for (int h=0; h<height; h++)
-		{
-			for (int w=0; w<width; w++)
-			{
-				pel2Plane[w<<1] = pPlane0[w];
-				pel2Plane[(w<<1) +1] = pPlane1[w];
-			}
-			pel2Plane += pel2Pitch;
-			for (int w=0; w<width; w++)
-			{
-				pel2Plane[w<<1] = pPlane2[w];
-				pel2Plane[(w<<1) +1] = pPlane3[w];
-			}
-			pel2Plane += pel2Pitch;
-			pPlane0 += pitch;
-			pPlane1 += pitch;
-			pPlane2 += pitch;
-			pPlane3 += pitch;
-		}
+    if(pixelsize==1)
+      Merge4PlanesToBig_c<uint8_t>(pel2Plane, pel2Pitch, pPlane0, pPlane1, pPlane2, pPlane3, width, height, pitch, pixelsize);
+    else if(pixelsize==2)
+      Merge4PlanesToBig_c<uint16_t>(pel2Plane, pel2Pitch, pPlane0, pPlane1, pPlane2, pPlane3, width, height, pitch, pixelsize);
+    else if(pixelsize==2)
+      Merge4PlanesToBig_c<float>(pel2Plane, pel2Pitch, pPlane0, pPlane1, pPlane2, pPlane3, width, height, pitch, pixelsize);
 	}
-	else // isse - not very optimized
+#if !(defined(_M_X64) && defined(_MSC_VER))
+  else // isse - not very optimized
 	{
+    // todo SIMD intrinsic
 		_asm
 		{
 #if !defined(_M_X64)
@@ -458,6 +510,7 @@ loopw2:
 #undef pel2Pitch_
 		}
 	}
+#endif // inline assembly MSVC X64 ignore
 }
 
 

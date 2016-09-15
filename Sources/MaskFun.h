@@ -45,12 +45,12 @@ void MakeVectorOcclusionMaskTimePlane (MVClip &mvClip, int nBlkX, int nBlkY, dou
 void MakeSADMaskTime(MVClip &mvClip, int nBlkX, int nBlkY, double dMaskNormDivider, double fGamma, int nPel, uint8_t * Mask, int MaskPitch, int time256, int nBlkStepX, int nBlkStepY);
 // in 2.5.11.22 BYTE * (uint_8*) -> short *
 void MakeVectorSmallMasks(MVClip &mvClip, int nX, int nY, short *VXSmallY, int pitchVXSmallY, short *VYSmallY, int pitchVYSmallY);
-void VectorSmallMaskYToHalfUV(short * VSmallY, int nBlkX, int nBlkY, short *VSmallUV, int ratioUV);
+void VectorSmallMaskYToHalfUV(short * VSmallY, int nBlkX, int nBlkY, short *VSmallUV, int RatioUV);
 //void MakeVectorSmallMasks(MVClip &mvClip, int nX, int nY, uint8_t *VXSmallY, int pitchVXSmallY, uint8_t *VYSmallY, int pitchVYSmallY);
 //void VectorSmallMaskYToHalfUV(uint8_t * VSmallY, int nBlkX, int nBlkY, uint8_t *VSmallUV, int ratioUV);
 
 void Merge4PlanesToBig(uint8_t *pel2Plane, int pel2Pitch, const uint8_t *pPlane0, const uint8_t *pPlane1,
-					  const uint8_t *pPlane2, const uint8_t * pPlane3, int width, int height, int pitch, bool isse);
+					  const uint8_t *pPlane2, const uint8_t * pPlane3, int width, int height, int pitch, int pixelsize, bool isse);
 
 void Merge16PlanesToBig(
 	uint8_t *pel4Plane, int pel4Pitch,
@@ -58,7 +58,7 @@ void Merge16PlanesToBig(
 	const uint8_t *pPlane4,  const uint8_t *pPlane5,  const uint8_t *pPlane6,  const uint8_t * pPlane7,
 	const uint8_t *pPlane8,  const uint8_t *pPlane9,  const uint8_t *pPlane10, const uint8_t * pPlane11,
 	const uint8_t *pPlane12, const uint8_t *pPlane13, const uint8_t *pPlane14, const uint8_t * pPlane15,
-	int width, int height, int pitch, bool isse
+	int width, int height, int pitch, int pixelsize, bool isse
 );
 
 unsigned char SADToMask(unsigned int sad, unsigned int sadnorm1024);
