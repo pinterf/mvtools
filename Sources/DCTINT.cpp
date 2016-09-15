@@ -54,6 +54,10 @@
 #define movsx_int movsxd
 #endif
 
+#if 0
+// PF 160915 DCTINT for 8x8 is omitted (inline asm vs. x64, 
+// and breaks generality
+
 #define DCTSHIFT 2 // 2 is 4x decreasing,
 // only DC component need in shift 4 (i.e. 16x) for real images
 
@@ -331,3 +335,5 @@ LoopQ:
 	}
 	_mm_empty();
 }
+#endif
+
