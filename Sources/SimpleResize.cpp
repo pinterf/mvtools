@@ -41,6 +41,7 @@
 #include	"avisynth.h"
 
 #include	"malloc.h"
+#include <emmintrin.h>
 
 #if !defined(_M_X64)
 #define rax	eax
@@ -102,25 +103,32 @@ SimpleResize::~SimpleResize()
 }
 
 // YV12 Luma
+// todo YV12 specific check
+// srcp2 is the next line to srcp1
 void SimpleResize::SimpleResizeDo(uint8_t *dstp, int row_size, int height, int dst_pitch,
   const uint8_t* srcp, int src_row_size, int src_pitch, int Planar_Type)
 {
   // Note: PlanarType is dummy, I (Fizick) do not use croma planes code for resize in MVTools
+  
+  typedef unsigned char src_type; 
+  // later for the other SimpleResizeDo for vectors this is unsigned short
+  //typedef short src_type; 
 
   int vWeight1[4];
   int vWeight2[4];
+  // not needed for short
   const __int64 FPround1[2] = { 0x0080008000800080,0x0080008000800080 }; // round words
+  // needed for byte and short
   const __int64 FPround2[2] = { 0x0000008000000080,0x0000008000000080 };// round dwords
+  // not needed for short
   const __int64 FPround4 = 0x0080008000800080;// round words
-
-  const uint8_t* srcp2W = srcp;
-  uint8_t* dstp2 = dstp;
 
   const unsigned int* pControl = &hControl[0];
 
-  const unsigned char* srcp1;
-  const unsigned char* srcp2;
-  unsigned char* vWorkYW = vWorkY;
+  const src_type * srcp1;
+  const src_type * srcp2;
+  src_type * vWorkYW = sizeof(src_type) == 1 ? (src_type *)vWorkY : (src_type *)vWorkY2;
+
   unsigned int* vOffsetsW = vOffsets;
   unsigned int* vWeightsW = vWeights;
 
@@ -135,30 +143,97 @@ void SimpleResize::SimpleResizeDo(uint8_t *dstp, int row_size, int height, int d
 
   for (int y = 0; y < height; y++)
   {
+    int CurrentWeight = vWeightsW[y];
+    int invCurrentWeight = 256 - CurrentWeight;
 
+    // fill 4x(16x2) bit for inline asm 
+    // for intrinsic it is not needed anymore
     vWeight1[0] = vWeight1[1] = vWeight1[2] = vWeight1[3] =
-      (256 - vWeightsW[y]) << 16 | (256 - vWeightsW[y]);
+      (invCurrentWeight << 16) | invCurrentWeight;
+
     vWeight2[0] = vWeight2[1] = vWeight2[2] = vWeight2[3] =
-      vWeightsW[y] << 16 | vWeightsW[y];
+      (CurrentWeight << 16) | CurrentWeight;
 
     srcp1 = srcp + vOffsetsW[y] * src_pitch;
 
+    // scrp2 is the next line (check for the most bottom line)
     {
       srcp2 = (y < height - 1)
         ? srcp1 + src_pitch
         : srcp1;
     }
 
+#if defined(_M_X64) && defined(_MSC_VER)
+    if(true) // use C for X64 + MS VS until this past goes to intrinsics todo
+#else
     if (false) // in 2.5.11.22: if (!MMXenabledW)
+#endif
     {
-      // recovered (and commented) C version as sort of doc
-      for (int x = 0; x < src_row_size; x++) {
-        vWorkYW[x] = (srcp1[x] * (vWeight1[0] & 0x0000ffff) + srcp2[x] * (vWeight2[0] & 0x0000ffff) + 128) >> 8;
-      }
+      if (false) {
+        // simd check
+          int mod8or16w = src_row_size / (16/sizeof(src_type)) * (16 * sizeof(src_type));
+          __m128i FPround1 = _mm_set1_epi16(0x0080);
+          __m128i FPround2 = _mm_set1_epi32(0x0080);
+          // weights are 0..255 and (8 bit scaled) , rounding is 128 (0.5)
+          __m128i weight1 = _mm_set1_epi16(invCurrentWeight); // _mm_loadu_si128(reinterpret_cast<const __m128i *>(vWeight1));
+          __m128i weight2 = _mm_set1_epi16(CurrentWeight);    // _mm_loadu_si128(reinterpret_cast<const __m128i *>(vWeight2));
+          __m128i zero = _mm_setzero_si128();
+          for (int x = 0; x < src_row_size; x += (16 / sizeof(src_type))) {
+              // top of 2 lines to interpolate
+            // load or loadu?
+            __m128i src1 = _mm_loadu_si128(reinterpret_cast<const __m128i *>((src_type *)srcp1 + x));
+            __m128i src2 = _mm_loadu_si128(reinterpret_cast<const __m128i *>((src_type *)srcp2 + x)); // 2nd of 2 lines
+            __m128i result;
+            if(sizeof(src_type) == 1) {
+              __m128i src1_lo = _mm_unpacklo_epi8(src1, zero); // make words
+              __m128i src1_hi = _mm_unpackhi_epi8(src1, zero);
+              __m128i src2_lo = _mm_unpacklo_epi8(src2, zero);
+              __m128i src2_hi = _mm_unpackhi_epi8(src2, zero);
 
+              __m128i res1_lo = _mm_mullo_epi16(src1_lo, weight1); // mult by weighting factor 1
+              __m128i res1_hi = _mm_mullo_epi16(src1_hi, weight1); // mult by weighting factor 1
+              __m128i res2_lo = _mm_mullo_epi16(src2_lo, weight2); // mult by weighting factor 2
+              __m128i res2_hi = _mm_mullo_epi16(src2_hi, weight2); // mult by weighting factor 2
+
+              __m128i res_lo = _mm_srli_epi16(_mm_adds_epu16(_mm_add_epi16(res1_lo, res2_lo), FPround1), 8); // combine lumas low + round and right adjust luma
+              __m128i res_hi = _mm_srli_epi16(_mm_adds_epu16(_mm_add_epi16(res1_hi, res2_hi), FPround1), 8); // combine lumas high + round and right
+              result = _mm_packus_epi16(res_lo, res_hi);// pack words to our 16 byte answer
+            } else {
+              __m128i res1_lo = _mm_mullo_epi16(src1, weight1); // mult by weighting factor 1
+              __m128i res1_hi = _mm_mulhi_epi16(src1, weight1); // upper 32 bits of src1 * weight
+              __m128i res2_lo = _mm_mullo_epi16(src2, weight2); // mult by weighting factor 2
+              __m128i res2_hi = _mm_mulhi_epi16(src2, weight2); // upper 32 bits of src2 * weight
+              // combine 16lo 16hi results to 32 bit result
+              __m128i mulres1_lo = _mm_unpacklo_epi16(res1_lo, res1_hi); //  src1 0..3   4x32 bit result of multiplication as 32 bit
+              __m128i mulres1_hi = _mm_unpackhi_epi16(res1_lo, res1_hi); //       4..7   4x32 bit result of multiplication as 32 bit
+              __m128i mulres2_lo = _mm_unpacklo_epi16(res2_lo, res2_hi); //  src2 0..3   4x32 bit result of multiplication as 32 bit
+              __m128i mulres2_hi = _mm_unpackhi_epi16(res2_lo, res2_hi); //       4..7   4x32 bit result of multiplication as 32 bit
+
+              __m128i res_lo = _mm_srai_epi32(_mm_add_epi32(_mm_add_epi32(mulres1_lo, mulres2_lo), FPround2), 8); // combine lumas + dword rounder 0x00000080
+              __m128i res_hi = _mm_srai_epi32(_mm_add_epi32(_mm_add_epi32(mulres1_hi, mulres2_hi), FPround2), 8); // combine lumas + dword rounder 0x00000080;
+
+              result = _mm_packs_epi32(res_lo, res_hi); // pack into 8 words
+            }
+            _mm_stream_si128(reinterpret_cast<__m128i *>((src_type *)vWorkYW + x), result); // movntdq don't pollute cache
+          }
+        // the rest one-by-one
+        for (int x = mod8or16w; x < src_row_size; x++) {
+          vWorkYW[x] = (srcp1[x] * invCurrentWeight + srcp2[x] * CurrentWeight + 128) >> 8;
+        }
+
+      }
+      else {
+        // recovered (and commented) C version as sort of doc
+        for (int x = 0; x < src_row_size; x++) {
+          vWorkYW[x] = (srcp1[x] * invCurrentWeight + srcp2[x] * CurrentWeight + 128) >> 8;
+        }
+      }
+      // We've taken care of the vertical scaling, now do horizontal
       for (int x = 0; x < row_size; x++) {
         unsigned int pc;
         unsigned int offs;
+
+        // eax: get data offset in pixels, 1st pixel pair. Control[4]=offs
         if ((x & 1) == 0) { // even
           pc = pControl[3 * x];
           offs = pControl[3 * x + 4];
@@ -172,8 +247,10 @@ void SimpleResize::SimpleResizeDo(uint8_t *dstp, int row_size, int height, int d
         dstp[x] = (vWorkYW[offs] * wY1 + vWorkYW[offs + 1] * wY2 + 128) >> 8;
       }
     }
+#if !(defined(_M_X64) && defined(_MSC_VER))
+    // inline asm ignored for MSVC X64 build
     else {
-
+      // Do Vertical. First SSE2 (mod16) then MMX (mod8) then MMX (for last_pos-8)
       _asm
       {
         //emms // added by paranoid Fizick
@@ -193,57 +270,74 @@ void SimpleResize::SimpleResizeDo(uint8_t *dstp, int row_size, int height, int d
           test    SSE2enabledW, 1			// is SSE2 supported?
           jz		vMaybeSSEMMX				// n, can't do anyway
 
+// if src_row_size < 16 jump to vMaybeSSEMMX
           cmp     ecx, 2					// we have at least 16 byts, 2 qwords?
           jl		vMaybeSSEMMX				// n, don't bother
-
+// srcp1 and srcp2 should be 16 byte aligned else jump to vMaybeSSEMMX
           mov		rbx, rsi
           or rbx, rdx
           test    rbx, 0xf				// both src rows 16 byte aligned?
           jnz		vMaybeSSEMMX			// n, don't use sse2
-
-          shr		ecx, 1					// do 16 bytes at a time instead
+// SSE2 part from here
+          shr		ecx, 1					// do 16 bytes at a time instead. ecx now src_row_size/16
           dec		ecx						// jigger loop ct
           align	16
-          movdqu  xmm0, FPround1
-          movdqu	xmm5, vWeight1
-          movdqu	xmm6, vWeight2
-          pxor	xmm7, xmm7
+          movdqu  xmm0, FPround1 // { 0x0080008000800080,0x0080008000800080 }; // round words _mm_set1_epi16(0x0080)
+          movdqu	xmm5, vWeight1  // __m128i weight1_xmm5 = _mm_loadu_si128(vWeight1)
+          movdqu	xmm6, vWeight2  // __m128i weight2_xmm6 = _mm_loadu_si128(vWeight2)
+          pxor	xmm7, xmm7        // __m128i zero = _mm_setzero_si128()
 
           align   16
           vLoopSSE2_Fetch:
-        prefetcht0[rsi + rax * 2 + 16]
+          prefetcht0[rsi + rax * 2 + 16]
           prefetcht0[rdx + rax * 2 + 16]
 
-          vLoopSSE2 :
+          // move unaligned
+            vLoopSSE2 :
+            // __mm128i src_lo_xmm1 = _mm_loadu_si128(src1 + x_eax)
           movdqu	xmm1, xmmword ptr[rsi + rax] // top of 2 lines to interpolate
+            // __mm128i src_hi_xmm3 = _mm_loadu_si128(src2 + x_eax)
           movdqu	xmm3, xmmword ptr[rdx + rax] // 2nd of 2 lines
+            // xmm2 = xmm1
+            // xmm4 = xmm3
           movdqa  xmm2, xmm1
           movdqa  xmm4, xmm3
-
+            // xmm1 = _mm_unpacklo_epi8(xmm1, zero)
+            // xmm2 = _mm_unpackhi_epi8(xmm2, zero)
           punpcklbw xmm1, xmm7			// make words
           punpckhbw xmm2, xmm7			// "
+            // xmm3 = _mm_unpacklo_epi8(xmm3, zero)
+            // xmm4 = _mm_unpackhi_epi8(xmm4, zero)
           punpcklbw xmm3, xmm7			// "
           punpckhbw xmm4, xmm7			// "
 
+            // xmm1 = _mm_mullo_epi16(xmm1, weight1_xmm5) // mult by weighting factor 1
+            // xmm2 = _mm_mullo_epi16(xmm2, weight1_xmm5)
           pmullw	xmm1, xmm5				// mult by top weighting factor
           pmullw	xmm2, xmm5              // "
+          // xmm3 = _mm_mullo_epi16(xmm3, weight2_xmm6) // mult by weighting factor 2
+          // xmm4 = _mm_mullo_epi16(xmm4, weight2_xmm6)
           pmullw	xmm3, xmm6				// mult by bot weighting factor
           pmullw	xmm4, xmm6              // "
-
+            // xmm1 = _mm_add_epi16(xmm1,xmm3) // combine lumas low
           paddw	xmm1, xmm3				// combine lumas low
+            // xmm2 = _mm_add_epi16(xmm2,xmm4) // combine lumas high
           paddw	xmm2, xmm4				// combine lumas high
-
+            // xmm1 = _mm_adds_epu16(xmm1, round_xmm0)
+            // xmm2 = _mm_adds_epu16(xmm2, round_xmm0)
           paddusw	xmm1, xmm0				// round
           paddusw	xmm2, xmm0				// round
-
+            // xmm1 = _mm_srli_epi16(xmm1, 8) // right adjust luma
+            // xmm2 = _mm_srli_epi16(xmm2, 8)
           psrlw	xmm1, 8					// right adjust luma
           psrlw	xmm2, 8					// right adjust luma
-
+            // xmm1 = _mm_packus_epi16(xmm1, xmm2)
           packuswb xmm1, xmm2				// pack words to our 16 byte answer
+            // _mm_stream_si128(vWorkYW+eax, xmm1) // movntdq don't pollute cache
           movntdq	xmmword ptr[rdi + rax], xmm1	// save lumas in our work area
-
+            //x_eax+=16
           lea     rax, [rax + 16]  // P.F. 16.04.28 ?should be rax here not eax (hack! define rax eax in 32 bit)
-          dec		ecx						// don
+          dec		ecx						// was: src_row_size/16 loop until zero
           jg		vLoopSSE2_Fetch			// if not on last one loop, prefetch
           jz		vLoopSSE2				// or just loop, or not
 
@@ -344,6 +438,7 @@ void SimpleResize::SimpleResizeDo(uint8_t *dstp, int row_size, int height, int d
           lea     rax, [rax + 8]            // P.F. 16.04.28 should be rax here not eax (hack! define rax eax in 32 bit)
           loop	vLoopMMX
 
+          // Trick!
           // Add a little code here to check if we have more pixels to do and, if so, make one
           // more pass thru vLoopMMX. We were processing in multiples of 8 pixels and alway have
           // an even number so there will never be more than 7 left. 
@@ -355,7 +450,24 @@ void SimpleResize::SimpleResizeDo(uint8_t *dstp, int row_size, int height, int d
           sub		rax, 8					// back up to last 8 pixels // P.F. 16.04.28 should be rax here not eax (hack! define rax eax in 32 bit)
           jmp		vLoopMMX
 
-
+//-----------------------------------------------------
+/*for (int x = 0; x < row_size; x++) {
+  unsigned int pc;
+  unsigned int offs;
+  if ((x & 1) == 0) { // even
+    pc = pControl[3 * x];
+    offs = pControl[3 * x + 4];
+  }
+  else { // odd
+    pc = pControl[3 * x - 2]; // [3*xeven+1]
+    offs = pControl[3 * x + 2]; // [3*xeven+5]
+  }
+  unsigned int wY1 = pc & 0x0000ffff; //low
+  unsigned int wY2 = pc >> 16; //high
+  dstp[x] = (vWorkYW[offs] * wY1 + vWorkYW[offs + 1] * wY2 + 128) >> 8;
+}
+    }
+*/
           // We've taken care of the vertical scaling, now do horizontal
           DoHorizontal :
         pxor    mm7, mm7
@@ -505,6 +617,7 @@ void SimpleResize::SimpleResizeDo(uint8_t *dstp, int row_size, int height, int d
           emms
       }
     }                               // done with one line
+#endif // MSVC x64 asm ignore
     dstp += dst_pitch;
   }
 
@@ -535,25 +648,37 @@ void SimpleResize::SimpleResizeDo(short *dstp, int row_size, int height, int dst
   for (int y = 0; y < height; y++)
   {
 
+    int CurrentWeight = vWeightsW[y];
+    int invCurrentWeight = 256 - CurrentWeight;
+
+    // fill 4x(16x2) bit for inline asm 
+    // for intrinsic it is not needed anymore
     vWeight1[0] = vWeight1[1] = vWeight1[2] = vWeight1[3] =
-      (256 - vWeightsW[y]) << 16 | (256 - vWeightsW[y]);
+      (invCurrentWeight << 16) | invCurrentWeight;
+
     vWeight2[0] = vWeight2[1] = vWeight2[2] = vWeight2[3] =
-      vWeightsW[y] << 16 | vWeightsW[y];
+      (CurrentWeight << 16) | CurrentWeight;
 
     srcp1 = srcp + vOffsetsW[y] * src_pitch;
 
+    // scrp2 is the next line (check for the most bottom line)
     {
       srcp2 = (y < height - 1)
         ? srcp1 + src_pitch
         : srcp1;
     }
 
-    if (false) { // if (!MMXenabledW) { P.F. ignore no MMX 
+#if defined(_M_X64) && defined(_MSC_VER)
+    if(true) // use C for X64 + MS VS until this past goes to intrinsics todo
+#else
+    if (false) // in 2.5.11.22: if (!MMXenabledW)
+#endif
+    {
       // recovered (and commented) C version as sort of doc
       for (int x = 0; x < src_row_size; x++) {
-        vWorkYW[x] = (srcp1[x] * (vWeight1[0] & 0x0000ffff) + srcp2[x] * (vWeight2[0] & 0x0000ffff) + 128) >> 8;
+        vWorkYW[x] = (srcp1[x] * invCurrentWeight + srcp2[x] * CurrentWeight + 128) >> 8;
       }
-
+      // We've taken care of the vertical scaling, now do horizontal
       for (int x = 0; x < row_size; x++) {
         unsigned int pc;
         unsigned int offs;
@@ -570,6 +695,8 @@ void SimpleResize::SimpleResizeDo(short *dstp, int row_size, int height, int dst
         dstp[x] = (vWorkYW[offs] * wY1 + vWorkYW[offs + 1] * wY2 + 128) >> 8;
       }
     }
+#if !(defined(_M_X64) && defined(_MSC_VER))
+    // inline asm ignored for MSVC X64 build
     else {
 
       _asm
@@ -594,28 +721,34 @@ void SimpleResize::SimpleResizeDo(short *dstp, int row_size, int height, int dst
           movq	mm2, mm1				// copy top bytes
           movq	mm4, mm3				// copy 2nd bytes
 
+          //__m128i _mm_mullo_epi16 (__m128i a, __m128i b);
           pmullw	mm1, mm5				// mult by weighting factor
+          //__m128i _mm_mulhi_epi16 (__m128i a, __m128i b);
           pmulhw	mm2, mm5				// mult by weighting factor, high
           pmullw	mm3, mm6				// mult by weighting factor
           pmulhw	mm4, mm6				// mult by weighting factor, high
 
           movq    mm7, mm1 // copy
+          // _mm_unpacklo_epi16
           punpcklwd mm1, mm2 // double from low and high
+          // _mm_unpackhi_epi16
           punpckhwd mm7, mm2 // double from low and high
 
           movq    mm2, mm3 // copy
           punpcklwd mm3, mm4 // double from low and high
           punpckhwd mm2, mm4 // double from low and high
-
+           // __m128i _mm_add_epi32 (__m128i a, __m128i b);
           paddd	mm1, mm3				// combine lumas
           paddd	mm2, mm7				// combine lumas
 
           paddd	mm1, mm0				// round
           paddd	mm2, mm0				// round
 
+          // _mm_sra_epi32
           psrad	mm1, 8					// right just
           psrad	mm2, 8					// right just
 
+          //_mm_packs_epi32
           packssdw mm1, mm2				// pack into 4 words
 
           movq	qword ptr[rdi + rax * 2], mm1	// save 4 words in our work area 
@@ -634,8 +767,36 @@ void SimpleResize::SimpleResizeDo(short *dstp, int row_size, int height, int dst
           sub		eax, 4					// back up to last 8 pixels
           jmp		vLoopMMX
 
+/*
+// We've taken care of the vertical scaling, now do horizontal
+int *Running_pControl = pControl
 
+for (int x = 0; x < row_size; x++) {
+unsigned int pc;
+unsigned int offs;
+**** offs     = pControl[6*x + 4] // 1st pixel pair (eax)
+**** offsodds = pControl[6*x + 5] // 2nd pixel pair (ebx)
+**** LumaPair_2x16bit   =  (short *)vWorkYW + offs
+**** LumaPair2_2x16bit  =  (short *)vWorkYW + offsodds
+movd	mm0, [rdx + rax * 2]		// copy luma pair 0000W1W0  work[offs]
+punpckldq mm0, [rdx + rbx * 2]    // 2nd luma pair, now V1V0W1W0
+
+if ((x & 1) == 0) { // even
+pc = pControl[3 * x];
+offs = pControl[3 * x + 4];
+}
+else { // odd
+pc = pControl[3 * x - 2]; // [3*xeven+1]
+offs = pControl[3 * x + 2]; // [3*xeven+5]
+}
+unsigned int wY1 = pc & 0x0000ffff; //low
+unsigned int wY2 = pc >> 16; //high
+dstp[x] = (vWorkYW[offs] * wY1 + vWorkYW[offs + 1] * wY2 + 128) >> 8;
+}
+
+*/
           // We've taken care of the vertical scaling, now do horizontal
+          // x pixels at a time
           DoHorizontal :
         pxor    mm7, mm7
           movq	mm6, FPround2		// useful rounding constant, dwords
@@ -647,13 +808,22 @@ void SimpleResize::SimpleResizeDo(short *dstp, int row_size, int height, int dst
           align 16
           hLoopMMX:
         // handle first 2 pixels
-        mov		eax, [rsi + 16]		// EAX! get data offset in pixels, 1st pixel pair. Control[4]=offs
+          mov		eax, [rsi + 16]		// EAX! get data offset in pixels, 1st pixel pair. Control[4]=offs
           mov		ebx, [rsi + 20]		// EBX! get data offset in pixels, 2nd pixel pair. Control[5]=offsodd
-          movd	mm0, [rdx + rax * 2]		// copy luma pair 0000W1W0  work[offs]
-          punpckldq mm0, [rdx + rbx * 2]    // 2nd luma pair, now V1V0W1W0
+          // (uint32_t)pair1     = (uint32_t *)((short *)(vWorkYW)[offs])      // vWorkYW[offs] and vWorkYW[offs+1]
+          // (uint32_t)pair2odds = (uint32_t *)((short *)(vWorkYW)[offsodds])  // vWorkYW[offsodds] and vWorkYW[offsodds+1]
 
+          // using only 64 bit MMX registers
+            // __m128i _mm_cvtsi32_si128 (uint32_t*(vWorkYW)[offs]);
+            // __m128i _mm_cvtsi64_si128 (uint32_t*(vWorkYW)[offs]);
+          movd	mm0, [rdx + rax * 2]		// copy luma pair 0000W1W0  work[offs]
+            // _mm_unpacklo_epi32 (mm0, uint32_t*(&ushort*(vWorkYW)[offsodd])
+          punpckldq mm0, [rdx + rbx * 2]    // 2nd luma pair, now V1V0W1W0
+            // _mm_madd_epi16(.. PControl[0-1])
           pmaddwd mm0, [rsi]			// mult and sum lumas by ctl weights. v1v0 Control[1] and w1w0 Control[0]
+            // _mm_add_epi32
           paddd	mm0, mm6			// round
+            // _mm_srai_epi32
           psrad	mm0, 8				// right just 2 luma pixel
 
                     // handle 3rd and 4th pixel pairs
@@ -666,8 +836,12 @@ void SimpleResize::SimpleResizeDo(short *dstp, int row_size, int height, int dst
           psrad	mm1, 8				// right just 2 luma pixel
 
                     // combine, store, and loop
+            // _mm_packs_epi32
           packssdw mm0, mm1			// pack all 4 into qword, 0Y0Y0Y0Y
+            // store 4 word, 8 bytes
+            // _mm_move_epi64
           movq	qword ptr[rdi], mm0	// done with 4 pixels
+            
           lea    rsi, [rsi + 48]		// bump to next control bytest. Control[12]
           lea    rdi, [rdi + 8]			// bump to next output pixel addr
           loop   hLoopMMX				// loop for more
@@ -714,6 +888,7 @@ void SimpleResize::SimpleResizeDo(short *dstp, int row_size, int height, int dst
         emms
       }
     }
+#endif // MSVC x64 asm ignore
     dstp += dst_pitch;
   }
 
