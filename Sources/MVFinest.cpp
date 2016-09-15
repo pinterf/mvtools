@@ -97,7 +97,11 @@ PVideoFrame __stdcall MVFinest::GetFrame(int n, IScriptEnvironment* env)
 //	int nDstPitchYUY2;
 
 	PVideoFrame dst = env->NewVideoFrame(vi);
-
+#ifdef AVS16
+  int pixelsize = vi.ComponentSize();
+#else
+  int pixelsize = 1;
+#endif
 	if (nPel == 1) // simply copy top lines
 	{
 		if ((vi.pixel_type & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2)
@@ -105,7 +109,7 @@ PVideoFrame __stdcall MVFinest::GetFrame(int n, IScriptEnvironment* env)
 			env->BitBlt(dst->GetWritePtr(), dst->GetPitch(),
 				ref->GetReadPtr(), ref->GetPitch(), dst->GetRowSize(), dst->GetHeight());
 		}
-		else // YV12
+		else // YUV
 		{
 			env->BitBlt(dst->GetWritePtr(PLANAR_Y), dst->GetPitch(PLANAR_Y),
 				ref->GetReadPtr(PLANAR_Y), ref->GetPitch(PLANAR_Y), dst->GetRowSize(PLANAR_Y), dst->GetHeight(PLANAR_Y));
@@ -163,71 +167,37 @@ PVideoFrame __stdcall MVFinest::GetFrame(int n, IScriptEnvironment* env)
 
 		if (nPel == 2)
 		{
-			// merge refined planes to big single plane
-			Merge4PlanesToBig(pDst[0], nDstPitches[0], pPlanes[0]->GetAbsolutePointer(0,0),
-				pPlanes[0]->GetAbsolutePointer(1,0), pPlanes[0]->GetAbsolutePointer(0,1),
-				pPlanes[0]->GetAbsolutePointer(1,1), pPlanes[0]->GetExtendedWidth(),
-				pPlanes[0]->GetExtendedHeight(), pPlanes[0]->GetPitch(), isse
-			);
-			if (pPlanes[1]) // 0 if plane not exist
-			{
-				Merge4PlanesToBig(pDst[1], nDstPitches[1], pPlanes[1]->GetAbsolutePointer(0,0),
-					pPlanes[1]->GetAbsolutePointer(1,0), pPlanes[1]->GetAbsolutePointer(0,1),
-					pPlanes[1]->GetAbsolutePointer(1,1), pPlanes[1]->GetExtendedWidth(),
-					pPlanes[1]->GetExtendedHeight(), pPlanes[1]->GetPitch(), isse
-				);
-			}
-			if (pPlanes[2])
-			{
-				Merge4PlanesToBig(pDst[2], nDstPitches[2], pPlanes[2]->GetAbsolutePointer(0,0),
-					pPlanes[2]->GetAbsolutePointer(1,0), pPlanes[2]->GetAbsolutePointer(0,1),
-					pPlanes[2]->GetAbsolutePointer(1,1), pPlanes[2]->GetExtendedWidth(),
-					pPlanes[2]->GetExtendedHeight(), pPlanes[2]->GetPitch(), isse
-				);
-			}
+      for (int p = 0; p < 3; p++) {
+        MVPlane *plane = pPlanes[p];
+        if (plane) {
+          // merge refined planes to big singpe plane
+          Merge4PlanesToBig(pDst[p], nDstPitches[p], 
+            plane->GetAbsolutePointer(0,0), plane->GetAbsolutePointer(1,0), 
+            plane->GetAbsolutePointer(0,1), plane->GetAbsolutePointer(1,1), 
+            plane->GetExtendedWidth(), plane->GetExtendedHeight(), plane->GetPitch(), pixelsize, isse
+          );
+        }
+      }
 		}
 		else if (nPel==4)
 		{
-			// merge refined planes to big single plane
-			Merge16PlanesToBig(pDst[0], nDstPitches[0],
-				pPlanes[0]->GetAbsolutePointer(0,0), pPlanes[0]->GetAbsolutePointer(1,0),
-				pPlanes[0]->GetAbsolutePointer(2,0), pPlanes[0]->GetAbsolutePointer(3,0),
-				pPlanes[0]->GetAbsolutePointer(0,1), pPlanes[0]->GetAbsolutePointer(1,1),
-				pPlanes[0]->GetAbsolutePointer(2,1), pPlanes[0]->GetAbsolutePointer(3,1),
-				pPlanes[0]->GetAbsolutePointer(0,2), pPlanes[0]->GetAbsolutePointer(1,2),
-				pPlanes[0]->GetAbsolutePointer(2,2), pPlanes[0]->GetAbsolutePointer(3,2),
-				pPlanes[0]->GetAbsolutePointer(0,3), pPlanes[0]->GetAbsolutePointer(1,3),
-				pPlanes[0]->GetAbsolutePointer(2,3), pPlanes[0]->GetAbsolutePointer(3,3),
-				pPlanes[0]->GetExtendedWidth(), pPlanes[0]->GetExtendedHeight(), pPlanes[0]->GetPitch(), isse
-			);
-			if (pPlanes[1])
-			{
-				Merge16PlanesToBig(pDst[1], nDstPitches[1],
-					pPlanes[1]->GetAbsolutePointer(0,0), pPlanes[1]->GetAbsolutePointer(1,0),
-					pPlanes[1]->GetAbsolutePointer(2,0), pPlanes[1]->GetAbsolutePointer(3,0),
-					pPlanes[1]->GetAbsolutePointer(0,1), pPlanes[1]->GetAbsolutePointer(1,1),
-					pPlanes[1]->GetAbsolutePointer(2,1), pPlanes[1]->GetAbsolutePointer(3,1),
-					pPlanes[1]->GetAbsolutePointer(0,2), pPlanes[1]->GetAbsolutePointer(1,2),
-					pPlanes[1]->GetAbsolutePointer(2,2), pPlanes[1]->GetAbsolutePointer(3,2),
-					pPlanes[1]->GetAbsolutePointer(0,3), pPlanes[1]->GetAbsolutePointer(1,3),
-					pPlanes[1]->GetAbsolutePointer(2,3), pPlanes[1]->GetAbsolutePointer(3,3),
-					pPlanes[1]->GetExtendedWidth(), pPlanes[1]->GetExtendedHeight(), pPlanes[1]->GetPitch(), isse
-				);
-			}
-			if (pPlanes[2])
-			{
-				Merge16PlanesToBig(pDst[2], nDstPitches[2],
-					pPlanes[2]->GetAbsolutePointer(0,0), pPlanes[2]->GetAbsolutePointer(1,0),
-					pPlanes[2]->GetAbsolutePointer(2,0), pPlanes[2]->GetAbsolutePointer(3,0),
-					pPlanes[2]->GetAbsolutePointer(0,1), pPlanes[2]->GetAbsolutePointer(1,1),
-					pPlanes[2]->GetAbsolutePointer(2,1), pPlanes[2]->GetAbsolutePointer(3,1),
-					pPlanes[2]->GetAbsolutePointer(0,2), pPlanes[2]->GetAbsolutePointer(1,2),
-					pPlanes[2]->GetAbsolutePointer(2,2), pPlanes[2]->GetAbsolutePointer(3,2),
-					pPlanes[2]->GetAbsolutePointer(0,3), pPlanes[2]->GetAbsolutePointer(1,3),
-					pPlanes[2]->GetAbsolutePointer(2,3), pPlanes[2]->GetAbsolutePointer(3,3),
-					pPlanes[2]->GetExtendedWidth(), pPlanes[2]->GetExtendedHeight(), pPlanes[2]->GetPitch(), isse
-				);
-			}
+      for (int p = 0; p < 3; p++) {
+        MVPlane *plane = pPlanes[p];
+        if (plane) {
+          // merge refined planes to big single plane
+          Merge16PlanesToBig(pDst[p], nDstPitches[p],
+            plane->GetAbsolutePointer(0,0), plane->GetAbsolutePointer(1,0),
+            plane->GetAbsolutePointer(2,0), plane->GetAbsolutePointer(3,0),
+            plane->GetAbsolutePointer(0,1), plane->GetAbsolutePointer(1,1),
+            plane->GetAbsolutePointer(2,1), plane->GetAbsolutePointer(3,1),
+            plane->GetAbsolutePointer(0,2), plane->GetAbsolutePointer(1,2),
+            plane->GetAbsolutePointer(2,2), plane->GetAbsolutePointer(3,2),
+            plane->GetAbsolutePointer(0,3), plane->GetAbsolutePointer(1,3),
+            plane->GetAbsolutePointer(2,3), plane->GetAbsolutePointer(3,3),
+            plane->GetExtendedWidth(), plane->GetExtendedHeight(), plane->GetPitch(), pixelsize, isse
+          );
+        }
+      }
 		}
 
 		PROFILE_STOP(MOTION_PROFILE_2X);
