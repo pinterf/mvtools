@@ -72,6 +72,9 @@ void YUY2Planes::convYUV422to422(const unsigned char *src, unsigned char *py, un
                                         int pitch1, int pitch2y, int pitch2uv, int width, int height)
 {
 int widthdiv2 = width>>1;
+#if !(defined(_M_X64) && defined(_MSC_VER))
+// inline asm ignored for MSVC X64 build
+// todo: get code from avs+ project
 __int64 Ymask = 0x00FF00FF00FF00FFi64;
 __asm
 {
@@ -132,6 +135,7 @@ emms
 #undef pitch2y_
 #undef pitch2uv_
 }
+#endif
 }
 
 
@@ -139,6 +143,10 @@ emms
 void YUY2Planes::conv422toYUV422(const unsigned char *py, const unsigned char *pu, const unsigned char *pv,
                            unsigned char *dst, int pitch1Y, int pitch1UV, int pitch2, int width, int height)
 {
+#if !(defined(_M_X64) && defined(_MSC_VER))
+  // inline asm ignored for MSVC X64 build
+  // todo: get code from avs+ project
+
 int widthdiv2 = width >> 1;
 __asm
 {
@@ -189,6 +197,7 @@ emms
 #undef pitch2Y_
 #undef pitch2UV_
 }
+#endif
 }
 //----------------------------------------------------------------------------------------------
 
@@ -201,6 +210,10 @@ void YUY2ToPlanes(const unsigned char *pSrcYUY2, int nSrcPitchYUY2, int nWidth, 
 	unsigned char * pSrcV1 = (unsigned char *) pSrcV0;
 
 	const int awidth = std::min(nSrcPitchYUY2>>1, (nWidth+7) & -8);
+#if !(defined(_M_X64) && defined(_MSC_VER))
+  // disable non working x64 msvc asm branch
+  mmx = false;
+#endif
 //mmx=false;
 	if (!(awidth&7) && mmx) {  // Use MMX
 
@@ -232,7 +245,10 @@ void YUY2FromPlanes(unsigned char *pSrcYUY2, int nSrcPitchYUY2, int nWidth, int 
 							  unsigned char * pSrcU1, unsigned char * pSrcV1, int _srcPitchUV, bool mmx)
 {
 	const int awidth = std::min(_srcPitch, (nWidth+7) & -8);
-//mmx=false;
+#if !(defined(_M_X64) && defined(_MSC_VER))
+  // disable non working x64 msvc asm branch
+  mmx = false;
+#endif
   if (!(awidth&7) && mmx) {  // Use MMX
     YUY2Planes::conv422toYUV422(pSrc1, pSrcU1, pSrcV1, pSrcYUY2, _srcPitch, _srcPitchUV, nSrcPitchYUY2, awidth, nHeight);
   }
