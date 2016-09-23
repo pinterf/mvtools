@@ -123,13 +123,13 @@ mvClipF(_mvfw, nSCD1, nSCD2, env, 1, 0)
 	nBlkYP = (nBlkY*(nBlkSizeY - nOverlapY) + nOverlapY < nHeight) ? nBlkY+1 : nBlkY;
 	nWidthP = nBlkXP*(nBlkSizeX - nOverlapX) + nOverlapX;
 	nHeightP = nBlkYP*(nBlkSizeY - nOverlapY) + nOverlapY;
-	// for YV12
-	nWidthPUV = nWidthP/2;
+	// for YV12 // NO! for every format
+	nWidthPUV = nWidthP/xRatioUV;   // PF160923 yet another /2
 	nHeightPUV = nHeightP/yRatioUV;
 	nHeightUV = nHeight/yRatioUV;
-	nWidthUV = nWidth/2;
+	nWidthUV = nWidth/xRatioUV; // PF160923 yet another /2
 
-	nHPaddingUV = nHPadding/2;
+	nHPaddingUV = nHPadding/xRatioUV; // PF160923 yet another /2
 	nVPaddingUV = nVPadding/yRatioUV;
 
 	VPitchY = (nWidthP + 15) & (~15);
@@ -138,7 +138,7 @@ mvClipF(_mvfw, nSCD1, nSCD2, env, 1, 0)
   // 2.5.11.22: 
   // old: VXFullYB = new BYTE [nHeightP*VPitchY]
   // new: VXFullYB = (short*) _aligned_malloc(2*nHeightP*VPitchY+128, 128);
-
+  // 2*: sizeof(short)
 	VXFullYB = (short*) _aligned_malloc(2*nHeightP*VPitchY+128, 128);
 	VXFullUVB = (short*) _aligned_malloc(2*nHeightPUV*VPitchUV+128, 128);
 	VYFullYB = (short*) _aligned_malloc(2*nHeightP*VPitchY+128, 128);
