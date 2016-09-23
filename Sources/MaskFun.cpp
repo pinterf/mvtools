@@ -354,14 +354,14 @@ static void Merge4PlanesToBig_c(
   {
     for (int w=0; w<width; w++)
     {
-      reinterpret_cast<pixel_t *>(pel2Plane)[w<<1] = reinterpret_cast<pixel_t *>(pPlane0)[w];
-      reinterpret_cast<pixel_t *>(pel2Plane)[(w<<1) +1] = reinterpret_cast<pixel_t *>(pPlane1)[w];
+      reinterpret_cast<pixel_t *>(pel2Plane)[w<<1] = reinterpret_cast<const pixel_t *>(pPlane0)[w];
+      reinterpret_cast<pixel_t *>(pel2Plane)[(w<<1) +1] = reinterpret_cast<const pixel_t *>(pPlane1)[w];
     }
     pel2Plane += pel2Pitch;
     for (int w=0; w<width; w++)
     {
-      reinterpret_cast<pixel_t *>(pel2Plane)[w<<1] = reinterpret_cast<pixel_t *>(pPlane2)[w];
-      reinterpret_cast<pixel_t *>(pel2Plane)[(w<<1) +1] = reinterpret_cast<pixel_t *>(pPlane3)[w];
+      reinterpret_cast<pixel_t *>(pel2Plane)[w<<1] = reinterpret_cast<const pixel_t *>(pPlane2)[w];
+      reinterpret_cast<pixel_t *>(pel2Plane)[(w<<1) +1] = reinterpret_cast<const pixel_t *>(pPlane3)[w];
     }
     pel2Plane += pel2Pitch;
     pPlane0 += pitch;
@@ -382,14 +382,14 @@ static void Merge4PlanesToBig_sse2(
   {
     for (int w=0; w<width; w++)
     {
-      reinterpret_cast<pixel_t *>(pel2Plane)[w<<1] = reinterpret_cast<pixel_t *>(pPlane0)[w];
-      reinterpret_cast<pixel_t *>(pel2Plane)[(w<<1) +1] = reinterpret_cast<pixel_t *>(pPlane1)[w];
+      reinterpret_cast<pixel_t *>(pel2Plane)[w<<1] = reinterpret_cast<const pixel_t *>(pPlane0)[w];
+      reinterpret_cast<pixel_t *>(pel2Plane)[(w<<1) +1] = reinterpret_cast<const pixel_t *>(pPlane1)[w];
     }
     pel2Plane += pel2Pitch;
     for (int w=0; w<width; w++)
     {
-      reinterpret_cast<pixel_t *>(pel2Plane)[w<<1] = reinterpret_cast<pixel_t *>(pPlane2)[w];
-      reinterpret_cast<pixel_t *>(pel2Plane)[(w<<1) +1] = reinterpret_cast<pixel_t *>(pPlane3)[w];
+      reinterpret_cast<pixel_t *>(pel2Plane)[w<<1] = reinterpret_cast<const pixel_t *>(pPlane2)[w];
+      reinterpret_cast<pixel_t *>(pel2Plane)[(w<<1) +1] = reinterpret_cast<const pixel_t *>(pPlane3)[w];
     }
     pel2Plane += pel2Pitch;
     pPlane0 += pitch;
@@ -418,7 +418,7 @@ void Merge4PlanesToBig(
       Merge4PlanesToBig_c<uint8_t>(pel2Plane, pel2Pitch, pPlane0, pPlane1, pPlane2, pPlane3, width, height, pitch, pixelsize);
     else if(pixelsize==2)
       Merge4PlanesToBig_c<uint16_t>(pel2Plane, pel2Pitch, pPlane0, pPlane1, pPlane2, pPlane3, width, height, pitch, pixelsize);
-    else if(pixelsize==2)
+    else if(pixelsize==4)
       Merge4PlanesToBig_c<float>(pel2Plane, pel2Pitch, pPlane0, pPlane1, pPlane2, pPlane3, width, height, pitch, pixelsize);
 	}
 #if !(defined(_M_X64) && defined(_MSC_VER))
@@ -514,69 +514,103 @@ loopw2:
 }
 
 
-void Merge16PlanesToBig(
-	uint8_t *pel4Plane, int pel4Pitch,
-	const uint8_t *pPlane0,  const uint8_t *pPlane1,  const uint8_t *pPlane2,  const uint8_t *pPlane3,
-	const uint8_t *pPlane4,  const uint8_t *pPlane5,  const uint8_t *pPlane6,  const uint8_t *pPlane7,
-	const uint8_t *pPlane8,  const uint8_t *pPlane9,  const uint8_t *pPlane10, const uint8_t *pPlane11,
-	const uint8_t *pPlane12, const uint8_t *pPlane13, const uint8_t *pPlane14, const uint8_t *pPlane15,
-	int width, int height, int pitch, bool isse)
+
+template<typename pixel_t>
+static void Merge16PlanesToBig_c(
+  uint8_t *pel4Plane, int pel4Pitch,
+  const uint8_t *pPlane0, const uint8_t *pPlane1, const uint8_t *pPlane2, const uint8_t *pPlane3,
+  const uint8_t *pPlane4, const uint8_t *pPlane5, const uint8_t *pPlane6, const uint8_t *pPlane7,
+  const uint8_t *pPlane8, const uint8_t *pPlane9, const uint8_t *pPlane10, const uint8_t *pPlane11,
+  const uint8_t *pPlane12, const uint8_t *pPlane13, const uint8_t *pPlane14, const uint8_t *pPlane15,
+  int width, int height, int pitch)
 {
-	// copy refined planes to big one plane
+  // copy refined planes to big one plane
 //	if (!isse)
-	{
-		for (int h=0; h<height; h++)
-		{
-			for (int w=0; w<width; w++)
-			{
-				pel4Plane[w<<2] = pPlane0[w];
-				pel4Plane[(w<<2) +1] = pPlane1[w];
-				pel4Plane[(w<<2) +2] = pPlane2[w];
-				pel4Plane[(w<<2) +3] = pPlane3[w];
-			}
-			pel4Plane += pel4Pitch;
-			for (int w=0; w<width; w++)
-			{
-				pel4Plane[w<<2] = pPlane4[w];
-				pel4Plane[(w<<2) +1] = pPlane5[w];
-				pel4Plane[(w<<2) +2] = pPlane6[w];
-				pel4Plane[(w<<2) +3] = pPlane7[w];
-			}
-			pel4Plane += pel4Pitch;
-			for (int w=0; w<width; w++)
-			{
-				pel4Plane[w<<2] = pPlane8[w];
-				pel4Plane[(w<<2) +1] = pPlane9[w];
-				pel4Plane[(w<<2) +2] = pPlane10[w];
-				pel4Plane[(w<<2) +3] = pPlane11[w];
-			}
-			pel4Plane += pel4Pitch;
-			for (int w=0; w<width; w++)
-			{
-				pel4Plane[w<<2] = pPlane12[w];
-				pel4Plane[(w<<2) +1] = pPlane13[w];
-				pel4Plane[(w<<2) +2] = pPlane14[w];
-				pel4Plane[(w<<2) +3] = pPlane15[w];
-			}
-			pel4Plane += pel4Pitch;
-			pPlane0 += pitch;
-			pPlane1 += pitch;
-			pPlane2 += pitch;
-			pPlane3 += pitch;
-			pPlane4 += pitch;
-			pPlane5 += pitch;
-			pPlane6 += pitch;
-			pPlane7 += pitch;
-			pPlane8 += pitch;
-			pPlane9 += pitch;
-			pPlane10 += pitch;
-			pPlane11 += pitch;
-			pPlane12 += pitch;
-			pPlane13+= pitch;
-			pPlane14 += pitch;
-			pPlane15 += pitch;
-		}
-	}
+  {
+    for (int h = 0; h < height; h++)
+    {
+      for (int w = 0; w < width; w++)
+      {
+        reinterpret_cast<pixel_t *>(pel4Plane)[w << 2] = reinterpret_cast<const pixel_t *>(pPlane0)[w];
+        reinterpret_cast<pixel_t *>(pel4Plane)[(w << 2) + 1] = reinterpret_cast<const pixel_t *>(pPlane1)[w];
+        reinterpret_cast<pixel_t *>(pel4Plane)[(w << 2) + 2] = reinterpret_cast<const pixel_t *>(pPlane2)[w];
+        reinterpret_cast<pixel_t *>(pel4Plane)[(w << 2) + 3] = reinterpret_cast<const pixel_t *>(pPlane3)[w];
+      }
+      pel4Plane += pel4Pitch;
+      for (int w = 0; w < width; w++)
+      {
+        reinterpret_cast<pixel_t *>(pel4Plane)[w << 2] = reinterpret_cast<const pixel_t *>(pPlane4)[w];
+        reinterpret_cast<pixel_t *>(pel4Plane)[(w << 2) + 1] = reinterpret_cast<const pixel_t *>(pPlane5)[w];
+        reinterpret_cast<pixel_t *>(pel4Plane)[(w << 2) + 2] = reinterpret_cast<const pixel_t *>(pPlane6)[w];
+        reinterpret_cast<pixel_t *>(pel4Plane)[(w << 2) + 3] = reinterpret_cast<const pixel_t *>(pPlane7)[w];
+      }
+      pel4Plane += pel4Pitch;
+      for (int w = 0; w < width; w++)
+      {
+        reinterpret_cast<pixel_t *>(pel4Plane)[w << 2] = reinterpret_cast<const pixel_t *>(pPlane8)[w];
+        reinterpret_cast<pixel_t *>(pel4Plane)[(w << 2) + 1] = reinterpret_cast<const pixel_t *>(pPlane9)[w];
+        reinterpret_cast<pixel_t *>(pel4Plane)[(w << 2) + 2] = reinterpret_cast<const pixel_t *>(pPlane10)[w];
+        reinterpret_cast<pixel_t *>(pel4Plane)[(w << 2) + 3] = reinterpret_cast<const pixel_t *>(pPlane11)[w];
+      }
+      pel4Plane += pel4Pitch;
+      for (int w = 0; w < width; w++)
+      {
+        reinterpret_cast<pixel_t *>(pel4Plane)[w << 2] = reinterpret_cast<const pixel_t *>(pPlane12)[w];
+        reinterpret_cast<pixel_t *>(pel4Plane)[(w << 2) + 1] = reinterpret_cast<const pixel_t *>(pPlane13)[w];
+        reinterpret_cast<pixel_t *>(pel4Plane)[(w << 2) + 2] = reinterpret_cast<const pixel_t *>(pPlane14)[w];
+        reinterpret_cast<pixel_t *>(pel4Plane)[(w << 2) + 3] = reinterpret_cast<const pixel_t *>(pPlane15)[w];
+      }
+      pel4Plane += pel4Pitch;
+      pPlane0 += pitch;
+      pPlane1 += pitch;
+      pPlane2 += pitch;
+      pPlane3 += pitch;
+      pPlane4 += pitch;
+      pPlane5 += pitch;
+      pPlane6 += pitch;
+      pPlane7 += pitch;
+      pPlane8 += pitch;
+      pPlane9 += pitch;
+      pPlane10 += pitch;
+      pPlane11 += pitch;
+      pPlane12 += pitch;
+      pPlane13 += pitch;
+      pPlane14 += pitch;
+      pPlane15 += pitch;
+    }
+  }
+}
+
+void Merge16PlanesToBig(
+  uint8_t *pel4Plane, int pel4Pitch,
+  const uint8_t *pPlane0,  const uint8_t *pPlane1,  const uint8_t *pPlane2,  const uint8_t *pPlane3,
+  const uint8_t *pPlane4,  const uint8_t *pPlane5,  const uint8_t *pPlane6,  const uint8_t *pPlane7,
+  const uint8_t *pPlane8,  const uint8_t *pPlane9,  const uint8_t *pPlane10, const uint8_t *pPlane11,
+  const uint8_t *pPlane12, const uint8_t *pPlane13, const uint8_t *pPlane14, const uint8_t *pPlane15,
+  int width, int height, int pitch, int pixelsize, bool isse)
+{
+  // no SSE2 here
+  if (pixelsize == 1)
+    Merge16PlanesToBig_c<uint8_t>(pel4Plane, pel4Pitch,
+      pPlane0, pPlane1, pPlane2, pPlane3,
+      pPlane4, pPlane5, pPlane6, pPlane7,
+      pPlane8, pPlane9, pPlane10, pPlane11,
+      pPlane12, pPlane13, pPlane14, pPlane15,
+      width, height, pitch);
+  else if(pixelsize==2)
+    Merge16PlanesToBig_c<uint16_t>(pel4Plane, pel4Pitch,
+      pPlane0, pPlane1, pPlane2, pPlane3,
+      pPlane4, pPlane5, pPlane6, pPlane7,
+      pPlane8, pPlane9, pPlane10, pPlane11,
+      pPlane12, pPlane13, pPlane14, pPlane15,
+      width, height, pitch);
+  else if(pixelsize==4)
+    Merge16PlanesToBig_c<float>(pel4Plane, pel4Pitch,
+      pPlane0, pPlane1, pPlane2, pPlane3,
+      pPlane4, pPlane5, pPlane6, pPlane7,
+      pPlane8, pPlane9, pPlane10, pPlane11,
+      pPlane12, pPlane13, pPlane14, pPlane15,
+      width, height, pitch);
 }
 
 //-----------------------------------------------------------
