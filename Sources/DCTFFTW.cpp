@@ -23,7 +23,7 @@
 #include "DCTFFTW.h"
 
 //#define __INTEL_COMPILER_USE_INTRINSIC_PROTOTYPES 1
-#include <mmintrin.h>
+#include <emmintrin.h>
 
 #include	<algorithm>
 
@@ -91,7 +91,7 @@ DCTFFTW::~DCTFFTW()
 	fftwf_free_addr(fSrcDCT);
 }
 
-//  put source data to real array for FFT
+// put source data to real array for FFT
 // see also DePanEstimate_fftw::frame_data2d
 template<typename pixel_t>
 void DCTFFTW::Bytes2Float (const unsigned char * srcp, int src_pitch, float * realdata)
@@ -100,7 +100,7 @@ void DCTFFTW::Bytes2Float (const unsigned char * srcp, int src_pitch, float * re
 	int i, j;
 	for (j = 0; j < sizey; j++)
 	{ 
-		for (i = 0; i < sizex; i+=1)
+		for (i = 0; i < sizex; i+=1) // typical sizex is 16
 		{
             realdata[i] = reinterpret_cast<const pixel_t *>(srcp)[i];
 		}
@@ -119,53 +119,38 @@ void DCTFFTW::Float2Bytes (unsigned char * dstp0, int dst_pitch, float * realdat
 	int floatpitch = sizex;
 	int i, j;
 	int integ;
-	float f = realdata[0]*0.5f; // to be compatible with integer DCTINT8
-    /*
-    // ?? PF todo in 2016 there must be a better uniform method for this
-#if !defined(_WIN64)
-	_asm fld f; 
-	_asm fistp integ; // fast conversion
-#else
-	integ = (int)f;
-#endif
-*/
-    integ = (int)(nearbyintf(f)); // thx jackoneill
 
-    int maxPixelValue = (1 << (pixelsize << 3)) - 1; // 255/65535
-    int middlePixelValue = 1 << ((pixelsize << 3) - 1);   // 128/32768 
+  int maxPixelValue = (1 << (pixelsize << 3)) - 1; // 255/65535
+  int middlePixelValue = 1 << ((pixelsize << 3) - 1);   // 128/32768 
 
+  // integer conversion
+  // was1: 	_asm fld f; _asm fistp integ; // fast conversion
+  // integ = (int)f; (x64)
+  // was2: integ = (int)(nearbyintf(f)); // thx jackoneill
+  // final: integ = (int)f: float to int with truncation
+  //        sse2: cvttss2si is generated. No fast trick needed (VC6 era?)
+
+  float f = realdata[0]*0.5f; // to be compatible with integer DCTINT8
+  integ = int(f); 
 	dstp[0] = std::min(maxPixelValue, std::max(0, (integ>>dctshift0) + middlePixelValue)); // DC
+
 	for (i = 1; i < sizex; i+=1)
 	{
 		f = realdata[i]*0.707f; // to be compatible with integer DCTINT8
-        /*
-#if !defined(_WIN64)
-		_asm fld f; 
-		_asm fistp integ; // fast conversion
-#else
-		integ = (int)f;
-#endif
-        */
-        integ = (int)(nearbyintf(f));
+    integ = int(f);
 		dstp[i] = std::min(maxPixelValue, std::max(0, (integ>>dctshift) + middlePixelValue));
 	}
-	dstp += dst_pitch;
+
+  dstp += dst_pitch;
 	realdata += floatpitch;
-	for (j = 1; j < sizey; j++)
+	
+  for (j = 1; j < sizey; j++)
 	{ 
 		for (i = 0; i < sizex; i+=1)
 		{
 			f = realdata[i]*0.707f; // to be compatible with integer DCTINT8
-            /*
-#if !defined(_WIN64)
-			_asm fld f; 
-			_asm fistp integ; // fast conversion
-#else
-			integ = (int)f;
-#endif
-            */
-            integ = (int)(nearbyintf(f));
-            dstp[i] = std::min(maxPixelValue, std::max(0, (integ>>dctshift) + middlePixelValue));
+      integ = (int)f;
+      dstp[i] = std::min(maxPixelValue, std::max(0, (integ>>dctshift) + middlePixelValue));
 		}
 		dstp += dst_pitch;
 		realdata += floatpitch;
