@@ -109,13 +109,39 @@ void SimpleResize::SimpleResizeDo(uint8_t *dstp, int row_size, int height, int d
   const uint8_t* srcp, int src_row_size, int src_pitch, int Planar_Type)
 {
   // Note: PlanarType is dummy, I (Fizick) do not use croma planes code for resize in MVTools
-  
+/*
+SetMemoryMax(6000)
+a=Avisource("c:\tape13\Videos\Tape02_digitall_Hi8.avi").assumefps(25,1).trim(0, 499)
+a=a.AssumeBFF()
+a=a.QTGMC(Preset="Slower",dct=5, ChromaMotion=true)
+sup = a.MSuper(pel=1)
+fw = sup.MAnalyse(isb=false, delta=1, overlap=4)
+bw = sup.MAnalyse(isb=true, delta=1, overlap=4)
+a=a.MFlowInter(sup, bw, fw, time=50, thSCD1=400) # MFlowInter uses SimpleResize
+a
+*/  
   typedef unsigned char src_type; 
   // later for the other SimpleResizeDo for vectors this is unsigned short
-  //typedef short src_type; 
+  // typedef short src_type; 
 
+#define USE_NEW_SSE2
+//#define USE_C_HORIZONTAL
+//#define USE_C_VERTICAL
+  //#define USE_SSE2_VERTICAL_HELPERS
+
+/*
+#ifdef USE_NEW_SSE2
+  typedef short workY_type; // this is not faster with new intrinsics that BYTE sized
+#else
+  typedef unsigned char workY_type; 
+#endif
+*/
+  typedef src_type workY_type; // be the same
+
+#ifndef USE_NEW_SSE2
   int vWeight1[4];
   int vWeight2[4];
+#endif
   // not needed for short
   const __int64 FPround1[2] = { 0x0080008000800080,0x0080008000800080 }; // round words
   // needed for byte and short
@@ -127,7 +153,7 @@ void SimpleResize::SimpleResizeDo(uint8_t *dstp, int row_size, int height, int d
 
   const src_type * srcp1;
   const src_type * srcp2;
-  src_type * vWorkYW = sizeof(src_type) == 1 ? (src_type *)vWorkY : (src_type *)vWorkY2;
+  workY_type * vWorkYW = sizeof(workY_type) == 1 ? (workY_type *)vWorkY : (workY_type *)vWorkY2;
 
   unsigned int* vOffsetsW = vOffsets;
   unsigned int* vWeightsW = vWeights;
@@ -141,11 +167,13 @@ void SimpleResize::SimpleResizeDo(uint8_t *dstp, int row_size, int height, int d
 
   // Just in case things are not aligned right, maybe turn off sse2
 
+
   for (int y = 0; y < height; y++)
   {
     int CurrentWeight = vWeightsW[y];
     int invCurrentWeight = 256 - CurrentWeight;
 
+#ifndef USE_NEW_SSE2
     // fill 4x(16x2) bit for inline asm 
     // for intrinsic it is not needed anymore
     vWeight1[0] = vWeight1[1] = vWeight1[2] = vWeight1[3] =
@@ -153,7 +181,7 @@ void SimpleResize::SimpleResizeDo(uint8_t *dstp, int row_size, int height, int d
 
     vWeight2[0] = vWeight2[1] = vWeight2[2] = vWeight2[3] =
       (CurrentWeight << 16) | CurrentWeight;
-
+#endif
     srcp1 = srcp + vOffsetsW[y] * src_pitch;
 
     // scrp2 is the next line (check for the most bottom line)
@@ -166,25 +194,45 @@ void SimpleResize::SimpleResizeDo(uint8_t *dstp, int row_size, int height, int d
 #if defined(_M_X64) && defined(_MSC_VER)
     if(true) // use C for X64 + MS VS until this past goes to intrinsics todo
 #else
+  #ifdef USE_NEW_SSE2
+    if (true) // in 2.5.11.22: if (!MMXenabledW)
+  #else
     if (false) // in 2.5.11.22: if (!MMXenabledW)
+  #endif
+    // debug. was: false
 #endif
     {
+#ifdef USE_C_HORIZONTAL
       if (false) {
-        // simd check
-          int mod8or16w = src_row_size / (16/sizeof(src_type)) * (16 * sizeof(src_type));
+#else
+      if (true) {
+#endif
+      // debug. was: false
+          // simd check
+          // in theory, this is ready
+          int mod8or16w = src_row_size / (16/sizeof(workY_type)) * (16 * sizeof(workY_type));
           __m128i FPround1 = _mm_set1_epi16(0x0080);
           __m128i FPround2 = _mm_set1_epi32(0x0080);
           // weights are 0..255 and (8 bit scaled) , rounding is 128 (0.5)
           __m128i weight1 = _mm_set1_epi16(invCurrentWeight); // _mm_loadu_si128(reinterpret_cast<const __m128i *>(vWeight1));
           __m128i weight2 = _mm_set1_epi16(CurrentWeight);    // _mm_loadu_si128(reinterpret_cast<const __m128i *>(vWeight2));
           __m128i zero = _mm_setzero_si128();
-          for (int x = 0; x < src_row_size; x += (16 / sizeof(src_type))) {
+          for (int x = 0; x < src_row_size; x += (16 / sizeof(workY_type))) {
               // top of 2 lines to interpolate
             // load or loadu?
-            __m128i src1 = _mm_loadu_si128(reinterpret_cast<const __m128i *>((src_type *)srcp1 + x));
-            __m128i src2 = _mm_loadu_si128(reinterpret_cast<const __m128i *>((src_type *)srcp2 + x)); // 2nd of 2 lines
-            __m128i result;
-            if(sizeof(src_type) == 1) {
+            __m128i src1, src2, result;
+            if(sizeof(src_type) == 1 && sizeof(workY_type)==2) {
+              src1 = _mm_loadl_epi64(reinterpret_cast<const __m128i *>((src_type *)srcp1 + x));
+              src2 = _mm_loadl_epi64(reinterpret_cast<const __m128i *>((src_type *)srcp2 + x)); // 2nd of 2 lines
+              src1 = _mm_unpacklo_epi8(src1, zero); // make words
+              src2 = _mm_unpackhi_epi8(src2, zero);
+              // we have 8 words 
+            }
+            else {
+              src1 = _mm_loadu_si128(reinterpret_cast<const __m128i *>((src_type *)srcp1 + x));
+              src2 = _mm_loadu_si128(reinterpret_cast<const __m128i *>((src_type *)srcp2 + x)); // 2nd of 2 lines
+            }
+            if(sizeof(src_type) == 1 && sizeof(workY_type)==1) {
               __m128i src1_lo = _mm_unpacklo_epi8(src1, zero); // make words
               __m128i src1_hi = _mm_unpackhi_epi8(src1, zero);
               __m128i src2_lo = _mm_unpacklo_epi8(src2, zero);
@@ -194,11 +242,11 @@ void SimpleResize::SimpleResizeDo(uint8_t *dstp, int row_size, int height, int d
               __m128i res1_hi = _mm_mullo_epi16(src1_hi, weight1); // mult by weighting factor 1
               __m128i res2_lo = _mm_mullo_epi16(src2_lo, weight2); // mult by weighting factor 2
               __m128i res2_hi = _mm_mullo_epi16(src2_hi, weight2); // mult by weighting factor 2
-
               __m128i res_lo = _mm_srli_epi16(_mm_adds_epu16(_mm_add_epi16(res1_lo, res2_lo), FPround1), 8); // combine lumas low + round and right adjust luma
               __m128i res_hi = _mm_srli_epi16(_mm_adds_epu16(_mm_add_epi16(res1_hi, res2_hi), FPround1), 8); // combine lumas high + round and right
               result = _mm_packus_epi16(res_lo, res_hi);// pack words to our 16 byte answer
             } else {
+              // workY_type == short
               __m128i res1_lo = _mm_mullo_epi16(src1, weight1); // mult by weighting factor 1
               __m128i res1_hi = _mm_mulhi_epi16(src1, weight1); // upper 32 bits of src1 * weight
               __m128i res2_lo = _mm_mullo_epi16(src2, weight2); // mult by weighting factor 2
@@ -214,7 +262,7 @@ void SimpleResize::SimpleResizeDo(uint8_t *dstp, int row_size, int height, int d
 
               result = _mm_packs_epi32(res_lo, res_hi); // pack into 8 words
             }
-            _mm_stream_si128(reinterpret_cast<__m128i *>((src_type *)vWorkYW + x), result); // movntdq don't pollute cache
+            _mm_stream_si128(reinterpret_cast<__m128i *>((workY_type *)vWorkYW + x), result); // movntdq don't pollute cache
           }
         // the rest one-by-one
         for (int x = mod8or16w; x < src_row_size; x++) {
@@ -228,6 +276,7 @@ void SimpleResize::SimpleResizeDo(uint8_t *dstp, int row_size, int height, int d
           vWorkYW[x] = (srcp1[x] * invCurrentWeight + srcp2[x] * CurrentWeight + 128) >> 8;
         }
       }
+#ifdef USE_C_VERTICAL
       // We've taken care of the vertical scaling, now do horizontal
       for (int x = 0; x < row_size; x++) {
         unsigned int pc;
@@ -246,11 +295,154 @@ void SimpleResize::SimpleResizeDo(uint8_t *dstp, int row_size, int height, int d
         unsigned int wY2 = pc >> 16; //high
         dstp[x] = (vWorkYW[offs] * wY1 + vWorkYW[offs + 1] * wY2 + 128) >> 8;
       }
+#else
+      // rework
+      // We've taken care of the vertical scaling, now do horizontal
+      // vvv for src_type char it can be loop by 8
+      int row_size_mod4 = row_size & ~3;
+      for (int x = 0; x < row_size_mod4; x+=4) {
+#ifdef USE_SSE2_VERTICAL_HELPERS        
+        unsigned int pc0, pc1, pc2, pc3;
+        short b0, b1, b2, b3, b4, b5, b6, b7;
+#endif
+        unsigned int offs0, offs1, offs2, offs3;
+
+        // mov		eax, [rsi + 16]
+        offs0 = pControl[3 * x + 4];   // get data offset in pixels, 1st pixel pair. Control[4]=offs
+        // mov		ebx, [rsi + 20]
+        offs1 = pControl[3 * x + 5];   // get data offset in pixels, 2nd pixel pair. Control[5]=offsodd
+
+        offs2 = pControl[3 * x + 4 + (2*3)];   // get data offset in pixels, 3nd pixel pair. Control[5]=offsodd
+        offs3 = pControl[3 * x + 5 + (2*3)];   // get data offset in pixels, 4nd pixel pair. Control[5]=offsodd
+
+        /*source_t*/
+        // (uint32_t)pair1     = (uint32_t *)((short *)(vWorkYW)[offs])      // vWorkYW[offs] and vWorkYW[offs+1]
+        // (uint32_t)pair2odds = (uint32_t *)((short *)(vWorkYW)[offsodds])  // vWorkYW[offsodds] and vWorkYW[offsodds+1]
+        __m128i a_pair3210;
+        uint32_t pair0, pair1, pair2, pair3;
+        if (sizeof(workY_type) == 1) { // vWorkYW uchars
+          uint16_t pair0_2x8 = *(uint16_t *)(&vWorkYW[offs0]);      // vWorkYW[offs] and vWorkYW[offs+1]
+          uint16_t pair1_2x8 = *(uint16_t *)(&vWorkYW[offs1]);      // vWorkYW[offs] and vWorkYW[offs+1]
+          uint16_t pair2_2x8 = *(uint16_t *)(&vWorkYW[offs2]);      // vWorkYW[offs] and vWorkYW[offs+1]
+          uint16_t pair3_2x8 = *(uint16_t *)(&vWorkYW[offs3]);      // vWorkYW[offs] and vWorkYW[offs+1]
+          pair0 = (((uint32_t)pair0_2x8 & 0xFF00) << 8) + (pair0_2x8 & 0xFF);
+          pair1 = (((uint32_t)pair1_2x8 & 0xFF00) << 8) + (pair1_2x8 & 0xFF);
+          pair2 = (((uint32_t)pair2_2x8 & 0xFF00) << 8) + (pair2_2x8 & 0xFF);
+          pair3 = (((uint32_t)pair3_2x8 & 0xFF00) << 8) + (pair3_2x8 & 0xFF);
+          __m128i a_pair10 = _mm_or_si128(_mm_shuffle_epi32(_mm_cvtsi32_si128(pair1), _MM_SHUFFLE(0,0,0,1)),_mm_cvtsi32_si128(pair0));
+          __m128i a_pair32 = _mm_or_si128(_mm_shuffle_epi32(_mm_cvtsi32_si128(pair3), _MM_SHUFFLE(0,0,0,1)),_mm_cvtsi32_si128(pair2));
+          a_pair3210 = _mm_unpacklo_epi64 (a_pair10, a_pair32);
+
+        } else { // vWorkYW shorts
+          pair0 = *(uint32_t *)(short *)(&vWorkYW[offs0]);      // vWorkYW[offs] and vWorkYW[offs+1]
+          pair1 = *(uint32_t *)(short *)(&vWorkYW[offs1]);      // vWorkYW[offs] and vWorkYW[offs+1]
+          pair2 = *(uint32_t *)(short *)(&vWorkYW[offs2]);      // vWorkYW[offs] and vWorkYW[offs+1]
+          pair3 = *(uint32_t *)(short *)(&vWorkYW[offs3]);      // vWorkYW[offs] and vWorkYW[offs+1]
+          __m128i a_pair10 = _mm_or_si128(_mm_shuffle_epi32(_mm_cvtsi32_si128(pair1), _MM_SHUFFLE(0,0,0,1)),_mm_cvtsi32_si128(pair0));
+          __m128i a_pair32 = _mm_or_si128(_mm_shuffle_epi32(_mm_cvtsi32_si128(pair3), _MM_SHUFFLE(0,0,0,1)),_mm_cvtsi32_si128(pair2));
+          a_pair3210 = _mm_unpacklo_epi64 (a_pair10, a_pair32);
+        }
+
+#ifdef USE_SSE2_VERTICAL_HELPERS        
+        pc0   = pControl[3 * x + 0];         // uint32: Y2_0:Y1_0
+        pc1   = pControl[3 * x + 1];         // uint32: Y2_1:Y1_1 
+        pc2   = pControl[3 * x + 0 + (2*3)]; // uint32: Y2_2:Y1_2 
+        pc3   = pControl[3 * x + 1 + (2*3)]; // uint32: Y2_3:Y1_3 
+#endif
+        // pc1, pc0
+        __m128i b_pair10 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(&pControl[3 * x + 0 ])); // +0, +1
+        // load the lower 64 bits from (unaligned)
+
+        // pc3, pc2
+        __m128i b_pair3210 = _mm_castpd_si128(_mm_loadh_pd(_mm_castsi128_pd(b_pair10), reinterpret_cast<const double*>(&pControl[3 * x + 0 + (2*3)]))); // +0, +1
+        // load the higher 64 bits from 2nd param, lower 64 bit copied from 1st param
+
+#ifdef USE_SSE2_VERTICAL_HELPERS        
+        unsigned int wY1_0 = b0 = pc0 & 0x0000ffff; //low
+        unsigned int wY2_0 = b1 = pc0 >> 16; //high
+        unsigned int wY1_1 = b2 = pc1 & 0x0000ffff; //low
+        unsigned int wY2_1 = b3 = pc1 >> 16; //high
+        unsigned int wY1_2 = b4 = pc2 & 0x0000ffff; //low
+        unsigned int wY2_2 = b5 = pc2 >> 16; //high
+        unsigned int wY1_3 = b6 = pc3 & 0x0000ffff; //low
+        unsigned int wY2_3 = b7 = pc3 >> 16; //high
+        short a0 = vWorkYW[offs0]; // 1 or 2 byte
+        short a1 = vWorkYW[offs0 + 1];
+        short a2 = vWorkYW[offs1];
+        short a3 = vWorkYW[offs1 + 1];
+        short a4 = vWorkYW[offs2];
+        short a5 = vWorkYW[offs2 + 1];
+        short a6 = vWorkYW[offs3];
+        short a7 = vWorkYW[offs3 + 1];
+
+        BYTE res0 = (a0 * b0 + a1 * b1 + 128) >> 8;
+        BYTE res1 = (a2 * b2 + a3 * b3 + 128) >> 8;
+        BYTE res2 = (a4 * b4 + a5 * b5 + 128) >> 8;
+        BYTE res3 = (a6 * b6 + a7 * b7 + 128) >> 8;
+        BYTE cmp0 = dstp[x + 0];
+        BYTE cmp1 = dstp[x + 1];
+        BYTE cmp2 = dstp[x + 2];
+        BYTE cmp3 = dstp[x + 3];
+        /*
+        dstp[x+0] = res0;
+        dstp[x+1] = res1;
+        dstp[x+2] = res2;
+        dstp[x+3] = res3;
+        */
+#endif
+        // pmaddwd mm0, [rsi]			// mult and sum lumas by ctl weights. v1v0 Control[1] and w1w0 Control[0]
+        // __m128i _mm_madd_epi16 (__m128i a, __m128i b);
+        // PMADDWD
+        // r0 := (a0 * b0) + (a1 * b1)
+        // r1 := (a2 * b2) + (a3 * b3)
+        // r2 := (a4 * b4) + (a5 * b5)
+        // r3 := (a6 * b6) + (a7 * b7)
+        __m128i result = _mm_madd_epi16(a_pair3210, b_pair3210); // 4x integer
+        __m128i rounder = _mm_set1_epi32(0x0080);
+        result = _mm_add_epi32(result, rounder);
+        result = _mm_srli_epi32(result, 8); 
+        // at 16 bit: result = _mm_srai_epi32(result, 8); ??
+        result = _mm_packs_epi32(result, result); // 4xqword ->4xword
+        if(sizeof(src_type)==1) {
+          // 8 bit version
+          result = _mm_packs_epi16(result, result); // 4xword ->4xbyte
+          uint32_t final4x8bitpixels = _mm_cvtsi128_si32(result);
+          *(uint32_t *)(&dstp[x]) = final4x8bitpixels;
+        }
+        else {
+          // for ushort version: 
+          _mm_storel_epi64(reinterpret_cast<__m128i *>(&dstp[x]), result);
+        }
+      }
+      // remaining
+      for (int x = row_size_mod4; x < row_size; x++) {
+        unsigned int pc;
+        unsigned int offs;
+
+        // eax: get data offset in pixels, 1st pixel pair. Control[4]=offs
+        if ((x & 1) == 0) { // even
+          pc = pControl[3 * x];
+          offs = pControl[3 * x + 4];
+        }
+        else { // odd
+          pc = pControl[3 * x - 2]; // [3*xeven+1]
+          offs = pControl[3 * x + 2]; // [3*xeven+5]
+        }
+        unsigned int wY1 = pc & 0x0000ffff; //low
+        unsigned int wY2 = pc >> 16; //high
+        dstp[x] = (vWorkYW[offs] * wY1 + vWorkYW[offs + 1] * wY2 + 128) >> 8;
+      }
+      // rework end
+#endif // USE_C_VERTICAL else
+
+
     }
+#ifndef USE_NEW_SSE2
 #if !(defined(_M_X64) && defined(_MSC_VER))
     // inline asm ignored for MSVC X64 build
     else {
       // Do Vertical. First SSE2 (mod16) then MMX (mod8) then MMX (for last_pos-8)
+      // This one already ported to intrinsics (SSE2 mod16) + rest C
       _asm
       {
         //emms // added by paranoid Fizick
@@ -449,9 +641,12 @@ void SimpleResize::SimpleResizeDo(uint8_t *dstp, int row_size, int height, int d
           mov		eax, src_row_size       // EAX! P.F. 16.04.28 should be rax here not eax (hack! define rax eax in 32 bit)
           sub		rax, 8					// back up to last 8 pixels // P.F. 16.04.28 should be rax here not eax (hack! define rax eax in 32 bit)
           jmp		vLoopMMX
+          
+          // Do vertical END This one already ported to intrinsics (SSE2 mod16) + rest C
 
 //-----------------------------------------------------
-/*for (int x = 0; x < row_size; x++) {
+/*
+for (int x = 0; x < row_size; x++) {
   unsigned int pc;
   unsigned int offs;
   if ((x & 1) == 0) { // even
@@ -522,6 +717,7 @@ void SimpleResize::SimpleResizeDo(uint8_t *dstp, int row_size, int height, int d
           punpcklwd mm3, [rdx + rbx]    // 2nd luma pair
           punpcklbw mm3, mm7		    // make words out of bytes
           pmaddwd mm3, [rsi + 72]		// mult and sum lumas by ctl weights
+ // _mm_adds_epu16
           paddusw	mm3, mm6			// round
           psrlw	mm3, 8				// right just 4 luma pixel value 0Y0Y0Y0Y
 
@@ -617,7 +813,9 @@ void SimpleResize::SimpleResizeDo(uint8_t *dstp, int row_size, int height, int d
           emms
       }
     }                               // done with one line
+#endif // NEW intrinsics
 #endif // MSVC x64 asm ignore
+
     dstp += dst_pitch;
   }
 
