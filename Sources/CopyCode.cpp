@@ -334,12 +334,12 @@ memoptA_done8:
 template<int nBlkWidth, int nBlkHeight, typename pixel_t>
 void Copy_C (uint8_t *pDst, int nDstPitch, const uint8_t *pSrc, int nSrcPitch)
 {
-    for ( int j = 0; j < nBlkHeight; j++ )
+    for (int j = 0; j < nBlkHeight; j++ )
     {
         //      for ( int i = 0; i < nBlkWidth; i++ )  //  waste cycles removed by Fizick in v1.2
-        memcpy(pDst, pSrc, nBlkWidth * sizeof(pixel_t));
-        pDst += nDstPitch;
-        pSrc += nSrcPitch;
+      memcpy(pDst, pSrc, nBlkWidth * sizeof(pixel_t));
+      pDst += nDstPitch;
+      pSrc += nSrcPitch;
     }
 }
 
@@ -397,7 +397,8 @@ COPYFunction* get_copy_function(int BlockX, int BlockY, int pixelsize, arch_t ar
     func_copy[make_tuple(2 , 4 , 2, NO_SIMD)] = Copy_C<2 , 4,uint16_t>;
     func_copy[make_tuple(2 , 2 , 2, NO_SIMD)] = Copy_C<2 , 2,uint16_t>;
     func_copy[make_tuple(2 , 1 , 2, NO_SIMD)] = Copy_C<2 , 1,uint16_t>;
-
+    
+    // we could even ignore copy sse2 assemblers, compilers are smart nowadays
     func_copy[make_tuple(32, 32, 1, USE_SSE2)] = Copy32x32_sse2;
     func_copy[make_tuple(32, 16, 1, USE_SSE2)] = Copy32x16_sse2;
     func_copy[make_tuple(32, 8 , 1, USE_SSE2)] = Copy32x8_sse2;
@@ -417,7 +418,7 @@ COPYFunction* get_copy_function(int BlockX, int BlockY, int pixelsize, arch_t ar
     func_copy[make_tuple(2 , 4 , 1, USE_SSE2)] = Copy2x4_sse2;
     func_copy[make_tuple(2 , 2 , 1, USE_SSE2)] = Copy2x2_sse2;
     //func_copy[make_tuple(2 , 1 , 1, USE_SSE2)] = Copy2x1_sse2; no such
-
+    
     COPYFunction *result = func_copy[make_tuple(BlockX, BlockY, pixelsize, arch)];
     if (result == nullptr)
         result = func_copy[make_tuple(BlockX, BlockY, pixelsize, NO_SIMD)]; // fallback to C
