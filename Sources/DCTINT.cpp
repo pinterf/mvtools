@@ -54,7 +54,7 @@
 #define movsx_int movsxd
 #endif
 
-#if 0
+#if 1
 // PF 160915 DCTINT for 8x8 is omitted (inline asm vs. x64, 
 // and breaks generality
 
