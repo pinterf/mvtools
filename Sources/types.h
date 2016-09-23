@@ -23,6 +23,8 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 	#pragma warning (4 : 4250) // "Inherits via dominance."
 #endif
 
+#include <stdint.h>
+
 // function tables
 enum arch_t {
     NO_SIMD,
@@ -30,7 +32,7 @@ enum arch_t {
     USE_SSE2
 };
 
-
+typedef uint8_t BYTE;
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
 /* no need for it in 2016
