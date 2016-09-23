@@ -22,6 +22,7 @@
 #include <cmath>
 #include <tuple>
 #include <map>
+#include "avs\minmax.h"
 
 #ifndef min
 #define min(a,b)            (((a) < (b)) ? (a) : (b))
@@ -148,8 +149,22 @@ void Short2Bytes(unsigned char *pDst, int nDstPitch, unsigned short *pDstShort, 
 		for (int i=0; i<nWidth; i++)
 		{
 			int a = (pDstShort[i])>>5;
-			pDst[i] = a | (255-a) >> (sizeof(int)*8-1);
-//			pDst[i] = min(255, (pDstShort[i])>>5);
+//			pDst[i] = a | ((255-a) >> (sizeof(int)*8-1)); // tricky but conditional move can be faster nowadays
+      /*
+      mov	ecx, 255				; 000000ffH
+      shr	edx, 5
+      sub	ecx, edx
+      sar	ecx, 31					; 0000001fH
+      or	cl, dl
+      mov	BYTE PTR [eax+esi], cl
+      */
+			pDst[i] = min(255, a); // PF everyone can understand it
+/*
+cmp	edx, ebp
+movzx	ecx, dl
+cmovg	ecx, ebp
+mov	BYTE PTR [eax+esi], cl
+*/
 		}
 		pDst += nDstPitch;
 		pDstShort += dstShortPitch;
@@ -178,7 +193,8 @@ void LimitChanges_c(unsigned char *pDst, int nDstPitch, const unsigned char *pSr
 	for (int h=0; h<nHeight; h++)
 	{
 		for (int i=0; i<nWidth; i++)
-			reinterpret_cast<pixel_t *>(pDst)[i] = min( max (reinterpret_cast<pixel_t *>(pDst)[i], (reinterpret_cast<const pixel_t *>(pSrc)[i]-nLimit)), (reinterpret_cast<const pixel_t *>(pSrc)[i]+nLimit));
+			reinterpret_cast<pixel_t *>(pDst)[i] = 
+        (pixel_t)clamp((int)reinterpret_cast<pixel_t *>(pDst)[i], (reinterpret_cast<const pixel_t *>(pSrc)[i]-nLimit), (reinterpret_cast<const pixel_t *>(pSrc)[i]+nLimit));
 		pDst += nDstPitch;
 		pSrc += nSrcPitch;
 	}
