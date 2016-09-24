@@ -141,13 +141,13 @@ a
 #ifndef USE_NEW_SSE2
   int vWeight1[4];
   int vWeight2[4];
-#endif
   // not needed for short
   const __int64 FPround1[2] = { 0x0080008000800080,0x0080008000800080 }; // round words
-  // needed for byte and short
+                                                                         // needed for byte and short
   const __int64 FPround2[2] = { 0x0000008000000080,0x0000008000000080 };// round dwords
-  // not needed for short
+                                                                        // not needed for short
   const __int64 FPround4 = 0x0080008000800080;// round words
+#endif
 
   const unsigned int* pControl = &hControl[0];
 
