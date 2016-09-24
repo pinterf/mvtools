@@ -41,19 +41,13 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 /*\\\ PUBLIC \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
-#define IGNORE_DCTINT 0
-
 DCTFactory::DCTFactory (int dctmode, bool isse, int blksizex, int blksizey, int pixelsize, ::IScriptEnvironment &env)
 :	_fftw_hnd (0)
 ,	_dctmode (dctmode)
 ,	_isse (isse)
 ,	_blksizex (blksizex)
 ,	_blksizey (blksizey)
-#if IGNORE_DCTINT
-,	_fftw_flag (true) // always 
-#else
-,	_fftw_flag (! (_isse && _blksizex == 8 && _blksizey == 8 && pixelsize==1)) // PF: could we get rid of this special case? if _isse and blocksize==8x8 -> integer DCTINT!
-#endif
+,	_fftw_flag (! (_isse && _blksizex == 8 && _blksizey == 8 && pixelsize==1))
 ,	_pixelsize(pixelsize)
 
 {
@@ -108,7 +102,6 @@ DCTClass *	DCTFactory::do_create ()
 	{
 		return (new DCTFFTW (_blksizex, _blksizey, _fftw_hnd, _dctmode, _pixelsize));
 	}
-    // P.F. do we need DCTInt???? Check todo
 	return (new DCTINT (_blksizex, _blksizey, _dctmode));
 }
 
