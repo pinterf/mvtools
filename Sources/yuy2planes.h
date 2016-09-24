@@ -42,10 +42,12 @@ public :
    inline unsigned char *GetPtrU() const { return pSrcU; }
    inline unsigned char *GetPtrV() const { return pSrcV; }
 
+#if 0
 static	void convYUV422to422(const unsigned char *src, unsigned char *py, unsigned char *pu, unsigned char *pv,
                                         int pitch1, int pitch2y, int pitch2uv, int width, int height);
 static	void conv422toYUV422(const unsigned char *py, const unsigned char *pu, const unsigned char *pv,
                            unsigned char *dst, int pitch1Y, int pitch1UV, int pitch2, int width, int height);
+#endif
 };
 
 void YUY2ToPlanes(const unsigned char *pSrcYUY2, int nSrcPitchYUY2, int nWidth, int nHeight,

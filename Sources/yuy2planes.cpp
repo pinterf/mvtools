@@ -69,7 +69,7 @@ YUY2Planes::~YUY2Planes()
 //----------------------------------------------------------------------------------------------
 // v1.2.1 asm code borrowed from AviSynth 2.6 CVS
 // ConvertPlanar (c) 2005 by Klaus Post
-
+#if 0
 void YUY2Planes::convYUV422to422(const unsigned char *src, unsigned char *py, unsigned char *pu, unsigned char *pv,
                                         int pitch1, int pitch2y, int pitch2uv, int width, int height)
 {
@@ -139,8 +139,10 @@ emms
 }
 #endif
 }
+#endif
 
 // YV16 -> YUY2
+#if 0
 void YUY2Planes::conv422toYUV422(const unsigned char *py, const unsigned char *pu, const unsigned char *pv,
                            unsigned char *dst, int pitch1Y, int pitch1UV, int pitch2, int width, int height)
 {
@@ -200,6 +202,7 @@ emms
 }
 #endif
 }
+#endif
 //----------------------------------------------------------------------------------------------
 
 // borrowed from Avisynth+ project
