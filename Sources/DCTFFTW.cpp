@@ -160,7 +160,9 @@ void DCTFFTW::Float2Bytes (unsigned char * dstp0, int dst_pitch, float * realdat
 
 void DCTFFTW::DCTBytes2D(const unsigned char *srcp, int src_pitch, unsigned char *dctp, int dct_pitch)
 {
-    _mm_empty ();
+#ifndef _M_X64 
+  _mm_empty ();
+#endif
     if(pixelsize==1){
         Bytes2Float<uint8_t>(srcp, src_pitch, fSrc);
         fftwf_execute_r2r_addr(dctplan, fSrc, fSrcDCT);

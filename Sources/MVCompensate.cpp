@@ -552,7 +552,9 @@ PVideoFrame __stdcall MVCompensate::GetFrame(int n, IScriptEnvironment* env_ptr)
 		}
 	}
 
-	_mm_empty (); // (we may use double-float somewhere) Fizick
+#ifndef _M_X64
+  _mm_empty (); // (we may use double-float somewhere) Fizick
+#endif
 
 	_mv_clip_ptr = 0;
 

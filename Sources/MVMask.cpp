@@ -188,8 +188,10 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
 
 	PVideoFrame mvn = mvClip.GetFrame(n, env);
    mvClip.Update(mvn, env);
-	_mm_empty();
-	if ( mvClip.IsUsable() )
+#ifndef _M_X64
+   _mm_empty();
+#endif
+   if ( mvClip.IsUsable() )
 	{
 		if (kind==0) // vector length mask
 		{

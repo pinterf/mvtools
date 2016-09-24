@@ -140,6 +140,8 @@ void Degrain3_C(BYTE *pDst, BYTE *pDstLsb, bool lsb_flag, int nDstPitch, const B
 	}
 }
 
+#ifndef _M_X64
+
 #include <mmintrin.h>
 template<int blockWidth, int blockHeight>
 void Degrain3_mmx(BYTE *pDst, BYTE *pDstLsb, bool lsb_flag, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
@@ -218,6 +220,7 @@ void Degrain3_mmx(BYTE *pDst, BYTE *pDstLsb, bool lsb_flag, int nDstPitch, const
 
 	_m_empty();
 }
+#endif
 
 #include <emmintrin.h>
 template<int blockWidth, int blockHeight>

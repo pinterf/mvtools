@@ -289,7 +289,9 @@ void RB2FilteredVertical(
 			pDst += nDstPitch / sizeof(pixel_t);
 			pSrc += nSrcPitch / sizeof(pixel_t) * 2;
 		}
-		_mm_empty ();
+#ifndef _M_X64
+    _mm_empty ();
+#endif
 	}
 	else
 	{
@@ -401,7 +403,9 @@ void RB2BilinearFilteredVertical(
 			pDst += nDstPitch / sizeof(pixel_t);
 			pSrc += nSrcPitch / sizeof(pixel_t) * 2;
 		}
-		_mm_empty ();
+#ifndef _M_X64
+    _mm_empty ();
+#endif
 	}
 	else
 	{
@@ -535,7 +539,9 @@ void RB2QuadraticVertical(
 			pDst += nDstPitch/sizeof(pixel_t);
 			pSrc += nSrcPitch/sizeof(pixel_t) * 2;
 		}
-		_mm_empty ();
+#ifndef _M_X64
+    _mm_empty ();
+#endif
 	}
 	else
 	{
@@ -673,7 +679,9 @@ void RB2CubicVertical(
 			pDst += nDstPitch / sizeof(pixel_t);
 			pSrc += nSrcPitch / sizeof(pixel_t) * 2;
 		}
-		_mm_empty ();
+#ifndef _M_X64
+    _mm_empty ();
+#endif
 	}
 	else
 	{
@@ -754,7 +762,9 @@ void RB2CubicHorizontalInplace(
 
 	if (isse2)
 	{
-		_mm_empty ();
+#ifndef _M_X64
+    _mm_empty ();
+#endif
 	}
 }
 
@@ -1123,6 +1133,7 @@ void Average2(unsigned char *pDst8, const unsigned char *pSrc1_8, const unsigned
         pSrc2 += nPitch;
     }
 }
+
 
 // instantiate templates defined in cpp
 template void VerticalBilin<uint8_t>(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight);

@@ -82,7 +82,7 @@ void DegrainN_C (
 }
 
 
-
+#ifndef _M_X64
 template <int blockWidth, int blockHeight>
 void DegrainN_mmx (
 	BYTE *pDst, BYTE *pDstLsb, bool lsb_flag, int nDstPitch,
@@ -176,7 +176,7 @@ void DegrainN_mmx (
 
 	_m_empty ();
 }
-
+#endif
 
 
 template <int blockWidth, int blockHeight>
@@ -303,6 +303,7 @@ MDegrainN::DenoiseNFunction* MDegrainN::get_denoiseN_function(int BlockX, int Bl
     func_degrain[make_tuple(2 , 4 , 1, NO_SIMD)] = DegrainN_C<2 , 4>;
     func_degrain[make_tuple(2 , 2 , 1, NO_SIMD)] = DegrainN_C<2 , 2>;
 
+#ifndef _M_X64
     func_degrain[make_tuple(32, 32, 1, USE_MMX)] = DegrainN_mmx<32, 32>;
     func_degrain[make_tuple(32, 16, 1, USE_MMX)] = DegrainN_mmx<32, 16>;
     func_degrain[make_tuple(32, 8 , 1, USE_MMX)] = DegrainN_mmx<32, 8>;
@@ -321,7 +322,7 @@ MDegrainN::DenoiseNFunction* MDegrainN::get_denoiseN_function(int BlockX, int Bl
     func_degrain[make_tuple(4 , 2 , 1, USE_MMX)] = DegrainN_mmx<4 , 2>;
     func_degrain[make_tuple(2 , 4 , 1, USE_MMX)] = DegrainN_mmx<2 , 4>;
     func_degrain[make_tuple(2 , 2 , 1, USE_MMX)] = DegrainN_mmx<2 , 2>;
-
+#endif
     func_degrain[make_tuple(32, 32, 1, USE_SSE2)] = DegrainN_sse2<32, 32>;
     func_degrain[make_tuple(32, 16, 1, USE_SSE2)] = DegrainN_sse2<32, 16>;
     func_degrain[make_tuple(32, 8 , 1, USE_SSE2)] = DegrainN_sse2<32, 8>;
@@ -866,7 +867,9 @@ MDegrainN::~MDegrainN ()
 
 	//-------------------------------------------------------------------------
 
-	_mm_empty (); // (we may use double-float somewhere) Fizick
+#ifndef _M_X64 
+  _mm_empty (); // (we may use double-float somewhere) Fizick
+#endif
 
 	PROFILE_STOP (MOTION_PROFILE_COMPENSATION);
 

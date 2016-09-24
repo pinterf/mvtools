@@ -475,7 +475,9 @@ LoopQ:
 	pSrc  += 8*src_pit;
 	pDest += 8*dst_pit;
 	}
-	_mm_empty();
+#ifndef _M_X64 
+  _mm_empty ();
+#endif
 }
 #endif
 

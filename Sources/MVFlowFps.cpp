@@ -249,7 +249,9 @@ MVFlowFps::~MVFlowFps()
 //-------------------------------------------------------------------------
 PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
 {
-	_mm_empty();
+#ifndef _M_X64
+  _mm_empty();
+#endif
  	int nleft = (int) ( __int64(n)* fa/fb );
 	// intermediate product may be very large! Now I know how to multiply int64
 	int time256 = int( (double(n)*double(fa)/double(fb) - nleft)*256 + 0.5);

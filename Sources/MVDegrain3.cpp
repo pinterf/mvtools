@@ -59,6 +59,7 @@ MVDegrain3::Denoise3Function* MVDegrain3::get_denoise3_function(int BlockX, int 
     func_degrain[make_tuple(2 , 4 , 1, NO_SIMD)] = Degrain3_C<2 , 4>;
     func_degrain[make_tuple(2 , 2 , 1, NO_SIMD)] = Degrain3_C<2 , 2>;
 
+#ifndef _M_X64
     func_degrain[make_tuple(32, 32, 1, USE_MMX)] = Degrain3_mmx<32, 32>;
     func_degrain[make_tuple(32, 16, 1, USE_MMX)] = Degrain3_mmx<32, 16>;
     func_degrain[make_tuple(32, 8 , 1, USE_MMX)] = Degrain3_mmx<32, 8>;
@@ -77,7 +78,7 @@ MVDegrain3::Denoise3Function* MVDegrain3::get_denoise3_function(int BlockX, int 
     func_degrain[make_tuple(4 , 2 , 1, USE_MMX)] = Degrain3_mmx<4 , 2>;
     func_degrain[make_tuple(2 , 4 , 1, USE_MMX)] = Degrain3_mmx<2 , 4>;
     func_degrain[make_tuple(2 , 2 , 1, USE_MMX)] = Degrain3_mmx<2 , 2>;
-
+#endif
     func_degrain[make_tuple(32, 32, 1, USE_SSE2)] = Degrain3_sse2<32, 32>;
     func_degrain[make_tuple(32, 16, 1, USE_SSE2)] = Degrain3_sse2<32, 16>;
     func_degrain[make_tuple(32, 8 , 1, USE_SSE2)] = Degrain3_sse2<32, 8>;
@@ -769,7 +770,9 @@ PVideoFrame __stdcall MVDegrain3::GetFrame(int n, IScriptEnvironment* env)
 
 //--------------------------------------------------------------------------------
 
-	_mm_empty ();	// (we may use double-float somewhere) Fizick
+#ifndef _M_X64
+  _mm_empty ();	// (we may use double-float somewhere) Fizick
+#endif
 
 	PROFILE_STOP(MOTION_PROFILE_COMPENSATION);
 

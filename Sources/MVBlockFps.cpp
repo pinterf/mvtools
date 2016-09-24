@@ -431,7 +431,9 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
   int nHeightUV = nHeight/yRatioUV;
 	int nWidthUV = nWidth/xRatioUV;
 
-	_mm_empty(); // paranoya
+#ifndef _M_X64
+  _mm_empty ();  // paranoya
+#endif
 	// intermediate product may be very large! Now I know how to multiply int64
 	int nleft = (int) ( __int64(n)* fa/fb );
 	int time256 = int( (double(n)*double(fa)/double(fb) - nleft)*256 + 0.5);

@@ -2226,7 +2226,9 @@ void	PlaneOfBlocks::search_mv_slice (Slicer::TaskData &td)
 
 	if (isse)
 	{
-		_mm_empty ();
+#ifndef _M_X64
+    _mm_empty ();
+#endif
 	}
 
 #ifdef ALLOW_DCT
@@ -2585,7 +2587,9 @@ void	PlaneOfBlocks::recalculate_mv_slice (Slicer::TaskData &td)
 
 	if (isse)
 	{
-		_mm_empty ();
+#ifndef _M_X64
+    _mm_empty ();
+#endif
 	}
 
 #ifdef ALLOW_DCT

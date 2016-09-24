@@ -53,7 +53,9 @@ void MakeVectorOcclusionMaskTime(MVClip &mvClip, int nBlkX, int nBlkY, double dM
 	MemZoneSet(occMask, 0, nBlkX, nBlkY, 0, 0, nBlkX);
 	int time4096X = time256*16/blkSizeX;
 	int time4096Y = time256*16/blkSizeY;
-	_mm_empty();
+#ifndef _M_X64 
+  _mm_empty ();
+#endif
 	double occnorm = 10 / dMaskNormFactor/nPel;
 	int occlusion;
 
@@ -100,7 +102,9 @@ void VectorMasksToOcclusionMaskTime(uint8_t *VXMask, uint8_t *VYMask, int nBlkX,
 	MemZoneSet(occMask, 0, nBlkX, nBlkY, 0, 0, nBlkX);
 	int time4096X = time256*16/blkSizeX;
 	int time4096Y = time256*16/blkSizeY;
-	_mm_empty();
+#ifndef _M_X64 
+  _mm_empty ();
+#endif
 	double occnorm = 10 / dMaskNormFactor/nPel;
 	int occlusion;
 	for (int by=0; by<nBlkY; by++)
@@ -141,7 +145,9 @@ void VectorMasksToOcclusionMaskTime(uint8_t *VXMask, uint8_t *VYMask, int nBlkX,
 // it is old pre 1.8 version
 void MakeVectorOcclusionMask(MVClip &mvClip, int nBlkX, int nBlkY, double dMaskNormFactor, double fGamma, int nPel, uint8_t * occMask, int occMaskPitch)
 {	// analyse vectors field to detect occlusion
-	_mm_empty();
+#ifndef _M_X64 
+  _mm_empty ();
+#endif
 	double occnorm = 10 / dMaskNormFactor/nPel; // empirical
 	for (int by=0; by<nBlkY; by++)
 	{
@@ -203,7 +209,9 @@ void MakeVectorOcclusionMask(MVClip &mvClip, int nBlkX, int nBlkY, double dMaskN
 void VectorMasksToOcclusionMask(uint8_t *VXMask, uint8_t *VYMask, int nBlkX, int nBlkY, double dMaskNormFactor, double fGamma, int nPel, uint8_t * occMask)
 {	// analyse vectors field to detect occlusion
 	// note: dMaskNormFactor was = 1/ml, now is = ml
-	_mm_empty();
+#ifndef _M_X64 
+  _mm_empty ();
+#endif
 	double occnorm = 10 / dMaskNormFactor/nPel; // empirical
 	for (int by=0; by<nBlkY; by++)
 	{

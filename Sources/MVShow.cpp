@@ -163,7 +163,9 @@ PVideoFrame __stdcall MVShow::GetFrame(int n, IScriptEnvironment* env)
 
 	if ( showSad ) {
 		char buf[80];
-		_mm_empty();
+#ifndef _M_X64
+    _mm_empty();
+#endif
 		double mean = 0;
 		int nsc = 0;
 		int ThSCD1 = mvClip.GetThSCD1();
