@@ -137,7 +137,7 @@ MVBlockFps::MVBlockFps(
   nBlkYP = (nBlkY*(nBlkSizeY - nOverlapY) + nOverlapY < nHeight) ? nBlkY + 1 : nBlkY;
   nWidthP = nBlkXP*(nBlkSizeX - nOverlapX) + nOverlapX;
   nHeightP = nBlkYP*(nBlkSizeY - nOverlapY) + nOverlapY;
-  // for YV12
+  // for YV12 and any type
   nWidthPUV = nWidthP / xRatioUV;
   nHeightPUV = nHeightP / yRatioUV;
   nHeightUV = nHeight / yRatioUV;
@@ -146,6 +146,7 @@ MVBlockFps::MVBlockFps(
   nPitchY = (nWidthP + 15) & (~15);
   nPitchUV = (nWidthPUV + 15) & (~15);
 
+  // todo: 16 aligned malloc? for Resize? unfortunately src_pitches e.g. nBlkXP are not aligned
   MaskFullYB = new BYTE[nHeightP*nPitchY];
   MaskFullUVB = new BYTE[nHeightPUV*nPitchUV];
   MaskFullYF = new BYTE[nHeightP*nPitchY];
