@@ -250,7 +250,8 @@ MVFlowInter::~MVFlowInter()
 //-------------------------------------------------------------------------
 PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
 {
-	PVideoFrame dst, t256;
+  PVideoFrame dst;
+  // PVideoFrame t256; 2.6.0.5? removed at 2.5.11.22 merge
 	BYTE *pDst[3];
 	const BYTE *pRef[3], *pSrc[3];
 	int nDstPitches[3], nRefPitches[3], nSrcPitches[3];
