@@ -71,7 +71,8 @@ OverlapsLsbFunction* get_overlaps_lsb_function(int BlockX, int BlockY, int pixel
 //=============================================================
 // short
 
-template <int blockWidth, int blockHeight>
+template <typename pixel_t, int blockWidth, int blockHeight>
+// todo: pDst short* is not enough
 void Overlaps_C(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch)
 {
 	// pWin from 0 to 2048
@@ -79,7 +80,7 @@ void Overlaps_C(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, 
 	{
 	    for (int i=0; i<blockWidth; i++)
 	    {
-            pDst[i] = ( pDst[i] + ((pSrc[i]*pWin[i]+256)>>6));
+            pDst[i] = ( pDst[i] + ((reinterpret_cast<const pixel_t *>(pSrc)[i]*pWin[i]+256)>>6));
 	    }
 		pDst += nDstPitch;
 		pSrc += nSrcPitch;
@@ -128,6 +129,7 @@ extern "C" void __cdecl  Overlaps8x1_sse2(unsigned short *pDst, int nDstPitch, c
 
 void Short2Bytes(unsigned char *pDst, int nDstPitch, unsigned short *pDstShort, int dstShortPitch, int nWidth, int nHeight);
 void Short2BytesLsb(unsigned char *pDst, unsigned char *pDstLsb, int nDstPitch, int *pDstInt, int dstIntPitch, int nWidth, int nHeight);
+void Short2Bytes16(uint16_t *pDst, unsigned char *pDstLsb, int nDstPitch, int *pDstInt, int dstIntPitch, int nWidth, int nHeight);
 
 template<typename pixel_t>
 void LimitChanges_c(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, int nLimit);
