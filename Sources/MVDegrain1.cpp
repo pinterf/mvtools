@@ -27,6 +27,8 @@
 #define __INTEL_COMPILER_USE_INTRINSIC_PROTOTYPES 1 // P.F. https://software.intel.com/en-us/articles/visual-studio-intellisense-stopped-recognizing-many-of-the-avx-avx2-intrinsics
 #include	<mmintrin.h>
 
+#if 0
+// PF 160926: common MDegrain1 to 5
 
 MVDegrain1::Denoise1Function* MVDegrain1::get_denoise1_function(int BlockX, int BlockY, int pixelsize, arch_t arch)
 {
@@ -827,3 +829,4 @@ void	MVDegrain1::norm_weights (int &WSrc, int &WRefB, int &WRefF)
 	WRefF  = WRefF*256/WSum;
 	WSrc = 256 - WRefB - WRefF;
 }
+#endif // #if 0

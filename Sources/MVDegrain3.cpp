@@ -30,9 +30,12 @@
 #include "overlap.h"
 #include <stdint.h>
 
-#include	<mmintrin.h>
+//#include	<mmintrin.h>
 
-MVDegrain3::Denoise3Function* MVDegrain3::get_denoise3_function(int BlockX, int BlockY, int pixelsize, arch_t arch)
+// PF 160926: MDegrain3 -> MDegrainX: common 1..5 level MDegrain functions
+
+#if 0
+MVDegrainX::Denoise3Function* MVDegrainX::get_denoise3_function(int BlockX, int BlockY, int pixelsize, arch_t arch)
 {
     // 8 bit only (pixelsize==1)
     //---------- DENOISE/DEGRAIN
@@ -59,6 +62,7 @@ MVDegrain3::Denoise3Function* MVDegrain3::get_denoise3_function(int BlockX, int 
     func_degrain[make_tuple(2 , 4 , 1, NO_SIMD)] = Degrain3_C<2 , 4>;
     func_degrain[make_tuple(2 , 2 , 1, NO_SIMD)] = Degrain3_C<2 , 2>;
 
+#if 0
 #ifndef _M_X64
     func_degrain[make_tuple(32, 32, 1, USE_MMX)] = Degrain3_mmx<32, 32>;
     func_degrain[make_tuple(32, 16, 1, USE_MMX)] = Degrain3_mmx<32, 16>;
@@ -78,6 +82,7 @@ MVDegrain3::Denoise3Function* MVDegrain3::get_denoise3_function(int BlockX, int 
     func_degrain[make_tuple(4 , 2 , 1, USE_MMX)] = Degrain3_mmx<4 , 2>;
     func_degrain[make_tuple(2 , 4 , 1, USE_MMX)] = Degrain3_mmx<2 , 4>;
     func_degrain[make_tuple(2 , 2 , 1, USE_MMX)] = Degrain3_mmx<2 , 2>;
+#endif
 #endif
     func_degrain[make_tuple(32, 32, 1, USE_SSE2)] = Degrain3_sse2<32, 32>;
     func_degrain[make_tuple(32, 16, 1, USE_SSE2)] = Degrain3_sse2<32, 16>;
@@ -100,47 +105,699 @@ MVDegrain3::Denoise3Function* MVDegrain3::get_denoise3_function(int BlockX, int 
 
     return func_degrain[make_tuple(BlockX, BlockY, pixelsize, arch)];
 }
+#endif
 
+MVDegrainX::Denoise1to5Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY, int pixelsize, bool lsb_flag, int level, arch_t arch)
+{
+  // 8 bit only (pixelsize==1)
+  //---------- DENOISE/DEGRAIN
+  // BlkSizeX, BlkSizeY, pixelsize, lsb_flag, level_of_MDegrain, arch_t
+  std::map<std::tuple<int, int, int, bool, int, arch_t>, Denoise1to5Function*> func_degrain;
+  using std::make_tuple;
+
+  // C, level1, lsb=false
+  func_degrain[make_tuple(32, 32, 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 32, false, 1>;
+  func_degrain[make_tuple(32, 16, 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 16, false, 1>;
+  func_degrain[make_tuple(32, 8 , 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 8 , false, 1>;
+  func_degrain[make_tuple(16, 32, 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 32, false, 1>;
+  func_degrain[make_tuple(16, 16, 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 16, false, 1>;
+  func_degrain[make_tuple(16, 8 , 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 8 , false, 1>;
+  func_degrain[make_tuple(16, 4 , 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 4 , false, 1>;
+  func_degrain[make_tuple(16, 2 , 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 2 , false, 1>;
+  func_degrain[make_tuple(8 , 16, 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 16, false, 1>;
+  func_degrain[make_tuple(8 , 8 , 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 8 , false, 1>;
+  func_degrain[make_tuple(8 , 4 , 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 4 , false, 1>;
+  func_degrain[make_tuple(8 , 2 , 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 2 , false, 1>;
+  func_degrain[make_tuple(8 , 1 , 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 1 , false, 1>;
+  func_degrain[make_tuple(4 , 8 , 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 4 , 8 , false, 1>;
+  func_degrain[make_tuple(4 , 4 , 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 4 , 4 , false, 1>;
+  func_degrain[make_tuple(4 , 2 , 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 4 , 2 , false, 1>;
+  func_degrain[make_tuple(2 , 4 , 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 2 , 4 , false, 1>;
+  func_degrain[make_tuple(2 , 2 , 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 2 , 2 , false, 1>;
+  // C, level1, lsb=true
+  func_degrain[make_tuple(32, 32, 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 32, true, 1>;
+  func_degrain[make_tuple(32, 16, 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 16, true, 1>;
+  func_degrain[make_tuple(32, 8 , 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 8 , true, 1>;
+  func_degrain[make_tuple(16, 32, 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 32, true, 1>;
+  func_degrain[make_tuple(16, 16, 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 16, true, 1>;
+  func_degrain[make_tuple(16, 8 , 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 8 , true, 1>;
+  func_degrain[make_tuple(16, 4 , 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 4 , true, 1>;
+  func_degrain[make_tuple(16, 2 , 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 2 , true, 1>;
+  func_degrain[make_tuple(8 , 16, 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 16, true, 1>;
+  func_degrain[make_tuple(8 , 8 , 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 8 , true, 1>;
+  func_degrain[make_tuple(8 , 4 , 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 4 , true, 1>;
+  func_degrain[make_tuple(8 , 2 , 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 2 , true, 1>;
+  func_degrain[make_tuple(8 , 1 , 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 1 , true, 1>;
+  func_degrain[make_tuple(4 , 8 , 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 4 , 8 , true, 1>;
+  func_degrain[make_tuple(4 , 4 , 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 4 , 4 , true, 1>;
+  func_degrain[make_tuple(4 , 2 , 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 4 , 2 , true, 1>;
+  func_degrain[make_tuple(2 , 4 , 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 2 , 4 , true, 1>;
+  func_degrain[make_tuple(2 , 2 , 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 2 , 2 , true, 1>;
+  
+  // C, level2, lsb=false
+  func_degrain[make_tuple(32, 32, 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 32, false, 2>;
+  func_degrain[make_tuple(32, 16, 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 16, false, 2>;
+  func_degrain[make_tuple(32, 8 , 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 8 , false, 2>;
+  func_degrain[make_tuple(16, 32, 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 32, false, 2>;
+  func_degrain[make_tuple(16, 16, 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 16, false, 2>;
+  func_degrain[make_tuple(16, 8 , 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 8 , false, 2>;
+  func_degrain[make_tuple(16, 4 , 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 4 , false, 2>;
+  func_degrain[make_tuple(16, 2 , 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 2 , false, 2>;
+  func_degrain[make_tuple(8 , 16, 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 16, false, 2>;
+  func_degrain[make_tuple(8 , 8 , 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 8 , false, 2>;
+  func_degrain[make_tuple(8 , 4 , 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 4 , false, 2>;
+  func_degrain[make_tuple(8 , 2 , 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 2 , false, 2>;
+  func_degrain[make_tuple(8 , 1 , 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 1 , false, 2>;
+  func_degrain[make_tuple(4 , 8 , 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 4 , 8 , false, 2>;
+  func_degrain[make_tuple(4 , 4 , 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 4 , 4 , false, 2>;
+  func_degrain[make_tuple(4 , 2 , 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 4 , 2 , false, 2>;
+  func_degrain[make_tuple(2 , 4 , 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 2 , 4 , false, 2>;
+  func_degrain[make_tuple(2 , 2 , 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 2 , 2 , false, 2>;
+  // C, level2, lsb=true
+  func_degrain[make_tuple(32, 32, 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 32, true, 2>;
+  func_degrain[make_tuple(32, 16, 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 16, true, 2>;
+  func_degrain[make_tuple(32, 8 , 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 8 , true, 2>;
+  func_degrain[make_tuple(16, 32, 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 32, true, 2>;
+  func_degrain[make_tuple(16, 16, 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 16, true, 2>;
+  func_degrain[make_tuple(16, 8 , 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 8 , true, 2>;
+  func_degrain[make_tuple(16, 4 , 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 4 , true, 2>;
+  func_degrain[make_tuple(16, 2 , 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 2 , true, 2>;
+  func_degrain[make_tuple(8 , 16, 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 16, true, 2>;
+  func_degrain[make_tuple(8 , 8 , 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 8 , true, 2>;
+  func_degrain[make_tuple(8 , 4 , 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 4 , true, 2>;
+  func_degrain[make_tuple(8 , 2 , 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 2 , true, 2>;
+  func_degrain[make_tuple(8 , 1 , 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 1 , true, 2>;
+  func_degrain[make_tuple(4 , 8 , 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 4 , 8 , true, 2>;
+  func_degrain[make_tuple(4 , 4 , 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 4 , 4 , true, 2>;
+  func_degrain[make_tuple(4 , 2 , 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 4 , 2 , true, 2>;
+  func_degrain[make_tuple(2 , 4 , 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 2 , 4 , true, 2>;
+  func_degrain[make_tuple(2 , 2 , 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 2 , 2 , true, 2>;
+
+  // C, level3, lsb=false
+  func_degrain[make_tuple(32, 32, 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 32, false, 3>;
+  func_degrain[make_tuple(32, 16, 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 16, false, 3>;
+  func_degrain[make_tuple(32, 8 , 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 8 , false, 3>;
+  func_degrain[make_tuple(16, 32, 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 32, false, 3>;
+  func_degrain[make_tuple(16, 16, 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 16, false, 3>;
+  func_degrain[make_tuple(16, 8 , 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 8 , false, 3>;
+  func_degrain[make_tuple(16, 4 , 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 4 , false, 3>;
+  func_degrain[make_tuple(16, 2 , 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 2 , false, 3>;
+  func_degrain[make_tuple(8 , 16, 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 16, false, 3>;
+  func_degrain[make_tuple(8 , 8 , 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 8 , false, 3>;
+  func_degrain[make_tuple(8 , 4 , 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 4 , false, 3>;
+  func_degrain[make_tuple(8 , 2 , 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 2 , false, 3>;
+  func_degrain[make_tuple(8 , 1 , 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 1 , false, 3>;
+  func_degrain[make_tuple(4 , 8 , 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 4 , 8 , false, 3>;
+  func_degrain[make_tuple(4 , 4 , 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 4 , 4 , false, 3>;
+  func_degrain[make_tuple(4 , 2 , 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 4 , 2 , false, 3>;
+  func_degrain[make_tuple(2 , 4 , 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 2 , 4 , false, 3>;
+  func_degrain[make_tuple(2 , 2 , 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 2 , 2 , false, 3>;
+  // C, level3, lsb=true
+  func_degrain[make_tuple(32, 32, 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 32, true, 3>;
+  func_degrain[make_tuple(32, 16, 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 16, true, 3>;
+  func_degrain[make_tuple(32, 8 , 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 8 , true, 3>;
+  func_degrain[make_tuple(16, 32, 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 32, true, 3>;
+  func_degrain[make_tuple(16, 16, 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 16, true, 3>;
+  func_degrain[make_tuple(16, 8 , 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 8 , true, 3>;
+  func_degrain[make_tuple(16, 4 , 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 4 , true, 3>;
+  func_degrain[make_tuple(16, 2 , 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 2 , true, 3>;
+  func_degrain[make_tuple(8 , 16, 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 16, true, 3>;
+  func_degrain[make_tuple(8 , 8 , 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 8 , true, 3>;
+  func_degrain[make_tuple(8 , 4 , 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 4 , true, 3>;
+  func_degrain[make_tuple(8 , 2 , 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 2 , true, 3>;
+  func_degrain[make_tuple(8 , 1 , 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 1 , true, 3>;
+  func_degrain[make_tuple(4 , 8 , 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 4 , 8 , true, 3>;
+  func_degrain[make_tuple(4 , 4 , 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 4 , 4 , true, 3>;
+  func_degrain[make_tuple(4 , 2 , 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 4 , 2 , true, 3>;
+  func_degrain[make_tuple(2 , 4 , 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 2 , 4 , true, 3>;
+  func_degrain[make_tuple(2 , 2 , 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 2 , 2 , true, 3>;
+  // C, level4, lsb=false
+  func_degrain[make_tuple(32, 32, 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 32, false, 4>;
+  func_degrain[make_tuple(32, 16, 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 16, false, 4>;
+  func_degrain[make_tuple(32, 8 , 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 8 , false, 4>;
+  func_degrain[make_tuple(16, 32, 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 32, false, 4>;
+  func_degrain[make_tuple(16, 16, 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 16, false, 4>;
+  func_degrain[make_tuple(16, 8 , 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 8 , false, 4>;
+  func_degrain[make_tuple(16, 4 , 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 4 , false, 4>;
+  func_degrain[make_tuple(16, 2 , 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 2 , false, 4>;
+  func_degrain[make_tuple(8 , 16, 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 16, false, 4>;
+  func_degrain[make_tuple(8 , 8 , 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 8 , false, 4>;
+  func_degrain[make_tuple(8 , 4 , 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 4 , false, 4>;
+  func_degrain[make_tuple(8 , 2 , 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 2 , false, 4>;
+  func_degrain[make_tuple(8 , 1 , 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 1 , false, 4>;
+  func_degrain[make_tuple(4 , 8 , 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 4 , 8 , false, 4>;
+  func_degrain[make_tuple(4 , 4 , 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 4 , 4 , false, 4>;
+  func_degrain[make_tuple(4 , 2 , 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 4 , 2 , false, 4>;
+  func_degrain[make_tuple(2 , 4 , 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 2 , 4 , false, 4>;
+  func_degrain[make_tuple(2 , 2 , 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 2 , 2 , false, 4>;
+  // C, level4, lsb=true
+  func_degrain[make_tuple(32, 32, 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 32, true, 4>;
+  func_degrain[make_tuple(32, 16, 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 16, true, 4>;
+  func_degrain[make_tuple(32, 8 , 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 8 , true, 4>;
+  func_degrain[make_tuple(16, 32, 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 32, true, 4>;
+  func_degrain[make_tuple(16, 16, 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 16, true, 4>;
+  func_degrain[make_tuple(16, 8 , 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 8 , true, 4>;
+  func_degrain[make_tuple(16, 4 , 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 4 , true, 4>;
+  func_degrain[make_tuple(16, 2 , 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 2 , true, 4>;
+  func_degrain[make_tuple(8 , 16, 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 16, true, 4>;
+  func_degrain[make_tuple(8 , 8 , 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 8 , true, 4>;
+  func_degrain[make_tuple(8 , 4 , 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 4 , true, 4>;
+  func_degrain[make_tuple(8 , 2 , 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 2 , true, 4>;
+  func_degrain[make_tuple(8 , 1 , 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 1 , true, 4>;
+  func_degrain[make_tuple(4 , 8 , 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 4 , 8 , true, 4>;
+  func_degrain[make_tuple(4 , 4 , 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 4 , 4 , true, 4>;
+  func_degrain[make_tuple(4 , 2 , 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 4 , 2 , true, 4>;
+  func_degrain[make_tuple(2 , 4 , 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 2 , 4 , true, 4>;
+  func_degrain[make_tuple(2 , 2 , 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 2 , 2 , true, 4>;
+
+  // C, level5, lsb=false
+  func_degrain[make_tuple(32, 32, 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 32, false, 5>;
+  func_degrain[make_tuple(32, 16, 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 16, false, 5>;
+  func_degrain[make_tuple(32, 8 , 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 8 , false, 5>;
+  func_degrain[make_tuple(16, 32, 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 32, false, 5>;
+  func_degrain[make_tuple(16, 16, 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 16, false, 5>;
+  func_degrain[make_tuple(16, 8 , 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 8 , false, 5>;
+  func_degrain[make_tuple(16, 4 , 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 4 , false, 5>;
+  func_degrain[make_tuple(16, 2 , 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 2 , false, 5>;
+  func_degrain[make_tuple(8 , 16, 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 16, false, 5>;
+  func_degrain[make_tuple(8 , 8 , 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 8 , false, 5>;
+  func_degrain[make_tuple(8 , 4 , 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 4 , false, 5>;
+  func_degrain[make_tuple(8 , 2 , 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 2 , false, 5>;
+  func_degrain[make_tuple(8 , 1 , 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 1 , false, 5>;
+  func_degrain[make_tuple(4 , 8 , 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 4 , 8 , false, 5>;
+  func_degrain[make_tuple(4 , 4 , 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 4 , 4 , false, 5>;
+  func_degrain[make_tuple(4 , 2 , 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 4 , 2 , false, 5>;
+  func_degrain[make_tuple(2 , 4 , 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 2 , 4 , false, 5>;
+  func_degrain[make_tuple(2 , 2 , 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 2 , 2 , false, 5>;
+  // C, level5, lsb=true
+  func_degrain[make_tuple(32, 32, 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 32, true, 5>;
+  func_degrain[make_tuple(32, 16, 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 16, true, 5>;
+  func_degrain[make_tuple(32, 8 , 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 8 , true, 5>;
+  func_degrain[make_tuple(16, 32, 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 32, true, 5>;
+  func_degrain[make_tuple(16, 16, 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 16, true, 5>;
+  func_degrain[make_tuple(16, 8 , 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 8 , true, 5>;
+  func_degrain[make_tuple(16, 4 , 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 4 , true, 5>;
+  func_degrain[make_tuple(16, 2 , 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 2 , true, 5>;
+  func_degrain[make_tuple(8 , 16, 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 16, true, 5>;
+  func_degrain[make_tuple(8 , 8 , 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 8 , true, 5>;
+  func_degrain[make_tuple(8 , 4 , 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 4 , true, 5>;
+  func_degrain[make_tuple(8 , 2 , 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 2 , true, 5>;
+  func_degrain[make_tuple(8 , 1 , 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 8 , 1 , true, 5>;
+  func_degrain[make_tuple(4 , 8 , 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 4 , 8 , true, 5>;
+  func_degrain[make_tuple(4 , 4 , 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 4 , 4 , true, 5>;
+  func_degrain[make_tuple(4 , 2 , 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 4 , 2 , true, 5>;
+  func_degrain[make_tuple(2 , 4 , 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 2 , 4 , true, 5>;
+  func_degrain[make_tuple(2 , 2 , 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 2 , 2 , true, 5>;
+
+// 16 bit
+// C, level1, lsb=false
+  func_degrain[make_tuple(32, 32, 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 32, false, 1>;
+  func_degrain[make_tuple(32, 16, 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 16, false, 1>;
+  func_degrain[make_tuple(32, 8 , 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 8 , false, 1>;
+  func_degrain[make_tuple(16, 32, 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 32, false, 1>;
+  func_degrain[make_tuple(16, 16, 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 16, false, 1>;
+  func_degrain[make_tuple(16, 8 , 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 8 , false, 1>;
+  func_degrain[make_tuple(16, 4 , 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 4 , false, 1>;
+  func_degrain[make_tuple(16, 2 , 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 2 , false, 1>;
+  func_degrain[make_tuple(8 , 16, 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 16, false, 1>;
+  func_degrain[make_tuple(8 , 8 , 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 8 , false, 1>;
+  func_degrain[make_tuple(8 , 4 , 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 4 , false, 1>;
+  func_degrain[make_tuple(8 , 2 , 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 2 , false, 1>;
+  func_degrain[make_tuple(8 , 1 , 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 1 , false, 1>;
+  func_degrain[make_tuple(4 , 8 , 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 4 , 8 , false, 1>;
+  func_degrain[make_tuple(4 , 4 , 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 4 , 4 , false, 1>;
+  func_degrain[make_tuple(4 , 2 , 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 4 , 2 , false, 1>;
+  func_degrain[make_tuple(2 , 4 , 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 2 , 4 , false, 1>;
+  func_degrain[make_tuple(2 , 2 , 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 2 , 2 , false, 1>;
+#if 0
+  // NO lsb + 16 bit 
+  // C, level1, lsb=true
+  func_degrain[make_tuple(32, 32, 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 32, true, 1>;
+  func_degrain[make_tuple(32, 16, 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 16, true, 1>;
+  func_degrain[make_tuple(32, 8 , 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 8 , true, 1>;
+  func_degrain[make_tuple(16, 32, 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 32, true, 1>;
+  func_degrain[make_tuple(16, 16, 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 16, true, 1>;
+  func_degrain[make_tuple(16, 8 , 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 8 , true, 1>;
+  func_degrain[make_tuple(16, 4 , 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 4 , true, 1>;
+  func_degrain[make_tuple(16, 2 , 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 2 , true, 1>;
+  func_degrain[make_tuple(8 , 16, 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 16, true, 1>;
+  func_degrain[make_tuple(8 , 8 , 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 8 , true, 1>;
+  func_degrain[make_tuple(8 , 4 , 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 4 , true, 1>;
+  func_degrain[make_tuple(8 , 2 , 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 2 , true, 1>;
+  func_degrain[make_tuple(8 , 1 , 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 1 , true, 1>;
+  func_degrain[make_tuple(4 , 8 , 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 4 , 8 , true, 1>;
+  func_degrain[make_tuple(4 , 4 , 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 4 , 4 , true, 1>;
+  func_degrain[make_tuple(4 , 2 , 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 4 , 2 , true, 1>;
+  func_degrain[make_tuple(2 , 4 , 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 2 , 4 , true, 1>;
+  func_degrain[make_tuple(2 , 2 , 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 2 , 2 , true, 1>;
+#endif
+  // C, level2, lsb=false
+  func_degrain[make_tuple(32, 32, 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 32, false, 2>;
+  func_degrain[make_tuple(32, 16, 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 16, false, 2>;
+  func_degrain[make_tuple(32, 8 , 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 8 , false, 2>;
+  func_degrain[make_tuple(16, 32, 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 32, false, 2>;
+  func_degrain[make_tuple(16, 16, 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 16, false, 2>;
+  func_degrain[make_tuple(16, 8 , 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 8 , false, 2>;
+  func_degrain[make_tuple(16, 4 , 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 4 , false, 2>;
+  func_degrain[make_tuple(16, 2 , 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 2 , false, 2>;
+  func_degrain[make_tuple(8 , 16, 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 16, false, 2>;
+  func_degrain[make_tuple(8 , 8 , 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 8 , false, 2>;
+  func_degrain[make_tuple(8 , 4 , 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 4 , false, 2>;
+  func_degrain[make_tuple(8 , 2 , 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 2 , false, 2>;
+  func_degrain[make_tuple(8 , 1 , 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 1 , false, 2>;
+  func_degrain[make_tuple(4 , 8 , 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 4 , 8 , false, 2>;
+  func_degrain[make_tuple(4 , 4 , 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 4 , 4 , false, 2>;
+  func_degrain[make_tuple(4 , 2 , 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 4 , 2 , false, 2>;
+  func_degrain[make_tuple(2 , 4 , 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 2 , 4 , false, 2>;
+  func_degrain[make_tuple(2 , 2 , 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 2 , 2 , false, 2>;
+  // C, level2, lsb=true
+#if 0
+  func_degrain[make_tuple(32, 32, 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 32, true, 2>;
+  func_degrain[make_tuple(32, 16, 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 16, true, 2>;
+  func_degrain[make_tuple(32, 8 , 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 8 , true, 2>;
+  func_degrain[make_tuple(16, 32, 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 32, true, 2>;
+  func_degrain[make_tuple(16, 16, 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 16, true, 2>;
+  func_degrain[make_tuple(16, 8 , 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 8 , true, 2>;
+  func_degrain[make_tuple(16, 4 , 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 4 , true, 2>;
+  func_degrain[make_tuple(16, 2 , 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 2 , true, 2>;
+  func_degrain[make_tuple(8 , 16, 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 16, true, 2>;
+  func_degrain[make_tuple(8 , 8 , 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 8 , true, 2>;
+  func_degrain[make_tuple(8 , 4 , 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 4 , true, 2>;
+  func_degrain[make_tuple(8 , 2 , 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 2 , true, 2>;
+  func_degrain[make_tuple(8 , 1 , 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 1 , true, 2>;
+  func_degrain[make_tuple(4 , 8 , 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 4 , 8 , true, 2>;
+  func_degrain[make_tuple(4 , 4 , 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 4 , 4 , true, 2>;
+  func_degrain[make_tuple(4 , 2 , 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 4 , 2 , true, 2>;
+  func_degrain[make_tuple(2 , 4 , 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 2 , 4 , true, 2>;
+  func_degrain[make_tuple(2 , 2 , 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 2 , 2 , true, 2>;
+#endif
+  // C, level3, lsb=false
+  func_degrain[make_tuple(32, 32, 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 32, false, 3>;
+  func_degrain[make_tuple(32, 16, 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 16, false, 3>;
+  func_degrain[make_tuple(32, 8 , 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 8 , false, 3>;
+  func_degrain[make_tuple(16, 32, 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 32, false, 3>;
+  func_degrain[make_tuple(16, 16, 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 16, false, 3>;
+  func_degrain[make_tuple(16, 8 , 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 8 , false, 3>;
+  func_degrain[make_tuple(16, 4 , 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 4 , false, 3>;
+  func_degrain[make_tuple(16, 2 , 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 2 , false, 3>;
+  func_degrain[make_tuple(8 , 16, 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 16, false, 3>;
+  func_degrain[make_tuple(8 , 8 , 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 8 , false, 3>;
+  func_degrain[make_tuple(8 , 4 , 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 4 , false, 3>;
+  func_degrain[make_tuple(8 , 2 , 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 2 , false, 3>;
+  func_degrain[make_tuple(8 , 1 , 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 1 , false, 3>;
+  func_degrain[make_tuple(4 , 8 , 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 4 , 8 , false, 3>;
+  func_degrain[make_tuple(4 , 4 , 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 4 , 4 , false, 3>;
+  func_degrain[make_tuple(4 , 2 , 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 4 , 2 , false, 3>;
+  func_degrain[make_tuple(2 , 4 , 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 2 , 4 , false, 3>;
+  func_degrain[make_tuple(2 , 2 , 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 2 , 2 , false, 3>;
+  // C, level3, lsb=true
+#if 0
+  func_degrain[make_tuple(32, 32, 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 32, true, 3>;
+  func_degrain[make_tuple(32, 16, 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 16, true, 3>;
+  func_degrain[make_tuple(32, 8 , 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 8 , true, 3>;
+  func_degrain[make_tuple(16, 32, 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 32, true, 3>;
+  func_degrain[make_tuple(16, 16, 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 16, true, 3>;
+  func_degrain[make_tuple(16, 8 , 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 8 , true, 3>;
+  func_degrain[make_tuple(16, 4 , 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 4 , true, 3>;
+  func_degrain[make_tuple(16, 2 , 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 2 , true, 3>;
+  func_degrain[make_tuple(8 , 16, 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 16, true, 3>;
+  func_degrain[make_tuple(8 , 8 , 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 8 , true, 3>;
+  func_degrain[make_tuple(8 , 4 , 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 4 , true, 3>;
+  func_degrain[make_tuple(8 , 2 , 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 2 , true, 3>;
+  func_degrain[make_tuple(8 , 1 , 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 1 , true, 3>;
+  func_degrain[make_tuple(4 , 8 , 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 4 , 8 , true, 3>;
+  func_degrain[make_tuple(4 , 4 , 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 4 , 4 , true, 3>;
+  func_degrain[make_tuple(4 , 2 , 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 4 , 2 , true, 3>;
+  func_degrain[make_tuple(2 , 4 , 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 2 , 4 , true, 3>;
+  func_degrain[make_tuple(2 , 2 , 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 2 , 2 , true, 3>;
+#endif
+  // C, level4, lsb=false
+  func_degrain[make_tuple(32, 32, 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 32, false, 4>;
+  func_degrain[make_tuple(32, 16, 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 16, false, 4>;
+  func_degrain[make_tuple(32, 8 , 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 8 , false, 4>;
+  func_degrain[make_tuple(16, 32, 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 32, false, 4>;
+  func_degrain[make_tuple(16, 16, 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 16, false, 4>;
+  func_degrain[make_tuple(16, 8 , 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 8 , false, 4>;
+  func_degrain[make_tuple(16, 4 , 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 4 , false, 4>;
+  func_degrain[make_tuple(16, 2 , 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 2 , false, 4>;
+  func_degrain[make_tuple(8 , 16, 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 16, false, 4>;
+  func_degrain[make_tuple(8 , 8 , 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 8 , false, 4>;
+  func_degrain[make_tuple(8 , 4 , 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 4 , false, 4>;
+  func_degrain[make_tuple(8 , 2 , 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 2 , false, 4>;
+  func_degrain[make_tuple(8 , 1 , 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 1 , false, 4>;
+  func_degrain[make_tuple(4 , 8 , 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 4 , 8 , false, 4>;
+  func_degrain[make_tuple(4 , 4 , 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 4 , 4 , false, 4>;
+  func_degrain[make_tuple(4 , 2 , 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 4 , 2 , false, 4>;
+  func_degrain[make_tuple(2 , 4 , 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 2 , 4 , false, 4>;
+  func_degrain[make_tuple(2 , 2 , 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 2 , 2 , false, 4>;
+  // C, level4, lsb=true
+#if 0
+  func_degrain[make_tuple(32, 32, 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 32, true, 4>;
+  func_degrain[make_tuple(32, 16, 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 16, true, 4>;
+  func_degrain[make_tuple(32, 8 , 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 8 , true, 4>;
+  func_degrain[make_tuple(16, 32, 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 32, true, 4>;
+  func_degrain[make_tuple(16, 16, 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 16, true, 4>;
+  func_degrain[make_tuple(16, 8 , 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 8 , true, 4>;
+  func_degrain[make_tuple(16, 4 , 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 4 , true, 4>;
+  func_degrain[make_tuple(16, 2 , 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 2 , true, 4>;
+  func_degrain[make_tuple(8 , 16, 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 16, true, 4>;
+  func_degrain[make_tuple(8 , 8 , 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 8 , true, 4>;
+  func_degrain[make_tuple(8 , 4 , 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 4 , true, 4>;
+  func_degrain[make_tuple(8 , 2 , 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 2 , true, 4>;
+  func_degrain[make_tuple(8 , 1 , 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 1 , true, 4>;
+  func_degrain[make_tuple(4 , 8 , 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 4 , 8 , true, 4>;
+  func_degrain[make_tuple(4 , 4 , 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 4 , 4 , true, 4>;
+  func_degrain[make_tuple(4 , 2 , 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 4 , 2 , true, 4>;
+  func_degrain[make_tuple(2 , 4 , 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 2 , 4 , true, 4>;
+  func_degrain[make_tuple(2 , 2 , 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 2 , 2 , true, 4>;
+#endif
+  // C, level5, lsb=false
+  func_degrain[make_tuple(32, 32, 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 32, false, 5>;
+  func_degrain[make_tuple(32, 16, 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 16, false, 5>;
+  func_degrain[make_tuple(32, 8 , 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 8 , false, 5>;
+  func_degrain[make_tuple(16, 32, 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 32, false, 5>;
+  func_degrain[make_tuple(16, 16, 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 16, false, 5>;
+  func_degrain[make_tuple(16, 8 , 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 8 , false, 5>;
+  func_degrain[make_tuple(16, 4 , 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 4 , false, 5>;
+  func_degrain[make_tuple(16, 2 , 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 2 , false, 5>;
+  func_degrain[make_tuple(8 , 16, 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 16, false, 5>;
+  func_degrain[make_tuple(8 , 8 , 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 8 , false, 5>;
+  func_degrain[make_tuple(8 , 4 , 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 4 , false, 5>;
+  func_degrain[make_tuple(8 , 2 , 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 2 , false, 5>;
+  func_degrain[make_tuple(8 , 1 , 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 1 , false, 5>;
+  func_degrain[make_tuple(4 , 8 , 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 4 , 8 , false, 5>;
+  func_degrain[make_tuple(4 , 4 , 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 4 , 4 , false, 5>;
+  func_degrain[make_tuple(4 , 2 , 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 4 , 2 , false, 5>;
+  func_degrain[make_tuple(2 , 4 , 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 2 , 4 , false, 5>;
+  func_degrain[make_tuple(2 , 2 , 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 2 , 2 , false, 5>;
+  // C, level5, lsb=true
+#if 0
+  func_degrain[make_tuple(32, 32, 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 32, true, 5>;
+  func_degrain[make_tuple(32, 16, 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 16, true, 5>;
+  func_degrain[make_tuple(32, 8 , 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 8 , true, 5>;
+  func_degrain[make_tuple(16, 32, 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 32, true, 5>;
+  func_degrain[make_tuple(16, 16, 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 16, true, 5>;
+  func_degrain[make_tuple(16, 8 , 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 8 , true, 5>;
+  func_degrain[make_tuple(16, 4 , 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 4 , true, 5>;
+  func_degrain[make_tuple(16, 2 , 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 2 , true, 5>;
+  func_degrain[make_tuple(8 , 16, 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 16, true, 5>;
+  func_degrain[make_tuple(8 , 8 , 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 8 , true, 5>;
+  func_degrain[make_tuple(8 , 4 , 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 4 , true, 5>;
+  func_degrain[make_tuple(8 , 2 , 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 2 , true, 5>;
+  func_degrain[make_tuple(8 , 1 , 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 8 , 1 , true, 5>;
+  func_degrain[make_tuple(4 , 8 , 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 4 , 8 , true, 5>;
+  func_degrain[make_tuple(4 , 4 , 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 4 , 4 , true, 5>;
+  func_degrain[make_tuple(4 , 2 , 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 4 , 2 , true, 5>;
+  func_degrain[make_tuple(2 , 4 , 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 2 , 4 , true, 5>;
+  func_degrain[make_tuple(2 , 2 , 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 2 , 2 , true, 5>;
+#endif
+
+// SSE2
+// level1, lsb=false
+  func_degrain[make_tuple(32, 32, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<32, 32, false, 1>;
+  func_degrain[make_tuple(32, 16, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<32, 16, false, 1>;
+  func_degrain[make_tuple(32, 8 , 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<32, 8 , false, 1>;
+  func_degrain[make_tuple(16, 32, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<16, 32, false, 1>;
+  func_degrain[make_tuple(16, 16, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<16, 16, false, 1>;
+  func_degrain[make_tuple(16, 8 , 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<16, 8 , false, 1>;
+  func_degrain[make_tuple(16, 4 , 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<16, 4 , false, 1>;
+  func_degrain[make_tuple(16, 2 , 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<16, 2 , false, 1>;
+  func_degrain[make_tuple(8 , 16, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<8 , 16, false, 1>;
+  func_degrain[make_tuple(8 , 8 , 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<8 , 8 , false, 1>;
+  func_degrain[make_tuple(8 , 4 , 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<8 , 4 , false, 1>;
+  func_degrain[make_tuple(8 , 2 , 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<8 , 2 , false, 1>;
+  func_degrain[make_tuple(8 , 1 , 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<8 , 1 , false, 1>;
+  func_degrain[make_tuple(4 , 8 , 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<4 , 8 , false, 1>;
+  func_degrain[make_tuple(4 , 4 , 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<4 , 4 , false, 1>;
+  func_degrain[make_tuple(4 , 2 , 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<4 , 2 , false, 1>;
+  func_degrain[make_tuple(2 , 4 , 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<2 , 4 , false, 1>;
+  func_degrain[make_tuple(2 , 2 , 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<2 , 2 , false, 1>;
+  // level1 lsb=true
+  func_degrain[make_tuple(32, 32, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<32, 32, true, 1>;
+  func_degrain[make_tuple(32, 16, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<32, 16, true, 1>;
+  func_degrain[make_tuple(32, 8 , 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<32, 8 , true, 1>;
+  func_degrain[make_tuple(16, 32, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<16, 32, true, 1>;
+  func_degrain[make_tuple(16, 16, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<16, 16, true, 1>;
+  func_degrain[make_tuple(16, 8 , 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<16, 8 , true, 1>;
+  func_degrain[make_tuple(16, 4 , 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<16, 4 , true, 1>;
+  func_degrain[make_tuple(16, 2 , 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<16, 2 , true, 1>;
+  func_degrain[make_tuple(8 , 16, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<8 , 16, true, 1>;
+  func_degrain[make_tuple(8 , 8 , 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<8 , 8 , true, 1>;
+  func_degrain[make_tuple(8 , 4 , 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<8 , 4 , true, 1>;
+  func_degrain[make_tuple(8 , 2 , 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<8 , 2 , true, 1>;
+  func_degrain[make_tuple(8 , 1 , 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<8 , 1 , true, 1>;
+  func_degrain[make_tuple(4 , 8 , 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<4 , 8 , true, 1>;
+  func_degrain[make_tuple(4 , 4 , 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<4 , 4 , true, 1>;
+  func_degrain[make_tuple(4 , 2 , 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<4 , 2 , true, 1>;
+  func_degrain[make_tuple(2 , 4 , 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<2 , 4 , true, 1>;
+  func_degrain[make_tuple(2 , 2 , 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<2 , 2 , true, 1>;
+
+
+  // level2, lsb=false
+  func_degrain[make_tuple(32, 32, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<32, 32, false, 2>;
+  func_degrain[make_tuple(32, 16, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<32, 16, false, 2>;
+  func_degrain[make_tuple(32, 8 , 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<32, 8 , false, 2>;
+  func_degrain[make_tuple(16, 32, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<16, 32, false, 2>;
+  func_degrain[make_tuple(16, 16, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<16, 16, false, 2>;
+  func_degrain[make_tuple(16, 8 , 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<16, 8 , false, 2>;
+  func_degrain[make_tuple(16, 4 , 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<16, 4 , false, 2>;
+  func_degrain[make_tuple(16, 2 , 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<16, 2 , false, 2>;
+  func_degrain[make_tuple(8 , 16, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<8 , 16, false, 2>;
+  func_degrain[make_tuple(8 , 8 , 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<8 , 8 , false, 2>;
+  func_degrain[make_tuple(8 , 4 , 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<8 , 4 , false, 2>;
+  func_degrain[make_tuple(8 , 2 , 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<8 , 2 , false, 2>;
+  func_degrain[make_tuple(8 , 1 , 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<8 , 1 , false, 2>;
+  func_degrain[make_tuple(4 , 8 , 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<4 , 8 , false, 2>;
+  func_degrain[make_tuple(4 , 4 , 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<4 , 4 , false, 2>;
+  func_degrain[make_tuple(4 , 2 , 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<4 , 2 , false, 2>;
+  func_degrain[make_tuple(2 , 4 , 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<2 , 4 , false, 2>;
+  func_degrain[make_tuple(2 , 2 , 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<2 , 2 , false, 2>;
+  // level2 lsb=true
+  func_degrain[make_tuple(32, 32, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<32, 32, true, 2>;
+  func_degrain[make_tuple(32, 16, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<32, 16, true, 2>;
+  func_degrain[make_tuple(32, 8 , 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<32, 8 , true, 2>;
+  func_degrain[make_tuple(16, 32, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<16, 32, true, 2>;
+  func_degrain[make_tuple(16, 16, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<16, 16, true, 2>;
+  func_degrain[make_tuple(16, 8 , 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<16, 8 , true, 2>;
+  func_degrain[make_tuple(16, 4 , 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<16, 4 , true, 2>;
+  func_degrain[make_tuple(16, 2 , 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<16, 2 , true, 2>;
+  func_degrain[make_tuple(8 , 16, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<8 , 16, true, 2>;
+  func_degrain[make_tuple(8 , 8 , 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<8 , 8 , true, 2>;
+  func_degrain[make_tuple(8 , 4 , 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<8 , 4 , true, 2>;
+  func_degrain[make_tuple(8 , 2 , 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<8 , 2 , true, 2>;
+  func_degrain[make_tuple(8 , 1 , 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<8 , 1 , true, 2>;
+  func_degrain[make_tuple(4 , 8 , 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<4 , 8 , true, 2>;
+  func_degrain[make_tuple(4 , 4 , 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<4 , 4 , true, 2>;
+  func_degrain[make_tuple(4 , 2 , 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<4 , 2 , true, 2>;
+  func_degrain[make_tuple(2 , 4 , 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<2 , 4 , true, 2>;
+  func_degrain[make_tuple(2 , 2 , 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<2 , 2 , true, 2>;
+
+  // level3, lsb=false
+  func_degrain[make_tuple(32, 32, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<32, 32, false, 3>;
+  func_degrain[make_tuple(32, 16, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<32, 16, false, 3>;
+  func_degrain[make_tuple(32, 8 , 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<32, 8 , false, 3>;
+  func_degrain[make_tuple(16, 32, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<16, 32, false, 3>;
+  func_degrain[make_tuple(16, 16, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<16, 16, false, 3>;
+  func_degrain[make_tuple(16, 8 , 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<16, 8 , false, 3>;
+  func_degrain[make_tuple(16, 4 , 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<16, 4 , false, 3>;
+  func_degrain[make_tuple(16, 2 , 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<16, 2 , false, 3>;
+  func_degrain[make_tuple(8 , 16, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<8 , 16, false, 3>;
+  func_degrain[make_tuple(8 , 8 , 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<8 , 8 , false, 3>;
+  func_degrain[make_tuple(8 , 4 , 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<8 , 4 , false, 3>;
+  func_degrain[make_tuple(8 , 2 , 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<8 , 2 , false, 3>;
+  func_degrain[make_tuple(8 , 1 , 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<8 , 1 , false, 3>;
+  func_degrain[make_tuple(4 , 8 , 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<4 , 8 , false, 3>;
+  func_degrain[make_tuple(4 , 4 , 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<4 , 4 , false, 3>;
+  func_degrain[make_tuple(4 , 2 , 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<4 , 2 , false, 3>;
+  func_degrain[make_tuple(2 , 4 , 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<2 , 4 , false, 3>;
+  func_degrain[make_tuple(2 , 2 , 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<2 , 2 , false, 3>;
+  // level3, lsb=true
+  func_degrain[make_tuple(32, 32, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<32, 32, true, 3>;
+  func_degrain[make_tuple(32, 16, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<32, 16, true, 3>;
+  func_degrain[make_tuple(32, 8 , 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<32, 8 , true, 3>;
+  func_degrain[make_tuple(16, 32, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<16, 32, true, 3>;
+  func_degrain[make_tuple(16, 16, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<16, 16, true, 3>;
+  func_degrain[make_tuple(16, 8 , 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<16, 8 , true, 3>;
+  func_degrain[make_tuple(16, 4 , 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<16, 4 , true, 3>;
+  func_degrain[make_tuple(16, 2 , 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<16, 2 , true, 3>;
+  func_degrain[make_tuple(8 , 16, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<8 , 16, true, 3>;
+  func_degrain[make_tuple(8 , 8 , 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<8 , 8 , true, 3>;
+  func_degrain[make_tuple(8 , 4 , 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<8 , 4 , true, 3>;
+  func_degrain[make_tuple(8 , 2 , 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<8 , 2 , true, 3>;
+  func_degrain[make_tuple(8 , 1 , 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<8 , 1 , true, 3>;
+  func_degrain[make_tuple(4 , 8 , 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<4 , 8 , true, 3>;
+  func_degrain[make_tuple(4 , 4 , 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<4 , 4 , true, 3>;
+  func_degrain[make_tuple(4 , 2 , 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<4 , 2 , true, 3>;
+  func_degrain[make_tuple(2 , 4 , 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<2 , 4 , true, 3>;
+  func_degrain[make_tuple(2 , 2 , 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<2 , 2 , true, 3>;
+
+  // level4, lsb=false
+  func_degrain[make_tuple(32, 32, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<32, 32, false, 4>;
+  func_degrain[make_tuple(32, 16, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<32, 16, false, 4>;
+  func_degrain[make_tuple(32, 8 , 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<32, 8 , false, 4>;
+  func_degrain[make_tuple(16, 32, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<16, 32, false, 4>;
+  func_degrain[make_tuple(16, 16, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<16, 16, false, 4>;
+  func_degrain[make_tuple(16, 8 , 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<16, 8 , false, 4>;
+  func_degrain[make_tuple(16, 4 , 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<16, 4 , false, 4>;
+  func_degrain[make_tuple(16, 2 , 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<16, 2 , false, 4>;
+  func_degrain[make_tuple(8 , 16, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<8 , 16, false, 4>;
+  func_degrain[make_tuple(8 , 8 , 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<8 , 8 , false, 4>;
+  func_degrain[make_tuple(8 , 4 , 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<8 , 4 , false, 4>;
+  func_degrain[make_tuple(8 , 2 , 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<8 , 2 , false, 4>;
+  func_degrain[make_tuple(8 , 1 , 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<8 , 1 , false, 4>;
+  func_degrain[make_tuple(4 , 8 , 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<4 , 8 , false, 4>;
+  func_degrain[make_tuple(4 , 4 , 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<4 , 4 , false, 4>;
+  func_degrain[make_tuple(4 , 2 , 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<4 , 2 , false, 4>;
+  func_degrain[make_tuple(2 , 4 , 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<2 , 4 , false, 4>;
+  func_degrain[make_tuple(2 , 2 , 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<2 , 2 , false, 4>;
+  // level4, lsb=true
+  func_degrain[make_tuple(32, 32, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<32, 32, true, 4>;
+  func_degrain[make_tuple(32, 16, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<32, 16, true, 4>;
+  func_degrain[make_tuple(32, 8 , 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<32, 8 , true, 4>;
+  func_degrain[make_tuple(16, 32, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<16, 32, true, 4>;
+  func_degrain[make_tuple(16, 16, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<16, 16, true, 4>;
+  func_degrain[make_tuple(16, 8 , 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<16, 8 , true, 4>;
+  func_degrain[make_tuple(16, 4 , 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<16, 4 , true, 4>;
+  func_degrain[make_tuple(16, 2 , 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<16, 2 , true, 4>;
+  func_degrain[make_tuple(8 , 16, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<8 , 16, true, 4>;
+  func_degrain[make_tuple(8 , 8 , 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<8 , 8 , true, 4>;
+  func_degrain[make_tuple(8 , 4 , 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<8 , 4 , true, 4>;
+  func_degrain[make_tuple(8 , 2 , 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<8 , 2 , true, 4>;
+  func_degrain[make_tuple(8 , 1 , 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<8 , 1 , true, 4>;
+  func_degrain[make_tuple(4 , 8 , 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<4 , 8 , true, 4>;
+  func_degrain[make_tuple(4 , 4 , 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<4 , 4 , true, 4>;
+  func_degrain[make_tuple(4 , 2 , 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<4 , 2 , true, 4>;
+  func_degrain[make_tuple(2 , 4 , 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<2 , 4 , true, 4>;
+  func_degrain[make_tuple(2 , 2 , 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<2 , 2 , true, 4>;
+
+  // level5, lsb=false
+  func_degrain[make_tuple(32, 32, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<32, 32, false, 5>;
+  func_degrain[make_tuple(32, 16, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<32, 16, false, 5>;
+  func_degrain[make_tuple(32, 8 , 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<32, 8 , false, 5>;
+  func_degrain[make_tuple(16, 32, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<16, 32, false, 5>;
+  func_degrain[make_tuple(16, 16, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<16, 16, false, 5>;
+  func_degrain[make_tuple(16, 8 , 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<16, 8 , false, 5>;
+  func_degrain[make_tuple(16, 4 , 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<16, 4 , false, 5>;
+  func_degrain[make_tuple(16, 2 , 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<16, 2 , false, 5>;
+  func_degrain[make_tuple(8 , 16, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<8 , 16, false, 5>;
+  func_degrain[make_tuple(8 , 8 , 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<8 , 8 , false, 5>;
+  func_degrain[make_tuple(8 , 4 , 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<8 , 4 , false, 5>;
+  func_degrain[make_tuple(8 , 2 , 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<8 , 2 , false, 5>;
+  func_degrain[make_tuple(8 , 1 , 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<8 , 1 , false, 5>;
+  func_degrain[make_tuple(4 , 8 , 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<4 , 8 , false, 5>;
+  func_degrain[make_tuple(4 , 4 , 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<4 , 4 , false, 5>;
+  func_degrain[make_tuple(4 , 2 , 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<4 , 2 , false, 5>;
+  func_degrain[make_tuple(2 , 4 , 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<2 , 4 , false, 5>;
+  func_degrain[make_tuple(2 , 2 , 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<2 , 2 , false, 5>;
+  // level5, lsb=true
+  func_degrain[make_tuple(32, 32, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<32, 32, true, 5>;
+  func_degrain[make_tuple(32, 16, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<32, 16, true, 5>;
+  func_degrain[make_tuple(32, 8 , 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<32, 8 , true, 5>;
+  func_degrain[make_tuple(16, 32, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<16, 32, true, 5>;
+  func_degrain[make_tuple(16, 16, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<16, 16, true, 5>;
+  func_degrain[make_tuple(16, 8 , 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<16, 8 , true, 5>;
+  func_degrain[make_tuple(16, 4 , 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<16, 4 , true, 5>;
+  func_degrain[make_tuple(16, 2 , 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<16, 2 , true, 5>;
+  func_degrain[make_tuple(8 , 16, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<8 , 16, true, 5>;
+  func_degrain[make_tuple(8 , 8 , 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<8 , 8 , true, 5>;
+  func_degrain[make_tuple(8 , 4 , 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<8 , 4 , true, 5>;
+  func_degrain[make_tuple(8 , 2 , 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<8 , 2 , true, 5>;
+  func_degrain[make_tuple(8 , 1 , 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<8 , 1 , true, 5>;
+  func_degrain[make_tuple(4 , 8 , 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<4 , 8 , true, 5>;
+  func_degrain[make_tuple(4 , 4 , 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<4 , 4 , true, 5>;
+  func_degrain[make_tuple(4 , 2 , 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<4 , 2 , true, 5>;
+  func_degrain[make_tuple(2 , 4 , 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<2 , 4 , true, 5>;
+  func_degrain[make_tuple(2 , 2 , 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<2 , 2 , true, 5>;
+
+  Denoise1to5Function *result = func_degrain[make_tuple(BlockX, BlockY, pixelsize, lsb_flag, level, arch)];
+  if(!result) // fallback to C
+    result = func_degrain[make_tuple(BlockX, BlockY, pixelsize, lsb_flag, level, NO_SIMD)];
+  return result;
+}
 
 
 // If mvfw is null, mvbw is assumed to be a radius-3 multi-vector clip.
-MVDegrain3::MVDegrain3 (
-	PClip _child, PClip _super, PClip mvbw, PClip mvfw, PClip mvbw2,  PClip mvfw2, PClip mvbw3,  PClip mvfw3,
+MVDegrainX::MVDegrainX (
+	PClip _child, PClip _super, PClip mvbw, PClip mvfw, PClip mvbw2,  PClip mvfw2, PClip mvbw3,  PClip mvfw3, PClip mvbw4,  PClip mvfw4, PClip mvbw5,  PClip mvfw5,
 	int _thSAD, int _thSADC, int _YUVplanes, int _nLimit, int _nLimitC,
 	int _nSCD1, int _nSCD2, bool _isse2, bool _planar, bool _lsb_flag,
-	bool mt_flag, IScriptEnvironment* env
+	bool mt_flag, int _level, IScriptEnvironment* env
 )
 :	GenericVideoFilter (_child)
-,	MVFilter ((! mvfw) ? mvbw : mvfw3, "MDegrain3",    env, (! mvfw) ? 6 : 1, (! mvfw) ? 5 : 0)
-,	mvClipF3 ((! mvfw) ? mvbw : mvfw3, _nSCD1, _nSCD2, env, (! mvfw) ? 6 : 1, (! mvfw) ? 5 : 0)
-,	mvClipF2 ((! mvfw) ? mvbw : mvfw2, _nSCD1, _nSCD2, env, (! mvfw) ? 6 : 1, (! mvfw) ? 3 : 0)
-,	mvClipF  ((! mvfw) ? mvbw : mvfw,  _nSCD1, _nSCD2, env, (! mvfw) ? 6 : 1, (! mvfw) ? 1 : 0)
-,	mvClipB  ((! mvfw) ? mvbw : mvbw,  _nSCD1, _nSCD2, env, (! mvfw) ? 6 : 1, (! mvfw) ? 0 : 0)
-,	mvClipB2 ((! mvfw) ? mvbw : mvbw2, _nSCD1, _nSCD2, env, (! mvfw) ? 6 : 1, (! mvfw) ? 2 : 0)
-,	mvClipB3 ((! mvfw) ? mvbw : mvbw3, _nSCD1, _nSCD2, env, (! mvfw) ? 6 : 1, (! mvfw) ? 4 : 0)
+//,	MVFilter ((! mvfw) ? mvbw : mvfw,  "MDegrain1",    env, (! mvfw) ? 2 : 1, (! mvfw) ? 1 : 0)
+//,	MVFilter ((! mvfw) ? mvbw : mvfw2, "MDegrain2",    env, (! mvfw) ? 4 : 1, (! mvfw) ? 3 : 0)
+,	MVFilter (
+  (! mvfw) ? mvbw : (_level==1 ? mvfw : (_level == 2 ? mvfw2 : (_level == 3 ? mvfw3 : (_level == 4 ? mvfw4 : mvfw5)))),  // mvfw/mvfw2/mvfw3/mvfw4/mvfw5
+  _level == 1 ? "MDegrain1" : (_level==2 ? "MDegrain2" : (_level==3 ? "MDegrain3" : (_level==4 ? "MDegrain4" : "MDegrain5"))),   // MDegrain1/2/3/4/5
+  env, 
+  (! mvfw) ? _level*2 : 1, (! mvfw) ? _level*2-1 : 0) // 1/3/5
+/*
+,	mvClipF  ((! mvfw) ? mvbw : mvfw,  _nSCD1, _nSCD2, env, (! mvfw) ? 2 : 1, (! mvfw) ? 1 : 0)
+,	mvClipB  ((! mvfw) ? mvbw : mvbw,  _nSCD1, _nSCD2, env, (! mvfw) ? 2 : 1, (! mvfw) ? 0 : 0)
+
+,	mvClipF2 ((! mvfw) ? mvbw : mvfw2, _nSCD1, _nSCD2, env, (! mvfw) ? 4 : 1, (! mvfw) ? 3 : 0)
+,	mvClipF  ((! mvfw) ? mvbw : mvfw,  _nSCD1, _nSCD2, env, (! mvfw) ? 4 : 1, (! mvfw) ? 1 : 0)
+,	mvClipB  ((! mvfw) ? mvbw : mvbw,  _nSCD1, _nSCD2, env, (! mvfw) ? 4 : 1, (! mvfw) ? 0 : 0)
+,	mvClipB2 ((! mvfw) ? mvbw : mvbw2, _nSCD1, _nSCD2, env, (! mvfw) ? 4 : 1, (! mvfw) ? 2 : 0)
+*/
+
 ,	super (_super)
 ,	lsb_flag (_lsb_flag)
 ,	height_lsb_mul ((_lsb_flag) ? 2 : 1)
 ,	DstShort (0)
 ,	DstInt (0)
+, level(_level)
 {
-	thSAD = _thSAD*mvClipB.GetThSCD1()/_nSCD1; // normalize to block SAD
-	thSADC = _thSADC*mvClipB.GetThSCD1()/_nSCD1; // chroma
+  const int group_len = level * 2; // 2, 4, 6
+  mvClipF[0] = new MVClip((!mvfw) ? mvbw : mvfw, _nSCD1, _nSCD2, env, (!mvfw) ? group_len : 1, (!mvfw) ? 1 : 0);
+  mvClipB[0] = new MVClip((!mvfw) ? mvbw : mvbw, _nSCD1, _nSCD2, env, (!mvfw) ? group_len : 1, (!mvfw) ? 0 : 0);
+  if(level>=2) {
+    mvClipF[1] = new MVClip((!mvfw) ? mvbw : mvfw2, _nSCD1, _nSCD2, env, (!mvfw) ? group_len : 1, (!mvfw) ? 3 : 0);
+    mvClipB[1] = new MVClip((!mvfw) ? mvbw : mvbw2, _nSCD1, _nSCD2, env, (!mvfw) ? group_len : 1, (!mvfw) ? 2 : 0);
+    if(level>=3) {
+      mvClipF[2] = new MVClip((!mvfw) ? mvbw : mvfw3, _nSCD1, _nSCD2, env, (!mvfw) ? group_len : 1, (!mvfw) ? 5 : 0);
+      mvClipB[2] = new MVClip((!mvfw) ? mvbw : mvbw3, _nSCD1, _nSCD2, env, (!mvfw) ? group_len : 1, (!mvfw) ? 4 : 0);
+      if(level>=4) {
+        mvClipF[3] = new MVClip((!mvfw) ? mvbw : mvfw4, _nSCD1, _nSCD2, env, (!mvfw) ? group_len : 1, (!mvfw) ? 7 : 0);
+        mvClipB[3] = new MVClip((!mvfw) ? mvbw : mvbw4, _nSCD1, _nSCD2, env, (!mvfw) ? group_len : 1, (!mvfw) ? 6 : 0);
+        if(level>=5) {
+          mvClipF[4] = new MVClip((!mvfw) ? mvbw : mvfw5, _nSCD1, _nSCD2, env, (!mvfw) ? group_len : 1, (!mvfw) ? 9 : 0);
+          mvClipB[4] = new MVClip((!mvfw) ? mvbw : mvbw5, _nSCD1, _nSCD2, env, (!mvfw) ? group_len : 1, (!mvfw) ? 8 : 0);
+        }
+      }
+    }
+  }
+
+  thSAD = _thSAD * mvClipB[0]->GetThSCD1() / _nSCD1; // normalize to block SAD
+  thSADC = _thSADC * mvClipB[0]->GetThSCD1() / _nSCD1; // chroma
 	YUVplanes = _YUVplanes;
 	nLimit = _nLimit;
 	nLimitC = _nLimitC;
 	isse2 = _isse2;
 	planar = _planar;
 
-	CheckSimilarity(mvClipB,  "mvbw",  env);
-	CheckSimilarity(mvClipF,  "mvfw",  env);
-	CheckSimilarity(mvClipF2, "mvfw2", env);
-	CheckSimilarity(mvClipB2, "mvbw2", env);
-	CheckSimilarity(mvClipF3, "mvfw3", env);
-	CheckSimilarity(mvClipB3, "mvbw3", env);
+  CheckSimilarity(*mvClipB[0], "mvbw",  env);
+  CheckSimilarity(*mvClipF[0], "mvfw",  env);
+  if(level>=2) {
+    CheckSimilarity(*mvClipF[1], "mvfw2", env);
+    CheckSimilarity(*mvClipB[1], "mvbw2", env);
+    if(level>=3) {
+      CheckSimilarity(*mvClipF[2], "mvfw3", env);
+      CheckSimilarity(*mvClipB[2], "mvbw3", env);
+      if(level>=4) {
+        CheckSimilarity(*mvClipF[3], "mvfw4", env);
+        CheckSimilarity(*mvClipB[3], "mvbw4", env);
+        if(level>=5) {
+          CheckSimilarity(*mvClipF[4], "mvfw5", env);
+          CheckSimilarity(*mvClipB[4], "mvbw5", env);
+        }
+      }
+    }
+  }
 
-	if (mvClipB.GetDeltaFrame() <= 0 || mvClipB.GetDeltaFrame() <= 0)
-		env->ThrowError("MDegrain1: cannot use motion vectors with absolute frame references.");
+  if (mvClipB[0]->GetDeltaFrame() <= 0 || mvClipB[0]->GetDeltaFrame() <= 0)   // 2.5.11.22, 
+    //todo check PF 160926: 2nd must be clipF, not the same clipB
+    env->ThrowError("MDegrain%d: cannot use motion vectors with absolute frame references.", level);
 
 	const ::VideoInfo &	vi_super = _super->GetVideoInfo ();
 
@@ -161,12 +818,10 @@ MVDegrain3::MVDegrain3 (
 	int nSuperPel = params.nPel;
 	nSuperModeYUV = params.nModeYUV;
 	int nSuperLevels = params.nLevels;
-	pRefBGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse2, xRatioUV, yRatioUV, pixelsize_super, mt_flag);
-	pRefFGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse2, xRatioUV, yRatioUV, pixelsize_super, mt_flag);
-	pRefB2GOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse2, xRatioUV, yRatioUV, pixelsize_super, mt_flag);
-	pRefF2GOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse2, xRatioUV, yRatioUV, pixelsize_super, mt_flag);
-	pRefB3GOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse2, xRatioUV, yRatioUV, pixelsize_super, mt_flag);
-	pRefF3GOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse2, xRatioUV, yRatioUV, pixelsize_super, mt_flag);
+  for(int i=0;i<level;i++) {
+    pRefBGOF[i] = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse2, xRatioUV, yRatioUV, pixelsize_super, mt_flag);
+    pRefFGOF[i] = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse2, xRatioUV, yRatioUV, pixelsize_super, mt_flag);
+  }
 	int nSuperWidth  = vi_super.width;
 	int nSuperHeight = vi_super.height;
 
@@ -184,13 +839,13 @@ MVDegrain3::MVDegrain3 (
 		DstPlanes =  new YUY2Planes(nWidth, nHeight * height_lsb_mul);
 		SrcPlanes =  new YUY2Planes(nWidth, nHeight);
    }
-   dstShortPitch = ((nWidth + 15)/16)*16;
-	dstIntPitch = dstShortPitch;
+   dstShortPitch = ((nWidth + 15)/16)*16;  // short (2 byte) granularity
+	 dstIntPitch = dstShortPitch; // int (4 byte) granulairty
    if (nOverlapX >0 || nOverlapY>0)
    {
 		OverWins = new OverlapWindows(nBlkSizeX, nBlkSizeY, nOverlapX, nOverlapY);
 		OverWinsUV = new OverlapWindows(nBlkSizeX/xRatioUV, nBlkSizeY/yRatioUV, nOverlapX/xRatioUV, nOverlapY/yRatioUV);
-		if (lsb_flag)
+		if (lsb_flag || pixelsize == 2)
 		{
 			DstInt = new int [dstIntPitch * nHeight];
 		}
@@ -207,22 +862,38 @@ MVDegrain3::MVDegrain3 (
    arch_t arch;
    if ((pixelsize == 1) && (((env->GetCPUFlags() & CPUF_SSE2) != 0) & isse2))
        arch = USE_SSE2;
-   else if ((pixelsize == 1) && isse2)
-       arch = USE_MMX;
+   /*else if ((pixelsize == 1) && isse2) // PF no MMX support
+       arch = USE_MMX;*/
    else
        arch = NO_SIMD;
 
    // C only -> NO_SIMD
+   // lsb 16-bit hack: uint8_t only
    OVERSLUMALSB   = get_overlaps_lsb_function(nBlkSizeX, nBlkSizeY, sizeof(uint8_t), NO_SIMD);
    OVERSCHROMALSB = get_overlaps_lsb_function(nBlkSizeX/xRatioUV, nBlkSizeY/yRatioUV, sizeof(uint8_t), NO_SIMD);
 
-   OVERSLUMA   = get_overlaps_function(nBlkSizeX, nBlkSizeY, pixelsize, arch);
-   OVERSCHROMA = get_overlaps_function(nBlkSizeX/xRatioUV, nBlkSizeY/yRatioUV, pixelsize, arch);
+   OVERSLUMA   = get_overlaps_function(nBlkSizeX, nBlkSizeY, sizeof(uint8_t), arch);
+   OVERSCHROMA = get_overlaps_function(nBlkSizeX/xRatioUV, nBlkSizeY/yRatioUV, sizeof(uint8_t), arch);
 
-   DEGRAINLUMA = get_denoise3_function(nBlkSizeX, nBlkSizeY, pixelsize, arch);
-   DEGRAINCHROMA = get_denoise3_function(nBlkSizeX/xRatioUV, nBlkSizeY/yRatioUV, pixelsize, arch);
 
-	const int		tmp_size = 32 * 32;
+  // todo: like lsb function int ptr
+   OVERSLUMA16   = get_overlaps_function(nBlkSizeX, nBlkSizeY, sizeof(uint16_t), NO_SIMD);
+   OVERSCHROMA16   = get_overlaps_function(nBlkSizeX, nBlkSizeY, sizeof(uint16_t), NO_SIMD);
+
+   //DEGRAINLUMA = get_denoise3_function(nBlkSizeX, nBlkSizeY, pixelsize, arch);
+   //DEGRAINCHROMA = get_denoise3_function(nBlkSizeX/xRatioUV, nBlkSizeY/yRatioUV, pixelsize, arch);
+   DEGRAINLUMA = get_denoise123_function(nBlkSizeX, nBlkSizeY, pixelsize, lsb_flag, level, arch);
+   DEGRAINCHROMA = get_denoise123_function(nBlkSizeX/xRatioUV, nBlkSizeY/yRatioUV, pixelsize, lsb_flag, level, arch);
+   if(!OVERSLUMA)
+     env->ThrowError("MDegrain%d : no valid OVERSLUMA function for %dx%d, pixelsize=%d, lsb_flag=%d, level=%d", level, nBlkSizeX, nBlkSizeY, pixelsize, (int)lsb_flag, level);
+   if(!OVERSCHROMA)
+     env->ThrowError("MDegrain%d : no valid OVERSCHROMA function for %dx%d, pixelsize=%d, lsb_flag=%d, level=%d", level, nBlkSizeX, nBlkSizeY, pixelsize, (int)lsb_flag, level);
+   if(!DEGRAINLUMA)
+     env->ThrowError("MDegrain%d : no valid DEGRAINLUMA function for %dx%d, pixelsize=%d, lsb_flag=%d, level=%d", level, nBlkSizeX, nBlkSizeY, pixelsize, (int)lsb_flag, level);
+   if(!DEGRAINCHROMA)
+     env->ThrowError("MDegrain%d : no valid DEGRAINCHROMA function for %dx%d, pixelsize=%d, lsb_flag=%d, level=%d", level, nBlkSizeX, nBlkSizeY, pixelsize, (int)lsb_flag, level);
+
+	const int		tmp_size = 32 * 32 * pixelsize;
 	tmpBlock = new BYTE[tmp_size * height_lsb_mul];
 	tmpBlockLsb = (lsb_flag) ? (tmpBlock + tmp_size) : 0;
 
@@ -233,7 +904,7 @@ MVDegrain3::MVDegrain3 (
 }
 
 
-MVDegrain3::~MVDegrain3()
+MVDegrainX::~MVDegrainX()
 {
    if ( (pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 )
    {
@@ -248,18 +919,20 @@ MVDegrain3::~MVDegrain3()
 	   delete [] DstInt;
    }
    delete [] tmpBlock;
-   delete pRefBGOF;
-   delete pRefFGOF;
-   delete pRefB2GOF;
-   delete pRefF2GOF;
-   delete pRefB3GOF;
-   delete pRefF3GOF;
+   for (int i = 0; i < level; i++) {
+     delete pRefBGOF[i];
+     delete pRefFGOF[i];
+   }
+   //delete pRefB2GOF;
+   //delete pRefF2GOF;
+   //delete pRefB3GOF;
+   //delete pRefF3GOF;
 }
 
 
 
 
-PVideoFrame __stdcall MVDegrain3::GetFrame(int n, IScriptEnvironment* env)
+PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
 {
 	int nWidth_B = nBlkX*(nBlkSizeX - nOverlapX) + nOverlapX;
 	int nHeight_B = nBlkY*(nBlkSizeY - nOverlapY) + nOverlapY;
@@ -267,22 +940,40 @@ PVideoFrame __stdcall MVDegrain3::GetFrame(int n, IScriptEnvironment* env)
 	BYTE *pDst[3], *pDstCur[3];
 	const BYTE *pSrcCur[3];
 	const BYTE *pSrc[3];
-	const BYTE *pRefB[3];
-	const BYTE *pRefF[3];
-	const BYTE *pRefB2[3];
-	const BYTE *pRefF2[3];
-	const BYTE *pRefB3[3];
-	const BYTE *pRefF3[3];
+	const BYTE *pRefB[MAX_DEGRAIN][3];
+	const BYTE *pRefF[MAX_DEGRAIN][3];
+	//const BYTE *pRefB2[3];
+	//const BYTE *pRefF2[3];
+	//const BYTE *pRefB3[3];
+	//const BYTE *pRefF3[3];
 	int nDstPitches[3], nSrcPitches[3];
-	int nRefBPitches[3], nRefFPitches[3];
-	int nRefB2Pitches[3], nRefF2Pitches[3];
-	int nRefB3Pitches[3], nRefF3Pitches[3];
+	int nRefBPitches[MAX_DEGRAIN][3], nRefFPitches[MAX_DEGRAIN][3];
+	//int nRefB2Pitches[3], nRefF2Pitches[3];
+	//int nRefB3Pitches[3], nRefF3Pitches[3];
 	unsigned char *pDstYUY2;
 	const unsigned char *pSrcYUY2;
 	int nDstPitchYUY2;
 	int nSrcPitchYUY2;
-	bool isUsableB, isUsableF, isUsableB2, isUsableF2, isUsableB3, isUsableF3;
+  bool isUsableB[MAX_DEGRAIN], isUsableF[MAX_DEGRAIN]; // , isUsableB2, isUsableF2, isUsableB3, isUsableF3;
 
+  PVideoFrame mvF[MAX_DEGRAIN];
+  PVideoFrame mvB[MAX_DEGRAIN];
+
+  for (int j = level - 1; j >= 0; j--)
+  {
+    mvF[j] = mvClipF[j]->GetFrame(n, env);
+    mvClipF[j]->Update(mvF[j], env);
+    isUsableF[j] = mvClipF[j]->IsUsable();
+    mvF[j] = 0; // v2.0.9.2 -  it seems, we do not need in vectors clip anymore when we finished copiing them to fakeblockdatas
+  }
+  for (int j = 0; j < level; j++)
+  {
+    mvB[j] = mvClipB[j]->GetFrame(n, env);
+    mvClipB[j]->Update(mvB[j], env);
+    isUsableB[j] = mvClipB[j]->IsUsable();
+    mvB[j] = 0;
+  }
+  /*
 	PVideoFrame mvF3 = mvClipF3.GetFrame(n, env);
 	mvClipF3.Update(mvF3, env);
 	isUsableF3 = mvClipF3.IsUsable();
@@ -295,6 +986,7 @@ PVideoFrame __stdcall MVDegrain3::GetFrame(int n, IScriptEnvironment* env)
 	mvClipF.Update(mvF, env);
 	isUsableF = mvClipF.IsUsable();
 	mvF =0;
+  
 	PVideoFrame mvB = mvClipB.GetFrame(n, env);
 	mvClipB.Update(mvB, env);
 	isUsableB = mvClipB.IsUsable();
@@ -307,7 +999,7 @@ PVideoFrame __stdcall MVDegrain3::GetFrame(int n, IScriptEnvironment* env)
 	mvClipB3.Update(mvB3, env);
 	isUsableB3 = mvClipB3.IsUsable();
 	mvB3 =0;
-
+  */
 	int				lsb_offset_y = 0;
 	int				lsb_offset_u = 0;
 	int				lsb_offset_v = 0;
@@ -385,18 +1077,36 @@ PVideoFrame __stdcall MVDegrain3::GetFrame(int n, IScriptEnvironment* env)
 		}
 	}
 
-	PVideoFrame refB, refF, refB2, refF2, refB3, refF3;
+	PVideoFrame refB[MAX_DEGRAIN], refF[MAX_DEGRAIN];
 
-	// reorder ror regular frames order in v2.0.9.2
+  // reorder ror regular frames order in v2.0.9.2
+  for (int j = level - 1; j >= 0; j--)
+    mvClipF[j]->use_ref_frame (refF[j], isUsableF[j], super, n, env);
+  for (int j = 0; j < level; j++)
+    mvClipB[j]->use_ref_frame (refB[j], isUsableB[j], super, n, env);
+/*
 	mvClipF3.use_ref_frame (refF3, isUsableF3, super, n, env);
 	mvClipF2.use_ref_frame (refF2, isUsableF2, super, n, env);
 	mvClipF. use_ref_frame (refF,  isUsableF,  super, n, env);
 	mvClipB. use_ref_frame (refB,  isUsableB,  super, n, env);
 	mvClipB2.use_ref_frame (refB2, isUsableB2, super, n, env);
 	mvClipB3.use_ref_frame (refB3, isUsableB3, super, n, env);
-
+*/
 	if ( (pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 )
 	{
+    for (int j = level - 1; j >= 0; j--)
+    {
+      if (isUsableF[j])
+      {
+        pRefF[j][0] = refF[j]->GetReadPtr();
+        pRefF[j][1] = pRefF[j][0] + refF[j]->GetRowSize()/2;
+        pRefF[j][2] = pRefF[j][1] + refF[j]->GetRowSize()/4;
+        nRefFPitches[j][0]  = refF[j]->GetPitch();
+        nRefFPitches[j][1]  = nRefFPitches[j][0];
+        nRefFPitches[j][2]  = nRefFPitches[j][0];
+      }
+    }
+    /*
 		if (isUsableF3)
 		{
 			pRefF3[0] = refF3->GetReadPtr();
@@ -424,6 +1134,20 @@ PVideoFrame __stdcall MVDegrain3::GetFrame(int n, IScriptEnvironment* env)
 			nRefFPitches[1]  = nRefFPitches[0];
 			nRefFPitches[2]  = nRefFPitches[0];
 		}
+    */
+    for (int j = 0; j<level;j++)
+    {
+      if (isUsableB[j])
+      {
+        pRefB[j][0] = refB[j]->GetReadPtr();
+        pRefB[j][1] = pRefB[j][0] + refB[j]->GetRowSize()/2;
+        pRefB[j][2] = pRefB[j][1] + refB[j]->GetRowSize()/4;
+        nRefBPitches[j][0]  = refB[j]->GetPitch();
+        nRefBPitches[j][1]  = nRefBPitches[j][0];
+        nRefBPitches[j][2]  = nRefBPitches[j][0];
+      }
+    }
+    /*
 		if (isUsableB)
 		{
 			pRefB[0] = refB->GetReadPtr();
@@ -451,10 +1175,24 @@ PVideoFrame __stdcall MVDegrain3::GetFrame(int n, IScriptEnvironment* env)
 			nRefB3Pitches[1]  = nRefB3Pitches[0];
 			nRefB3Pitches[2]  = nRefB3Pitches[0];
 		}
+    */
 	}
 	else
 	{
-		if (isUsableF3)
+    for (int j = level - 1; j >= 0; j--)
+    {
+      if (isUsableF[j])
+      {
+        pRefF[j][0] = YRPLAN(refF[j]);
+        pRefF[j][1] = URPLAN(refF[j]);
+        pRefF[j][2] = VRPLAN(refF[j]);
+        nRefFPitches[j][0] = YPITCH(refF[j]);
+        nRefFPitches[j][1] = UPITCH(refF[j]);
+        nRefFPitches[j][2] = VPITCH(refF[j]);
+      }
+    }
+    /*
+    if (isUsableF3)
 		{
 			pRefF3[0] = YRPLAN(refF3);
 			pRefF3[1] = URPLAN(refF3);
@@ -481,6 +1219,20 @@ PVideoFrame __stdcall MVDegrain3::GetFrame(int n, IScriptEnvironment* env)
 			nRefFPitches[1] = UPITCH(refF);
 			nRefFPitches[2] = VPITCH(refF);
 		}
+    */
+    for (int j = 0; j<level;j++)
+    {
+      if (isUsableB[j])
+      {
+        pRefB[j][0] = YRPLAN(refB[j]);
+        pRefB[j][1] = URPLAN(refB[j]);
+        pRefB[j][2] = VRPLAN(refB[j]);
+        nRefBPitches[j][0] = YPITCH(refB[j]);
+        nRefBPitches[j][1] = UPITCH(refB[j]);
+        nRefBPitches[j][2] = VPITCH(refB[j]);
+      }
+    }
+    /*
 		if (isUsableB)
 		{
 			pRefB[0] = YRPLAN(refB);
@@ -508,15 +1260,31 @@ PVideoFrame __stdcall MVDegrain3::GetFrame(int n, IScriptEnvironment* env)
 			nRefB3Pitches[1] = UPITCH(refB3);
 			nRefB3Pitches[2] = VPITCH(refB3);
 		}
+    */
 	}
 
-	MVPlane *pPlanesB[3]  = { 0 };
-   MVPlane *pPlanesF[3]  = { 0 };
+	MVPlane *pPlanesB[3][MAX_DEGRAIN]  = { 0 };
+   MVPlane *pPlanesF[3][MAX_DEGRAIN]  = { 0 };
+   /*
    MVPlane *pPlanesB2[3] = { 0 };
    MVPlane *pPlanesF2[3] = { 0 };
    MVPlane *pPlanesB3[3] = { 0 };
    MVPlane *pPlanesF3[3] = { 0 };
-
+   */
+   for (int j = level - 1; j >= 0; j--)
+   {
+     if (isUsableF[j])
+     {
+       pRefFGOF[j]->Update(YUVplanes, (BYTE*)pRefF[j][0], nRefFPitches[j][0], (BYTE*)pRefF[j][1], nRefFPitches[j][1], (BYTE*)pRefF[j][2], nRefFPitches[j][2]);
+       if (YUVplanes & YPLANE)
+         pPlanesF[0][j] = pRefFGOF[j]->GetFrame(0)->GetPlane(YPLANE);
+       if (YUVplanes & UPLANE)
+         pPlanesF[1][j] = pRefFGOF[j]->GetFrame(0)->GetPlane(UPLANE);
+       if (YUVplanes & VPLANE)
+         pPlanesF[2][j] = pRefFGOF[j]->GetFrame(0)->GetPlane(VPLANE);
+     }
+   }
+   /*
 	if (isUsableF3)
 	{
 		pRefF3GOF->Update(YUVplanes, (BYTE*)pRefF3[0], nRefF3Pitches[0], (BYTE*)pRefF3[1], nRefF3Pitches[1], (BYTE*)pRefF3[2], nRefF3Pitches[2]);
@@ -547,6 +1315,21 @@ PVideoFrame __stdcall MVDegrain3::GetFrame(int n, IScriptEnvironment* env)
 		if (YUVplanes & VPLANE)
 			pPlanesF[2] = pRefFGOF->GetFrame(0)->GetPlane(VPLANE);
 	}
+  */
+   for (int j = 0; j<level;j++)
+   {
+     if (isUsableB[j])
+     {
+       pRefBGOF[j]->Update(YUVplanes, (BYTE*)pRefB[j][0], nRefBPitches[j][0], (BYTE*)pRefB[j][1], nRefBPitches[j][1], (BYTE*)pRefB[j][2], nRefBPitches[j][2]);// v2.0
+       if (YUVplanes & YPLANE)
+         pPlanesB[0][j] = pRefBGOF[j]->GetFrame(0)->GetPlane(YPLANE);
+       if (YUVplanes & UPLANE)
+         pPlanesB[1][j] = pRefBGOF[j]->GetFrame(0)->GetPlane(UPLANE);
+       if (YUVplanes & VPLANE)
+         pPlanesB[2][j] = pRefBGOF[j]->GetFrame(0)->GetPlane(VPLANE);
+     }
+   }
+   /*
 	if (isUsableB)
 	{
 		pRefBGOF->Update(YUVplanes, (BYTE*)pRefB[0], nRefBPitches[0], (BYTE*)pRefB[1], nRefBPitches[1], (BYTE*)pRefB[2], nRefBPitches[2]);// v2.0
@@ -577,6 +1360,7 @@ PVideoFrame __stdcall MVDegrain3::GetFrame(int n, IScriptEnvironment* env)
 		if (YUVplanes & VPLANE)
 			pPlanesB3[2] = pRefB3GOF->GetFrame(0)->GetPlane(VPLANE);
 	}
+  */
 
 	PROFILE_START(MOTION_PROFILE_COMPENSATION);
 	pDstCur[0] = pDst[0];
@@ -592,7 +1376,7 @@ PVideoFrame __stdcall MVDegrain3::GetFrame(int n, IScriptEnvironment* env)
 
 	if (!(YUVplanes & YPLANE))
 	{
-		BitBlt(pDstCur[0], nDstPitches[0], pSrcCur[0], nSrcPitches[0], nWidth, nHeight, isse2);
+		BitBlt(pDstCur[0], nDstPitches[0], pSrcCur[0], nSrcPitches[0], nWidth*pixelsize, nHeight, isse2);
 	}
 
 	else
@@ -601,35 +1385,52 @@ PVideoFrame __stdcall MVDegrain3::GetFrame(int n, IScriptEnvironment* env)
 		{
 			for (int by=0; by<nBlkY; by++)
 			{
-				int xx = 0;
+				int xx = 0; // logical offset. Mul by 2 for pixelsize==2. Don't mul for indexing int* array
 				for (int bx=0; bx<nBlkX; bx++)
 				{
 					int i = by*nBlkX + bx;
-					const BYTE * pB, *pF, *pB2, *pF2, *pB3, *pF3;
-					int npB, npF, npB2, npF2, npB3, npF3;
-					int WSrc, WRefB, WRefF, WRefB2, WRefF2, WRefB3, WRefF3;
+          const BYTE * pB[MAX_DEGRAIN], *pF[MAX_DEGRAIN]; // , *pB2, *pF2, *pB3, *pF3;
+          int npB[MAX_DEGRAIN], npF[MAX_DEGRAIN]; // , npB2, npF2, npB3, npF3;
+          int WSrc;
+          int WRefB[MAX_DEGRAIN], WRefF[MAX_DEGRAIN]; // , WRefB2, WRefF2, WRefB3, WRefF3;
 
+          for (int j = 0; j < level; j++) {
+            use_block_y (pB[j] , npB[j] , WRefB[j] , isUsableB[j] , *mvClipB[j] , i, pPlanesB[0][j], pSrcCur [0], xx*pixelsize, nSrcPitches [0]);
+            use_block_y (pF[j] , npF[j] , WRefF[j] , isUsableF[j] , *mvClipF[j] , i, pPlanesF[0][j], pSrcCur [0], xx*pixelsize, nSrcPitches [0]);
+          }
+          /*
 					use_block_y (pB , npB , WRefB , isUsableB , mvClipB , i, pPlanesB  [0], pSrcCur [0], xx, nSrcPitches [0]);
 					use_block_y (pF , npF , WRefF , isUsableF , mvClipF , i, pPlanesF  [0], pSrcCur [0], xx, nSrcPitches [0]);
 					use_block_y (pB2, npB2, WRefB2, isUsableB2, mvClipB2, i, pPlanesB2 [0], pSrcCur [0], xx, nSrcPitches [0]);
 					use_block_y (pF2, npF2, WRefF2, isUsableF2, mvClipF2, i, pPlanesF2 [0], pSrcCur [0], xx, nSrcPitches [0]);
 					use_block_y (pB3, npB3, WRefB3, isUsableB3, mvClipB3, i, pPlanesB3 [0], pSrcCur [0], xx, nSrcPitches [0]);
 					use_block_y (pF3, npF3, WRefF3, isUsableF3, mvClipF3, i, pPlanesF3 [0], pSrcCur [0], xx, nSrcPitches [0]);
-					norm_weights (WSrc, WRefB, WRefF, WRefB2, WRefF2, WRefB3, WRefF3);
+          */
+          if(level==1)
+					  norm_weights<1>(WSrc, WRefB, WRefF);
+          else if(level==2)
+            norm_weights<2>(WSrc, WRefB, WRefF);
+          else if(level==3)
+            norm_weights<3>(WSrc, WRefB, WRefF);
+          else if(level==4)
+            norm_weights<4>(WSrc, WRefB, WRefF);
+          else if(level==5)
+            norm_weights<5>(WSrc, WRefB, WRefF);
 
 					// luma
-					DEGRAINLUMA(pDstCur[0] + xx, pDstCur[0] + lsb_offset_y + xx,
-						lsb_flag, nDstPitches[0], pSrcCur[0]+ xx, nSrcPitches[0],
-						pB, npB, pF, npF, pB2, npB2, pF2, npF2, pB3, npB3, pF3, npF3,
-						WSrc, WRefB, WRefF, WRefB2, WRefF2, WRefB3, WRefF3);
+					DEGRAINLUMA(pDstCur[0] + xx*pixelsize, pDstCur[0] + lsb_offset_y + xx*pixelsize,
+						lsb_flag, nDstPitches[0], pSrcCur[0]+ xx*pixelsize, nSrcPitches[0],
+						pB, npB, pF, npF, //pB2, npB2, pF2, npF2, pB3, npB3, pF3, npF3,
+						WSrc, WRefB, WRefF //, WRefB2, WRefF2, WRefB3, WRefF3
+          );
 
-					xx += (nBlkSizeX);
+					xx += nBlkSizeX; // xx: indexing offset
 
 					if (bx == nBlkX-1 && nWidth_B < nWidth) // right non-covered region
 					{
 						// luma
-						BitBlt(pDstCur[0] + nWidth_B, nDstPitches[0],
-							pSrcCur[0] + nWidth_B, nSrcPitches[0], nWidth-nWidth_B, nBlkSizeY, isse2);
+						BitBlt(pDstCur[0] + nWidth_B*pixelsize, nDstPitches[0],
+							pSrcCur[0] + nWidth_B*pixelsize, nSrcPitches[0], (nWidth-nWidth_B)*pixelsize, nBlkSizeY, isse2);
 					}
 				}	// for bx
 
@@ -639,7 +1440,7 @@ PVideoFrame __stdcall MVDegrain3::GetFrame(int n, IScriptEnvironment* env)
 				if (by == nBlkY-1 && nHeight_B < nHeight) // bottom uncovered region
 				{
 					// luma
-					BitBlt(pDstCur[0], nDstPitches[0], pSrcCur[0], nSrcPitches[0], nWidth, nHeight-nHeight_B, isse2);
+					BitBlt(pDstCur[0], nDstPitches[0], pSrcCur[0], nSrcPitches[0], nWidth*pixelsize, nHeight-nHeight_B, isse2);
 				}
 			}	// for by
 		}	// nOverlapX==0 && nOverlapY==0
@@ -652,21 +1453,21 @@ PVideoFrame __stdcall MVDegrain3::GetFrame(int n, IScriptEnvironment* env)
 			int *pDstInt = DstInt;
 			const int tmpPitch = nBlkSizeX;
 
-			if (lsb_flag)
+			if (lsb_flag || pixelsize == 2)
 			{
 				MemZoneSet(reinterpret_cast<unsigned char*>(pDstInt), 0,
-					nWidth_B*4, nHeight_B, 0, 0, dstIntPitch*4);
+					nWidth_B*sizeof(int), nHeight_B, 0, 0, dstIntPitch*sizeof(int));
 			}
 			else
 			{
 				MemZoneSet(reinterpret_cast<unsigned char*>(pDstShort), 0,
-					nWidth_B*2, nHeight_B, 0, 0, dstShortPitch*2);
+					nWidth_B*sizeof(short), nHeight_B, 0, 0, dstShortPitch*sizeof(short));
 			}
 
 			for (int by=0; by<nBlkY; by++)
 			{
 				int wby = ((by + nBlkY - 3)/(nBlkY - 2))*3;
-				int xx = 0;
+				int xx = 0; // logical offset. Mul by 2 for pixelsize==2. Don't mul for indexing int* array
 				for (int bx=0; bx<nBlkX; bx++)
 				{
 					// select window
@@ -674,10 +1475,27 @@ PVideoFrame __stdcall MVDegrain3::GetFrame(int n, IScriptEnvironment* env)
 					short *			winOver = OverWins->GetWindow(wby + wbx);
 
 					int i = by*nBlkX + bx;
-					const BYTE * pB, *pF, *pB2, *pF2, *pB3, *pF3;
-					int npB, npF, npB2, npF2, npB3, npF3;
-					int WSrc, WRefB, WRefF, WRefB2, WRefF2, WRefB3, WRefF3;
 
+          const BYTE * pB[MAX_DEGRAIN], *pF[MAX_DEGRAIN]; // , *pB2, *pF2, *pB3, *pF3;
+          int npB[MAX_DEGRAIN], npF[MAX_DEGRAIN]; // , npB2, npF2, npB3, npF3;
+          int WSrc;
+          int WRefB[MAX_DEGRAIN], WRefF[MAX_DEGRAIN]; // , WRefB2, WRefF2, WRefB3, WRefF3;
+
+          for (int j = 0; j < level; j++) {
+            use_block_y (pB[j] , npB[j] , WRefB[j] , isUsableB[j] , *mvClipB[j] , i, pPlanesB[0][j], pSrcCur [0], xx*pixelsize, nSrcPitches [0]);
+            use_block_y (pF[j] , npF[j] , WRefF[j] , isUsableF[j] , *mvClipF[j] , i, pPlanesF[0][j], pSrcCur [0], xx*pixelsize, nSrcPitches [0]);
+          }
+          if(level==1)
+            norm_weights<1>(WSrc, WRefB, WRefF);
+          else if(level==2)
+            norm_weights<2>(WSrc, WRefB, WRefF);
+          else if(level==3)
+            norm_weights<3>(WSrc, WRefB, WRefF);
+          else if(level==4)
+            norm_weights<4>(WSrc, WRefB, WRefF);
+          else if(level==5)
+            norm_weights<5>(WSrc, WRefB, WRefF);
+          /*
 					use_block_y (pB , npB , WRefB , isUsableB , mvClipB , i, pPlanesB  [0], pSrcCur [0], xx, nSrcPitches [0]);
 					use_block_y (pF , npF , WRefF , isUsableF , mvClipF , i, pPlanesF  [0], pSrcCur [0], xx, nSrcPitches [0]);
 					use_block_y (pB2, npB2, WRefB2, isUsableB2, mvClipB2, i, pPlanesB2 [0], pSrcCur [0], xx, nSrcPitches [0]);
@@ -685,46 +1503,54 @@ PVideoFrame __stdcall MVDegrain3::GetFrame(int n, IScriptEnvironment* env)
 					use_block_y (pB3, npB3, WRefB3, isUsableB3, mvClipB3, i, pPlanesB3 [0], pSrcCur [0], xx, nSrcPitches [0]);
 					use_block_y (pF3, npF3, WRefF3, isUsableF3, mvClipF3, i, pPlanesF3 [0], pSrcCur [0], xx, nSrcPitches [0]);
 					norm_weights (WSrc, WRefB, WRefF, WRefB2, WRefF2, WRefB3, WRefF3);
-
+*/
 					// luma
-					DEGRAINLUMA(tmpBlock, tmpBlockLsb, lsb_flag, tmpPitch, pSrcCur[0]+ xx, nSrcPitches[0],
-						pB, npB, pF, npF, pB2, npB2, pF2, npF2, pB3, npB3, pF3, npF3,
-						WSrc, WRefB, WRefF, WRefB2, WRefF2, WRefB3, WRefF3);
+					DEGRAINLUMA(tmpBlock, tmpBlockLsb, lsb_flag, tmpPitch, pSrcCur[0]+ xx*pixelsize, nSrcPitches[0],
+						pB, npB, pF, npF, // pB2, npB2, pF2, npF2, pB3, npB3, pF3, npF3,
+						WSrc, 
+            WRefB, WRefF
+            //, WRefB2, WRefF2, WRefB3, WRefF3
+          );
 					if (lsb_flag)
 					{
 						OVERSLUMALSB(pDstInt + xx, dstIntPitch, tmpBlock, tmpBlockLsb, tmpPitch, winOver, nBlkSizeX);
 					}
-					else
+					else if (pixelsize == 1)
 					{
 						OVERSLUMA(pDstShort + xx, dstShortPitch, tmpBlock, tmpPitch, winOver, nBlkSizeX);
-					}
+          }
+          else if (pixelsize == 2) {
+            OVERSLUMA16((uint16_t *)(pDstInt + xx), dstIntPitch, tmpBlock, tmpPitch, winOver, nBlkSizeX);
+          }
 
 					xx += (nBlkSizeX - nOverlapX);
 				}	// for bx
 
-				pSrcCur[0] += (nBlkSizeY - nOverlapY) * (nSrcPitches[0]);
-				pDstShort += (nBlkSizeY - nOverlapY) * dstShortPitch;
-				pDstInt += (nBlkSizeY - nOverlapY) * dstIntPitch;
+				pSrcCur[0] += (nBlkSizeY - nOverlapY) * (nSrcPitches[0]); // byte pointer
+				pDstShort += (nBlkSizeY - nOverlapY) * dstShortPitch; // short pointer
+				pDstInt += (nBlkSizeY - nOverlapY) * dstIntPitch; // int pointer
 			}	// for by
 			if (lsb_flag)
 			{
 				Short2BytesLsb(pDst[0], pDst[0] + lsb_offset_y, nDstPitches[0], DstInt, dstIntPitch, nWidth_B, nHeight_B);
 			}
-			else
+			else if(pixelsize == 1)
 			{
 				Short2Bytes(pDst[0], nDstPitches[0], DstShort, dstShortPitch, nWidth_B, nHeight_B);
-			}
-			if (nWidth_B < nWidth)
+			} else if(pixelsize == 2) {
+        Short2Bytes16((uint16_t *)(pDst[0]), pDst[0] + lsb_offset_y, nDstPitches[0], DstInt, dstIntPitch, nWidth_B, nHeight_B);
+      }
+      if (nWidth_B < nWidth)
 			{
-				BitBlt(pDst[0] + nWidth_B, nDstPitches[0],
-					pSrc[0] + nWidth_B, nSrcPitches[0],
-					nWidth-nWidth_B, nHeight_B, isse2);
+				BitBlt(pDst[0] + nWidth_B*pixelsize, nDstPitches[0],
+					pSrc[0] + nWidth_B*pixelsize, nSrcPitches[0],
+					(nWidth-nWidth_B)*pixelsize, nHeight_B, isse2);
 			}
 			if (nHeight_B < nHeight) // bottom noncovered region
 			{
 				BitBlt(pDst[0] + nHeight_B*nDstPitches[0], nDstPitches[0],
 					pSrc[0] + nHeight_B*nSrcPitches[0], nSrcPitches[0],
-					nWidth, nHeight-nHeight_B, isse2);
+					nWidth*pixelsize, nHeight-nHeight_B, isse2);
 			}
 		}	// overlap - end
 
@@ -751,8 +1577,8 @@ PVideoFrame __stdcall MVDegrain3::GetFrame(int n, IScriptEnvironment* env)
 	process_chroma (
 		UPLANE & nSuperModeYUV,
 		pDst [1], pDstCur [1], nDstPitches [1], pSrc [1], pSrcCur [1], nSrcPitches [1],
-		isUsableB, isUsableF, isUsableB2, isUsableF2, isUsableB3, isUsableF3,
-		pPlanesB [1], pPlanesF [1], pPlanesB2 [1], pPlanesF2 [1], pPlanesB3 [1], pPlanesF3 [1],
+		isUsableB, isUsableF, // isUsableB2, isUsableF2, isUsableB3, isUsableF3,
+		pPlanesB[1], pPlanesF[1], //, pPlanesB2 [1], pPlanesF2 [1], pPlanesB3 [1], pPlanesF3 [1],
 		lsb_offset_u, nWidth_B, nHeight_B
 	);
 
@@ -763,8 +1589,8 @@ PVideoFrame __stdcall MVDegrain3::GetFrame(int n, IScriptEnvironment* env)
 	process_chroma (
 		VPLANE & nSuperModeYUV,
 		pDst [2], pDstCur [2], nDstPitches [2], pSrc [2], pSrcCur [2], nSrcPitches [2],
-		isUsableB, isUsableF, isUsableB2, isUsableF2, isUsableB3, isUsableF3,
-		pPlanesB [2], pPlanesF [2], pPlanesB2 [2], pPlanesF2 [2], pPlanesB3 [2], pPlanesF3 [2],
+		isUsableB, isUsableF, //, isUsableB2, isUsableF2, isUsableB3, isUsableF3,
+		pPlanesB [2], pPlanesF [2], //, pPlanesB2 [2], pPlanesF2 [2], pPlanesB3 [2], pPlanesF3 [2],
 		lsb_offset_v, nWidth_B, nHeight_B
 	);
 
@@ -787,167 +1613,195 @@ PVideoFrame __stdcall MVDegrain3::GetFrame(int n, IScriptEnvironment* env)
 
 
 
-void	MVDegrain3::process_chroma (int plane_mask, BYTE *pDst, BYTE *pDstCur, int nDstPitch, const BYTE *pSrc, const BYTE *pSrcCur, int nSrcPitch, bool isUsableB, bool isUsableF, bool isUsableB2, bool isUsableF2, bool isUsableB3, bool isUsableF3, MVPlane *pPlanesB, MVPlane *pPlanesF, MVPlane *pPlanesB2, MVPlane *pPlanesF2, MVPlane *pPlanesB3, MVPlane *pPlanesF3, int lsb_offset_uv, int nWidth_B, int nHeight_B)
+void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int nDstPitch, const BYTE *pSrc, const BYTE *pSrcCur, int nSrcPitch,
+  bool isUsableB[MAX_DEGRAIN], bool isUsableF[MAX_DEGRAIN], MVPlane *pPlanesB[MAX_DEGRAIN], MVPlane *pPlanesF[MAX_DEGRAIN],
+  int lsb_offset_uv, int nWidth_B, int nHeight_B)
 {
-	if (!(YUVplanes & plane_mask))
-	{
-		BitBlt(pDstCur, nDstPitch, pSrcCur, nSrcPitch, nWidth/xRatioUV*pixelsize, nHeight/yRatioUV, isse2);
-	}
+  if (!(YUVplanes & plane_mask))
+  {
+    BitBlt(pDstCur, nDstPitch, pSrcCur, nSrcPitch, nWidth / xRatioUV*pixelsize, nHeight / yRatioUV, isse2);
+  }
 
-	else
-	{
-		if (nOverlapX==0 && nOverlapY==0)
-		{
-			for (int by=0; by<nBlkY; by++)
-			{
-				int xx = 0;
-				for (int bx=0; bx<nBlkX; bx++)
-				{
-					int i = by*nBlkX + bx;
-					const BYTE * pBV, *pFV, *pB2V, *pF2V, *pB3V, *pF3V;
-					int npBV, npFV, npB2V, npF2V, npB3V, npF3V;
-					int WSrc, WRefB, WRefF, WRefB2, WRefF2, WRefB3, WRefF3;
+  else
+  {
+    if (nOverlapX == 0 && nOverlapY == 0)
+    {
+      for (int by = 0; by < nBlkY; by++)
+      {
+        int xx = 0; // byte granularity
+        for (int bx = 0; bx < nBlkX; bx++)
+        {
+          int i = by*nBlkX + bx;
+          const BYTE * pBV[MAX_DEGRAIN], *pFV[MAX_DEGRAIN]; // , *pB2V, *pF2V, *pB3V, *pF3V;
+          int npBV[MAX_DEGRAIN], npFV[MAX_DEGRAIN]; // , npB2V, npF2V, npB3V, npF3V;
+          int WSrc, WRefB[MAX_DEGRAIN], WRefF[MAX_DEGRAIN]; // , WRefB2, WRefF2, WRefB3, WRefF3;
 
-					use_block_uv (pBV , npBV , WRefB , isUsableB , mvClipB , i, pPlanesB , pSrcCur, xx, nSrcPitch);
-					use_block_uv (pFV , npFV , WRefF , isUsableF , mvClipF , i, pPlanesF , pSrcCur, xx, nSrcPitch);
-					use_block_uv (pB2V, npB2V, WRefB2, isUsableB2, mvClipB2, i, pPlanesB2, pSrcCur, xx, nSrcPitch);
-					use_block_uv (pF2V, npF2V, WRefF2, isUsableF2, mvClipF2, i, pPlanesF2, pSrcCur, xx, nSrcPitch);
-					use_block_uv (pB3V, npB3V, WRefB3, isUsableB3, mvClipB3, i, pPlanesB3, pSrcCur, xx, nSrcPitch);
-					use_block_uv (pF3V, npF3V, WRefF3, isUsableF3, mvClipF3, i, pPlanesF3, pSrcCur, xx, nSrcPitch);
-					norm_weights (WSrc, WRefB, WRefF, WRefB2, WRefF2, WRefB3, WRefF3);
+          for (int j = 0; j < level; j++) {
+            // xx: byte granularity pointer shift
+            use_block_uv(pBV[j], npBV[j], WRefB[j], isUsableB[j], *mvClipB[j], i, pPlanesB[j], pSrcCur, xx, nSrcPitch);
+            use_block_uv(pFV[j], npFV[j], WRefF[j], isUsableF[j], *mvClipF[j], i, pPlanesF[j], pSrcCur, xx, nSrcPitch);
+          }
+          if (level == 1)
+            norm_weights<1>(WSrc, WRefB, WRefF);
+          else if (level == 2)
+            norm_weights<2>(WSrc, WRefB, WRefF);
+          else if (level == 3)
+            norm_weights<3>(WSrc, WRefB, WRefF);
+          else if(level==4)
+            norm_weights<4>(WSrc, WRefB, WRefF);
+          else if(level==5)
+            norm_weights<5>(WSrc, WRefB, WRefF);
 
-					// chroma
-					DEGRAINCHROMA(pDstCur + (xx/xRatioUV)*pixelsize, pDstCur + (xx/xRatioUV)*pixelsize + lsb_offset_uv,
-						lsb_flag, nDstPitch, pSrcCur + (xx/xRatioUV)*pixelsize, nSrcPitch,
-						pBV, npBV, pFV, npFV, pB2V, npB2V, pF2V, npF2V, pB3V, npB3V, pF3V, npF3V,
-						WSrc, WRefB, WRefF, WRefB2, WRefF2, WRefB3, WRefF3);
+          // chroma
+          DEGRAINCHROMA(pDstCur + (xx / xRatioUV), pDstCur + (xx / xRatioUV) + lsb_offset_uv,
+            lsb_flag, nDstPitch, pSrcCur + (xx / xRatioUV), nSrcPitch,
+            pBV, npBV, pFV, npFV, //pB2V, npB2V, pF2V, npF2V, pB3V, npB3V, pF3V, npF3V,
+            WSrc, WRefB, WRefF //, WRefB2, WRefF2, WRefB3, WRefF3
+          );
 
-					xx += (nBlkSizeX)*pixelsize;
+          xx += nBlkSizeX*pixelsize;
 
-					if (bx == nBlkX-1 && nWidth_B < nWidth) // right non-covered region
-					{
-						// chroma
-						BitBlt(pDstCur + (nWidth_B/xRatioUV)*pixelsize, nDstPitch,
-							pSrcCur + (nWidth_B/xRatioUV)*pixelsize, nSrcPitch, (nWidth-nWidth_B)/xRatioUV*pixelsize, (nBlkSizeY)/yRatioUV, isse2);
-					}
-				}	// for bx
+          if (bx == nBlkX - 1 && nWidth_B < nWidth) // right non-covered region
+          {
+            // chroma
+            BitBlt(pDstCur + (nWidth_B / xRatioUV)*pixelsize, nDstPitch,
+              pSrcCur + (nWidth_B / xRatioUV)*pixelsize, nSrcPitch, (nWidth - nWidth_B) / xRatioUV*pixelsize, (nBlkSizeY) / yRatioUV, isse2);
+          }
+        }	// for bx
 
-				pDstCur += ( nBlkSizeY )/yRatioUV * nDstPitch;
-				pSrcCur += ( nBlkSizeY )/yRatioUV * nSrcPitch;
+        pDstCur += (nBlkSizeY) / yRatioUV * nDstPitch;
+        pSrcCur += (nBlkSizeY) / yRatioUV * nSrcPitch;
 
-				if (by == nBlkY-1 && nHeight_B < nHeight) // bottom uncovered region
-				{
-					// chroma
-					BitBlt(pDstCur, nDstPitch, pSrcCur, nSrcPitch, nWidth/xRatioUV*pixelsize, (nHeight-nHeight_B)/yRatioUV, isse2);
-				}
-			}	// for by
-		}	// nOverlapX==0 && nOverlapY==0
+        if (by == nBlkY - 1 && nHeight_B < nHeight) // bottom uncovered region
+        {
+          // chroma
+          BitBlt(pDstCur, nDstPitch, pSrcCur, nSrcPitch, nWidth / xRatioUV*pixelsize, (nHeight - nHeight_B) / yRatioUV, isse2);
+        }
+      }	// for by
+    }	// nOverlapX==0 && nOverlapY==0
 
 // -----------------------------------------------------------------
 
-		else // overlap
-		{
-			unsigned short *pDstShort = DstShort;
-			int *pDstInt = DstInt;
-			const int tmpPitch = nBlkSizeX;
+    else // overlap
+    {
+      unsigned short *pDstShort = DstShort;
+      int *pDstInt = DstInt;
+      const int tmpPitch = nBlkSizeX;
 
-			if (lsb_flag)
-			{
-				MemZoneSet(reinterpret_cast<unsigned char*>(pDstInt), 0,
-					nWidth_B*4/xRatioUV, nHeight_B/yRatioUV, 0, 0, dstIntPitch*4);
-			}
-			else
-			{
-				MemZoneSet(reinterpret_cast<unsigned char*>(pDstShort), 0,
-					nWidth_B*2/xRatioUV, nHeight_B/yRatioUV, 0, 0, dstShortPitch*2);
-			}
+      if (lsb_flag || pixelsize == 2)
+      {
+        MemZoneSet(reinterpret_cast<unsigned char*>(pDstInt), 0,
+          nWidth_B * sizeof(int) / xRatioUV, nHeight_B / yRatioUV, 0, 0, dstIntPitch * sizeof(int));
+      }
+      else
+      {
+        MemZoneSet(reinterpret_cast<unsigned char*>(pDstShort), 0,
+          nWidth_B * sizeof(short) / xRatioUV, nHeight_B / yRatioUV, 0, 0, dstShortPitch * sizeof(short));
+      }
 
-			for (int by=0; by<nBlkY; by++)
-			{
-				int wby = ((by + nBlkY - 3)/(nBlkY - 2))*3;
-				int xx = 0;
-				for (int bx=0; bx<nBlkX; bx++)
-				{
-					// select window
-					int wbx = (bx + nBlkX - 3)/(nBlkX - 2);
-					short *			winOverUV = OverWinsUV->GetWindow(wby + wbx);
+      for (int by = 0; by < nBlkY; by++)
+      {
+        int wby = ((by + nBlkY - 3) / (nBlkY - 2)) * 3;
+        int xx = 0;
+        for (int bx = 0; bx < nBlkX; bx++)
+        {
+          // select window
+          int wbx = (bx + nBlkX - 3) / (nBlkX - 2);
+          short *			winOverUV = OverWinsUV->GetWindow(wby + wbx);
 
-					int i = by*nBlkX + bx;
-					const BYTE * pBV, *pFV, *pB2V, *pF2V, *pB3V, *pF3V;
-					int npBV, npFV, npB2V, npF2V, npB3V, npF3V;
-					int WSrc, WRefB, WRefF, WRefB2, WRefF2, WRefB3, WRefF3;
+          int i = by*nBlkX + bx;
+          const BYTE * pBV[MAX_DEGRAIN], *pFV[MAX_DEGRAIN]; // , *pB2V, *pF2V, *pB3V, *pF3V;
+          int npBV[MAX_DEGRAIN], npFV[MAX_DEGRAIN]; // , npB2V, npF2V, npB3V, npF3V;
+          int WSrc, WRefB[MAX_DEGRAIN], WRefF[MAX_DEGRAIN]; // , WRefB2, WRefF2, WRefB3, WRefF3;
 
-					use_block_uv (pBV , npBV , WRefB , isUsableB , mvClipB , i, pPlanesB , pSrcCur, xx, nSrcPitch);
-					use_block_uv (pFV , npFV , WRefF , isUsableF , mvClipF , i, pPlanesF , pSrcCur, xx, nSrcPitch);
-					use_block_uv (pB2V, npB2V, WRefB2, isUsableB2, mvClipB2, i, pPlanesB2, pSrcCur, xx, nSrcPitch);
-					use_block_uv (pF2V, npF2V, WRefF2, isUsableF2, mvClipF2, i, pPlanesF2, pSrcCur, xx, nSrcPitch);
-					use_block_uv (pB3V, npB3V, WRefB3, isUsableB3, mvClipB3, i, pPlanesB3, pSrcCur, xx, nSrcPitch);
-					use_block_uv (pF3V, npF3V, WRefF3, isUsableF3, mvClipF3, i, pPlanesF3, pSrcCur, xx, nSrcPitch);
-					norm_weights (WSrc, WRefB, WRefF, WRefB2, WRefF2, WRefB3, WRefF3);
+          for (int j = 0; j < level; j++) {
+            use_block_uv(pBV[j], npBV[j], WRefB[j], isUsableB[j], *mvClipB[j], i, pPlanesB[j], pSrcCur, xx, nSrcPitch);
+            use_block_uv(pFV[j], npFV[j], WRefF[j], isUsableF[j], *mvClipF[j], i, pPlanesF[j], pSrcCur, xx, nSrcPitch);
+          }
+          if (level == 1)
+            norm_weights<1>(WSrc, WRefB, WRefF);
+          else if (level == 2)
+            norm_weights<2>(WSrc, WRefB, WRefF);
+          else if (level == 3)
+            norm_weights<3>(WSrc, WRefB, WRefF);
+          else if(level==4)
+            norm_weights<4>(WSrc, WRefB, WRefF);
+          else if(level==5)
+            norm_weights<5>(WSrc, WRefB, WRefF);
 
-					// chroma
-					DEGRAINCHROMA(tmpBlock, tmpBlockLsb, lsb_flag, tmpPitch, pSrcCur + (xx/xRatioUV)*pixelsize, nSrcPitch,
-						pBV, npBV, pFV, npFV, pB2V, npB2V, pF2V, npF2V, pB3V, npB3V, pF3V, npF3V,
-						WSrc, WRefB, WRefF, WRefB2, WRefF2, WRefB3, WRefF3);
-					if (lsb_flag)
-					{ // no pixelsize here pointers Int or short
-						OVERSCHROMALSB(pDstInt + (xx/xRatioUV), dstIntPitch, tmpBlock, tmpBlockLsb, tmpPitch, winOverUV, nBlkSizeX/xRatioUV);
-					}
-					else
-					{
-						OVERSCHROMA(pDstShort + (xx/xRatioUV), dstShortPitch, tmpBlock, tmpPitch, winOverUV, nBlkSizeX/xRatioUV);
-					}
+          // chroma
+          DEGRAINCHROMA(tmpBlock, tmpBlockLsb, lsb_flag, tmpPitch, pSrcCur + (xx / xRatioUV)*pixelsize, nSrcPitch,
+            pBV, npBV, pFV, npFV, //pB2V, npB2V, pF2V, npF2V, pB3V, npB3V, pF3V, npF3V,
+            WSrc, WRefB, WRefF //, WRefB2, WRefF2, WRefB3, WRefF3
+          );
+          if (lsb_flag)
+          { // no pixelsize here pointers Int or short
+            OVERSCHROMALSB(pDstInt + (xx / xRatioUV), dstIntPitch, tmpBlock, tmpBlockLsb, tmpPitch, winOverUV, nBlkSizeX / xRatioUV);
+          }
+          else if (pixelsize==1)
+          {
+            OVERSCHROMA(pDstShort + (xx / xRatioUV), dstShortPitch, tmpBlock, tmpPitch, winOverUV, nBlkSizeX / xRatioUV);
+          }
+          else if (pixelsize==2)
+          {
+            OVERSCHROMA16((uint16_t*)(pDstInt + (xx / xRatioUV)), dstIntPitch, tmpBlock, tmpPitch, winOverUV, nBlkSizeX / xRatioUV);
+          }
 
-					xx += (nBlkSizeX - nOverlapX); // no pixelsize here
+          xx += (nBlkSizeX - nOverlapX); // no pixelsize here
 
-				}	// for bx
+        }	// for bx
 
-				pSrcCur += (nBlkSizeY - nOverlapY)/yRatioUV * nSrcPitch ;
-				pDstShort += (nBlkSizeY - nOverlapY)/yRatioUV * dstShortPitch;
-				pDstInt += (nBlkSizeY - nOverlapY)/yRatioUV * dstIntPitch;
-			}	// for by
+        pSrcCur += (nBlkSizeY - nOverlapY) / yRatioUV * nSrcPitch; // pitch is byte granularity
+        pDstShort += (nBlkSizeY - nOverlapY) / yRatioUV * dstShortPitch; // pitch is short granularity
+        pDstInt += (nBlkSizeY - nOverlapY) / yRatioUV * dstIntPitch; // pitch is int granularity
+      }	// for by
 
-			if (lsb_flag)
-			{ // todo pixelsize
-				Short2BytesLsb(pDst, pDst + lsb_offset_uv, nDstPitch, DstInt, dstIntPitch, nWidth_B/xRatioUV, nHeight_B/yRatioUV);
-			}
-			else
-			{ // pixelsize
-				Short2Bytes(pDst, nDstPitch, DstShort, dstShortPitch, nWidth_B/xRatioUV, nHeight_B/yRatioUV);
-			}
-			if (nWidth_B < nWidth)
-			{
-				BitBlt(pDst + (nWidth_B/xRatioUV)*pixelsize, nDstPitch,
-					pSrc + (nWidth_B/xRatioUV)*pixelsize, nSrcPitch,
-					(nWidth-nWidth_B)/xRatioUV*pixelsize, nHeight_B/yRatioUV, isse2);
-			}
-			if (nHeight_B < nHeight) // bottom noncovered region
-			{
-				BitBlt(pDst + nDstPitch*nHeight_B/yRatioUV, nDstPitch,
-					pSrc + nSrcPitch*nHeight_B/yRatioUV, nSrcPitch,
-					nWidth/xRatioUV*pixelsize, (nHeight-nHeight_B)/yRatioUV, isse2);
-			}
-		}	// overlap - end
+      if (lsb_flag)
+      { 
+        Short2BytesLsb(pDst, pDst + lsb_offset_uv, nDstPitch, DstInt, dstIntPitch, nWidth_B / xRatioUV, nHeight_B / yRatioUV);
+      }
+      else if(pixelsize==1)
+      { // pixelsize
+        Short2Bytes(pDst, nDstPitch, DstShort, dstShortPitch, nWidth_B / xRatioUV, nHeight_B / yRatioUV);
+      }
+      else if(pixelsize==2)
+      { // pixelsize
+        Short2Bytes16((uint16_t *)(pDst), pDst + lsb_offset_uv, nDstPitch, DstInt, dstIntPitch, nWidth_B / xRatioUV, nHeight_B / yRatioUV);
+      }
+      if (nWidth_B < nWidth)
+      {
+        BitBlt(pDst + (nWidth_B / xRatioUV)*pixelsize, nDstPitch,
+          pSrc + (nWidth_B / xRatioUV)*pixelsize, nSrcPitch,
+          (nWidth - nWidth_B) / xRatioUV*pixelsize, nHeight_B / yRatioUV, isse2);
+      }
+      if (nHeight_B < nHeight) // bottom noncovered region
+      {
+        BitBlt(pDst + nDstPitch*nHeight_B / yRatioUV, nDstPitch,
+          pSrc + nSrcPitch*nHeight_B / yRatioUV, nSrcPitch,
+          nWidth / xRatioUV*pixelsize, (nHeight - nHeight_B) / yRatioUV, isse2);
+      }
+    }	// overlap - end
 
-		if (nLimitC < (pixelsize == 1 ? 255 : 65535))
-		{
-			if ((pixelsize==1) && isse2)
-			{
-				LimitChanges_sse2(pDst, nDstPitch, pSrc, nSrcPitch, nWidth/xRatioUV, nHeight/yRatioUV, nLimitC);
-			}
-			else
-			{
-				if(pixelsize==1)
-                    LimitChanges_c<uint8_t>(pDst, nDstPitch, pSrc, nSrcPitch, nWidth/xRatioUV, nHeight/yRatioUV, nLimitC);
-                else
-                    LimitChanges_c<uint16_t>(pDst, nDstPitch, pSrc, nSrcPitch, nWidth/xRatioUV, nHeight/yRatioUV, nLimitC);
-            }
-		}
-	}
+    if (nLimitC < (pixelsize == 1 ? 255 : 65535))
+    {
+      if ((pixelsize == 1) && isse2)
+      {
+        LimitChanges_sse2(pDst, nDstPitch, pSrc, nSrcPitch, nWidth / xRatioUV, nHeight / yRatioUV, nLimitC);
+      }
+      else
+      {
+        if (pixelsize == 1)
+          LimitChanges_c<uint8_t>(pDst, nDstPitch, pSrc, nSrcPitch, nWidth / xRatioUV, nHeight / yRatioUV, nLimitC);
+        else
+          LimitChanges_c<uint16_t>(pDst, nDstPitch, pSrc, nSrcPitch, nWidth / xRatioUV, nHeight / yRatioUV, nLimitC);
+      }
+    }
+  }
 }
 
 
-void	MVDegrain3::use_block_y (const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch)
+// no difference for 1-2-3
+void	MVDegrainX::use_block_y (const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch)
 {
 	if (isUsable)
 	{
@@ -961,27 +1815,28 @@ void	MVDegrain3::use_block_y (const BYTE * &p, int &np, int &WRef, bool isUsable
 	}
 	else
 	{
-		p = pSrcCur + xx; // check: pixelsize?
+		p = pSrcCur + xx; // xx here:byte offset
 		np = nSrcPitch;
 		WRef = 0;
 	}
 }
 
-void	MVDegrain3::use_block_uv (const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch)
+// no difference for 1-2-3
+void	MVDegrainX::use_block_uv (const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch)
 {
 	if (isUsable)
 	{
 		const FakeBlockData &block = mvclip.GetBlock(0, i);
 		int blx = block.GetX() * nPel + block.GetMV().x;
 		int bly = block.GetY() * nPel + block.GetMV().y;
-		p = pPlane->GetPointer(blx/xRatioUV, bly/yRatioUV);
+		p = pPlane->GetPointer(blx/xRatioUV, bly/yRatioUV); // pixelsize - aware
 		np = pPlane->GetPitch();
 		int blockSAD = block.GetSAD();
 		WRef = DegrainWeight(thSADC, blockSAD);
 	}
 	else
 	{
-		p = pSrcCur + (xx/xRatioUV);
+		p = pSrcCur + (xx/xRatioUV); // xx:byte offset
 		np = nSrcPitch;
 		WRef = 0;
 	}
@@ -989,15 +1844,47 @@ void	MVDegrain3::use_block_uv (const BYTE * &p, int &np, int &WRef, bool isUsabl
 
 
 
-void	MVDegrain3::norm_weights (int &WSrc, int &WRefB, int &WRefF, int &WRefB2, int &WRefF2, int &WRefB3, int &WRefF3)
+template<int level>
+void	MVDegrainX::norm_weights (int &WSrc, int (&WRefB)[MAX_DEGRAIN], int (&WRefF)[MAX_DEGRAIN])
 {
 	WSrc = 256;
-	int WSum = WRefB + WRefF + WSrc + WRefB2 + WRefF2 + WRefB3 + WRefF3 + 1;
-	WRefB  = WRefB*256/WSum; // normalize weights to 256
-	WRefF  = WRefF*256/WSum;
-	WRefB2 = WRefB2*256/WSum;
-	WRefF2 = WRefF2*256/WSum;
-	WRefB3 = WRefB3*256/WSum;
-	WRefF3 = WRefF3*256/WSum;
-	WSrc = 256 - WRefB - WRefF - WRefB2 - WRefF2 - WRefB3 - WRefF3;
+  int WSum;
+  if (level==5)
+    WSum = WRefB[0] + WRefF[0] + WSrc + WRefB[1] + WRefF[1] + WRefB[2] + WRefF[2] + WRefB[3] + WRefF[3] + WRefB[4] + WRefF[4] +1;
+  if (level==4)
+    WSum = WRefB[0] + WRefF[0] + WSrc + WRefB[1] + WRefF[1] + WRefB[2] + WRefF[2] + WRefB[3] + WRefF[3] +1;
+  if (level==3)
+    WSum = WRefB[0] + WRefF[0] + WSrc + WRefB[1] + WRefF[1] + WRefB[2] + WRefF[2] + 1;
+  else if(level==2)
+    WSum = WRefB[0] + WRefF[0] + WSrc + WRefB[1] + WRefF[1] + 1;
+  else if(level==1)
+    WSum = WRefB[0] + WRefF[0] + WSrc + 1;
+  WRefB[0]  = WRefB[0]*256/WSum; // normalize weights to 256
+	WRefF[0]  = WRefF[0]*256/WSum;
+  if(level>=2) {
+    WRefB[1]  = WRefB[1]*256/WSum; // normalize weights to 256
+    WRefF[1]  = WRefF[1]*256/WSum;
+  }
+  if(level>=3) {
+    WRefB[2]  = WRefB[2]*256/WSum; // normalize weights to 256
+    WRefF[2]  = WRefF[2]*256/WSum;
+  }
+  if(level>=4) {
+    WRefB[3]  = WRefB[3]*256/WSum; // normalize weights to 256
+    WRefF[3]  = WRefF[3]*256/WSum;
+  }
+  if(level>=5) {
+    WRefB[4]  = WRefB[4]*256/WSum; // normalize weights to 256
+    WRefF[4]  = WRefF[4]*256/WSum;
+  }
+  if (level == 5)
+    WSrc = 256 - WRefB[0] - WRefF[0] - WRefB[1] - WRefF[1] - WRefB[2] - WRefF[2] - WRefB[3] - WRefF[3] - WRefB[4] - WRefF[4];
+  else if (level == 4)
+    WSrc = 256 - WRefB[0] - WRefF[0] - WRefB[1] - WRefF[1] - WRefB[2] - WRefF[2] - WRefB[3] - WRefF[3];
+  else if (level == 3)
+    WSrc = 256 - WRefB[0] - WRefF[0] - WRefB[1] - WRefF[1] - WRefB[2] - WRefF[2];
+  else if (level == 2)
+    WSrc = 256 - WRefB[0] - WRefF[0] - WRefB[1] - WRefF[1];
+  else if (level == 1)
+    WSrc = 256 - WRefB[0] - WRefF[0];
 }

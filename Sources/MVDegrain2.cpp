@@ -28,6 +28,8 @@
 #include "profile.h"
 #include "SuperParams64Bits.h"
 
+#if 0
+// PF 160926: common MDegrain1 to 5
 MVDegrain2::Denoise2Function* MVDegrain2::get_denoise2_function(int BlockX, int BlockY, int pixelsize, arch_t arch)
 {
     // 8 bit only (pixelsize==1)
@@ -909,3 +911,4 @@ void	MVDegrain2::norm_weights (int &WSrc, int &WRefB, int &WRefF, int &WRefB2, i
 	WRefF2 = WRefF2*256/WSum;
 	WSrc = 256 - WRefB - WRefF - WRefB2 - WRefF2;
 }
+#endif // #if 0

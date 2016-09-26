@@ -8,83 +8,84 @@
 #include "yuy2planes.h"
 
 
+#if 0
 
-
-
+// PF 160926: common MDegrain1 to 5
 class MVGroupOfFrames;
 class MVPlane;
 
 /*! \brief Filter that denoise the picture
  */
 class MVDegrain2
-:	public GenericVideoFilter
-,	public MVFilter
+  : public GenericVideoFilter
+  , public MVFilter
 {
 private:
-    typedef void (Denoise2Function) (
-        BYTE *pDst, BYTE *pDstLsb, bool lsb_flag, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
-        const BYTE *pRefB, int BPitch, const BYTE *pRefF, int FPitch,
-        const BYTE *pRefB2, int B2Pitch, const BYTE *pRefF2, int F2Pitch,
-        int WSrc, int WRefB, int WRefF, int WRefB2, int WRefF2
-        );
+  typedef void (Denoise2Function)(
+    BYTE *pDst, BYTE *pDstLsb, bool lsb_flag, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
+    const BYTE *pRefB, int BPitch, const BYTE *pRefF, int FPitch,
+    const BYTE *pRefB2, int B2Pitch, const BYTE *pRefF2, int F2Pitch,
+    int WSrc, int WRefB, int WRefF, int WRefB2, int WRefF2
+    );
 
-   MVClip mvClipB;
-   MVClip mvClipF;
-   MVClip mvClipB2;
-   MVClip mvClipF2;
-   int thSAD;
-   int thSADC;
-   int YUVplanes;
-   int nLimit;
-   int nLimitC;
-   bool isse2;
-   bool planar;
-	bool lsb_flag;
-	int height_lsb_mul;
-    //int pixelsize; // in MVFilter
-    int pixelsize_super; // PF not param, from create
+  MVClip mvClipB;
+  MVClip mvClipF;
+  MVClip mvClipB2;
+  MVClip mvClipF2;
+  int thSAD;
+  int thSADC;
+  int YUVplanes;
+  int nLimit;
+  int nLimitC;
+  PClip super; // v2.0
+  bool isse2;
+  bool planar;
+  bool lsb_flag;
+  int height_lsb_mul;
+  //int pixelsize; // in MVFilter
+  int pixelsize_super; // PF not param, from create
 
-   PClip super; // v2.0
-   int nSuperModeYUV;
-	MVGroupOfFrames *pRefBGOF, *pRefFGOF;
-	MVGroupOfFrames *pRefB2GOF, *pRefF2GOF;
+  int nSuperModeYUV;
 
-	YUY2Planes * DstPlanes;
-	YUY2Planes * SrcPlanes;
+  YUY2Planes * DstPlanes;
+  YUY2Planes * SrcPlanes;
 
-	OverlapWindows *OverWins;
-	OverlapWindows *OverWinsUV;
+  OverlapWindows *OverWins;
+  OverlapWindows *OverWinsUV;
 
-	OverlapsFunction *OVERSLUMA;
-	OverlapsFunction *OVERSCHROMA;
-	OverlapsLsbFunction *OVERSLUMALSB;
-	OverlapsLsbFunction *OVERSCHROMALSB;
-	Denoise2Function *DEGRAINLUMA;
-	Denoise2Function *DEGRAINCHROMA;
+  OverlapsFunction *OVERSLUMA;
+  OverlapsFunction *OVERSCHROMA;
+  OverlapsLsbFunction *OVERSLUMALSB;
+  OverlapsLsbFunction *OVERSCHROMALSB;
+  Denoise2Function *DEGRAINLUMA;
+  Denoise2Function *DEGRAINCHROMA;
 
-	unsigned char *tmpBlock;
-	unsigned char *tmpBlockLsb;	// Not allocated, it's just a reference to a part of the tmpBlock area (or 0 if no LSB)
-	unsigned short * DstShort;
-	int dstShortPitch;
-	int * DstInt;
-	int dstIntPitch;
+  MVGroupOfFrames *pRefBGOF, *pRefFGOF;
+  MVGroupOfFrames *pRefB2GOF, *pRefF2GOF;
+
+  unsigned char *tmpBlock;
+  unsigned char *tmpBlockLsb;	// Not allocated, it's just a reference to a part of the tmpBlock area (or 0 if no LSB)
+  unsigned short * DstShort;
+  int dstShortPitch;
+  int * DstInt;
+  int dstIntPitch;
 
 public:
-	MVDegrain2(
-		PClip _child, PClip _super, PClip _mvbw2, PClip _mvbw, PClip _mvfw, PClip _mvfw2,
-		int _thSAD, int _thSADC, int _YUVplanes, int _nLimit, int _nLimitC,
-		int nSCD1, int nSCD2, bool _isse2, bool _planar, bool _lsb_flag,
-		bool mt_flag, IScriptEnvironment* env
-	);
-	~MVDegrain2();
-	PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
+  MVDegrain2(
+    PClip _child, PClip _super, PClip _mvbw2, PClip _mvbw, PClip _mvfw, PClip _mvfw2,
+    int _thSAD, int _thSADC, int _YUVplanes, int _nLimit, int _nLimitC,
+    int nSCD1, int nSCD2, bool _isse2, bool _planar, bool _lsb_flag,
+    bool mt_flag, IScriptEnvironment* env
+  );
+  ~MVDegrain2();
+  PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
 
 private:
-	inline void	process_chroma (int plane_mask, BYTE *pDst, BYTE *pDstCur, int nDstPitch, const BYTE *pSrc, const BYTE *pSrcCur, int nSrcPitch, bool isUsableB, bool isUsableF, bool isUsableB2, bool isUsableF2, MVPlane *pPlanesB, MVPlane *pPlanesF, MVPlane *pPlanesB2, MVPlane *pPlanesF2, int lsb_offset_uv, int nWidth_B, int nHeight_B);
-	inline void	use_block_y (const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch);
-	inline void	use_block_uv (const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch);
-	static inline void	norm_weights (int &WSrc, int &WRefB, int &WRefF, int &WRefB2, int &WRefF2);
-    Denoise2Function* get_denoise2_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
+  inline void	process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int nDstPitch, const BYTE *pSrc, const BYTE *pSrcCur, int nSrcPitch, bool isUsableB, bool isUsableF, bool isUsableB2, bool isUsableF2, MVPlane *pPlanesB, MVPlane *pPlanesF, MVPlane *pPlanesB2, MVPlane *pPlanesF2, int lsb_offset_uv, int nWidth_B, int nHeight_B);
+  inline void	use_block_y(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch);
+  inline void	use_block_uv(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch);
+  static inline void	norm_weights(int &WSrc, int &WRefB, int &WRefF, int &WRefB2, int &WRefF2);
+  Denoise2Function* get_denoise2_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
 };
 
 template<int blockWidth, int blockHeight>
@@ -267,5 +268,5 @@ void Degrain2_sse2(BYTE *pDst, BYTE *pDstLsb, bool lsb_flag, int nDstPitch, cons
 		}
 	}
 }
-
+#endif // if 0
 #endif
