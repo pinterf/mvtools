@@ -76,6 +76,45 @@ SADFunction* get_sad_function(int BlockX, int BlockY, int pixelsize, arch_t arch
     func_sad[make_tuple(2 , 2 , 2, NO_SIMD)] = Sad_C<2 , 2,uint16_t>;
     func_sad[make_tuple(2 , 1 , 2, NO_SIMD)] = Sad_C<2 , 1,uint16_t>;
     
+    // PF SAD 16 SIMD intrinsic functions
+    // only for >=8 bytes widths
+    func_sad[make_tuple(32, 32, 2, USE_SSE2)] = Sad16_sse2<32, 32,uint16_t>;
+    func_sad[make_tuple(32, 16, 2, USE_SSE2)] = Sad16_sse2<32, 16,uint16_t>;
+    func_sad[make_tuple(32, 8 , 2, USE_SSE2)] = Sad16_sse2<32, 8,uint16_t>;
+    func_sad[make_tuple(16, 32, 2, USE_SSE2)] = Sad16_sse2<16, 32,uint16_t>;
+    func_sad[make_tuple(16, 16, 2, USE_SSE2)] = Sad16_sse2<16, 16,uint16_t>;
+    func_sad[make_tuple(16, 8 , 2, USE_SSE2)] = Sad16_sse2<16, 8,uint16_t>;
+    func_sad[make_tuple(16, 4 , 2, USE_SSE2)] = Sad16_sse2<16, 4,uint16_t>;
+    func_sad[make_tuple(16, 2 , 2, USE_SSE2)] = Sad16_sse2<16, 2,uint16_t>;
+    func_sad[make_tuple(16, 1 , 2, USE_SSE2)] = Sad16_sse2<16, 1,uint16_t>;
+    func_sad[make_tuple(8 , 16, 2, USE_SSE2)] = Sad16_sse2<8 , 16,uint16_t>;
+    func_sad[make_tuple(8 , 8 , 2, USE_SSE2)] = Sad16_sse2<8 , 8,uint16_t>;
+    func_sad[make_tuple(8 , 4 , 2, USE_SSE2)] = Sad16_sse2<8 , 4,uint16_t>;
+    func_sad[make_tuple(8 , 2 , 2, USE_SSE2)] = Sad16_sse2<8 , 2,uint16_t>;
+    func_sad[make_tuple(8 , 1 , 2, USE_SSE2)] = Sad16_sse2<8 , 1,uint16_t>;
+    func_sad[make_tuple(4 , 8 , 2, USE_SSE2)] = Sad16_sse2<4 , 8,uint16_t>;
+    func_sad[make_tuple(4 , 4 , 2, USE_SSE2)] = Sad16_sse2<4 , 4,uint16_t>;
+    func_sad[make_tuple(4 , 2 , 2, USE_SSE2)] = Sad16_sse2<4 , 2,uint16_t>;
+
+    // PF uint8_t sse2 versions. test. 
+    // a bit slower than the existing external asm. At least for MSVC
+    // >=8 bytes
+#ifdef SAD_8BIT_INSTINSICS
+    func_sad[make_tuple(32, 32, 1, USE_SSE2)] = Sad16_sse2<32, 32,uint8_t>;
+    func_sad[make_tuple(32, 16, 1, USE_SSE2)] = Sad16_sse2<32, 16,uint8_t>;
+    func_sad[make_tuple(32, 8 , 1, USE_SSE2)] = Sad16_sse2<32, 8,uint8_t>;
+    func_sad[make_tuple(16, 32, 1, USE_SSE2)] = Sad16_sse2<16, 32,uint8_t>;
+    func_sad[make_tuple(16, 16, 1, USE_SSE2)] = Sad16_sse2<16, 16,uint8_t>;
+    func_sad[make_tuple(16, 8 , 1, USE_SSE2)] = Sad16_sse2<16, 8,uint8_t>;
+    func_sad[make_tuple(16, 4 , 1, USE_SSE2)] = Sad16_sse2<16, 4,uint8_t>;
+    func_sad[make_tuple(16, 2 , 1, USE_SSE2)] = Sad16_sse2<16, 2,uint8_t>;
+    func_sad[make_tuple(16, 1 , 1, USE_SSE2)] = Sad16_sse2<16, 1,uint8_t>;
+    func_sad[make_tuple(8 , 16, 1, USE_SSE2)] = Sad16_sse2<8 , 16,uint8_t>;
+    func_sad[make_tuple(8 , 8 , 1, USE_SSE2)] = Sad16_sse2<8 , 8,uint8_t>;
+    func_sad[make_tuple(8 , 4 , 1, USE_SSE2)] = Sad16_sse2<8 , 4,uint8_t>;
+    func_sad[make_tuple(8 , 2 , 1, USE_SSE2)] = Sad16_sse2<8 , 2,uint8_t>;
+    func_sad[make_tuple(8 , 1 , 1, USE_SSE2)] = Sad16_sse2<8 , 1,uint8_t>;
+#else
     func_sad[make_tuple(32, 32, 1, USE_SSE2)] = Sad32x32_iSSE;
     func_sad[make_tuple(32, 16, 1, USE_SSE2)] = Sad32x16_iSSE;
     func_sad[make_tuple(32, 8 , 1, USE_SSE2)] = Sad32x8_iSSE;
@@ -89,6 +128,7 @@ SADFunction* get_sad_function(int BlockX, int BlockY, int pixelsize, arch_t arch
     func_sad[make_tuple(8 , 4 , 1, USE_SSE2)] = Sad8x4_iSSE;
     func_sad[make_tuple(8 , 2 , 1, USE_SSE2)] = Sad8x2_iSSE;
     func_sad[make_tuple(8 , 1 , 1, USE_SSE2)] = Sad8x1_iSSE;
+#endif
     func_sad[make_tuple(4 , 8 , 1, USE_SSE2)] = Sad4x8_iSSE;
     func_sad[make_tuple(4 , 4 , 1, USE_SSE2)] = Sad4x4_iSSE;
     func_sad[make_tuple(4 , 2 , 1, USE_SSE2)] = Sad4x2_iSSE;

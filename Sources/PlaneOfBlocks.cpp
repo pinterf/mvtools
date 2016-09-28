@@ -253,7 +253,7 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
                      // OverlapsFunction
                      // in M(V)DegrainX: DenoiseXFunction
     arch_t arch;
-    if ((pixelsize == 1) && isse)
+    if (isse)
         arch = USE_SSE2;
     else
         arch = NO_SIMD;
