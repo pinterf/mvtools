@@ -207,12 +207,14 @@ PVideoFrame __stdcall MVShow::GetFrame(int n, IScriptEnvironment* env)
 	return dst;
 }
 
+// todo: bits_per_pixel
 inline void MVShow::DrawPixel(unsigned char *pDst, int nDstPitch, int x, int y, int w, int h, int luma)
 {
 //	if (( x >= 0 ) && ( x < w ) && ( y >= 0 ) && ( y < h )) // disababled in v.2 - it is no more needed with super clip
 		pDst[x + y * nDstPitch] = luma;
 }
 
+// todo: bits_per_pixel
 // Draw the vector, scaled with the right scalar factor.
 void MVShow::DrawMV(unsigned char *pDst, int nDstPitch, int scale,
 			        int x, int y, int sizex, int sizey, int w, int h, VECTOR vector, int pel)
@@ -281,6 +283,7 @@ void MVShow::DrawMVs(unsigned char *pDst, int nDstPitch, const unsigned char *pS
 	    }
     }
 */
+  // todo: bits_per_pixel
 	for ( int i = 0; i < plane.GetBlockCount(); i++ )
 		if ( plane[i].GetSAD() < nTolerance )
 			DrawMV(pDst + plane.GetBlockSizeX() / 2 * effectiveScale + plane.GetBlockSizeY()/ 2 * effectiveScale*nDstPitch, // changed in v1.8, now address is the center of first block
