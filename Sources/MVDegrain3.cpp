@@ -885,13 +885,9 @@ MVDegrainX::MVDegrainX(
   OVERSLUMA = get_overlaps_function(nBlkSizeX, nBlkSizeY, sizeof(uint8_t), arch);
   OVERSCHROMA = get_overlaps_function(nBlkSizeX / xRatioUV, nBlkSizeY / yRatioUV, sizeof(uint8_t), arch);
 
-
-  // todo: like lsb function int ptr
   OVERSLUMA16 = get_overlaps_function(nBlkSizeX, nBlkSizeY, sizeof(uint16_t), NO_SIMD);
-  OVERSCHROMA16 = get_overlaps_function(nBlkSizeX, nBlkSizeY, sizeof(uint16_t), NO_SIMD);
+  OVERSCHROMA16 = get_overlaps_function(nBlkSizeX / xRatioUV, nBlkSizeY / yRatioUV, sizeof(uint16_t), NO_SIMD);
 
-  //DEGRAINLUMA = get_denoise3_function(nBlkSizeX, nBlkSizeY, pixelsize, arch);
-  //DEGRAINCHROMA = get_denoise3_function(nBlkSizeX/xRatioUV, nBlkSizeY/yRatioUV, pixelsize, arch);
   DEGRAINLUMA = get_denoise123_function(nBlkSizeX, nBlkSizeY, pixelsize_super, lsb_flag, level, arch);
   DEGRAINCHROMA = get_denoise123_function(nBlkSizeX / xRatioUV, nBlkSizeY / yRatioUV, pixelsize_super, lsb_flag, level, arch);
   if (!OVERSLUMA)
@@ -902,6 +898,14 @@ MVDegrainX::MVDegrainX(
     env->ThrowError("MDegrain%d : no valid DEGRAINLUMA function for %dx%d, pixelsize=%d, lsb_flag=%d, level=%d", level, nBlkSizeX, nBlkSizeY, pixelsize_super, (int)lsb_flag, level);
   if (!DEGRAINCHROMA)
     env->ThrowError("MDegrain%d : no valid DEGRAINCHROMA function for %dx%d, pixelsize=%d, lsb_flag=%d, level=%d", level, nBlkSizeX, nBlkSizeY, pixelsize_super, (int)lsb_flag, level);
+
+  switch (level) {
+  case 1: NORMWEIGHTS = norm_weights<1>; break;
+  case 2: NORMWEIGHTS = norm_weights<2>; break;
+  case 3: NORMWEIGHTS = norm_weights<3>; break;
+  case 4: NORMWEIGHTS = norm_weights<4>; break;
+  case 5: NORMWEIGHTS = norm_weights<5>; break;
+  }
 
   const int		tmp_size = 32 * 32 * pixelsize_super;
   tmpBlock = new BYTE[tmp_size * height_lsb_mul];
@@ -1391,6 +1395,7 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
 
   else
   {
+    
     if (nOverlapX == 0 && nOverlapY == 0)
     {
       for (int by = 0; by < nBlkY; by++)
@@ -1416,6 +1421,8 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
           use_block_y (pB3, npB3, WRefB3, isUsableB3, mvClipB3, i, pPlanesB3 [0], pSrcCur [0], xx, nSrcPitches [0]);
           use_block_y (pF3, npF3, WRefF3, isUsableF3, mvClipF3, i, pPlanesF3 [0], pSrcCur [0], xx, nSrcPitches [0]);
           */
+          NORMWEIGHTS(WSrc, WRefB, WRefF);
+          /*
           if (level == 1)
             norm_weights<1>(WSrc, WRefB, WRefF);
           else if (level == 2)
@@ -1426,6 +1433,7 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
             norm_weights<4>(WSrc, WRefB, WRefF);
           else if (level == 5)
             norm_weights<5>(WSrc, WRefB, WRefF);
+            */
 
           // luma
           DEGRAINLUMA(pDstCur[0] + xx*pixelsize_super, pDstCur[0] + lsb_offset_y + xx*pixelsize_super,
@@ -1495,16 +1503,7 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
             use_block_y(pB[j], npB[j], WRefB[j], isUsableB[j], *mvClipB[j], i, pPlanesB[0][j], pSrcCur[0], xx*pixelsize_super, nSrcPitches[0]);
             use_block_y(pF[j], npF[j], WRefF[j], isUsableF[j], *mvClipF[j], i, pPlanesF[0][j], pSrcCur[0], xx*pixelsize_super, nSrcPitches[0]);
           }
-          if (level == 1)
-            norm_weights<1>(WSrc, WRefB, WRefF);
-          else if (level == 2)
-            norm_weights<2>(WSrc, WRefB, WRefF);
-          else if (level == 3)
-            norm_weights<3>(WSrc, WRefB, WRefF);
-          else if (level == 4)
-            norm_weights<4>(WSrc, WRefB, WRefF);
-          else if (level == 5)
-            norm_weights<5>(WSrc, WRefB, WRefF);
+          NORMWEIGHTS(WSrc, WRefB, WRefF);
           /*
           use_block_y (pB , npB , WRefB , isUsableB , mvClipB , i, pPlanesB  [0], pSrcCur [0], xx, nSrcPitches [0]);
           use_block_y (pF , npF , WRefF , isUsableF , mvClipF , i, pPlanesF  [0], pSrcCur [0], xx, nSrcPitches [0]);
@@ -1650,28 +1649,18 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
 
           for (int j = 0; j < level; j++) {
             // xx: byte granularity pointer shift
-            use_block_uv(pBV[j], npBV[j], WRefB[j], isUsableB[j], *mvClipB[j], i, pPlanesB[j], pSrcCur, xx, nSrcPitch);
-            use_block_uv(pFV[j], npFV[j], WRefF[j], isUsableF[j], *mvClipF[j], i, pPlanesF[j], pSrcCur, xx, nSrcPitch);
+            use_block_uv(pBV[j], npBV[j], WRefB[j], isUsableB[j], *mvClipB[j], i, pPlanesB[j], pSrcCur, xx*pixelsize_super, nSrcPitch);
+            use_block_uv(pFV[j], npFV[j], WRefF[j], isUsableF[j], *mvClipF[j], i, pPlanesF[j], pSrcCur, xx*pixelsize_super, nSrcPitch);
           }
-          if (level == 1)
-            norm_weights<1>(WSrc, WRefB, WRefF);
-          else if (level == 2)
-            norm_weights<2>(WSrc, WRefB, WRefF);
-          else if (level == 3)
-            norm_weights<3>(WSrc, WRefB, WRefF);
-          else if (level == 4)
-            norm_weights<4>(WSrc, WRefB, WRefF);
-          else if (level == 5)
-            norm_weights<5>(WSrc, WRefB, WRefF);
-
+          NORMWEIGHTS(WSrc, WRefB, WRefF);
           // chroma
-          DEGRAINCHROMA(pDstCur + (xx / xRatioUV), pDstCur + (xx / xRatioUV) + lsb_offset_uv,
-            lsb_flag, nDstPitch, pSrcCur + (xx / xRatioUV), nSrcPitch,
+          DEGRAINCHROMA(pDstCur + (xx / xRatioUV)*pixelsize_super, pDstCur + (xx / xRatioUV)*pixelsize_super + lsb_offset_uv,
+            lsb_flag, nDstPitch, pSrcCur + (xx / xRatioUV)*pixelsize_super, nSrcPitch,
             pBV, npBV, pFV, npFV, //pB2V, npB2V, pF2V, npF2V, pB3V, npB3V, pF3V, npF3V,
             WSrc, WRefB, WRefF //, WRefB2, WRefF2, WRefB3, WRefF3
           );
 
-          xx += nBlkSizeX*pixelsize_super;
+          xx += nBlkSizeX; // xx: indexing offset
 
           if (bx == nBlkX - 1 && nWidth_B < nWidth) // right non-covered region
           {
@@ -1727,20 +1716,10 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
           int WSrc, WRefB[MAX_DEGRAIN], WRefF[MAX_DEGRAIN]; // , WRefB2, WRefF2, WRefB3, WRefF3;
 
           for (int j = 0; j < level; j++) {
-            use_block_uv(pBV[j], npBV[j], WRefB[j], isUsableB[j], *mvClipB[j], i, pPlanesB[j], pSrcCur, xx, nSrcPitch);
-            use_block_uv(pFV[j], npFV[j], WRefF[j], isUsableF[j], *mvClipF[j], i, pPlanesF[j], pSrcCur, xx, nSrcPitch);
+            use_block_uv(pBV[j], npBV[j], WRefB[j], isUsableB[j], *mvClipB[j], i, pPlanesB[j], pSrcCur, xx*pixelsize_super, nSrcPitch);
+            use_block_uv(pFV[j], npFV[j], WRefF[j], isUsableF[j], *mvClipF[j], i, pPlanesF[j], pSrcCur, xx*pixelsize_super, nSrcPitch);
           }
-          if (level == 1)
-            norm_weights<1>(WSrc, WRefB, WRefF);
-          else if (level == 2)
-            norm_weights<2>(WSrc, WRefB, WRefF);
-          else if (level == 3)
-            norm_weights<3>(WSrc, WRefB, WRefF);
-          else if (level == 4)
-            norm_weights<4>(WSrc, WRefB, WRefF);
-          else if (level == 5)
-            norm_weights<5>(WSrc, WRefB, WRefF);
-
+          NORMWEIGHTS(WSrc, WRefB, WRefF);
           // chroma
           DEGRAINCHROMA(tmpBlock, tmpBlockLsb, lsb_flag, tmpPitch*pixelsize_super, pSrcCur + (xx / xRatioUV)*pixelsize_super, nSrcPitch,
             pBV, npBV, pFV, npFV, //pB2V, npB2V, pF2V, npF2V, pB3V, npB3V, pF3V, npF3V,
@@ -1811,8 +1790,8 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
   }
 }
 
-
-// no difference for 1-2-3
+// todo: put together with use_block_uv,  
+// todo: change /xRatioUV and /yRatioUV to bit shifts everywhere
 void	MVDegrainX::use_block_y(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch)
 {
   if (isUsable)

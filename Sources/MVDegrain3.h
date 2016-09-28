@@ -39,6 +39,9 @@ private:
     int WSrc, int WRefB, int WRefF, int WRefB2, int WRefF2, int WRefB3, int WRefF3
     );
     */
+  typedef void (norm_weights_Function_t)(int &WSrc, int(&WRefB)[MAX_DEGRAIN], int(&WRefF)[MAX_DEGRAIN]);
+
+
   typedef void (Denoise1to5Function)(
     BYTE *pDst, BYTE *pDstLsb, bool lsb_flag, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
     const BYTE *pRefB[MAX_DEGRAIN], int BPitch[MAX_DEGRAIN], const BYTE *pRefF[MAX_DEGRAIN], int FPitch[MAX_DEGRAIN],
@@ -88,6 +91,8 @@ private:
   //Denoise3Function *DEGRAINCHROMA;
   Denoise1to5Function *DEGRAINLUMA;
   Denoise1to5Function *DEGRAINCHROMA;
+
+  norm_weights_Function_t *NORMWEIGHTS;
 
   MVGroupOfFrames *pRefBGOF[MAX_DEGRAIN], *pRefFGOF[MAX_DEGRAIN];
   //MVGroupOfFrames *pRefB2GOF, *pRefF2GOF;
