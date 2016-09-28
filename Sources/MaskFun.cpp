@@ -625,6 +625,7 @@ void Merge16PlanesToBig(
 unsigned char SADToMask(unsigned int sad, unsigned int sadnorm1024)
 {
 	// sadnorm1024 = 255 * (4*1024)/(mlSAD*nBlkSize*nBlkSize*chromablockfactor)
+  // Check todo: bits_per_pixel? pixelsize?
 	unsigned int l = sadnorm1024*sad/1024;
 	return (unsigned char)((l > 255) ? 255 : l);
 }
