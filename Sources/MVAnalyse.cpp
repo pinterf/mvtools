@@ -65,8 +65,10 @@ MVAnalyse::MVAnalyse (
 
 #ifdef AVS16
     pixelsize = vi.ComponentSize();
+    bits_per_pixel = vi.BitsPerComponent();
 #else
     pixelsize = 1;
+    bits_per_pixel = 8;
 #endif
 
 	MVAnalysisData &	analysisData        = _srd_arr [0]._analysis_data;
@@ -122,17 +124,18 @@ MVAnalyse::MVAnalyse (
         analysisData.xRatioUV = 1; // n/a
     }
     analysisData.pixelsize = pixelsize;
+    analysisData.bits_per_pixel = bits_per_pixel;
 
 //	env->ThrowError ("MVAnalyse: %d, %d, %d, %d, %d", nPrepHPad, nPrepVPad, nPrepPel, nPrepModeYUV, nPrepLevels);
 	pSrcGOF = new MVGroupOfFrames (
 		nSuperLevels, analysisData.nWidth, analysisData.nHeight,
 		nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV,
-		_isse, analysisData.xRatioUV, analysisData.yRatioUV, pixelsize, mt_flag
+		_isse, analysisData.xRatioUV, analysisData.yRatioUV, pixelsize, bits_per_pixel, mt_flag
 	);
 	pRefGOF = new MVGroupOfFrames (
 		nSuperLevels, analysisData.nWidth, analysisData.nHeight,
 		nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV,
-		_isse, analysisData.xRatioUV, analysisData.yRatioUV, pixelsize,  mt_flag
+		_isse, analysisData.xRatioUV, analysisData.yRatioUV, pixelsize, bits_per_pixel, mt_flag
 	);
 
 	analysisData.nBlkSizeX = _blksizex;
@@ -267,7 +270,7 @@ MVAnalyse::MVAnalyse (
    global   = _global;
    pglobal  = _pglobal;
    pzero    = _pzero;
-   badSAD   = _badSAD * (_blksizex * _blksizey) / 64;
+   badSAD   = _badSAD * (_blksizex * _blksizey) / 64 * (1 << (bits_per_pixel-8)) ;
    badrange = _badrange;
    meander  = _meander;
    tryMany  = _tryMany;
@@ -275,7 +278,7 @@ MVAnalyse::MVAnalyse (
    if (_dctmode != 0)
    {
 		_dct_factory_ptr = std::auto_ptr <DCTFactory> (
-			new DCTFactory (_dctmode, _isse, _blksizex, _blksizey, pixelsize, *env)
+			new DCTFactory (_dctmode, _isse, _blksizex, _blksizey, pixelsize, bits_per_pixel, *env)
 		);
 		_dct_pool.set_factory (*_dct_factory_ptr);
    }
@@ -376,6 +379,7 @@ MVAnalyse::MVAnalyse (
         analysisData.yRatioUV,
         divideExtra,
         analysisData.pixelsize, // PF
+        analysisData.bits_per_pixel,
         (_dct_factory_ptr.get () != 0) ? &_dct_pool : 0,
 		_mt_flag
 	));
