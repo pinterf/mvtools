@@ -145,6 +145,7 @@ void LimitChanges_c(unsigned char *pDst, int nDstPitch, const unsigned char *pSr
 extern "C" void  __cdecl  LimitChanges_sse2(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, int nLimit);
 
 // Not really related to overlap, but common to MDegrainX functions
+// PF 160928: this is bottleneck. Could be optimized with precalc thSAD*thSAD
 inline int DegrainWeight(int thSAD, int blockSAD, int bits_per_pixels)
 {
 	// Returning directly prevents a divide by 0 if thSAD == blockSAD == 0.
@@ -153,7 +154,6 @@ inline int DegrainWeight(int thSAD, int blockSAD, int bits_per_pixels)
 		return 0;
 	}
   if(bits_per_pixels <= 8 ) {
-    //typedef typename std::conditional < sizeof(pixel_t) == 1, int, __int64>::type sad_sqr_t;
     const int thSAD2    = thSAD    * thSAD;
     const int blockSAD2 = blockSAD * blockSAD;
     const int num = thSAD2 - blockSAD2;
@@ -164,9 +164,15 @@ inline int DegrainWeight(int thSAD, int blockSAD, int bits_per_pixels)
       :  num     / (den>>8)); // very large numerator, prevent overflow
     return (res);
   } else {
-    // int overflows with bits_per_pixel scaled power of 2
-    const float sq_thSAD = std::powf(float(thSAD), 2.0f); // smart compiler makes x*x
-    const float sq_blockSAD = std::powf(float(blockSAD), 2.0f);
+    // int overflows with 8+ bits_per_pixel scaled power of 2
+    /* float is faster
+    const int64_t sq_thSAD = int64_t(thSAD) * thSAD;
+    const int64_t sq_blockSAD = int64_t(blockSAD) * blockSAD;
+    return (int)((256*(sq_thSAD - sq_blockSAD)) / (sq_thSAD + sq_blockSAD));
+    */
+    const float sq_thSAD = float(thSAD) * float(thSAD); // std::powf(float(thSAD), 2.0f); 
+    // smart compiler makes x*x, VS2015 calls __libm_sse2_pow_precise, way too slow
+    const float sq_blockSAD = float(blockSAD) * float(blockSAD); // std::powf(float(blockSAD), 2.0f);
     return (int)(256.0f*(sq_thSAD - sq_blockSAD) / (sq_thSAD + sq_blockSAD));
   }
 }
