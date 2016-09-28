@@ -120,8 +120,9 @@ private:
 	const bool		_lsb_flag;
 	const bool		_mt_flag;
 	int				_height_lsb_mul;
-    //int pixelsize; // in MVFilter
+    //int pixelsize, bits_per_pixel; // in MVFilter
     int pixelsize_super; // PF not param, from create
+    int bits_per_pixel_super;
 
     const int		_xratiouv_log; // PF
     const int		_yratiouv_log;

@@ -428,11 +428,11 @@ MDegrainN::MDegrainN (
 	const ::VideoInfo &	vi_super = _super->GetVideoInfo ();
 
 #ifdef AVS16
-    pixelsize = vi.ComponentSize();
     pixelsize_super = vi_super.ComponentSize();
+    bits_per_pixel_super = vi_super.BitsPerComponent();
 #else
-    pixelsize = 1; // of MVFilter
-    pixelsize_super = 1;
+    pixelsize_super = 1; // of MVFilter
+    bits_per_pixel_super = 8;
 #endif
 
 
@@ -461,7 +461,8 @@ MDegrainN::MDegrainN (
 			_isse_flag,
             xRatioUV,
             yRatioUV,
-            pixelsize, // or pixelsize_super or all the same?
+            pixelsize_super, // todo check! or pixelsize
+      bits_per_pixel_super,
 			mt_flag
 		));
 
@@ -1452,7 +1453,7 @@ void	MDegrainN::use_block_y (
 		p    = plane_ptr->GetPointer (blx, bly);
 		np   = plane_ptr->GetPitch ();
 		const int	block_sad = block.GetSAD ();
-		wref = DegrainWeight (c_info._thsad, block_sad);
+		wref = DegrainWeight(c_info._thsad, block_sad, bits_per_pixel);
 	}
 	else
 	{
@@ -1477,7 +1478,7 @@ void	MDegrainN::use_block_uv (
 		p    = plane_ptr->GetPointer (blx >> _xratiouv_log, bly >> _yratiouv_log);
 		np   = plane_ptr->GetPitch();
 		const int	block_sad = block.GetSAD();
-		wref = DegrainWeight (c_info._thsadc, block_sad);
+		wref = DegrainWeight(c_info._thsadc, block_sad, bits_per_pixel);
 	}
 	else
 	{
