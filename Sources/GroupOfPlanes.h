@@ -38,6 +38,7 @@ class GroupOfPlanes
 	int            yRatioUV;
     int            xRatioUV; // PF 160729
     int            pixelsize; // PF 160729
+    int bits_per_pixel;
 	int            divideExtra;
 	bool           _mt_flag;
 
@@ -47,10 +48,10 @@ class GroupOfPlanes
 	               planes;
 
 public :
-	GroupOfPlanes (
-		int _nBlkSizeX, int _nBlkSizeY, int _nLevelCount, int _nPel, int _nFlags,
-		int _nOverlapX, int _nOverlapY, int _nBlkX, int _nBlkY, int _xRatioUV, int _yRatioUV, int _pixelsize,
-		int _divideExtra, conc::ObjPool <DCTClass> *dct_pool_ptr, bool mt_flag);
+  GroupOfPlanes(
+    int _nBlkSizeX, int _nBlkSizeY, int _nLevelCount, int _nPel, int _nFlags,
+    int _nOverlapX, int _nOverlapY, int _nBlkX, int _nBlkY, int _xRatioUV, int _yRatioUV, int _divideExtra, int _pixelsize, int _bits_per_pixel, 
+		conc::ObjPool <DCTClass> *dct_pool_ptr, bool mt_flag);
 	~GroupOfPlanes ();
 	void           SearchMVs (
 		MVGroupOfFrames *pSrcGOF, MVGroupOfFrames *pRefGOF,

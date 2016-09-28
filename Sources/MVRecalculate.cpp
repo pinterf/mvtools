@@ -64,8 +64,10 @@ MVRecalculate::MVRecalculate (
 
 #ifdef AVS16
     pixelsize = vi.ComponentSize();
+    bits_per_pixel = vi.BitsPerComponent();
 #else
     pixelsize = 1;
+    bits_per_pixel = 8;
 #endif
 
 	MVAnalysisData &	analysisData        = _srd_arr [0]._analysis_data;
@@ -119,17 +121,18 @@ MVRecalculate::MVRecalculate (
         analysisData.xRatioUV = 1; // n/a
     }
     analysisData.pixelsize = pixelsize;
+    analysisData.bits_per_pixel = bits_per_pixel;
 
 
 	pSrcGOF = new MVGroupOfFrames (
 		nSuperLevels, analysisData.nWidth, analysisData.nHeight,
 		nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV,
-		_isse, analysisData.xRatioUV, analysisData.yRatioUV, analysisData.pixelsize, mt_flag
+		_isse, analysisData.xRatioUV, analysisData.yRatioUV, analysisData.pixelsize, analysisData.bits_per_pixel, mt_flag
 	);
 	pRefGOF = new MVGroupOfFrames (
 		nSuperLevels, analysisData.nWidth, analysisData.nHeight,
 		nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV,
-		_isse, analysisData.xRatioUV, analysisData.yRatioUV, analysisData.pixelsize, mt_flag
+		_isse, analysisData.xRatioUV, analysisData.yRatioUV, analysisData.pixelsize, analysisData.bits_per_pixel, mt_flag
 	);
 	const int		nSuperWidth  = child->GetVideoInfo().width;
 	const int		nSuperHeight = child->GetVideoInfo().height;
@@ -215,7 +218,7 @@ MVRecalculate::MVRecalculate (
    if (_dctmode != 0)
    {
 		_dct_factory_ptr = std::auto_ptr <DCTFactory> (
-			new DCTFactory (_dctmode, _isse, _blksizex, _blksizey, pixelsize, *env)
+			new DCTFactory (_dctmode, _isse, _blksizex, _blksizey, pixelsize, bits_per_pixel, *env)
 		);
 		_dct_pool.set_factory (*_dct_factory_ptr);
    }
@@ -296,6 +299,7 @@ MVRecalculate::MVRecalculate (
         analysisData.yRatioUV,
         divideExtra,
         analysisData.pixelsize,
+        analysisData.bits_per_pixel,
         (_dct_factory_ptr.get () != 0) ? &_dct_pool : 0,
 		_mt_flag
 	));

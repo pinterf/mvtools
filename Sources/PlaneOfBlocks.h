@@ -55,7 +55,7 @@ public :
 
 	typedef	MTSlicer <PlaneOfBlocks>	Slicer;
 
-	PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSizeY, int _nPel, int _nLevel, int _nFlags, int _nOverlapX, int _nOverlapY, int _xRatioUV, int _yRatioUV, int _pixelsize, conc::ObjPool <DCTClass> *dct_pool_ptr, bool mt_flag);
+	PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSizeY, int _nPel, int _nLevel, int _nFlags, int _nOverlapX, int _nOverlapY, int _xRatioUV, int _yRatioUV, int _pixelsize, int _bits_per_pixel, conc::ObjPool <DCTClass> *dct_pool_ptr, bool mt_flag);
 
 	~PlaneOfBlocks();
 
@@ -106,6 +106,7 @@ private:
     const int      yRatioUV;
     const int      nLogyRatioUV;     // log of yRatioUV (0 for 1 and 1 for 2)
     const int      pixelsize; // PF
+    const int      bits_per_pixel;
     const bool     _mt_flag;         // Allows multithreading
 
 	SADFunction *  SAD;              /* function which computes the sad */
@@ -226,6 +227,9 @@ private:
 		int iter;                   // MOTION_DEBUG only?
 		int srcLuma;
 
+    int pixelsize;
+    int bits_per_pixel;
+
 		// Data set once
 		TmpDataArray dctSrc;
 		TmpDataArray dctRef;
@@ -234,7 +238,7 @@ private:
 		uint8_t* pSrc_temp[3];      //for easy WRITE access to temp block
 #endif	// ALIGN_SOURCEBLOCK
 
-							WorkingArea (int nBlkSizeX, int nBlkSizeY, int dctpitch, int nLogxRatioUV, int xRatioUV, int nLogyRatioUV, int yRatioUV, int pixelsize);
+							WorkingArea (int nBlkSizeX, int nBlkSizeY, int dctpitch, int nLogxRatioUV, int xRatioUV, int nLogyRatioUV, int yRatioUV, int pixelsize, int bits_per_pixel);
 		virtual			~WorkingArea ();
 
 		inline bool IsVectorOK(int vx, int vy) const;
@@ -245,7 +249,7 @@ private:
 	:	public conc::ObjFactoryInterface <WorkingArea>
 	{
 	public:
-							WorkingAreaFactory (int nBlkSizeX, int nBlkSizeY, int dctpitch, int nLogxRatioUV, int xRatioUV, int nLogyRatioUV, int yRatioUV, int pixelsize);
+							WorkingAreaFactory (int nBlkSizeX, int nBlkSizeY, int dctpitch, int nLogxRatioUV, int xRatioUV, int nLogyRatioUV, int yRatioUV, int pixelsize, int bits_per_pixel);
 	protected:
 		// conc::ObjFactoryInterface
 		virtual WorkingArea *
@@ -259,6 +263,7 @@ private:
         int				_y_ratio_uv_log;
 		int				_y_ratio_uv;
         int _pixelsize; // PF
+        int _bits_per_pixel;
 	};
 
 	typedef	conc::ObjPool <WorkingArea>	WorkingAreaPool;

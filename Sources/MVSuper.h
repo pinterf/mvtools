@@ -111,6 +111,7 @@ protected:
 	int            xRatioUV;
 
     int pixelsize; // PF
+    int bits_per_pixel;
 
 	bool           chroma;
 	int            pixelType; //PF maybe obsolate 160729 used in YUY decision along with planar flag

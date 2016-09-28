@@ -23,6 +23,8 @@ private:
 //   PClip pelclip;
    bool isse;
 
+   int pixelsize;
+   int bits_per_pixel;
 
    int nPel;
 

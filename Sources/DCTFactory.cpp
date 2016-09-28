@@ -41,14 +41,15 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 /*\\\ PUBLIC \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
-DCTFactory::DCTFactory (int dctmode, bool isse, int blksizex, int blksizey, int pixelsize, ::IScriptEnvironment &env)
+DCTFactory::DCTFactory (int dctmode, bool isse, int blksizex, int blksizey, int pixelsize, int bits_per_pixel, ::IScriptEnvironment &env)
 :	_fftw_hnd (0)
 ,	_dctmode (dctmode)
 ,	_isse (isse)
 ,	_blksizex (blksizex)
 ,	_blksizey (blksizey)
-,	_fftw_flag (! (_isse && _blksizex == 8 && _blksizey == 8 && pixelsize==1))
+,	_fftw_flag (! (_isse && _blksizex == 8 && _blksizey == 8 && pixelsize==1)) // only 8x8 is implemented as an int FFT
 ,	_pixelsize(pixelsize)
+,	_bits_per_pixel(bits_per_pixel)
 
 {
 	assert (dctmode != 0);
@@ -100,7 +101,7 @@ DCTClass *	DCTFactory::do_create ()
 {
 	if (_fftw_flag)
 	{
-		return (new DCTFFTW (_blksizex, _blksizey, _fftw_hnd, _dctmode, _pixelsize));
+		return (new DCTFFTW (_blksizex, _blksizey, _fftw_hnd, _dctmode, _pixelsize, _bits_per_pixel));
 	}
 	return (new DCTINT (_blksizex, _blksizey, _dctmode));
 }

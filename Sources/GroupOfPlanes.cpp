@@ -28,7 +28,7 @@
 GroupOfPlanes::GroupOfPlanes (
 	int _nBlkSizeX, int _nBlkSizeY, int _nLevelCount, int _nPel, int _nFlags,
 	int _nOverlapX, int _nOverlapY, int _nBlkX, int _nBlkY, int _xRatioUV, int _yRatioUV,
-	int _divideExtra, int _pixelsize, conc::ObjPool <DCTClass> *dct_pool_ptr, bool mt_flag
+	int _divideExtra, int _pixelsize, int _bits_per_pixel, conc::ObjPool <DCTClass> *dct_pool_ptr, bool mt_flag
 )
 :	nBlkSizeX (_nBlkSizeX)
 ,	nBlkSizeY (_nBlkSizeY)
@@ -41,6 +41,7 @@ GroupOfPlanes::GroupOfPlanes (
 ,	yRatioUV (_yRatioUV)
 ,	divideExtra (_divideExtra)
 ,	pixelsize (_pixelsize)
+,	bits_per_pixel (_bits_per_pixel)
 ,	_mt_flag (mt_flag)
 ,	_dct_pool_ptr (dct_pool_ptr)
 {
@@ -63,7 +64,7 @@ GroupOfPlanes::GroupOfPlanes (
 		}
 		nBlkX = ((nWidth_B  >> i) - nOverlapX) / (nBlkSizeX - nOverlapX);
 		nBlkY = ((nHeight_B >> i) - nOverlapY) / (nBlkSizeY - nOverlapY);
-		planes [i] = new PlaneOfBlocks(nBlkX, nBlkY, nBlkSizeX, nBlkSizeY, nPelCurrent, i, nFlagsCurrent, nOverlapX, nOverlapY, xRatioUV, yRatioUV, pixelsize, dct_pool_ptr, mt_flag);
+		planes [i] = new PlaneOfBlocks(nBlkX, nBlkY, nBlkSizeX, nBlkSizeY, nPelCurrent, i, nFlagsCurrent, nOverlapX, nOverlapY, xRatioUV, yRatioUV, pixelsize, bits_per_pixel, dct_pool_ptr, mt_flag);
 		nPelCurrent = 1;
 	}
 }

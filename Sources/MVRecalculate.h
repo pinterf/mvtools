@@ -113,6 +113,7 @@ protected:
 	bool           _mt_flag;
 
     int pixelsize; // PF
+    int bits_per_pixel;
 
 public :
 

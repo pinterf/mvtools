@@ -53,6 +53,7 @@ MVFilter::MVFilter(const PClip &vector, const char *filterName, IScriptEnvironme
    xRatioUV = mvClip.GetXRatioUV(); // PF
    yRatioUV = mvClip.GetYRatioUV();
    pixelsize = mvClip.GetPixelSize(); // PF
+   bits_per_pixel = mvClip.GetBitsPerPixel();
 
    name = filterName;
 }
@@ -87,4 +88,8 @@ void MVFilter::CheckSimilarity(const MVClip &vector, const char *vectorName, ISc
 
    if ( pixelsize != vector.GetPixelSize() )
        env->ThrowError("Error in %s : %s's pixel size (bit depth) is incorrect", name, vectorName);
+
+   if ( bits_per_pixel != vector.GetBitsPerPixel() )
+     env->ThrowError("Error in %s : %s's bit depth is incorrect", name, vectorName);
+
 }

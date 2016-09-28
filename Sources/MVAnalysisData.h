@@ -94,6 +94,7 @@ public:
 
    int xRatioUV; // ratio of luma plane height to chroma plane width (fixed to 2 for YV12 and YUY2) PF used!
    int pixelsize; // PF
+   int bits_per_pixel;
 
 //	int sharp; // pel2 interpolation type
 
@@ -124,7 +125,8 @@ public :
    inline int GetYRatioUV() const { return yRatioUV; }
    inline int GetXRatioUV() const { return xRatioUV; }
    inline int GetPixelSize() const { return pixelsize; } // PF
-   //	inline int GetSharp() const { return sharp; }
+   inline int GetBitsPerPixel() const { return bits_per_pixel; } // PF
+//	inline int GetSharp() const { return sharp; }
 //	inline bool UsePelClip() const { return usePelClip; }
    inline int GetBlkSizeY() const { return nBlkSizeY; }
    inline int GetOverlapY() const { return nOverlapY; }

@@ -144,8 +144,8 @@ MVCompensate::MVCompensate(
 	int nSuperModeYUV = params.nModeYUV;
 	int nSuperLevels = params.nLevels;
 
-	pRefGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse2, xRatioUV, yRatioUV, pixelsize, mt_flag);
-	pSrcGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse2, xRatioUV, yRatioUV, pixelsize, mt_flag);
+	pRefGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse2, xRatioUV, yRatioUV, pixelsize, bits_per_pixel, mt_flag);
+	pSrcGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse2, xRatioUV, yRatioUV, pixelsize, bits_per_pixel, mt_flag);
 	nSuperWidth = super->GetVideoInfo().width;
 	nSuperHeight = super->GetVideoInfo().height;
 

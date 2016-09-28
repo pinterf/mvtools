@@ -70,6 +70,7 @@ protected:
    int xRatioUV; // PF
    int yRatioUV;
    int pixelsize; // PF
+   int bits_per_pixel;
 
    /*! \brief Filter's name */
 //   std::string name;

@@ -41,7 +41,7 @@ class MVPlane
 {
 public:
 
-   MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, int _pixelsize, bool _isse, bool mt_flag);
+   MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, int _pixelsize, int _bits_per_pixel, bool _isse, bool mt_flag);
    ~MVPlane();
 
    void set_interp (int rfilter, int sharp);
@@ -150,6 +150,7 @@ private:
    int nExtendedHeight;
 
    int pixelsize; // PF
+   int bits_per_pixel;
 
    int nPel;
 	int nSharp;		// Set only from MSuper, used in Refine()

@@ -39,7 +39,7 @@ boundaries.
 #include <stdint.h>
 
 
-MVPlane::MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, int _pixelsize, bool _isse, bool mt_flag)
+MVPlane::MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, int _pixelsize, int _bits_per_pixel, bool _isse, bool mt_flag)
 :	pPlane (new uint8_t* [_nPel * _nPel * _pixelsize])
 ,	nWidth (_nWidth)
 ,	nHeight (_nHeight)
@@ -54,6 +54,7 @@ MVPlane::MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, i
 ,	nPel (_nPel)
 ,	nSharp (2)
 ,	pixelsize(_pixelsize)
+,	bits_per_pixel(_bits_per_pixel)
 ,	isse (_isse)
 ,	_mt_flag (mt_flag)
 ,	isPadded (false)

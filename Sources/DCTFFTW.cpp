@@ -35,7 +35,7 @@ conc::Mutex	DCTFFTW::_fftw_mutex;
 
 
 
-DCTFFTW::DCTFFTW(int _sizex, int _sizey, HINSTANCE hinstFFTW3, int _dctmode, int _pixelsize) 
+DCTFFTW::DCTFFTW(int _sizex, int _sizey, HINSTANCE hinstFFTW3, int _dctmode, int _pixelsize, int _bits_per_pixel) 
 {
 	fftwf_free_addr = (fftwf_free_proc) GetProcAddress(hinstFFTW3, "fftwf_free"); 
     if(!fftwf_free_addr) fftwf_free_addr = (fftwf_free_proc) GetProcAddress(hinstFFTW3, "fftw_free"); // ffw3 v3.5!!!
@@ -57,6 +57,7 @@ DCTFFTW::DCTFFTW(int _sizex, int _sizey, HINSTANCE hinstFFTW3, int _dctmode, int
 	sizey = _sizey;
 	dctmode = _dctmode;
     pixelsize = _pixelsize;
+    bits_per_pixel = _bits_per_pixel;
 
 	int size2d = sizey*sizex;
 
@@ -120,8 +121,8 @@ void DCTFFTW::Float2Bytes (unsigned char * dstp0, int dst_pitch, float * realdat
 	int i, j;
 	int integ;
 
-  int maxPixelValue = (1 << (pixelsize << 3)) - 1; // 255/65535
-  int middlePixelValue = 1 << ((pixelsize << 3) - 1);   // 128/32768 
+  int maxPixelValue = (1 << bits_per_pixel) - 1; // 255/65535
+  int middlePixelValue = 1 << (bits_per_pixel - 1);   // 128/32768 
 
   // integer conversion
   // was1: 	_asm fld f; _asm fistp integ; // fast conversion

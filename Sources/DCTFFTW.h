@@ -46,11 +46,12 @@ class DCTFFTW
 	fftwf_plan dctplan;
 	float * fSrcDCT;
 
-//  members from DCTClass
+//  members from DCTClass (DCTClass is parent of DCTINT or DCTFFTW)
 //	int sizex;
 //	int sizey;
 //	int dctmode;
 //  int pixelsize
+//  int bits_per_pixel;
 	int dctshift;
 	int dctshift0;
 
@@ -64,7 +65,7 @@ class DCTFFTW
 
 public:
 
-	DCTFFTW(int _sizex, int _sizey, ::HINSTANCE _hFFTW3, int _dctmode, int _pixelsize);
+	DCTFFTW(int _sizex, int _sizey, ::HINSTANCE _hFFTW3, int _dctmode, int _pixelsize, int _bits_per_pixel);
 	~DCTFFTW();
     // works internally by pixelsize:
 	void DCTBytes2D(const unsigned char *srcp0, int _src_pitch, unsigned char *dctp, int _dct_pitch);

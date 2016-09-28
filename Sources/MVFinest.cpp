@@ -64,12 +64,14 @@ GenericVideoFilter(_super)
     }
 
 #ifdef AVS16
-    int pixelsize = _super->GetVideoInfo().ComponentSize();
+    pixelsize = _super->GetVideoInfo().ComponentSize();
+    bits_per_pixel = _super->GetVideoInfo().BitsPerComponent();
 #else
-    int pixelsize = 1;
+    pixelsize = 1;
+    bits_per_pixel = 8;
 #endif
 
-	pRefGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse, xRatioUV, yRatioUV, pixelsize, true);
+	pRefGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse, xRatioUV, yRatioUV, pixelsize, bits_per_pixel, true);
 
 //	if (nHeight != nHeightS || nHeight != vi.height || nWidth != nSuperWidth-nSuperHPad*2 || nWidth != vi.width)
 //		env->ThrowError("MVFinest : different frame sizes of input clips");
@@ -97,12 +99,8 @@ PVideoFrame __stdcall MVFinest::GetFrame(int n, IScriptEnvironment* env)
 //	int nDstPitchYUY2;
 
 	PVideoFrame dst = env->NewVideoFrame(vi);
-#ifdef AVS16
-  int pixelsize = vi.ComponentSize();
-#else
-  int pixelsize = 1;
-#endif
-	if (nPel == 1) // simply copy top lines
+
+  if (nPel == 1) // simply copy top lines
 	{
 		if ((vi.pixel_type & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2)
 		{

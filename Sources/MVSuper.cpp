@@ -89,8 +89,10 @@ MVSuper::MVSuper (
     }
 #ifdef AVS16
     pixelsize = vi.ComponentSize();
+    bits_per_pixel = vi.BitsPerComponent();
 #else
     pixelsize = 1;
+    bits_per_pixel = 8;
 #endif
 
 	nLevels = _levels;
@@ -155,7 +157,7 @@ MVSuper::MVSuper (
 
 	// LDS: why not nModeYUV?
 //	pSrcGOF = new MVGroupOfFrames(nLevels, nWidth, nHeight, nPel, nHPad, nVPad, nModeYUV, isse, yRatioUV, mt_flag);
-	pSrcGOF = new MVGroupOfFrames(nLevels, nWidth, nHeight, nPel, nHPad, nVPad, YUVPLANES, isse, xRatioUV, yRatioUV, pixelsize, mt_flag);
+	pSrcGOF = new MVGroupOfFrames(nLevels, nWidth, nHeight, nPel, nHPad, nVPad, YUVPLANES, isse, xRatioUV, yRatioUV, pixelsize, bits_per_pixel, mt_flag);
 
 	pSrcGOF->set_interp (nModeYUV, rfilter, sharp);
 

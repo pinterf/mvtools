@@ -42,10 +42,11 @@ class MVGroupOfFrames
    int xRatioUV; // PF 160729
    int yRatioUV;
    int pixelsize; // PF 160729
+   int bits_per_pixel; // PF 160927
 
 public :
     // xRatioUV PF 160729
-   MVGroupOfFrames(int _nLevelCount, int nWidth, int nHeight, int nPel, int nHPad, int nVPad, int nMode, bool isse, int xRatioUV, int yRatioUV, int pixelsize, bool mt_flag);
+   MVGroupOfFrames(int _nLevelCount, int nWidth, int nHeight, int nPel, int nHPad, int nVPad, int nMode, bool isse, int xRatioUV, int yRatioUV, int _pixelsize, int _bits_per_pixel, bool mt_flag);
    ~MVGroupOfFrames();
    void Update(int nModeYUV, uint8_t * pSrcY, int pitchY, uint8_t * pSrcU, int pitchU, uint8_t *pSrcV, int pitchV);
 
