@@ -100,8 +100,8 @@ MVBlockFps::MVBlockFps(
   nSuperModeYUV = params.nModeYUV;
   int nSuperLevels = params.nLevels;
 
-  pRefBGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse2, xRatioUV, yRatioUV, pixelsize, mt_flag);
-  pRefFGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse2, xRatioUV, yRatioUV, pixelsize, mt_flag);
+  pRefBGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse2, xRatioUV, yRatioUV, pixelsize, bits_per_pixel, mt_flag);
+  pRefFGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse2, xRatioUV, yRatioUV, pixelsize, bits_per_pixel, mt_flag);
   int nSuperWidth = super->GetVideoInfo().width;
   int nSuperHeight = super->GetVideoInfo().height;
 
