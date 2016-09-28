@@ -40,7 +40,7 @@
 #include <stdint.h>
 
 
-PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSizeY, int _nPel, int _nLevel, int _nFlags, int _nOverlapX, int _nOverlapY, int _xRatioUV, int _yRatioUV, int _pixelsize, conc::ObjPool <DCTClass> *dct_pool_ptr, bool mt_flag)
+PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSizeY, int _nPel, int _nLevel, int _nFlags, int _nOverlapX, int _nOverlapY, int _xRatioUV, int _yRatioUV, int _pixelsize, int _bits_per_pixel, conc::ObjPool <DCTClass> *dct_pool_ptr, bool mt_flag)
 :	nBlkX (_nBlkX)
 ,	nBlkY (_nBlkY)
 ,	nBlkSizeX (_nBlkSizeX)
@@ -58,6 +58,7 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
 ,	yRatioUV (_yRatioUV)
 ,	nLogyRatioUV (ilog2 (_yRatioUV))
 ,   pixelsize (_pixelsize) // PF
+,   bits_per_pixel (_bits_per_pixel) // PF
 ,  _mt_flag (mt_flag)
 ,	SAD (0)
 ,	LUMA (0)
@@ -73,10 +74,10 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
 ,	chroma ((_nFlags & MOTION_USE_CHROMA_MOTION) != 0)
 ,	dctpitch (std::max (_nBlkSizeX, 16))
 ,	_dct_pool_ptr (dct_pool_ptr)
-,	verybigSAD (_nBlkSizeX * _nBlkSizeY * (1<<(_pixelsize << 3))) // * 256, pixelsize==2 -> 65536
+,	verybigSAD (_nBlkSizeX * _nBlkSizeY * (1<<bits_per_pixel)) // * 256, pixelsize==2 -> 65536
 ,	freqArray ()
 ,	dctmode (0)
-,	_workarea_fact (nBlkSizeX, nBlkSizeY, dctpitch, nLogxRatioUV, xRatioUV, nLogyRatioUV, yRatioUV, pixelsize)
+,	_workarea_fact (nBlkSizeX, nBlkSizeY, dctpitch, nLogxRatioUV, xRatioUV, nLogyRatioUV, yRatioUV, pixelsize, bits_per_pixel)
 ,	_workarea_pool ()
 ,	_gvect_estim_ptr (0)
 ,	_gvect_result_count (0)
@@ -2609,10 +2610,12 @@ void	PlaneOfBlocks::recalculate_mv_slice (Slicer::TaskData &td)
 
 
 
-PlaneOfBlocks::WorkingArea::WorkingArea (int nBlkSizeX, int nBlkSizeY, int dctpitch, int nLogxRatioUV, int xRatioUV, int nLogyRatioUV, int yRatioUV, int pixelsize)
+PlaneOfBlocks::WorkingArea::WorkingArea (int nBlkSizeX, int nBlkSizeY, int dctpitch, int nLogxRatioUV, int xRatioUV, int nLogyRatioUV, int yRatioUV, int _pixelsize, int _bits_per_pixel)
 :	dctSrc (nBlkSizeY*dctpitch)
 ,	dctRef (nBlkSizeY*dctpitch)
 ,	DCT (0)
+, pixelsize(_pixelsize)
+, bits_per_pixel(_bits_per_pixel)
 {
 #if (ALIGN_SOURCEBLOCK > 1)
 	int blocksize = nBlkSizeX*nBlkSizeY*pixelsize; // for memory allocation pixelsize needed
@@ -2677,7 +2680,7 @@ bool	PlaneOfBlocks::WorkingArea::IsVectorOK (int vx, int vy) const
 int	PlaneOfBlocks::WorkingArea::MotionDistorsion (int vx, int vy) const
 {
 	int dist = SquareDifferenceNorm(predictor, vx, vy);
-	return (nLambda * dist) >> 8;
+	return (nLambda * dist) >> (16-bits_per_pixel) /*8*/ ; // PF
 }
 
 /* computes the length cost of a vector (vx, vy) */
@@ -2688,7 +2691,7 @@ int	PlaneOfBlocks::WorkingArea::MotionDistorsion (int vx, int vy) const
 
 
 
-PlaneOfBlocks::WorkingAreaFactory::WorkingAreaFactory (int nBlkSizeX, int nBlkSizeY, int dctpitch, int nLogxRatioUV, int xRatioUV, int nLogyRatioUV, int yRatioUV, int pixelsize)
+PlaneOfBlocks::WorkingAreaFactory::WorkingAreaFactory (int nBlkSizeX, int nBlkSizeY, int dctpitch, int nLogxRatioUV, int xRatioUV, int nLogyRatioUV, int yRatioUV, int pixelsize, int bits_per_pixel)
 :	_blk_size_x (nBlkSizeX)
 ,	_blk_size_y (nBlkSizeY)
 ,	_dctpitch (dctpitch)
@@ -2697,6 +2700,7 @@ PlaneOfBlocks::WorkingAreaFactory::WorkingAreaFactory (int nBlkSizeX, int nBlkSi
 ,	_y_ratio_uv_log (nLogyRatioUV)
 ,	_y_ratio_uv (yRatioUV)
 ,	_pixelsize (pixelsize)
+, _bits_per_pixel (bits_per_pixel)
 {
 	// Nothing
 }
@@ -2713,7 +2717,8 @@ PlaneOfBlocks::WorkingArea *PlaneOfBlocks::WorkingAreaFactory::do_create ()
         _x_ratio_uv,
         _y_ratio_uv_log,
 		_y_ratio_uv,
-        _pixelsize
+        _pixelsize, 
+    _bits_per_pixel
 	));
 }
 
