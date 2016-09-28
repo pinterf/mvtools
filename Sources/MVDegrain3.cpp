@@ -749,7 +749,7 @@ MVDegrainX::MVDegrainX(
   , level(_level)
 {
   const int group_len = level * 2; // 2, 4, 6
-  // memo: _nSCD1 and 2 are scaled with bits_per_pixel in MVClip
+  // remark: _nSCD1 and 2 are scaled with bits_per_pixel in MVClip
   mvClipF[0] = new MVClip((!mvfw) ? mvbw : mvfw, _nSCD1, _nSCD2, env, (!mvfw) ? group_len : 1, (!mvfw) ? 1 : 0);
   mvClipB[0] = new MVClip((!mvfw) ? mvbw : mvbw, _nSCD1, _nSCD2, env, (!mvfw) ? group_len : 1, (!mvfw) ? 0 : 0);
   if (level >= 2) {
@@ -769,10 +769,9 @@ MVDegrainX::MVDegrainX(
     }
   }
 
-
   thSAD = _thSAD * mvClipB[0]->GetThSCD1() / _nSCD1; // normalize to block SAD
   thSADC = _thSADC * mvClipB[0]->GetThSCD1() / _nSCD1; // chroma
-  // later can be modified for 10-16 bit
+  // later these are modified for 10-16 bit scale
 
   YUVplanes = _YUVplanes;
   nLimit = _nLimit;
