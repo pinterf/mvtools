@@ -21,6 +21,7 @@
 #include <map>
 #include <tuple>
 #include "copycode.h"
+#include <cstdio>
 
 // top, middle, botom and left, middle, right windows
 #define OW_TL 0
@@ -72,17 +73,24 @@ OverlapsLsbFunction* get_overlaps_lsb_function(int BlockX, int BlockY, int pixel
 // short
 
 template <typename pixel_t, int blockWidth, int blockHeight>
-// todo: pDst short* is not enough
-void Overlaps_C(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch)
+// pDst is short* for 8 bit, int * for 16 bit
+void Overlaps_C(unsigned short *pDst0, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch)
 {
 	// pWin from 0 to 2048
-	for (int j=0; j<blockHeight; j++)
+  // when pixel_t == uint16_t, dst should be int*
+  typedef typename std::conditional < sizeof(pixel_t) == 1, short, int>::type target_t;
+  target_t *pDst = reinterpret_cast<target_t *>(pDst0);
+  for (int j=0; j<blockHeight; j++)
 	{
 	    for (int i=0; i<blockWidth; i++)
 	    {
-            pDst[i] = ( pDst[i] + ((reinterpret_cast<const pixel_t *>(pSrc)[i]*pWin[i]+256)>>6));
+        if(sizeof(pixel_t) == 1)
+          pDst[i] = ( pDst[i] + ((reinterpret_cast<const pixel_t *>(pSrc)[i]*pWin[i] + 256)>> 6)); // shift 5 in Short2Bytes<uint8_t> in overlap.cpp
+        else
+          pDst[i] = ( pDst[i] + ((reinterpret_cast<const pixel_t *>(pSrc)[i]*pWin[i]))); // shift (5+6); in Short2Bytes16
+        // no shift 6
 	    }
-		pDst += nDstPitch;
+      pDst += nDstPitch;
 		pSrc += nSrcPitch;
 		pWin += nWinPitch;
 	}
@@ -97,7 +105,7 @@ void OverlapsLsb_C(int *pDst, int nDstPitch, const unsigned char *pSrc, const un
 		for (int i=0; i<blockWidth; i++)
 		{
 			const int		val = (pSrc [i] << 8) + pSrcLsb [i];
-			pDst [i] += val * pWin [i];
+			pDst [i] += val * pWin [i]; // shift (5+6); in Short2BytesLsb
 		}
 		pDst += nDstPitch;
 		pSrc += nSrcPitch;
@@ -129,7 +137,7 @@ extern "C" void __cdecl  Overlaps8x1_sse2(unsigned short *pDst, int nDstPitch, c
 
 void Short2Bytes(unsigned char *pDst, int nDstPitch, unsigned short *pDstShort, int dstShortPitch, int nWidth, int nHeight);
 void Short2BytesLsb(unsigned char *pDst, unsigned char *pDstLsb, int nDstPitch, int *pDstInt, int dstIntPitch, int nWidth, int nHeight);
-void Short2Bytes16(uint16_t *pDst, unsigned char *pDstLsb, int nDstPitch, int *pDstInt, int dstIntPitch, int nWidth, int nHeight);
+void Short2Bytes16(uint16_t *pDst, unsigned char *pDstLsb, int nDstPitch, int *pDstInt, int dstIntPitch, int nWidth, int nHeight, int bits_per_pixel);
 
 template<typename pixel_t>
 void LimitChanges_c(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, int nLimit);
@@ -137,22 +145,29 @@ void LimitChanges_c(unsigned char *pDst, int nDstPitch, const unsigned char *pSr
 extern "C" void  __cdecl  LimitChanges_sse2(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, int nLimit);
 
 // Not really related to overlap, but common to MDegrainX functions
-inline int DegrainWeight(int thSAD, int blockSAD)
+inline int DegrainWeight(int thSAD, int blockSAD, int bits_per_pixels)
 {
 	// Returning directly prevents a divide by 0 if thSAD == blockSAD == 0.
 	if (thSAD <= blockSAD)
 	{
 		return 0;
 	}
-
-	const int      thSAD2    = thSAD    * thSAD;
-	const int      blockSAD2 = blockSAD * blockSAD;
-	const int      num = thSAD2 - blockSAD2;
-	const int		den = thSAD2 + blockSAD2;
-	const int      res =   (num < (1<<23))
-	                     ? (num<<8) /  den      // small numerator
-	                     :  num     / (den>>8); // very large numerator, prevent overflow
-	return (res);
+  if(bits_per_pixels <= 8 ) {
+    //typedef typename std::conditional < sizeof(pixel_t) == 1, int, __int64>::type sad_sqr_t;
+    const int thSAD2    = thSAD    * thSAD;
+    const int blockSAD2 = blockSAD * blockSAD;
+    const int num = thSAD2 - blockSAD2;
+    const int den = thSAD2 + blockSAD2;
+    // res = num*256/den
+    const int      res = int((num < (1<<23))
+      ? (num<<8) /  den      // small numerator
+      :  num     / (den>>8)); // very large numerator, prevent overflow
+    return (res);
+  } else {
+    // int overflows with bits_per_pixel scaled power of 2
+    const float sq_thSAD = std::powf(float(thSAD), 2.0f); // smart compiler makes x*x
+    const float sq_blockSAD = std::powf(float(blockSAD), 2.0f);
+    return (int)(256.0f*(sq_thSAD - sq_blockSAD) / (sq_thSAD + sq_blockSAD));
+  }
 }
-
 #endif

@@ -70,7 +70,9 @@ private:
   bool lsb_flag;
   int height_lsb_mul;
   //int pixelsize; // in MVFilter
+  //int bits_per_pixel; // in MVFilter
   int pixelsize_super; // PF not param, from create
+  int bits_per_pixel_super; // PF not param, from create
 
   int nSuperModeYUV;
 
@@ -138,6 +140,7 @@ void Degrain1to5_C(uint8_t *pDst, BYTE *pDstLsb, bool lsb_flag, int nDstPitch, c
   int WSrc,
   int WRefB[MAX_DEGRAIN], int WRefF[MAX_DEGRAIN])
 {
+  const bool no_need_round = lsb_flag || (sizeof(pixel_t) > 1);
   for (int h = 0; h < blockHeight; h++)
   {
     for (int x = 0; x < blockWidth; x++)
@@ -145,7 +148,7 @@ void Degrain1to5_C(uint8_t *pDst, BYTE *pDstLsb, bool lsb_flag, int nDstPitch, c
       if (level == 1) {
         const int		val = reinterpret_cast<const pixel_t *>(pSrc)[x] * WSrc +
           reinterpret_cast<const pixel_t *>(pRefF[0])[x] * WRefF[0] + reinterpret_cast<const pixel_t *>(pRefB[0])[x] * WRefB[0];
-        reinterpret_cast<pixel_t *>(pDst)[x] = (val + (lsb_flag ? 0 : 128)) >> 8;
+        reinterpret_cast<pixel_t *>(pDst)[x] = (val + (no_need_round ? 0 : 128)) >> 8;
         if (lsb_flag)
           pDstLsb[x] = val & 255;
       }
@@ -153,7 +156,7 @@ void Degrain1to5_C(uint8_t *pDst, BYTE *pDstLsb, bool lsb_flag, int nDstPitch, c
         const int		val = reinterpret_cast<const pixel_t *>(pSrc)[x] * WSrc +
           reinterpret_cast<const pixel_t *>(pRefF[0])[x] * WRefF[0] + reinterpret_cast<const pixel_t *>(pRefB[0])[x] * WRefB[0] +
           reinterpret_cast<const pixel_t *>(pRefF[1])[x] * WRefF[1] + reinterpret_cast<const pixel_t *>(pRefB[1])[x] * WRefB[1];
-        reinterpret_cast<pixel_t *>(pDst)[x] = (val + (lsb_flag ? 0 : 128)) >> 8;
+        reinterpret_cast<pixel_t *>(pDst)[x] = (val + (no_need_round ? 0 : 128)) >> 8;
         if (lsb_flag)
           pDstLsb[x] = val & 255;
       }
@@ -162,7 +165,7 @@ void Degrain1to5_C(uint8_t *pDst, BYTE *pDstLsb, bool lsb_flag, int nDstPitch, c
           reinterpret_cast<const pixel_t *>(pRefF[0])[x] * WRefF[0] + reinterpret_cast<const pixel_t *>(pRefB[0])[x] * WRefB[0] +
           reinterpret_cast<const pixel_t *>(pRefF[1])[x] * WRefF[1] + reinterpret_cast<const pixel_t *>(pRefB[1])[x] * WRefB[1] +
           reinterpret_cast<const pixel_t *>(pRefF[2])[x] * WRefF[2] + reinterpret_cast<const pixel_t *>(pRefB[2])[x] * WRefB[2];
-        reinterpret_cast<pixel_t *>(pDst)[x] = (val + (lsb_flag ? 0 : 128)) >> 8;
+        reinterpret_cast<pixel_t *>(pDst)[x] = (val + (no_need_round ? 0 : 128)) >> 8;
         if (lsb_flag)
           pDstLsb[x] = val & 255;
       }
@@ -172,7 +175,7 @@ void Degrain1to5_C(uint8_t *pDst, BYTE *pDstLsb, bool lsb_flag, int nDstPitch, c
           reinterpret_cast<const pixel_t *>(pRefF[1])[x] * WRefF[1] + reinterpret_cast<const pixel_t *>(pRefB[1])[x] * WRefB[1] +
           reinterpret_cast<const pixel_t *>(pRefF[2])[x] * WRefF[2] + reinterpret_cast<const pixel_t *>(pRefB[2])[x] * WRefB[2] +
           reinterpret_cast<const pixel_t *>(pRefF[3])[x] * WRefF[3] + reinterpret_cast<const pixel_t *>(pRefB[3])[x] * WRefB[3];
-        reinterpret_cast<pixel_t *>(pDst)[x] = (val + (lsb_flag ? 0 : 128)) >> 8;
+        reinterpret_cast<pixel_t *>(pDst)[x] = (val + (no_need_round ? 0 : 128)) >> 8;
         if (lsb_flag)
           pDstLsb[x] = val & 255;
       }
@@ -183,7 +186,7 @@ void Degrain1to5_C(uint8_t *pDst, BYTE *pDstLsb, bool lsb_flag, int nDstPitch, c
           reinterpret_cast<const pixel_t *>(pRefF[2])[x] * WRefF[2] + reinterpret_cast<const pixel_t *>(pRefB[2])[x] * WRefB[2] +
           reinterpret_cast<const pixel_t *>(pRefF[3])[x] * WRefF[3] + reinterpret_cast<const pixel_t *>(pRefB[3])[x] * WRefB[3] +
           reinterpret_cast<const pixel_t *>(pRefF[4])[x] * WRefF[4] + reinterpret_cast<const pixel_t *>(pRefB[4])[x] * WRefB[4];
-        reinterpret_cast<pixel_t *>(pDst)[x] = (val + (lsb_flag ? 0 : 128)) >> 8;
+        reinterpret_cast<pixel_t *>(pDst)[x] = (val + (no_need_round ? 0 : 128)) >> 8;
         if (lsb_flag)
           pDstLsb[x] = val & 255;
       }

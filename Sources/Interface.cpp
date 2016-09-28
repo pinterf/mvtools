@@ -483,7 +483,11 @@ AVSValue __cdecl Create_MVDegrainX(AVSValue args, void* user_data, IScriptEnviro
 	}
 
 	int thSAD = args[thsad_param_index+param_index_shift].AsInt(400);  // thSAD
-	int limit = args[limit_param_index+param_index_shift].AsInt(255); // limit
+
+  int bits_per_pixel = args[0].AsClip()->GetVideoInfo().BitsPerComponent();
+
+  // bit-depth adaptive limit
+	int limit = args[limit_param_index+param_index_shift].AsInt((1 << bits_per_pixel) - 1); // limit. was: 255 for 8 bit
 
 	  return new MVDegrainX(
 		  args[0].AsClip(),       // source
@@ -542,7 +546,9 @@ AVSValue __cdecl Create_MDegrainN (AVSValue args, void* user_data, IScriptEnviro
 	const int		tr      = args [3].AsInt (1);       // tr
 	const int      thSAD   = args [4].AsInt (400);     // thSAD
 	const int      thSADC  = args [5].AsInt (thSAD);   // thSADC
-	const int      limit   = args [7].AsInt (255);	   // limit
+  int bits_per_pixel = args[0].AsClip()->GetVideoInfo().BitsPerComponent();
+  // bit-depth adaptive limit
+  const int limit = args[7].AsInt((1 << bits_per_pixel) - 1); // limit. was: 255 for 8 bit
 	const int		thSAD2  = args [14].AsInt (thSAD);  // thSAD2
 	const int		thSADC2 = args [15].AsInt (thSADC); // thSADC2
 

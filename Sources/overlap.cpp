@@ -188,14 +188,15 @@ void Short2BytesLsb(unsigned char *pDst, unsigned char *pDstLsb, int nDstPitch, 
 }
 
 // better name: Int to uint16
-void Short2Bytes16(uint16_t *pDst, unsigned char *pDstLsb, int nDstPitch, int *pDstInt, int dstIntPitch, int nWidth, int nHeight)
+void Short2Bytes16(uint16_t *pDst, unsigned char *pDstLsb, int nDstPitch, int *pDstInt, int dstIntPitch, int nWidth, int nHeight, int bits_per_pixel)
 {
+  const int max_pixel_value = (1 << bits_per_pixel) - 1;
   for (int h=0; h<nHeight; h++)
   {
     for (int i=0; i<nWidth; i++)
     {
       const int		a = pDstInt [i] >> (5+6);
-      pDst [i] = min(a >> 8, 65535); // todo bits_per_pixel
+      pDst [i] = min(a, max_pixel_value); // no need 8*shift
     }
     pDst += nDstPitch/sizeof(uint16_t);
     //pDstLsb += nDstPitch;
