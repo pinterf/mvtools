@@ -76,7 +76,7 @@ float hsum_ps_sse3(__m128 v) {
 }
 */
 
-// above width==8 for uint16_t and width==16 for uint8_t
+// above width==4 for uint16_t and width==8 for uint8_t
 template<int nBlkWidth, int nBlkHeight, typename pixel_t>
 unsigned int Sad16_sse2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, int nRefPitch)
 {
@@ -90,8 +90,9 @@ unsigned int Sad16_sse2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
 
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128(); // 2x or 4x int is probably enough for 32x32
+  const bool two_rows = (sizeof(pixel_t) == 2 && nBlkWidth <= 4) || (sizeof(pixel_t) == 1 && nBlkWidth <= 8);
 
-  for ( int y = 0; y < nBlkHeight; y++ )
+  for ( int y = 0; y < nBlkHeight; y+= (two_rows ? 2 : 1))
   {
     for ( int x = 0; x < nBlkWidth; x+=16 )
     {
@@ -107,10 +108,10 @@ unsigned int Sad16_sse2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
         src2 = _mm_loadu_si128((__m128i *) (pRef + x));
       }
 #else
-      if ((sizeof(pixel_t) == 2 && nBlkWidth <= 4) || (sizeof(pixel_t) == 1 && nBlkWidth <= 8)) {
-        // 8 bytes or 4 words
-        src1 = _mm_loadl_epi64((__m128i *) (pSrc + x));
-        src2 = _mm_loadl_epi64((__m128i *) (pRef + x));
+      if (two_rows) {
+        // (8 bytes or 4 words) * 2 rows
+        src1 = _mm_or_si128(_mm_loadl_epi64((__m128i *) (pSrc + x)),_mm_slli_si128(_mm_loadl_epi64((__m128i *) (pSrc + x + nSrcPitch)),8));
+        src2 = _mm_or_si128(_mm_loadl_epi64((__m128i *) (pRef + x)),_mm_slli_si128(_mm_loadl_epi64((__m128i *) (pRef + x + nRefPitch)),8));
       } else {
         src1 = _mm_loadu_si128((__m128i *) (pSrc + x));
         src2 = _mm_loadu_si128((__m128i *) (pRef + x));
@@ -132,8 +133,13 @@ unsigned int Sad16_sse2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
       }
       // sum += SADABS(reinterpret_cast<const pixel_t *>(pSrc)[x] - reinterpret_cast<const pixel_t *>(pRef)[x]);
     }
-    pSrc += nSrcPitch;
-    pRef += nRefPitch;
+    if (two_rows) {
+      pSrc += nSrcPitch*2;
+      pRef += nRefPitch*2;
+    } else {
+      pSrc += nSrcPitch;
+      pRef += nRefPitch;
+    }
   }
   /*
                                               [Low64, Hi64]
@@ -147,18 +153,15 @@ unsigned int Sad16_sse2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
     __m128i a0_a1 = _mm_unpacklo_epi32(sum, zero); // a0 0 a1 0
     __m128i a2_a3 = _mm_unpackhi_epi32(sum, zero); // a2 0 a3 0
       sum = _mm_add_epi32( a0_a1, a2_a3 ); // a0+a2, 0, a1+a3, 0
-    /* SSSE3:
+      
+      /* SSSE3:
     sum = _mm_hadd_epi32(sum, zero);  // A1+A2, B1+B2, 0+0, 0+0
     sum = _mm_hadd_epi32(sum, zero);  // A1+A2+B1+B2, 0+0+0+0, 0+0+0+0, 0+0+0+0
     */
   }
-  // sum here: sum1 0 sum2 0
-  if(sizeof(pixel_t) == 1 && nBlkWidth >= 16) {
-    // ignore upper, as input bytes 8..15 are not counted
-    // uint16_t result structure is different -> not handled here
-    __m128i sum_hi = _mm_unpackhi_epi64(sum, zero); // >= faster than _mm_srli_si128(sum, 8), but with
-    sum = _mm_add_epi32(sum, sum_hi);
-  }
+  // sum here: two 32 bit partial result: sum1 0 sum2 0
+  __m128i sum_hi = _mm_unpackhi_epi64(sum, zero); // a1 + a3. 2 dwords right 
+  sum = _mm_add_epi32(sum, sum_hi);  // a0 + a2 + a1 + a3
   int result = _mm_cvtsi128_si32(sum);
   return result;
 }
