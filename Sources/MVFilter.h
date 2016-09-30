@@ -69,6 +69,8 @@ protected:
    int pixelType;
    int xRatioUV; // PF
    int yRatioUV;
+   int nLogxRatioUV;
+   int nLogyRatioUV;
    int pixelsize; // PF
    int bits_per_pixel;
 
