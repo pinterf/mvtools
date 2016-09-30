@@ -94,7 +94,9 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
 	bool sse2 = (bool)(nFlags & CPU_SSE2_IS_FAST);
 	bool sse3 = (bool)(nFlags & CPU_SSE3);
 	bool ssse3 = (bool)(nFlags & CPU_SSSE3);
-	bool ssse3pha = (bool)(nFlags & CPU_PHADD_IS_FAST);
+  bool avx = (bool)(nFlags & CPU_AVX);
+  bool avx2 = (bool)(nFlags & CPU_AVX2);
+  bool ssse3pha = (bool)(nFlags & CPU_PHADD_IS_FAST);
 	bool ssd = (bool)(nFlags & MOTION_USE_SSD);
 	bool satd = (bool)(nFlags & MOTION_USE_SATD);
 
@@ -253,10 +255,14 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
                      // OverlapsFunction
                      // in M(V)DegrainX: DenoiseXFunction
     arch_t arch;
-    if (isse)
-        arch = USE_SSE2;
+    if (isse && avx2)
+      arch = USE_AVX2;
+    else if (isse && avx)
+      arch = USE_AVX;
+    else if (isse && sse2)
+      arch = USE_SSE2;
     else
-        arch = NO_SIMD;
+      arch = NO_SIMD;
 
     SAD        = get_sad_function(nBlkSizeX, nBlkSizeY, pixelsize, arch);
     SADCHROMA  = get_sad_function(nBlkSizeX/xRatioUV, nBlkSizeY/yRatioUV, pixelsize, arch);

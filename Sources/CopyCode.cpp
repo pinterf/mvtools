@@ -420,8 +420,33 @@ COPYFunction* get_copy_function(int BlockX, int BlockY, int pixelsize, arch_t ar
     //func_copy[make_tuple(2 , 1 , 1, USE_SSE2)] = Copy2x1_sse2; no such
     
     COPYFunction *result = func_copy[make_tuple(BlockX, BlockY, pixelsize, arch)];
-    if (result == nullptr)
+
+    arch_t arch_orig = arch;
+
+    // no AVX2 -> try AVX
+    if (result == nullptr && (arch==USE_AVX2 || arch_orig==USE_AVX)) {
+      arch = USE_AVX;
+      result = func_copy[make_tuple(BlockX, BlockY, pixelsize, USE_AVX)];
+    }
+    // no AVX -> try SSE2
+    if (result == nullptr && (arch==USE_AVX || arch_orig==USE_SSE2)) {
+      arch = USE_SSE2;
+      result = func_copy[make_tuple(BlockX, BlockY, pixelsize, USE_SSE2)];
+    }
+    // no SSE2 -> try C
+    if (result == nullptr && (arch==USE_SSE2 || arch_orig==NO_SIMD)) {
+      arch = NO_SIMD;
+      /* C version variations are only working in SAD
+      // priority: C version compiled to avx2, avx
+      if(arch_orig==USE_AVX2)
+        result = get_copy_avx2_C_function(BlockX, BlockY, pixelsize, NO_SIMD);
+      else if(arch_orig==USE_AVX)
+        result = get_copy_avx_C_function(BlockX, BlockY, pixelsize, NO_SIMD);
+      */
+      if(result == nullptr)
         result = func_copy[make_tuple(BlockX, BlockY, pixelsize, NO_SIMD)]; // fallback to C
+    }
+
     return result;
 }
 

@@ -1,4 +1,6 @@
 #include "SADFunctions.h"
+#include "SADFunctions_avx.h"
+#include "SADFunctions_avx2.h"
 #include "overlap.h"
 #include <map>
 #include <tuple>
@@ -28,9 +30,11 @@ MK_CPPWRAP(2,2);
 
 SADFunction* get_sad_function(int BlockX, int BlockY, int pixelsize, arch_t arch)
 {
+    SADFunction *result;
+    using std::make_tuple;
+
     // BlkSizeX, BlkSizeY, pixelsize, arch_t
     std::map<std::tuple<int, int, int, arch_t>, SADFunction*> func_sad;
-    using std::make_tuple;
 
     func_sad[make_tuple(32, 32, 1, NO_SIMD)] = Sad_C<32, 32,uint8_t>;
     func_sad[make_tuple(32, 16, 1, NO_SIMD)] = Sad_C<32, 16,uint8_t>;
@@ -95,7 +99,7 @@ SADFunction* get_sad_function(int BlockX, int BlockY, int pixelsize, arch_t arch
     func_sad[make_tuple(4 , 8 , 2, USE_SSE2)] = Sad16_sse2<4 , 8,uint16_t>;
     func_sad[make_tuple(4 , 4 , 2, USE_SSE2)] = Sad16_sse2<4 , 4,uint16_t>;
     func_sad[make_tuple(4 , 2 , 2, USE_SSE2)] = Sad16_sse2<4 , 2,uint16_t>;
-
+    
     // PF uint8_t sse2 versions. test. 
     // a bit slower than the existing external asm. At least for MSVC
     // >=8 bytes
@@ -135,9 +139,63 @@ SADFunction* get_sad_function(int BlockX, int BlockY, int pixelsize, arch_t arch
     func_sad[make_tuple(2 , 4 , 1, USE_SSE2)] = Sad2x4_iSSE;
     func_sad[make_tuple(2 , 2 , 1, USE_SSE2)] = Sad2x2_iSSE;
 
-    SADFunction *result = func_sad[make_tuple(BlockX, BlockY, pixelsize, arch)];
-    if (result == nullptr)
+    //---------------- AVX2
+    // PF SAD 16 SIMD intrinsic functions
+    // only for >=16 bytes widths (2x16 byte still OK)
+    // templates in SADFunctions_avx2
+    func_sad[make_tuple(32, 32, 2, USE_AVX2)] = Sad16_avx2<32, 32,uint16_t>;
+    func_sad[make_tuple(32, 16, 2, USE_AVX2)] = Sad16_avx2<32, 16,uint16_t>;
+    func_sad[make_tuple(32, 8 , 2, USE_AVX2)] = Sad16_avx2<32, 8,uint16_t>;
+    func_sad[make_tuple(16, 32, 2, USE_AVX2)] = Sad16_avx2<16, 32,uint16_t>;
+    func_sad[make_tuple(16, 16, 2, USE_AVX2)] = Sad16_avx2<16, 16,uint16_t>;
+    func_sad[make_tuple(16, 8 , 2, USE_AVX2)] = Sad16_avx2<16, 8,uint16_t>;
+    func_sad[make_tuple(16, 4 , 2, USE_AVX2)] = Sad16_avx2<16, 4,uint16_t>;
+    func_sad[make_tuple(16, 2 , 2, USE_AVX2)] = Sad16_avx2<16, 2,uint16_t>;
+    func_sad[make_tuple(16, 1 , 2, USE_AVX2)] = Sad16_avx2<16, 1,uint16_t>;
+    func_sad[make_tuple(8 , 16, 2, USE_AVX2)] = Sad16_avx2<8 , 16,uint16_t>;
+    func_sad[make_tuple(8 , 8 , 2, USE_AVX2)] = Sad16_avx2<8 , 8,uint16_t>;
+    func_sad[make_tuple(8 , 4 , 2, USE_AVX2)] = Sad16_avx2<8 , 4,uint16_t>;
+    func_sad[make_tuple(8 , 2 , 2, USE_AVX2)] = Sad16_avx2<8 , 2,uint16_t>;
+    func_sad[make_tuple(8 , 1 , 2, USE_AVX2)] = Sad16_avx2<8 , 1,uint16_t>;
+    // >=16 bytes
+#ifdef SAD_AVX2_8BIT_INSTINSICS
+    func_sad[make_tuple(32, 32, 1, USE_SSE2)] = Sad16_avx2<32, 32,uint8_t>;
+    func_sad[make_tuple(32, 16, 1, USE_SSE2)] = Sad16_avx2<32, 16,uint8_t>;
+    func_sad[make_tuple(32, 8 , 1, USE_SSE2)] = Sad16_avx2<32, 8,uint8_t>;
+    func_sad[make_tuple(16, 32, 1, USE_SSE2)] = Sad16_avx2<16, 32,uint8_t>;
+    func_sad[make_tuple(16, 16, 1, USE_SSE2)] = Sad16_avx2<16, 16,uint8_t>;
+    func_sad[make_tuple(16, 8 , 1, USE_SSE2)] = Sad16_avx2<16, 8,uint8_t>;
+    func_sad[make_tuple(16, 4 , 1, USE_SSE2)] = Sad16_avx2<16, 4,uint8_t>;
+    func_sad[make_tuple(16, 2 , 1, USE_SSE2)] = Sad16_avx2<16, 2,uint8_t>;
+    func_sad[make_tuple(16, 1 , 1, USE_SSE2)] = Sad16_avx2<16, 1,uint8_t>;
+#endif
+
+    result = func_sad[make_tuple(BlockX, BlockY, pixelsize, arch)];
+
+    arch_t arch_orig = arch;
+
+    // no AVX2 -> try AVX
+    if (result == nullptr && (arch==USE_AVX2 || arch_orig==USE_AVX)) {
+      arch = USE_AVX;
+      result = func_sad[make_tuple(BlockX, BlockY, pixelsize, USE_AVX)];
+    }
+    // no AVX -> try SSE2
+    if (result == nullptr && (arch==USE_AVX || arch_orig==USE_SSE2)) {
+      arch = USE_SSE2;
+      result = func_sad[make_tuple(BlockX, BlockY, pixelsize, USE_SSE2)];
+    }
+    // no SSE2 -> try C
+    if (result == nullptr && (arch==USE_SSE2 || arch_orig==NO_SIMD)) {
+      arch = NO_SIMD;
+      // priority: C version compiled to avx2, avx
+      if(arch_orig==USE_AVX2)
+        result = get_sad_avx2_C_function(BlockX, BlockY, pixelsize, NO_SIMD);
+      else if(arch_orig==USE_AVX)
+        result = get_sad_avx_C_function(BlockX, BlockY, pixelsize, NO_SIMD);
+
+      if(result == nullptr)
         result = func_sad[make_tuple(BlockX, BlockY, pixelsize, NO_SIMD)]; // fallback to C
+    }
     return result;
 }
 
@@ -170,8 +228,33 @@ SADFunction* get_satd_function(int BlockX, int BlockY, int pixelsize, arch_t arc
     //func_satd[make_tuple(2 , 2 , 1, USE_SSE2)] = x264_pixel_satd_2x2_sse2;
 
     SADFunction *result = func_satd[make_tuple(BlockX, BlockY, pixelsize, arch)];
-    if (result == nullptr)
-        result = func_satd[make_tuple(BlockX, BlockY, pixelsize, NO_SIMD)]; // fallback to C (not available yet)
+
+    arch_t arch_orig = arch;
+
+    // no AVX2 -> try AVX
+    if (result == nullptr && (arch==USE_AVX2 || arch_orig==USE_AVX)) {
+      arch = USE_AVX;
+      result = func_satd[make_tuple(BlockX, BlockY, pixelsize, USE_AVX)];
+    }
+    // no AVX -> try SSE2
+    if (result == nullptr && (arch==USE_AVX || arch_orig==USE_SSE2)) {
+      arch = USE_SSE2;
+      result = func_satd[make_tuple(BlockX, BlockY, pixelsize, USE_SSE2)];
+    }
+    // no SSE2 -> try C
+    if (result == nullptr && (arch==USE_SSE2 || arch_orig==NO_SIMD)) {
+      arch = NO_SIMD;
+      // priority: C version compiled to avx2, avx
+      /*
+      if(arch_orig==USE_AVX2)
+        result = get_satd_avx2_C_function(BlockX, BlockY, pixelsize, NO_SIMD);
+      else if(arch_orig==USE_AVX)
+        result = get_satd_avx_C_function(BlockX, BlockY, pixelsize, NO_SIMD);
+      */
+      if(result == nullptr)
+        result = func_satd[make_tuple(BlockX, BlockY, pixelsize, NO_SIMD)]; // fallback to C
+    }
+    // fallback to C is not available yet
     return result;
 }
 
