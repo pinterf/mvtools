@@ -51,26 +51,41 @@ uint32_t cpu_detect( void )
     if( eax == 0 )
         return 0;
 
-    x264_cpu_cpuid( 1, &eax, &ebx, &ecx, &edx );
-    if( edx&0x00800000 )
-        cpu |= CPU_MMX;
-    else
-        return 0;
-    if( edx&0x02000000 )
-        cpu |= CPU_MMXEXT|CPU_SSE;
-    if( edx&0x04000000 )
-        cpu |= CPU_SSE2;
-    if( ecx&0x00000001 )
-        cpu |= CPU_SSE3;
-    if( ecx&0x00000200 )
-        cpu |= CPU_SSSE3;
-    if( ecx&0x00080000 )
-        cpu |= CPU_SSE4;
+    int nIds = eax;
 
-    if( cpu & CPU_SSSE3 )
-        cpu |= CPU_SSE2_IS_FAST;
-    if( cpu & CPU_SSE4 )
-        cpu |= CPU_PHADD_IS_FAST;
+    if(nIds >= 1) {
+      x264_cpu_cpuid( 1, &eax, &ebx, &ecx, &edx );
+      if( edx&0x00800000 ) // 1 << 23
+          cpu |= CPU_MMX;
+      else
+          return 0;
+      if( edx&0x02000000 ) // 1 << 25
+          cpu |= CPU_MMXEXT|CPU_SSE;
+      if( edx&0x04000000 ) // 1 << 26
+          cpu |= CPU_SSE2;
+      if( ecx&0x00000001 ) // 1 <<  0
+          cpu |= CPU_SSE3;
+      if( ecx&0x00000200 ) // 1 <<  9
+          cpu |= CPU_SSSE3;
+      if( ecx&0x00080000 ) // 1 << 19
+          cpu |= CPU_SSE4;
+      if( ecx&0x00100000 ) // 1 << 20
+          cpu |= CPU_SSE42;
+      if( ecx&0x10000000 ) // 1 << 28
+          cpu |= CPU_AVX;
+
+      if( cpu & CPU_SSSE3 )
+          cpu |= CPU_SSE2_IS_FAST;
+      if( cpu & CPU_SSE4 )
+          cpu |= CPU_PHADD_IS_FAST;
+    }
+
+    // PF
+    if(nIds >= 7) {
+      x264_cpu_cpuid( 7, &eax, &ebx, &ecx, &edx );
+      if( ebx&0x00000020 ) // 1 <<  5
+        cpu |= CPU_AVX2;
+    }
 
     x264_cpu_cpuid( 0x80000000, &eax, &ebx, &ecx, &edx );
     max_extended_cap = eax;
