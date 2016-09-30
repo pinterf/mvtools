@@ -27,9 +27,13 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 // function tables
 enum arch_t {
-    NO_SIMD,
+    NO_SIMD=0,
     USE_MMX,
-    USE_SSE2
+    USE_SSE2,
+    USE_SSE41,
+    USE_SSE42,
+    USE_AVX,
+    USE_AVX2
 };
 
 typedef uint8_t BYTE;
