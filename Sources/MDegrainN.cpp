@@ -4,6 +4,7 @@
 #include "CopyCode.h"
 #include	"def.h"
 #include	"MDegrainN.h"
+#include	"MVDegrain3.h"
 #include "MVFrame.h"
 #include "MVPlane.h"
 #include "profile.h"
@@ -1266,6 +1267,7 @@ void	MDegrainN::process_chroma_normal_slice (Slicer::TaskData &td)
 					_planes_ptr [k] [P],
 					pSrcCur,
 					xx, // the pointer increment inside knows that xx later here is incremented with nBlkSize and not nBlkSize>>_xRatioUV
+              // todo: copy from MDegrainX. Here we shift, and incement with nBlkSize>>_xRatioUV
 					_src_pitch_arr [P]
 				); // vs: extra nLogPel, plane, xSubUV, ySubUV, thSAD
 			}
@@ -1398,7 +1400,8 @@ void	MDegrainN::process_chroma_overlap_slice (int y_beg, int y_end)
 					_planes_ptr [k] [P],
 					pSrcCur,
 					xx, //  the pointer increment inside knows that xx later here is incremented with nBlkSize and not nBlkSize>>_xRatioUV
-					_src_pitch_arr [P]
+              // todo: copy from MDegrainX. Here we shift, and increment with nBlkSize>>_xRatioUV
+          _src_pitch_arr [P]
 				);
 			}
 
@@ -1482,7 +1485,7 @@ void	MDegrainN::use_block_uv (
 	}
 	else
 	{
-		p    = src_ptr + (xx >> _xratiouv_log);
+		p    = src_ptr + (xx >> _xratiouv_log); // todo: kill  >> _xratiouv_log from here and put it in the caller like in MDegrainX
 		np   = src_pitch;
 		wref = 0;
 	}
