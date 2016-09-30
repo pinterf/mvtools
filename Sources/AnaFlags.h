@@ -49,9 +49,13 @@ enum AnaFlags
 	CPU_SSSE3                  = 0x00200000,
 	CPU_PHADD_IS_FAST          = 0x00400000, // pre-Penryn Core2 have a uselessly slow PHADD instruction
 	CPU_SSE4                   = 0x00800000, // SSE4.1
-	// force MVAnalyse to use a different function for SAD / SADCHROMA (debug)
-	MOTION_USE_SSD             = 0x01000000,
-	MOTION_USE_SATD            = 0x02000000
+  CPU_SSE42                  = 0x01000000, // SSE4.2
+  CPU_AVX                    = 0x02000000, // AVX  PF RFU
+  CPU_AVX2                   = 0x04000000, // AVX2 PF RFU
+
+  // force MVAnalyse to use a different function for SAD / SADCHROMA (debug)
+	MOTION_USE_SSD             = 0x08000000,
+	MOTION_USE_SATD            = 0x10000000
 };
 
 
