@@ -195,7 +195,8 @@
     <ClCompile Include="MVCompensate.cpp">
       <Filter>Filters</Filter>
     </ClCompile>
-    <ClCompile Include="memcpy_amd.cpp" />
+    <ClCompile Include="SADFunctions_avx.cpp" />
+    <ClCompile Include="SADFunctions_avx2.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MDegrainN.h">
@@ -453,7 +454,6 @@
     <ClInclude Include="version.h" />
     <ClInclude Include="yuy2planes.h" />
     <ClInclude Include="conc\Interlocked.hpp" />
-    <ClInclude Include="memcpy_amd.h" />
     <ClInclude Include="include\avs\alignment.h">
       <Filter>Include</Filter>
     </ClInclude>
@@ -478,16 +478,10 @@
     <ClInclude Include="include\avisynth.h">
       <Filter>Include</Filter>
     </ClInclude>
+    <ClInclude Include="SADFunctions_avx.h" />
+    <ClInclude Include="SADFunctions_avx2.h" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="cpu.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <MASM Include="asm\memcpy_amd_asm.asm">
-      <Filter>Assembler</Filter>
-    </MASM>
-    <MASM Include="asm\memcpy_amd_asm_x64.asm">
-      <Filter>Assembler</Filter>
-    </MASM>
   </ItemGroup>
 </Project>
