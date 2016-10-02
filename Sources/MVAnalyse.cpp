@@ -324,10 +324,12 @@ MVAnalyse::MVAnalyse (
 
 
 	analysisData.nFlags  = 0;
-	analysisData.nFlags |= (_isse) ? MOTION_USE_ISSE : 0; // P.F. debug 16.06.20 if zero, still error (a=a.QTGMC(/*Preset="Slower",*/dct=5, ChromaMotion=true))
+	analysisData.nFlags |= (_isse) ? MOTION_USE_ISSE : 0;
 	analysisData.nFlags |= (analysisData.isBackward) ? MOTION_IS_BACKWARD : 0;
-	analysisData.nFlags |= (chroma) ? MOTION_USE_CHROMA_MOTION : 0; // P.F. debug 16.06.20 if zero, no error (a=a.QTGMC(/*Preset="Slower",*/dct = 5, ChromaMotion = true))
-	if (_sadx264 == 0)
+	analysisData.nFlags |= (chroma) ? MOTION_USE_CHROMA_MOTION : 0;
+  analysisData.nFlags |= cpu_detect (); // 161002 get rid of sadx264, no effect
+#if 0
+  if (_sadx264 == 0)
 	{
 		analysisData.nFlags |= cpu_detect ();
 	}
@@ -345,9 +347,10 @@ MVAnalyse::MVAnalyse (
 			//beta (debug)
 			analysisData.nFlags |= (_sadx264 ==  8) ? MOTION_USE_SSD : 0;
 			analysisData.nFlags |= (_sadx264 >=  9 && _sadx264 <= 12) ? MOTION_USE_SATD : 0;
-			analysisData.nFlags |= (_sadx264 == 12) ? CPU_PHADD_IS_FAST : 0;
+//			analysisData.nFlags |= (_sadx264 == 12) ? CPU_PHADD_IS_FAST : 0;
 		}
 	}
+#endif
 
 	if (_dctmode >= 5 && (analysisData.nFlags & CPU_MMXEXT) == 0)
 	{

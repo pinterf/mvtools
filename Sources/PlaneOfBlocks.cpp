@@ -88,15 +88,16 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
 	freqArray [0].resize (8192 * _nPel * 2);
 	freqArray [1].resize (8192 * _nPel * 2);
 
-	bool mmxext = (bool)(nFlags & CPU_MMXEXT);
-	bool cache32 = (bool)(nFlags & CPU_CACHELINE_32);
-	bool cache64 = (bool)(nFlags & CPU_CACHELINE_64);
-	bool sse2 = (bool)(nFlags & CPU_SSE2_IS_FAST);
-	bool sse3 = (bool)(nFlags & CPU_SSE3);
-	bool ssse3 = (bool)(nFlags & CPU_SSSE3);
+//  bool mmxext = (bool)(nFlags & CPU_MMXEXT);
+//  bool cache32 = (bool)(nFlags & CPU_CACHELINE_32);
+//  bool cache64 = (bool)(nFlags & CPU_CACHELINE_64);
+//  bool sse2 = (bool)(nFlags & CPU_SSE2_IS_FAST);
+  bool sse2 = (bool)(nFlags & CPU_SSE2); // no tricks for really old processors. If SSE2 is reported, use it
+  //	bool sse3 = (bool)(nFlags & CPU_SSE3);
+//	bool ssse3 = (bool)(nFlags & CPU_SSSE3);
   bool avx = (bool)(nFlags & CPU_AVX);
   bool avx2 = (bool)(nFlags & CPU_AVX2);
-  bool ssse3pha = (bool)(nFlags & CPU_PHADD_IS_FAST);
+//  bool ssse3pha = (bool)(nFlags & CPU_PHADD_IS_FAST);
 	bool ssd = (bool)(nFlags & MOTION_USE_SSD);
 	bool satd = (bool)(nFlags & MOTION_USE_SATD);
 
@@ -109,7 +110,11 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
 
 	memset (&vectors [0], 0, vectors.size () * sizeof (vectors [0]));
 
-	// function's pointers initialization
+	// function's pointers 
+  // Sad_C: SadFunction.cpp
+  // Var_c: Variance.h   PF nowhere used!!!
+  // Luma_c: Variance.h 
+  // Copy_C: CopyCode
 
 #if 0
     // Sad_C: SadFunction.cpp
@@ -207,6 +212,8 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
 #endif	// NEWBLIT
 
 
+#if 0
+// not used since years
 #define SET_FUNCPTR_x264(blksizex, blksizey, type)	do \
 	{ \
 		type = x264_pixel_sad_##blksizex##x##blksizey##_mmx2; \
@@ -246,7 +253,7 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
 		if (sse2) SATD = x264_pixel_satd_##blksizex##x##blksizey##_sse2; \
 		if (ssse3) SATD = x264_pixel_satd_##blksizex##x##blksizey##_ssse3; \
 	} while (false)
-
+#endif
 
 	SATD = SadDummy; //for now disable SATD if default functions are used
 

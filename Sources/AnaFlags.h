@@ -37,17 +37,17 @@ enum AnaFlags
 	MOTION_USE_CHROMA_MOTION   = 0x00000800,
 
 	// cpu capability flags from x264 cpu.h  // added in 1.9.5.4
-	CPU_CACHELINE_32           = 0x00001000, // avoid memory loads that span the border between two cachelines
-	CPU_CACHELINE_64           = 0x00002000, // 32/64 is the size of a cacheline in bytes
+//	CPU_CACHELINE_32           = 0x00001000, // avoid memory loads that span the border between two cachelines
+//	CPU_CACHELINE_64           = 0x00002000, // 32/64 is the size of a cacheline in bytes
 	CPU_MMX                    = 0x00004000,
 	CPU_MMXEXT                 = 0x00008000, // MMX2 aka MMXEXT aka ISSE
 	CPU_SSE                    = 0x00010000,
 	CPU_SSE2                   = 0x00020000,
-	CPU_SSE2_IS_SLOW           = 0x00040000, // avoid most SSE2 functions on Athlon64
-	CPU_SSE2_IS_FAST           = 0x00080000, // a few functions are only faster on Core2 and Phenom
+//	CPU_SSE2_IS_SLOW           = 0x00040000, // avoid most SSE2 functions on Athlon64
+//	CPU_SSE2_IS_FAST           = 0x00080000, // a few functions are only faster on Core2 and Phenom
 	CPU_SSE3                   = 0x00100000,
 	CPU_SSSE3                  = 0x00200000,
-	CPU_PHADD_IS_FAST          = 0x00400000, // pre-Penryn Core2 have a uselessly slow PHADD instruction
+//	CPU_PHADD_IS_FAST          = 0x00400000, // pre-Penryn Core2 have a uselessly slow PHADD instruction
 	CPU_SSE4                   = 0x00800000, // SSE4.1
   CPU_SSE42                  = 0x01000000, // SSE4.2
   CPU_AVX                    = 0x02000000, // AVX  PF RFU

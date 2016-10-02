@@ -40,7 +40,7 @@ uint32_t cpu_detect( void )
     uint32_t eax, ebx, ecx, edx;
     uint32_t vendor[4] = {0};
     int max_extended_cap;
-    int cache;
+//    int cache;
 
 #if !defined(_WIN64)
 	if( !x264_cpu_cpuid_test() )
@@ -73,11 +73,13 @@ uint32_t cpu_detect( void )
           cpu |= CPU_SSE42;
       if( ecx&0x10000000 ) // 1 << 28
           cpu |= CPU_AVX;
-
+#if 0
       if( cpu & CPU_SSSE3 )
           cpu |= CPU_SSE2_IS_FAST;
+      
       if( cpu & CPU_SSE4 )
           cpu |= CPU_PHADD_IS_FAST;
+#endif
     }
 
     // PF
@@ -90,6 +92,7 @@ uint32_t cpu_detect( void )
     x264_cpu_cpuid( 0x80000000, &eax, &ebx, &ecx, &edx );
     max_extended_cap = eax;
 
+#if 0
     if( !strcmp((char*)vendor, "AuthenticAMD") && max_extended_cap >= 0x80000001 )
     {
         x264_cpu_cpuid( 0x80000001, &eax, &ebx, &ecx, &edx );
@@ -103,6 +106,7 @@ uint32_t cpu_detect( void )
                 cpu |= CPU_SSE2_IS_SLOW;
         }
     }
+#endif
 
     if( !strcmp((char*)vendor, "GenuineIntel") )
     {
@@ -122,6 +126,7 @@ uint32_t cpu_detect( void )
         }
     }
 
+#if 0
     if( !strcmp((char*)vendor, "GenuineIntel") || !strcmp((char*)vendor, "CyrixInstead") )
     {
         /* cacheline size is specified in 3 places, any of which may be missing */
@@ -163,6 +168,7 @@ uint32_t cpu_detect( void )
 		}
 		else
 			DebugPrintf("unable to determine cacheline size");
+#endif
 
     return cpu;
 }
