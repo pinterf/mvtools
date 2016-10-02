@@ -1553,7 +1553,11 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
       }
       else if (pixelsize_super == 2)
       {
-        Short2Bytes16((uint16_t *)(pDst[0]), pDst[0] + lsb_offset_y, nDstPitches[0], DstInt, dstIntPitch, nWidth_B, nHeight_B, bits_per_pixel_super);
+        Short2Bytes_Int32toWord16((uint16_t *)(pDst[0]), nDstPitches[0], DstInt, dstIntPitch, nWidth_B, nHeight_B, bits_per_pixel_super);
+      }
+      else if (pixelsize_super == 4)
+      {
+        Short2Bytes_FloatInInt32ArrayToFloat((float *)(pDst[0]), nDstPitches[0], DstInt, dstIntPitch, nWidth_B, nHeight_B);
       }
       if (nWidth_B < nWidth)
       {
@@ -1768,8 +1772,12 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
       }
       else if (pixelsize_super == 2)
       { // pixelsize
-        Short2Bytes16((uint16_t *)(pDst), pDst + lsb_offset_uv, nDstPitch, DstInt, dstIntPitch, nWidth_B >> nLogxRatioUV, nHeight_B >> nLogyRatioUV, bits_per_pixel_super);
+        Short2Bytes_Int32toWord16((uint16_t *)(pDst), nDstPitch, DstInt, dstIntPitch, nWidth_B >> nLogxRatioUV, nHeight_B >> nLogyRatioUV, bits_per_pixel_super);
       }
+      else if (pixelsize_super == 4)
+      {
+        Short2Bytes_FloatInInt32ArrayToFloat((float *)(pDst), nDstPitch, DstInt, dstIntPitch, nWidth_B >> nLogxRatioUV, nHeight_B >> nLogyRatioUV);
+      }      
       if (nWidth_B < nWidth)
       {
         BitBlt(pDst + (nWidth_B >> nLogxRatioUV)*pixelsize_super, nDstPitch,
@@ -1784,19 +1792,27 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
       }
     }	// overlap - end
 
-    if (nLimitC < (1 << bits_per_pixel_super) - 1)
-    {
-      if ((pixelsize_super == 1) && isse2)
+    if(pixelsize <= 2) {
+      if (nLimitC < (1 << bits_per_pixel_super) - 1)
       {
-        LimitChanges_sse2(pDst, nDstPitch, pSrc, nSrcPitch, nWidth >> nLogxRatioUV, nHeight >> nLogyRatioUV, nLimitC);
-      }
-      else
-      {
-        if (pixelsize_super == 1)
-          LimitChanges_c<uint8_t>(pDst, nDstPitch, pSrc, nSrcPitch, nWidth >> nLogxRatioUV, nHeight >> nLogyRatioUV, nLimitC);
+        if (isse2)
+        {
+          if (pixelsize_super == 1)
+            LimitChanges_sse2_new<uint8_t>(pDst, nDstPitch, pSrc, nSrcPitch, nWidth >> nLogxRatioUV, nHeight >> nLogyRatioUV, nLimitC);
+          else
+            LimitChanges_sse2_new<uint16_t>(pDst, nDstPitch, pSrc, nSrcPitch, nWidth >> nLogxRatioUV, nHeight >> nLogyRatioUV, nLimitC);
+        }
         else
-          LimitChanges_c<uint16_t>(pDst, nDstPitch, pSrc, nSrcPitch, nWidth >> nLogxRatioUV, nHeight >> nLogyRatioUV, nLimitC);
+        {
+          if (pixelsize_super == 1)
+            LimitChanges_c<uint8_t>(pDst, nDstPitch, pSrc, nSrcPitch, nWidth >> nLogxRatioUV, nHeight >> nLogyRatioUV, nLimitC);
+          else if(pixelsize_super == 2)
+            LimitChanges_c<uint16_t>(pDst, nDstPitch, pSrc, nSrcPitch, nWidth >> nLogxRatioUV, nHeight >> nLogyRatioUV, nLimitC);
+        }
       }
+    }
+    else {
+      //LimitChanges_float_c(pDst, nDstPitch, pSrc, nSrcPitch, nWidth >> nLogxRatioUV, nHeight >> nLogyRatioUV, nLimitC_f);
     }
   }
 }
