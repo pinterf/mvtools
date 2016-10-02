@@ -87,6 +87,7 @@ unsigned int Sad16_sse2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
   */
   //__assume_aligned(piMblk, 16);
   //__assume_aligned(piRef, 16);
+  // check. int result2 = Sad_C<nBlkWidth, nBlkHeight, pixel_t>(pSrc, nSrcPitch, pRef, nRefPitch);
 
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128(); // 2x or 4x int is probably enough for 32x32
@@ -163,6 +164,11 @@ unsigned int Sad16_sse2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
   __m128i sum_hi = _mm_unpackhi_epi64(sum, zero); // a1 + a3. 2 dwords right 
   sum = _mm_add_epi32(sum, sum_hi);  // a0 + a2 + a1 + a3
   int result = _mm_cvtsi128_si32(sum);
+
+// check  
+  /*if (result != result2)
+    result = result2;*/
+
   return result;
 }
 
