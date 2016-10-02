@@ -188,20 +188,157 @@ void Short2BytesLsb(unsigned char *pDst, unsigned char *pDstLsb, int nDstPitch, 
 }
 
 // better name: Int to uint16
-void Short2Bytes16(uint16_t *pDst, unsigned char *pDstLsb, int nDstPitch, int *pDstInt, int dstIntPitch, int nWidth, int nHeight, int bits_per_pixel)
+void Short2Bytes_Int32toWord16(uint16_t *pDst, int nDstPitch, int *pDstInt, int dstIntPitch, int nWidth, int nHeight, int bits_per_pixel)
 {
   const int max_pixel_value = (1 << bits_per_pixel) - 1;
   for (int h=0; h<nHeight; h++)
   {
     for (int i=0; i<nWidth; i++)
     {
-      const int		a = pDstInt [i] >> (5+6);
+      const int		a = pDstInt [i] >> (5+6); //scale back
       pDst [i] = min(a, max_pixel_value); // no need 8*shift
     }
     pDst += nDstPitch/sizeof(uint16_t);
-    //pDstLsb += nDstPitch;
     pDstInt += dstIntPitch; // this pitch is int granularity
   }
+}
+
+void Short2Bytes_FloatInInt32ArrayToFloat(float *pDst, int nDstPitch, int *pDstInt, int dstIntPitch, int nWidth, int nHeight)
+{
+  float *pDstIntF = reinterpret_cast<float *>(pDstInt);
+  for (int h=0; h<nHeight; h++)
+  {
+    for (int i=0; i<nWidth; i++)
+    {
+      // const int		a = pDstInt [i] >> (5+6); float: no scale
+      pDst [i] = min(pDstIntF[i], 1.0f);
+    }
+    pDst += nDstPitch/sizeof(float);
+    pDstInt += dstIntPitch; // this pitch is int/float (4 byte) granularity
+  }
+}
+
+
+
+// MVDegrains-a.asm ported to intrinsics + 16 bit PF 161002
+template<typename pixel_t>
+void LimitChanges_sse2_new(unsigned char *pDst8, int nDstPitch, const unsigned char *pSrc8, int nSrcPitch, const int nWidth, int nHeight, int nLimit)
+{
+  __m128i limits;
+  if (sizeof(pixel_t) == 1)
+    limits = _mm_set1_epi8(nLimit);
+  else
+    limits = _mm_set1_epi16(nLimit);
+
+  const int stride = nWidth * sizeof(pixel_t); // back to byte size
+
+  __m128i zero = _mm_setzero_si128();
+  for (int y = 0; y < nHeight; y++)
+  {
+    for (int x = 0; x < stride; x += 16) {
+      __m128i src = _mm_load_si128((__m128i *)(pSrc8 + x));
+      __m128i dst = _mm_load_si128((__m128i *)(pDst8 + x));
+      __m128i res;
+      if (sizeof(pixel_t) == 1) {
+        __m128i src_plus_limit = _mm_adds_epu8(src, limits);   //  max possible
+        // dst <= (src + limit)  ==>   dst - src - limit <= 0  ==> zero where dst was ok (under limit) (dst <= (src + limit) == true)
+        __m128i compare_tmp = _mm_subs_epu8(dst, src); // dst - orig,   saturated to 0
+        compare_tmp = _mm_subs_epu8(compare_tmp, src_plus_limit);  // did it change too much, Y where nonzero
+        compare_tmp = _mm_cmpeq_epi8(compare_tmp, zero); // now ff where new value should be used, else 
+
+        __m128i m1 = _mm_and_si128(dst, compare_tmp); //  use new value from dst for these pixels
+        __m128i m2 = _mm_andnot_si128(compare_tmp, src_plus_limit); // use max value for these pixels
+        __m128i dst_maxlimited = _mm_or_si128(m1, m2); // combine them, get result with limited  positive correction
+
+        // here we use dst_maxlimited instead of dst
+        __m128i src_minus_limit = _mm_subs_epu8(src, limits);   //  min possible
+        // dst_maxlimited >= (src - limit)  ==>  0 >= src - dst_maxlimited - limit   ==> zero where dst was ok 
+        compare_tmp = _mm_subs_epu8(src, dst_maxlimited); // orig - dst_maxlimited,   saturated to 0
+        compare_tmp = _mm_subs_epu8(compare_tmp, src_minus_limit);  // did it change too much, Y where nonzero
+        compare_tmp = _mm_cmpeq_epi8(compare_tmp, zero); // now ff where new value should be used, else 00
+
+        m1 = _mm_and_si128(dst_maxlimited, compare_tmp); //  use new value for these pixels
+        m2 = _mm_andnot_si128(compare_tmp, src_minus_limit); // use min value for these pixels
+        res = _mm_or_si128(m1, m2); // combine them, get result with limited  negative correction
+
+      }
+      else {
+
+        __m128i src_plus_limit = _mm_adds_epu16(src, limits);   //  max possible
+                                                               // dst <= (src + limit)  ==>   dst - src - limit <= 0  ==> zero where dst was ok (under limit) (dst <= (src + limit) == true)
+        __m128i compare_tmp = _mm_subs_epu16(dst, src); // dst - orig,   saturated to 0
+        compare_tmp = _mm_subs_epu16(compare_tmp, src_plus_limit);  // did it change too much, Y where nonzero
+        compare_tmp = _mm_cmpeq_epi16(compare_tmp, zero); // now ff where new value should be used, else 
+
+        __m128i m1 = _mm_and_si128(dst, compare_tmp); //  use new value from dst for these pixels
+        __m128i m2 = _mm_andnot_si128(compare_tmp, src_plus_limit); // use max value for these pixels
+        __m128i dst_maxlimited = _mm_or_si128(m1, m2); // combine them, get result with limited  positive correction
+
+                                                       // here we use dst_maxlimited instead of dst
+        __m128i src_minus_limit = _mm_subs_epu16(src, limits);   //  min possible
+                                                                // dst_maxlimited >= (src - limit)  ==>  0 >= src - dst_maxlimited - limit   ==> zero where dst was ok 
+        compare_tmp = _mm_subs_epu16(src, dst_maxlimited); // orig - dst_maxlimited,   saturated to 0
+        compare_tmp = _mm_subs_epu16(compare_tmp, src_minus_limit);  // did it change too much, Y where nonzero
+        compare_tmp = _mm_cmpeq_epi16(compare_tmp, zero); // now ff where new value should be used, else 00
+
+        m1 = _mm_and_si128(dst_maxlimited, compare_tmp); //  use new value for these pixels
+        m2 = _mm_andnot_si128(compare_tmp, src_minus_limit); // use min value for these pixels
+        res = _mm_or_si128(m1, m2); // combine them, get result with limited  negative correction
+      }
+      _mm_stream_si128((__m128i *)(pDst8 + x), res);
+    }
+    //  reinterpret_cast<pixel_t *>(pDst)[i] = 
+    //  (pixel_t)clamp((int)reinterpret_cast<pixel_t *>(pDst)[i], (reinterpret_cast<const pixel_t *>(pSrc)[i]-nLimit), (reinterpret_cast<const pixel_t *>(pSrc)[i]+nLimit));
+    pDst8 += nDstPitch;
+    pSrc8 += nSrcPitch;
+  }
+
+#if 0
+  original external asm from MVDegrains - a.asm
+    .h_loopy:
+  ; limit is no longer needed
+    xor r6, r6
+
+    .h_loopx:
+  ; srcp and dstp should be aligned
+    movdqa m0, [srcpq + r6]; src bytes
+    movdqa m1, [dstpq + r6]; dest bytes
+    movdqa m2, m5;/* copy limit */
+  paddusb m2, m0;/* max possible (m0 is original) */
+  movdqa m3, m1;/* (m1 is changed) */
+  psubusb m3, m0;/* changed - orig,   saturated to 0 */
+  psubusb m3, m5;/* did it change too much, Y where nonzero */
+  pcmpeqb m3, m4;/* now ff where new value should be used, else 00 (m4=0)*/
+  pand m1, m3;    /* use new value for these pixels */
+  pandn m3, m2; /* use max value for these pixels */
+  por m1, m3;/* combine them, get result with limited  positive correction */
+
+  movdqa m3, m5;/* copy limit */
+  movdqa m2, m0;/* copy orig */
+  psubusb m2, m5;/* min possible */
+  movdqa m3, m0;/* copy orig */
+  psubusb m3, m1;/* orig - changed, saturated to 0 */
+  psubusb m3, m5;/* did it change too much, Y where nonzero */
+  pcmpeqb m3, m4;/* now ff where new value should be used, else 00 */
+
+  pand m1, m3;/* use new value for these pixels */
+  pandn m3, m2;/* use min value for these pixels */
+  por m1, m3;/* combine them, get result with limited  negative correction */
+
+  movdqa[dstpq + r6], m1
+    add r6, 16
+    cmp r6, widthq
+    jl.h_loopx
+
+    ; do not process rightmost rest bytes
+
+    add srcpq, src_strideq
+    add dstpq, dst_strideq
+    dec heightq
+    jnz.h_loopy
+
+    RET
+#endif
 }
 
 
@@ -218,9 +355,24 @@ void LimitChanges_c(unsigned char *pDst, int nDstPitch, const unsigned char *pSr
 	}
 }
 
+void LimitChanges_float_c(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, float nLimit)
+{
+  typedef float pixel_t;
+  for (int h=0; h<nHeight; h++)
+  {
+    for (int i=0; i<nWidth; i++)
+      reinterpret_cast<pixel_t *>(pDst)[i] = 
+      (pixel_t)clamp(reinterpret_cast<pixel_t *>(pDst)[i], (reinterpret_cast<const pixel_t *>(pSrc)[i]-nLimit), (reinterpret_cast<const pixel_t *>(pSrc)[i]+nLimit));
+    pDst += nDstPitch;
+    pSrc += nSrcPitch;
+  }
+}
+
 // if a non-static template function is in cpp, we have to instantiate it
 template void LimitChanges_c<uint8_t>(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, int nLimit);
 template void LimitChanges_c<uint16_t>(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, int nLimit);
+template void LimitChanges_sse2_new<uint8_t>(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, int nLimit);
+template void LimitChanges_sse2_new<uint16_t>(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, int nLimit);
 
 
 OverlapsFunction *get_overlaps_function(int BlockX, int BlockY, int pixelsize, arch_t arch)
