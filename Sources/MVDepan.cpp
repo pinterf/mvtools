@@ -30,7 +30,7 @@
 
 
 MVDepan::MVDepan(PClip _child, PClip mvs, PClip _mask, bool _zoom, bool _rot, float _pixaspect,
-		float _error, bool _info, const char * _logfilename, float _wrong, float _zerow, int _range, int nSCD1, int nSCD2, bool isse, bool _planar, IScriptEnvironment* env) :
+		float _error, bool _info, const char * _logfilename, float _wrong, float _zerow, int _range, sad_t nSCD1, int nSCD2, bool isse, bool _planar, IScriptEnvironment* env) :
 GenericVideoFilter(_child),
 mvclip(mvs, nSCD1, nSCD2, env, 1, 0),
 MVFilter(mvs, "MDepan", env, 1, 0),
@@ -42,7 +42,7 @@ ifZoom(_zoom), ifRot(_rot), pixaspect(_pixaspect), error(_error), info(_info), l
 {
 	blockDx = new float[nBlkX * nBlkY]; // dx vector
 	blockDy = new float[nBlkX * nBlkY]; // dy
-	blockSAD = new int[nBlkX * nBlkY];
+	blockSAD = new sad_t[nBlkX * nBlkY];
 	blockX = new int[nBlkX * nBlkY]; // block x position
 	blockY = new int[nBlkX * nBlkY];
 	blockWeight = new float[nBlkX * nBlkY];

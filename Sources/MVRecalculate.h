@@ -75,7 +75,7 @@ protected:
 
 //	int            nPelSearch;    // search radius at finest level
 
-	int            lsad;          // SAD limit for lambda using - added by Fizick
+	sad_t            lsad;          // SAD limit for lambda using - added by Fizick
 	int            pnew;          // penalty to cost for new canditate - added by Fizick
 	int            plen;          // penalty factor (similar to lambda) for vector length - added by Fizick
 	int            plevel;        // penalty factors (lambda, plen) level scaling - added by Fizick
@@ -101,7 +101,7 @@ protected:
 
 	int headerSize;
 
-	int            thSAD;
+	sad_t            thSAD;
 
 	MVGroupOfFrames *             //v2.0
 	               pSrcGOF;
@@ -118,7 +118,7 @@ protected:
 public :
 
 	MVRecalculate (
-		PClip _super, PClip _vectors, int thSAD, int smooth,
+		PClip _super, PClip _vectors, sad_t thSAD, int smooth,
 		int _blksizex, int _blksizey, int st, int stp, int lambda, bool chroma,
 		int _pnew, int _overlapx, int _overlapy, const char* _outfilename,
 		int _dctmode, int _divide, int _sadx264, bool _isse, bool _meander,

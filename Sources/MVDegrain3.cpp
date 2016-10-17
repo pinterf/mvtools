@@ -35,7 +35,7 @@
 // PF 160926: MDegrain3 -> MDegrainX: common 1..5 level MDegrain functions
 
 #if 0
-MVDegrainX::Denoise3Function* MVDegrainX::get_denoise3_function(int BlockX, int BlockY, int pixelsize, arch_t arch)
+MVDegrainX::Denoise3Function* MVDegrainX::get_denoise3_function(int BlockX, int BlockY, int _pixelsize, arch_t arch)
 {
   // 8 bit only (pixelsize==1)
   //---------- DENOISE/DEGRAIN
@@ -103,11 +103,12 @@ MVDegrainX::Denoise3Function* MVDegrainX::get_denoise3_function(int BlockX, int 
   func_degrain[make_tuple(2, 4, 1, USE_SSE2)] = Degrain3_sse2<2, 4>;
   func_degrain[make_tuple(2, 2, 1, USE_SSE2)] = Degrain3_sse2<2, 2>;
 
-  return func_degrain[make_tuple(BlockX, BlockY, pixelsize, arch)];
+  return func_degrain[make_tuple(BlockX, BlockY, _pixelsize, arch)];
 }
 #endif
 
-MVDegrainX::Denoise1to5Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY, int pixelsize, bool lsb_flag, int level, arch_t arch)
+
+Denoise1to5Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY, int _pixelsize, bool _lsb_flag, int level, arch_t arch)
 {
   // 8 bit only (pixelsize==1)
   //---------- DENOISE/DEGRAIN
@@ -709,61 +710,52 @@ MVDegrainX::Denoise1to5Function* MVDegrainX::get_denoise123_function(int BlockX,
   func_degrain[make_tuple(2, 4, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<2, 4, true, 5>;
   func_degrain[make_tuple(2, 2, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<2, 2, true, 5>;
 
-  Denoise1to5Function *result = func_degrain[make_tuple(BlockX, BlockY, pixelsize, lsb_flag, level, arch)];
+  Denoise1to5Function* result = func_degrain[make_tuple(BlockX, BlockY, _pixelsize, _lsb_flag, level, arch)];
   if (!result) // fallback to C
-    result = func_degrain[make_tuple(BlockX, BlockY, pixelsize, lsb_flag, level, NO_SIMD)];
+    result = func_degrain[make_tuple(BlockX, BlockY, _pixelsize, _lsb_flag, level, NO_SIMD)];
   return result;
 }
 
 
 // If mvfw is null, mvbw is assumed to be a radius-3 multi-vector clip.
+
 MVDegrainX::MVDegrainX(
-  PClip _child, PClip _super, PClip mvbw, PClip mvfw, PClip mvbw2, PClip mvfw2, PClip mvbw3, PClip mvfw3, PClip mvbw4, PClip mvfw4, PClip mvbw5, PClip mvfw5,
-  int _thSAD, int _thSADC, int _YUVplanes, int _nLimit, int _nLimitC,
-  int _nSCD1, int _nSCD2, bool _isse2, bool _planar, bool _lsb_flag,
-  bool mt_flag, int _level, IScriptEnvironment* env
-)
-  : GenericVideoFilter(_child)
-  //,	MVFilter ((! mvfw) ? mvbw : mvfw,  "MDegrain1",    env, (! mvfw) ? 2 : 1, (! mvfw) ? 1 : 0)
-  //,	MVFilter ((! mvfw) ? mvbw : mvfw2, "MDegrain2",    env, (! mvfw) ? 4 : 1, (! mvfw) ? 3 : 0)
+  PClip _child, PClip _super, PClip _mvbw, PClip _mvfw, PClip _mvbw2, PClip _mvfw2, PClip _mvbw3, PClip _mvfw3, PClip _mvbw4, PClip _mvfw4, PClip _mvbw5, PClip _mvfw5,
+  sad_t _thSAD, sad_t _thSADC, int _YUVplanes, sad_t _nLimit, sad_t _nLimitC,
+  sad_t _nSCD1, int _nSCD2, bool _isse2, bool _planar, bool _lsb_flag,
+  bool _mt_flag, int _level, IScriptEnvironment* env
+) : GenericVideoFilter(_child)
   , MVFilter(
-  (!mvfw) ? mvbw : (_level == 1 ? mvfw : (_level == 2 ? mvfw2 : (_level == 3 ? mvfw3 : (_level == 4 ? mvfw4 : mvfw5)))),  // mvfw/mvfw2/mvfw3/mvfw4/mvfw5
-    _level == 1 ? "MDegrain1" : (_level == 2 ? "MDegrain2" : (_level == 3 ? "MDegrain3" : (_level == 4 ? "MDegrain4" : "MDegrain5"))),   // MDegrain1/2/3/4/5
+    // mvfw/mvfw2/mvfw3/mvfw4/mvfw5
+    // MDegrain1/2/3/4/5
+    (!_mvfw) ? _mvbw : (_level == 1 ? _mvfw : (_level == 2 ? _mvfw2 : (_level == 3 ? _mvfw3 : (_level == 4 ? _mvfw4 : _mvfw5)))),
+    _level == 1 ? "MDegrain1" : (_level == 2 ? "MDegrain2" : (_level == 3 ? "MDegrain3" : (_level == 4 ? "MDegrain4" : "MDegrain5"))),
     env,
-    (!mvfw) ? _level * 2 : 1, (!mvfw) ? _level * 2 - 1 : 0) // 1/3/5
-  /*
-  ,	mvClipF  ((! mvfw) ? mvbw : mvfw,  _nSCD1, _nSCD2, env, (! mvfw) ? 2 : 1, (! mvfw) ? 1 : 0)
-  ,	mvClipB  ((! mvfw) ? mvbw : mvbw,  _nSCD1, _nSCD2, env, (! mvfw) ? 2 : 1, (! mvfw) ? 0 : 0)
-
-  ,	mvClipF2 ((! mvfw) ? mvbw : mvfw2, _nSCD1, _nSCD2, env, (! mvfw) ? 4 : 1, (! mvfw) ? 3 : 0)
-  ,	mvClipF  ((! mvfw) ? mvbw : mvfw,  _nSCD1, _nSCD2, env, (! mvfw) ? 4 : 1, (! mvfw) ? 1 : 0)
-  ,	mvClipB  ((! mvfw) ? mvbw : mvbw,  _nSCD1, _nSCD2, env, (! mvfw) ? 4 : 1, (! mvfw) ? 0 : 0)
-  ,	mvClipB2 ((! mvfw) ? mvbw : mvbw2, _nSCD1, _nSCD2, env, (! mvfw) ? 4 : 1, (! mvfw) ? 2 : 0)
-  */
-
+    (!_mvfw) ? _level * 2 : 1, 
+    (!_mvfw) ? _level * 2 - 1 : 0) // 1/3/5
   , super(_super)
   , lsb_flag(_lsb_flag)
-  , height_lsb_mul((_lsb_flag) ? 2 : 1)
-  , DstShort(0)
-  , DstInt(0)
-  , level(_level)
+  , height_lsb_mul(_lsb_flag ? 2 : 1)
+  , level( _level )
 {
+  DstShort = nullptr;
+  DstInt = nullptr;
   const int group_len = level * 2; // 2, 4, 6
   // remark: _nSCD1 and 2 are scaled with bits_per_pixel in MVClip
-  mvClipF[0] = new MVClip((!mvfw) ? mvbw : mvfw, _nSCD1, _nSCD2, env, (!mvfw) ? group_len : 1, (!mvfw) ? 1 : 0);
-  mvClipB[0] = new MVClip((!mvfw) ? mvbw : mvbw, _nSCD1, _nSCD2, env, (!mvfw) ? group_len : 1, (!mvfw) ? 0 : 0);
+  mvClipF[0] = new MVClip((!_mvfw) ? _mvbw : _mvfw, _nSCD1, _nSCD2, env, (!_mvfw) ? group_len : 1, (!_mvfw) ? 1 : 0);
+  mvClipB[0] = new MVClip((!_mvfw) ? _mvbw : _mvbw, _nSCD1, _nSCD2, env, (!_mvfw) ? group_len : 1, (!_mvfw) ? 0 : 0);
   if (level >= 2) {
-    mvClipF[1] = new MVClip((!mvfw) ? mvbw : mvfw2, _nSCD1, _nSCD2, env, (!mvfw) ? group_len : 1, (!mvfw) ? 3 : 0);
-    mvClipB[1] = new MVClip((!mvfw) ? mvbw : mvbw2, _nSCD1, _nSCD2, env, (!mvfw) ? group_len : 1, (!mvfw) ? 2 : 0);
+    mvClipF[1] = new MVClip((!_mvfw) ? _mvbw : _mvfw2, _nSCD1, _nSCD2, env, (!_mvfw) ? group_len : 1, (!_mvfw) ? 3 : 0);
+    mvClipB[1] = new MVClip((!_mvfw) ? _mvbw : _mvbw2, _nSCD1, _nSCD2, env, (!_mvfw) ? group_len : 1, (!_mvfw) ? 2 : 0);
     if (level >= 3) {
-      mvClipF[2] = new MVClip((!mvfw) ? mvbw : mvfw3, _nSCD1, _nSCD2, env, (!mvfw) ? group_len : 1, (!mvfw) ? 5 : 0);
-      mvClipB[2] = new MVClip((!mvfw) ? mvbw : mvbw3, _nSCD1, _nSCD2, env, (!mvfw) ? group_len : 1, (!mvfw) ? 4 : 0);
+      mvClipF[2] = new MVClip((!_mvfw) ? _mvbw : _mvfw3, _nSCD1, _nSCD2, env, (!_mvfw) ? group_len : 1, (!_mvfw) ? 5 : 0);
+      mvClipB[2] = new MVClip((!_mvfw) ? _mvbw : _mvbw3, _nSCD1, _nSCD2, env, (!_mvfw) ? group_len : 1, (!_mvfw) ? 4 : 0);
       if (level >= 4) {
-        mvClipF[3] = new MVClip((!mvfw) ? mvbw : mvfw4, _nSCD1, _nSCD2, env, (!mvfw) ? group_len : 1, (!mvfw) ? 7 : 0);
-        mvClipB[3] = new MVClip((!mvfw) ? mvbw : mvbw4, _nSCD1, _nSCD2, env, (!mvfw) ? group_len : 1, (!mvfw) ? 6 : 0);
+        mvClipF[3] = new MVClip((!_mvfw) ? _mvbw : _mvfw4, _nSCD1, _nSCD2, env, (!_mvfw) ? group_len : 1, (!_mvfw) ? 7 : 0);
+        mvClipB[3] = new MVClip((!_mvfw) ? _mvbw : _mvbw4, _nSCD1, _nSCD2, env, (!_mvfw) ? group_len : 1, (!_mvfw) ? 6 : 0);
         if (level >= 5) {
-          mvClipF[4] = new MVClip((!mvfw) ? mvbw : mvfw5, _nSCD1, _nSCD2, env, (!mvfw) ? group_len : 1, (!mvfw) ? 9 : 0);
-          mvClipB[4] = new MVClip((!mvfw) ? mvbw : mvbw5, _nSCD1, _nSCD2, env, (!mvfw) ? group_len : 1, (!mvfw) ? 8 : 0);
+          mvClipF[4] = new MVClip((!_mvfw) ? _mvbw : _mvfw5, _nSCD1, _nSCD2, env, (!_mvfw) ? group_len : 1, (!_mvfw) ? 9 : 0);
+          mvClipB[4] = new MVClip((!_mvfw) ? _mvbw : _mvbw5, _nSCD1, _nSCD2, env, (!_mvfw) ? group_len : 1, (!_mvfw) ? 8 : 0);
         }
       }
     }
@@ -820,8 +812,6 @@ MVDegrainX::MVDegrainX(
   thSADC = int(thSADC / 255.0 * ((1 << bits_per_pixel) - 1));
   thSADpow2 = thSAD * thSAD;
   thSADCpow2 = thSADC * thSADC;
-  thSADpow2_f = (float)thSAD * thSAD;
-  thSADCpow2_f = (float)thSADC * thSADC;
 
   // get parameters of prepared super clip - v2.0
   SuperParams64Bits params;
@@ -833,8 +823,8 @@ MVDegrainX::MVDegrainX(
   nSuperModeYUV = params.nModeYUV;
   int nSuperLevels = params.nLevels;
   for (int i = 0; i < level; i++) {
-    pRefBGOF[i] = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse2, xRatioUV, yRatioUV, pixelsize_super, bits_per_pixel_super, mt_flag);
-    pRefFGOF[i] = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse2, xRatioUV, yRatioUV, pixelsize_super, bits_per_pixel_super, mt_flag);
+    pRefBGOF[i] = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse2, xRatioUV, yRatioUV, pixelsize_super, bits_per_pixel_super, _mt_flag);
+    pRefFGOF[i] = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse2, xRatioUV, yRatioUV, pixelsize_super, bits_per_pixel_super, _mt_flag);
   }
   int nSuperWidth = vi_super.width;
   int nSuperHeight = vi_super.height;
@@ -1828,7 +1818,7 @@ void	MVDegrainX::use_block_y(const BYTE * &p, int &np, int &WRef, bool isUsable,
     int bly = block.GetY() * nPel + block.GetMV().y;
     p = pPlane->GetPointer(blx, bly);
     np = pPlane->GetPitch();
-    int blockSAD = block.GetSAD(); // SAD of MV Block. Scaled to MVClip's bits_per_pixel;
+    sad_t blockSAD = block.GetSAD(); // SAD of MV Block. Scaled to MVClip's bits_per_pixel;
     WRef = DegrainWeight(thSAD, blockSAD, bits_per_pixel);
   }
   else
@@ -1849,7 +1839,7 @@ void	MVDegrainX::use_block_uv(const BYTE * &p, int &np, int &WRef, bool isUsable
     int bly = block.GetY() * nPel + block.GetMV().y;
     p = pPlane->GetPointer(blx >> nLogxRatioUV, bly >> nLogyRatioUV); // pixelsize - aware
     np = pPlane->GetPitch();
-    int blockSAD = block.GetSAD();  // SAD of MV Block. Scaled to MVClip's bits_per_pixel;
+    sad_t blockSAD = block.GetSAD();  // SAD of MV Block. Scaled to MVClip's bits_per_pixel;
     WRef = DegrainWeight(thSADC, blockSAD, bits_per_pixel);
   }
   else
@@ -1863,7 +1853,7 @@ void	MVDegrainX::use_block_uv(const BYTE * &p, int &np, int &WRef, bool isUsable
 
 
 template<int level>
-void	MVDegrainX::norm_weights(int &WSrc, int(&WRefB)[MAX_DEGRAIN], int(&WRefF)[MAX_DEGRAIN])
+void	norm_weights(int &WSrc, int(&WRefB)[MAX_DEGRAIN], int(&WRefF)[MAX_DEGRAIN])
 {
   WSrc = 256;
   int WSum;

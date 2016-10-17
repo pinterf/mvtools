@@ -26,6 +26,7 @@
 #include	"Windows.h"
 
 
+#include "types.h"
 
 class FakePlaneOfBlocks;
 
@@ -53,7 +54,7 @@ public :
    void Create(int _nBlkSizeX, int _nBlkSizeY, int _nLevelCount, int _nPel, int _nOverlapX, int _nOverlapY, int _xRatioUV, int _yRatioUV, int _nBlkX, int _nBlkY); 
 
 	bool Update(const int *array, int data_size);
-	bool IsSceneChange(int nThSCD1, int nThSCD2) const;
+	bool IsSceneChange(sad_t nThSCD1, int nThSCD2) const;
 
 	inline const FakePlaneOfBlocks& operator[](const int i) const {
 		return *(planes[i]);

@@ -48,7 +48,7 @@ class MVClip
    int nVPadding;
 
    /*! \brief First Scene Change Detection threshold ( compared against SAD value of the block ) */
-   int nSCD1;
+   sad_t nSCD1;
 
    /*! \brief Second Scene Change Detection threshold ( compared against the number of block over the first threshold */
    int nSCD2;
@@ -60,14 +60,13 @@ class MVClip
 	bool				_frame_update_flag;
 
 public :
-	MVClip(const ::PClip &vectors, int nSCD1, int nSCD2, ::IScriptEnvironment *env, int group_len, int group_ofs);
+	MVClip(const ::PClip &vectors, sad_t nSCD1, int nSCD2, ::IScriptEnvironment *env, int group_len, int group_ofs);
    ~MVClip();
 
 	int				get_child_frame_index (int n) const;
 	void				update_analysis_data (const MVAnalysisData &adata);
 
-	::PVideoFrame __stdcall
-						GetFrame (int n, IScriptEnvironment* env_ptr);
+	::PVideoFrame __stdcall GetFrame (int n, IScriptEnvironment* env_ptr);
 	bool __stdcall	GetParity (int n);
 
 //   void SetVectorsNeed(bool srcluma, bool refluma, bool var,
@@ -81,10 +80,10 @@ public :
    inline int GetBlkCount() const { return nBlkCount; }
    inline int GetHPadding() const { return nHPadding; }
    inline int GetVPadding() const { return nVPadding; }
-   inline int GetThSCD1() const { return nSCD1; }
+   inline sad_t GetThSCD1() const { return nSCD1; }
    inline int GetThSCD2() const { return nSCD2; }
    inline const FakeBlockData& GetBlock(int nLevel, int nBlk) const { return GetPlane(nLevel)[nBlk]; }
-   bool IsUsable(int nSCD1_, int nSCD2_) const;
+   bool IsUsable(sad_t nSCD1_, int nSCD2_) const;
    bool IsUsable() const { return IsUsable(nSCD1, nSCD2); }
    bool IsSceneChange() const { return FakeGroupOfPlanes::IsSceneChange(nSCD1, nSCD2); }
 };

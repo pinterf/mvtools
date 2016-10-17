@@ -74,7 +74,7 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
   , chroma((_nFlags & MOTION_USE_CHROMA_MOTION) != 0)
   , dctpitch(std::max(_nBlkSizeX, 16))
   , _dct_pool_ptr(dct_pool_ptr)
-  , verybigSAD(_nBlkSizeX * _nBlkSizeY * (1 << bits_per_pixel)) // * 256, pixelsize==2 -> 65536
+  , verybigSAD(_nBlkSizeX * _nBlkSizeY * (pixelsize == 4 ? 1 : (1 << bits_per_pixel))) // * 256, pixelsize==2 -> 65536. Float:1
   , freqArray()
   , dctmode(0)
   , _workarea_fact(nBlkSizeX, nBlkSizeY, dctpitch, nLogxRatioUV, xRatioUV, nLogyRatioUV, yRatioUV, pixelsize, bits_per_pixel)
@@ -209,10 +209,10 @@ PlaneOfBlocks::~PlaneOfBlocks()
 
 void PlaneOfBlocks::SearchMVs(
   MVFrame *_pSrcFrame, MVFrame *_pRefFrame,
-  SearchType st, int stp, int lambda, int lsad, int pnew,
+  SearchType st, int stp, int lambda, sad_t lsad, int pnew,
   int plevel, int flags, int *out, const VECTOR * globalMVec,
   short *outfilebuf, int fieldShift, int * pmeanLumaChange,
-  int divideExtra, int _pzero, int _pglobal, int _badSAD, int _badrange, bool meander, int *vecPrev, bool _tryMany
+  int divideExtra, int _pzero, int _pglobal, sad_t _badSAD, int _badrange, bool meander, int *vecPrev, bool _tryMany
 )
 {
   // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
@@ -321,9 +321,9 @@ void PlaneOfBlocks::SearchMVs(
 
 void PlaneOfBlocks::RecalculateMVs(
   MVClip & mvClip, MVFrame *_pSrcFrame, MVFrame *_pRefFrame,
-  SearchType st, int stp, int lambda, int lsad, int pnew,
+  SearchType st, int stp, int lambda, sad_t lsad, int pnew,
   int flags, int *out,
-  short *outfilebuf, int fieldShift, int thSAD, int divideExtra, int smooth, bool meander
+  short *outfilebuf, int fieldShift, sad_t thSAD, int divideExtra, int smooth, bool meander
 )
 {
   // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
@@ -338,7 +338,7 @@ void PlaneOfBlocks::RecalculateMVs(
   // Actually the global predictor is not used in RecalculateMVs().
   _glob_mv_pred_def.x = 0;
   _glob_mv_pred_def.y = fieldShift;
-  _glob_mv_pred_def.sad = 9999999;
+  _glob_mv_pred_def.sad = 9999999; // P.F. will be good for floats, too
 
   //	int nOutPitchY = nBlkX * (nBlkSizeX - nOverlapX) + nOverlapX;
   //	int nOutPitchUV = (nBlkX * (nBlkSizeX - nOverlapX) + nOverlapX) / 2; // xRatioUV=2
@@ -490,11 +490,11 @@ void PlaneOfBlocks::InterpolatePrediction(const PlaneOfBlocks &pob)
       {
         vectors[index].x = (v1.x + v2.x + v3.x + v4.x) << 2;
         vectors[index].y = (v1.y + v2.y + v3.y + v4.y) << 2;
-        vectors[index].sad = (v1.sad + v2.sad + v3.sad + v4.sad + 2) << 2;
+        vectors[index].sad = (v1.sad + v2.sad + v3.sad + v4.sad + 2) * 4; // float friendly, compiler optimizes for int << 2;
       }
       vectors[index].x = (vectors[index].x >> normFactor) << mulFactor;
       vectors[index].y = (vectors[index].y >> normFactor) << mulFactor;
-      vectors[index].sad = vectors[index].sad >> 4;
+      vectors[index].sad = vectors[index].sad / 16; // float friendly, compiler optimizes for int >> 4;
     }	// for k < nBlkX
   }	// for l < nBlkY
 }
@@ -511,12 +511,12 @@ void PlaneOfBlocks::WriteHeaderToArray(int *array)
 int PlaneOfBlocks::WriteDefaultToArray(int *array, int divideMode)
 {
   array[0] = nBlkCount * N_PER_BLOCK + 1;
-  //	int verybigSAD = nBlkSizeX*nBlkSizeY*256;
+  //	int verybigSAD = nBlkSizeX*nBlkSizeY*256*  bits_per_pixel_factor;
   for (int i = 0; i < nBlkCount*N_PER_BLOCK; i += N_PER_BLOCK)
   {
     array[i + 1] = 0;
     array[i + 2] = 0;
-    array[i + 3] = verybigSAD;
+    *(sad_t *)(&array[i + 3]) = verybigSAD; // float or int!!
   }
 
   if (nLogScale == 0)
@@ -530,7 +530,7 @@ int PlaneOfBlocks::WriteDefaultToArray(int *array, int divideMode)
       {
         array[i + 1] = 0;
         array[i + 2] = 0;
-        array[i + 3] = verybigSAD;
+        *(sad_t *)(&array[i + 3]) = verybigSAD; // float or int
       }
       array += array[0];
     }
@@ -850,7 +850,7 @@ void PlaneOfBlocks::PseudoEPZSearch(WorkingArea &workarea)
     Refine(workarea);
   }
 
-  int foundSAD = workarea.bestMV.sad;
+  sad_t foundSAD = workarea.bestMV.sad;
 
   const int		BADCOUNT_LIMIT = 16;
 
@@ -1493,10 +1493,10 @@ const uint8_t *	PlaneOfBlocks::GetSrcBlock(int nX, int nY)
   return pSrcFrame->GetPlane(YPLANE)->GetAbsolutePelPointer(nX, nY);
 }
 
-int	PlaneOfBlocks::LumaSADx(WorkingArea &workarea, const unsigned char *pRef0)
+sad_t	PlaneOfBlocks::LumaSADx(WorkingArea &workarea, const unsigned char *pRef0)
 {
-  int sad;
-  int refLuma;
+  sad_t sad;
+  sad_t refLuma; // int or float/double?
   switch (dctmode)
   {
   case 1: // dct SAD
@@ -1508,7 +1508,7 @@ int	PlaneOfBlocks::LumaSADx(WorkingArea &workarea, const unsigned char *pRef0)
     if (dctweight16 > 0)
     {
       workarea.DCT->DCTBytes2D(pRef0, nRefPitch[0], &workarea.dctRef[0], dctpitch);
-      int dctsad = (SAD(&workarea.dctSrc[0], dctpitch, &workarea.dctRef[0], dctpitch) + abs(workarea.dctSrc[0] - workarea.dctRef[0]) * 3)*nBlkSizeX / 2;
+      sad_t dctsad = (SAD(&workarea.dctSrc[0], dctpitch, &workarea.dctRef[0], dctpitch) + abs(workarea.dctSrc[0] - workarea.dctRef[0]) * 3)*nBlkSizeX / 2;
       sad = (sad*(16 - dctweight16) + dctsad*dctweight16) / 16;
     }
     break;
@@ -1518,7 +1518,7 @@ int	PlaneOfBlocks::LumaSADx(WorkingArea &workarea, const unsigned char *pRef0)
     if (abs(workarea.srcLuma - refLuma) > (workarea.srcLuma + refLuma) >> 5)
     {
       workarea.DCT->DCTBytes2D(pRef0, nRefPitch[0], &workarea.dctRef[0], dctpitch);
-      int dctsad = SAD(&workarea.dctSrc[0], dctpitch, &workarea.dctRef[0], dctpitch)*nBlkSizeX / 2;
+      sad_t dctsad = SAD(&workarea.dctSrc[0], dctpitch, &workarea.dctRef[0], dctpitch)*nBlkSizeX / 2;
       sad = sad / 2 + dctsad / 2;
     }
     break;
@@ -1528,7 +1528,7 @@ int	PlaneOfBlocks::LumaSADx(WorkingArea &workarea, const unsigned char *pRef0)
     if (abs(workarea.srcLuma - refLuma) > (workarea.srcLuma + refLuma) >> 5)
     {
       workarea.DCT->DCTBytes2D(pRef0, nRefPitch[0], &workarea.dctRef[0], dctpitch);
-      int dctsad = SAD(&workarea.dctSrc[0], dctpitch, &workarea.dctRef[0], dctpitch)*nBlkSizeX / 2;
+      sad_t dctsad = SAD(&workarea.dctSrc[0], dctpitch, &workarea.dctRef[0], dctpitch)*nBlkSizeX / 2;
       sad = sad / 4 + dctsad / 2 + dctsad / 4;
     }
     break;
@@ -1540,7 +1540,7 @@ int	PlaneOfBlocks::LumaSADx(WorkingArea &workarea, const unsigned char *pRef0)
     sad = SAD(workarea.pSrc[0], nSrcPitch[0], pRef0, nRefPitch[0]);
     if (dctweight16 > 0)
     {
-      int dctsad = SATD(workarea.pSrc[0], nSrcPitch[0], pRef0, nRefPitch[0]);
+      sad_t dctsad = SATD(workarea.pSrc[0], nSrcPitch[0], pRef0, nRefPitch[0]);
       sad = (sad*(16 - dctweight16) + dctsad*dctweight16) / 16;
     }
     break;
@@ -1549,7 +1549,7 @@ int	PlaneOfBlocks::LumaSADx(WorkingArea &workarea, const unsigned char *pRef0)
     sad = SAD(workarea.pSrc[0], nSrcPitch[0], pRef0, nRefPitch[0]);
     if (abs(workarea.srcLuma - refLuma) > (workarea.srcLuma + refLuma) >> 5)
     {
-      int dctsad = SATD(workarea.pSrc[0], nSrcPitch[0], pRef0, nRefPitch[0]);
+      sad_t dctsad = SATD(workarea.pSrc[0], nSrcPitch[0], pRef0, nRefPitch[0]);
       sad = sad / 2 + dctsad / 2;
     }
     break;
@@ -1558,7 +1558,7 @@ int	PlaneOfBlocks::LumaSADx(WorkingArea &workarea, const unsigned char *pRef0)
     sad = SAD(workarea.pSrc[0], nSrcPitch[0], pRef0, nRefPitch[0]);
     if (abs(workarea.srcLuma - refLuma) > (workarea.srcLuma + refLuma) >> 5)
     {
-      int dctsad = SATD(workarea.pSrc[0], nSrcPitch[0], pRef0, nRefPitch[0]);
+      sad_t dctsad = SATD(workarea.pSrc[0], nSrcPitch[0], pRef0, nRefPitch[0]);
       sad = sad / 4 + dctsad / 2 + dctsad / 4;
     }
     break;
@@ -1567,7 +1567,7 @@ int	PlaneOfBlocks::LumaSADx(WorkingArea &workarea, const unsigned char *pRef0)
     if (dctweight16 > 1)
     {
       int dctweighthalf = dctweight16 / 2;
-      int dctsad = SATD(workarea.pSrc[0], nSrcPitch[0], pRef0, nRefPitch[0]);
+      sad_t dctsad = SATD(workarea.pSrc[0], nSrcPitch[0], pRef0, nRefPitch[0]);
       sad = (sad*(16 - dctweighthalf) + dctsad*dctweighthalf) / 16;
     }
     break;
@@ -1576,7 +1576,7 @@ int	PlaneOfBlocks::LumaSADx(WorkingArea &workarea, const unsigned char *pRef0)
     sad = SAD(workarea.pSrc[0], nSrcPitch[0], pRef0, nRefPitch[0]);
     if (abs(workarea.srcLuma - refLuma) > (workarea.srcLuma + refLuma) >> 4)
     {
-      int dctsad = SATD(workarea.pSrc[0], nSrcPitch[0], pRef0, nRefPitch[0]);
+      sad_t dctsad = SATD(workarea.pSrc[0], nSrcPitch[0], pRef0, nRefPitch[0]);
       sad = sad / 2 + dctsad / 4 + sad / 4;
     }
     break;
@@ -1586,7 +1586,7 @@ int	PlaneOfBlocks::LumaSADx(WorkingArea &workarea, const unsigned char *pRef0)
   return sad;
 }
 
-int	PlaneOfBlocks::LumaSAD(WorkingArea &workarea, const unsigned char *pRef0)
+sad_t	PlaneOfBlocks::LumaSAD(WorkingArea &workarea, const unsigned char *pRef0)
 {
 #ifdef MOTION_DEBUG
   workarea.iter++;
@@ -1611,11 +1611,11 @@ void	PlaneOfBlocks::CheckMV0(WorkingArea &workarea, int vx, int vy)
 #endif
     workarea.IsVectorOK(vx, vy))
   {
-    int saduv = (chroma) ? SADCHROMA(workarea.pSrc[1], nSrcPitch[1], GetRefBlockU(workarea, vx, vy), nRefPitch[1])
+    sad_t saduv = (chroma) ? SADCHROMA(workarea.pSrc[1], nSrcPitch[1], GetRefBlockU(workarea, vx, vy), nRefPitch[1])
       + SADCHROMA(workarea.pSrc[2], nSrcPitch[2], GetRefBlockV(workarea, vx, vy), nRefPitch[2]) : 0;
-    int sad = LumaSAD(workarea, GetRefBlock(workarea, vx, vy));
+    sad_t sad = LumaSAD(workarea, GetRefBlock(workarea, vx, vy));
     sad += saduv;
-    int cost = sad + workarea.MotionDistorsion(vx, vy);
+    sad_t cost = sad + workarea.MotionDistorsion(vx, vy);
     //		int cost = sad + sad*workarea.MotionDistorsion(vx, vy)/(nBlkSizeX*nBlkSizeY*4);
     //		if (sad>bigSAD) { DebugPrintf("%d %d %d %d %d %d", workarea.blkIdx, vx, vy, workarea.nMinCost, cost, sad);}
     if (cost < workarea.nMinCost)
@@ -1639,13 +1639,13 @@ void	PlaneOfBlocks::CheckMV(WorkingArea &workarea, int vx, int vy)
 #endif
     workarea.IsVectorOK(vx, vy))
   {
-    int saduv =
+    sad_t saduv =
       !(chroma) ? 0 :
       SADCHROMA(workarea.pSrc[1], nSrcPitch[1], GetRefBlockU(workarea, vx, vy), nRefPitch[1])
       + SADCHROMA(workarea.pSrc[2], nSrcPitch[2], GetRefBlockV(workarea, vx, vy), nRefPitch[2]);
-    int sad = LumaSAD(workarea, GetRefBlock(workarea, vx, vy));
+    sad_t sad = LumaSAD(workarea, GetRefBlock(workarea, vx, vy));
     sad += saduv;
-    int cost = sad + workarea.MotionDistorsion(vx, vy) + ((penaltyNew*sad) >> 8); //v2
+    sad_t cost = sad + workarea.MotionDistorsion(vx, vy) + ((penaltyNew*sad) >> 8); //v2
 //		int cost = sad + sad*workarea.MotionDistorsion(vx, vy)/(nBlkSizeX*nBlkSizeY*4);
 //		if (sad>bigSAD) { DebugPrintf("%d %d %d %d %d %d", workarea.blkIdx, vx, vy, workarea.nMinCost, cost, sad);}
     if (cost < workarea.nMinCost)
@@ -1669,13 +1669,13 @@ void	PlaneOfBlocks::CheckMV2(WorkingArea &workarea, int vx, int vy, int *dir, in
 #endif
     workarea.IsVectorOK(vx, vy))
   {
-    int saduv =
+    sad_t saduv =
       !(chroma) ? 0 :
       SADCHROMA(workarea.pSrc[1], nSrcPitch[1], GetRefBlockU(workarea, vx, vy), nRefPitch[1])
       + SADCHROMA(workarea.pSrc[2], nSrcPitch[2], GetRefBlockV(workarea, vx, vy), nRefPitch[2]);
-    int sad = LumaSAD(workarea, GetRefBlock(workarea, vx, vy));
+    sad_t sad = LumaSAD(workarea, GetRefBlock(workarea, vx, vy));
     sad += saduv;
-    int cost = sad + workarea.MotionDistorsion(vx, vy) + ((penaltyNew*sad) >> 8); // v1.5.8
+    sad_t cost = sad + workarea.MotionDistorsion(vx, vy) + ((penaltyNew*sad) >> 8); // v1.5.8
 //		if (sad > LSAD/4) DebugPrintf("%d %d %d %d %d %d %d", workarea.blkIdx, vx, vy, val, workarea.nMinCost, cost, sad);
 //		int cost = sad + sad*workarea.MotionDistorsion(vx, vy)/(nBlkSizeX*nBlkSizeY*4) + ((penaltyNew*sad)>>8); // v1.5.8
     if (cost < workarea.nMinCost)
@@ -1700,11 +1700,11 @@ void	PlaneOfBlocks::CheckMVdir(WorkingArea &workarea, int vx, int vy, int *dir, 
 #endif
     workarea.IsVectorOK(vx, vy))
   {
-    int saduv = (chroma) ? SADCHROMA(workarea.pSrc[1], nSrcPitch[1], GetRefBlockU(workarea, vx, vy), nRefPitch[1])
+    sad_t saduv = (chroma) ? SADCHROMA(workarea.pSrc[1], nSrcPitch[1], GetRefBlockU(workarea, vx, vy), nRefPitch[1])
       + SADCHROMA(workarea.pSrc[2], nSrcPitch[2], GetRefBlockV(workarea, vx, vy), nRefPitch[2]) : 0;
-    int sad = LumaSAD(workarea, GetRefBlock(workarea, vx, vy));
+    sad_t sad = LumaSAD(workarea, GetRefBlock(workarea, vx, vy));
     sad += saduv;
-    int cost = sad + workarea.MotionDistorsion(vx, vy) + ((penaltyNew*sad) >> 8); // v1.5.8
+    sad_t cost = sad + workarea.MotionDistorsion(vx, vy) + ((penaltyNew*sad) >> 8); // v1.5.8
 //		if (sad > LSAD/4) DebugPrintf("%d %d %d %d %d %d %d", workarea.blkIdx, vx, vy, val, workarea.nMinCost, cost, sad);
 //		int cost = sad + sad*workarea.MotionDistorsion(vx, vy)/(nBlkSizeX*nBlkSizeY*4) + ((penaltyNew*sad)>>8); // v1.5.8
     if (cost < workarea.nMinCost)
@@ -2290,6 +2290,7 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
       {
         outfilebuf[workarea.blkx * 4 + 0] = workarea.bestMV.x;
         outfilebuf[workarea.blkx * 4 + 1] = workarea.bestMV.y;
+        // todo: SAD as int when it is float
         outfilebuf[workarea.blkx * 4 + 2] = (workarea.bestMV.sad & 0x0000ffff); // low word
         outfilebuf[workarea.blkx * 4 + 3] = (workarea.bestMV.sad >> 16);     // high word, usually null
       }
@@ -2464,6 +2465,5 @@ PlaneOfBlocks::WorkingArea *PlaneOfBlocks::WorkingAreaFactory::do_create()
     _bits_per_pixel
   ));
 }
-
 
 

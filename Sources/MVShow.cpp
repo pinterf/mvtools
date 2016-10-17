@@ -31,7 +31,7 @@
 
 
 MVShow::MVShow(PClip _super, PClip vectors, int _scale, int _plane, int _tol, bool _showsad, int _number,
-               int nSCD1, int nSCD2, bool _isse, bool _planar, IScriptEnvironment* env) :
+               sad_t nSCD1, int nSCD2, bool _isse, bool _planar, IScriptEnvironment* env) :
 GenericVideoFilter(_super),
 mvClip(vectors, nSCD1, nSCD2, env, 1, 0),
 MVFilter(vectors, "MShow", env, 1, 0)
@@ -168,10 +168,10 @@ PVideoFrame __stdcall MVShow::GetFrame(int n, IScriptEnvironment* env)
 #endif
 		double mean = 0;
 		int nsc = 0;
-		int ThSCD1 = mvClip.GetThSCD1();
+		sad_t ThSCD1 = mvClip.GetThSCD1();
       for ( int i = 0; i < mvClip.GetBlkCount(); i++ )
 	  {
-         int sad = mvClip.GetBlock(0, i).GetSAD();
+         sad_t sad = mvClip.GetBlock(0, i).GetSAD();
 //		 DebugPrintf("i= %d, SAD= %d", i, sad);
 		 mean += sad;
 		 if (sad > ThSCD1)

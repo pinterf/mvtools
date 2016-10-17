@@ -79,7 +79,7 @@ protected:
 
 	int nPelSearch; // search radius at finest level
 
-	int lsad; // SAD limit for lambda using - added by Fizick
+	sad_t lsad; // SAD limit for lambda using - added by Fizick
 	int pnew; // penalty to cost for new canditate - added by Fizick
 	int plen; // penalty factor (similar to lambda) for vector length - added by Fizick
 	int plevel; // penalty factors (lambda, plen) level scaling - added by Fizick
@@ -88,7 +88,7 @@ protected:
 	int pzero; // penalty factor for zero vector
 	const char* outfilename;// vectors output file
 	int divideExtra; // divide blocks on sublocks with median motion
-	int badSAD; //  SAD threshold to make more wide search for bad vectors
+	sad_t badSAD; //  SAD threshold to make more wide search for bad vectors
 	int badrange;// range (radius) of wide search
 	bool meander; //meander (alternate) scan blocks (even row left to right, odd row right to left
 	bool tryMany; // try refine around many predictors
@@ -122,10 +122,10 @@ public :
 
 	MVAnalyse (
 		PClip _child, int _blksizex, int _blksizey, int lv, int st, int stp,
-		int _pelSearch, bool isb, int lambda, bool chroma, int df, int _lsad,
+		int _pelSearch, bool isb, int lambda, bool chroma, int df, sad_t _lsad,
 		int _plevel, bool _global, int _pnew, int _pzero, int _pglobal,
 		int _overlapx, int _overlapy, const char* _outfilename, int _dctmode,
-		int _divide, int _sadx264, int _badSAD, int _badrange, bool _isse,
+		int _divide, int _sadx264, sad_t _badSAD, int _badrange, bool _isse,
 		bool _meander, bool temporal_flag, bool _tryMany, bool multi_flag,
 		bool mt_flag, IScriptEnvironment* env);
 	~MVAnalyse();

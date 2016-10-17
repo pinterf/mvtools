@@ -96,7 +96,7 @@ private:
 
 public:
 	MVFlowInter(PClip _child, PClip _finest, PClip _mvbw, PClip _mvfw, int _time256, double _ml,
-                bool _blend, int nSCD1, int nSCD2, bool isse, bool _planar, PClip _timeclip, IScriptEnvironment* env);
+                bool _blend, sad_t nSCD1, int nSCD2, bool isse, bool _planar, PClip _timeclip, IScriptEnvironment* env);
 	~MVFlowInter();
 	PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
 };

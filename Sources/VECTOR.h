@@ -20,6 +20,7 @@
 #define	__MV_VECTOR__
 
 
+#include "types.h"
 
 #pragma pack (push, 16)
 
@@ -34,7 +35,7 @@ struct VECTOR
 		};
 		int coord [2];
 	};
-   int sad;
+  sad_t sad;
 };
 
 #pragma pack (pop)

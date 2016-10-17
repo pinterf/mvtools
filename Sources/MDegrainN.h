@@ -30,9 +30,9 @@ public:
 
 						MDegrainN (
 							::PClip child, ::PClip super, ::PClip mvmulti, int trad,
-							int thsad, int thsadc, int yuvplanes, int nlimit, int nlimitc,
-							int nscd1, int nscd2, bool isse_flag, bool planar_flag, bool lsb_flag,
-							int thsad2, int thsadc2, bool mt_flag, ::IScriptEnvironment* env_ptr
+							sad_t thsad, sad_t thsadc, int yuvplanes, sad_t nlimit, sad_t nlimitc,
+							sad_t nscd1, int nscd2, bool isse_flag, bool planar_flag, bool lsb_flag,
+							sad_t thsad2, sad_t thsadc2, bool mt_flag, ::IScriptEnvironment* env_ptr
 						);
 						~MDegrainN ();
 
@@ -62,14 +62,14 @@ private:
 							_clip_sptr;
 		SharedPtr <MVGroupOfFrames>
 							_gof_sptr;
-		int				_thsad;
-		int				_thsadc;
+		sad_t				_thsad;
+		sad_t				_thsadc;
 	};
 	typedef	std::vector <MvClipInfo>	MvClipArray;
 
 	typedef	MTSlicer <MDegrainN>	Slicer;
 
-	class TmpBlock
+  class TmpBlock
 	{
 	public:
 		enum {         MAX_SIZE = 32                  };

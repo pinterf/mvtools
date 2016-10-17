@@ -56,17 +56,17 @@ public :
 	void           SearchMVs (
 		MVGroupOfFrames *pSrcGOF, MVGroupOfFrames *pRefGOF,
 		SearchType searchType, int nSearchParam, int _PelSearch, int _nLambda,
-		int _lsad, int _pnew, int _plevel, bool _global, int flags, int *out,
-		short * outfilebuf, int fieldShift, int _pzero, int _pglobal, int badSAD,
+		sad_t _lsad, int _pnew, int _plevel, bool _global, int flags, int *out,
+		short * outfilebuf, int fieldShift, int _pzero, int _pglobal, sad_t badSAD,
 		int badrange, bool meander, int *vecPrev, bool tryMany);
 	void           WriteDefaultToArray (int *array);
 	int            GetArraySize ();
 	void           ExtraDivide (int *out, int flags);
 	void           RecalculateMVs (
 		MVClip &mvClip, MVGroupOfFrames *pSrcGOF, MVGroupOfFrames *pRefGOF,
-		SearchType _searchType, int _nSearchParam, int _nLambda, int _lsad,
+		SearchType _searchType, int _nSearchParam, int _nLambda, sad_t _lsad,
 		int _pnew, int flags, int *out, short * outfilebuf, int fieldShift,
-		int thSAD, int smooth, bool meander);
+		sad_t thSAD, int smooth, bool meander);
 };
 
 #endif

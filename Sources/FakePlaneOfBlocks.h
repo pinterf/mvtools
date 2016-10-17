@@ -49,7 +49,7 @@ public :
 	~FakePlaneOfBlocks();
 
 	void Update(const int *array);
-	bool IsSceneChange(int nTh1, int nTh2) const;
+	bool IsSceneChange(sad_t nTh1, int nTh2) const;
 
 	inline bool IsInFrame(int i) const
 	{

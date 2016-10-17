@@ -64,7 +64,7 @@ private:
 
 	float *blockDx ; // dx vector
 	float *blockDy ; // dy
-	int *blockSAD ;
+	sad_t *blockSAD ;
 	int *blockX; // blocks x position
 	int *blockY;
 	float *blockWeight;
@@ -88,8 +88,8 @@ private:
 	void RejectBadBlocks (transform tr, float blockDx[], float blockDy[], int blockSAD[], int blockX[], int blockY[], float blockWeight[], int nBlkX, int nBlkY, float neighboursDif, float globalDif, int thSCD1, float zeroWeight, float blockWeightMask[], int ignoredBorder );
 
 public:
-	MVDepan::MVDepan(PClip _child, PClip mvs, PClip _mask, bool _zoom, bool _rot, float _pixaspect,
-			float _error, bool _info, const char * _logfilename, float _wrong, float _zerow, int _range, int nSCD1, int nSCD2, bool isse, bool _planar, IScriptEnvironment* env);
+	MVDepan(PClip _child, PClip mvs, PClip _mask, bool _zoom, bool _rot, float _pixaspect,
+			float _error, bool _info, const char * _logfilename, float _wrong, float _zerow, int _range, sad_t nSCD1, int nSCD2, bool isse, bool _planar, IScriptEnvironment* env);
 	~MVDepan();
 	PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
 };

@@ -261,7 +261,8 @@ void VectorMasksToOcclusionMask(uint8_t *VXMask, uint8_t *VYMask, int nBlkX, int
 	}
 }
 
-unsigned char ByteNorm(unsigned int sad, double dSADNormFactor, double fGamma)
+// PF todo pixelsize?
+unsigned char ByteNorm(sad_t sad, double dSADNormFactor, double fGamma)
 {
   //	    double dSADNormFactor = 4 / (dMaskNormFactor*blkSizeX*blkSizeY);
   double l = 255 * pow(sad*dSADNormFactor, fGamma); // Fizick - now linear for gm=1
@@ -622,12 +623,12 @@ void Merge16PlanesToBig(
 }
 
 //-----------------------------------------------------------
-unsigned char SADToMask(unsigned int sad, unsigned int sadnorm1024)
+unsigned char SADToMask(sad_t sad, sad_t sadnorm1024)
 {
 	// sadnorm1024 = 255 * (4*1024)/(mlSAD*nBlkSize*nBlkSize*chromablockfactor)
   // Check todo: bits_per_pixel? pixelsize?
-	unsigned int l = sadnorm1024*sad/1024;
-	return (unsigned char)((l > 255) ? 255 : l);
+	sad_t l = sadnorm1024*sad/1024;
+	return (unsigned char)((l > 255) ? 255 : l); // todo PF: mask clip is 8 bit always?
 }
 
 

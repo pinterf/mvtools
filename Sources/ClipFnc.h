@@ -21,6 +21,7 @@ Various utility functions related to avisynth clips.
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
+#include "types.h"
 
 
 /*! \brief Macros for accessing easily frame pointers & pitch */
@@ -53,7 +54,7 @@ public:
 	static int		compute_fieldshift (::PClip &clp, bool field_flag, int npel, int nsrc, int nref);
 	static void		format_vector_clip (::VideoInfo &vi, bool single_line_flag, int nbr_blk_x, const char *vccs_0, int size_bytes, const char *funcname_0, ::IScriptEnvironment &env);
 	static int		compute_mvclip_best_width (int nbr_blk_x, int unit_size, int align);
-	static int		interpolate_thsad (int thsad1, int thsad2, int d, int tr);
+	static sad_t		interpolate_thsad (sad_t thsad1, sad_t thsad2, int d, int tr);
 
 
 
@@ -74,7 +75,7 @@ private:
 private:
 
 						ClipFnc ();
-						ClipFnc (const ClipFnc &other);
+            ClipFnc (const ClipFnc &other);
 	virtual			~ClipFnc () {}
 	ClipFnc &		operator = (const ClipFnc &other);
 	bool				operator == (const ClipFnc &other) const;

@@ -64,7 +64,7 @@ private:
 
 //	void ComputeLUTBilinear();
 	unsigned char Length(VECTOR v, unsigned char pel);
-	unsigned char SAD(unsigned int);
+//	unsigned char SAD(unsigned int); PF uncomm
 //	void EnlargeMaskBilinear(unsigned char *derp, const int pitch);
 //	void Reorganize(unsigned char *d, int dp);
 
@@ -75,7 +75,7 @@ private:
 
 public:
 	MVMask(::PClip _child, ::PClip mvs, double _maxlength, double _gamma, int _kind, double _time100,
-		int _scvalue, int nSCD1, int nSCD2, bool isse, bool _planar, ::IScriptEnvironment* env);
+		int _scvalue, sad_t nSCD1, int nSCD2, bool isse, bool _planar, ::IScriptEnvironment* env);
 	~MVMask();
 	::PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
 };

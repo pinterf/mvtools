@@ -91,7 +91,7 @@ void	GroupOfPlanes::SearchMVs (
 	int    nSearchParam,
 	int    nPelSearch,
 	int    nLambda,
-	int    lsad,
+	sad_t    lsad,
 	int    pnew,
 	int    plevel,
 	bool   global,
@@ -101,7 +101,7 @@ void	GroupOfPlanes::SearchMVs (
 	int    fieldShift,
 	int    pzero,
 	int    pglobal,
-	int    badSAD,
+	sad_t    badSAD,
 	int    badrange,
 	bool   meander,
 	int *  vecPrev,
@@ -126,9 +126,9 @@ void	GroupOfPlanes::SearchMVs (
 
 	// create and init global motion vector as zero
 	VECTOR globalMV;
-	globalMV.x   = zeroMV.x;
-	globalMV.y   = zeroMV.y;
-	globalMV.sad = zeroMV.sad;
+  globalMV.x   = zeroMV.x;
+  globalMV.y   = zeroMV.y;
+  globalMV.sad = zeroMV.sad;
 
 	if (! global)
 	{
@@ -247,13 +247,13 @@ void	GroupOfPlanes::RecalculateMVs (
 	SearchType searchType,
 	int    nSearchParam,
 	int    nLambda,
-	int    lsad,
+	sad_t    lsad,
 	int    pnew,
 	int    flags,
 	int*   out,
 	short* outfilebuf,
 	int    fieldShift,
-	int    thSAD,
+	sad_t    thSAD,
 	int    smooth,
 	bool meander)
 {

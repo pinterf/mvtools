@@ -20,10 +20,13 @@ class MVSCDetection
 private:
 
 	MVClip mvClip;
-   unsigned char sceneChangeValue;
+   int sceneChangeValue;
+   float sceneChangeValue_f;
+   int pixelsize;
+   int bits_per_pixel;
 
 public:
-	MVSCDetection(::PClip _child, ::PClip vectors, int nSceneChangeValue, int nSCD1, int nSCD2, bool isse, IScriptEnvironment* env);
+	MVSCDetection(::PClip _child, ::PClip vectors, float nSceneChangeValue, sad_t nSCD1, int nSCD2, bool isse, IScriptEnvironment* env);
 	~MVSCDetection();
 	::PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
 };

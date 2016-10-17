@@ -114,7 +114,7 @@ bool FakeGroupOfPlanes::Update(const int *array, int data_size)
 	return (ok_flag);
 }
 
-bool FakeGroupOfPlanes::IsSceneChange(int nThSCD1, int nThSCD2) const
+bool FakeGroupOfPlanes::IsSceneChange(sad_t nThSCD1, int nThSCD2) const
 {
 	return planes[0]->IsSceneChange(nThSCD1, nThSCD2);
 }

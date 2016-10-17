@@ -10,10 +10,20 @@
 
 class MVGroupOfFrames;
 class MVPlane;
+class MVFilter;
 
 #define MAX_DEGRAIN 5
+
+typedef void (Denoise1to5Function)(
+  BYTE *pDst, BYTE *pDstLsb, bool lsb_flag, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
+  const BYTE *pRefB[MAX_DEGRAIN], int BPitch[MAX_DEGRAIN], const BYTE *pRefF[MAX_DEGRAIN], int FPitch[MAX_DEGRAIN],
+  int WSrc,
+  int WRefB[MAX_DEGRAIN], int WRefF[MAX_DEGRAIN]
+  );
+
 /*! \brief Filter that denoise the picture
  */
+
 class MVDegrainX
   : public GenericVideoFilter
   , public MVFilter
@@ -42,14 +52,6 @@ private:
   typedef void (norm_weights_Function_t)(int &WSrc, int(&WRefB)[MAX_DEGRAIN], int(&WRefF)[MAX_DEGRAIN]);
 
 
-  typedef void (Denoise1to5Function)(
-    BYTE *pDst, BYTE *pDstLsb, bool lsb_flag, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
-    const BYTE *pRefB[MAX_DEGRAIN], int BPitch[MAX_DEGRAIN], const BYTE *pRefF[MAX_DEGRAIN], int FPitch[MAX_DEGRAIN],
-    int WSrc,
-    int WRefB[MAX_DEGRAIN], int WRefF[MAX_DEGRAIN]
-    );
-
-
   MVClip *mvClipB[MAX_DEGRAIN];
   MVClip *mvClipF[MAX_DEGRAIN];
   /*
@@ -58,15 +60,13 @@ private:
   MVClip mvClipB3;
   MVClip mvClipF3;
   */
-  int thSAD;
-  int thSADpow2;
-  float thSADpow2_f;
-  int thSADC;
-  int thSADCpow2;
-  float thSADCpow2_f;
+  sad_t thSAD;
+  sad_t thSADpow2;
+  sad_t thSADC;
+  sad_t thSADCpow2;
   int YUVplanes;
-  int nLimit;
-  int nLimitC;
+  sad_t nLimit;
+  sad_t nLimitC;
   PClip super;
   bool isse2;
   bool planar;
@@ -109,13 +109,13 @@ private:
   int * DstInt;
   int dstIntPitch;
 
-  int level;
+  const int level;
 
 public:
   MVDegrainX(PClip _child, PClip _super, PClip _mvbw, PClip _mvfw, PClip _mvbw2, PClip _mvfw2, PClip _mvbw3, PClip _mvfw3, PClip _mvbw4, PClip _mvfw4, PClip _mvbw5, PClip _mvfw5,
-    int _thSAD, int _thSADC, int _YUVplanes, int _nLimit, int _nLimitC,
-    int nSCD1, int nSCD2, bool _isse2, bool _planar, bool _lsb_flag,
-    bool mt_flag, int _level, IScriptEnvironment* env);
+    sad_t _thSAD, sad_t _thSADC, int _YUVplanes, sad_t _nLimit, sad_t _nLimitC,
+    sad_t _nSCD1, int _nSCD2, bool _isse2, bool _planar, bool _lsb_flag,
+    bool _mt_flag, int _level, IScriptEnvironment* env);
   ~MVDegrainX();
   PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
 
@@ -130,8 +130,6 @@ private:
   // inline void	process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int nDstPitch, const BYTE *pSrc, const BYTE *pSrcCur, int nSrcPitch, bool isUsableB, bool isUsableF, bool isUsableB2, bool isUsableF2, bool isUsableB3, bool isUsableF3, MVPlane *pPlanesB, MVPlane *pPlanesF, MVPlane *pPlanesB2, MVPlane *pPlanesF2, MVPlane *pPlanesB3, MVPlane *pPlanesF3, int lsb_offset_uv, int nWidth_B, int nHeight_B);
   inline void	use_block_y(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch);
   inline void	use_block_uv(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch);
-  template<int level>
-  static inline void norm_weights(int &WSrc, int(&WRefB)[MAX_DEGRAIN], int(&RefF)[MAX_DEGRAIN]);
   // static inline void	norm_weights(int &WSrc, int &WRefB, int &WRefF, int &WRefB2, int &WRefF2, int &WRefB3, int &WRefF3);
     //Denoise1Function* get_denoise1_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
     //Denoise2Function* get_denoise2_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
@@ -675,5 +673,8 @@ inline int DegrainWeight(int thSAD, int blockSAD, int bits_per_pixels)
     return (int)(256.0f*(sq_thSAD - sq_blockSAD) / (sq_thSAD + sq_blockSAD));
   }
 }
+
+template<int level>
+void norm_weights(int &WSrc, int(&WRefB)[MAX_DEGRAIN], int(&RefF)[MAX_DEGRAIN]);
 
 #endif

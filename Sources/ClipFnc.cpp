@@ -168,7 +168,7 @@ int	ClipFnc::compute_mvclip_best_width (int nbr_blk_x, int unit_size, int align)
 
 
 // d ranges from 1 to tr, or d = tr = 0.
-int	ClipFnc::interpolate_thsad (int thsad1, int thsad2, int d, int tr)
+sad_t	ClipFnc::interpolate_thsad (sad_t thsad1, sad_t thsad2, int d, int tr)
 {
 	assert (thsad1 >= 0);
 	assert (thsad2 >= 0);
@@ -176,14 +176,14 @@ int	ClipFnc::interpolate_thsad (int thsad1, int thsad2, int d, int tr)
 	assert (tr >= 0);
 	//assert (d <= tr); PF 
 
-	int			thsad = thsad1;
+	sad_t			thsad = thsad1;
 
 	if (d > 1)
 	{
 		assert (tr > 1);
 		const double   x    = (d - 1) * PI / (tr - 1);
 		const double   lerp = (1 - cos (x)) * 0.5;
-		thsad = int (floor (thsad1 + lerp * (thsad2  - thsad1) + 0.5));
+		thsad = sad_t (floor (thsad1 + lerp * (thsad2  - thsad1) + 0.5));
 	}
 
 	return (thsad);

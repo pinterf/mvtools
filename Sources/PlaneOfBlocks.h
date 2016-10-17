@@ -61,10 +61,10 @@ public:
 
   /* search the vectors for the whole plane */
   void SearchMVs(MVFrame *_pSrcFrame, MVFrame *_pRefFrame, SearchType st,
-    int stp, int _lambda, int _lSAD, int _pennew, int _plevel,
+    int stp, int _lambda, sad_t _lSAD, int _pennew, int _plevel,
     int flags, int *out, const VECTOR *globalMVec, short * outfilebuf, int _fieldShiftCur,
     int * _meanLumaChange, int _divideExtra,
-    int _pzero, int _pglobal, int _badSAD, int _badrange, bool meander, int *vecPrev, bool _tryMany);
+    int _pzero, int _pglobal, sad_t _badSAD, int _badrange, bool meander, int *vecPrev, bool _tryMany);
 
 
   /* plane initialisation */
@@ -75,15 +75,16 @@ public:
   void WriteHeaderToArray(int *array);
   int WriteDefaultToArray(int *array, int divideExtra);
   int GetArraySize(int divideExtra);
-  void FitReferenceIntoArray(MVFrame *_pRefFrame, int *array);
+  // not used void FitReferenceIntoArray(MVFrame *_pRefFrame, int *array);
   void EstimateGlobalMVDoubled(VECTOR *globalMVec, Slicer &slicer); // Fizick
   inline int GetnBlkX() { return nBlkX; }
   inline int GetnBlkY() { return nBlkY; }
 
   void RecalculateMVs(MVClip & mvClip, MVFrame *_pSrcFrame, MVFrame *_pRefFrame, SearchType st,
-    int stp, int _lambda, int _lSAD, int _pennew,
-    int flags, int *out, short * outfilebuf, int fieldShift, int thSAD,
+    int stp, int _lambda, sad_t _lSAD, int _pennew,
+    int flags, int *out, short * outfilebuf, int fieldShift, sad_t thSAD,
     int _divideExtra, int smooth, bool meander);
+
 
 private:
 
@@ -134,7 +135,7 @@ private:
   conc::Array <std::vector <int>, 2>
     freqArray; // temporary array for global motion estimaton [x|y][value]
 
-  int verybigSAD;
+  sad_t verybigSAD;
 
   /* working fields */
 
@@ -155,20 +156,21 @@ private:
   // Current plane
   SearchType searchType;      /* search type used */
   int nSearchParam;           /* additionnal parameter for this search */
-  int LSAD;                   // SAD limit for lambda using - Fizick.
+  sad_t LSAD;                   // SAD limit for lambda using - Fizick.
   int penaltyNew;             // cost penalty factor for new candidates
   int penaltyZero;            // cost penalty factor for zero vector
   int pglobal;                // cost penalty factor for global predictor
 //	int nLambdaLen;             // penalty factor (lambda) for vector length
-  int badSAD;                 // SAD threshold for more wide search
+  sad_t badSAD;                 // SAD threshold for more wide search
   int badrange;               // wide search radius
   conc::AtomicInt <int> badcount;      // number of bad blocks refined
   bool temporal;              // use temporal predictor
   bool tryMany;               // try refine around many predictors
 
-  conc::AtomicInt <int> planeSAD;      // summary SAD of plane
-  conc::AtomicInt <int> sumLumaChange; // luma change sum
-
+  // PF todo this should be float or double for float format??
+  // it is not AtomicInt anymore
+  conc::AtomicInt <sad_t> planeSAD;      // summary SAD of plane // P.F. todo check where it is used
+  conc::AtomicInt <sad_t> sumLumaChange; // luma change sum
   VECTOR _glob_mv_pred_def;
   int _lambda_level;
 
@@ -178,10 +180,17 @@ private:
   int *_vecPrev;
   bool _meander_flag;
   int _pnew;
-  int _lsad;
+  sad_t _lsad;
   MVClip *	_mv_clip_ptr;
   int _smooth;
-  int _thSAD;
+  sad_t _thSAD;
+
+//  const VECTOR zeroMV = {0,0,(sad_t)-1};
+  globalMV.x = zeroMV.x;
+  globalMV.y = zeroMV.y;
+  globalMV.sad = zeroMV.sad;
+
+
 
   // Working area
   class WorkingArea
@@ -204,9 +213,8 @@ private:
 
     VECTOR globalMVPredictor;   // predictor of global motion vector
 
-    int planeSAD;               // partial summary SAD of plane
-    int sumLumaChange;          // partial luma change sum
-
+    sad_t planeSAD;               // partial summary SAD of plane
+    sad_t sumLumaChange;          // partial luma change sum
     int blky_beg;               // First line of blocks to process from this thread
     int blky_end;               // Last line of blocks + 1 to process from this thread
 
@@ -214,7 +222,7 @@ private:
     const uint8_t* pSrc[3];     // the alignment of this array is important for speed for some reason (cacheline?)
 
     VECTOR bestMV;              /* best vector found so far during the search */
-    int nMinCost;               /* minimum cost ( sad + mv cost ) found so far */
+    sad_t nMinCost;               /* minimum cost ( sad + mv cost ) found so far */
     VECTOR predictor;           /* best predictor for the current vector */
     VECTOR predictors[MAX_PREDICTOR];   /* set of predictors for the current block */
 
@@ -255,13 +263,13 @@ private:
     virtual WorkingArea *
       do_create();
   private:
-    int				_blk_size_x;
-    int				_blk_size_y;
-    int				_dctpitch;
-    int				_x_ratio_uv_log; // PF
-    int				_x_ratio_uv; // PF
-    int				_y_ratio_uv_log;
-    int				_y_ratio_uv;
+    int _blk_size_x;
+    int _blk_size_y;
+    int _dctpitch;
+    int _x_ratio_uv_log; // PF
+    int _x_ratio_uv; // PF
+    int _y_ratio_uv_log;
+    int _y_ratio_uv;
     int _pixelsize; // PF
     int _bits_per_pixel;
   };
@@ -315,8 +323,8 @@ private:
   inline const uint8_t *GetRefBlockV(WorkingArea &workarea, int nVx, int nVy);
   inline const uint8_t *GetSrcBlock(int nX, int nY);
   //	inline int LengthPenalty(int vx, int vy);
-  int LumaSADx(WorkingArea &workarea, const unsigned char *pRef0);
-  inline int LumaSAD(WorkingArea &workarea, const unsigned char *pRef0);
+  sad_t LumaSADx(WorkingArea &workarea, const unsigned char *pRef0);
+  inline sad_t LumaSAD(WorkingArea &workarea, const unsigned char *pRef0);
   inline void CheckMV0(WorkingArea &workarea, int vx, int vy);
   inline void CheckMV(WorkingArea &workarea, int vx, int vy);
   inline void CheckMV2(WorkingArea &workarea, int vx, int vy, int *dir, int val);

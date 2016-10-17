@@ -7,6 +7,7 @@
 #include	"MVDegrain3.h"
 #include "MVFrame.h"
 #include "MVPlane.h"
+#include "MVFilter.h"
 #include "profile.h"
 #include "SuperParams64Bits.h"
 
@@ -277,7 +278,7 @@ void DegrainN_sse2 (
 	}
 }
 
-MDegrainN::DenoiseNFunction* MDegrainN::get_denoiseN_function(int BlockX, int BlockY, int pixelsize, arch_t arch)
+MDegrainN::DenoiseNFunction* MDegrainN::get_denoiseN_function(int BlockX, int BlockY, int _pixelsize, arch_t arch)
 {
     // 8 bit only (pixelsize==1)
     //---------- DENOISE/DEGRAIN
@@ -343,57 +344,57 @@ MDegrainN::DenoiseNFunction* MDegrainN::get_denoiseN_function(int BlockX, int Bl
     func_degrain[make_tuple(2 , 4 , 1, USE_SSE2)] = DegrainN_sse2<2 , 4>;
     func_degrain[make_tuple(2 , 2 , 1, USE_SSE2)] = DegrainN_sse2<2 , 2>;
 
-    return func_degrain[make_tuple(BlockX, BlockY, pixelsize, arch)];
+    return func_degrain[make_tuple(BlockX, BlockY, _pixelsize, arch)];
 }
 
 
 
-MDegrainN::MDegrainN (
-	::PClip child, ::PClip super, ::PClip mvmulti, int trad,
-	int thsad, int thsadc, int yuvplanes, int nlimit, int nlimitc,
-	int nscd1, int nscd2, bool isse_flag, bool planar_flag, bool lsb_flag,
-	int thsad2, int thsadc2, bool mt_flag, ::IScriptEnvironment* env_ptr
+MDegrainN::MDegrainN(
+  ::PClip child, ::PClip super, ::PClip mvmulti, int trad,
+  sad_t thsad, sad_t thsadc, int yuvplanes, sad_t nlimit, sad_t nlimitc,
+  sad_t nscd1, int nscd2, bool isse_flag, bool planar_flag, bool lsb_flag,
+  sad_t thsad2, sad_t thsadc2, bool mt_flag, ::IScriptEnvironment* env_ptr
 )
-:	GenericVideoFilter (child)
-,	MVFilter (mvmulti, "MDegrainN", env_ptr, 1, 0)
-,	_mv_clip_arr ()
-,	_trad (trad)
-,	_yuvplanes (yuvplanes)
-,	_nlimit (nlimit)
-,	_nlimitc (nlimitc)
-,	_super (super)
-,	_isse_flag (isse_flag)
-,	_planar_flag (planar_flag)
-,	_lsb_flag (lsb_flag)
-,	_mt_flag (mt_flag)
-,	_height_lsb_mul ((lsb_flag) ? 2 : 1)
-,	_xratiouv_log ((xRatioUV == 2) ? 1 : 0)
-,	_yratiouv_log ((yRatioUV == 2) ? 1 : 0)
-,	_nsupermodeyuv (-1)
-,	_dst_planes (0)
-,	_src_planes (0)
-,	_overwins ()
-,	_overwins_uv ()
-,	_oversluma_ptr (0)
-,	_overschroma_ptr (0)
-,	_oversluma_lsb_ptr (0)
-,	_overschroma_lsb_ptr (0)
-,	_degrainluma_ptr (0)
-,	_degrainchroma_ptr (0)
-,	_dst_short ()
-,	_dst_short_pitch ()
-,	_dst_int ()
-,	_dst_int_pitch ()
-//,	_usable_flag_arr ()
-//,	_planes_ptr ()
-//,	_dst_ptr_arr ()
-//,	_src_ptr_arr ()
-//,	_dst_pitch_arr ()
-//,	_src_pitch_arr ()
-//,	_lsb_offset_arr ()
-,	_covered_width (0)
-,	_covered_height (0)
-,	_boundary_cnt_arr ()
+  : GenericVideoFilter(child)
+  , MVFilter(mvmulti, "MDegrainN", env_ptr, 1, 0)
+  , _mv_clip_arr()
+  , _trad(trad)
+  , _yuvplanes(yuvplanes)
+  , _nlimit(nlimit)
+  , _nlimitc(nlimitc)
+  , _super(super)
+  , _isse_flag(isse_flag)
+  , _planar_flag(planar_flag)
+  , _lsb_flag(lsb_flag)
+  , _mt_flag(mt_flag)
+  , _height_lsb_mul((lsb_flag) ? 2 : 1)
+  , _xratiouv_log((xRatioUV == 2) ? 1 : 0)
+  , _yratiouv_log((yRatioUV == 2) ? 1 : 0)
+  , _nsupermodeyuv(-1)
+  , _dst_planes(0)
+  , _src_planes(0)
+  , _overwins()
+  , _overwins_uv()
+  , _oversluma_ptr(0)
+  , _overschroma_ptr(0)
+  , _oversluma_lsb_ptr(0)
+  , _overschroma_lsb_ptr(0)
+  , _degrainluma_ptr(0)
+  , _degrainchroma_ptr(0)
+  , _dst_short()
+  , _dst_short_pitch()
+  , _dst_int()
+  , _dst_int_pitch()
+  //,	_usable_flag_arr ()
+  //,	_planes_ptr ()
+  //,	_dst_ptr_arr ()
+  //,	_src_ptr_arr ()
+  //,	_dst_pitch_arr ()
+  //,	_src_pitch_arr ()
+  //,	_lsb_offset_arr ()
+  , _covered_width(0)
+  , _covered_height(0)
+  , _boundary_cnt_arr()
 {
 	if (trad > MAX_TEMP_RAD)
 	{
@@ -420,7 +421,7 @@ MDegrainN::MDegrainN (
 		CheckSimilarity (*(_mv_clip_arr [k]._clip_sptr), txt_0, env_ptr);
 	}
 
-	const int		mv_thscd1 = _mv_clip_arr [0]._clip_sptr->GetThSCD1 ();
+	const sad_t mv_thscd1 = _mv_clip_arr [0]._clip_sptr->GetThSCD1 ();
 	thsad   = thsad   * mv_thscd1 / nscd1;	// normalize to block SAD
 	thsadc  = thsadc  * mv_thscd1 / nscd1;	// chroma
 	thsad2  = thsad2  * mv_thscd1 / nscd1;

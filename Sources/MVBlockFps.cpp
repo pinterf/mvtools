@@ -37,7 +37,7 @@
 MVBlockFps::MVBlockFps(
   PClip _child, PClip _super, PClip mvbw, PClip mvfw,
   unsigned int _num, unsigned int _den, int _mode, double _ml, bool _blend,
-  int nSCD1, int nSCD2, bool _isse2, bool _planar, bool mt_flag,
+  sad_t nSCD1, int nSCD2, bool _isse2, bool _planar, bool mt_flag,
   IScriptEnvironment* env
   )
   : GenericVideoFilter(_child)
@@ -573,6 +573,7 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
 		pPlanesF[1] = pRefFGOF->GetFrame(0)->GetPlane(UPLANE);
 		pPlanesF[2] = pRefFGOF->GetFrame(0)->GetPlane(VPLANE);
 
+    // pf todo check pixelsize?
 		MemZoneSet(MaskFullYB, 0, nWidthP, nHeightP, 0, 0, nPitchY); // put zeros
 		MemZoneSet(MaskFullYF, 0, nWidthP, nHeightP, 0, 0, nPitchY);
 
@@ -654,7 +655,7 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
 		// fetch image blocks
 		for ( int i = 0; i < blocks; i++ )
 		{
-			const FakeBlockData &blockB = mvClipB.GetBlock(0, i);
+			const FakeBlockData &blockB = mvClipB.GetBlock(0, i); 
 			const FakeBlockData &blockF = mvClipF.GetBlock(0, i);
 
 			// luma

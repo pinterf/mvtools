@@ -25,7 +25,7 @@
 #include "SuperParams64Bits.h"
 
 MVFlow::MVFlow(PClip _child, PClip super, PClip _mvec, int _time256, int _mode, bool _fields,
-                           int nSCD1, int nSCD2, bool _isse, bool _planar, PClip _timeclip, IScriptEnvironment* env) :
+                           sad_t nSCD1, int nSCD2, bool _isse, bool _planar, PClip _timeclip, IScriptEnvironment* env) :
 GenericVideoFilter(_child),
 MVFilter(_mvec, "MFlow", env, 1, 0),
 mvClip(_mvec, nSCD1, nSCD2, env, 1, 0)
@@ -102,6 +102,7 @@ mvClip(_mvec, nSCD1, nSCD2, env, 1, 0)
 //	wsprintf(debugbuf,"MVFlow: nBlkX=%d, nOverlap=%d, nBlkXP=%d, nWidth=%d, nWidthP=%d, VPitchY=%d",nBlkX, nOverlap, nBlkXP, nWidth, nWidthP, VPitchY);
 //	OutputDebugString(debugbuf);
 
+  // 128 align: something about pentium cache line
   VXFullY = (short*)_aligned_malloc(2 * nHeightP*VPitchY + 128, 128);
   VXFullUV = (short*)_aligned_malloc(2 * nHeightPUV*VPitchUV + 128, 128);
 
@@ -437,7 +438,7 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
 		}
 
 		const int		fieldShift =
-			ClipFnc::compute_fieldshift(finest, fields, nPel, n, nref);
+      ClipFnc::compute_fieldshift(finest, fields, nPel, n, nref);
 
 		for (int j = 0; j < nBlkYP; j++)
 		{

@@ -28,8 +28,8 @@ public:
 
 	MVCompensate(
 		PClip _child, PClip _super, PClip vectors, bool sc, double _recursionPercent,
-		int thsad, bool _fields, double _time100, int nSCD1, int nSCD2, bool isse2, bool _planar,
-		bool mt_flag, int trad, bool center_flag, PClip cclip_sptr, int thsad2,
+		sad_t thsad, bool _fields, double _time100, sad_t nSCD1, int nSCD2, bool isse2, bool _planar,
+		bool mt_flag, int trad, bool center_flag, PClip cclip_sptr, sad_t thsad2,
 		IScriptEnvironment* env_ptr
 	);
 	~MVCompensate();
@@ -42,7 +42,7 @@ private:
 	{
 	public:
 		MVClipSPtr		_clip_sptr;
-		int				_thsad;
+		sad_t				_thsad;
 	};
 	typedef	std::vector <MvClipInfo>	MvClipArray;
 
@@ -97,7 +97,7 @@ private:
 
 	// Processing variables
 	MVClip *       _mv_clip_ptr;  // Vector clip used to process this frame
-	int            _thsad;
+	sad_t            _thsad;
     const int xSubUV; // PF
 	const int		ySubUV;
 	int            fieldShift;

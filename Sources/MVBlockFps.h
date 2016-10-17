@@ -92,7 +92,7 @@ public:
 	MVBlockFps(
 		PClip _child, PClip _super, PClip _mvbw, PClip _mvfw,
 		unsigned int _num, unsigned int _den, int _mode, double _ml, bool _blend,
-		int nSCD1, int nSCD2, bool isse, bool _planar, bool mt_flag,
+		sad_t nSCD1, int nSCD2, bool isse, bool _planar, bool mt_flag,
 		IScriptEnvironment* env
 	);
 	~MVBlockFps();

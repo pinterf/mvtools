@@ -46,7 +46,7 @@ private:
 	int nPlane;
 
     /*! \brief threshold over which block's mv isn't shown */
-	int nTolerance;
+	sad_t nTolerance;
 
     /*! \brief show sad mode : mean sad is shown instead of mvs */
 	bool showSad;
@@ -65,7 +65,7 @@ private:
 
 public:
 	MVShow(PClip _child, PClip vectors, int _scale, int _plane, int _tol, bool _showsad, int number,
-          int nSCD1, int nSCD2, bool isse, bool _planar, IScriptEnvironment* env);
+          sad_t nSCD1, int nSCD2, bool isse, bool _planar, IScriptEnvironment* env);
 	~MVShow();
 	PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
 

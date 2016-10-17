@@ -39,7 +39,7 @@
 //extern MVCore mvCore;
 
 MVRecalculate::MVRecalculate (
-	PClip _super, PClip _vectors, int _thSAD, int _smooth,
+	PClip _super, PClip _vectors, sad_t _thSAD, int _smooth,
 	int _blksizex, int _blksizey, int st, int stp, int lambda, bool chroma,
    int _pnew, int _overlapx, int _overlapy, const char* _outfilename,
 	int _dctmode, int _divide, int _sadx264, bool _isse, bool _meander,
@@ -384,12 +384,12 @@ MVRecalculate::MVRecalculate (
     // PF _thSAD is originally on 255 scale, for 16 bit we have to scale it.
     thSAD = _thSAD;
     if (pixelsize == 2)
-        thSAD = int(thSAD / 255.0 * 65535.0);
+        thSAD = (sad_t)(thSAD * (1 << (bits_per_pixel-8))); // todo float
     // luma only
     thSAD =
         thSAD
         * (analysisData.nBlkSizeX * analysisData.nBlkSizeY)
-        / (8 * 8); 
+        / (8 * 8);  // normalize to 8x8 block size
     if (chroma)
 	{
 		/*thSAD = _thSAD * (analysisData.nBlkSizeX * analysisData.nBlkSizeY) / (8 * 8) 

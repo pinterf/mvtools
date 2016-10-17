@@ -69,7 +69,7 @@ void FakePlaneOfBlocks::Update(const int *array)
 	}
 }
 
-bool FakePlaneOfBlocks::IsSceneChange(int nTh1, int nTh2) const
+bool FakePlaneOfBlocks::IsSceneChange(sad_t nTh1, int nTh2) const
 {
 	int sum = 0;
 	for ( int i = 0; i < nBlkCount; i++ )

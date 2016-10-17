@@ -61,7 +61,7 @@ void Merge16PlanesToBig(
 	int width, int height, int pitch, int pixelsize, bool isse
 );
 
-unsigned char SADToMask(unsigned int sad, unsigned int sadnorm1024);
+unsigned char SADToMask(sad_t sad, sad_t sadnorm1024);
 
 // 2.6.0.5 template <class T256P>
 // void Blend(uint8_t * pdst, const uint8_t * psrc, const uint8_t * pref, int height, int width, int dst_pitch, int src_pitch, int ref_pitch, T256P &t256_provider, bool isse);

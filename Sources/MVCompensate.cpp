@@ -35,8 +35,8 @@
 
 MVCompensate::MVCompensate(
 	PClip _child, PClip _super, PClip vectors, bool sc, double _recursionPercent,
-	int thsad, bool _fields, double _time100, int nSCD1, int nSCD2, bool _isse2, bool _planar,
-	bool mt_flag, int trad, bool center_flag, PClip cclip_sptr, int thsad2,
+	sad_t thsad, bool _fields, double _time100, sad_t nSCD1, int nSCD2, bool _isse2, bool _planar,
+	bool mt_flag, int trad, bool center_flag, PClip cclip_sptr, sad_t thsad2,
 	IScriptEnvironment* env_ptr
 )
 :	GenericVideoFilter(_child)
@@ -109,9 +109,9 @@ MVCompensate::MVCompensate(
 	for (int k = 0; k < int (_mv_clip_arr.size ()); ++k)
 	{
 		MvClipInfo &	c_info  = _mv_clip_arr [k];
-		const int		thscd1  = c_info._clip_sptr->GetThSCD1 ();
-		const int		thsadn  = thsad  * thscd1 / nSCD1;
-		const int		thsadn2 = thsad2 * thscd1 / nSCD1;
+		const sad_t		thscd1  = c_info._clip_sptr->GetThSCD1 ();
+		const sad_t		thsadn  = thsad  * thscd1 / nSCD1; // PF check todo bits_per_pixel
+		const sad_t		thsadn2 = thsad2 * thscd1 / nSCD1;
 		const int		d       = k / 2 + 1;
 		c_info._thsad = ClipFnc::interpolate_thsad (thsadn, thsadn2, d, _trad); // P.F. when testing, d=0, _trad=1, will assert inside.
 	}
@@ -585,7 +585,7 @@ void	MVCompensate::compensate_slice_normal (Slicer::TaskData &td)
 		for (int bx = 0; bx < nBlkX; ++bx)
 		{
 			int i = by*nBlkX + bx;
-			const FakeBlockData &block = _mv_clip_ptr->GetBlock(0, i);
+      const FakeBlockData &block = _mv_clip_ptr->GetBlock(0, i);
       /*
       blx = block.GetX() * nPel + block.GetMV().x * time256 / 256;
       bly = block.GetY() * nPel + block.GetMV().y * time256 / 256 + fieldShift;

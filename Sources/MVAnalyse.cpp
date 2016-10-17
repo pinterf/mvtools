@@ -38,10 +38,10 @@
 
 MVAnalyse::MVAnalyse (
 	PClip _child, int _blksizex, int _blksizey, int lv, int st, int stp,
-	int _pelSearch, bool isb, int lambda, bool chroma, int df, int _lsad,
+	int _pelSearch, bool isb, int lambda, bool chroma, int df, sad_t _lsad,
 	int _plevel, bool _global, int _pnew, int _pzero, int _pglobal,
 	int _overlapx, int _overlapy, const char* _outfilename, int _dctmode,
-	int _divide, int _sadx264, int _badSAD, int _badrange, bool _isse,
+	int _divide, int _sadx264, sad_t _badSAD, int _badrange, bool _isse,
 	bool _meander, bool temporal_flag, bool _tryMany, bool multi_flag,
 	bool mt_flag, IScriptEnvironment* env
 )
@@ -264,7 +264,7 @@ MVAnalyse::MVAnalyse (
 	analysisData.isBackward = isb;
 
    nLambda  = lambda;
-   lsad     = _lsad   * (_blksizex * _blksizey) / 64;
+   lsad     = _lsad   * (_blksizex * _blksizey) / 64 * (1 << (bits_per_pixel-8)); // normalized to 8x8 blocksize todo: float
    pnew     = _pnew;
    plevel   = _plevel;
    global   = _global;

@@ -28,7 +28,7 @@
 
 
 MVFlowFps::MVFlowFps(PClip _child, PClip super, PClip _mvbw, PClip _mvfw,  unsigned int _num, unsigned int _den, int _maskmode, double _ml,
-                           bool _blend, int nSCD1, int nSCD2, bool _isse, bool _planar, IScriptEnvironment* env) :
+                           bool _blend, sad_t nSCD1, int nSCD2, bool _isse, bool _planar, IScriptEnvironment* env) :
 GenericVideoFilter(_child),
 MVFilter(_mvfw, "MFlowFps", env, 1, 0),
 mvClipB(_mvbw, nSCD1, nSCD2, env, 1, 0),

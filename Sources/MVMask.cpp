@@ -32,7 +32,7 @@
 
 MVMask::MVMask(
 	PClip _child, PClip vectors, double ml, double gm, int _kind, double _time100, int Ysc,
-	int nSCD1, int nSCD2, bool _isse, bool _planar, IScriptEnvironment* env
+	sad_t nSCD1, int nSCD2, bool _isse, bool _planar, IScriptEnvironment* env
 )
 :	GenericVideoFilter(_child)
 ,	mvClip(vectors, nSCD1, nSCD2, env, 1, 0)

@@ -65,12 +65,16 @@ extern "C" unsigned int __cdecl Var8x4_sse2(const unsigned char *pSrc, int nSrcP
 extern "C" unsigned int __cdecl Var16x8_sse2(const unsigned char *pSrc, int nSrcPitch, int *pLuma);
 extern "C" unsigned int __cdecl Var16x2_sse2(const unsigned char *pSrc, int nSrcPitch, int *pLuma);
 
+// todo sad_t (float) and here sad_t is unsigned int, and at all other places in code: int
+//using LUMAFunction = sad_t (*)(const unsigned char *pSrc, int nSrcPitch);
 typedef unsigned int (LUMAFunction)(const unsigned char *pSrc, int nSrcPitch);
 LUMAFunction* get_luma_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
 
+// todo sad_t float
 template<int nBlkWidth, int nBlkHeight, typename pixel_t>
 unsigned int Luma_C(const unsigned char *pSrc, int nSrcPitch);
 
+// todo sad_t float
 template<int nBlkSize, typename pixel_t>
 unsigned int Luma_C(const unsigned char *pSrc, int nSrcPitch);
 

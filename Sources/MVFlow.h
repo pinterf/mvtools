@@ -86,7 +86,7 @@ private:
 
 public:
 	MVFlow(PClip _child, PClip _super, PClip _vectors, int _time256, int _mode, bool _fields,
-                int nSCD1, int nSCD2, bool isse, bool _planar, PClip _timeclip, IScriptEnvironment* env);
+                sad_t nSCD1, int nSCD2, bool isse, bool _planar, PClip _timeclip, IScriptEnvironment* env);
 	~MVFlow();
 	PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
 };

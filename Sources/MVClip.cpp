@@ -23,7 +23,7 @@
 
 
 
-MVClip::MVClip(const PClip &vectors, int _nSCD1, int _nSCD2, IScriptEnvironment *env, int group_len, int group_ofs)
+MVClip::MVClip(const PClip &vectors, sad_t _nSCD1, int _nSCD2, IScriptEnvironment *env, int group_len, int group_ofs)
 :	GenericVideoFilter(vectors) 
 ,	_group_len (group_len)
 ,	_group_ofs (group_ofs)
@@ -66,13 +66,17 @@ MVClip::MVClip(const PClip &vectors, int _nSCD1, int _nSCD2, IScriptEnvironment 
     if (pAnalyseFilter->IsChromaMotion())
         nSCD1 += nSCD1 / (xRatioUV * yRatioUV) * 2; // *2: two additional planes: UV
 
-   nSCD2 = _nSCD2 * nBlkCount / 256;
+    nSCD2 = _nSCD2 * nBlkCount / (8 * 8);
+   /* PF 16.10.02:  nSCD2 is count, normalized to a 8x8 block
    if (pixelsize == 2)
-       nSCD2 = int(nSCD2 / 255.0 * ((1 << bits_per_pixel) - 1)); // todo: check if do we need it here?
-
+       nSCD2 = int(nSCD2 / 255.0 * ((1 << bits_per_pixel) - 1)); 
+       // todo: check if do we need it here?
+       // i think not: it's count
+   */
    // FakeGroupOfPlane creation
-   FakeGroupOfPlanes::Create(nBlkSizeX, nBlkSizeY, nLvCount, nPel, nOverlapX, nOverlapY, xRatioUV, yRatioUV, nBlkX, nBlkY);// todo xRatioUV?
+   FakeGroupOfPlanes::Create(nBlkSizeX, nBlkSizeY, nLvCount, nPel, nOverlapX, nOverlapY, xRatioUV, yRatioUV, nBlkX, nBlkY);
 }
+
 
 MVClip::~MVClip()
 {
@@ -144,7 +148,7 @@ int	MVClip::get_child_frame_index (int n) const
 
 
 
-::PVideoFrame __stdcall	MVClip::GetFrame (int n, IScriptEnvironment* env_ptr)
+::PVideoFrame __stdcall MVClip::GetFrame (int n, IScriptEnvironment* env_ptr)
 {
 	const int		child_n = get_child_frame_index (n);
 	::PVideoFrame	frame_ptr = child->GetFrame (child_n, env_ptr);
@@ -171,7 +175,7 @@ int	MVClip::get_child_frame_index (int n) const
 
 
 
-bool __stdcall	MVClip::GetParity (int n)
+bool __stdcall MVClip::GetParity (int n)
 {
 	const int		child_n = get_child_frame_index (n);
 
@@ -185,8 +189,12 @@ void MVClip::Update (::PVideoFrame &fn, ::IScriptEnvironment *env)
 	assert (&fn != 0);
 	assert (env != 0);
 
-	const int		bytes_per_pix = vi.BitsPerPixel () >> 3;
-	const int		line_size = vi.width * bytes_per_pix;	// in bytes
+	const int		bytes_per_pix = vi.BitsPerPixel () >> 3; 
+  // P.F.: for calculation of buffer size 
+  // P.F. todo above 16.10.02 check BitsPerPixel? nowhere used
+  // 
+  
+  const int		line_size = vi.width * bytes_per_pix;	// in bytes
 	int				data_size = vi.height * line_size / sizeof(int);	// in 32-bit words
 
 	const int *pMv = reinterpret_cast<const int*>(fn->GetReadPtr());
@@ -235,7 +243,7 @@ void	MVClip::use_ref_frame (int &ref_index, bool &usable_flag, ::PClip &super, i
 			ref_index = -off;
 		}
 
-		const ::VideoInfo &	vi_super = super->GetVideoInfo ();
+		const ::VideoInfo &vi_super = super->GetVideoInfo ();
 		if (ref_index < 0 || ref_index >= vi_super.num_frames)
 		{
 			usable_flag = false;
@@ -255,7 +263,7 @@ void	MVClip::use_ref_frame (::PVideoFrame &ref, bool &usable_flag, ::PClip &supe
 
 
 
-bool  MVClip::IsUsable(int nSCD1_, int nSCD2_) const
+bool  MVClip::IsUsable(sad_t nSCD1_, int nSCD2_) const
 {
    return (!FakeGroupOfPlanes::IsSceneChange(nSCD1_, nSCD2_)) && FakeGroupOfPlanes::IsValid();
 }
