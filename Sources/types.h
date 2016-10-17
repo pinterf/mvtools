@@ -25,6 +25,8 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 #include <stdint.h>
 
+typedef int sad_t;
+
 // function tables
 enum arch_t {
     NO_SIMD=0,
