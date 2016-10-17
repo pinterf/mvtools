@@ -186,10 +186,6 @@ private:
   sad_t _thSAD;
 
 //  const VECTOR zeroMV = {0,0,(sad_t)-1};
-  globalMV.x = zeroMV.x;
-  globalMV.y = zeroMV.y;
-  globalMV.sad = zeroMV.sad;
-
 
 
   // Working area
