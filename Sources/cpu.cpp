@@ -26,6 +26,7 @@
 #include "cpu.h"
 #include "debugprintf.h"
 #include "string.h"
+#include <intrin.h>
 
 #define uint32_t unsigned int
 
@@ -71,8 +72,18 @@ uint32_t cpu_detect( void )
           cpu |= CPU_SSE4;
       if( ecx&0x00100000 ) // 1 << 20
           cpu |= CPU_SSE42;
-      if( ecx&0x10000000 ) // 1 << 28
+      // AVX
+      bool xgetbv_supported = ecx & 0x08000000; // IS_BIT_SET(cpuinfo[2], 27);
+      bool avx_supported = ecx & 0x10000000; // IS_BIT_SET(cpuinfo[2], 28);
+      if (xgetbv_supported && avx_supported)
+      {
+        if ((_xgetbv(_XCR_XFEATURE_ENABLED_MASK) & 0x6ull) == 0x6ull) {
           cpu |= CPU_AVX;
+          x264_cpu_cpuid( 7, &eax, &ebx, &ecx, &edx ); // __cpuid(cpuinfo, 7);
+          if (ebx&0x00000020 /*IS_BIT_SET(cpuinfo[1], 5)*/)
+            cpu |= CPU_AVX2;
+        }
+      }
 #if 0
       if( cpu & CPU_SSSE3 )
           cpu |= CPU_SSE2_IS_FAST;
@@ -80,13 +91,6 @@ uint32_t cpu_detect( void )
       if( cpu & CPU_SSE4 )
           cpu |= CPU_PHADD_IS_FAST;
 #endif
-    }
-
-    // PF
-    if(nIds >= 7) {
-      x264_cpu_cpuid( 7, &eax, &ebx, &ecx, &edx );
-      if( ebx&0x00000020 ) // 1 <<  5
-        cpu |= CPU_AVX2;
     }
 
     x264_cpu_cpuid( 0x80000000, &eax, &ebx, &ecx, &edx );
