@@ -49,7 +49,7 @@ static inline void DebugPrintf(char *fmt, ...)
 
 static inline void DebugPrintf(char *fmt, ...)
 {
-	// Nothing
+  __noop(fmt); 	// Nothing
 }
 
 
