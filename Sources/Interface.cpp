@@ -36,8 +36,10 @@
 #include "MVFlowInter.h"
 #include "MVFlowFps.h"
 #include "MVFlowBlur.h"
+/*
 #include "MVDegrain1.h"
 #include "MVDegrain2.h"
+*/
 #include "MVDegrain3.h"
 #include "MDegrainN.h"
 #include "MVBlockFps.h"
@@ -93,7 +95,7 @@ AVSValue __cdecl Create_MVShow(AVSValue args, void* user_data, IScriptEnvironmen
 
 AVSValue __cdecl Create_MVCompensate(AVSValue args, void* user_data, IScriptEnvironment* env)
 {
-	const int		thsad = args[5].AsInt(10000);   // thSAD
+	const int thsad = args[5].AsInt(10000);   // thSAD
 
 	return new MVCompensate(
 		args[0].AsClip(),       // source
@@ -112,7 +114,7 @@ AVSValue __cdecl Create_MVCompensate(AVSValue args, void* user_data, IScriptEnvi
 		args[13].AsInt(0),		// tr
 		args[14].AsBool(true),	// center
 		args[15].IsClip() ? args[16].AsClip() : 0, // cclip
-		args[16].AsInt(thsad),  // thSAD2
+		args[16].AsInt(thsad),  // thSAD2  todo sad_t float
 		env
 	);
 }
@@ -122,7 +124,7 @@ AVSValue __cdecl Create_MVSCDetection(AVSValue args, void* user_data, IScriptEnv
 	return new MVSCDetection(
 		args[0].AsClip(),
 		args[1].AsClip(),
-      args[2].AsInt(255),
+      args[2].AsFloat(-9999.0f),
       args[3].AsInt(MV_DEFAULT_SCD1),
       args[4].AsInt(MV_DEFAULT_SCD2),
       args[5].AsBool(true),
@@ -196,7 +198,7 @@ AVSValue __cdecl Create_MVAnalyse(AVSValue args, void* user_data, IScriptEnviron
 	);
 }
 
-AVSValue __cdecl Create_MVMask(AVSValue args, void* user_data, IScriptEnvironment* env)
+AVSValue __cdecl Create_MVMask(AVSValue args, void* , IScriptEnvironment* env)
 {
 	double ml = args[2].AsFloat(100);
 	if (ml<=0)
@@ -219,7 +221,7 @@ AVSValue __cdecl Create_MVMask(AVSValue args, void* user_data, IScriptEnvironmen
 	);
 }
 
-AVSValue __cdecl Create_MVDepan(AVSValue args, void* user_data, IScriptEnvironment* env) // Added by Fizick
+AVSValue __cdecl Create_MVDepan(AVSValue args, void* , IScriptEnvironment* env) // Added by Fizick
 {
 	return new MVDepan(
 		args[0].AsClip(),
@@ -243,7 +245,7 @@ AVSValue __cdecl Create_MVDepan(AVSValue args, void* user_data, IScriptEnvironme
 }
 
 
-AVSValue __cdecl Create_MVFlow(AVSValue args, void* user_data, IScriptEnvironment* env)
+AVSValue __cdecl Create_MVFlow(AVSValue args, void* , IScriptEnvironment* env)
 {
    double time = args[3].AsFloat(100.0);
 	if (time<0 || time>100)
@@ -267,7 +269,7 @@ AVSValue __cdecl Create_MVFlow(AVSValue args, void* user_data, IScriptEnvironmen
 	);
 }
 
-AVSValue __cdecl Create_MVFlowInter(AVSValue args, void* user_data, IScriptEnvironment* env)
+AVSValue __cdecl Create_MVFlowInter(AVSValue args, void* , IScriptEnvironment* env)
 {
    double time = args[4].AsFloat(50.0);
 	if (time<0 || time>100)
@@ -296,7 +298,7 @@ AVSValue __cdecl Create_MVFlowInter(AVSValue args, void* user_data, IScriptEnvir
 		env);
 }
 
-AVSValue __cdecl Create_MVFlowFps(AVSValue args, void* user_data, IScriptEnvironment* env)
+AVSValue __cdecl Create_MVFlowFps(AVSValue args, void* , IScriptEnvironment* env)
 {
 	double ml = args[7].AsFloat(100);
 	if (ml<=0)
@@ -321,7 +323,7 @@ AVSValue __cdecl Create_MVFlowFps(AVSValue args, void* user_data, IScriptEnviron
 	);
 }
 
-AVSValue __cdecl Create_MVFlowBlur(AVSValue args, void* user_data, IScriptEnvironment* env)
+AVSValue __cdecl Create_MVFlowBlur(AVSValue args, void* , IScriptEnvironment* env)
 {
 	double time = args[4].AsFloat(50.0);
 	if (time<0 || time>200)
@@ -518,7 +520,7 @@ AVSValue __cdecl Create_MVDegrainX(AVSValue args, void* user_data, IScriptEnviro
 	  );
 }
 
-AVSValue __cdecl Create_MDegrainN (AVSValue args, void* user_data, IScriptEnvironment* env)
+AVSValue __cdecl Create_MDegrainN (AVSValue args, void* , IScriptEnvironment* env)
 {
 	int				plane = args [6].AsInt (4);
 	int				YUVplanes;
@@ -657,7 +659,7 @@ AVSValue __cdecl Create_MDegrainN (AVSValue args, void* user_data, IScriptEnviro
 	);
 }
 
-AVSValue __cdecl Create_MVRecalculate(AVSValue args, void* user_data, IScriptEnvironment* env)
+AVSValue __cdecl Create_MVRecalculate(AVSValue args, void* , IScriptEnvironment* env)
 {
 	int blksize  = args[4].AsInt(8);       // block size horizontal
 	int blksizeV = args[5].AsInt(blksize); // block size vertical
@@ -704,7 +706,7 @@ AVSValue __cdecl Create_MVRecalculate(AVSValue args, void* user_data, IScriptEnv
 	);
 }
 
-AVSValue __cdecl Create_MVBlockFps(AVSValue args, void* user_data, IScriptEnvironment* env)
+AVSValue __cdecl Create_MVBlockFps(AVSValue args, void* , IScriptEnvironment* env)
 {
 	return new MVBlockFps(
 		args[0].AsClip(),       // src
@@ -725,7 +727,7 @@ AVSValue __cdecl Create_MVBlockFps(AVSValue args, void* user_data, IScriptEnviro
 	);
 }
 
-AVSValue __cdecl Create_MVSuper(AVSValue args, void* user_data, IScriptEnvironment* env)
+AVSValue __cdecl Create_MVSuper(AVSValue args, void* , IScriptEnvironment* env)
 {
    return new MVSuper(
 		args [0].AsClip (),      // source
@@ -744,7 +746,7 @@ AVSValue __cdecl Create_MVSuper(AVSValue args, void* user_data, IScriptEnvironme
 	);
 }
 
-AVSValue __cdecl Create_MVFinest(AVSValue args, void* user_data, IScriptEnvironment* env)
+AVSValue __cdecl Create_MVFinest(AVSValue args, void* , IScriptEnvironment* env)
 {
 	return new MVFinest(
       args[0].AsClip(),    // super
@@ -753,7 +755,7 @@ AVSValue __cdecl Create_MVFinest(AVSValue args, void* user_data, IScriptEnvironm
 	);
 }
 
-AVSValue __cdecl Create_MStoreVect (AVSValue args, void* user_data_ptr, IScriptEnvironment* env_ptr)
+AVSValue __cdecl Create_MStoreVect (AVSValue args, void* , IScriptEnvironment* env_ptr)
 {
 	const int		nbr_clips = args [0].ArraySize ();
 	if (nbr_clips < 1)
@@ -775,7 +777,7 @@ AVSValue __cdecl Create_MStoreVect (AVSValue args, void* user_data_ptr, IScriptE
 	);
 }
 
-AVSValue __cdecl Create_MRestoreVect (AVSValue args, void* user_data_ptr, IScriptEnvironment* env_ptr)
+AVSValue __cdecl Create_MRestoreVect (AVSValue args, void* , IScriptEnvironment* env_ptr)
 {
 	return new MRestoreVect (
       args [0].AsClip (), // wrapped vectors
@@ -784,7 +786,7 @@ AVSValue __cdecl Create_MRestoreVect (AVSValue args, void* user_data_ptr, IScrip
 	);
 }
 
-AVSValue __cdecl Create_MScaleVect (AVSValue args, void* user_data, IScriptEnvironment* env)
+AVSValue __cdecl Create_MScaleVect (AVSValue args, void* , IScriptEnvironment* env)
 {
 	enum { CLIP, SCALE, SCALEV, MODE, FLIP, ADJUSTSUBPEL };
 	float scaleX = float(args[SCALE].AsFloat(2.0));
