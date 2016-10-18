@@ -1,6 +1,9 @@
 // Avisynth v2.5.  Copyright 2002 Ben Rudiak-Gould et al.
 // Avisynth v2.6.  Copyright 2006 Klaus Post.
 // Avisynth v2.6.  Copyright 2009 Ian Brabham.
+// Avisynth+ project
+// Last modification date: 20161005
+
 // http://www.avisynth.org
 
 // This program is free software; you can redistribute it and/or modify
@@ -61,14 +64,24 @@ enum { AVISYNTH_INTERFACE_VERSION = 6 };
 #ifdef _MSC_VER
   #include <crtdbg.h>
 #else
+  #undef _RPT0
+  #undef _RPT1
+  #undef _RPT2
+  #undef _RPT3
+  #undef _RPT4
+  #undef _RPT5
   #define _RPT0(a,b) ((void)0)
   #define _RPT1(a,b,c) ((void)0)
   #define _RPT2(a,b,c,d) ((void)0)
   #define _RPT3(a,b,c,d,e) ((void)0)
   #define _RPT4(a,b,c,d,e,f) ((void)0)
+  #define _RPT5(a,b,c,d,e,f,g) ((void)0)
 
+  #include <cassert>
+  #undef _ASSERTE
+  #undef _ASSERT
   #define _ASSERTE(x) assert(x)
-  #include <assert.h>
+  #define _ASSERT(x) assert(x)
 #endif
 
 
@@ -117,14 +130,19 @@ private:
 
 
 /* Forward references */
-struct __single_inheritance VideoInfo;
-class __single_inheritance VideoFrameBuffer;
-class __single_inheritance VideoFrame;
+#if defined(MSVC)
+    #define SINGLE_INHERITANCE __single_inheritance
+#else
+    #define SINGLE_INHERITANCE
+#endif
+struct SINGLE_INHERITANCE VideoInfo;
+class SINGLE_INHERITANCE VideoFrameBuffer;
+class SINGLE_INHERITANCE VideoFrame;
 class IClip;
-class __single_inheritance PClip;
-class __single_inheritance PVideoFrame;
+class SINGLE_INHERITANCE PClip;
+class SINGLE_INHERITANCE PVideoFrame;
 class IScriptEnvironment;
-class __single_inheritance AVSValue;
+class SINGLE_INHERITANCE AVSValue;
 
 
 /*
@@ -305,6 +323,9 @@ struct AVS_Linkage {
 # define AVS_BakedCode(arg) ;
 # define AVS_LinkCall(arg)
 # define AVS_LinkCallV(arg)
+# define AVS_LinkCallOpt(arg, argOpt) AVSLinkCall(arg)
+# define AVS_LinkCallOptDefault(arg, argDefaultValue) AVSLinkCall(arg())
+# define CALL_MEMBER_FN(object,ptrToMember)
 
 #else
 /* Macro resolution for code inside user plugin */
@@ -321,6 +342,14 @@ extern const AVS_Linkage* AVS_linkage;
 # define AVS_BakedCode(arg) { arg ; }
 # define AVS_LinkCall(arg)  !AVS_linkage || offsetof(AVS_Linkage, arg) >= AVS_linkage->Size ?     0 : (this->*(AVS_linkage->arg))
 # define AVS_LinkCallV(arg) !AVS_linkage || offsetof(AVS_Linkage, arg) >= AVS_linkage->Size ? *this : (this->*(AVS_linkage->arg))
+// Helper macros for fallback option when a function does not exists
+#define CALL_MEMBER_FN(object,ptrToMember)  ((object)->*(ptrToMember))
+#define AVS_LinkCallOpt(arg, argOpt)  !AVS_linkage ? 0 : \
+                                      ( offsetof(AVS_Linkage, arg) >= AVS_linkage->Size ? \
+                                        (offsetof(AVS_Linkage, argOpt) >= AVS_linkage->Size ? 0 : CALL_MEMBER_FN(this, AVS_linkage->argOpt)() ) : \
+                                        CALL_MEMBER_FN(this, AVS_linkage->arg)() )
+// AVS_LinkCallOptDefault puts automatically () only after arg
+# define AVS_LinkCallOptDefault(arg, argDefaultValue)  !AVS_linkage || offsetof(AVS_Linkage, arg) >= AVS_linkage->Size ? (argDefaultValue) : ((this->*(AVS_linkage->arg))())
 
 #endif
 
@@ -586,99 +615,111 @@ enum {
   };
 
   // useful functions of the above
-  bool HasVideo() const AVS_BakedCode( return AVS_LinkCall(HasVideo)() )
-  bool HasAudio() const AVS_BakedCode( return AVS_LinkCall(HasAudio)() )
-  bool IsRGB() const AVS_BakedCode( return AVS_LinkCall(IsRGB)() )
-  bool IsRGB24() const AVS_BakedCode( return AVS_LinkCall(IsRGB24)() )
-  bool IsRGB32() const AVS_BakedCode( return AVS_LinkCall(IsRGB32)() )
-  bool IsYUV() const AVS_BakedCode( return AVS_LinkCall(IsYUV)() )
-  bool IsYUY2() const AVS_BakedCode( return AVS_LinkCall(IsYUY2)() )
+  bool HasVideo() const AVS_BakedCode(return AVS_LinkCall(HasVideo)())
+  bool HasAudio() const AVS_BakedCode(return AVS_LinkCall(HasAudio)())
+  bool IsRGB() const AVS_BakedCode(return AVS_LinkCall(IsRGB)())
+  bool IsRGB24() const AVS_BakedCode(return AVS_LinkCall(IsRGB24)())
+  bool IsRGB32() const AVS_BakedCode(return AVS_LinkCall(IsRGB32)())
+  bool IsYUV() const AVS_BakedCode(return AVS_LinkCall(IsYUV)())
+  bool IsYUY2() const AVS_BakedCode(return AVS_LinkCall(IsYUY2)())
 
-  bool IsYV24()  const AVS_BakedCode( return AVS_LinkCall(IsYV24)() )
-  bool IsYV16()  const AVS_BakedCode( return AVS_LinkCall(IsYV16)() )
-  bool IsYV12()  const AVS_BakedCode( return AVS_LinkCall(IsYV12)() )
-  bool IsYV411() const AVS_BakedCode( return AVS_LinkCall(IsYV411)() )
-//bool IsYUV9()  const;
-  bool IsY8()    const AVS_BakedCode( return AVS_LinkCall(IsY8)() )
+  bool IsYV24()  const AVS_BakedCode(return AVS_LinkCall(IsYV24)())
+  bool IsYV16()  const AVS_BakedCode(return AVS_LinkCall(IsYV16)())
+  bool IsYV12()  const AVS_BakedCode(return AVS_LinkCall(IsYV12)())
+  bool IsYV411() const AVS_BakedCode(return AVS_LinkCall(IsYV411)())
+  //bool IsYUV9()  const;
+  bool IsY8()    const AVS_BakedCode(return AVS_LinkCall(IsY8)())
 
-  bool IsColorSpace(int c_space) const AVS_BakedCode( return AVS_LinkCall(IsColorSpace)(c_space) )
+  bool IsColorSpace(int c_space) const AVS_BakedCode(return AVS_LinkCall(IsColorSpace)(c_space))
 
-  bool Is(int property) const AVS_BakedCode( return AVS_LinkCall(Is)(property) )
-  bool IsPlanar() const AVS_BakedCode( return AVS_LinkCall(IsPlanar)() )
-  bool IsFieldBased() const AVS_BakedCode( return AVS_LinkCall(IsFieldBased)() )
-  bool IsParityKnown() const AVS_BakedCode( return AVS_LinkCall(IsParityKnown)() )
-  bool IsBFF() const AVS_BakedCode( return AVS_LinkCall(IsBFF)() )
-  bool IsTFF() const AVS_BakedCode( return AVS_LinkCall(IsTFF)() )
+  bool Is(int property) const AVS_BakedCode(return AVS_LinkCall(Is)(property))
+  bool IsPlanar() const AVS_BakedCode(return AVS_LinkCall(IsPlanar)())
+  bool IsFieldBased() const AVS_BakedCode(return AVS_LinkCall(IsFieldBased)())
+  bool IsParityKnown() const AVS_BakedCode(return AVS_LinkCall(IsParityKnown)())
+  bool IsBFF() const AVS_BakedCode(return AVS_LinkCall(IsBFF)())
+  bool IsTFF() const AVS_BakedCode(return AVS_LinkCall(IsTFF)())
 
-  bool IsVPlaneFirst() const AVS_BakedCode( return AVS_LinkCall(IsVPlaneFirst)() )  // Don't use this
+  bool IsVPlaneFirst() const AVS_BakedCode(return AVS_LinkCall(IsVPlaneFirst)())  // Don't use this
   // Will not work on planar images, but will return only luma planes
-  int BytesFromPixels(int pixels) const AVS_BakedCode( return AVS_LinkCall(BytesFromPixels)(pixels) )
-  int RowSize(int plane=0) const AVS_BakedCode( return AVS_LinkCall(RowSize)(plane) )
-  int BMPSize() const AVS_BakedCode( return AVS_LinkCall(BMPSize)() )
+  int BytesFromPixels(int pixels) const AVS_BakedCode(return AVS_LinkCall(BytesFromPixels)(pixels))
+  int RowSize(int plane = 0) const AVS_BakedCode(return AVS_LinkCall(RowSize)(plane))
+  int BMPSize() const AVS_BakedCode(return AVS_LinkCall(BMPSize)())
 
-  __int64 AudioSamplesFromFrames(int frames) const AVS_BakedCode( return AVS_LinkCall(AudioSamplesFromFrames)(frames) )
-  int FramesFromAudioSamples(__int64 samples) const AVS_BakedCode( return AVS_LinkCall(FramesFromAudioSamples)(samples) )
-  __int64 AudioSamplesFromBytes(__int64 bytes) const AVS_BakedCode( return AVS_LinkCall(AudioSamplesFromBytes)(bytes) )
-  __int64 BytesFromAudioSamples(__int64 samples) const AVS_BakedCode( return AVS_LinkCall(BytesFromAudioSamples)(samples) )
-  int AudioChannels() const AVS_BakedCode( return AVS_LinkCall(AudioChannels)() )
-  int SampleType() const AVS_BakedCode( return AVS_LinkCall(SampleType)() )
-  bool IsSampleType(int testtype) const AVS_BakedCode( return AVS_LinkCall(IsSampleType)(testtype) )
-  int SamplesPerSecond() const AVS_BakedCode( return AVS_LinkCall(SamplesPerSecond)() )
-  int BytesPerAudioSample() const AVS_BakedCode( return AVS_LinkCall(BytesPerAudioSample)() )
-  void SetFieldBased(bool isfieldbased) AVS_BakedCode( AVS_LinkCall(SetFieldBased)(isfieldbased) )
-  void Set(int property) AVS_BakedCode( AVS_LinkCall(Set)(property) )
-  void Clear(int property) AVS_BakedCode( AVS_LinkCall(Clear)(property) )
+  __int64 AudioSamplesFromFrames(int frames) const AVS_BakedCode(return AVS_LinkCall(AudioSamplesFromFrames)(frames))
+  int FramesFromAudioSamples(__int64 samples) const AVS_BakedCode(return AVS_LinkCall(FramesFromAudioSamples)(samples))
+  __int64 AudioSamplesFromBytes(__int64 bytes) const AVS_BakedCode(return AVS_LinkCall(AudioSamplesFromBytes)(bytes))
+  __int64 BytesFromAudioSamples(__int64 samples) const AVS_BakedCode(return AVS_LinkCall(BytesFromAudioSamples)(samples))
+  int AudioChannels() const AVS_BakedCode(return AVS_LinkCall(AudioChannels)())
+  int SampleType() const AVS_BakedCode(return AVS_LinkCall(SampleType)())
+  bool IsSampleType(int testtype) const AVS_BakedCode(return AVS_LinkCall(IsSampleType)(testtype))
+  int SamplesPerSecond() const AVS_BakedCode(return AVS_LinkCall(SamplesPerSecond)())
+  int BytesPerAudioSample() const AVS_BakedCode(return AVS_LinkCall(BytesPerAudioSample)())
+  void SetFieldBased(bool isfieldbased) AVS_BakedCode(AVS_LinkCall(SetFieldBased)(isfieldbased))
+  void Set(int property) AVS_BakedCode(AVS_LinkCall(Set)(property))
+  void Clear(int property) AVS_BakedCode(AVS_LinkCall(Clear)(property))
   // Subsampling in bitshifts!
-  int GetPlaneWidthSubsampling(int plane) const AVS_BakedCode( return AVS_LinkCall(GetPlaneWidthSubsampling)(plane) )
-  int GetPlaneHeightSubsampling(int plane) const AVS_BakedCode( return AVS_LinkCall(GetPlaneHeightSubsampling)(plane) )
-  int BitsPerPixel() const AVS_BakedCode( return AVS_LinkCall(BitsPerPixel)() )
+  int GetPlaneWidthSubsampling(int plane) const AVS_BakedCode(return AVS_LinkCall(GetPlaneWidthSubsampling)(plane))
+  int GetPlaneHeightSubsampling(int plane) const AVS_BakedCode(return AVS_LinkCall(GetPlaneHeightSubsampling)(plane))
+  int BitsPerPixel() const AVS_BakedCode(return AVS_LinkCall(BitsPerPixel)())
 
-  int BytesPerChannelSample() const AVS_BakedCode( return AVS_LinkCall(BytesPerChannelSample)() )
+  int BytesPerChannelSample() const AVS_BakedCode(return AVS_LinkCall(BytesPerChannelSample)())
 
   // useful mutator
-  void SetFPS(unsigned numerator, unsigned denominator) AVS_BakedCode( AVS_LinkCall(SetFPS)(numerator, denominator) )
+  void SetFPS(unsigned numerator, unsigned denominator) AVS_BakedCode(AVS_LinkCall(SetFPS)(numerator, denominator))
 
   // Range protected multiply-divide of FPS
-  void MulDivFPS(unsigned multiplier, unsigned divisor) AVS_BakedCode( AVS_LinkCall(MulDivFPS)(multiplier, divisor) )
+  void MulDivFPS(unsigned multiplier, unsigned divisor) AVS_BakedCode(AVS_LinkCall(MulDivFPS)(multiplier, divisor))
 
   // Test for same colorspace
   bool IsSameColorspace(const VideoInfo& vi) const AVS_BakedCode(return AVS_LinkCall(IsSameColorspace)(vi))
 
+  // AVS+ extensions
+  // 20161005: 
+  //   Mapping of AVS+ extensions to classic 2.6 functions.
+  //   In order to use these extended AVS+ functions for plugins that should work
+  //   either with AVS+ or with Classic (8 bit) Avs 2.6 ans earlier AVS+ versions, there is an 
+  //   automatic fallback mechanism.
+  //   From AVS+'s point of view these are not "baked" codes, the primary functions should exist.
+  //   Examples:
+  //   Is444() is mapped to IsYV24() for classic AVS2.6 
+  //   ComponentSize() returns constant 1 (1 bytes per pixel component)
+  //   BitsPerComponent() returns constant 8 (Classic AVS2.6 is 8 bit only)
+
   // Returns the number of color channels or planes in a frame
-  int NumComponents() const AVS_BakedCode(return AVS_LinkCall(NumComponents)())
+  int NumComponents() const AVS_BakedCode(return AVS_LinkCallOptDefault(NumComponents, (((AVS_LinkCall(IsYUV)()) && !(AVS_LinkCall(IsY8)())) ? 3 : AVS_LinkCall(BytesFromPixels)(1)) ) )
 
   // Returns the size in bytes of a single component of a pixel
-  int ComponentSize() const AVS_BakedCode(return AVS_LinkCall(ComponentSize)())
+  int ComponentSize() const AVS_BakedCode(return AVS_LinkCallOptDefault(ComponentSize, 1))
 
   // Returns the bit depth of a single component of a pixel
-  int BitsPerComponent() const AVS_BakedCode(return AVS_LinkCall(BitsPerComponent)())
+  int BitsPerComponent() const AVS_BakedCode(return AVS_LinkCallOptDefault(BitsPerComponent, 8))
 
   // like IsYV24, but bit-depth independent also for YUVA
-  bool Is444() const AVS_BakedCode( return AVS_LinkCall(Is444)() )
-  
+  bool Is444() const AVS_BakedCode(return AVS_LinkCallOpt(Is444, IsYV24) )
+
   // like IsYV16, but bit-depth independent also for YUVA
-  bool Is422() const AVS_BakedCode( return AVS_LinkCall(Is422)() )
+  bool Is422() const AVS_BakedCode(return AVS_LinkCallOpt(Is422, IsYV16) )
 
   // like IsYV12, but bit-depth independent also for YUVA
-  bool Is420() const AVS_BakedCode( return AVS_LinkCall(Is420)() )
+  bool Is420() const AVS_BakedCode( return AVS_LinkCallOpt(Is420, IsYV12) )
 
   // like IsY8, but bit-depth independent
-  bool IsY()      const AVS_BakedCode( return AVS_LinkCall(IsY)() )
+  bool IsY()   const AVS_BakedCode( return AVS_LinkCallOpt(IsY, IsY8) )
 
   // like IsRGB24 for 16 bit samples
-  bool IsRGB48() const AVS_BakedCode( return AVS_LinkCall(IsRGB48)() )
+  bool IsRGB48() const AVS_BakedCode( return AVS_LinkCallOptDefault(IsRGB48, false) )
 
   // like IsRGB32 for 16 bit samples
-  bool IsRGB64() const AVS_BakedCode( return AVS_LinkCall(IsRGB64)() )
+  bool IsRGB64() const AVS_BakedCode( return AVS_LinkCallOptDefault(IsRGB64, false) )
 
   // YUVA?
-  bool IsYUVA() const AVS_BakedCode( return AVS_LinkCall(IsYUVA)() )
+  bool IsYUVA() const AVS_BakedCode( return AVS_LinkCallOptDefault(IsYUVA, false) )
 
   // Planar RGB?
-  bool IsPlanarRGB() const AVS_BakedCode( return AVS_LinkCall(IsPlanarRGB)() )
+  bool IsPlanarRGB() const AVS_BakedCode( return AVS_LinkCallOptDefault(IsPlanarRGB, false) )
 
   // Planar RGBA?
-  bool IsPlanarRGBA() const AVS_BakedCode( return AVS_LinkCall(IsPlanarRGBA)() )
+  bool IsPlanarRGBA() const AVS_BakedCode( return AVS_LinkCallOptDefault(IsPlanarRGBA, false) )
 
 }; // end struct VideoInfo
 
@@ -692,8 +733,8 @@ enum {
 // file is closed.
 
 class VideoFrameBuffer {
-  BYTE* const data;
-  const int data_size;
+  BYTE* data;
+  int data_size;
   // sequence_number is incremented every time the buffer is changed, so
   // that stale views can tell they're no longer valid.
   volatile long sequence_number;
@@ -732,7 +773,7 @@ class VideoFrame {
   // Due to technical reasons these members are not const, but should be treated as such.
   // That means do not modify them once the class has been constructed.
   int offset, pitch, row_size, height, offsetU, offsetV, pitchUV;  // U&V offsets are from top of picture.
-  int row_sizeUV, heightUV; // for Planar RGB offsetU, offsetV is for the 2nd and 3rd Plane. 
+  int row_sizeUV, heightUV; // for Planar RGB offsetU, offsetV is for the 2nd and 3rd Plane.
                             // for Planar RGB pitchUV and row_sizeUV = 0, because when no VideoInfo (MakeWriteable)
                             // the decision on existance of UV is checked by zero pitch
   // AVS+ extension, does not break plugins if appended here
@@ -875,7 +916,7 @@ public:
   /* Need to check GetVersion first, pre v5 will return random crap from EAX reg. */
   virtual int __stdcall SetCacheHints(int cachehints,int frame_range) = 0 ;  // We do not pass cache requests upwards, only to the next filter.
   virtual const VideoInfo& __stdcall GetVideoInfo() = 0;
-  virtual __stdcall ~IClip() {}
+  virtual AVSC_CC ~IClip() {}
 }; // end class IClip
 
 
@@ -989,7 +1030,7 @@ public:
   const char* AsString() const AVS_BakedCode( return AVS_LinkCall(AsString1)() )
   double AsFloat() const AVS_BakedCode( return AVS_LinkCall(AsFloat1)() )
   float AsFloatf() const AVS_BakedCode( return float( AVS_LinkCall(AsFloat1)() ) )
-  
+
   bool AsBool(bool def) const AVS_BakedCode( return AVS_LinkCall(AsBool2)(def) )
   int AsInt(int def) const AVS_BakedCode( return AVS_LinkCall(AsInt2)(def) )
   double AsDblDef(double def) const AVS_BakedCode( return AVS_LinkCall(AsDblDef)(def) ) // Value is still a float
@@ -1003,7 +1044,7 @@ public:
 
 private:
 
-  short type;  // 'a'rray, 'c'lip, 'b'ool, 'i'nt, 'f'loat, 's'tring, 'v'oid, or 'l'ong
+  short type;  // 'a'rray, 'c'lip, 'b'ool, 'i'nt, 'f'loat, 's'tring, 'v'oid, or RFU: 'l'ong ('d'ouble)
   short array_size;
   union {
     IClip* clip;
@@ -1012,7 +1053,11 @@ private:
     float floating_pt;
     const char* string;
     const AVSValue* array;
-//    __int64 longlong;
+    #ifdef X86_64
+    // if ever, only x64 will support. It breaks struct size on 32 bit
+    __int64 longlong; // 8 bytes
+    double double_pt; // 8 bytes 
+    #endif
   };
 
   void Assign(const AVSValue* src, bool init);
@@ -1044,6 +1089,9 @@ public:
 #endif
 }; // end class AVSValue
 
+#undef CALL_MEMBER_FN
+#undef AVS_LinkCallOptDefault
+#undef AVS_LinkCallOpt
 #undef AVS_LinkCallV
 #undef AVS_LinkCall
 #undef AVS_BakedCode
@@ -1071,7 +1119,7 @@ public:
 
 class IScriptEnvironment {
 public:
-  virtual __stdcall ~IScriptEnvironment() {}
+  virtual AVSC_CC ~IScriptEnvironment() {}
 
   virtual /*static*/ int __stdcall GetCPUFlags() = 0;
 
@@ -1183,9 +1231,9 @@ enum AvsAllocType
 };
 
 /* -----------------------------------------------------------------------------
-   Note to plugin authors: The interface in IScriptEnvironment2 is 
+   Note to plugin authors: The interface in IScriptEnvironment2 is
       preliminary / under construction / only for testing / non-final etc.!
-      As long as you see this note here, IScriptEnvironment2 might still change, 
+      As long as you see this note here, IScriptEnvironment2 might still change,
       in which case your plugin WILL break. This also means that you are welcome
       to test it and give your feedback about any ideas, improvements, or issues
       you might have.
@@ -1193,7 +1241,7 @@ enum AvsAllocType
 class AVSFunction;
 class IScriptEnvironment2 : public IScriptEnvironment{
 public:
-  virtual __stdcall ~IScriptEnvironment2() {}
+  virtual ~IScriptEnvironment2() {}
 
   // Generic system to ask for various properties
   virtual size_t  __stdcall GetProperty(AvsEnvProperty prop) = 0;
@@ -1239,7 +1287,7 @@ public:
 
 // avisynth.dll exports this; it's a way to use it as a library, without
 // writing an AVS script or without going through AVIFile.
-IScriptEnvironment* __stdcall CreateScriptEnvironment(int version = AVISYNTH_INTERFACE_VERSION);
+AVSC_API(IScriptEnvironment*, CreateScriptEnvironment)(int version = AVISYNTH_INTERFACE_VERSION);
 
 
 // These are some global variables you can set in your script to change AviSynth's behavior.

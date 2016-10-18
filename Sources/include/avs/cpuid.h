@@ -51,6 +51,20 @@ enum {
   CPUF_SSE4_1       = 0x400,   //  Penryn, Wolfdale, Yorkfield  
   CPUF_AVX          = 0x800,   //  Sandy Bridge, Bulldozer
   CPUF_SSE4_2       = 0x1000,  //  Nehalem
+  // AVS+
+  CPUF_AVX2         = 0x2000,   //  Haswell
+  CPUF_FMA3         = 0x4000,
+  CPUF_F16C         = 0x8000,
+  CPUF_MOVBE        = 0x10000,  // Big Endian move
+  CPUF_POPCNT       = 0x20000,
+  CPUF_AES          = 0x40000,
+  // CPUF_AVX512F      = 0x80000,   // AVX-512 Foundation.
+  // CPUF_AVX512DQ     = 0x100000,  // AVX-512 DQ (Double/Quad granular) Instructions
+  // CPUF_AVX512PF     = 0x200000,  // AVX-512 Prefetch
+  // CPUF_AVX512ER     = 0x400000,  // AVX-512 Exponential and Reciprocal
+  // CPUF_AVX512CD     = 0x800000,  // AVX-512 Conflict Detection
+  // CPUF_AVX512BW     = 0x1000000, // AVX-512 BW (Byte/Word granular) Instructions
+  // CPUF_AVX512VL     = 0x2000000, // AVX-512 VL (128/256 Vector Length) Extensions
 };
 
 #ifdef BUILDING_AVSCORE

@@ -37,7 +37,7 @@
 #define AVSC_USE_STDCALL 1
 
 // NOTE TO PLUGIN AUTHORS:
-// Because FRAME_ALIGN can be substantially higher than the alignment 
+// Because FRAME_ALIGN can be substantially higher than the alignment
 // a plugin actually needs, plugins should not use FRAME_ALIGN to check for
 // alignment. They should always request the exact alignment value they need.
 // This is to make sure that plugins work over the widest range of AviSynth
@@ -50,6 +50,21 @@
 #   define X86_32
 #else
 #   error Unsupported CPU architecture.
+#endif
+
+#if   defined(_MSC_VER)
+#   define MSVC
+#elif defined(__GNUC__)
+#   define GCC
+#elif defined(__clang__)
+#   define CLANG
+#else
+#   error Unsupported compiler.
+#endif
+
+#if   defined(GCC)
+#   undef __forceinline
+#   define __forceinline inline
 #endif
 
 #endif //AVS_CONFIG_H
