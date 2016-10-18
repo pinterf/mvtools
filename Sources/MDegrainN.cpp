@@ -429,14 +429,8 @@ MDegrainN::MDegrainN(
 
 	const ::VideoInfo &	vi_super = _super->GetVideoInfo ();
 
-#ifdef AVS16
-    pixelsize_super = vi_super.ComponentSize();
+    pixelsize_super = vi_super.ComponentSize(); // of MVFilter
     bits_per_pixel_super = vi_super.BitsPerComponent();
-#else
-    pixelsize_super = 1; // of MVFilter
-    bits_per_pixel_super = 8;
-#endif
-
 
 	// get parameters of prepared super clip - v2.0
 	SuperParams64Bits params;

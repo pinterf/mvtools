@@ -94,11 +94,7 @@ PVideoFrame __stdcall Padding::GetFrame(int n, IScriptEnvironment *env)
     int xRatioUV;
     int yRatioUV;
 
-#ifdef AVS16
     if(!vi.IsY()) {
-#else
-    if(!vi.IsY8()) {
-#endif
         xRatioUV = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U)); // PF
         yRatioUV = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U)); // PF
     } else {

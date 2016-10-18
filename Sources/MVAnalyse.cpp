@@ -63,13 +63,8 @@ MVAnalyse::MVAnalyse (
 		);
 	}
 
-#ifdef AVS16
     pixelsize = vi.ComponentSize();
     bits_per_pixel = vi.BitsPerComponent();
-#else
-    pixelsize = 1;
-    bits_per_pixel = 8;
-#endif
 
 	MVAnalysisData &	analysisData        = _srd_arr [0]._analysis_data;
 	MVAnalysisData &	analysisDataDivided = _srd_arr [0]._analysis_data_divided;
@@ -111,11 +106,7 @@ MVAnalyse::MVAnalyse (
 	analysisData.nWidth    = vi.width - nSuperHPad * 2;
 	analysisData.nHeight   = nHeight;
 	analysisData.pixelType = vi.pixel_type;
-#ifdef AVS16
     if(!vi.IsY()) {
-#else
-    if(!vi.IsY8()) {
-#endif
         analysisData.yRatioUV = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U)); // (vi.IsYV12()) ? 2 : 1; // PF todo YV12 specific!
         analysisData.xRatioUV  = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U)); // for YV12 and YUY2, really do not used and assumed to 2
     }
@@ -189,11 +180,7 @@ MVAnalyse::MVAnalyse (
 		);
 	}
 
-#ifdef AVS16
     if(vi.IsY() && chroma)
-#else
-    if (vi.IsY8() && chroma)
-#endif
     {
         chroma = false; // PF 22d silent fallback
         //env->ThrowError ("MAnalyse: chroma is not allowed for greyscale mode");

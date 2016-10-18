@@ -50,11 +50,7 @@ GenericVideoFilter(_super)
 	int nHeight = nHeightS;
     int xRatioUV;
     int yRatioUV;
-#ifdef AVS16
     if(!vi.IsY()) {
-#else
-    if(!vi.IsY8()) {
-#endif
         xRatioUV = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U));
         yRatioUV = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U));;
     }
@@ -63,13 +59,8 @@ GenericVideoFilter(_super)
         yRatioUV = 1; // n/a
     }
 
-#ifdef AVS16
     pixelsize = _super->GetVideoInfo().ComponentSize();
     bits_per_pixel = _super->GetVideoInfo().BitsPerComponent();
-#else
-    pixelsize = 1;
-    bits_per_pixel = 8;
-#endif
 
 	pRefGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse, xRatioUV, yRatioUV, pixelsize, bits_per_pixel, true);
 

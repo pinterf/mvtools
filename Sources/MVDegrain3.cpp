@@ -798,14 +798,9 @@ MVDegrainX::MVDegrainX(
 
   //pixelsize and bits_per_pixel: in MVFilter, property of motion vectors
 
-#ifdef AVS16
   pixelsize_super = vi_super.ComponentSize();
   bits_per_pixel_super = vi_super.BitsPerComponent();
   // pixelsize, bits_per_pixel: vector clip data
-#else
-  pixelsize_super = 1;
-  bits_per_pixel_super = 8;
-#endif
 
   // SAD is coming from the mv clip analysis. Parameter must be scaled accordingly
   thSAD = int(thSAD / 255.0 * ((1 << bits_per_pixel) - 1));

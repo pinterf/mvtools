@@ -62,13 +62,8 @@ MVRecalculate::MVRecalculate (
 		);
 	}
 
-#ifdef AVS16
     pixelsize = vi.ComponentSize();
     bits_per_pixel = vi.BitsPerComponent();
-#else
-    pixelsize = 1;
-    bits_per_pixel = 8;
-#endif
 
 	MVAnalysisData &	analysisData        = _srd_arr [0]._analysis_data;
    MVAnalysisData &	analysisDataDivided = _srd_arr [0]._analysis_data_divided;
@@ -108,11 +103,7 @@ MVRecalculate::MVRecalculate (
 	analysisData.nWidth    = pAnalyseFilter->GetWidth();
 	analysisData.nHeight   = pAnalyseFilter->GetHeight();
 	analysisData.pixelType = pAnalyseFilter->GetPixelType();
-#ifdef AVS16
     if(!vi.IsY()) {
-#else
-    if(!vi.IsY8()) {
-#endif
         analysisData.yRatioUV =  vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U)); // (vi.IsYV12()) ? 2 : 1; // todo
         analysisData.xRatioUV = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U));  // 2;	// for YV12 and YUY2, really do not used and assumed to 2
     }

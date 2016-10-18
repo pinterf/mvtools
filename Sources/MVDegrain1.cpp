@@ -136,13 +136,8 @@ MVDegrain1::MVDegrain1(
 
 	const ::VideoInfo &	vi_super = _super->GetVideoInfo ();
 
-#ifdef AVS16
     pixelsize = vi.ComponentSize();
     pixelsize_super = vi_super.ComponentSize();
-#else
-    pixelsize = 1;
-    pixelsize_super = 1;
-#endif
 
 	// get parameters of prepared super clip - v2.0
 	SuperParams64Bits params;
