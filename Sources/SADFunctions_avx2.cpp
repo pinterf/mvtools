@@ -105,8 +105,6 @@ unsigned int Sad16_avx2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
     return 0;
   }
 
-  _mm256_zeroupper();
-
   __m256i zero = _mm256_setzero_si256();
   __m256i sum = _mm256_setzero_si256(); // 2x or 4x int is probably enough for 32x32
 
@@ -119,8 +117,8 @@ unsigned int Sad16_avx2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
       __m256i src1, src2;
       if (two_rows)  {
         // two 16 byte rows at a time
-        src1 = _mm256_loadu2_m128i((const __m128i *) (pSrc + nSrcPitch), (const __m128i *) (pSrc));
-        src2 = _mm256_loadu2_m128i((const __m128i *) (pRef + nRefPitch), (const __m128i *) (pRef));
+        src1 = _mm256_loadu2_m128i((const __m128i *) (pSrc + nSrcPitch + x), (const __m128i *) (pSrc + x));
+        src2 = _mm256_loadu2_m128i((const __m128i *) (pRef + nRefPitch + x), (const __m128i *) (pRef + x));
       }
       else {
         src1 = _mm256_loadu_si256((__m256i *) (pSrc + x));
