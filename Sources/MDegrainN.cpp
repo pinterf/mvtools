@@ -790,7 +790,7 @@ MDegrainN::~MDegrainN()
     BitBlt(
       _dst_ptr_arr[0], _dst_pitch_arr[0],
       _src_ptr_arr[0], _src_pitch_arr[0],
-      nWidth*pixelsize_super, nHeight, _isse_flag // or pixelsize_super
+      nWidth*pixelsize_super, nHeight, _isse_flag
     );
   }
   else

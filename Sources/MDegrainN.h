@@ -113,10 +113,10 @@ private:
   int _nlimit;
   int _nlimitc;
   PClip _super;
-  const bool isse_flag;
-  const bool planar_flag;
-  const bool lsb_flag;
-  const bool mt_flag;
+  const bool _isse_flag;
+  const bool _planar_flag;
+  const bool _lsb_flag;
+  const bool _mt_flag;
   int _height_lsb_mul;
   //int pixelsize, bits_per_pixel; // in MVFilter
   int pixelsize_super;
