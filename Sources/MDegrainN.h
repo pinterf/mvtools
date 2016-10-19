@@ -143,7 +143,11 @@ private:
 						_oversluma_ptr;
 	OverlapsFunction *
 						_overschroma_ptr;
-	OverlapsLsbFunction *
+  OverlapsFunction *
+    _oversluma16_ptr;
+  OverlapsFunction *
+    _overschroma16_ptr;
+  OverlapsLsbFunction *
 						_oversluma_lsb_ptr;
 	OverlapsLsbFunction *
 						_overschroma_lsb_ptr;
