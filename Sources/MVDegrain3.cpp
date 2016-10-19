@@ -839,12 +839,12 @@ MVDegrainX::MVDegrainX(
     SrcPlanes = new YUY2Planes(nWidth, nHeight);
   }
   dstShortPitch = ((nWidth + 15) / 16) * 16;  // short (2 byte) granularity
-  dstIntPitch = dstShortPitch; // int (4 byte) granulairty
+  dstIntPitch = dstShortPitch; // int (4 byte) granularity
   if (nOverlapX > 0 || nOverlapY > 0)
   {
     OverWins = new OverlapWindows(nBlkSizeX, nBlkSizeY, nOverlapX, nOverlapY);
     OverWinsUV = new OverlapWindows(nBlkSizeX >> nLogxRatioUV, nBlkSizeY >> nLogyRatioUV, nOverlapX >> nLogxRatioUV, nOverlapY >> nLogyRatioUV);
-    if (lsb_flag || pixelsize_super == 2)
+    if (lsb_flag || pixelsize_super > 1)
     {
       DstInt = new int[dstIntPitch * nHeight];
     }
@@ -1479,7 +1479,7 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
         {
           // select window
           int wbx = (bx + nBlkX - 3) / (nBlkX - 2);
-          short *			winOver = OverWins->GetWindow(wby + wbx);
+          short *winOver = OverWins->GetWindow(wby + wbx);
 
           int i = by*nBlkX + bx;
 
@@ -1635,7 +1635,7 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
 
       for (int by = 0; by < nBlkY; by++)
       {
-        int xx = 0; // byte granularity
+        int xx = 0; // index
         for (int bx = 0; bx < nBlkX; bx++)
         {
           int i = by*nBlkX + bx;
@@ -1656,7 +1656,7 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
             WSrc, WRefB, WRefF //, WRefB2, WRefF2, WRefB3, WRefF3
           );
 
-          xx += nBlkSizeX >> nLogxRatioUV; // xx: indexing offset
+          xx += (nBlkSizeX >> nLogxRatioUV); // xx: indexing offset
 
           if (bx == nBlkX - 1 && nWidth_B < nWidth) // right non-covered region
           {
@@ -1685,7 +1685,7 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
       int *pDstInt = DstInt;
       const int tmpPitch = nBlkSizeX;
 
-      if (lsb_flag || pixelsize_super == 2)
+      if (lsb_flag || pixelsize_super > 1)
       {
         MemZoneSet(reinterpret_cast<unsigned char*>(pDstInt), 0,
           nWidth_B * sizeof(int) >> nLogxRatioUV, nHeight_B >> nLogyRatioUV, 0, 0, dstIntPitch * sizeof(int));
@@ -1703,12 +1703,12 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
       for (int by = 0; by < nBlkY; by++)
       {
         int wby = ((by + nBlkY - 3) / (nBlkY - 2)) * 3;
-        int xx = 0;
+        int xx = 0; // logical offset. Mul by 2 for pixelsize_super==2. Don't mul for indexing int* array
         for (int bx = 0; bx < nBlkX; bx++)
         {
           // select window
           int wbx = (bx + nBlkX - 3) / (nBlkX - 2);
-          short *			winOverUV = OverWinsUV->GetWindow(wby + wbx);
+          short *winOverUV = OverWinsUV->GetWindow(wby + wbx);
 
           int i = by*nBlkX + bx;
           const BYTE * pBV[MAX_DEGRAIN], *pFV[MAX_DEGRAIN]; // , *pB2V, *pF2V, *pB3V, *pF3V;
