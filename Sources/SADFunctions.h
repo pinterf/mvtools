@@ -305,6 +305,7 @@ MK_CFUNC(x264_pixel_ssd_4x8_mmx);
 MK_CFUNC(x264_pixel_ssd_4x4_mmx);
 
 /* SATD: Sum of Absolute Transformed Differences, more sensitive to noise, frequency domain based - replacement to dct/SAD */
+#if 0
 MK_CFUNC(x264_pixel_satd_16x16_mmx2);
 MK_CFUNC(x264_pixel_satd_16x8_mmx2);
 MK_CFUNC(x264_pixel_satd_8x16_mmx2);
@@ -315,7 +316,7 @@ MK_CFUNC(x264_pixel_satd_4x4_mmx2);
 
 MK_CFUNC(x264_pixel_satd_32x32_mmx2);
 MK_CFUNC(x264_pixel_satd_32x16_mmx2);
-
+#endif
 #define SATD_SSE(blsizex, blsizey, type) extern "C" unsigned int __cdecl x264_pixel_satd_##blsizex##x##blsizey##_##type##(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 
 //x264_pixel_satd_16x16_%1
