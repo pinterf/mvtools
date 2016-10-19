@@ -554,7 +554,7 @@ AVSValue __cdecl Create_MDegrainN (AVSValue args, void* , IScriptEnvironment* en
 	const int		thSAD2  = args [14].AsInt (thSAD);  // thSAD2
 	const int		thSADC2 = args [15].AsInt (thSADC); // thSADC2
 
-	// Switch to MDegrain1/2/3 when possible (faster)
+	// Switch to MDegrain1/2/3/4/5 when possible (faster)
 	if (thSAD2 == thSAD && thSADC == thSADC2)
 	{
     if(tr <= MAX_DEGRAIN) // up to MDegrain5 160926
