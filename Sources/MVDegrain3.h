@@ -105,11 +105,14 @@ private:
   unsigned char *tmpBlock;
   unsigned char *tmpBlockLsb;	// Not allocated, it's just a reference to a part of the tmpBlock area (or 0 if no LSB)
   unsigned short * DstShort;
+  __m256i *DstShortAlign32; // PF AVX2 friendly
   int dstShortPitch;
   int * DstInt;
+  __m256i *DstIntAlign32; // PF AVX2 friendly
   int dstIntPitch;
 
   const int level;
+  int framenumber;
 
 public:
   MVDegrainX(PClip _child, PClip _super, PClip _mvbw, PClip _mvfw, PClip _mvbw2, PClip _mvfw2, PClip _mvbw3, PClip _mvfw3, PClip _mvbw4, PClip _mvfw4, PClip _mvbw5, PClip _mvfw5,
@@ -652,6 +655,10 @@ inline int DegrainWeight(int thSAD, int blockSAD, int bits_per_pixels)
   }
   if(bits_per_pixels <= 8) {
     const int thSAD2    = thSAD    * thSAD;
+    if (blockSAD > (1 << 15))
+    {
+      blockSAD = blockSAD + 1;
+    }
     const int blockSAD2 = blockSAD * blockSAD;
     const int num = thSAD2 - blockSAD2;
     const int den = thSAD2 + blockSAD2;

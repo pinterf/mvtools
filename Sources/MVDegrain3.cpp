@@ -738,7 +738,9 @@ MVDegrainX::MVDegrainX(
   , height_lsb_mul(_lsb_flag ? 2 : 1)
   , level( _level )
 {
+  DstShortAlign32 = nullptr;
   DstShort = nullptr;
+  DstIntAlign32 = nullptr;
   DstInt = nullptr;
   const int group_len = level * 2; // 2, 4, 6
   // remark: _nSCD1 and 2 are scaled with bits_per_pixel in MVClip
@@ -839,18 +841,21 @@ MVDegrainX::MVDegrainX(
     SrcPlanes = new YUY2Planes(nWidth, nHeight);
   }
   dstShortPitch = ((nWidth + 15) / 16) * 16;  // short (2 byte) granularity
-  dstIntPitch = dstShortPitch; // int (4 byte) granularity
+  dstIntPitch = dstShortPitch; // int (4 byte) granularity, 4*16
   if (nOverlapX > 0 || nOverlapY > 0)
   {
     OverWins = new OverlapWindows(nBlkSizeX, nBlkSizeY, nOverlapX, nOverlapY);
     OverWinsUV = new OverlapWindows(nBlkSizeX >> nLogxRatioUV, nBlkSizeY >> nLogyRatioUV, nOverlapX >> nLogxRatioUV, nOverlapY >> nLogyRatioUV);
     if (lsb_flag || pixelsize_super > 1)
     {
-      DstInt = new int[dstIntPitch * nHeight];
+      // Damn '__m256i': object allocated on the heap may not be aligned 32
+      DstIntAlign32 = new __m256i[dstIntPitch * nHeight * sizeof(int) / 32]; // force 32 byte alignment
+      DstInt = reinterpret_cast<int *>(DstIntAlign32); // new int[dstIntPitch * nHeight];
     }
     else
     {
-      DstShort = new unsigned short[dstShortPitch*nHeight];
+      DstShortAlign32 = new __m256i[dstShortPitch * nHeight * sizeof(short) / 32]; // force 32 byte alignment
+      DstShort = reinterpret_cast<unsigned short *>(DstShortAlign32); // new unsigned short[dstShortPitch*nHeight];
     }
   }
 
@@ -918,8 +923,8 @@ MVDegrainX::~MVDegrainX()
   {
     delete OverWins;
     delete OverWinsUV;
-    delete[] DstShort;
-    delete[] DstInt;
+    delete[] DstShortAlign32;
+    delete[] DstIntAlign32;
   }
   delete[] tmpBlock;
   for (int i = 0; i < level; i++) {
@@ -961,6 +966,8 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
 
   PVideoFrame mvF[MAX_DEGRAIN];
   PVideoFrame mvB[MAX_DEGRAIN];
+
+  framenumber = n; // debug
 
   for (int j = level - 1; j >= 0; j--)
   {
@@ -1539,6 +1546,7 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
       else if (pixelsize_super == 2)
       {
         Short2Bytes_Int32toWord16((uint16_t *)(pDst[0]), nDstPitches[0], DstInt, dstIntPitch, nWidth_B, nHeight_B, bits_per_pixel_super);
+        //Short2Bytes_Int32toWord16_sse4((uint16_t *)(pDst[0]), nDstPitches[0], DstInt, dstIntPitch, nWidth_B, nHeight_B, bits_per_pixel_super);
       }
       else if (pixelsize_super == 4)
       {
@@ -1577,7 +1585,6 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
   //----------------------------------------------------------------------------
   // -----------------------------------------------------------------------------
   // CHROMA plane U
-
   process_chroma(
     UPLANE & nSuperModeYUV,
     pDst[1], pDstCur[1], nDstPitches[1], pSrc[1], pSrcCur[1], nSrcPitches[1],
@@ -1756,8 +1763,9 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
         Short2Bytes(pDst, nDstPitch, DstShort, dstShortPitch, nWidth_B >> nLogxRatioUV, nHeight_B >> nLogyRatioUV);
       }
       else if (pixelsize_super == 2)
-      { // pixelsize
+      { 
         Short2Bytes_Int32toWord16((uint16_t *)(pDst), nDstPitch, DstInt, dstIntPitch, nWidth_B >> nLogxRatioUV, nHeight_B >> nLogyRatioUV, bits_per_pixel_super);
+        //Short2Bytes_Int32toWord16_sse4((uint16_t *)(pDst), nDstPitch, DstInt, dstIntPitch, nWidth_B >> nLogxRatioUV, nHeight_B >> nLogyRatioUV, bits_per_pixel_super);
       }
       else if (pixelsize_super == 4)
       {

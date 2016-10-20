@@ -203,6 +203,52 @@ void Short2Bytes_Int32toWord16(uint16_t *pDst, int nDstPitch, int *pDstInt, int 
   }
 }
 
+void Short2Bytes_Int32toWord16_sse4(uint16_t *pDst, int nDstPitch, int *pDstInt, int dstIntPitch, int nWidth, int nHeight, int bits_per_pixel)
+{
+  typedef uint16_t pixel_t;
+  const int max_pixel_value = (1 << bits_per_pixel) - 1;
+  /*
+  for (int h=0; h<nHeight; h++)
+  {
+    for (int i=0; i<nWidth; i++)
+    {
+      const int		a = pDstInt [i] >> (5+6); //scale back
+      pDst [i] = min(a, max_pixel_value); // no need 8*shift
+    }
+    pDst += nDstPitch/sizeof(uint16_t);
+    pDstInt += dstIntPitch; // this pitch is int granularity
+  }
+  */
+  __m128i limits, limits16;
+  limits = _mm_set1_epi32(max_pixel_value);
+  limits16 = _mm_set1_epi16(max_pixel_value);
+
+  // pDstInt is 16 byte granularity -> pitch is 64 bytes aligned
+  const int nSrcPitch = dstIntPitch * sizeof(int); // back to byte size
+  //nDstPitch /= sizeof(uint16_t);
+  const int width_b = nWidth * sizeof(uint16_t); // destination byte size
+  BYTE *pSrc8 = reinterpret_cast<BYTE *>(pDstInt);
+  BYTE *pDst8 = reinterpret_cast<BYTE *>(pDst);
+
+  for (int y = 0; y < nHeight; y++)
+  {
+    for (int x = 0; x < width_b; x += 16) { // 32 source bytes = 8 integer sized pixels, 16 bytes of 8*uint16_t destination
+      // 2*4 int -> 8 uint16_t
+      __m128i src03 = _mm_loadu_si128((__m128i *)(pSrc8 + x*2)); // 4 int pixels
+      __m128i src47 = _mm_loadu_si128((__m128i *)(pSrc8 + x*2 + 16)); // 4 int pixels
+      __m128i res03 = _mm_srai_epi32(src03, (5+6)); // shift and limit
+      __m128i res47 = _mm_srai_epi32(src47, (5+6)); // shift and limit
+      //__m128i res03 = _mm_min_epi32(_mm_srai_epi32(src03, (5+6)), limits); // shift and limit
+      //__m128i res47 = _mm_min_epi32(_mm_srai_epi32(src47, (5+6)), limits); // shift and limit
+      __m128i res = _mm_packus_epi32(res03, res47); // sse4 int->uint16_t, already limiting to 65535
+      res = _mm_min_epu16(res, limits16); // 10,12,14 bits can be lesser
+      _mm_store_si128((__m128i *)(pDst8 + x), res);
+    }
+    pDst8 += nDstPitch;
+    pSrc8 += nSrcPitch;
+  }
+}
+
 void Short2Bytes_FloatInInt32ArrayToFloat(float *pDst, int nDstPitch, int *pDstInt, int dstIntPitch, int nWidth, int nHeight)
 {
   float *pDstIntF = reinterpret_cast<float *>(pDstInt);
