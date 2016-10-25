@@ -418,18 +418,36 @@ COPYFunction* get_copy_function(int BlockX, int BlockY, int pixelsize, arch_t ar
     func_copy[make_tuple(2 , 4 , 1, USE_SSE2)] = Copy2x4_sse2;
     func_copy[make_tuple(2 , 2 , 1, USE_SSE2)] = Copy2x2_sse2;
     //func_copy[make_tuple(2 , 1 , 1, USE_SSE2)] = Copy2x1_sse2; no such
-    
+
+    COPYFunction *result = nullptr;
+    arch_t archlist[] = { USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
+    int index = 0;
+    while (result == nullptr) {
+      arch_t current_arch_try = archlist[index++];
+      if (current_arch_try > arch) continue;
+      result = func_copy[make_tuple(BlockX, BlockY, pixelsize, current_arch_try)];
+      if (result == nullptr && current_arch_try == NO_SIMD)
+        break;
+    }
+#if 0
     COPYFunction *result = func_copy[make_tuple(BlockX, BlockY, pixelsize, arch)];
 
     arch_t arch_orig = arch;
+
+
 
     // no AVX2 -> try AVX
     if (result == nullptr && (arch==USE_AVX2 || arch_orig==USE_AVX)) {
       arch = USE_AVX;
       result = func_copy[make_tuple(BlockX, BlockY, pixelsize, USE_AVX)];
     }
-    // no AVX -> try SSE2
-    if (result == nullptr && (arch==USE_AVX || arch_orig==USE_SSE2)) {
+    // no AVX -> try SSE41
+    if (result == nullptr && (arch==USE_AVX || arch_orig==USE_SSE41)) {
+      arch = USE_SSE41;
+      result = func_copy[make_tuple(BlockX, BlockY, pixelsize, USE_SSE41)];
+    }
+    // no SSE41 -> try SSE2
+    if (result == nullptr && (arch==USE_SSE41 || arch_orig==USE_SSE2)) {
       arch = USE_SSE2;
       result = func_copy[make_tuple(BlockX, BlockY, pixelsize, USE_SSE2)];
     }
@@ -446,6 +464,7 @@ COPYFunction* get_copy_function(int BlockX, int BlockY, int pixelsize, arch_t ar
       if(result == nullptr)
         result = func_copy[make_tuple(BlockX, BlockY, pixelsize, NO_SIMD)]; // fallback to C
     }
+#endif
 
     return result;
 }
