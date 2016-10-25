@@ -84,8 +84,8 @@ private:
 	void motion2transform (float dx1, float dy1, float rot, float zoom1, float pixaspect, float xcenter, float ycenter, int forward, float fractoffset, transform *tr);
 	void transform2motion (transform tr, int forward, float xcenter, float ycenter, float pixaspect, float *dx, float *dy, float *rot, float *zoom);
 	void inversetransform(transform ta, transform *tinv);
-	void TrasformUpdate(transform *tr, float blockDx[], float blockDy[], int blockSAD[], int blockX[], int blockY[], float blockWeight[], int nBlkX, int nBlkY, float safety, bool ifZoom, bool ifRot, float *error, float pixaspect);
-	void RejectBadBlocks (transform tr, float blockDx[], float blockDy[], int blockSAD[], int blockX[], int blockY[], float blockWeight[], int nBlkX, int nBlkY, float neighboursDif, float globalDif, int thSCD1, float zeroWeight, float blockWeightMask[], int ignoredBorder );
+	void TrasformUpdate(transform *tr, float blockDx[], float blockDy[], sad_t blockSAD[], int blockX[], int blockY[], float blockWeight[], int nBlkX, int nBlkY, float safety, bool ifZoom, bool ifRot, float *error, float pixaspect);
+	void RejectBadBlocks (transform tr, float blockDx[], float blockDy[], sad_t blockSAD[], int blockX[], int blockY[], float blockWeight[], int nBlkX, int nBlkY, float neighboursDif, float globalDif, int thSCD1, float zeroWeight, float blockWeightMask[], int ignoredBorder );
 
 public:
 	MVDepan(PClip _child, PClip mvs, PClip _mask, bool _zoom, bool _rot, float _pixaspect,

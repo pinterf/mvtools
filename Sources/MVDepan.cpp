@@ -328,7 +328,7 @@ void MVDepan::inversetransform(transform ta, transform *tinv)
 }
 
 //----------------------------------------------------------------------------
-void MVDepan::TrasformUpdate(transform *tr, float blockDx[], float blockDy[], int blockSAD[], int blockX[], int blockY[], float blockWeight[], int nBlkX, int nBlkY, float safety, bool ifZoom1, bool ifRot1, float *error1, float pixaspect)
+void MVDepan::TrasformUpdate(transform *tr, float blockDx[], float blockDy[], sad_t blockSAD[], int blockX[], int blockY[], float blockWeight[], int nBlkX, int nBlkY, float safety, bool ifZoom1, bool ifRot1, float *error1, float pixaspect)
 {
 	transform trderiv;
 	int n = nBlkX*nBlkY;
@@ -382,7 +382,7 @@ void MVDepan::TrasformUpdate(transform *tr, float blockDx[], float blockDy[], in
 }
 //----------------------------------------------------------------------------
 
-void MVDepan::RejectBadBlocks (transform tr, float blockDx[], float blockDy[], int blockSAD[], int blockX[], int blockY[], float blockWeight[], int nBlkX, int nBlkY, float wrongDif, float globalDif, int thSCD1, float zeroWeight, float blockWeightMask[], int ignoredBorder)
+void MVDepan::RejectBadBlocks (transform tr, float blockDx[], float blockDy[], sad_t blockSAD[], int blockX[], int blockY[], float blockWeight[], int nBlkX, int nBlkY, float wrongDif, float globalDif, int thSCD1, float zeroWeight, float blockWeightMask[], int ignoredBorder)
 {
 	for (int j=0; j< nBlkY; j++)
 	{
