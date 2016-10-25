@@ -85,7 +85,7 @@ MVCompensate::MVCompensate(
 		vi.fps_numerator *= tbsize;
 	}
 
-	isse2 = _isse2;
+	isse_flag = _isse2;
 	scBehavior = sc;
 	recursion = std::max (0, std::min (256, int (_recursionPercent/100*256))); // convert to int scaled 0 to 256
 	fields = _fields;
@@ -120,6 +120,7 @@ MVCompensate::MVCompensate(
     // OverlapsLsbFunction
     // OverlapsFunction
     // in M(V)DegrainX: DenoiseXFunction
+  /*
     arch_t arch;
     if ((pixelsize == 1) && (((env_ptr->GetCPUFlags() & CPUF_SSE2) != 0) & isse2))
         arch = USE_SSE2;
@@ -127,6 +128,21 @@ MVCompensate::MVCompensate(
         arch = USE_MMX;
     else
         arch = NO_SIMD;
+        */
+  arch_t arch;
+  if ((((env_ptr->GetCPUFlags() & CPUF_AVX2) != 0) & isse_flag))
+    arch = USE_AVX2;
+  else if ((((env_ptr->GetCPUFlags() & CPUF_AVX) != 0) & isse_flag))
+    arch = USE_AVX;
+  else if ((((env_ptr->GetCPUFlags() & CPUF_SSE4_1) != 0) & isse_flag))
+    arch = USE_SSE41;
+  else if ((((env_ptr->GetCPUFlags() & CPUF_SSE2) != 0) & isse_flag))
+    arch = USE_SSE2;
+  /*  else if ((pixelsize == 1) && _isse_flag) // PF no MMX support
+  arch = USE_MMX;*/
+  else
+    arch = NO_SIMD;
+
 
     OVERSLUMA   = get_overlaps_function(nBlkSizeX, nBlkSizeY, pixelsize, arch);
     OVERSCHROMA = get_overlaps_function(nBlkSizeX/xRatioUV, nBlkSizeY/yRatioUV, pixelsize, arch);
@@ -144,8 +160,8 @@ MVCompensate::MVCompensate(
 	int nSuperModeYUV = params.nModeYUV;
 	int nSuperLevels = params.nLevels;
 
-	pRefGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse2, xRatioUV, yRatioUV, pixelsize, bits_per_pixel, mt_flag);
-	pSrcGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse2, xRatioUV, yRatioUV, pixelsize, bits_per_pixel, mt_flag);
+	pRefGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse_flag, xRatioUV, yRatioUV, pixelsize, bits_per_pixel, mt_flag);
+	pSrcGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse_flag, xRatioUV, yRatioUV, pixelsize, bits_per_pixel, mt_flag);
 	nSuperWidth = super->GetVideoInfo().width;
 	nSuperHeight = super->GetVideoInfo().height;
 
@@ -343,9 +359,9 @@ PVideoFrame __stdcall MVCompensate::GetFrame(int n, IScriptEnvironment* env_ptr)
 		if (recursion>0)
 		{
 			// const Time256ProviderCst	t256_prov_cst (256-recursion, 0, 0);
-			Blend(pLoop[0], pLoop[0], pRef[0], nSuperHeight, nSuperWidth, nLoopPitches[0], nLoopPitches[0], nRefPitches[0], time256 /*t256_prov_cst*/, isse2);
-			Blend(pLoop[1], pLoop[1], pRef[1], nSuperHeight/yRatioUV, nSuperWidth/xRatioUV, nLoopPitches[1], nLoopPitches[1], nRefPitches[1], time256 /*t256_prov_cst*/, isse2);
-			Blend(pLoop[2], pLoop[2], pRef[2], nSuperHeight/yRatioUV, nSuperWidth/xRatioUV, nLoopPitches[2], nLoopPitches[2], nRefPitches[2], time256 /*t256_prov_cst*/, isse2);
+			Blend(pLoop[0], pLoop[0], pRef[0], nSuperHeight, nSuperWidth, nLoopPitches[0], nLoopPitches[0], nRefPitches[0], time256 /*t256_prov_cst*/, isse_flag);
+			Blend(pLoop[1], pLoop[1], pRef[1], nSuperHeight/yRatioUV, nSuperWidth/xRatioUV, nLoopPitches[1], nLoopPitches[1], nRefPitches[1], time256 /*t256_prov_cst*/, isse_flag);
+			Blend(pLoop[2], pLoop[2], pRef[2], nSuperHeight/yRatioUV, nSuperWidth/xRatioUV, nLoopPitches[2], nLoopPitches[2], nRefPitches[2], time256 /*t256_prov_cst*/, isse_flag);
 			pRefGOF->Update(YUVPLANES, (BYTE*)pLoop[0], nLoopPitches[0], (BYTE*)pLoop[1], nLoopPitches[1], (BYTE*)pLoop[2], nLoopPitches[2]);
 		}
 		else
@@ -428,27 +444,27 @@ PVideoFrame __stdcall MVCompensate::GetFrame(int n, IScriptEnvironment* env_ptr)
 
 		if (nWidth_B < nWidth) // Right padding
 		{
-			BitBlt(pDst[0] + nWidth_B, nDstPitches[0], pSrcMapped[0] + nWidth_B + nHPadding + nVPadding * pPitchesMapped[0], pPitchesMapped[0], nWidth-nWidth_B, nHeight_B, isse2);
+			BitBlt(pDst[0] + nWidth_B, nDstPitches[0], pSrcMapped[0] + nWidth_B + nHPadding + nVPadding * pPitchesMapped[0], pPitchesMapped[0], nWidth-nWidth_B, nHeight_B, isse_flag);
 			if(pPlanes[1]) // chroma u
 			{
-				BitBlt(pDst[1] + (nWidth_B>>xSubUV), nDstPitches[1], pSrcMapped[1] + (nWidth_B>>xSubUV) + (nHPadding>>xSubUV) + (nVPadding>>ySubUV) * pPitchesMapped[1], pPitchesMapped[1], (nWidth-nWidth_B)>>xSubUV, nHeight_B>>ySubUV, isse2);
+				BitBlt(pDst[1] + (nWidth_B>>xSubUV), nDstPitches[1], pSrcMapped[1] + (nWidth_B>>xSubUV) + (nHPadding>>xSubUV) + (nVPadding>>ySubUV) * pPitchesMapped[1], pPitchesMapped[1], (nWidth-nWidth_B)>>xSubUV, nHeight_B>>ySubUV, isse_flag);
 			}
 			if(pPlanes[2])	// chroma v
 			{
-				BitBlt(pDst[2] + (nWidth_B>>xSubUV), nDstPitches[2], pSrcMapped[2] + (nWidth_B>>xSubUV) + (nHPadding>>xSubUV) + (nVPadding>>ySubUV) * pPitchesMapped[2], pPitchesMapped[2], (nWidth-nWidth_B)>>xSubUV, nHeight_B>>ySubUV, isse2);
+				BitBlt(pDst[2] + (nWidth_B>>xSubUV), nDstPitches[2], pSrcMapped[2] + (nWidth_B>>xSubUV) + (nHPadding>>xSubUV) + (nVPadding>>ySubUV) * pPitchesMapped[2], pPitchesMapped[2], (nWidth-nWidth_B)>>xSubUV, nHeight_B>>ySubUV, isse_flag);
 			}
 		}
 
 		if (nHeight_B < nHeight) // Bottom padding
 		{
-			BitBlt(pDst[0] + nHeight_B*nDstPitches[0], nDstPitches[0], pSrcMapped[0] + nHPadding + (nHeight_B + nVPadding) * pPitchesMapped[0], pPitchesMapped[0], nWidth, nHeight-nHeight_B, isse2);
+			BitBlt(pDst[0] + nHeight_B*nDstPitches[0], nDstPitches[0], pSrcMapped[0] + nHPadding + (nHeight_B + nVPadding) * pPitchesMapped[0], pPitchesMapped[0], nWidth, nHeight-nHeight_B, isse_flag);
 			if(pPlanes[1])	// chroma u
 			{
-				BitBlt(pDst[1] + (nHeight_B>>ySubUV)*nDstPitches[1], nDstPitches[1], pSrcMapped[1] + nHPadding + ((nHeight_B + nVPadding)>>ySubUV) * pPitchesMapped[1], pPitchesMapped[1], nWidth>>xSubUV, (nHeight-nHeight_B)>>ySubUV, isse2);
+				BitBlt(pDst[1] + (nHeight_B>>ySubUV)*nDstPitches[1], nDstPitches[1], pSrcMapped[1] + nHPadding + ((nHeight_B + nVPadding)>>ySubUV) * pPitchesMapped[1], pPitchesMapped[1], nWidth>>xSubUV, (nHeight-nHeight_B)>>ySubUV, isse_flag);
 			}
 			if(pPlanes[2])	// chroma v
 			{
-				BitBlt(pDst[2] + (nHeight_B>>ySubUV)*nDstPitches[2], nDstPitches[2], pSrcMapped[2] + nHPadding + ((nHeight_B + nVPadding)>>ySubUV) * pPitchesMapped[2], pPitchesMapped[2], nWidth>>xSubUV, (nHeight-nHeight_B)>>ySubUV, isse2);
+				BitBlt(pDst[2] + (nHeight_B>>ySubUV)*nDstPitches[2], nDstPitches[2], pSrcMapped[2] + nHPadding + ((nHeight_B + nVPadding)>>ySubUV) * pPitchesMapped[2], pPitchesMapped[2], nWidth>>xSubUV, (nHeight-nHeight_B)>>ySubUV, isse_flag);
 			}
 		}
 
@@ -466,7 +482,7 @@ PVideoFrame __stdcall MVCompensate::GetFrame(int n, IScriptEnvironment* env_ptr)
 		{
 			YUY2FromPlanes(
 				pDstYUY2, nDstPitchYUY2, nWidth, nHeight,
-				pDst[0], nDstPitches[0], pDst[1], pDst[2], nDstPitches[1], isse2
+				pDst[0], nDstPitches[0], pDst[1], pDst[2], nDstPitches[1], isse_flag
 			);
 		}
 	}
@@ -540,7 +556,7 @@ PVideoFrame __stdcall MVCompensate::GetFrame(int n, IScriptEnvironment* env_ptr)
 		if ( (pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
 		{
 			YUY2FromPlanes(pDstYUY2, nDstPitchYUY2, nWidth, nHeight,
-			pDst[0], nDstPitches[0], pDst[1], pDst[2], nDstPitches[1], isse2);
+			pDst[0], nDstPitches[0], pDst[1], pDst[2], nDstPitches[1], isse_flag);
 		}
 
 		if ( recursion>0 )

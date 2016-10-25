@@ -58,7 +58,7 @@ private:
 	int recursion;
 	bool fields;
 	PClip super;
-	bool isse2;
+	bool isse_flag;
 	bool planar;
   int time256;
 
