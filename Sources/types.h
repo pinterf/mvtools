@@ -26,6 +26,7 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 #include <stdint.h>
 
 typedef int sad_t;
+typedef int64_t bigsad_t; // 16 bit overflow cases
 
 // function tables
 enum arch_t {
