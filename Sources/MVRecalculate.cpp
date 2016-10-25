@@ -68,6 +68,12 @@ MVRecalculate::MVRecalculate(
   MVAnalysisData &	analysisData = _srd_arr[0]._analysis_data;
   MVAnalysisData &	analysisDataDivided = _srd_arr[0]._analysis_data_divided;
 
+  // or? todo PF 161025
+  /*
+  pixelsize = analysisData.pixelsize;
+  bits_per_pixel = analysisData.bits_per_pixel;
+  */
+
   vi.num_frames *= _nbr_srd;
   vi.MulDivFPS(_nbr_srd, 1);
 
@@ -82,6 +88,8 @@ MVRecalculate::MVRecalculate(
   const int		nSuperModeYUV = params.nModeYUV;
   const int		nSuperLevels = params.nLevels;
 
+  if (vi.IsY())
+    chroma = false; // silent fallback
 
   nModeYUV = chroma ? YUVPLANES : YPLANE;
   if ((nModeYUV & nSuperModeYUV) != nModeYUV)
@@ -113,7 +121,6 @@ MVRecalculate::MVRecalculate(
   }
   analysisData.pixelsize = pixelsize;
   analysisData.bits_per_pixel = bits_per_pixel;
-
 
   pSrcGOF = new MVGroupOfFrames(
     nSuperLevels, analysisData.nWidth, analysisData.nHeight,
@@ -203,6 +210,8 @@ MVRecalculate::MVRecalculate(
 
 
   nLambda = lambda;
+  // lambda is finally scaled in PlaneOfBlocks::WorkingArea::MotionDistorsion(int vx, int vy) const
+  // as return (nLambda * dist) >> (16 - bits_per_pixel) 
   pnew = _pnew;
   meander = _meander;
 
