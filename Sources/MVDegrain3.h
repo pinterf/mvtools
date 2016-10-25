@@ -68,7 +68,7 @@ private:
   sad_t nLimit;
   sad_t nLimitC;
   PClip super;
-  bool isse2;
+  bool isse_flag;
   bool planar;
   bool lsb_flag;
   int height_lsb_mul;
@@ -655,10 +655,6 @@ inline int DegrainWeight(int thSAD, int blockSAD, int bits_per_pixels)
   }
   if(bits_per_pixels <= 8) {
     const int thSAD2    = thSAD    * thSAD;
-    if (blockSAD > (1 << 15))
-    {
-      blockSAD = blockSAD + 1;
-    }
     const int blockSAD2 = blockSAD * blockSAD;
     const int num = thSAD2 - blockSAD2;
     const int den = thSAD2 + blockSAD2;
