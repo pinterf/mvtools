@@ -420,6 +420,113 @@ template void LimitChanges_c<uint16_t>(unsigned char *pDst, int nDstPitch, const
 template void LimitChanges_sse2_new<uint8_t>(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, int nLimit);
 template void LimitChanges_sse2_new<uint16_t>(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, int nLimit);
 
+template <typename pixel_t, int blockWidth, int blockHeight>
+// pDst is short* for 8 bit, int * for 16 bit
+// works for blockWidth >= 4 && uint16_t
+void Overlaps_sse4(unsigned short *pDst0, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch)
+{
+  // pWin from 0 to 2048
+  // when pixel_t == uint16_t, dst should be int*
+  typedef typename std::conditional < sizeof(pixel_t) == 1, short, int>::type target_t;
+  target_t *pDst = reinterpret_cast<target_t *>(pDst0);
+  __m128i zero = _mm_setzero_si128();
+  //const int stride = BlockWidth * sizeof(pixel_t); // back to byte size
+
+  for (int j=0; j<blockHeight; j++)
+  {
+    __m128i dst;
+    __m128i win, src;
+
+    if (sizeof(pixel_t) == 2) {
+      if (blockWidth == 4) // half of 1x16 byte
+      {
+        win = _mm_loadl_epi64(reinterpret_cast<__m128i *>(pWin)); // 4x16 short: Window
+        src = _mm_loadl_epi64(reinterpret_cast<const __m128i *>(pSrc)); // 4x16 uint16_t: source pixels
+
+        __m128i reslo = _mm_mullo_epi32(_mm_unpacklo_epi16(src, zero), _mm_unpacklo_epi16(win, zero));
+        dst = _mm_loadu_si128(reinterpret_cast<__m128i *>(pDst)); // 4x32 int: destination pixels
+        dst = _mm_add_epi32(dst, reslo);
+        _mm_storeu_si128(reinterpret_cast<__m128i *>(pDst), dst);
+
+      }
+      else if (blockWidth == 8) // exact 1x16 byte
+      {
+        win = _mm_loadu_si128(reinterpret_cast<__m128i *>(pWin)); // 8x16 short: Window
+        src = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pSrc)); // 8x16 uint16_t: source pixels
+
+        __m128i reslo = _mm_mullo_epi32(_mm_unpacklo_epi16(src, zero), _mm_unpacklo_epi16(win, zero));
+        dst = _mm_loadu_si128(reinterpret_cast<__m128i *>(pDst)); // 4x32 int: destination pixels
+        dst = _mm_add_epi32(dst, reslo);
+        _mm_storeu_si128(reinterpret_cast<__m128i *>(pDst), dst);
+
+        __m128i reshi = _mm_mullo_epi32(_mm_unpackhi_epi16(src, zero), _mm_unpackhi_epi16(win, zero));
+        dst = _mm_loadu_si128(reinterpret_cast<__m128i *>(pDst + 4)); // next 4x32 int: destination pixels
+        dst = _mm_add_epi32(dst, reshi);
+        _mm_storeu_si128(reinterpret_cast<__m128i *>(pDst + 4), dst);
+      }
+      else if (blockWidth == 16) // 2x16 byte: 2x8 pixels
+      {
+        win = _mm_loadu_si128(reinterpret_cast<__m128i *>(pWin)); // 8x16 short: Window
+        src = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pSrc)); // 8x16 uint16_t: source pixels
+
+        __m128i reslo = _mm_mullo_epi32(_mm_unpacklo_epi16(src, zero), _mm_unpacklo_epi16(win, zero));
+        dst = _mm_loadu_si128(reinterpret_cast<__m128i *>(pDst)); // 4x32 int: destination pixels
+        dst = _mm_add_epi32(dst, reslo);
+        _mm_storeu_si128(reinterpret_cast<__m128i *>(pDst), dst);
+
+        __m128i reshi = _mm_mullo_epi32(_mm_unpackhi_epi16(src, zero), _mm_unpackhi_epi16(win, zero));
+        dst = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pDst + 4)); // next 4x32 int: destination pixels
+        dst = _mm_add_epi32(dst, reshi);
+        _mm_storeu_si128(reinterpret_cast<__m128i *>(pDst + 4), dst);
+
+        win = _mm_loadu_si128(reinterpret_cast<__m128i *>(pWin + 8)); // next 8x16 short: Window
+        src = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pSrc + 16)); // next 8x16 uint16_t: source pixels
+
+        // once again
+        reslo = _mm_mullo_epi32(_mm_unpacklo_epi16(src, zero), _mm_unpacklo_epi16(win, zero));
+        dst = _mm_loadu_si128(reinterpret_cast<__m128i *>(pDst + 8)); // 4x32 int: destination pixels
+        dst = _mm_add_epi32(dst, reslo);
+        _mm_storeu_si128(reinterpret_cast<__m128i *>(pDst + 8), dst);
+
+        reshi = _mm_mullo_epi32(_mm_unpackhi_epi16(src, zero), _mm_unpackhi_epi16(win, zero));
+        dst = _mm_loadu_si128(reinterpret_cast<__m128i *>(pDst + 8 + 4)); // next 4x32 int: destination pixels
+        dst = _mm_add_epi32(dst, reshi);
+        _mm_storeu_si128(reinterpret_cast<__m128i *>(pDst + 8 + 4), dst);
+      }
+      else {
+        for (int x = 0; x < blockWidth; x += 16 / sizeof(pixel_t)) {
+          win = _mm_loadu_si128(reinterpret_cast<__m128i *>(pWin + x)); // 8x16 short: Window
+          src = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pSrc + x * 2)); // 8x16 uint16_t: source pixels
+
+          __m128i reslo = _mm_mullo_epi32(_mm_unpacklo_epi16(src, zero), _mm_unpacklo_epi16(win, zero));
+          dst = _mm_loadu_si128(reinterpret_cast<__m128i *>(pDst + x)); // 4x32 int: destination pixels
+          dst = _mm_add_epi32(dst, reslo);
+          _mm_storeu_si128(reinterpret_cast<__m128i *>(pDst + x), dst);
+
+          __m128i reshi = _mm_mullo_epi32(_mm_unpackhi_epi16(src, zero), _mm_unpackhi_epi16(win, zero));
+          dst = _mm_loadu_si128(reinterpret_cast<__m128i *>(pDst + x + 4)); // next 4x32 int: destination pixels
+          dst = _mm_add_epi32(dst, reshi);
+          _mm_storeu_si128(reinterpret_cast<__m128i *>(pDst + x + 4), dst);
+        }
+      }
+    } // pixel_t == 2
+
+    /*
+      for (int i=0; i<blockWidth; i++)
+      {
+        if(sizeof(pixel_t) == 1)
+          pDst[i] = ( pDst[i] + ((reinterpret_cast<const pixel_t *>(pSrc)[i]*pWin[i] + 256)>> 6)); // shift 5 in Short2Bytes<uint8_t> in overlap.cpp
+        else
+          pDst[i] = ( pDst[i] + ((reinterpret_cast<const pixel_t *>(pSrc)[i]*pWin[i]))); // shift (5+6); in Short2Bytes16
+                                                                                         // no shift 6
+      }
+      */
+    pDst += nDstPitch;
+    pSrc += nSrcPitch;
+    pWin += nWinPitch;
+  }
+}
+
 
 OverlapsFunction *get_overlaps_function(int BlockX, int BlockY, int pixelsize, arch_t arch)
 {
@@ -484,6 +591,28 @@ OverlapsFunction *get_overlaps_function(int BlockX, int BlockY, int pixelsize, a
     func_overlaps[make_tuple(4 , 2 , 1, USE_SSE2)] = Overlaps4x2_sse2;
     func_overlaps[make_tuple(2 , 4 , 1, USE_SSE2)] = Overlaps2x4_sse2;
     func_overlaps[make_tuple(2 , 2 , 1, USE_SSE2)] = Overlaps2x2_sse2;
+    
+    func_overlaps[make_tuple(32, 32, 2, USE_SSE41)] = Overlaps_sse4<uint16_t, 32, 32>;
+    func_overlaps[make_tuple(32, 16, 2, USE_SSE41)] = Overlaps_sse4<uint16_t, 32, 16>;
+    func_overlaps[make_tuple(32, 8 , 2, USE_SSE41)] = Overlaps_sse4<uint16_t, 32, 8>;
+    func_overlaps[make_tuple(16, 32, 2, USE_SSE41)] = Overlaps_sse4<uint16_t, 16, 32>;
+    func_overlaps[make_tuple(16, 16, 2, USE_SSE41)] = Overlaps_sse4<uint16_t, 16, 16>;
+    func_overlaps[make_tuple(16, 8 , 2, USE_SSE41)] = Overlaps_sse4<uint16_t, 16, 8>;
+    func_overlaps[make_tuple(16, 4 , 2, USE_SSE41)] = Overlaps_sse4<uint16_t, 16, 4>;
+    func_overlaps[make_tuple(16, 2 , 2, USE_SSE41)] = Overlaps_sse4<uint16_t, 16, 2>;
+    func_overlaps[make_tuple(8 , 16, 2, USE_SSE41)] = Overlaps_sse4<uint16_t, 8 , 16>;
+    func_overlaps[make_tuple(8 , 8 , 2, USE_SSE41)] = Overlaps_sse4<uint16_t, 8 , 8>;
+    func_overlaps[make_tuple(8 , 4 , 2, USE_SSE41)] = Overlaps_sse4<uint16_t, 8 , 4>;
+    func_overlaps[make_tuple(8 , 2 , 2, USE_SSE41)] = Overlaps_sse4<uint16_t, 8 , 2>;
+    func_overlaps[make_tuple(8 , 1 , 2, USE_SSE41)] = Overlaps_sse4<uint16_t, 8 , 1>;
+    func_overlaps[make_tuple(4 , 8 , 2, USE_SSE41)] = Overlaps_sse4<uint16_t, 4 , 8>;
+    func_overlaps[make_tuple(4 , 4 , 2, USE_SSE41)] = Overlaps_sse4<uint16_t, 4 , 4>;
+    func_overlaps[make_tuple(4 , 2 , 2, USE_SSE41)] = Overlaps_sse4<uint16_t, 4 , 2>;
+    //func_overlaps[make_tuple(2 , 4 , 2, NO_SIMD)] = Overlaps_C<uint16_t, 2 , 4>;
+    //func_overlaps[make_tuple(2 , 2 , 2, NO_SIMD)] = Overlaps_C<uint16_t, 2 , 2>;
+    
+
+
 #if 0
     // Why did the original code used sse2 named functions for overlaps 
     // when no CPUF_SSE2 was detected bit isse param is true?
@@ -506,9 +635,49 @@ OverlapsFunction *get_overlaps_function(int BlockX, int BlockY, int pixelsize, a
     func_overlaps[make_tuple(2 , 4 , 1, USE_MMX)] = Overlaps2x4_sse2;
     func_overlaps[make_tuple(2 , 2 , 1, USE_MMX)] = Overlaps2x2_sse2;
 #endif
+    OverlapsFunction *result = nullptr;
+
+    arch_t archlist[] = { USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
+    int index = 0;
+    while (result == nullptr) {
+      arch_t current_arch_try = archlist[index++];
+      if (current_arch_try > arch) continue;
+      result = func_overlaps[make_tuple(BlockX, BlockY, pixelsize, current_arch_try)];
+      if (result == nullptr && current_arch_try == NO_SIMD)
+        break;
+    }
+#if 0
     OverlapsFunction *result = func_overlaps[std::make_tuple(BlockX, BlockY, pixelsize, arch)];
-    if (result == nullptr)
-        result = func_overlaps[std::make_tuple(BlockX, BlockY, pixelsize, NO_SIMD)]; // fallback to C
+    arch_t arch_orig = arch;
+    // no AVX2 -> try AVX
+    if (result == nullptr && (arch==USE_AVX2 || arch_orig==USE_AVX)) {
+      arch = USE_AVX;
+      result = func_overlaps[make_tuple(BlockX, BlockY, pixelsize, USE_AVX)];
+    }
+    // no AVX -> try SSE41
+    if (result == nullptr && (arch==USE_AVX || arch_orig==USE_SSE41)) {
+      arch = USE_SSE41;
+      result = func_overlaps[make_tuple(BlockX, BlockY, pixelsize, USE_SSE41)];
+    }
+    // no SSE41 -> try SSE2
+    if (result == nullptr && (arch==USE_SSE41 || arch_orig==USE_SSE2)) {
+      arch = USE_SSE2;
+      result = func_overlaps[make_tuple(BlockX, BlockY, pixelsize, USE_SSE2)];
+    }
+    // no SSE2 -> try C
+    if (result == nullptr && (arch==USE_SSE2 || arch_orig==NO_SIMD)) {
+      arch = NO_SIMD;
+      /* C version variations are only working in SAD
+      // priority: C version compiled to avx2, avx
+      if(arch_orig==USE_AVX2)
+      result = get_luma_avx2_C_function(BlockX, BlockY, pixelsize, NO_SIMD);
+      else if(arch_orig==USE_AVX)
+      result = get_luma_avx_C_function(BlockX, BlockY, pixelsize, NO_SIMD);
+      */
+      if(result == nullptr)
+        result = func_overlaps[make_tuple(BlockX, BlockY, pixelsize, NO_SIMD)]; // fallback to C
+    }
+#endif
     return result;
 }
 
@@ -537,9 +706,22 @@ OverlapsLsbFunction *get_overlaps_lsb_function(int BlockX, int BlockY, int pixel
     func_overlaps_lsb[make_tuple(2 , 4 , 1, NO_SIMD)] = OverlapsLsb_C<2 , 4>;
     func_overlaps_lsb[make_tuple(2 , 2 , 1, NO_SIMD)] = OverlapsLsb_C<2 , 2>;
 
+    OverlapsLsbFunction *result = nullptr;
+    arch_t archlist[] = { USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
+    int index = 0;
+    while (result == nullptr) {
+      arch_t current_arch_try = archlist[index++];
+      if (current_arch_try > arch) continue;
+      result = func_overlaps_lsb[make_tuple(BlockX, BlockY, pixelsize, current_arch_try)];
+      if (result == nullptr && current_arch_try == NO_SIMD)
+        break;
+    }
+
+#if 0
     OverlapsLsbFunction *result = func_overlaps_lsb[std::make_tuple(BlockX, BlockY, pixelsize, arch)];
     if (result == nullptr)
         result = func_overlaps_lsb[std::make_tuple(BlockX, BlockY, pixelsize, NO_SIMD)]; // fallback to C
+#endif
     return result;
 }
 

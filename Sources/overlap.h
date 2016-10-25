@@ -96,6 +96,7 @@ void Overlaps_C(unsigned short *pDst0, int nDstPitch, const unsigned char *pSrc,
 	}
 }
 
+
 template <int blockWidth, int blockHeight>
 void OverlapsLsb_C(int *pDst, int nDstPitch, const unsigned char *pSrc, const unsigned char *pSrcLsb, int nSrcPitch, short *pWin, int nWinPitch)
 {
