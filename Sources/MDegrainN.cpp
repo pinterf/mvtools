@@ -368,9 +368,22 @@ MDegrainN::DenoiseNFunction* MDegrainN::get_denoiseN_function(int BlockX, int Bl
   func_degrain[make_tuple(2, 4, 1, USE_SSE2)] = DegrainN_sse2<2, 4>;
   func_degrain[make_tuple(2, 2, 1, USE_SSE2)] = DegrainN_sse2<2, 2>;
 
+  DenoiseNFunction* result = nullptr;
+  arch_t archlist[] = { USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
+  int index = 0;
+  while (result == nullptr) {
+    arch_t current_arch_try = archlist[index++];
+    if (current_arch_try > arch) continue;
+    result = func_degrain[make_tuple(BlockX, BlockY, pixelsize, current_arch_try)];
+    if (result == nullptr && current_arch_try == NO_SIMD)
+      break;
+  }
+
+#if 0
   DenoiseNFunction* result = func_degrain[make_tuple(BlockX, BlockY, _pixelsize, arch)];
   if(!result) // fallback to C
     result = func_degrain[make_tuple(BlockX, BlockY, _pixelsize, NO_SIMD)];
+#endif
   return result;
 }
 
@@ -451,10 +464,10 @@ MDegrainN::MDegrainN(
   }
 
   const sad_t mv_thscd1 = _mv_clip_arr[0]._clip_sptr->GetThSCD1();
-  thsad = thsad   * mv_thscd1 / nscd1;	// normalize to block SAD
-  thsadc = thsadc  * mv_thscd1 / nscd1;	// chroma
-  thsad2 = thsad2  * mv_thscd1 / nscd1;
-  thsadc2 = thsadc2 * mv_thscd1 / nscd1;
+  thsad = (uint64_t)thsad   * mv_thscd1 / nscd1;	// normalize to block SAD
+  thsadc = (uint64_t)thsadc  * mv_thscd1 / nscd1;	// chroma
+  thsad2 = (uint64_t)thsad2  * mv_thscd1 / nscd1;
+  thsadc2 = (uint64_t)thsadc2 * mv_thscd1 / nscd1;
 
   const ::VideoInfo &vi_super = _super->GetVideoInfo();
 
@@ -472,10 +485,10 @@ MDegrainN::MDegrainN(
   _nsupermodeyuv = params.nModeYUV;
 
   // SAD is coming from the mv clip analysis. Parameter must be scaled accordingly
-  thsad = int(thsad / 255.0 * ((1 << bits_per_pixel) - 1));
-  thsadc = int(thsadc / 255.0 * ((1 << bits_per_pixel) - 1));
-  thsad2 = int(thsad2 / 255.0 * ((1 << bits_per_pixel) - 1));
-  thsadc2 = int(thsadc2 / 255.0 * ((1 << bits_per_pixel) - 1));
+  thsad = sad_t(thsad / 255.0 * ((1 << bits_per_pixel) - 1));
+  thsadc = sad_t(thsadc / 255.0 * ((1 << bits_per_pixel) - 1));
+  thsad2 = sad_t(thsad2 / 255.0 * ((1 << bits_per_pixel) - 1));
+  thsadc2 = sad_t(thsadc2 / 255.0 * ((1 << bits_per_pixel) - 1));
 
   for (int k = 0; k < _trad * 2; ++k)
   {
@@ -558,7 +571,13 @@ MDegrainN::MDegrainN(
     // OverlapsFunction
     // in M(V)DegrainX: DenoiseXFunction
   arch_t arch;
-  if (((env_ptr->GetCPUFlags() & CPUF_SSE2) != 0) & _isse_flag)
+  if ((((env_ptr->GetCPUFlags() & CPUF_AVX2) != 0) & isse_flag))
+    arch = USE_AVX2;
+  else if ((((env_ptr->GetCPUFlags() & CPUF_AVX) != 0) & isse_flag))
+    arch = USE_AVX;
+  else if ((((env_ptr->GetCPUFlags() & CPUF_SSE4_1) != 0) & isse_flag))
+    arch = USE_SSE41;
+  else if ((((env_ptr->GetCPUFlags() & CPUF_SSE2) != 0) & isse_flag))
     arch = USE_SSE2;
 /*  else if ((pixelsize == 1) && _isse_flag) // PF no MMX support
     arch = USE_MMX;*/

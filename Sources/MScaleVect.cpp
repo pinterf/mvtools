@@ -162,7 +162,7 @@ PVideoFrame __stdcall MScaleVect::GetFrame( int FrameNum, IScriptEnvironment* En
 					pBlocks->x = (int)(pBlocks->x * mScaleX + 0.5);
 					pBlocks->y = (int)(pBlocks->y * mScaleY + 0.5);
 				}
-				pBlocks->sad = (int)(pBlocks->sad * mScaleX * mScaleY + 0.5);
+				pBlocks->sad = (sad_t)(pBlocks->sad * mScaleX * mScaleY + 0.5);
 				pBlocks++;
 			}
 		}

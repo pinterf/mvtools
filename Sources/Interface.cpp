@@ -95,7 +95,7 @@ AVSValue __cdecl Create_MVShow(AVSValue args, void* user_data, IScriptEnvironmen
 
 AVSValue __cdecl Create_MVCompensate(AVSValue args, void* user_data, IScriptEnvironment* env)
 {
-	const int thsad = args[5].AsInt(10000);   // thSAD
+	const sad_t thsad = args[5].AsInt(10000);   // thSAD
 
 	return new MVCompensate(
 		args[0].AsClip(),       // source
