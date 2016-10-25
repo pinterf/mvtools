@@ -28,7 +28,7 @@ private:
    int mode;
    double ml;
    PClip super;
-   bool isse2;
+   bool isse_flag;
    bool planar;
    bool blend;
 

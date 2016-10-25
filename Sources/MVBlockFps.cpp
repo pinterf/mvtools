@@ -83,7 +83,7 @@ MVBlockFps::MVBlockFps(
   if (mode < 0 || mode >8)
     env->ThrowError("MBlockFps: mode from 0 to 8");
   ml = _ml;
-  isse2 = _isse2;
+  isse_flag = _isse2;
   planar = _planar;
   blend = _blend;
 
@@ -100,8 +100,8 @@ MVBlockFps::MVBlockFps(
   nSuperModeYUV = params.nModeYUV;
   int nSuperLevels = params.nLevels;
 
-  pRefBGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse2, xRatioUV, yRatioUV, pixelsize, bits_per_pixel, mt_flag);
-  pRefFGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse2, xRatioUV, yRatioUV, pixelsize, bits_per_pixel, mt_flag);
+  pRefBGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse_flag, xRatioUV, yRatioUV, pixelsize, bits_per_pixel, mt_flag);
+  pRefFGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse_flag, xRatioUV, yRatioUV, pixelsize, bits_per_pixel, mt_flag);
   int nSuperWidth = super->GetVideoInfo().width;
   int nSuperHeight = super->GetVideoInfo().height;
 
@@ -119,12 +119,18 @@ MVBlockFps::MVBlockFps(
   // OverlapsFunction
   // in M(V)DegrainX: DenoiseXFunction
   arch_t arch;
-  if ((pixelsize == 1) && (((env->GetCPUFlags() & CPUF_SSE2) != 0) & isse2))
-      arch = USE_SSE2;
-  else if ((pixelsize == 1) && isse2)
-      arch = USE_MMX;
+  if ((((env->GetCPUFlags() & CPUF_AVX2) != 0) & isse_flag))
+    arch = USE_AVX2;
+  else if ((((env->GetCPUFlags() & CPUF_AVX) != 0) & isse_flag))
+    arch = USE_AVX;
+  else if ((((env->GetCPUFlags() & CPUF_SSE4_1) != 0) & isse_flag))
+    arch = USE_SSE41;
+  else if ((((env->GetCPUFlags() & CPUF_SSE2) != 0) & isse_flag))
+    arch = USE_SSE2;
+  /*  else if ((pixelsize == 1) && _isse_flag) // PF no MMX support
+  arch = USE_MMX;*/
   else
-      arch = NO_SIMD;
+    arch = NO_SIMD;
 
   OVERSLUMA   = get_overlaps_function(nBlkSizeX, nBlkSizeY, pixelsize, arch);
   OVERSCHROMA = get_overlaps_function(nBlkSizeX/xRatioUV, nBlkSizeY/yRatioUV, pixelsize, arch);
@@ -163,7 +169,7 @@ MVBlockFps::MVBlockFps(
   TmpBlock = new BYTE[nBlkPitch*nBlkSizeY]; // may be more padding?
 
   int CPUF_Resize = env->GetCPUFlags();
-  if (!isse2) CPUF_Resize = (CPUF_Resize & !CPUF_INTEGER_SSE) & !CPUF_SSE2;
+  if (!isse_flag) CPUF_Resize = (CPUF_Resize & !CPUF_INTEGER_SSE) & !CPUF_SSE2;
 
   upsizer = new SimpleResize(nWidthP, nHeightP, nBlkXP, nBlkYP, CPUF_Resize);
   upsizerUV = new SimpleResize(nWidthPUV, nHeightPUV, nBlkXP, nBlkYP, CPUF_Resize);
@@ -714,9 +720,9 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
 			if ( !((i + 1) % nBlkX)  )
 			{
 				// blend rest right with time weight
-				Blend(pDst[0], pSrc[0], pRef[0], nBlkSizeY, nWidth-nBlkSizeX*nBlkX, nDstPitches[0], nSrcPitches[0], nRefPitches[0], time256 /*t256_prov_cst*/, isse2);
-				if (nSuperModeYUV & UPLANE) Blend(pDst[1], pSrc[1], pRef[1], nBlkSizeY /yRatioUV, nWidthUV-(nBlkSizeX / xRatioUV)*nBlkX, nDstPitches[1], nSrcPitches[1], nRefPitches[1], time256 /*t256_prov_cst*/, isse2);
-				if (nSuperModeYUV & VPLANE) Blend(pDst[2], pSrc[2], pRef[2], nBlkSizeY /yRatioUV, nWidthUV-(nBlkSizeX / xRatioUV)*nBlkX, nDstPitches[2], nSrcPitches[2], nRefPitches[2], time256 /*t256_prov_cst*/, isse2);
+				Blend(pDst[0], pSrc[0], pRef[0], nBlkSizeY, nWidth-nBlkSizeX*nBlkX, nDstPitches[0], nSrcPitches[0], nRefPitches[0], time256 /*t256_prov_cst*/, isse_flag);
+				if (nSuperModeYUV & UPLANE) Blend(pDst[1], pSrc[1], pRef[1], nBlkSizeY /yRatioUV, nWidthUV-(nBlkSizeX / xRatioUV)*nBlkX, nDstPitches[1], nSrcPitches[1], nRefPitches[1], time256 /*t256_prov_cst*/, isse_flag);
+				if (nSuperModeYUV & VPLANE) Blend(pDst[2], pSrc[2], pRef[2], nBlkSizeY /yRatioUV, nWidthUV-(nBlkSizeX / xRatioUV)*nBlkX, nDstPitches[2], nSrcPitches[2], nRefPitches[2], time256 /*t256_prov_cst*/, isse_flag);
 
 				pDst[0] += nBlkSizeY * nDstPitches[0] - nBlkSizeX*nBlkX;
 				pDst[1] += ( nBlkSizeY /yRatioUV ) * nDstPitches[1] - (nBlkSizeX / xRatioUV)*nBlkX;
@@ -736,21 +742,21 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
 			}
 		}
 		// blend rest bottom with time weight
-		Blend(pDst[0], pSrc[0], pRef[0], nHeight-nBlkSizeY*nBlkY, nWidth, nDstPitches[0], nSrcPitches[0], nRefPitches[0], time256 /*t256_prov_cst*/, isse2);
-		if (nSuperModeYUV & UPLANE) Blend(pDst[1], pSrc[1], pRef[1], nHeightUV-(nBlkSizeY /yRatioUV)*nBlkY, nWidthUV, nDstPitches[1], nSrcPitches[1], nRefPitches[1], time256/*t256_prov_cst*/, isse2);
-		if (nSuperModeYUV & VPLANE) Blend(pDst[2], pSrc[2], pRef[2], nHeightUV-(nBlkSizeY /yRatioUV)*nBlkY, nWidthUV, nDstPitches[2], nSrcPitches[2], nRefPitches[2], time256/*t256_prov_cst*/, isse2);
+		Blend(pDst[0], pSrc[0], pRef[0], nHeight-nBlkSizeY*nBlkY, nWidth, nDstPitches[0], nSrcPitches[0], nRefPitches[0], time256 /*t256_prov_cst*/, isse_flag);
+		if (nSuperModeYUV & UPLANE) Blend(pDst[1], pSrc[1], pRef[1], nHeightUV-(nBlkSizeY /yRatioUV)*nBlkY, nWidthUV, nDstPitches[1], nSrcPitches[1], nRefPitches[1], time256/*t256_prov_cst*/, isse_flag);
+		if (nSuperModeYUV & VPLANE) Blend(pDst[2], pSrc[2], pRef[2], nHeightUV-(nBlkSizeY /yRatioUV)*nBlkY, nWidthUV, nDstPitches[2], nSrcPitches[2], nRefPitches[2], time256/*t256_prov_cst*/, isse_flag);
     }
     else // overlap
     {
       // blend rest right with time weight
-      Blend(pDst[0] + nWidth_B, pSrc[0] + nWidth_B, pRef[0] + nWidth_B, nHeight_B, nWidth - nWidth_B, nDstPitches[0], nSrcPitches[0], nRefPitches[0], time256, isse2);
-      if (nSuperModeYUV & UPLANE) Blend(pDst[1], pSrc[1], pRef[1], nHeight_B / yRatioUV, nWidthUV - nWidth_B / xRatioUV, nDstPitches[1], nSrcPitches[1], nRefPitches[1], time256, isse2);
-      if (nSuperModeYUV & VPLANE) Blend(pDst[2], pSrc[2], pRef[2], nHeight_B / yRatioUV, nWidthUV - nWidth_B / xRatioUV, nDstPitches[2], nSrcPitches[2], nRefPitches[2], time256, isse2);
+      Blend(pDst[0] + nWidth_B, pSrc[0] + nWidth_B, pRef[0] + nWidth_B, nHeight_B, nWidth - nWidth_B, nDstPitches[0], nSrcPitches[0], nRefPitches[0], time256, isse_flag);
+      if (nSuperModeYUV & UPLANE) Blend(pDst[1], pSrc[1], pRef[1], nHeight_B / yRatioUV, nWidthUV - nWidth_B / xRatioUV, nDstPitches[1], nSrcPitches[1], nRefPitches[1], time256, isse_flag);
+      if (nSuperModeYUV & VPLANE) Blend(pDst[2], pSrc[2], pRef[2], nHeight_B / yRatioUV, nWidthUV - nWidth_B / xRatioUV, nDstPitches[2], nSrcPitches[2], nRefPitches[2], time256, isse_flag);
 
       // blend rest bottom with time weight
-      Blend(pDst[0] + (nHeight - nHeight_B)*nDstPitches[0], pSrc[0] + (nHeight - nHeight_B)*nSrcPitches[0], pRef[0] + (nHeight - nHeight_B)*nRefPitches[0], nHeight - nHeight_B, nWidth, nDstPitches[0], nSrcPitches[0], nRefPitches[0], time256, isse2);
-      if (nSuperModeYUV & UPLANE) Blend(pDst[1] + nDstPitches[1] * (nHeight - nHeight_B) / yRatioUV, pSrc[1] + nSrcPitches[1] * (nHeight - nHeight_B) / yRatioUV, pRef[1] + nRefPitches[1] * (nHeight - nHeight_B) / yRatioUV, nHeightUV - nHeight_B / yRatioUV, nWidthUV, nDstPitches[1], nSrcPitches[1], nRefPitches[1], time256, isse2);
-      if (nSuperModeYUV & VPLANE) Blend(pDst[2] + nDstPitches[2] * (nHeight - nHeight_B) / yRatioUV, pSrc[2] + nSrcPitches[2] * (nHeight - nHeight_B) / yRatioUV, pRef[2] + nRefPitches[2] * (nHeight - nHeight_B) / yRatioUV, nHeightUV - nHeight_B / yRatioUV, nWidthUV, nDstPitches[2], nSrcPitches[2], nRefPitches[2], time256, isse2);
+      Blend(pDst[0] + (nHeight - nHeight_B)*nDstPitches[0], pSrc[0] + (nHeight - nHeight_B)*nSrcPitches[0], pRef[0] + (nHeight - nHeight_B)*nRefPitches[0], nHeight - nHeight_B, nWidth, nDstPitches[0], nSrcPitches[0], nRefPitches[0], time256, isse_flag);
+      if (nSuperModeYUV & UPLANE) Blend(pDst[1] + nDstPitches[1] * (nHeight - nHeight_B) / yRatioUV, pSrc[1] + nSrcPitches[1] * (nHeight - nHeight_B) / yRatioUV, pRef[1] + nRefPitches[1] * (nHeight - nHeight_B) / yRatioUV, nHeightUV - nHeight_B / yRatioUV, nWidthUV, nDstPitches[1], nSrcPitches[1], nRefPitches[1], time256, isse_flag);
+      if (nSuperModeYUV & VPLANE) Blend(pDst[2] + nDstPitches[2] * (nHeight - nHeight_B) / yRatioUV, pSrc[2] + nSrcPitches[2] * (nHeight - nHeight_B) / yRatioUV, pRef[2] + nRefPitches[2] * (nHeight - nHeight_B) / yRatioUV, nHeightUV - nHeight_B / yRatioUV, nWidthUV, nDstPitches[2], nSrcPitches[2], nRefPitches[2], time256, isse_flag);
 
       pDstShort = DstShort;
       MemZoneSet(reinterpret_cast<unsigned char*>(DstShort), 0, nWidth_B * 2, nHeight_B, 0, 0, dstShortPitch * 2);
@@ -857,7 +863,7 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
     if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
     {
       YUY2FromPlanes(pDstYUY2, nDstPitchYUY2, nWidth, nHeight,
-        pDstSave[0], nDstPitches[0], pDstSave[1], pDstSave[2], nDstPitches[1], isse2);
+        pDstSave[0], nDstPitches[0], pDstSave[1], pDstSave[2], nDstPitches[1], isse_flag);
     }
     PROFILE_STOP(MOTION_PROFILE_YUY2CONVERT);
 
@@ -880,7 +886,7 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
 				nRefPitches[0]  = ref->GetPitch();
 				pDstYUY2 = dst->GetWritePtr();
 				nDstPitchYUY2 = dst->GetPitch();
-				Blend(pDstYUY2, pSrc[0], pRef[0], nHeight, nWidth*2, nDstPitchYUY2, nSrcPitches[0], nRefPitches[0], time256 /*t256_prov_cst*/, isse2);
+				Blend(pDstYUY2, pSrc[0], pRef[0], nHeight, nWidth*2, nDstPitchYUY2, nSrcPitches[0], nRefPitches[0], time256 /*t256_prov_cst*/, isse_flag);
 			}
 			else
 			{
@@ -905,9 +911,9 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
 				nSrcPitches[1] = UPITCH(src);
 				nSrcPitches[2] = VPITCH(src);
 				// blend with time weight
-				Blend(pDst[0], pSrc[0], pRef[0], nHeight, nWidth, nDstPitches[0], nSrcPitches[0], nRefPitches[0], time256 /*t256_prov_cst*/, isse2);
-				if (nSuperModeYUV & UPLANE) Blend(pDst[1], pSrc[1], pRef[1], nHeightUV, nWidthUV, nDstPitches[1], nSrcPitches[1], nRefPitches[1], time256 /*t256_prov_cst*/, isse2);
-				if (nSuperModeYUV & VPLANE) Blend(pDst[2], pSrc[2], pRef[2], nHeightUV, nWidthUV, nDstPitches[2], nSrcPitches[2], nRefPitches[2], time256 /*t256_prov_cst*/, isse2);
+				Blend(pDst[0], pSrc[0], pRef[0], nHeight, nWidth, nDstPitches[0], nSrcPitches[0], nRefPitches[0], time256 /*t256_prov_cst*/, isse_flag);
+				if (nSuperModeYUV & UPLANE) Blend(pDst[1], pSrc[1], pRef[1], nHeightUV, nWidthUV, nDstPitches[1], nSrcPitches[1], nRefPitches[1], time256 /*t256_prov_cst*/, isse_flag);
+				if (nSuperModeYUV & VPLANE) Blend(pDst[2], pSrc[2], pRef[2], nHeightUV, nWidthUV, nDstPitches[2], nSrcPitches[2], nRefPitches[2], time256 /*t256_prov_cst*/, isse_flag);
 			}
 			PROFILE_STOP(MOTION_PROFILE_FLOWINTER);
 
