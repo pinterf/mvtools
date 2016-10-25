@@ -34,7 +34,7 @@ private:
   int nLimit;
   int nLimitC;
   PClip super; // v2.0
-  bool isse2;
+  bool isse_flag;
   bool planar;
   bool lsb_flag;
   int height_lsb_mul;

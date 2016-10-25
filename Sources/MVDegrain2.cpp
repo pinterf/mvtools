@@ -125,7 +125,7 @@ MVDegrain2::MVDegrain2(
 	nLimit = _nLimit;
 	nLimitC = _nLimitC;
 
-	isse2 = _isse2;
+	isse_flag = _isse2;
 	planar = _planar;
 
 	CheckSimilarity(mvClipB, "mvbw", env);
@@ -151,10 +151,10 @@ MVDegrain2::MVDegrain2(
 	int nSuperPel = params.nPel;
 	nSuperModeYUV = params.nModeYUV;
 	int nSuperLevels = params.nLevels;
-	pRefBGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse2, xRatioUV, yRatioUV, pixelsize_super, mt_flag);
-	pRefFGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse2, xRatioUV, yRatioUV, pixelsize_super, mt_flag);
-	pRefB2GOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse2, xRatioUV, yRatioUV, pixelsize_super, mt_flag);
-	pRefF2GOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse2, xRatioUV, yRatioUV, pixelsize_super, mt_flag);
+	pRefBGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse_flag, xRatioUV, yRatioUV, pixelsize_super, mt_flag);
+	pRefFGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse_flag, xRatioUV, yRatioUV, pixelsize_super, mt_flag);
+	pRefB2GOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse_flag, xRatioUV, yRatioUV, pixelsize_super, mt_flag);
+	pRefF2GOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse_flag, xRatioUV, yRatioUV, pixelsize_super, mt_flag);
 	int nSuperWidth  = vi_super.width;
 	int nSuperHeight = vi_super.height;
 
@@ -193,9 +193,9 @@ MVDegrain2::MVDegrain2(
    // OverlapsFunction
    // in M(V)DegrainX: DenoiseXFunction
    arch_t arch;
-   if ((pixelsize == 1) && (((env->GetCPUFlags() & CPUF_SSE2) != 0) & isse2))
+   if ((pixelsize == 1) && (((env->GetCPUFlags() & CPUF_SSE2) != 0) & isse_flag))
        arch = USE_SSE2;
-   else if ((pixelsize == 1) && isse2)
+   else if ((pixelsize == 1) && isse_flag)
        arch = USE_MMX;
    else
        arch = NO_SIMD;
@@ -313,7 +313,7 @@ PVideoFrame __stdcall MVDegrain2::GetFrame(int n, IScriptEnvironment* env)
 			nSrcPitches[1]  = SrcPlanes->GetPitchUV();
 			nSrcPitches[2]  = SrcPlanes->GetPitchUV();
 			YUY2ToPlanes(pSrcYUY2, nSrcPitchYUY2, nWidth, nHeight,
-			pSrc[0], nSrcPitches[0], pSrc[1], pSrc[2], nSrcPitches[1], isse2);
+			pSrc[0], nSrcPitches[0], pSrc[1], pSrc[2], nSrcPitches[1], isse_flag);
 		}
 		else
 		{
@@ -508,7 +508,7 @@ PVideoFrame __stdcall MVDegrain2::GetFrame(int n, IScriptEnvironment* env)
 
 	if (!(YUVplanes & YPLANE))
 	{
-		BitBlt(pDstCur[0], nDstPitches[0], pSrcCur[0], nSrcPitches[0], nWidth, nHeight, isse2);
+		BitBlt(pDstCur[0], nDstPitches[0], pSrcCur[0], nSrcPitches[0], nWidth, nHeight, isse_flag);
 	}
 
 	else
@@ -543,7 +543,7 @@ PVideoFrame __stdcall MVDegrain2::GetFrame(int n, IScriptEnvironment* env)
 					{
 						// luma
 						BitBlt(pDstCur[0] + nWidth_B, nDstPitches[0],
-							pSrcCur[0] + nWidth_B, nSrcPitches[0], nWidth-nWidth_B, nBlkSizeY, isse2);
+							pSrcCur[0] + nWidth_B, nSrcPitches[0], nWidth-nWidth_B, nBlkSizeY, isse_flag);
 					}
 				}	// for bx
 
@@ -553,7 +553,7 @@ PVideoFrame __stdcall MVDegrain2::GetFrame(int n, IScriptEnvironment* env)
 				if (by == nBlkY-1 && nHeight_B < nHeight) // bottom uncovered region
 				{
 					// luma
-					BitBlt(pDstCur[0], nDstPitches[0], pSrcCur[0], nSrcPitches[0], nWidth, nHeight-nHeight_B, isse2);
+					BitBlt(pDstCur[0], nDstPitches[0], pSrcCur[0], nSrcPitches[0], nWidth, nHeight-nHeight_B, isse_flag);
 				}
 			}	// for by
 		}	// nOverlapX==0 && nOverlapY==0
@@ -630,19 +630,19 @@ PVideoFrame __stdcall MVDegrain2::GetFrame(int n, IScriptEnvironment* env)
 			{
 				BitBlt(pDst[0] + nWidth_B, nDstPitches[0],
 					pSrc[0] + nWidth_B, nSrcPitches[0],
-					nWidth-nWidth_B, nHeight_B, isse2);
+					nWidth-nWidth_B, nHeight_B, isse_flag);
 			}
 			if (nHeight_B < nHeight) // bottom noncovered region
 			{
 				BitBlt(pDst[0] + nHeight_B*nDstPitches[0], nDstPitches[0],
 					pSrc[0] + nHeight_B*nSrcPitches[0], nSrcPitches[0],
-					nWidth, nHeight-nHeight_B, isse2);
+					nWidth, nHeight-nHeight_B, isse_flag);
 			}
 		}	// overlap - end
 
 		if (nLimit < (pixelsize == 1 ? 255 : 65535))
 		{
-			if ((pixelsize==1) && isse2)
+			if ((pixelsize==1) && isse_flag)
 			{
 				LimitChanges_sse2(pDst[0], nDstPitches[0], pSrc[0], nSrcPitches[0], nWidth, nHeight, nLimit);
 			}
@@ -691,7 +691,7 @@ PVideoFrame __stdcall MVDegrain2::GetFrame(int n, IScriptEnvironment* env)
 	if ( (pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
 	{
 		YUY2FromPlanes(pDstYUY2, nDstPitchYUY2, nWidth, nHeight * height_lsb_mul,
-					  pDst[0], nDstPitches[0], pDst[1], pDst[2], nDstPitches[1], isse2);
+					  pDst[0], nDstPitches[0], pDst[1], pDst[2], nDstPitches[1], isse_flag);
 	}
    return dst;
 }
@@ -702,7 +702,7 @@ void	MVDegrain2::process_chroma (int plane_mask, BYTE *pDst, BYTE *pDstCur, int 
 {
 	if (!(YUVplanes & plane_mask))
 	{
-		BitBlt(pDstCur, nDstPitch, pSrcCur, nSrcPitch, nWidth/xRatioUV*pixelsize, nHeight/yRatioUV, isse2);
+		BitBlt(pDstCur, nDstPitch, pSrcCur, nSrcPitch, nWidth/xRatioUV*pixelsize, nHeight/yRatioUV, isse_flag);
 	}
 
 	else
@@ -737,7 +737,7 @@ void	MVDegrain2::process_chroma (int plane_mask, BYTE *pDst, BYTE *pDstCur, int 
 					{
 						// chroma
 						BitBlt(pDstCur + (nWidth_B/xRatioUV)*pixelsize, nDstPitch,
-							pSrcCur + (nWidth_B/xRatioUV)*pixelsize, nSrcPitch, (nWidth-nWidth_B)/xRatioUV*pixelsize, (nBlkSizeY)/yRatioUV, isse2);
+							pSrcCur + (nWidth_B/xRatioUV)*pixelsize, nSrcPitch, (nWidth-nWidth_B)/xRatioUV*pixelsize, (nBlkSizeY)/yRatioUV, isse_flag);
 					}
 				}	// for bx
 
@@ -747,7 +747,7 @@ void	MVDegrain2::process_chroma (int plane_mask, BYTE *pDst, BYTE *pDstCur, int 
 				if (by == nBlkY-1 && nHeight_B < nHeight) // bottom uncovered region
 				{
 					// chroma
-					BitBlt(pDstCur, nDstPitch, pSrcCur, nSrcPitch, nWidth/xRatioUV*pixelsize, (nHeight-nHeight_B)/yRatioUV, isse2);
+					BitBlt(pDstCur, nDstPitch, pSrcCur, nSrcPitch, nWidth/xRatioUV*pixelsize, (nHeight-nHeight_B)/yRatioUV, isse_flag);
 				}
 			}	// for by
 		}	// nOverlapX==0 && nOverlapY==0
@@ -826,19 +826,19 @@ void	MVDegrain2::process_chroma (int plane_mask, BYTE *pDst, BYTE *pDstCur, int 
 			{
 				BitBlt(pDst + (nWidth_B/xRatioUV)*pixelsize, nDstPitch,
 					pSrc + (nWidth_B/xRatioUV)*pixelsize, nSrcPitch,
-					(nWidth-nWidth_B)/xRatioUV*pixelsize, nHeight_B/yRatioUV, isse2);
+					(nWidth-nWidth_B)/xRatioUV*pixelsize, nHeight_B/yRatioUV, isse_flag);
 			}
 			if (nHeight_B < nHeight) // bottom noncovered region
 			{
 				BitBlt(pDst + nDstPitch*nHeight_B/yRatioUV, nDstPitch,
 					pSrc + nSrcPitch*nHeight_B/yRatioUV, nSrcPitch,
-					nWidth/xRatioUV*pixelsize, (nHeight-nHeight_B)/yRatioUV, isse2);
+					nWidth/xRatioUV*pixelsize, (nHeight-nHeight_B)/yRatioUV, isse_flag);
 			}
 		}	// overlap - end
 
 		if (nLimitC < (pixelsize == 1 ? 255 : 65535))
 		{
-			if ((pixelsize==1) && isse2)
+			if ((pixelsize==1) && isse_flag)
 			{
 				LimitChanges_sse2(pDst, nDstPitch, pSrc, nSrcPitch, nWidth/xRatioUV, nHeight/yRatioUV, nLimitC);
 			}
