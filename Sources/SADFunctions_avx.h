@@ -55,5 +55,27 @@ unsigned int Sad_AVX_C(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef,
 	return sum;
 }
 
+template<int nBlkWidth, int nBlkHeight, typename pixel_t>
+unsigned int Sad16_sse2_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+
+template unsigned int Sad16_sse2_avx<32, 32, uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+template unsigned int Sad16_sse2_avx<32, 16, uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+template unsigned int Sad16_sse2_avx<32, 8, uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+template unsigned int Sad16_sse2_avx<16, 32,uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+template unsigned int Sad16_sse2_avx<16, 16,uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+template unsigned int Sad16_sse2_avx<16, 8,uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+template unsigned int Sad16_sse2_avx<16, 4,uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+template unsigned int Sad16_sse2_avx<16, 2,uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+template unsigned int Sad16_sse2_avx<16, 1,uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+template unsigned int Sad16_sse2_avx<8 , 16,uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+template unsigned int Sad16_sse2_avx<8 , 8,uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+template unsigned int Sad16_sse2_avx<8 , 4,uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+template unsigned int Sad16_sse2_avx<8 , 2,uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+template unsigned int Sad16_sse2_avx<8 , 1,uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+template unsigned int Sad16_sse2_avx<4 , 8,uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+template unsigned int Sad16_sse2_avx<4 , 4,uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+template unsigned int Sad16_sse2_avx<4 , 2,uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+
+
 
 #endif

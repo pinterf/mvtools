@@ -92,36 +92,19 @@ unsigned int Sad16_sse2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128(); // 2x or 4x int is probably enough for 32x32
   const bool two_rows = (sizeof(pixel_t) == 2 && nBlkWidth <= 4) || (sizeof(pixel_t) == 1 && nBlkWidth <= 8);
+  const bool one_cycle = (sizeof(pixel_t) * nBlkWidth) == 16;
 
   for ( int y = 0; y < nBlkHeight; y+= (two_rows ? 2 : 1))
   {
-    for ( int x = 0; x < nBlkWidth; x+=16 )
-    {
+    if (two_rows) { // no x cycle
       __m128i src1, src2;
-#if 0
-      // later...
-      if(aligned) { // unaligned
-        src1 = _mm_load_si128((__m128i *) (pSrc + x)); // 16 bytes or 8 words
-        src2 = _mm_load_si128((__m128i *) (pRef + x));
-      }
-      else { // unaligned
-        src1 = _mm_loadu_si128((__m128i *) (pSrc + x));
-        src2 = _mm_loadu_si128((__m128i *) (pRef + x));
-      }
-#else
-      if (two_rows) {
-        // (8 bytes or 4 words) * 2 rows
-        src1 = _mm_or_si128(_mm_loadl_epi64((__m128i *) (pSrc + x)),_mm_slli_si128(_mm_loadl_epi64((__m128i *) (pSrc + x + nSrcPitch)),8));
-        src2 = _mm_or_si128(_mm_loadl_epi64((__m128i *) (pRef + x)),_mm_slli_si128(_mm_loadl_epi64((__m128i *) (pRef + x + nRefPitch)),8));
-      } else {
-        src1 = _mm_loadu_si128((__m128i *) (pSrc + x));
-        src2 = _mm_loadu_si128((__m128i *) (pRef + x));
-      }
-#endif
-      if(sizeof(pixel_t) == 1) {
-          // this is uint_16 specific, but will test on uint8_t against external .asm SAD functions)
+      // (8 bytes or 4 words) * 2 rows
+      src1 = _mm_or_si128(_mm_loadl_epi64((__m128i *) (pSrc)), _mm_slli_si128(_mm_loadl_epi64((__m128i *) (pSrc + nSrcPitch)), 8));
+      src2 = _mm_or_si128(_mm_loadl_epi64((__m128i *) (pRef)), _mm_slli_si128(_mm_loadl_epi64((__m128i *) (pRef + nRefPitch)), 8));
+      if (sizeof(pixel_t) == 1) {
+        // this is uint_16 specific, but will test on uint8_t against external .asm SAD functions)
         sum = _mm_add_epi32(sum, _mm_sad_epu8(src1, src2)); // yihhaaa, existing SIMD   sum1_32, 0, sum2_32, 0
-        // result in two 32 bit areas at the upper and lower 64 bytes
+                                                            // result in two 32 bit areas at the upper and lower 64 bytes
       }
       else {
         __m128i greater_t = _mm_subs_epu16(src1, src2); // unsigned sub with saturation
@@ -132,7 +115,49 @@ unsigned int Sad16_sse2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
         sum = _mm_add_epi32(sum, _mm_unpackhi_epi16(absdiff, zero));
         // sum1_32, sum2_32, sum3_32, sum4_32
       }
-      // sum += SADABS(reinterpret_cast<const pixel_t *>(pSrc)[x] - reinterpret_cast<const pixel_t *>(pRef)[x]);
+    }
+    else if (one_cycle)
+    {
+      __m128i src1, src2;
+      src1 = _mm_loadu_si128((__m128i *) (pSrc)); // no x
+      src2 = _mm_loadu_si128((__m128i *) (pRef));
+      if (sizeof(pixel_t) == 1) {
+        // this is uint_16 specific, but will test on uint8_t against external .asm SAD functions)
+        sum = _mm_add_epi32(sum, _mm_sad_epu8(src1, src2)); // yihhaaa, existing SIMD   sum1_32, 0, sum2_32, 0
+                                                            // result in two 32 bit areas at the upper and lower 64 bytes
+      }
+      else {
+        __m128i greater_t = _mm_subs_epu16(src1, src2); // unsigned sub with saturation
+        __m128i smaller_t = _mm_subs_epu16(src2, src1);
+        __m128i absdiff = _mm_or_si128(greater_t, smaller_t); //abs(s1-s2)  == (satsub(s1,s2) | satsub(s2,s1))
+                                                              // 8 x uint16 absolute differences
+        sum = _mm_add_epi32(sum, _mm_unpacklo_epi16(absdiff, zero));
+        sum = _mm_add_epi32(sum, _mm_unpackhi_epi16(absdiff, zero));
+        // sum1_32, sum2_32, sum3_32, sum4_32
+      }
+    }
+    else {
+      for (int x = 0; x < nBlkWidth; x += 16)
+      {
+        __m128i src1, src2;
+        src1 = _mm_loadu_si128((__m128i *) (pSrc + x));
+        src2 = _mm_loadu_si128((__m128i *) (pRef + x));
+        if (sizeof(pixel_t) == 1) {
+            // this is uint_16 specific, but will test on uint8_t against external .asm SAD functions)
+          sum = _mm_add_epi32(sum, _mm_sad_epu8(src1, src2)); // yihhaaa, existing SIMD   sum1_32, 0, sum2_32, 0
+          // result in two 32 bit areas at the upper and lower 64 bytes
+        }
+        else {
+          __m128i greater_t = _mm_subs_epu16(src1, src2); // unsigned sub with saturation
+          __m128i smaller_t = _mm_subs_epu16(src2, src1);
+          __m128i absdiff = _mm_or_si128(greater_t, smaller_t); //abs(s1-s2)  == (satsub(s1,s2) | satsub(s2,s1))
+          // 8 x uint16 absolute differences
+          sum = _mm_add_epi32(sum, _mm_unpacklo_epi16(absdiff, zero));
+          sum = _mm_add_epi32(sum, _mm_unpackhi_epi16(absdiff, zero));
+          // sum1_32, sum2_32, sum3_32, sum4_32
+        }
+        // sum += SADABS(reinterpret_cast<const pixel_t *>(pSrc)[x] - reinterpret_cast<const pixel_t *>(pRef)[x]);
+      }
     }
     if (two_rows) {
       pSrc += nSrcPitch*2;
