@@ -211,6 +211,18 @@ LUMAFunction* get_luma_function(int BlockX, int BlockY, int pixelsize, arch_t ar
     func_luma[make_tuple(4 , 2 , 2, USE_SSE2)] = Luma16_sse2<4 , 2,uint16_t>;
     // no 4,1 or 2,x,x for uint16_t
     
+    LUMAFunction *result = nullptr;
+    arch_t archlist[] = { USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
+    int index = 0;
+    while (result == nullptr) {
+      arch_t current_arch_try = archlist[index++];
+      if (current_arch_try > arch) continue;
+      result = func_luma[make_tuple(BlockX, BlockY, pixelsize, current_arch_try)];
+      if (result == nullptr && current_arch_try == NO_SIMD)
+        break;
+    }
+
+#if 0
     LUMAFunction *result = func_luma[make_tuple(BlockX, BlockY, pixelsize, arch)];
 
     arch_t arch_orig = arch;
@@ -238,6 +250,7 @@ LUMAFunction* get_luma_function(int BlockX, int BlockY, int pixelsize, arch_t ar
       if(result == nullptr)
         result = func_luma[make_tuple(BlockX, BlockY, pixelsize, NO_SIMD)]; // fallback to C
     }
+#endif
     return result;
 }
 
