@@ -159,7 +159,6 @@ SATD_REC_FUNC_UINT16 (32, 16, 16,  8, c)
 
 SADFunction* get_sad_function(int BlockX, int BlockY, int pixelsize, arch_t arch)
 {
-    SADFunction *result;
     using std::make_tuple;
 
     // BlkSizeX, BlkSizeY, pixelsize, arch_t
@@ -208,7 +207,28 @@ SADFunction* get_sad_function(int BlockX, int BlockY, int pixelsize, arch_t arch
     func_sad[make_tuple(2 , 4 , 2, NO_SIMD)] = Sad_C<2 , 4,uint16_t>;
     func_sad[make_tuple(2 , 2 , 2, NO_SIMD)] = Sad_C<2 , 2,uint16_t>;
     func_sad[make_tuple(2 , 1 , 2, NO_SIMD)] = Sad_C<2 , 1,uint16_t>;
-    
+
+    // PF SAD 16 SIMD intrinsic functions
+    // only for >=8 bytes widths
+    // AVX compiled SSE2 code
+    func_sad[make_tuple(32, 32, 2, USE_AVX)] = Sad16_sse2_avx<32, 32,uint16_t>;
+    func_sad[make_tuple(32, 16, 2, USE_AVX)] = Sad16_sse2_avx<32, 16,uint16_t>;
+    func_sad[make_tuple(32, 8 , 2, USE_AVX)] = Sad16_sse2_avx<32, 8,uint16_t>;
+    func_sad[make_tuple(16, 32, 2, USE_AVX)] = Sad16_sse2_avx<16, 32,uint16_t>;
+    func_sad[make_tuple(16, 16, 2, USE_AVX)] = Sad16_sse2_avx<16, 16,uint16_t>;
+    func_sad[make_tuple(16, 8 , 2, USE_AVX)] = Sad16_sse2_avx<16, 8,uint16_t>;
+    func_sad[make_tuple(16, 4 , 2, USE_AVX)] = Sad16_sse2_avx<16, 4,uint16_t>;
+    func_sad[make_tuple(16, 2 , 2, USE_AVX)] = Sad16_sse2_avx<16, 2,uint16_t>;
+    func_sad[make_tuple(16, 1 , 2, USE_AVX)] = Sad16_sse2_avx<16, 1,uint16_t>;
+    func_sad[make_tuple(8 , 16, 2, USE_AVX)] = Sad16_sse2_avx<8 , 16,uint16_t>;
+    func_sad[make_tuple(8 , 8 , 2, USE_AVX)] = Sad16_sse2_avx<8 , 8,uint16_t>;
+    func_sad[make_tuple(8 , 4 , 2, USE_AVX)] = Sad16_sse2_avx<8 , 4,uint16_t>;
+    func_sad[make_tuple(8 , 2 , 2, USE_AVX)] = Sad16_sse2_avx<8 , 2,uint16_t>;
+    func_sad[make_tuple(8 , 1 , 2, USE_AVX)] = Sad16_sse2_avx<8 , 1,uint16_t>;
+    func_sad[make_tuple(4 , 8 , 2, USE_AVX)] = Sad16_sse2_avx<4 , 8,uint16_t>;
+    func_sad[make_tuple(4 , 4 , 2, USE_AVX)] = Sad16_sse2_avx<4 , 4,uint16_t>;
+    func_sad[make_tuple(4 , 2 , 2, USE_AVX)] = Sad16_sse2_avx<4 , 2,uint16_t>;
+
     // PF SAD 16 SIMD intrinsic functions
     // only for >=8 bytes widths
     func_sad[make_tuple(32, 32, 2, USE_SSE2)] = Sad16_sse2<32, 32,uint16_t>;
@@ -299,6 +319,29 @@ SADFunction* get_sad_function(int BlockX, int BlockY, int pixelsize, arch_t arch
     func_sad[make_tuple(16, 1 , 1, USE_SSE2)] = Sad16_avx2<16, 1,uint8_t>;
 #endif
 
+    SADFunction *result = nullptr;
+    arch_t archlist[] = { USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
+    int index = 0;
+    while (result == nullptr) {
+      arch_t current_arch_try = archlist[index++];
+      if (current_arch_try > arch) continue;
+      if (result == nullptr && current_arch_try == NO_SIMD) {
+        if(arch==USE_AVX2)
+          result = get_sad_avx2_C_function(BlockX, BlockY, pixelsize, NO_SIMD);
+        else if(arch==USE_AVX)
+          result = get_sad_avx_C_function(BlockX, BlockY, pixelsize, NO_SIMD);
+        else
+          result = func_sad[make_tuple(BlockX, BlockY, pixelsize, NO_SIMD)];
+      }
+      else {
+        result = func_sad[make_tuple(BlockX, BlockY, pixelsize, current_arch_try)];
+      }
+      if (result == nullptr && current_arch_try == NO_SIMD) {
+        break;
+      }
+    }
+
+#if 0
     result = func_sad[make_tuple(BlockX, BlockY, pixelsize, arch)];
 
     arch_t arch_orig = arch;
@@ -325,6 +368,7 @@ SADFunction* get_sad_function(int BlockX, int BlockY, int pixelsize, arch_t arch
       if(result == nullptr)
         result = func_sad[make_tuple(BlockX, BlockY, pixelsize, NO_SIMD)]; // fallback to C
     }
+#endif
     return result;
 }
 
@@ -353,6 +397,29 @@ SADFunction* get_satd_function(int BlockX, int BlockY, int pixelsize, arch_t arc
     func_satd[make_tuple(8 , 8 , 2, NO_SIMD)] = x264_pixel_satd_uint16_8x8_c;
     func_satd[make_tuple(8 , 4 , 2, NO_SIMD)] = x264_pixel_satd_uint16_8x4_c;
 
+    SADFunction *result = nullptr;
+    arch_t archlist[] = { USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
+    int index = 0;
+    while (result == nullptr) {
+      arch_t current_arch_try = archlist[index++];
+      if (current_arch_try > arch) continue;
+      if (result == nullptr && current_arch_try == NO_SIMD) {
+        /*
+        if(arch==USE_AVX2)
+          result = get_sadt_avx2_C_function(BlockX, BlockY, pixelsize, NO_SIMD);
+        else if(arch==USE_AVX)
+          result = get_sadt_avx_C_function(BlockX, BlockY, pixelsize, NO_SIMD);
+        else*/
+          result = func_satd[make_tuple(BlockX, BlockY, pixelsize, NO_SIMD)];
+      }
+      else {
+        result = func_satd[make_tuple(BlockX, BlockY, pixelsize, current_arch_try)];
+      }
+      if (result == nullptr && current_arch_try == NO_SIMD) {
+        break;
+      }
+    }
+#if 0
     SADFunction *result = func_satd[make_tuple(BlockX, BlockY, pixelsize, arch)];
 
     arch_t arch_orig = arch;
@@ -380,7 +447,7 @@ SADFunction* get_satd_function(int BlockX, int BlockY, int pixelsize, arch_t arc
       if(result == nullptr)
         result = func_satd[make_tuple(BlockX, BlockY, pixelsize, NO_SIMD)]; // fallback to C
     }
-    // fallback to C is not available yet
+#endif
     return result;
 }
 
