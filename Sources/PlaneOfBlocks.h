@@ -62,7 +62,7 @@ public:
   /* search the vectors for the whole plane */
   void SearchMVs(MVFrame *_pSrcFrame, MVFrame *_pRefFrame, SearchType st,
     int stp, int _lambda, sad_t _lSAD, int _pennew, int _plevel,
-    int flags, int *out, const VECTOR *globalMVec, short * outfilebuf, int _fieldShiftCur,
+    int flags, sad_t *out, const VECTOR *globalMVec, short * outfilebuf, int _fieldShiftCur,
     int * _meanLumaChange, int _divideExtra,
     int _pzero, int _pglobal, sad_t _badSAD, int _badrange, bool meander, int *vecPrev, bool _tryMany);
 
@@ -151,7 +151,7 @@ private:
   VECTOR zeroMVfieldShifted;  // zero motion vector for fieldbased video at finest level pel2
 
   int dctmode;
-  int dctweight16;
+  sad_t dctweight16;
 
   // Current plane
   SearchType searchType;      /* search type used */
@@ -169,8 +169,8 @@ private:
 
   // PF todo this should be float or double for float format??
   // it is not AtomicInt anymore
-  conc::AtomicInt <sad_t> planeSAD;      // summary SAD of plane // P.F. todo check where it is used
-  conc::AtomicInt <sad_t> sumLumaChange; // luma change sum
+  conc::AtomicInt <bigsad_t> planeSAD;      // summary SAD of plane // P.F. todo check where it is used
+  conc::AtomicInt <bigsad_t> sumLumaChange; // luma change sum
   VECTOR _glob_mv_pred_def;
   int _lambda_level;
 
@@ -209,8 +209,8 @@ private:
 
     VECTOR globalMVPredictor;   // predictor of global motion vector
 
-    sad_t planeSAD;               // partial summary SAD of plane
-    sad_t sumLumaChange;          // partial luma change sum
+    bigsad_t planeSAD;               // partial summary SAD of plane
+    bigsad_t sumLumaChange;          // partial luma change sum
     int blky_beg;               // First line of blocks to process from this thread
     int blky_end;               // Last line of blocks + 1 to process from this thread
 

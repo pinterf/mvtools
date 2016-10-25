@@ -89,6 +89,7 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
   freqArray[1].resize(8192 * _nPel * 2);
 
   bool sse2 = (bool)(nFlags & CPU_SSE2); // no tricks for really old processors. If SSE2 is reported, use it
+  bool sse41 = (bool)(nFlags & CPUF_SSE4_1); 
   bool avx = (bool)(nFlags & CPU_AVX);
   bool avx2 = (bool)(nFlags & CPU_AVX2);
   bool ssd = (bool)(nFlags & MOTION_USE_SSD);
@@ -121,6 +122,8 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
     arch = USE_AVX2;
   else if (isse && avx)
     arch = USE_AVX;
+  else if (isse && sse41)
+    arch = USE_SSE41;
   else if (isse && sse2)
     arch = USE_SSE2;
   else
@@ -210,8 +213,8 @@ PlaneOfBlocks::~PlaneOfBlocks()
 void PlaneOfBlocks::SearchMVs(
   MVFrame *_pSrcFrame, MVFrame *_pRefFrame,
   SearchType st, int stp, int lambda, sad_t lsad, int pnew,
-  int plevel, int flags, int *out, const VECTOR * globalMVec,
-  short *outfilebuf, int fieldShift, int * pmeanLumaChange,
+  int plevel, int flags, sad_t *out, const VECTOR * globalMVec,
+  short *outfilebuf, int fieldShift, sad_t * pmeanLumaChange,
   int divideExtra, int _pzero, int _pglobal, sad_t _badSAD, int _badrange, bool meander, int *vecPrev, bool _tryMany
 )
 {
@@ -220,8 +223,9 @@ void PlaneOfBlocks::SearchMVs(
 
   zeroMVfieldShifted.x = 0;
   zeroMVfieldShifted.y = fieldShift;
+  zeroMVfieldShifted.sad = 0; // vs
 #ifdef ALLOW_DCT
-  dctweight16 = std::min(16, abs(*pmeanLumaChange) / (nBlkSizeX*nBlkSizeY)); //equal dct and spatial weights for meanLumaChange=8 (empirical)
+  dctweight16 = std::min((sad_t)16, abs(*pmeanLumaChange) / (nBlkSizeX*nBlkSizeY)); //equal dct and spatial weights for meanLumaChange=8 (empirical)
 #endif	// ALLOW_DCT
 
   badSAD = _badSAD;
@@ -331,6 +335,7 @@ void PlaneOfBlocks::RecalculateMVs(
 
   zeroMVfieldShifted.x = 0;
   zeroMVfieldShifted.y = fieldShift;
+  zeroMVfieldShifted.sad = 0; // vs
 #ifdef ALLOW_DCT
   dctweight16 = 8;//min(16,abs(*pmeanLumaChange)/(nBlkSizeX*nBlkSizeY)); //equal dct and spatial weights for meanLumaChange=8 (empirical)
 #endif	// ALLOW_DCT
@@ -426,6 +431,7 @@ void PlaneOfBlocks::InterpolatePrediction(const PlaneOfBlocks &pob)
   int aoddy = (nBlkSizeY * 3 - nOverlapY * 2);
   int aeveny = (nBlkSizeY * 3 - nOverlapY * 4);
   // note: overlapping is still (v2.5.7) not processed properly
+  // PF todo make faster
   for (int l = 0, index = 0; l < nBlkY; l++)
   {
     for (int k = 0; k < nBlkX; k++, index++)
@@ -443,37 +449,42 @@ void PlaneOfBlocks::InterpolatePrediction(const PlaneOfBlocks &pob)
       }
       int offy = -1 + 2 * (j % 2);
       int offx = -1 + 2 * (i % 2);
+      int iper2 = i / 2;
+      int jper2 = j / 2;
 
       if ((i == 0) || (i >= 2 * pob.nBlkX - 1))
       {
         if ((j == 0) || (j >= 2 * pob.nBlkY - 1))
         {
-          v1 = v2 = v3 = v4 = pob.vectors[i / 2 + (j / 2) * pob.nBlkX];
+          v1 = v2 = v3 = v4 = pob.vectors[iper2 + (jper2) * pob.nBlkX];
         }
         else
         {
-          v1 = v2 = pob.vectors[i / 2 + (j / 2) * pob.nBlkX];
-          v3 = v4 = pob.vectors[i / 2 + (j / 2 + offy) * pob.nBlkX];
+          v1 = v2 = pob.vectors[iper2 + (jper2) * pob.nBlkX];
+          v3 = v4 = pob.vectors[iper2 + (jper2 + offy) * pob.nBlkX];
         }
       }
       else if ((j == 0) || (j >= 2 * pob.nBlkY - 1))
       {
-        v1 = v2 = pob.vectors[i / 2 + (j / 2) * pob.nBlkX];
-        v3 = v4 = pob.vectors[i / 2 + offx + (j / 2) * pob.nBlkX];
+        v1 = v2 = pob.vectors[iper2 + (jper2) * pob.nBlkX];
+        v3 = v4 = pob.vectors[iper2 + offx + (jper2) * pob.nBlkX];
       }
       else
       {
-        v1 = pob.vectors[i / 2 + (j / 2) * pob.nBlkX];
-        v2 = pob.vectors[i / 2 + offx + (j / 2) * pob.nBlkX];
-        v3 = pob.vectors[i / 2 + (j / 2 + offy) * pob.nBlkX];
-        v4 = pob.vectors[i / 2 + offx + (j / 2 + offy) * pob.nBlkX];
+        v1 = pob.vectors[iper2 + (jper2) * pob.nBlkX];
+        v2 = pob.vectors[iper2 + offx + (jper2) * pob.nBlkX];
+        v3 = pob.vectors[iper2 + (jper2 + offy) * pob.nBlkX];
+        v4 = pob.vectors[iper2 + offx + (jper2 + offy) * pob.nBlkX];
       }
+      bigsad_t tmp_sad; // 16 bit worst case: 16 * sad_max: 16 * 3x32x32x65536 = 4+5+5+16 > 2^31 over limit
+      // in case of BlockSize > 32, e.g. 128x128x65536 is even more: 7+7+16=30 bits
 
       if (nOverlapX == 0 && nOverlapY == 0)
       {
         vectors[index].x = 9 * v1.x + 3 * v2.x + 3 * v3.x + v4.x;
         vectors[index].y = 9 * v1.y + 3 * v2.y + 3 * v3.y + v4.y;
-        vectors[index].sad = 9 * v1.sad + 3 * v2.sad + 3 * v3.sad + v4.sad + 8;
+        tmp_sad = 9 * (bigsad_t)v1.sad + 3 * (bigsad_t)v2.sad + 3 * (bigsad_t)v3.sad + (bigsad_t)v4.sad + 8;
+        
       }
       else if (nOverlapX <= (nBlkSizeX >> 1) && nOverlapY <= (nBlkSizeY >> 1)) // corrected in v1.4.11
       {
@@ -484,17 +495,17 @@ void PlaneOfBlocks::InterpolatePrediction(const PlaneOfBlocks &pob)
         int a11 = ax1*ay1, a12 = ax1*ay2, a21 = ax2*ay1, a22 = ax2*ay2;
         vectors[index].x = (a11*v1.x + a21*v2.x + a12*v3.x + a22*v4.x) / normov;
         vectors[index].y = (a11*v1.y + a21*v2.y + a12*v3.y + a22*v4.y) / normov;
-        vectors[index].sad = (a11*v1.sad + a21*v2.sad + a12*v3.sad + a22*v4.sad) / normov;
+        tmp_sad = ((bigsad_t)a11*v1.sad + (bigsad_t)a21*v2.sad + (bigsad_t)a12*v3.sad + (bigsad_t)a22*v4.sad) / normov;
       }
       else // large overlap. Weights are not quite correct but let it be
       {
         vectors[index].x = (v1.x + v2.x + v3.x + v4.x) << 2;
         vectors[index].y = (v1.y + v2.y + v3.y + v4.y) << 2;
-        vectors[index].sad = (v1.sad + v2.sad + v3.sad + v4.sad + 2) * 4; // float friendly, compiler optimizes for int << 2;
+        tmp_sad = ((bigsad_t)v1.sad + v2.sad + v3.sad + v4.sad + 2) << 2;
       }
       vectors[index].x = (vectors[index].x >> normFactor) << mulFactor;
       vectors[index].y = (vectors[index].y >> normFactor) << mulFactor;
-      vectors[index].sad = vectors[index].sad / 16; // float friendly, compiler optimizes for int >> 4;
+      vectors[index].sad = (sad_t)(tmp_sad >> 4);
     }	// for k < nBlkX
   }	// for l < nBlkY
 }
@@ -634,7 +645,7 @@ void PlaneOfBlocks::FetchPredictors(WorkingArea &workarea)
     }
   */
   //	if ( workarea.predictor.sad > LSAD ) { workarea.nLambda = 0; } // generalized (was LSAD=400) by Fizick
-  workarea.nLambda = workarea.nLambda*LSAD / (LSAD + (workarea.predictor.sad >> 1))*LSAD / (LSAD + (workarea.predictor.sad >> 1));
+  workarea.nLambda = workarea.nLambda*(bigsad_t)LSAD / ((bigsad_t)LSAD + (workarea.predictor.sad >> 1))*LSAD / ((bigsad_t)LSAD + (workarea.predictor.sad >> 1));
   // replaced hard threshold by soft in v1.10.2 by Fizick (a liitle complex expression to avoid overflow)
   //	int a = LSAD/(LSAD + (workarea.predictor.sad>>1));
   //	workarea.nLambda = workarea.nLambda*a*a;
@@ -721,8 +732,8 @@ void PlaneOfBlocks::PseudoEPZSearch(WorkingArea &workarea)
 {
   FetchPredictors(workarea);
 
-  int sad;
-  int saduv;
+  sad_t sad;
+  sad_t saduv;
 #ifdef ALLOW_DCT
   if (dctmode != 0) // DCT method (luma only - currently use normal spatial SAD chroma)
   {
@@ -747,7 +758,7 @@ void PlaneOfBlocks::PseudoEPZSearch(WorkingArea &workarea)
   sad = LumaSAD(workarea, GetRefBlock(workarea, 0, zeroMVfieldShifted.y));
   sad += saduv;
   workarea.bestMV.sad = sad;
-  workarea.nMinCost = sad + ((penaltyZero*sad) >> 8); // v.1.11.0.2
+  workarea.nMinCost = sad + ((penaltyZero*(bigsad_t)sad) >> 8); // v.1.11.0.2
 
   VECTOR bestMVMany[8];
   int nMinCostMany[8];
@@ -768,7 +779,7 @@ void PlaneOfBlocks::PseudoEPZSearch(WorkingArea &workarea)
       + SADCHROMA(workarea.pSrc[2], nSrcPitch[2], GetRefBlockV(workarea, workarea.globalMVPredictor.x, workarea.globalMVPredictor.y), nRefPitch[2]) : 0;
     sad = LumaSAD(workarea, GetRefBlock(workarea, workarea.globalMVPredictor.x, workarea.globalMVPredictor.y));
     sad += saduv;
-    int cost = sad + ((pglobal*sad) >> 8);
+    sad_t cost = sad + ((pglobal*(bigsad_t)sad) >> 8);
 
     if (cost < workarea.nMinCost || tryMany)
     {
@@ -940,7 +951,7 @@ void PlaneOfBlocks::PseudoEPZSearch(WorkingArea &workarea)
   vectors[workarea.blkIdx].y = workarea.bestMV.y;
   vectors[workarea.blkIdx].sad = workarea.bestMV.sad;
 
-  workarea.planeSAD += workarea.bestMV.sad;
+  workarea.planeSAD += workarea.bestMV.sad; // todo PF check int overflow
 }
 
 
@@ -1515,7 +1526,7 @@ sad_t	PlaneOfBlocks::LumaSADx(WorkingArea &workarea, const unsigned char *pRef0)
   case 3: // per block adaptive switched from spatial to equal mixed SAD (faster)
     refLuma = LUMA(pRef0, nRefPitch[0]);
     sad = SAD(workarea.pSrc[0], nSrcPitch[0], pRef0, nRefPitch[0]);
-    if (abs(workarea.srcLuma - refLuma) > (workarea.srcLuma + refLuma) >> 5)
+    if (abs((int)workarea.srcLuma - (int)refLuma) > ((int)workarea.srcLuma + (int)refLuma) >> 5)
     {
       workarea.DCT->DCTBytes2D(pRef0, nRefPitch[0], &workarea.dctRef[0], dctpitch);
       sad_t dctsad = SAD(&workarea.dctSrc[0], dctpitch, &workarea.dctRef[0], dctpitch)*nBlkSizeX / 2;
@@ -1525,7 +1536,7 @@ sad_t	PlaneOfBlocks::LumaSADx(WorkingArea &workarea, const unsigned char *pRef0)
   case 4: //  per block adaptive switched from spatial to mixed SAD with more weight of DCT (best?)
     refLuma = LUMA(pRef0, nRefPitch[0]);
     sad = SAD(workarea.pSrc[0], nSrcPitch[0], pRef0, nRefPitch[0]);
-    if (abs(workarea.srcLuma - refLuma) > (workarea.srcLuma + refLuma) >> 5)
+    if (abs((int)workarea.srcLuma - (int)refLuma) > ((int)workarea.srcLuma + (int)refLuma) >> 5)
     {
       workarea.DCT->DCTBytes2D(pRef0, nRefPitch[0], &workarea.dctRef[0], dctpitch);
       sad_t dctsad = SAD(&workarea.dctSrc[0], dctpitch, &workarea.dctRef[0], dctpitch)*nBlkSizeX / 2;
@@ -1547,7 +1558,7 @@ sad_t	PlaneOfBlocks::LumaSADx(WorkingArea &workarea, const unsigned char *pRef0)
   case 7: // per block adaptive switched from spatial to equal mixed SAD (faster?)
     refLuma = LUMA(pRef0, nRefPitch[0]);
     sad = SAD(workarea.pSrc[0], nSrcPitch[0], pRef0, nRefPitch[0]);
-    if (abs(workarea.srcLuma - refLuma) > (workarea.srcLuma + refLuma) >> 5)
+    if (abs((int)workarea.srcLuma - (int)refLuma) > (workarea.srcLuma + refLuma) >> 5)
     {
       sad_t dctsad = SATD(workarea.pSrc[0], nSrcPitch[0], pRef0, nRefPitch[0]);
       sad = sad / 2 + dctsad / 2;
@@ -1556,7 +1567,7 @@ sad_t	PlaneOfBlocks::LumaSADx(WorkingArea &workarea, const unsigned char *pRef0)
   case 8: //  per block adaptive switched from spatial to mixed SAD with more weight of DCT (faster?)
     refLuma = LUMA(pRef0, nRefPitch[0]);
     sad = SAD(workarea.pSrc[0], nSrcPitch[0], pRef0, nRefPitch[0]);
-    if (abs(workarea.srcLuma - refLuma) > (workarea.srcLuma + refLuma) >> 5)
+    if (abs((int)workarea.srcLuma - (int)refLuma) > (workarea.srcLuma + refLuma) >> 5)
     {
       sad_t dctsad = SATD(workarea.pSrc[0], nSrcPitch[0], pRef0, nRefPitch[0]);
       sad = sad / 4 + dctsad / 2 + dctsad / 4;
@@ -1574,7 +1585,7 @@ sad_t	PlaneOfBlocks::LumaSADx(WorkingArea &workarea, const unsigned char *pRef0)
   case 10: // per block adaptive switched from spatial to mixed SAD, weighted to SAD (faster)
     refLuma = LUMA(pRef0, nRefPitch[0]);
     sad = SAD(workarea.pSrc[0], nSrcPitch[0], pRef0, nRefPitch[0]);
-    if (abs(workarea.srcLuma - refLuma) > (workarea.srcLuma + refLuma) >> 4)
+    if (abs((int)workarea.srcLuma - (int)refLuma) > ((int)workarea.srcLuma + (int)refLuma) >> 4)
     {
       sad_t dctsad = SATD(workarea.pSrc[0], nSrcPitch[0], pRef0, nRefPitch[0]);
       sad = sad / 2 + dctsad / 4 + sad / 4;
@@ -1645,7 +1656,7 @@ void	PlaneOfBlocks::CheckMV(WorkingArea &workarea, int vx, int vy)
       + SADCHROMA(workarea.pSrc[2], nSrcPitch[2], GetRefBlockV(workarea, vx, vy), nRefPitch[2]);
     sad_t sad = LumaSAD(workarea, GetRefBlock(workarea, vx, vy));
     sad += saduv;
-    sad_t cost = sad + workarea.MotionDistorsion(vx, vy) + ((penaltyNew*sad) >> 8); //v2
+    sad_t cost = sad + workarea.MotionDistorsion(vx, vy) + ((penaltyNew*(bigsad_t)sad) >> 8); //v2
 //		int cost = sad + sad*workarea.MotionDistorsion(vx, vy)/(nBlkSizeX*nBlkSizeY*4);
 //		if (sad>bigSAD) { DebugPrintf("%d %d %d %d %d %d", workarea.blkIdx, vx, vy, workarea.nMinCost, cost, sad);}
     if (cost < workarea.nMinCost)
@@ -1675,7 +1686,7 @@ void	PlaneOfBlocks::CheckMV2(WorkingArea &workarea, int vx, int vy, int *dir, in
       + SADCHROMA(workarea.pSrc[2], nSrcPitch[2], GetRefBlockV(workarea, vx, vy), nRefPitch[2]);
     sad_t sad = LumaSAD(workarea, GetRefBlock(workarea, vx, vy));
     sad += saduv;
-    sad_t cost = sad + workarea.MotionDistorsion(vx, vy) + ((penaltyNew*sad) >> 8); // v1.5.8
+    sad_t cost = sad + workarea.MotionDistorsion(vx, vy) + ((penaltyNew*(int64_t)sad) >> 8); // v1.5.8
 //		if (sad > LSAD/4) DebugPrintf("%d %d %d %d %d %d %d", workarea.blkIdx, vx, vy, val, workarea.nMinCost, cost, sad);
 //		int cost = sad + sad*workarea.MotionDistorsion(vx, vy)/(nBlkSizeX*nBlkSizeY*4) + ((penaltyNew*sad)>>8); // v1.5.8
     if (cost < workarea.nMinCost)
@@ -1704,7 +1715,7 @@ void	PlaneOfBlocks::CheckMVdir(WorkingArea &workarea, int vx, int vy, int *dir, 
       + SADCHROMA(workarea.pSrc[2], nSrcPitch[2], GetRefBlockV(workarea, vx, vy), nRefPitch[2]) : 0;
     sad_t sad = LumaSAD(workarea, GetRefBlock(workarea, vx, vy));
     sad += saduv;
-    sad_t cost = sad + workarea.MotionDistorsion(vx, vy) + ((penaltyNew*sad) >> 8); // v1.5.8
+    sad_t cost = sad + workarea.MotionDistorsion(vx, vy) + ((penaltyNew*(int64_t)sad) >> 8); // v1.5.8
 //		if (sad > LSAD/4) DebugPrintf("%d %d %d %d %d %d %d", workarea.blkIdx, vx, vy, val, workarea.nMinCost, cost, sad);
 //		int cost = sad + sad*workarea.MotionDistorsion(vx, vy)/(nBlkSizeX*nBlkSizeY*4) + ((penaltyNew*sad)>>8); // v1.5.8
     if (cost < workarea.nMinCost)
@@ -1928,14 +1939,14 @@ void	PlaneOfBlocks::search_mv_slice(Slicer::TaskData &td)
       {
         outfilebuf[workarea.blkx * 4 + 0] = workarea.bestMV.x;
         outfilebuf[workarea.blkx * 4 + 1] = workarea.bestMV.y;
-        outfilebuf[workarea.blkx * 4 + 2] = (workarea.bestMV.sad & 0x0000ffff); // low word
-        outfilebuf[workarea.blkx * 4 + 3] = (workarea.bestMV.sad >> 16);     // high word, usually null
+        outfilebuf[workarea.blkx * 4 + 2] = (*(uint32_t *)(&workarea.bestMV.sad) & 0x0000ffff); // low word
+        outfilebuf[workarea.blkx * 4 + 3] = (*(uint32_t *)(&workarea.bestMV.sad) >> 16);     // high word, usually null
       }
 
       /* write the results */
       pBlkData[workarea.blkx*N_PER_BLOCK + 0] = workarea.bestMV.x;
       pBlkData[workarea.blkx*N_PER_BLOCK + 1] = workarea.bestMV.y;
-      pBlkData[workarea.blkx*N_PER_BLOCK + 2] = workarea.bestMV.sad;
+      pBlkData[workarea.blkx*N_PER_BLOCK + 2] = *(uint32_t *)(&workarea.bestMV.sad);
 
       PROFILE_STOP(MOTION_PROFILE_ME);
 
@@ -1965,7 +1976,7 @@ void	PlaneOfBlocks::search_mv_slice(Slicer::TaskData &td)
     workarea.y[2] += ((nBlkSizeY - nOverlapY) >> nLogyRatioUV);
   }	// for workarea.blky
 
-  planeSAD += workarea.planeSAD;
+  planeSAD += workarea.planeSAD; // PF todo check int overflow
   sumLumaChange += workarea.sumLumaChange;
 
   if (isse)
@@ -2143,15 +2154,15 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
         // interpolate
         int vector1_x = vectorOld1.x*nStepXold + deltaX*(vectorOld2.x - vectorOld1.x); // scaled by nStepXold to skip slow division
         int vector1_y = vectorOld1.y*nStepXold + deltaX*(vectorOld2.y - vectorOld1.y);
-        int vector1_sad = vectorOld1.sad*nStepXold + deltaX*(vectorOld2.sad - vectorOld1.sad);
+        bigsad_t vector1_sad = (bigsad_t)vectorOld1.sad*nStepXold + deltaX*((bigsad_t)vectorOld2.sad - vectorOld1.sad);
 
         int vector2_x = vectorOld3.x*nStepXold + deltaX*(vectorOld4.x - vectorOld3.x);
         int vector2_y = vectorOld3.y*nStepXold + deltaX*(vectorOld4.y - vectorOld3.y);
-        int vector2_sad = vectorOld3.sad*nStepXold + deltaX*(vectorOld4.sad - vectorOld3.sad);
+        bigsad_t vector2_sad = (bigsad_t)vectorOld3.sad*nStepXold + deltaX*((bigsad_t)vectorOld4.sad - vectorOld3.sad);
 
         vectorOld.x = (vector1_x + deltaY*(vector2_x - vector1_x) / nStepYold) / nStepXold;
         vectorOld.y = (vector1_y + deltaY*(vector2_y - vector1_y) / nStepYold) / nStepXold;
-        vectorOld.sad = (vector1_sad + deltaY*(vector2_sad - vector1_sad) / nStepYold) / nStepXold;
+        vectorOld.sad = (sad_t)((vector1_sad + deltaY*(vector2_sad - vector1_sad) / nStepYold) / nStepXold);
       }
 
       else // nearest
@@ -2179,7 +2190,7 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
       vectorOld.y = (vectorOld.y << nLogPel) >> nLogPelold;
 
       workarea.predictor = ClipMV(workarea, vectorOld); // predictor
-      workarea.predictor.sad = vectorOld.sad * (nBlkSizeX*nBlkSizeY) / (nBlkSizeXold*nBlkSizeYold); // normalized to new block size
+      workarea.predictor.sad = (sad_t)((bigsad_t)vectorOld.sad * (nBlkSizeX*nBlkSizeY) / (nBlkSizeXold*nBlkSizeYold)); // normalized to new block size
 
 //			workarea.bestMV = workarea.predictor; // by pointer?
       workarea.bestMV.x = workarea.predictor.x;
@@ -2202,9 +2213,9 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
       }
 #endif	// ALLOW_DCT
 
-      int saduv = (chroma) ? SADCHROMA(workarea.pSrc[1], nSrcPitch[1], GetRefBlockU(workarea, workarea.predictor.x, workarea.predictor.y), nRefPitch[1])
+      sad_t saduv = (chroma) ? SADCHROMA(workarea.pSrc[1], nSrcPitch[1], GetRefBlockU(workarea, workarea.predictor.x, workarea.predictor.y), nRefPitch[1])
         + SADCHROMA(workarea.pSrc[2], nSrcPitch[2], GetRefBlockV(workarea, workarea.predictor.x, workarea.predictor.y), nRefPitch[2]) : 0;
-      int sad = LumaSAD(workarea, GetRefBlock(workarea, workarea.predictor.x, workarea.predictor.y));
+      sad_t sad = LumaSAD(workarea, GetRefBlock(workarea, workarea.predictor.x, workarea.predictor.y));
       sad += saduv;
       workarea.bestMV.sad = sad;
       workarea.nMinCost = sad;
