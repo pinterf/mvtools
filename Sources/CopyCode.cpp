@@ -343,12 +343,6 @@ void Copy_C (uint8_t *pDst, int nDstPitch, const uint8_t *pSrc, int nSrcPitch)
     }
 }
 
-template<int nBlkSize, typename pixel_t>
-void Copy_C(uint8_t *pDst, int nDstPitch, const uint8_t *pSrc, int nSrcPitch)
-{
-    Copy_C<nBlkSize, nBlkSize, pixel_t>(pDst, nDstPitch, pSrc, nSrcPitch);
-}
-
 
 COPYFunction* get_copy_function(int BlockX, int BlockY, int pixelsize, arch_t arch)
 {
