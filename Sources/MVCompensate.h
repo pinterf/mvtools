@@ -98,8 +98,8 @@ private:
 	// Processing variables
 	MVClip *       _mv_clip_ptr;  // Vector clip used to process this frame
 	sad_t            _thsad;
-    const int xSubUV; // PF
-	const int		ySubUV;
+// const int xSubUV; // PF mvfilter has nLogxRatioUV
+//	const int		ySubUV;
 	int            fieldShift;
 	BYTE *         pDst [3];
 	int            nDstPitches [3];
