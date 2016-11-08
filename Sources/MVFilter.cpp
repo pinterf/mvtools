@@ -57,6 +57,7 @@ MVFilter::MVFilter(const PClip &vector, const char *filterName, IScriptEnvironme
    nLogyRatioUV = ilog2 (yRatioUV);
    pixelsize = mvClip.GetPixelSize(); // PF
    bits_per_pixel = mvClip.GetBitsPerPixel();
+   pixelsize_shift = ilog2(pixelsize);
 
    name = filterName;
 }

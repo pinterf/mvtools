@@ -68,13 +68,13 @@ public:
       nX >>= NPELL2;
       nY >>= NPELL2;
 
-      return pPlane[idx] + nX*pixelsize + nY * nPitch;
+      return pPlane[idx] + (nX << pixelsize_shift) + nY * nPitch;
    }
 
 	template <>
    inline const uint8_t *GetAbsolutePointerPel <0> (int nX, int nY) const
    {
-         return pPlane[0] + nX*pixelsize + nY * nPitch;
+         return pPlane[0] + (nX << pixelsize_shift) + nY * nPitch;
    }
 
    inline const uint8_t *GetAbsolutePointer(int nX, int nY) const
@@ -106,7 +106,7 @@ public:
 
    inline const uint8_t *GetAbsolutePelPointer(int nX, int nY) const
    {
-		return pPlane[0] + nX*pixelsize + nY * nPitch;
+		return pPlane[0] + (nX << pixelsize_shift) + nY * nPitch;
 	}
 
    inline int GetPitch() const { return nPitch; }
@@ -151,6 +151,7 @@ private:
 
    int pixelsize; // PF
    int bits_per_pixel;
+   int pixelsize_shift; // prevent multiplicaion of *pixelsize, use shift
 
    int nPel;
 	int nSharp;		// Set only from MSuper, used in Refine()

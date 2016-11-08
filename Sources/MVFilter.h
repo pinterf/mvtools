@@ -73,6 +73,7 @@ protected:
    int nLogyRatioUV;
    int pixelsize; // PF
    int bits_per_pixel;
+   int pixelsize_shift;
 
    /*! \brief Filter's name */
 //   std::string name;

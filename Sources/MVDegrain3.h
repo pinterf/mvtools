@@ -76,6 +76,7 @@ private:
   //int bits_per_pixel; // in MVFilter
   int pixelsize_super; // PF not param, from create
   int bits_per_pixel_super; // PF not param, from create
+  int pixelsize_super_shift;
 
   int nSuperModeYUV;
 
@@ -105,10 +106,8 @@ private:
   unsigned char *tmpBlock;
   unsigned char *tmpBlockLsb;	// Not allocated, it's just a reference to a part of the tmpBlock area (or 0 if no LSB)
   unsigned short * DstShort;
-  __m256i *DstShortAlign32; // PF AVX2 friendly
   int dstShortPitch;
   int * DstInt;
-  __m256i *DstIntAlign32; // PF AVX2 friendly
   int dstIntPitch;
 
   const int level;
