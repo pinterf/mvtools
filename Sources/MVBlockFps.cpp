@@ -46,8 +46,10 @@ MVBlockFps::MVBlockFps(
   , mvClipF(mvfw, nSCD1, nSCD2, env, 1, 0)
   , super(_super)
 {
-  if (!vi.IsYV12() && !vi.IsYUY2())
-    env->ThrowError("MBlockFps: Clip must be YV12 or YUY2");
+  if (!vi.IsYUV() && !vi.IsYUVA())
+    env->ThrowError("MBlockFps: Clip must be YUV or YUY2");
+  if(vi.BitsPerComponent>8)
+    env->ThrowError("MBlockFps: only 8 bit clips are allowed");
 
   numeratorOld = vi.fps_numerator;
   denominatorOld = vi.fps_denominator;
@@ -87,7 +89,7 @@ MVBlockFps::MVBlockFps(
   planar = _planar;
   blend = _blend;
 
-  if (mvClipB.GetDeltaFrame() <= 0 || mvClipB.GetDeltaFrame() <= 0)
+  if (mvClipB.GetDeltaFrame() <= 0 || mvClipF.GetDeltaFrame() <= 0)
     env->ThrowError("MBlockFPS: cannot use motion vectors with absolute frame references.");
 
   // get parameters of prepared super clip - v2.0
@@ -179,7 +181,8 @@ MVBlockFps::MVBlockFps(
     DstPlanes = new YUY2Planes(nWidth, nHeight);
   }
   dstShortPitch = ((nWidth + 15) / 16) * 16; // 2.5.11.22
-  dstShortPitchUV = (((nWidth >> xRatioUV) + 15) / 16) * 16;
+  //dstShortPitchUV = (((nWidth >> xRatioUV) + 15) / 16) * 16;
+  dstShortPitchUV = (((nWidth / xRatioUV) + 15) / 16) * 16; // PF fix (when it has gone wrong? nWidth / instead of >>
   if (nOverlapX > 0 || nOverlapY > 0)
   {
     OverWins = new OverlapWindows(nBlkSizeX, nBlkSizeY, nOverlapX, nOverlapY);
@@ -478,7 +481,7 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
 		return dst;
 	}
 
-	PVideoFrame mvF = mvClipF.GetFrame(nright, env);
+  PVideoFrame mvF = mvClipF.GetFrame(nright, env);
 	mvClipF.Update(mvF, env);// forward from current to next
 	mvF = 0;
 
@@ -855,7 +858,21 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
         pMaskOccY += nPitchY*(nBlkSizeY - nOverlapY);
         pMaskOccUV += nPitchUV*(nBlkSizeY - nOverlapY) / yRatioUV;
       }
-
+      // post 2.7.1.22: wow, the copy from internal 16 bit array to destination was missing for overlaps!
+      Short2Bytes(pDstSave[0], nDstPitches[0], DstShort, dstShortPitch, nWidth_B, nHeight_B);
+      Short2Bytes(pDstSave[1], nDstPitches[1], DstShortU, dstShortPitchUV, nWidth_B/xRatioUV, nHeight_B/yRatioUV);
+      Short2Bytes(pDstSave[2], nDstPitches[2], DstShortV, dstShortPitchUV, nWidth_B/xRatioUV, nHeight_B/yRatioUV);
+      /* todo later for 16 bit. same as in MDegrainX
+      if (pixelsize_super == 1)
+      {
+        Short2Bytes(pDst[0], nDstPitches[0], DstShort, dstShortPitch, nWidth_B, nHeight_B);
+      }
+      else if (pixelsize_super == 2)
+      {
+        Short2Bytes_Int32toWord16((uint16_t *)(pDst[0]), nDstPitches[0], DstInt, dstIntPitch, nWidth_B, nHeight_B, bits_per_pixel_super);
+        //Short2Bytes_Int32toWord16_sse4((uint16_t *)(pDst[0]), nDstPitches[0], DstInt, dstIntPitch, nWidth_B, nHeight_B, bits_per_pixel_super);
+      }
+      */
     }
     PROFILE_STOP(MOTION_PROFILE_COMPENSATION);
 
