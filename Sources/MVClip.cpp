@@ -66,13 +66,9 @@ MVClip::MVClip(const PClip &vectors, sad_t _nSCD1, int _nSCD2, IScriptEnvironmen
     if (pAnalyseFilter->IsChromaMotion())
         nSCD1 += nSCD1 / (xRatioUV * yRatioUV) * 2; // *2: two additional planes: UV
 
-    nSCD2 = _nSCD2 * nBlkCount / (8 * 8);
-   /* PF 16.10.02:  nSCD2 is count, normalized to a 8x8 block
-   if (pixelsize == 2)
-       nSCD2 = int(nSCD2 / 255.0 * ((1 << bits_per_pixel) - 1)); 
-       // todo: check if do we need it here?
-       // i think not: it's count
-   */
+   // Threshold which sets how many blocks have to change for the frame to be considered as a scene change. 
+   // It is ranged from 0 to 255, 0 meaning 0 %, 255 meaning 100 %. Default is 130 (which means 51 %).
+   nSCD2 = _nSCD2 * nBlkCount / 256; 
    // FakeGroupOfPlane creation
    FakeGroupOfPlanes::Create(nBlkSizeX, nBlkSizeY, nLvCount, nPel, nOverlapX, nOverlapY, xRatioUV, yRatioUV, nBlkX, nBlkY);
 }
