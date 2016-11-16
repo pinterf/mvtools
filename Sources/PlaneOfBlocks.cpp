@@ -316,7 +316,7 @@ void PlaneOfBlocks::SearchMVs(
 
   if (smallestPlane)
   {
-    *pmeanLumaChange = sumLumaChange / nBlkCount; // for all finer planes
+    *pmeanLumaChange = (sad_t)(sumLumaChange / nBlkCount); // for all finer planes
   }
 
 }
@@ -527,7 +527,8 @@ int PlaneOfBlocks::WriteDefaultToArray(int *array, int divideMode)
   {
     array[i + 1] = 0;
     array[i + 2] = 0;
-    *(sad_t *)(&array[i + 3]) = verybigSAD; // float or int!!
+    array[i + 3] = verybigSAD; // float or int!!
+    //*(sad_t *)(&array[i + 3]) = verybigSAD; // float or int!!
   }
 
   if (nLogScale == 0)
@@ -541,7 +542,8 @@ int PlaneOfBlocks::WriteDefaultToArray(int *array, int divideMode)
       {
         array[i + 1] = 0;
         array[i + 2] = 0;
-        *(sad_t *)(&array[i + 3]) = verybigSAD; // float or int
+        array[i + 3] = verybigSAD; // float or int!!
+        //*(sad_t *)(&array[i + 3]) = verybigSAD; // float or int
       }
       array += array[0];
     }
@@ -1857,8 +1859,8 @@ void	PlaneOfBlocks::search_mv_slice(Slicer::TaskData &td)
       workarea.x[0] = pSrcFrame->GetPlane(YPLANE)->GetHPadding() + (nBlkSizeX - nOverlapX)*(nBlkX - 1);
       if (chroma)
       {
-        workarea.x[1] = pSrcFrame->GetPlane(UPLANE)->GetHPadding() + ((nBlkSizeX - nOverlapX) / xRatioUV)*(nBlkX - 1);  // PF after 2.7.0.22c
-        workarea.x[2] = pSrcFrame->GetPlane(VPLANE)->GetHPadding() + ((nBlkSizeX - nOverlapX) / xRatioUV)*(nBlkX - 1);
+        workarea.x[1] = pSrcFrame->GetPlane(UPLANE)->GetHPadding() + ((nBlkSizeX - nOverlapX) >> nLogxRatioUV)*(nBlkX - 1);  // PF after 2.7.0.22c
+        workarea.x[2] = pSrcFrame->GetPlane(VPLANE)->GetHPadding() + ((nBlkSizeX - nOverlapX) >> nLogxRatioUV)*(nBlkX - 1);
       }
     }
 
@@ -1960,8 +1962,8 @@ void	PlaneOfBlocks::search_mv_slice(Slicer::TaskData &td)
       if (iblkx < nBlkX - 1)
       {
         workarea.x[0] += (nBlkSizeX - nOverlapX)*workarea.blkScanDir;
-        workarea.x[1] += ((nBlkSizeX - nOverlapX)*workarea.blkScanDir / xRatioUV); // PF after 2.7.0.22c);
-        workarea.x[2] += ((nBlkSizeX - nOverlapX)*workarea.blkScanDir / xRatioUV);
+        workarea.x[1] += (((nBlkSizeX - nOverlapX)*workarea.blkScanDir) >> nLogxRatioUV); // PF after 2.7.0.22c);
+        workarea.x[2] += (((nBlkSizeX - nOverlapX)*workarea.blkScanDir) >> nLogxRatioUV);
       }
     }	// for iblkx
 
@@ -2072,8 +2074,8 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
       workarea.x[0] = pSrcFrame->GetPlane(YPLANE)->GetHPadding() + (nBlkSizeX - nOverlapX)*(nBlkX - 1);
       if (chroma)
       {
-        workarea.x[1] = pSrcFrame->GetPlane(UPLANE)->GetHPadding() + ((nBlkSizeX - nOverlapX) / xRatioUV)*(nBlkX - 1);
-        workarea.x[2] = pSrcFrame->GetPlane(VPLANE)->GetHPadding() + ((nBlkSizeX - nOverlapX) / xRatioUV)*(nBlkX - 1);
+        workarea.x[1] = pSrcFrame->GetPlane(UPLANE)->GetHPadding() + ((nBlkSizeX - nOverlapX) >> nLogxRatioUV)*(nBlkX - 1);
+        workarea.x[2] = pSrcFrame->GetPlane(VPLANE)->GetHPadding() + ((nBlkSizeX - nOverlapX) >> nLogxRatioUV)*(nBlkX - 1);
       }
     }
 
@@ -2322,8 +2324,8 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
       if (iblkx < nBlkX - 1)
       {
         workarea.x[0] += (nBlkSizeX - nOverlapX)*workarea.blkScanDir;
-        workarea.x[1] += ((nBlkSizeX - nOverlapX)*workarea.blkScanDir / xRatioUV);// PF after 2.7.0.22c);
-        workarea.x[2] += ((nBlkSizeX - nOverlapX)*workarea.blkScanDir / xRatioUV);
+        workarea.x[1] += (((nBlkSizeX - nOverlapX)*workarea.blkScanDir) >> nLogxRatioUV);// PF after 2.7.0.22c);
+        workarea.x[2] += (((nBlkSizeX - nOverlapX)*workarea.blkScanDir) >> nLogxRatioUV);
       }
     }	// for workarea.blkx
 
