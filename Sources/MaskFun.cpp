@@ -261,7 +261,7 @@ void VectorMasksToOcclusionMask(uint8_t *VXMask, uint8_t *VYMask, int nBlkX, int
 	}
 }
 
-// PF todo pixelsize?
+// creates 8 bit sad mask value from (8-16bit) block sad, scaling through dSADNormFactor
 unsigned char ByteNorm(sad_t sad, double dSADNormFactor, double fGamma)
 {
   //	    double dSADNormFactor = 4 / (dMaskNormFactor*blkSizeX*blkSizeY);
@@ -294,8 +294,8 @@ void MakeSADMaskTime(MVClip &mvClip, int nBlkX, int nBlkY, double dSADNormFactor
         byi = by;
       }
       int i1 = bxi + byi*nBlkX;
-      int sad = mvClip.GetBlock(0, i1).GetSAD();
-      Mask[bx + by*nBlkX] = ByteNorm(sad, dSADNormFactor, fGamma);
+      sad_t sad = mvClip.GetBlock(0, i1).GetSAD();
+      Mask[bx + by*nBlkX] = ByteNorm(sad, dSADNormFactor, fGamma); // bits_per_pixel scale through dSADNormFactor
     }
   }
 }
@@ -636,14 +636,23 @@ void Create_LUTV(int time256, short *LUTVB, short *LUTVF)
 {
 	for (int v=0; v<256; v++)
 	{
-		LUTVB[v] = ((v-128)*(256-time256))/256;
-		LUTVF[v] = ((v-128)*time256)/256;
+		LUTVB[v] = (short)(((v-128)*(256-time256))/256);
+		LUTVF[v] = (short)(((v-128)*time256)/256);
 	}
 }
 
 /* was: in maskfun.hpp (template)*/
-void Blend(uint8_t * pdst, const uint8_t * psrc, const uint8_t * pref, int height, int width, int dst_pitch, int src_pitch, int ref_pitch, int time256, bool isse)
+
+// pitches: byte offsets
+template<typename pixel_t>
+void Blend(uint8_t * pdst8, const uint8_t * psrc8, const uint8_t * pref8, int height, int width, int dst_pitch, int src_pitch, int ref_pitch, int time256, bool isse)
 {
+  pixel_t *pdst = reinterpret_cast<pixel_t *>(pdst8);
+  const pixel_t *psrc = reinterpret_cast<const pixel_t *>(psrc8);
+  const pixel_t *pref = reinterpret_cast<const pixel_t *>(pref8);
+  dst_pitch /= sizeof(pixel_t);
+  src_pitch /= sizeof(pixel_t);
+  ref_pitch /= sizeof(pixel_t);
   // add isse
   int h, w;
   for (h = 0; h<height; h++)
@@ -651,7 +660,7 @@ void Blend(uint8_t * pdst, const uint8_t * psrc, const uint8_t * pref, int heigh
     for (w = 0; w<width; w++)
     {
       //const int		time256 = t256_provider.get_t (w);
-      pdst[w] = (psrc[w] * (256 - time256) + pref[w] * time256) >> 8;
+      pdst[w] =(pixel_t)( (psrc[w] * (256 - time256) + pref[w] * time256) >> 8);
     }
     pdst += dst_pitch;
     psrc += src_pitch;
@@ -659,6 +668,11 @@ void Blend(uint8_t * pdst, const uint8_t * psrc, const uint8_t * pref, int heigh
     //t256_provider.jump_to_next_row ();
   }
 }
+
+// instantiate Blend
+template void Blend<uint8_t>(uint8_t * pdst8, const uint8_t * psrc8, const uint8_t * pref8, int height, int width, int dst_pitch, int src_pitch, int ref_pitch, int time256, bool isse);
+template void Blend<uint16_t>(uint8_t * pdst8, const uint8_t * psrc8, const uint8_t * pref8, int height, int width, int dst_pitch, int src_pitch, int ref_pitch, int time256, bool isse);
+
 
 /*template <class T256P>
 void FlowInter(

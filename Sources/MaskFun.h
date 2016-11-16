@@ -66,7 +66,9 @@ unsigned char SADToMask(sad_t sad, sad_t sadnorm1024);
 // 2.6.0.5 template <class T256P>
 // void Blend(uint8_t * pdst, const uint8_t * psrc, const uint8_t * pref, int height, int width, int dst_pitch, int src_pitch, int ref_pitch, T256P &t256_provider, bool isse);
 // back to 2.5.11.22
-void Blend(uint8_t * pdst, const uint8_t * psrc, const uint8_t * pref, int height, int width, int dst_pitch, int src_pitch, int ref_pitch, int time256, bool isse);
+// 8+ bit support pixel_t template PF 16115
+template<typename pixel_t>
+void Blend(uint8_t * pdst8, const uint8_t * psrc8, const uint8_t * pref8, int height, int width, int dst_pitch, int src_pitch, int ref_pitch, int time256, bool isse);
 // in *.hpp
 
 // lookup table size 256
