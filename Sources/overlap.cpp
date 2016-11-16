@@ -423,6 +423,9 @@ template void LimitChanges_sse2_new<uint16_t>(unsigned char *pDst, int nDstPitch
 template <typename pixel_t, int blockWidth, int blockHeight>
 // pDst is short* for 8 bit, int * for 16 bit
 // works for blockWidth >= 4 && uint16_t
+// only src_pitch is byte-level
+// dstPitch knows int* or short* 
+// winPitch knows short *
 void Overlaps_sse4(unsigned short *pDst0, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch)
 {
   // pWin from 0 to 2048
