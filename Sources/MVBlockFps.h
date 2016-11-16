@@ -67,6 +67,8 @@ private:
 
   OverlapsFunction *OVERSLUMA;
   OverlapsFunction *OVERSCHROMA;
+  OverlapsFunction *OVERSLUMA16; // 161115
+  OverlapsFunction *OVERSCHROMA16; // 161115
   unsigned short * DstShort;
   unsigned short * DstShortU;
   unsigned short * DstShortV;
@@ -79,9 +81,10 @@ private:
 //	void MakeSmallMask(BYTE *image, int imagePitch, BYTE *smallmask, int nBlkX, int nBlkY, int nBlkSizeX, int nBlkSizeY, int threshold);
 //	void InflateMask(BYTE *smallmask, int nBlkX, int nBlkY);
 	void MultMasks(BYTE *smallmaskF, BYTE *smallmaskB, BYTE *smallmaskO,  int nBlkX, int nBlkY);
-	void ResultBlock(BYTE *pDst, int dst_pitch, const BYTE * pMCB, int MCB_pitch, const BYTE * pMCF, int MCF_pitch,
-		const BYTE * pRef, int ref_pitch, const BYTE * pSrc, int src_pitch, BYTE *maskB, int mask_pitch, BYTE *maskF,
-		BYTE *pOcc, int nBlkSizeX, int nBlkSizeY, int time256, int mode);
+  template<typename pixel_t>
+  void ResultBlock(BYTE *pDst8, int dst_pitch, const BYTE * pMCB8, int MCB_pitch, const BYTE * pMCF8, int MCF_pitch,
+    const BYTE * pRef8, int ref_pitch, const BYTE * pSrc8, int src_pitch, BYTE *maskB, int mask_pitch, BYTE *maskF,
+    BYTE *pOcc, int nBlkSizeX, int nBlkSizeY, int time256, int mode, int bits_per_pixel);
 
 	SimpleResize *upsizer;
    SimpleResize *upsizerUV;
@@ -97,6 +100,11 @@ public:
 	);
 	~MVBlockFps();
 	PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
+
+  int __stdcall SetCacheHints(int cachehints, int frame_range) override {
+    return cachehints == CACHE_GET_MTMODE ? MT_MULTI_INSTANCE : 0;
+  }
+
 };
 
 #endif
