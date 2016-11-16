@@ -37,6 +37,7 @@ boundaries.
 #include	"MVPlane.h"
 #include "Padding.h"
 #include <stdint.h>
+#include <commonfunctions.h>
 
 
 MVPlane::MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, int _pixelsize, int _bits_per_pixel, bool _isse, bool mt_flag)
@@ -54,6 +55,7 @@ MVPlane::MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, i
 ,	nPel (_nPel)
 ,	nSharp (2)
 ,	pixelsize(_pixelsize)
+, pixelsize_shift((_pixelsize == 1) ? 0 : (_pixelsize == 2 ? 1 : 2)) // pixelsize 1/2/4: shift 0/1/2
 ,	bits_per_pixel(_bits_per_pixel)
 ,	isse (_isse)
 ,	_mt_flag (mt_flag)
@@ -186,11 +188,12 @@ void MVPlane::Update(uint8_t* pSrc, int _nPitch) //v2.0
 {
     // npitch is pixelsize aware
     nPitch = _nPitch;
-	nOffsetPadding = nPitch * nVPadding + nHPadding*pixelsize;
+
+	nOffsetPadding = nPitch * nVPadding + (nHPadding << pixelsize_shift);
 
 	for ( int i = 0; i < nPel * nPel; i++ )
 	{
-		pPlane[i] = pSrc + i*nPitch * nExtendedHeight;
+		pPlane[i] = pSrc + i * nPitch * nExtendedHeight;
     }
 
 	ResetState();
@@ -203,7 +206,7 @@ void MVPlane::ChangePlane(const uint8_t *pNewPlane, int nNewPitch)
    if (! isFilled)
 	{
        // noffsetPadding is pixelsize aware
-		BitBlt(pPlane[0] + nOffsetPadding, nPitch, pNewPlane, nNewPitch, nWidth*pixelsize, nHeight, isse);
+		BitBlt(pPlane[0] + nOffsetPadding, nPitch, pNewPlane, nNewPitch, (nWidth << pixelsize_shift), nHeight, isse);
 		isFilled = true;
 	}
 }
@@ -297,7 +300,6 @@ void MVPlane::RefineExt(const uint8_t *pSrc2x_8, int nSrc2xPitch, bool isExtPadd
 	}
 	else if (( nPel == 4 ) && ( !isRefined ))
 	{
-        // PF todo: pixelsize!
         // pel clip may be already padded (i.e. is finest clip)
 		int offset = isExtPadded ? 0 : nPitch*nVPadding/sizeof(pixel_t) + nHPadding;
         pixel_t* pp1  = reinterpret_cast<pixel_t *>(pPlane[ 1]) + offset;
@@ -315,7 +317,6 @@ void MVPlane::RefineExt(const uint8_t *pSrc2x_8, int nSrc2xPitch, bool isExtPadd
         pixel_t* pp13 = reinterpret_cast<pixel_t *>(pPlane[13]) + offset;
         pixel_t* pp14 = reinterpret_cast<pixel_t *>(pPlane[14]) + offset;
         pixel_t* pp15 = reinterpret_cast<pixel_t *>(pPlane[15]) + offset;
-        // PF todo: pixelsize!   pp1  += nPitch;
 
 		for (int h=0; h<nHeight; h++) // assembler optimization?
 		{
@@ -410,7 +411,7 @@ void MVPlane::WritePlane(FILE *pFile)
     // noffsetPadding is pixelsize aware
     for ( int i = 0; i < nHeight; i++ )
 	{
-      fwrite(pPlane[0] + i * nPitch + nOffsetPadding, 1, nWidth*pixelsize, pFile);
+      fwrite(pPlane[0] + i * nPitch + nOffsetPadding, 1, (nWidth << pixelsize_shift), pFile);
 	}
 }
 
