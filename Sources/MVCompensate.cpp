@@ -148,6 +148,9 @@ MVCompensate::MVCompensate(
     OVERSCHROMA = get_overlaps_function(nBlkSizeX >> nLogxRatioUV, nBlkSizeY >> nLogyRatioUV, pixelsize, arch);
     BLITLUMA = get_copy_function(nBlkSizeX, nBlkSizeY, pixelsize, arch);
     BLITCHROMA = get_copy_function(nBlkSizeX >> nLogxRatioUV, nBlkSizeY >> nLogyRatioUV, pixelsize, arch);
+    // 161115
+    OVERSLUMA16 = get_overlaps_function(nBlkSizeX, nBlkSizeY, sizeof(uint16_t), arch);
+    OVERSCHROMA16 = get_overlaps_function(nBlkSizeX >> nLogxRatioUV, nBlkSizeY >> nLogyRatioUV, sizeof(uint16_t), arch);
 
 
 	// get parameters of prepared super clip - v2.0
@@ -359,9 +362,9 @@ PVideoFrame __stdcall MVCompensate::GetFrame(int n, IScriptEnvironment* env_ptr)
 		if (recursion>0)
 		{
 			// const Time256ProviderCst	t256_prov_cst (256-recursion, 0, 0);
-			Blend(pLoop[0], pLoop[0], pRef[0], nSuperHeight, nSuperWidth, nLoopPitches[0], nLoopPitches[0], nRefPitches[0], time256 /*t256_prov_cst*/, isse_flag);
-			Blend(pLoop[1], pLoop[1], pRef[1], nSuperHeight >> nLogyRatioUV, nSuperWidth >> nLogxRatioUV, nLoopPitches[1], nLoopPitches[1], nRefPitches[1], time256 /*t256_prov_cst*/, isse_flag);
-			Blend(pLoop[2], pLoop[2], pRef[2], nSuperHeight >> nLogyRatioUV, nSuperWidth >> nLogxRatioUV, nLoopPitches[2], nLoopPitches[2], nRefPitches[2], time256 /*t256_prov_cst*/, isse_flag);
+			Blend<uint8_t>(pLoop[0], pLoop[0], pRef[0], nSuperHeight, nSuperWidth, nLoopPitches[0], nLoopPitches[0], nRefPitches[0], time256 /*t256_prov_cst*/, isse_flag);
+			Blend<uint8_t>(pLoop[1], pLoop[1], pRef[1], nSuperHeight >> nLogyRatioUV, nSuperWidth >> nLogxRatioUV, nLoopPitches[1], nLoopPitches[1], nRefPitches[1], time256 /*t256_prov_cst*/, isse_flag);
+			Blend<uint8_t>(pLoop[2], pLoop[2], pRef[2], nSuperHeight >> nLogyRatioUV, nSuperWidth >> nLogxRatioUV, nLoopPitches[2], nLoopPitches[2], nRefPitches[2], time256 /*t256_prov_cst*/, isse_flag);
 			pRefGOF->Update(YUVPLANES, (BYTE*)pLoop[0], nLoopPitches[0], (BYTE*)pLoop[1], nLoopPitches[1], (BYTE*)pLoop[2], nLoopPitches[2]);
 		}
 		else
@@ -769,6 +772,7 @@ void	MVCompensate::compensate_slice_overlap (int y_beg, int y_end)
       const int      blx = block.GetX() * nPel + block.GetMV().x * time256 / 256; // 2.5.11.22
       const int      bly = block.GetY() * nPel + block.GetMV().y * time256 / 256 + fieldShift; // 2.5.11.22
 
+      // todo: oversluma16, overschroma16
 			if (block.GetSAD() < _thsad)
 			{
 				// luma

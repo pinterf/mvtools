@@ -72,7 +72,9 @@ private:
 
 	OverlapsFunction *OVERSLUMA;
 	OverlapsFunction *OVERSCHROMA;
-	unsigned short * DstShort;
+  OverlapsFunction *OVERSLUMA16;
+  OverlapsFunction *OVERSCHROMA16;
+  unsigned short * DstShort;
 	unsigned short * DstShortU;
 	unsigned short * DstShortV;
 	int dstShortPitch;
