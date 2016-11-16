@@ -5,6 +5,25 @@
 #include <map>
 #include <tuple>
 #include <stdint.h>
+
+inline unsigned int SADABS(int x) {	return ( x < 0 ) ? -x : x; }
+//inline unsigned int SADABS(int x) {	return ( x < -16 ) ? 16 : ( x < 0 ) ? -x : ( x > 16) ? 16 : x; }
+
+template<int nBlkWidth, int nBlkHeight, typename pixel_t>
+static unsigned int Sad_C(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef,
+  int nRefPitch)
+{
+  unsigned int sum = 0; // int is probably enough for 32x32
+  for ( int y = 0; y < nBlkHeight; y++ )
+  {
+    for ( int x = 0; x < nBlkWidth; x++ )
+      sum += SADABS(reinterpret_cast<const pixel_t *>(pSrc)[x] - reinterpret_cast<const pixel_t *>(pRef)[x]);
+    pSrc += nSrcPitch;
+    pRef += nRefPitch;
+  }
+  return sum;
+}
+
 /*
 A change in interface can be covered like this at least until release
 
@@ -287,7 +306,7 @@ SADFunction* get_sad_function(int BlockX, int BlockY, int pixelsize, arch_t arch
     func_sad[make_tuple(4 , 2 , 1, USE_SSE2)] = Sad4x2_iSSE;
     func_sad[make_tuple(2 , 4 , 1, USE_SSE2)] = Sad2x4_iSSE;
     func_sad[make_tuple(2 , 2 , 1, USE_SSE2)] = Sad2x2_iSSE;
-
+#undef SAD_8BIT_INSTINSICS
     //---------------- AVX2
     // PF SAD 16 SIMD intrinsic functions
     // only for >=16 bytes widths (2x16 byte still OK)
