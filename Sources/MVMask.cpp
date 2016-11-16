@@ -201,8 +201,8 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
 		else if (kind==1) // SAD mask
 		{
 			//for ( int j = 0; j < nBlkCount; j++)
-			//	smallMask[j] = SAD(mvClip.GetBlock(0, j).GetSAD());
-      MakeSADMaskTime(mvClip, nBlkX, nBlkY, 4.0*fMaskNormFactor / (nBlkSizeX*nBlkSizeY), fGamma, nPel, smallMask, nBlkX, time256, nBlkSizeX - nOverlapX, nBlkSizeY - nOverlapY);
+			//	smallMask[j] = SAD(mvClip.GetBlock(0, j).GetSAD()); // PF 161115 bits_per_pixel scale through dSADNormFactor
+      MakeSADMaskTime(mvClip, nBlkX, nBlkY, 4.0*fMaskNormFactor / (nBlkSizeX*nBlkSizeY) / (1<<(bits_per_pixel-8)), fGamma, nPel, smallMask, nBlkX, time256, nBlkSizeX - nOverlapX, nBlkSizeY - nOverlapY);
     }
 		else if (kind==2) // occlusion mask
 		{
@@ -233,7 +233,7 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
 		}
 
       if (kind == 5) { // do not change luma for kind=5
-			env->BitBlt(pDst[0],nDstPitches[0],pSrc[0],nSrcPitches[0], nWidth, nHeight);
+			env->BitBlt(pDst[0],nDstPitches[0],pSrc[0],nSrcPitches[0], nWidth*pixelsize, nHeight);
       }
       else {
 		upsizer->SimpleResizeDo(pDst[0], nWidthB, nHeightB, nDstPitches[0], smallMask, nBlkX, nBlkX, dummyplane);
