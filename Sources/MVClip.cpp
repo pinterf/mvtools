@@ -62,7 +62,7 @@ MVClip::MVClip(const PClip &vectors, sad_t _nSCD1, int _nSCD2, IScriptEnvironmen
     nSCD1 = _nSCD1;
     if (pixelsize == 2)
         nSCD1 = sad_t(nSCD1 / 255.0 * ((1 << bits_per_pixel) - 1));
-    nSCD1 = _nSCD1 * (nBlkSizeX * nBlkSizeY) / (8 * 8);
+    nSCD1 = nSCD1 * (nBlkSizeX * nBlkSizeY) / (8 * 8); // this is normalized to 8x8 block sizes
     if (pAnalyseFilter->IsChromaMotion())
         nSCD1 += nSCD1 / (xRatioUV * yRatioUV) * 2; // *2: two additional planes: UV
 
