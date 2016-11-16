@@ -36,24 +36,9 @@
 
 SADFunction* get_sad_avx_C_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
 
-//inline unsigned int SADABS(int x) {	return ( x < -16 ) ? 16 : ( x < 0 ) ? -x : ( x > 16) ? 16 : x; }
-
-// simple AVX still does not support 256 bit integer SIMD versions of SSE2 functions
-// Still the compiler can generate more optimized code
 template<int nBlkWidth, int nBlkHeight, typename pixel_t>
-unsigned int Sad_AVX_C(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef,
-					     int nRefPitch)
-{
-	unsigned int sum = 0; // int is probably enough for 32x32
-	for ( int y = 0; y < nBlkHeight; y++ )
-	{
-		for ( int x = 0; x < nBlkWidth; x++ )
-			sum += SADABS(reinterpret_cast<const pixel_t *>(pSrc)[x] - reinterpret_cast<const pixel_t *>(pRef)[x]);
-      pSrc += nSrcPitch;
-      pRef += nRefPitch;
-	}
-	return sum;
-}
+unsigned int Sad_AVX_C(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef,
+  int nRefPitch);
 
 template<int nBlkWidth, int nBlkHeight, typename pixel_t>
 unsigned int Sad16_sse2_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);

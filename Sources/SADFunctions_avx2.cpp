@@ -5,6 +5,23 @@
 #include <immintrin.h>
 #include <stdint.h>
 
+inline unsigned int SADABS(int x) {	return ( x < 0 ) ? -x : x; }
+
+template<int nBlkWidth, int nBlkHeight, typename pixel_t>
+static unsigned int Sad_AVX2_C(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, int nRefPitch)
+{
+  unsigned int sum = 0; // int is probably enough for 32x32
+  for ( int y = 0; y < nBlkHeight; y++ )
+  {
+    for ( int x = 0; x < nBlkWidth; x++ )
+      sum += SADABS(reinterpret_cast<const pixel_t *>(pSrc)[x] - reinterpret_cast<const pixel_t *>(pRef)[x]);
+    pSrc += nSrcPitch;
+    pRef += nRefPitch;
+  }
+  return sum;
+}
+
+
 SADFunction* get_sad_avx2_C_function(int BlockX, int BlockY, int pixelsize, arch_t arch)
 {
     // BlkSizeX, BlkSizeY, pixelsize, arch_t
@@ -60,20 +77,6 @@ SADFunction* get_sad_avx2_C_function(int BlockX, int BlockY, int pixelsize, arch
 }
 
 
-template<int nBlkWidth, int nBlkHeight, typename pixel_t>
-unsigned int Sad_AVX2_C(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, int nRefPitch)
-{
-  unsigned int sum = 0; // int is probably enough for 32x32
-  for ( int y = 0; y < nBlkHeight; y++ )
-  {
-    for ( int x = 0; x < nBlkWidth; x++ )
-      sum += SADABS(reinterpret_cast<const pixel_t *>(pSrc)[x] - reinterpret_cast<const pixel_t *>(pRef)[x]);
-    pSrc += nSrcPitch;
-    pRef += nRefPitch;
-  }
-  return sum;
-}
-
 /*
 // add 4 floats horizontally.
 // sse3 (not ssse3)
@@ -98,6 +101,7 @@ const __m128 sum = _mm_add_ss(t, _mm_shuffle_ps(t, t, 1));
 template<int nBlkWidth, int nBlkHeight, typename pixel_t>
 unsigned int Sad16_avx2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, int nRefPitch)
 {
+  _mm256_zeroupper(); 
   //__assume_aligned(piMblk, 16);
   //__assume_aligned(piRef, 16);
   if ((sizeof(pixel_t) == 2 && nBlkWidth < 8) || (sizeof(pixel_t) == 1 && nBlkWidth <= 16)) {

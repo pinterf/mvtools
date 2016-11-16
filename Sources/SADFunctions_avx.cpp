@@ -5,6 +5,28 @@
 
 #include <emmintrin.h>
 
+inline unsigned int SADABS(int x) {	return ( x < 0 ) ? -x : x; }
+
+// simple AVX still does not support 256 bit integer SIMD versions of SSE2 functions
+// Still the compiler can generate more optimized code
+template<int nBlkWidth, int nBlkHeight, typename pixel_t>
+static unsigned int Sad_AVX_C(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef,
+  int nRefPitch)
+{
+  _mm256_zeroupper();
+  unsigned int sum = 0; // int is probably enough for 32x32
+  for ( int y = 0; y < nBlkHeight; y++ )
+  {
+    for ( int x = 0; x < nBlkWidth; x++ )
+      sum += SADABS(reinterpret_cast<const pixel_t *>(pSrc)[x] - reinterpret_cast<const pixel_t *>(pRef)[x]);
+    pSrc += nSrcPitch;
+    pRef += nRefPitch;
+  }
+  _mm256_zeroupper();
+  return sum;
+}
+
+
 
 SADFunction* get_sad_avx_C_function(int BlockX, int BlockY, int pixelsize, arch_t arch)
 {
@@ -72,6 +94,7 @@ unsigned int Sad16_sse2_avx(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pR
   //__assume_aligned(piMblk, 16);
   //__assume_aligned(piRef, 16);
   // check. int result2 = Sad_C<nBlkWidth, nBlkHeight, pixel_t>(pSrc, nSrcPitch, pRef, nRefPitch);
+  _mm256_zeroupper(); // diff from main sse2
 
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128(); // 2x or 4x int is probably enough for 32x32
@@ -172,15 +195,13 @@ unsigned int Sad16_sse2_avx(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pR
   // sum here: two 32 bit partial result: sum1 0 sum2 0
   __m128i sum_hi = _mm_unpackhi_epi64(sum, zero); // a1 + a3. 2 dwords right 
   sum = _mm_add_epi32(sum, sum_hi);  // a0 + a2 + a1 + a3
-  _mm256_zeroupper(); // diff from main sse2
 
-  int result = _mm_cvtsi128_si32(sum);
+  unsigned int result = _mm_cvtsi128_si32(sum);
 
   // check  
   /*if (result != result2)
   result = result2;*/
+  _mm256_zeroupper(); // diff from main sse2
 
   return result;
 }
-
-
