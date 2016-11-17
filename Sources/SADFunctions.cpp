@@ -24,29 +24,7 @@ static unsigned int Sad_C(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef
   return sum;
 }
 
-/*
-A change in interface can be covered like this at least until release
 
-unsigned int Sad16x16_wrap(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch){
-	return Sad16x16_sse2(pSrc,nSrcPitch,pRef,nRefPitch);
-}
-
-#define MK_CPPWRAP(blkx, blky) unsigned int  Sad##blkx##x##blky##_wrap(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch){return Sad##blkx##x##blky##_iSSE(pSrc, nSrcPitch, pRef, nRefPitch);}
-//MK_CPPWRAP(16,16);
-MK_CPPWRAP(16,8);
-MK_CPPWRAP(16,2);
-MK_CPPWRAP(8,16);
-MK_CPPWRAP(8,8);
-MK_CPPWRAP(8,4);
-MK_CPPWRAP(8,2);
-MK_CPPWRAP(8,1);
-MK_CPPWRAP(4,8);
-MK_CPPWRAP(4,4);
-MK_CPPWRAP(4,2);
-MK_CPPWRAP(2,4);
-MK_CPPWRAP(2,2);
-#undef MK_CPPWRAP
-*/
 // SATD C from x264 project common/pixel.c
 #define BIT_DEPTH 16 // any >8
 
@@ -247,7 +225,7 @@ SADFunction* get_sad_function(int BlockX, int BlockY, int pixelsize, arch_t arch
     func_sad[make_tuple(4 , 8 , 2, USE_AVX)] = Sad16_sse2_avx<4 , 8,uint16_t>;
     func_sad[make_tuple(4 , 4 , 2, USE_AVX)] = Sad16_sse2_avx<4 , 4,uint16_t>;
     func_sad[make_tuple(4 , 2 , 2, USE_AVX)] = Sad16_sse2_avx<4 , 2,uint16_t>;
-
+    
     // PF SAD 16 SIMD intrinsic functions
     // only for >=8 bytes widths
     func_sad[make_tuple(32, 32, 2, USE_SSE2)] = Sad16_sse2<32, 32,uint16_t>;
@@ -438,35 +416,6 @@ SADFunction* get_satd_function(int BlockX, int BlockY, int pixelsize, arch_t arc
         break;
       }
     }
-#if 0
-    SADFunction *result = func_satd[make_tuple(BlockX, BlockY, pixelsize, arch)];
-
-    arch_t arch_orig = arch;
-
-    // no AVX2 -> try AVX
-    if (result == nullptr && (arch==USE_AVX2 || arch_orig==USE_AVX)) {
-      arch = USE_AVX;
-      result = func_satd[make_tuple(BlockX, BlockY, pixelsize, USE_AVX)];
-    }
-    // no AVX -> try SSE2
-    if (result == nullptr && (arch==USE_AVX || arch_orig==USE_SSE2)) {
-      arch = USE_SSE2;
-      result = func_satd[make_tuple(BlockX, BlockY, pixelsize, USE_SSE2)];
-    }
-    // no SSE2 -> try C
-    if (result == nullptr && (arch==USE_SSE2 || arch_orig==NO_SIMD)) {
-      arch = NO_SIMD;
-      // priority: C version compiled to avx2, avx
-      /*
-      if(arch_orig==USE_AVX2)
-        result = get_satd_avx2_C_function(BlockX, BlockY, pixelsize, NO_SIMD);
-      else if(arch_orig==USE_AVX)
-        result = get_satd_avx_C_function(BlockX, BlockY, pixelsize, NO_SIMD);
-      */
-      if(result == nullptr)
-        result = func_satd[make_tuple(BlockX, BlockY, pixelsize, NO_SIMD)]; // fallback to C
-    }
-#endif
     return result;
 }
 
