@@ -144,7 +144,7 @@ unsigned int Sad16_sse2_avx(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pR
       }
     }
     else {
-      for (int x = 0; x < nBlkWidth; x += 16)
+      for (int x = 0; x < nBlkWidth*sizeof(pixel_t); x += 16)
       {
         __m128i src1, src2;
         src1 = _mm_loadu_si128((__m128i *) (pSrc + x));

@@ -116,7 +116,7 @@ unsigned int Sad16_avx2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
 
   for ( int y = 0; y < nBlkHeight; y++ )
   {
-    for ( int x = 0; x < nBlkWidth; x+=32 )
+    for ( int x = 0; x < nBlkWidth*sizeof(pixel_t); x+=32 )
     {
       __m256i src1, src2;
       if (two_rows)  {
