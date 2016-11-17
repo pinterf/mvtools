@@ -161,13 +161,19 @@ static void FlowInter_NPel(
 	uint8_t *VXFullB, uint8_t *VXFullF, uint8_t *VYFullB, uint8_t *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
   int VPitch, int width, int height, T256P &t256_provider)
 */  
-template <int NPELL2>
+template <typename pixel_t, int NPELL2>
 static void FlowInter_NPel(
-  uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
+  uint8_t * pdst8, int dst_pitch, const uint8_t *prefB8, const uint8_t *prefF8, int ref_pitch,
   short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
   int VPitch, int width, int height, int time256)
 {
-	for (int h=0; h<height; h++)
+  dst_pitch /= sizeof(pixel_t);
+  ref_pitch /= sizeof(pixel_t);
+  pixel_t *pdst = reinterpret_cast<pixel_t *>(pdst8);
+  const pixel_t *prefB = reinterpret_cast<const pixel_t *>(prefB8);
+  const pixel_t *prefF = reinterpret_cast<const pixel_t *>(prefF8);
+
+  for (int h=0; h<height; h++)
 	{
 		for (int w=0; w<width; w++)
 		{
@@ -219,13 +225,19 @@ static void FlowInterExtra_NPel(
 	int VPitch, int width, int height, T256P &t256_provider,
 	uint8_t *VXFullBB, uint8_t *VXFullFF, uint8_t *VYFullBB, uint8_t *VYFullFF)
 */  
-template <int NPELL2>
+template <typename pixel_t, int NPELL2>
 static void FlowInterExtra_NPel(
-  uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
+  uint8_t * pdst8, int dst_pitch, const uint8_t *prefB8, const uint8_t *prefF8, int ref_pitch,
   short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
   int VPitch, int width, int height, int time256,
   short *VXFullBB, short *VXFullFF, short *VYFullBB, short *VYFullFF)
 {
+  dst_pitch /= sizeof(pixel_t);
+  ref_pitch /= sizeof(pixel_t);
+  pixel_t *pdst = reinterpret_cast<pixel_t *>(pdst8);
+  const pixel_t *prefB = reinterpret_cast<const pixel_t *>(prefB8);
+  const pixel_t *prefF = reinterpret_cast<const pixel_t *>(prefF8);
+
 	for (int h=0; h<height; h++)
 	{
 		for (int w=0; w<width; w++)
@@ -270,7 +282,7 @@ static void FlowInterExtra_NPel(
                  maxfb = dstB;
                  minfb = dstF;
              }
-
+             // PF todo check: +255 is bits_per_pixel-aware?
              pdst[w] = (((Median3r(minfb, dstBB, maxfb)*MaskF[w] + dstF*(255-MaskF[w])+255)>>8)*(256-time256) +
                         ((Median3r(minfb, dstFF, maxfb)*MaskB[w] + dstB*(255-MaskB[w])+255)>>8)*     time256   )>>8;
 		}
@@ -294,12 +306,18 @@ static void FlowInterExtra_NPel(
 
 
 
-template </*class T256P,*/ int NPELL2>
+template <typename pixel_t, /*class T256P,*/ int NPELL2>
 static void FlowInterSimple_NPel(
-	uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
+	uint8_t * pdst8, int dst_pitch, const uint8_t *prefB8, const uint8_t *prefF8, int ref_pitch,
 	short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
 	int VPitch, int width, int height, int time256 /* T256P &t256_provider*/)
 {
+  dst_pitch /= sizeof(pixel_t);
+  ref_pitch /= sizeof(pixel_t);
+  pixel_t *pdst = reinterpret_cast<pixel_t *>(pdst8);
+  const pixel_t *prefB = reinterpret_cast<const pixel_t *>(prefB8);
+  const pixel_t *prefF = reinterpret_cast<const pixel_t *>(prefF8);
+
 	if (time256 == 128 /*t256_provider.is_half ()*/) // special case double fps - fastest
 	{
 		for (int h=0; h<height; h++)
@@ -379,11 +397,18 @@ static void FlowInterSimple_NPel(
 }
 
 //template <class T256P>
+template<typename pixel_t>
 static void FlowInterSimple_Pel1 (
-	uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
+	uint8_t * pdst8, int dst_pitch, const uint8_t *prefB8, const uint8_t *prefF8, int ref_pitch,
 	short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
 	int VPitch, int width, int height, int time256 /*T256P &t256_provider*/)
 {
+  dst_pitch /= sizeof(pixel_t);
+  ref_pitch /= sizeof(pixel_t);
+  pixel_t *pdst = reinterpret_cast<pixel_t *>(pdst8);
+  const pixel_t *prefB = reinterpret_cast<const pixel_t *>(prefB8);
+  const pixel_t *prefF = reinterpret_cast<const pixel_t *>(prefF8);
+
 	if (time256 == 128 /*t256_provider.is_half ()*/) // special case double fps - fastest
 	{
 		for (int h=0; h<height; h++)
@@ -421,6 +446,9 @@ static void FlowInterSimple_Pel1 (
 
 	else // general case
 	{
+    // avoid "uint16*uint16 can't get into int32" overflows
+    typedef std::conditional < sizeof(pixel_t) == 1, int, typename std::conditional < sizeof(pixel_t) == 2, __int64, float>::type >::type result_t;
+
 		for (int h=0; h<height; h++)
 		{
 			for (int w=0; w<width; w+=2) // paired for speed
@@ -441,10 +469,11 @@ static void FlowInterSimple_Pel1 (
         int addrB = vyB*ref_pitch + vxB + w;
 				int dstB = prefB[addrB];
 				int dstB1 = prefB[addrB+1];
-				pdst[w  ] = ( ( (dstF *255 + (dstB -dstF )*MaskF[w  ] + 255) )*(256-time256) +
-				              ( (dstB *255 - (dstB -dstF )*MaskB[w  ] + 255) )*     time256   )>>16;
-				pdst[w+1] = ( ( (dstF1*255 + (dstB1-dstF1)*MaskF[w+1] + 255) )*(256-time256) +
-				              ( (dstB1*255 - (dstB1-dstF1)*MaskB[w+1] + 255) )*     time256   )>>16;
+        // possible overflow for 16 bit
+				pdst[w  ] = ( ( (result_t)(dstF *255 + (dstB -dstF )*MaskF[w  ] + 255) )*(256-time256) +
+				              ( (result_t)(dstB *255 - (dstB -dstF )*MaskB[w  ] + 255) )*     time256   )>>16;
+				pdst[w+1] = ( ( (result_t)(dstF1*255 + (dstB1-dstF1)*MaskF[w+1] + 255) )*(256-time256) +
+				              ( (result_t)(dstB1*255 - (dstB1-dstF1)*MaskB[w+1] + 255) )*     time256   )>>16;
 			}
 			pdst += dst_pitch;
 			prefB += ref_pitch;

@@ -75,17 +75,20 @@ void Blend(uint8_t * pdst8, const uint8_t * psrc8, const uint8_t * pref8, int he
 void Create_LUTV(int time256, short *LUTVB, short *LUTVF);
 
 //template <class T256P>
-void FlowInterSimple(uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
+template<typename pixel_t>
+  void FlowInterSimple(uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
   short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
   int VPitch, int width, int height, int time256 /*T256P &t256_provider*/, int nPel );
 
 //template <class T256P>
-void FlowInter(uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
+template<typename pixel_t>
+  void FlowInter(uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
   short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
 	int VPitch, int width, int height, int time256 /*T256P &t256_provider*/, int nPel );
 
 //template <class T256P>
-void FlowInterExtra(uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
+template<typename pixel_t>
+  void FlowInterExtra(uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
   short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
 	int VPitch, int width, int height, int time256 /*T256P &t256_provider*/, int nPel,
   short *VXFullBB, short *VXFullFF, short *VYFullBB, short *VYFullFF);

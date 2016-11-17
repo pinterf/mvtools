@@ -25,6 +25,7 @@
 #include "SuperParams64Bits.h"
 #include "Time256ProviderCst.h"
 #include "Time256ProviderPlane.h"
+#include "commonfunctions.h"
 
 MVFlowInter::MVFlowInter(PClip _child, PClip super, PClip _mvbw, PClip _mvfw,  int _time256, double _ml,
                            bool _blend, sad_t nSCD1, int nSCD2, bool _isse, bool _planar, PClip _timeclip, IScriptEnvironment* env) :
@@ -104,8 +105,8 @@ timeclip (_timeclip)
 	nHPaddingUV = nHPadding/xRatioUV;
 	nVPaddingUV = nVPadding/yRatioUV;
 
-	VPitchY = (nWidthP + 15) & (~15);
-	VPitchUV = (nWidthPUV + 15) & (~15);
+  VPitchY = AlignNumber(nWidthP, 16);
+  VPitchUV = AlignNumber(nWidthPUV, 16);
 
   VXFullYB = (short*)_aligned_malloc(2 * nHeightP*VPitchY + 128, 128);
   VXFullUVB = (short*)_aligned_malloc(2 * nHeightPUV*VPitchUV + 128, 128);
@@ -541,13 +542,13 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
       upsizerUV->SimpleResizeDo(VXFullUVFF, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVFF, nBlkXP, nBlkXP);
       upsizerUV->SimpleResizeDo(VYFullUVFF, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVFF, nBlkXP, nBlkXP);
       // back to 2.5.11.22 what is timeclip??? in 2.6.0.5
-      FlowInterExtra(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, pSrc[0] + nOffsetY, nRefPitches[0],
+      FlowInterExtra<uint8_t>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, pSrc[0] + nOffsetY, nRefPitches[0],
         VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
         nWidth, nHeight, time256, nPel, VXFullYBB, VXFullYFF, VYFullYBB, VYFullYFF);
-      FlowInterExtra(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
+      FlowInterExtra<uint8_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
         VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
         nWidthUV, nHeightUV, time256, nPel, VXFullUVBB, VXFullUVFF, VYFullUVBB, VYFullUVFF);
-      FlowInterExtra(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
+      FlowInterExtra<uint8_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
         VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
         nWidthUV, nHeightUV, time256, nPel, VXFullUVBB, VXFullUVFF, VYFullUVBB, VYFullUVFF);
 	  /* 2.6.0.5? removed at 2.5.11.22 merge
@@ -589,13 +590,13 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
 		else // bad extra frames, use old method without extra frames
 		{
       // back to 2.5.11.22 what is timeclip??? in 2.6.0.5
-      FlowInter(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, pSrc[0] + nOffsetY, nRefPitches[0],
+      FlowInter<uint8_t>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, pSrc[0] + nOffsetY, nRefPitches[0],
         VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
         nWidth, nHeight, time256, nPel);
-      FlowInter(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
+      FlowInter<uint8_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
         VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
         nWidthUV, nHeightUV, time256, nPel);
-      FlowInter(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
+      FlowInter<uint8_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
         VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
         nWidthUV, nHeightUV, time256, nPel);
 
