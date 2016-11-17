@@ -22,6 +22,7 @@
 #include "MVSCDetection.h"
 #include "CopyCode.h"
 #include "avs\minmax.h"
+#include <vector>
 
 
 MVSCDetection::MVSCDetection(PClip _child, PClip vectors, float Ysc, sad_t nSCD1, int nSCD2, bool isse, IScriptEnvironment* env) :
@@ -29,12 +30,18 @@ GenericVideoFilter(_child),
 mvClip(vectors, nSCD1, nSCD2, env, 1, 0),
 MVFilter(vectors, "MSCDetection", env, 1, 0)
 {
-  bits_per_pixel = _child->GetVideoInfo().BitsPerComponent();
-  pixelsize = _child->GetVideoInfo().ComponentSize();
-  if (pixelsize == 4)
-    sceneChangeValue_f = clamp(Ysc, 0.0f, 1.0f); // (Ysc < 0) ? 0 : ((Ysc > 255) ? 255 : Ysc);
-  else
-    sceneChangeValue = clamp(int(Ysc), 0, (1 << bits_per_pixel) - 1);
+  if (pixelsize == 4) {
+    if (Ysc < 0) // default if not provided: -9999
+      sceneChangeValue_f = 1.0f;
+    else
+      sceneChangeValue_f = clamp(Ysc, 0.0f, 1.0f); // (Ysc < 0) ? 0 : ((Ysc > 255) ? 255 : Ysc);
+  }
+  else {
+    if (Ysc < 0)
+      sceneChangeValue = (1 << bits_per_pixel) - 1;
+    else
+      sceneChangeValue = clamp(int(Ysc), 0, (1 << bits_per_pixel) - 1);
+  }
 }
 
 MVSCDetection::~MVSCDetection()
