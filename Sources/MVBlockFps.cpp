@@ -154,8 +154,8 @@ MVBlockFps::MVBlockFps(
   nHeightUV = nHeight / yRatioUV;
   nWidthUV = nWidth / xRatioUV;
 
-  nPitchY = (nWidthP + 15) & (~15);
-  nPitchUV = (nWidthPUV + 15) & (~15);
+  nPitchY = AlignNumber(nWidthP,16);
+  nPitchUV = AlignNumber(nWidthPUV,16);
 
   // PF remark: masks are 8 bits
   MaskFullYB = new BYTE[nHeightP*nPitchY];
