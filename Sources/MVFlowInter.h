@@ -19,7 +19,7 @@ private:
   int time256;
   double ml;
   PClip finest;
-  PClip	timeclip;
+  //PClip	timeclip;
   bool isse;
   bool planar;
   bool blend;
@@ -83,10 +83,11 @@ private:
   int nHPaddingUV;
   int nVPaddingUV;
 
+  /*
   typedef	short	VectLut[VECT_AMP];
   VectLut	*LUTVB; // [time256] [v] lookup table for v
   VectLut	*LUTVF;
-
+  */
 
   SimpleResize *upsizer;
   SimpleResize *upsizerUV;

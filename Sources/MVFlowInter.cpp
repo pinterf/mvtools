@@ -32,9 +32,10 @@ MVFlowInter::MVFlowInter(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, in
   GenericVideoFilter(_child),
   MVFilter(_mvfw, "MFlowInter", env, 1, 0),
   mvClipB(_mvbw, nSCD1, nSCD2, env, 1, 0),
-  mvClipF(_mvfw, nSCD1, nSCD2, env, 1, 0),
-  timeclip(_timeclip)
+  mvClipF(_mvfw, nSCD1, nSCD2, env, 1, 0)
+  //timeclip(_timeclip)
 {
+  /*
   if (_timeclip != 0)
   {
     const ::VideoInfo &	vi_tst = timeclip->GetVideoInfo();
@@ -47,6 +48,7 @@ MVFlowInter::MVFlowInter(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, in
       env->ThrowError("MFlow: tclip format is different from the main clip.");
     }
   }
+  */
 
   time256 = _time256;
   ml = _ml;
