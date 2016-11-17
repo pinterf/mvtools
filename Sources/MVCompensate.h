@@ -110,6 +110,9 @@ private:
 	MVPlane *      pPlanes[3];
 	MVPlane *      pSrcPlanes[3];
 
+  int pixelsize_super;
+  int bits_per_pixel_super;
+
 	// This array has an nBlkY size. It is used in vertical overlap mode
 	// to avoid read/write sync problems when processing is multithreaded.
 	// Only elements corresponding to the first row of each sub-plane are
