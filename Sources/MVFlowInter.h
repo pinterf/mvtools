@@ -99,6 +99,11 @@ public:
                 bool _blend, sad_t nSCD1, int nSCD2, bool isse, bool _planar, PClip _timeclip, IScriptEnvironment* env);
 	~MVFlowInter();
 	PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
+
+  int __stdcall SetCacheHints(int cachehints, int frame_range) override {
+    return cachehints == CACHE_GET_MTMODE ? MT_MULTI_INSTANCE : 0;
+  }
+
 };
 
 #endif

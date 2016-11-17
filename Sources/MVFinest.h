@@ -45,6 +45,11 @@ public:
 	MVFinest(PClip _super, bool isse, IScriptEnvironment* env);
 	~MVFinest();
 	PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
+
+  int __stdcall SetCacheHints(int cachehints, int frame_range) override {
+    return cachehints == CACHE_GET_MTMODE ? MT_MULTI_INSTANCE : 0;
+  }
+
 };
 
 #endif
