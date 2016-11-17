@@ -39,7 +39,7 @@ mvClipF(_mvfw, nSCD1, nSCD2, env, 1, 0)
    CheckSimilarity(mvClipB, "mvbw", env);
    CheckSimilarity(mvClipF, "mvfw", env);
    
-   if (mvClipB.GetDeltaFrame() <= 0 || mvClipB.GetDeltaFrame() <= 0)
+   if (mvClipB.GetDeltaFrame() <= 0 || mvClipF.GetDeltaFrame() <= 0)
      env->ThrowError("MFlowBlur: cannot use motion vectors with absolute frame references.");
 
    SuperParams64Bits params;
