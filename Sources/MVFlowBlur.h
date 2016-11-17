@@ -58,6 +58,7 @@ private:
 
    SimpleResize *upsizer;
    SimpleResize *upsizerUV;
+   template<typename pixel_t>
    void FlowBlur(BYTE * pdst, int dst_pitch, const BYTE *prefB, int ref_pitch,
      short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF,
      int VPitch, int width, int height, int time256, int nb);

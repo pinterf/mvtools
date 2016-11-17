@@ -158,11 +158,16 @@ MVFlowBlur::~MVFlowBlur()
 
 }
 
-
-void MVFlowBlur::FlowBlur(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch,
+template<typename pixel_t>
+void MVFlowBlur::FlowBlur(BYTE * pdst8, int dst_pitch, const BYTE *pref8, int ref_pitch,
   short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF,
   int VPitch, int width, int height, int blur256, int prec)
 {
+  dst_pitch /= sizeof(pixel_t);
+  ref_pitch /= sizeof(pixel_t);
+  pixel_t *pdst = reinterpret_cast<pixel_t *>(pdst8);
+  const pixel_t *pref = reinterpret_cast<const pixel_t *>(pref8);
+
   // very slow, but precise motion blur
   if (nPel == 1)
   {
@@ -397,8 +402,8 @@ PVideoFrame __stdcall MVFlowBlur::GetFrame(int n, IScriptEnvironment* env)
       nRefPitches[2] = VPITCH(ref);
     }
 
-    int nOffsetY = nRefPitches[0] * nVPadding*nPel + nHPadding*nPel;
-    int nOffsetUV = nRefPitches[1] * nVPaddingUV*nPel + nHPaddingUV*nPel;
+    int nOffsetY = nRefPitches[0] * nVPadding*nPel + nHPadding*nPel*pixelsize;
+    int nOffsetUV = nRefPitches[1] * nVPaddingUV*nPel + nHPaddingUV*nPel*pixelsize;
 
 
     // make  vector vx and vy small masks
@@ -427,16 +432,28 @@ PVideoFrame __stdcall MVFlowBlur::GetFrame(int n, IScriptEnvironment* env)
     upsizerUV->SimpleResizeDo(VYFullUVF, nWidthUV, nHeightUV, VPitchUV, VYSmallUVF, nBlkX, nBlkX);
 
 
-
-    FlowBlur(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, nRefPitches[0],
-      VXFullYB, VXFullYF, VYFullYB, VYFullYF, VPitchY,
-      nWidth, nHeight, blur256, prec);
-    FlowBlur(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, nRefPitches[1],
-      VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, VPitchUV,
-      nWidthUV, nHeightUV, blur256, prec);
-    FlowBlur(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, nRefPitches[2],
-      VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, VPitchUV,
-      nWidthUV, nHeightUV, blur256, prec);
+    if (pixelsize == 1) {
+      FlowBlur<uint8_t>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, nRefPitches[0],
+        VXFullYB, VXFullYF, VYFullYB, VYFullYF, VPitchY,
+        nWidth, nHeight, blur256, prec);
+      FlowBlur<uint8_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, nRefPitches[1],
+        VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, VPitchUV,
+        nWidthUV, nHeightUV, blur256, prec);
+      FlowBlur<uint8_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, nRefPitches[2],
+        VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, VPitchUV,
+        nWidthUV, nHeightUV, blur256, prec);
+    }
+    else { // pixelsize == 2
+      FlowBlur<uint16_t>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, nRefPitches[0],
+        VXFullYB, VXFullYF, VYFullYB, VYFullYF, VPitchY,
+        nWidth, nHeight, blur256, prec);
+      FlowBlur<uint16_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, nRefPitches[1],
+        VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, VPitchUV,
+        nWidthUV, nHeightUV, blur256, prec);
+      FlowBlur<uint16_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, nRefPitches[2],
+        VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, VPitchUV,
+        nWidthUV, nHeightUV, blur256, prec);
+    }
 
     if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
     {
