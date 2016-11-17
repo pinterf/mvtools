@@ -23,6 +23,7 @@
 #include "MVFinest.h"
 #include "MVFlow.h"
 #include "SuperParams64Bits.h"
+#include "commonfunctions.h"
 
 MVFlow::MVFlow(PClip _child, PClip super, PClip _mvec, int _time256, int _mode, bool _fields,
                            sad_t nSCD1, int nSCD2, bool _isse, bool _planar, PClip _timeclip, IScriptEnvironment* env) :
@@ -96,8 +97,8 @@ mvClip(_mvec, nSCD1, nSCD2, env, 1, 0)
 	nVPaddingUV = nVPadding/yRatioUV;
 
 
-	VPitchY = (nWidthP + 15) & (~15);
-	VPitchUV = (nWidthPUV + 15) & (~15);
+  VPitchY = AlignNumber(nWidthP, 16);
+  VPitchUV = AlignNumber(nWidthPUV, 16);
 //	char debugbuf[128];
 //	wsprintf(debugbuf,"MVFlow: nBlkX=%d, nOverlap=%d, nBlkXP=%d, nWidth=%d, nWidthP=%d, VPitchY=%d",nBlkX, nOverlap, nBlkXP, nWidth, nWidthP, VPitchY);
 //	OutputDebugString(debugbuf);
@@ -186,28 +187,34 @@ void MVFlow::Create_LUTV(int t256, VectLut plut)
 // but does not fit into 2.5.11.22 logic
 //template <class T256P>
 //void MVFlow::Shift(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch,  short *VXFull, int VXPitch,  short *VYFull, int VYPitch, int width, int height, T256P &t256_provider)
+template<typename pixel_t>
 void MVFlow::Shift(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch, short *VXFull, int VXPitch, short *VYFull, int VYPitch, int width, int height, int time256)
 {
 	// shift mode
 	if (nPel==1)
 	{
-		Shift_NPel </*T256P,*/0> (pdst, dst_pitch, pref, ref_pitch, VXFull, VXPitch, VYFull, VYPitch, width, height, time256/*t256_provider*/);
+		Shift_NPel <pixel_t,/*T256P,*/0> (pdst, dst_pitch, pref, ref_pitch, VXFull, VXPitch, VYFull, VYPitch, width, height, time256/*t256_provider*/);
 	}
 	else if (nPel==2)
 	{
-		Shift_NPel </*T256P,*/ 1> (pdst, dst_pitch, pref, ref_pitch, VXFull, VXPitch, VYFull, VYPitch, width, height, time256/*t256_provider*/);
+		Shift_NPel <pixel_t,/*T256P,*/ 1> (pdst, dst_pitch, pref, ref_pitch, VXFull, VXPitch, VYFull, VYPitch, width, height, time256/*t256_provider*/);
 	}
 	else if (nPel==4)
 	{
-		Shift_NPel </*T256P,*/ 2> (pdst, dst_pitch, pref, ref_pitch, VXFull, VXPitch, VYFull, VYPitch, width, height, time256/*t256_provider*/);
+		Shift_NPel <pixel_t,/*T256P,*/ 2> (pdst, dst_pitch, pref, ref_pitch, VXFull, VXPitch, VYFull, VYPitch, width, height, time256/*t256_provider*/);
 	}
 }
 
-template <int NPELL2>
-void MVFlow::Shift_NPel(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch, short *VXFull, int VXPitch, short *VYFull, int VYPitch, int width, int height, int time256)
+template <typename pixel_t, int NPELL2>
+void MVFlow::Shift_NPel(BYTE * pdst8, int dst_pitch, const BYTE *pref8, int ref_pitch, short *VXFull, int VXPitch, short *VYFull, int VYPitch, int width, int height, int time256)
 //template <class T256P, int NPELL2>
 //void MVFlow::Shift_NPel(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch,  short *VXFull, int VXPitch,  short *VYFull, int VYPitch, int width, int height, T256P &t256_provider)
 {
+  dst_pitch /= sizeof(pixel_t);
+  ref_pitch /= sizeof(pixel_t);
+  pixel_t *pdst = reinterpret_cast<pixel_t *>(pdst8);
+  const pixel_t *pref = reinterpret_cast<const pixel_t *>(pref8);
+
 	for (int h=0; h<height; h++)
 	{
 		for (int w=0; w<width; w++)
@@ -234,30 +241,35 @@ void MVFlow::Shift_NPel(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pi
 
 
 
-
+template<typename pixel_t>
 void MVFlow::Fetch(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch, short *VXFull, int VXPitch, short *VYFull, int VYPitch, int width, int height, int time256)
 /*template <class T256P>
 void MVFlow::Fetch(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch,  short *VXFull, int VXPitch,  short *VYFull, int VYPitch, int width, int height, T256P &t256_provider)
 */{
 	if (nPel==1)
 	{
-		Fetch_NPel </*T256P,*/ 0> (pdst, dst_pitch, pref, ref_pitch, VXFull, VXPitch, VYFull, VYPitch, width, height, time256 /*t256_provider*/);
+		Fetch_NPel <pixel_t,/*T256P,*/ 0> (pdst, dst_pitch, pref, ref_pitch, VXFull, VXPitch, VYFull, VYPitch, width, height, time256 /*t256_provider*/);
 	}
 	else if (nPel==2)
 	{
-		Fetch_NPel </*T256P,*/ 1> (pdst, dst_pitch, pref, ref_pitch, VXFull, VXPitch, VYFull, VYPitch, width, height, time256 /*t256_provider*/);
+		Fetch_NPel <pixel_t,/*T256P,*/ 1> (pdst, dst_pitch, pref, ref_pitch, VXFull, VXPitch, VYFull, VYPitch, width, height, time256 /*t256_provider*/);
 	}
 	else if (nPel==4)
 	{
-		Fetch_NPel </*T256P, */2> (pdst, dst_pitch, pref, ref_pitch, VXFull, VXPitch, VYFull, VYPitch, width, height, time256 /*t256_provider*/);
+		Fetch_NPel <pixel_t,/*T256P, */2> (pdst, dst_pitch, pref, ref_pitch, VXFull, VXPitch, VYFull, VYPitch, width, height, time256 /*t256_provider*/);
 	}
 }
 
 //template <class T256P, int NPELL2>
 //void MVFlow::Fetch_NPel(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch,  short *VXFull, int VXPitch,  short *VYFull, int VYPitch, int width, int height, T256P &t256_provider)
-template <int NPELL2>
-void MVFlow::Fetch_NPel(BYTE * pdst, int dst_pitch, const BYTE *pref, int ref_pitch, short *VXFull, int VXPitch, short *VYFull, int VYPitch, int width, int height, int time256)
+template <typename pixel_t, int NPELL2>
+void MVFlow::Fetch_NPel(BYTE * pdst8, int dst_pitch, const BYTE *pref8, int ref_pitch, short *VXFull, int VXPitch, short *VYFull, int VYPitch, int width, int height, int time256)
 {
+  dst_pitch /= sizeof(pixel_t);
+  ref_pitch /= sizeof(pixel_t);
+  pixel_t *pdst = reinterpret_cast<pixel_t *>(pdst8);
+  const pixel_t *pref = reinterpret_cast<const pixel_t *>(pref8);
+
 	for (int h=0; h<height; h++)
 	{
 		for (int w=0; w<width; w++)
@@ -416,8 +428,8 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
 		}
 
 
-		int nOffsetY = nRefPitches[0] * nVPadding*nPel + nHPadding*nPel;
-		int nOffsetUV = nRefPitches[1] * nVPaddingUV*nPel + nHPaddingUV*nPel;
+		int nOffsetY = nRefPitches[0] * nVPadding*nPel + nHPadding*nPel*pixelsize;
+		int nOffsetUV = nRefPitches[1] * nVPaddingUV*nPel + nHPaddingUV*nPel*pixelsize;
 
 		MakeVectorSmallMasks(mvClip, nBlkX, nBlkY, VXSmallY, nBlkXP, VYSmallY, nBlkXP);
 		if (nBlkXP > nBlkX) // fill right
@@ -461,9 +473,9 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
 
 		if (mode == 1)
 		{
-			MemZoneSet(pDst[0], 0, nWidth, nHeight, 0, 0, nDstPitches[0]);
-			MemZoneSet(pDst[1], 0, nWidthUV, nHeightUV, 0, 0, nDstPitches[1]);
-			MemZoneSet(pDst[2], 0, nWidthUV, nHeightUV, 0, 0, nDstPitches[2]);
+			MemZoneSet(pDst[0], 0, nWidth*pixelsize, nHeight, 0, 0, nDstPitches[0]);
+			MemZoneSet(pDst[1], 0, nWidthUV*pixelsize, nHeightUV, 0, 0, nDstPitches[1]);
+			MemZoneSet(pDst[2], 0, nWidthUV*pixelsize, nHeightUV, 0, 0, nDstPitches[2]);
 		}
 
     		// Time as a script parameter
@@ -491,9 +503,16 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
     {
 			if (mode == 0) // fetch mode
 			{
-        Fetch(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, nRefPitches[0], VXFullY, VPitchY, VYFullY, VPitchY, nWidth, nHeight, time256); //padded
-        Fetch(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, nRefPitches[1], VXFullUV, VPitchUV, VYFullUV, VPitchUV, nWidthUV, nHeightUV, time256);
-        Fetch(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, nRefPitches[2], VXFullUV, VPitchUV, VYFullUV, VPitchUV, nWidthUV, nHeightUV, time256);
+        if (pixelsize == 1) {
+          Fetch<uint8_t>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, nRefPitches[0], VXFullY, VPitchY, VYFullY, VPitchY, nWidth, nHeight, time256); //padded
+          Fetch<uint8_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, nRefPitches[1], VXFullUV, VPitchUV, VYFullUV, VPitchUV, nWidthUV, nHeightUV, time256);
+          Fetch<uint8_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, nRefPitches[2], VXFullUV, VPitchUV, VYFullUV, VPitchUV, nWidthUV, nHeightUV, time256);
+        }
+        else {
+          Fetch<uint16_t>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, nRefPitches[0], VXFullY, VPitchY, VYFullY, VPitchY, nWidth, nHeight, time256); //padded
+          Fetch<uint16_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, nRefPitches[1], VXFullUV, VPitchUV, VYFullUV, VPitchUV, nWidthUV, nHeightUV, time256);
+          Fetch<uint16_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, nRefPitches[2], VXFullUV, VPitchUV, VYFullUV, VPitchUV, nWidthUV, nHeightUV, time256);
+        }
         /* 
 				Fetch(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, nRefPitches[0],
 					VXFullY, VPitchY, VYFullY, VPitchY, nWidth, nHeight,
@@ -508,12 +527,23 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
 			}
 			else if (mode == 1) // shift mode
 			{
-        MemZoneSet(pDst[0], 255, nWidth, nHeight, 0, 0, nDstPitches[0]);
-        MemZoneSet(pDst[1], 255, nWidthUV, nHeightUV, 0, 0, nDstPitches[1]);
-        MemZoneSet(pDst[2], 255, nWidthUV, nHeightUV, 0, 0, nDstPitches[2]);
-        Shift(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, nRefPitches[0], VXFullY, VPitchY, VYFullY, VPitchY, nWidth, nHeight, time256);
-        Shift(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, nRefPitches[1], VXFullUV, VPitchUV, VYFullUV, VPitchUV, nWidthUV, nHeightUV, time256);
-        Shift(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, nRefPitches[2], VXFullUV, VPitchUV, VYFullUV, VPitchUV, nWidthUV, nHeightUV, time256);
+        if (pixelsize == 1) {
+          MemZoneSet(pDst[0], 255, nWidth, nHeight, 0, 0, nDstPitches[0]);
+          MemZoneSet(pDst[1], 255, nWidthUV, nHeightUV, 0, 0, nDstPitches[1]);
+          MemZoneSet(pDst[2], 255, nWidthUV, nHeightUV, 0, 0, nDstPitches[2]);
+          Shift<uint8_t>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, nRefPitches[0], VXFullY, VPitchY, VYFullY, VPitchY, nWidth, nHeight, time256);
+          Shift<uint8_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, nRefPitches[1], VXFullUV, VPitchUV, VYFullUV, VPitchUV, nWidthUV, nHeightUV, time256);
+          Shift<uint8_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, nRefPitches[2], VXFullUV, VPitchUV, VYFullUV, VPitchUV, nWidthUV, nHeightUV, time256);
+        }
+        else { // pixelsize == 2
+          int max_pixel_value = (1 << bits_per_pixel) - 1;
+          fill_plane<uint16_t>(pDst[0], nHeight, nDstPitches[0], max_pixel_value);
+          fill_plane<uint16_t>(pDst[1], nHeight, nDstPitches[0], max_pixel_value);
+          fill_plane<uint16_t>(pDst[2], nHeight, nDstPitches[0], max_pixel_value);
+          Shift<uint16_t>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, nRefPitches[0], VXFullY, VPitchY, VYFullY, VPitchY, nWidth, nHeight, time256);
+          Shift<uint16_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, nRefPitches[1], VXFullUV, VPitchUV, VYFullUV, VPitchUV, nWidthUV, nHeightUV, time256);
+          Shift<uint16_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, nRefPitches[2], VXFullUV, VPitchUV, VYFullUV, VPitchUV, nWidthUV, nHeightUV, time256);
+        }
         /*
 				Shift(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, nRefPitches[0],
 					VXFullY, VPitchY, VYFullY, VPitchY, nWidth, nHeight,
