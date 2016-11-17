@@ -36,10 +36,12 @@
 
 SADFunction* get_sad_avx_C_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
 
+// static
+/*
 template<int nBlkWidth, int nBlkHeight, typename pixel_t>
 unsigned int Sad_AVX_C(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef,
   int nRefPitch);
-
+*/
 template<int nBlkWidth, int nBlkHeight, typename pixel_t>
 unsigned int Sad16_sse2_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
 
