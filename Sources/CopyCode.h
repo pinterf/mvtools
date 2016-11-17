@@ -8,6 +8,12 @@
 #include <cstring>
 #include <stdint.h>
 
+template <typename pixel_t>
+void fill_chroma(BYTE* dstp_u, BYTE* dstp_v, int height, int pitch, pixel_t val);
+
+template <typename pixel_t>
+void fill_plane(BYTE* dstp, int height, int pitch, pixel_t val);
+
 void BitBlt(unsigned char* dstp, int dst_pitch, const unsigned char* srcp, int src_pitch, int row_size, int height, bool isse);
 //void asm_BitBlt_ISSE(unsigned char* dstp, int dst_pitch, const unsigned char* srcp, int src_pitch, int row_size, int height);
 //extern "C" void memcpy_amd(void *dest, const void *src, size_t n);

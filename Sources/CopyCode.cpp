@@ -45,6 +45,29 @@
 #define movsx_int movsxd
 #endif
 
+template <typename pixel_t>
+void fill_chroma(BYTE* dstp_u, BYTE* dstp_v, int height, int pitch, pixel_t val)
+{
+  size_t size = height * pitch / sizeof(pixel_t);
+  std::fill_n(reinterpret_cast<pixel_t*>(dstp_u), size, val);
+  std::fill_n(reinterpret_cast<pixel_t*>(dstp_v), size, val);
+}
+
+template <typename pixel_t>
+void fill_plane(BYTE* dstp, int height, int pitch, pixel_t val)
+{
+  size_t size = height * pitch / sizeof(pixel_t);
+  std::fill_n(reinterpret_cast<pixel_t*>(dstp), size, val);
+}
+
+// instantiate to let them access from other modules
+template void fill_chroma<BYTE>(BYTE* dstp_u, BYTE* dstp_v, int height, int pitch, BYTE val);
+template void fill_chroma<uint16_t>(BYTE* dstp_u, BYTE* dstp_v, int height, int pitch, uint16_t val);
+template void fill_chroma<float>(BYTE* dstp_u, BYTE* dstp_v, int height, int pitch, float val);
+
+template void fill_plane<BYTE>(BYTE* dstp, int height, int pitch, BYTE val);
+template void fill_plane<uint16_t>(BYTE* dstp, int height, int pitch, uint16_t val);
+template void fill_plane<float>(BYTE* dstp, int height, int pitch, float val);
 // I use here the copy code from avisynth. I duplicated it, because I have to use it
 // in a class which doesn't have to know what "env" is. Anyway, such static functions
 // should not have been put into that class in the first place ( imho )

@@ -23,6 +23,7 @@
 #include "CopyCode.h"
 #include "avs\minmax.h"
 
+
 MVSCDetection::MVSCDetection(PClip _child, PClip vectors, float Ysc, sad_t nSCD1, int nSCD2, bool isse, IScriptEnvironment* env) :
 GenericVideoFilter(_child),
 mvClip(vectors, nSCD1, nSCD2, env, 1, 0),
@@ -49,12 +50,8 @@ PVideoFrame __stdcall MVSCDetection::GetFrame(int n, IScriptEnvironment* env)
 
    if ( mvClip.IsUsable() )
 	{
-	   if(vi.IsYUV() && !vi.IsYUY2())
+	   if((vi.IsYUV() || vi.IsYUVA()) && !vi.IsYUY2())
 	   {
-//      MemZoneSet(YWPLAN(dst), 0, nWidth, nHeight, 0, 0, YPITCH(dst));
-//      MemZoneSet(UWPLAN(dst), 0, nWidth/2, nHeight/2, 0, 0, UPITCH(dst));
-//      MemZoneSet(VWPLAN(dst), 0, nWidth/2, nHeight/2, 0, 0, VPITCH(dst));
-       // todo: MemZoneSet to uint16_t and float
 		  MemZoneSet(dst->GetWritePtr(PLANAR_Y), 0, dst->GetRowSize(PLANAR_Y), dst->GetHeight(PLANAR_Y), 0, 0, dst->GetPitch(PLANAR_Y));
 		  MemZoneSet(dst->GetWritePtr(PLANAR_U), 0, dst->GetRowSize(PLANAR_U), dst->GetHeight(PLANAR_U), 0, 0, dst->GetPitch(PLANAR_U));
 		  MemZoneSet(dst->GetWritePtr(PLANAR_V), 0, dst->GetRowSize(PLANAR_V), dst->GetHeight(PLANAR_V), 0, 0, dst->GetPitch(PLANAR_V));
@@ -65,16 +62,24 @@ PVideoFrame __stdcall MVSCDetection::GetFrame(int n, IScriptEnvironment* env)
 	   }
 	}
    else {
-	   if(vi.IsYUV() && !vi.IsYUY2())
+	   if((vi.IsYUV() || vi.IsYUVA()) && !vi.IsYUY2())
 	   {
-//      MemZoneSet(YWPLAN(dst), sceneChangeValue, nWidth, nHeight, 0, 0, YPITCH(dst));
-//      MemZoneSet(UWPLAN(dst), sceneChangeValue, nWidth/2, nHeight/2, 0, 0, UPITCH(dst));
-//      MemZoneSet(VWPLAN(dst), sceneChangeValue, nWidth/2, nHeight/2, 0, 0, VPITCH(dst));
-// todo: MemZoneSet to uint16_t and float
-       MemZoneSet(dst->GetWritePtr(PLANAR_Y), sceneChangeValue, dst->GetRowSize(PLANAR_Y), dst->GetHeight(PLANAR_Y), 0, 0, dst->GetPitch(PLANAR_Y));
-		  MemZoneSet(dst->GetWritePtr(PLANAR_U), sceneChangeValue, dst->GetRowSize(PLANAR_U), dst->GetHeight(PLANAR_U), 0, 0, dst->GetPitch(PLANAR_U));
-		  MemZoneSet(dst->GetWritePtr(PLANAR_V), sceneChangeValue, dst->GetRowSize(PLANAR_V), dst->GetHeight(PLANAR_V), 0, 0, dst->GetPitch(PLANAR_V));
-	   }
+       if (pixelsize == 1) {
+         MemZoneSet(dst->GetWritePtr(PLANAR_Y), sceneChangeValue, dst->GetRowSize(PLANAR_Y), dst->GetHeight(PLANAR_Y), 0, 0, dst->GetPitch(PLANAR_Y));
+         MemZoneSet(dst->GetWritePtr(PLANAR_U), sceneChangeValue, dst->GetRowSize(PLANAR_U), dst->GetHeight(PLANAR_U), 0, 0, dst->GetPitch(PLANAR_U));
+         MemZoneSet(dst->GetWritePtr(PLANAR_V), sceneChangeValue, dst->GetRowSize(PLANAR_V), dst->GetHeight(PLANAR_V), 0, 0, dst->GetPitch(PLANAR_V));
+       }
+       else if (pixelsize == 2) {
+         fill_plane<uint16_t>(dst->GetWritePtr(PLANAR_Y), dst->GetHeight(PLANAR_Y), dst->GetPitch(PLANAR_Y), sceneChangeValue);
+         fill_plane<uint16_t>(dst->GetWritePtr(PLANAR_U), dst->GetHeight(PLANAR_U), dst->GetPitch(PLANAR_U), sceneChangeValue);
+         fill_plane<uint16_t>(dst->GetWritePtr(PLANAR_V), dst->GetHeight(PLANAR_V), dst->GetPitch(PLANAR_V), sceneChangeValue);
+       }
+       else if (pixelsize == 4) {
+         fill_plane<float>(dst->GetWritePtr(PLANAR_Y), dst->GetHeight(PLANAR_Y), dst->GetPitch(PLANAR_Y), sceneChangeValue_f);
+         fill_plane<float>(dst->GetWritePtr(PLANAR_U), dst->GetHeight(PLANAR_U), dst->GetPitch(PLANAR_U), sceneChangeValue_f);
+         fill_plane<float>(dst->GetWritePtr(PLANAR_V), dst->GetHeight(PLANAR_V), dst->GetPitch(PLANAR_V), sceneChangeValue_f);
+       }
+     }
 	   else
 	   {
 		  MemZoneSet(dst->GetWritePtr(), sceneChangeValue, dst->GetRowSize(), dst->GetHeight(), 0, 0, dst->GetPitch());
