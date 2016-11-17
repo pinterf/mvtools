@@ -32,66 +32,66 @@ typedef struct transformstruct {
 //   xsrc = dxc + dxx*x + dxy*y
 //   ysrc = dyc + dyx*x + dyy*y
 // But really only 4  parameters (dxc, dxx, dxy, dyc) are independent in used model
-	float dxc;
-	float dxx;
-	float dxy;
-	float dyc;
-	float dyx;
-	float dyy;
+  float dxc;
+  float dxx;
+  float dxy;
+  float dyc;
+  float dyx;
+  float dyy;
 } transform;
 
 /*! \brief Filter which get global motion gata for Depan
  */
 class MVDepan
-:	public GenericVideoFilter
-,	public MVFilter
+  : public GenericVideoFilter
+  , public MVFilter
 {
 private:
-	MVClip mvclip;
-	bool ifZoom;
-	bool ifRot;
-	float pixaspect;
-	float error;
-	bool info;
-	const char *logfilename;
-	float wrongDif;
-	float zeroWeight;
-	int range;
-	PClip mask;
-	bool planar;
+  MVClip mvclip;
+  bool ifZoom;
+  bool ifRot;
+  float pixaspect;
+  float error;
+  bool info;
+  const char *logfilename;
+  float wrongDif;
+  float zeroWeight;
+  int range;
+  PClip mask;
+  bool planar;
 
-	FILE *logfile;
+  FILE *logfile;
 
-	float *blockDx ; // dx vector
-	float *blockDy ; // dy
-	sad_t *blockSAD ;
-	int *blockX; // blocks x position
-	int *blockY;
-	float *blockWeight;
-	float *blockWeightMask;
-	float *motionx;
-	float *motiony;
-	float *motionzoom;
-	float *motionrot;
+  float *blockDx; // dx vector
+  float *blockDy; // dy
+  sad_t *blockSAD;
+  int *blockX; // blocks x position
+  int *blockY;
+  float *blockWeight;
+  float *blockWeightMask;
+  float *motionx;
+  float *motiony;
+  float *motionzoom;
+  float *motionrot;
 
-	char messagebuf[128];
+  char messagebuf[128];
 
 //	FakeGroupOfPlanes *fgop;
 
-	void write_deshakerlog1(FILE *logfile, int IsFieldBased, int IsTFF, int ndest, float motionx, float motiony, float motionzoom, float rotation);
-	void write_depan_data1(unsigned char *dstp, int frame, float motionx, float motiony, float motionzoom, float motionrot);
-	void write_depan_data(unsigned char *dstp, int startframe, int lastframe, float motionx[], float motiony[], float motionzoom[], float motionrot[]);
-	void motion2transform (float dx1, float dy1, float rot, float zoom1, float pixaspect, float xcenter, float ycenter, int forward, float fractoffset, transform *tr);
-	void transform2motion (transform tr, int forward, float xcenter, float ycenter, float pixaspect, float *dx, float *dy, float *rot, float *zoom);
-	void inversetransform(transform ta, transform *tinv);
-	void TrasformUpdate(transform *tr, float blockDx[], float blockDy[], sad_t blockSAD[], int blockX[], int blockY[], float blockWeight[], int nBlkX, int nBlkY, float safety, bool ifZoom, bool ifRot, float *error, float pixaspect);
-	void RejectBadBlocks (transform tr, float blockDx[], float blockDy[], sad_t blockSAD[], int blockX[], int blockY[], float blockWeight[], int nBlkX, int nBlkY, float neighboursDif, float globalDif, int thSCD1, float zeroWeight, float blockWeightMask[], int ignoredBorder );
+  void write_deshakerlog1(FILE *logfile, int IsFieldBased, int IsTFF, int ndest, float motionx, float motiony, float motionzoom, float rotation);
+  void write_depan_data1(unsigned char *dstp, int frame, float motionx, float motiony, float motionzoom, float motionrot);
+  void write_depan_data(unsigned char *dstp, int startframe, int lastframe, float motionx[], float motiony[], float motionzoom[], float motionrot[]);
+  void motion2transform(float dx1, float dy1, float rot, float zoom1, float pixaspect, float xcenter, float ycenter, int forward, float fractoffset, transform *tr);
+  void transform2motion(transform tr, int forward, float xcenter, float ycenter, float pixaspect, float *dx, float *dy, float *rot, float *zoom);
+  void inversetransform(transform ta, transform *tinv);
+  void TrasformUpdate(transform *tr, float blockDx[], float blockDy[], sad_t blockSAD[], int blockX[], int blockY[], float blockWeight[], int nBlkX, int nBlkY, float safety, bool ifZoom, bool ifRot, float *error, float pixaspect);
+  void RejectBadBlocks(transform tr, float blockDx[], float blockDy[], sad_t blockSAD[], int blockX[], int blockY[], float blockWeight[], int nBlkX, int nBlkY, float neighboursDif, float globalDif, int thSCD1, float zeroWeight, float blockWeightMask[], int ignoredBorder);
 
 public:
-	MVDepan(PClip _child, PClip mvs, PClip _mask, bool _zoom, bool _rot, float _pixaspect,
-			float _error, bool _info, const char * _logfilename, float _wrong, float _zerow, int _range, sad_t nSCD1, int nSCD2, bool isse, bool _planar, IScriptEnvironment* env);
-	~MVDepan();
-	PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
+  MVDepan(PClip _child, PClip mvs, PClip _mask, bool _zoom, bool _rot, float _pixaspect,
+    float _error, bool _info, const char * _logfilename, float _wrong, float _zerow, int _range, sad_t nSCD1, int nSCD2, bool isse, bool _planar, IScriptEnvironment* env);
+  ~MVDepan();
+  PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
 };
 
 #endif
