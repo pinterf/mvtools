@@ -1,0 +1,66 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="depanestimate.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="depanio.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="estimate_fftw.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="info.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="avisynth.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="depanio.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="estimate_fftw.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fftwlite.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Doc">
+      <UniqueIdentifier>{3b5a6189-1fe0-4539-bc3c-deaeb1c86f0a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{2fc0386a-cd3a-4ab3-96d0-b2ff96bc19ed}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{d26dd1c5-736d-4846-9a9c-df8dba0fc2d4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{330510ea-d61b-4baa-9479-fb7fd2669270}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Doc_DepanEstimate\depan.html">
+      <Filter>Doc</Filter>
+    </None>
+    <None Include="..\Doc_DepanEstimate\depan-rus.html">
+      <Filter>Doc</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\Doc_DepanEstimate\gpl.txt">
+      <Filter>Doc</Filter>
+    </Text>
+    <Text Include="..\Doc_DepanEstimate\gpl-rus.txt">
+      <Filter>Doc</Filter>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="depanestimate.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>
