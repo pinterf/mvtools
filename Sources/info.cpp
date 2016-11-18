@@ -23,8 +23,9 @@
 #define	NOGDI
 #define	NOMINMAX
 #define	WIN32_LEAN_AND_MEAN
-#include "Windows.h"
+//#include "Windows.h"
 #include	"avisynth.h"
+#include <stdint.h>
 
 
 
@@ -1567,13 +1568,82 @@ static unsigned short font[][20] = {
 	}
 };
 
-/*
-#ifndef Pixel32
+template <typename pixel_t>
+void DrawDigit(PVideoFrame &dst, int x, int y, int num, int bits_per_pixel, int xRatioShift, int yRatioShift, bool chroma)
+{
+  x = x * 10;
+  y = y * 20;
 
-typedef unsigned long Pixel32;
+  const pixel_t color = 235 << (bits_per_pixel - 8);
 
-#endif
-*/
+  int pitch = dst->GetPitch() / sizeof(pixel_t);
+
+  pixel_t* dstp = reinterpret_cast<pixel_t *>(dst->GetWritePtr());
+
+  // write only to luma
+  for (int tx = 0; tx < 10; tx++) {
+    for (int ty = 0; ty < 20; ty++) {
+      pixel_t* dp = &dstp[(x + tx) + (y + ty) * pitch];
+      if (font[num][ty] & (1 << (15 - tx))) 
+        *dp = color;
+      else 
+        *dp = (*dp * 3) >> 2;
+    }
+  }
+  if (chroma)
+  {
+    pixel_t* dstpU = reinterpret_cast<pixel_t *>(dst->GetWritePtr(PLANAR_U));
+    pixel_t* dstpV = reinterpret_cast<pixel_t *>(dst->GetWritePtr(PLANAR_V));
+
+    int pitchUV = dst->GetPitch(PLANAR_U);
+    int midChroma = 1 << (bits_per_pixel - 1);
+    for (int tx = 0; tx < 10; tx++)
+    {
+      for (int ty = 0; ty < 20; ty++)
+      {
+        int pos = ((x + tx) >> xRatioShift) + (((y + ty) * pitchUV) >> yRatioShift);
+        pixel_t* dpU = &dstpU[pos];
+        pixel_t* dpV = &dstpV[pos];
+        if (font[num][ty] & (1 << (15 - tx)))
+        {
+          *dpU = midChroma;
+          *dpV = midChroma;
+        }
+        else
+        {
+          *dpU = (pixel_t)((*dpU + midChroma) >> 1);
+          *dpV = (pixel_t)((*dpV + midChroma) >> 1);
+        }
+      }
+    }
+  }
+}
+
+// instantiate
+template void DrawDigit<uint8_t>(PVideoFrame &dst, int x, int y, int num, int bits_per_pixel, int xRatioShift, int yRatioShift, bool chroma);
+template void DrawDigit<uint16_t>(PVideoFrame &dst, int x, int y, int num, int bits_per_pixel, int xRatioShift, int yRatioShift, bool chroma);
+
+// for YUY2 and any planar
+void DrawString(PVideoFrame &dst, VideoInfo &vi, int x, int y, const char *s)
+{
+  if (vi.IsYUY2()) {
+    DrawStringYUY2(dst, x, y, s);
+    return;
+  }
+
+  int bits_per_pixel = vi.BitsPerComponent();
+  int xRatioShift = vi.GetPlaneWidthSubsampling(PLANAR_U);
+  int yRatioShift = vi.GetPlaneHeightSubsampling(PLANAR_U);
+  bool grey = vi.IsY();
+  for (int xx = 0; *s; ++s, ++xx) {
+    if(bits_per_pixel == 8)
+      DrawDigit<uint8_t>(dst, x + xx, y, *s - ' ', bits_per_pixel, xRatioShift, yRatioShift, !grey);
+    else
+      DrawDigit<uint16_t>(dst, x + xx, y, *s - ' ', bits_per_pixel, xRatioShift, yRatioShift, !grey);
+  }
+}
+
+#if 0
 void DrawDigit(::PVideoFrame &dst, int x, int y, int num) 
 {
 	int tx, ty;
@@ -1623,6 +1693,7 @@ void DrawString(::PVideoFrame &dst, int x, int y, const char *s)
 		DrawDigit(dst, x + xx, y, *s - ' ');
 	}
 }
+#endif
 
 void DrawDigitYUY2(::PVideoFrame &dst, int x, int y, int num) 
 {

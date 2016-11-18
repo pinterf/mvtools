@@ -23,10 +23,14 @@
 #ifndef __INFO___H__
 #define __INFO___H__
 
+#include "avisynth.h"
+
 class PVideoFrame;
 
-void	DrawDigit(PVideoFrame &dst, int x, int y, int num);
-void	DrawString(PVideoFrame &dst, int x, int y, const char *s);
+template <typename pixel_t>
+void DrawDigit(PVideoFrame &dst, int x, int y, int num, int bits_per_pixel, int xRatioShift, int yRatioShift, bool chroma);
+
+void DrawString(PVideoFrame &dst, VideoInfo &vi, int x, int y, const char *s);
 void	DrawDigitYUY2(PVideoFrame &dst, int x, int y, int num);
 void	DrawStringYUY2(PVideoFrame &dst, int x, int y, const char *s);
 
