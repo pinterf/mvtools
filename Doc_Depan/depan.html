@@ -1,0 +1,747 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta content="text/html;charset=ISO-8859-1" http-equiv="Content-Type">
+<title>DePan, DePanEstimate plugins for Avisynth. Global motion tools</title>
+<link rel="stylesheet" type="text/css" href="../avisynth.css">
+</head>
+<body>
+<h1>DePan, DePanEstimate</h1>
+<h3>Tools for estimation and compensation of global motion (pan)
+</h3>
+
+<p>Plugins for <a href="http://www.avisynth.org/">AviSynth 2.5</a><br>
+Copyright (C)2004-2007 Alexander G. Balakhnin aka Fizick.<br>
+<a href="http://avisynth.org.ru/">http://avisynth.org.ru</a> <br>
+</p>
+<h2>Introduction</h2>
+
+<p> This package contain tools (functions) for estimation of global motion
+(pan) in frames, and for full or partial global motion compensation.</p>
+<p>The tools can be used for:</p>
+<ul>
+  <li>global motion compensation of neighbor frames  for strong temporal denoising and clip (film) restoration.</li>
+  <li>recreating of damaged frames by motion interpolation,</li>
+  <li>creating series of intermediate frames for frequency (fps) changing.</li>
+  <li>doing partial motion stabilization.</li>
+</ul>
+<p>The DePan plugin replaced my experimental GenMotion C-plugin
+(which uses motion data from VirtualDub Deshaker plugin log file).</p>
+<p>The package can works in one pass, it contains a server part (DePanestimate function) 
+and one or more clients parts (functions or its instances).
+The server function estimates frames motion data and transmit it to client functions on inquiry.
+Special service clip is used as the motion data container.</p>
+
+<h2>DePanEstimate plugin function</h2>
+
+<h3>DePanEstimate function</h3>
+<p>This function uses phase-shift method (by fast Fourier transform)
+for global motion estimation.
+It uses some central region of every frame (or field) as FFT window to
+find the inter-frames correlation
+and to calculate the most appropriate values of vertical and horizontal
+shifts, which fit current frame to previous one.
+The some relative correlation parameter is used as trust measure and
+for scene change detection.
+In zoom mode, plugin uses left and right sub-windows to estimate both
+displacements and zoom.&nbsp;Output is special service clip with coded
+motion data in frames, and optional log file.<br>
+</p>
+<h4>Function call:<br>
+</h4>
+<p><code>DePanEstimate</code> ( <var>clip,
+int range, float trust, int winx, int winy, int dxmax, int dymax, float
+zoommax, bool improve, float stab, float pixaspect, bool info, string
+log, bool debug, bool show, string extlog, bool fftw</var>)</p>
+
+<h4>Parameters of DePanEstimate:<br>
+</h4>
+<var>clip</var> - input clip<br>
+
+<var>
+range</var> - number of previous (and also next) frames (fields) near requested frame to estimate motion (integer value &gt;=0, default=1)<br>
+<var>trust</var> - limit of relative maximum correlation difference from mean value at scene change (0.0 to 100.0, default=4.0)<br>
+<var>winx</var> - number of columns (width) of fft window (must be power of 2 &nbsp;if not <var>fftw</var>, default
+= maximum within frame width).<br>
+
+<var>
+winy</var> - number of rows (height) of fft window (must be power of 2 &nbsp;if not <var>fftw</var>, default
+= maximum within frame height).<br>
+
+<var>
+dxmax</var> - limit of x shift (default = <var>winx</var>/4)<br>
+<var>dymax</var> - limit of y shift (default = <var>winy</var>/4)<br>
+
+<var>
+zoommax</var> - maximum zoom factor (if  = 1 (default), zoom is not estimated)<br>
+
+<var>
+improve</var> - improve zoom estimation by iteration (default = false). Since v1.6 this mode is disabled.<br>
+
+<var>
+stab</var> -  decreasing of calculated trust for large shifts ( factor <var>dxmax/(dxmax + stab*abs(dx))</var> ):<br>
+&nbsp;&nbsp;&nbsp; = 0.0 (default)- not decrease,<br>
+&nbsp;&nbsp;&nbsp; = 1.0 - half at <var>dxmax</var>, <var>dymax</var>.<br>
+
+<var>
+pixaspect</var> - pixel aspect (default = 1.0)<br>
+
+<var>
+info</var> - show motion info on frame (default = false)<br>
+
+<var>
+log</var> - output log filename with motion data (in the VirtualDub Deshaker plugin format) (default none, not write)<br>
+
+<var>
+debug</var> - output data for debugview utility (default = false)<br>
+
+<var>
+show</var> - show correlation surface (default = false)<br>
+
+<var>
+extlog</var> - output extended log filename with motion and trust data (default none, not write)<br>
+
+<var>fftw</var> - use external FFTW library (since v1.9 - always true)<br>
+<br>
+<p>Notes. <i>trust </i> parameters defines
+some threshold value of inter-frame similarity (corelation). It defines how similar must be
+current frame to prev frame in the same scene.
+DePanEstimare detects scenechange at current frame, if current
+correlation valu is below the threshold. Set it lower to prevent false scene change detecting,
+set it higher to prevent skipping of real scenechange (with shaking).
+Default value is good for most video, but you can test it in <i>info</i> mode.
+</p>
+
+<h2>DePan plugin functions</h2>
+<p>DePan (client) - make full or partial  global motion compensation<br>
+DePanInterleave (client) - generates long motion compensated interleaved clip<br>
+DePanStabilize (client) -  stabilizes motion<br>
+DePanScenes(client)
+- scene change indication</p>
+
+<h3>DePan function</h3>
+<p>It generates the clip with motion compensated frames, using motion data previously calculated by
+DePanEstimate.
+</p>
+<h4>Function call:</h4>
+<p><code>DePan</code> (<var>clip, clip data, float offset, int subpixel, float pixaspect, bool matchfields, int mirror, int blur, bool info, string inputlog</var>)&nbsp; </p>
+<h4>Parameters of DePan:</h4>
+
+<var>
+clip</var> - input clip (the same as input clip for DePanEstimate)<br>
+
+<var>
+data</var> - special service clip with coded motion data, produced by DePanEstimate<br>
+
+<var>
+offset</var> - value of compensation offset for all input frames (fields) (from - 10.0 to 10.0, default =0)<br>
+&nbsp;&nbsp;&nbsp; = 0 is null transform.<br>
+&nbsp;&nbsp;&nbsp; = -1.0 is full backward motion compensation of next frame (field) to current,<br>
+&nbsp;&nbsp;&nbsp; = 1.0 is full forward motion compensation of previous frame (field),<br>
+&nbsp;&nbsp;&nbsp; = -0.5 is backward semi-compensation of next frame (field),<br>
+&nbsp;&nbsp;&nbsp; = 0.5 is forward semi-compensation of previous frame (field),<br>
+&nbsp;&nbsp;&nbsp; = 0.3333333 is forward one-third compensation of previous frame (field),<br>
+&nbsp;&nbsp;&nbsp; = -1.5 is backward semi-compensation of next next frame (field),<br>
+&nbsp;&nbsp;&nbsp; = 2.0 is full forward motion compensation of previous previous frame (field),<br>
+&nbsp;&nbsp;&nbsp; and so on.<br>
+
+<var>
+subpixel</var> - pixel interpolation accuracy (default = 2)<br>
+&nbsp;&nbsp;&nbsp; 0 - pixel accuracy (at nearest pixel), no interpolation (fast),<br>
+&nbsp;&nbsp;&nbsp; 1 - subpixel accuracy with bilinear interpolation,<br>
+&nbsp;&nbsp;&nbsp; 2 - subpixel accuracy with bicubic interpolation (best).<br>
+
+<var>
+pixaspect</var> - pixel aspect (default = 1.0)<br>
+
+<var>
+matchfields</var> - match vertical position of interlaced fields for preserve fields order,  
+better denoising etc (default=true)<br>
+
+<var>
+mirror</var> - fill empty borders with mirrored from frame edge pixels (instead of black):<br>
+&nbsp;&nbsp;&nbsp; 0 - no mirror (default);<br>
+&nbsp;&nbsp;&nbsp; 1 - top;<br>
+&nbsp;&nbsp;&nbsp; 2 - bottom;<br>
+&nbsp;&nbsp;&nbsp; 4 - left;<br>
+&nbsp;&nbsp;&nbsp; 8 - right;<br>
+&nbsp;&nbsp;&nbsp; sum any of above - combination (15 - all ).<br>
+
+<var>blur</var> -&nbsp; blur mirrored zone by using given max blur length (default=0,&nbsp; not blur;&nbsp;&nbsp; the good values is above 30)<br>
+
+<var>
+info</var> - show motion info on frame (default=false).<br>
+
+<var>
+inputlog</var> - name of input log file in Deshaker format (default - none, not read)<br>
+
+<p>Note: The <var>offset</var> parameter of DePan is extended version of <var>delta</var> parameter of GenMotion.</p>
+
+<h3>DePanInterleave</h3>
+<p>It generates long interleaved clipwith series of group of previous
+frames motion compensated (within some range), original frame,
+and motion compensated next frames (within range), and same groups for
+every following frames.
+In fact, it combines DePan function and <code>Interleave</code> function (AviSynth
+internal)
+for easy following temporal denoising, with following SelectEvery(prev+next+1, prev) function for selecting only cleaned source frames.<br>
+</p>
+<h4>Function call:</h4>
+<p><code>DePanInterleave</code> (<var>clip,
+clip data, int prev, int next,&nbsp;int subpixel, float pixaspect,
+bool matchfields, int mirror, int blur, bool info, string inputlog</var>)</p>
+<h4>Parameters of DePanInterleave similar to Depan:</h4>
+
+<var>
+clip</var> - input clip (the same as input clip for DePanEstimate)<br>
+
+<var>
+data</var> - special service clip with coded motion data, produced by DePanEstimate<br>
+
+<var>
+prev</var> - number of previous  frames (fields) in group to compensate (integer&gt;0, default=1)<br>
+
+<var>
+next</var> - number of  next frames (fields) in group to compensate (integer&gt;0, default=1)<br>
+
+<var>
+subpixel</var> - pixel interpolation accuracy (default = 1)<br>
+&nbsp;&nbsp;&nbsp; 0 - pixel accuracy (at nearest pixel), no interpolation (fast),<br>
+&nbsp;&nbsp;&nbsp; 1 - subpixel accuracy with bilinear interpolation, (optimal for denoising)<br>
+&nbsp;&nbsp;&nbsp; 2 - subpixel accuracy with bicubic interpolation (best but slow).<br>
+
+<var>
+pixaspect</var> - pixel aspect (default = 1.0)<br>
+
+<var>
+matchfields</var> - match vertical position of interlaced fields for better denoising etc (default=true)<br>
+
+<var>
+mirror</var> - fill empty borders with mirrored from frame edge pixels (instead of black):<br>
+&nbsp;&nbsp;&nbsp; 0 - no mirror (default);<br>
+&nbsp;&nbsp;&nbsp; 1 - top;<br>
+&nbsp;&nbsp;&nbsp; 2 - bottom;<br>
+&nbsp;&nbsp;&nbsp; 4 - left;<br>
+&nbsp;&nbsp;&nbsp; 8 - right;<br>
+&nbsp;&nbsp;&nbsp; sum any of above - combination (15 - all ).<br>
+
+<var>blur</var> -&nbsp; blur mirrored zone by using given max blur length (default=0,&nbsp; not blur;&nbsp;&nbsp; the good values is above 30)<br>
+
+<var>
+info</var> - show motion info on frame (default=false).<br>
+
+<var>
+inputlog</var> - name of input log file in Deshaker format (none default,  not read)<br>
+
+<h3>DePanStabilize&nbsp;</h3>
+<p>This function make some motion stabilization (deshake) by smoothing of global motion.
+Inertial filtering method is used (probably similar to Digistudio VirtualDub plugin).<br>
+</p>
+<h4>Function call:<br>
+</h4>
+<p><code>DePanStabilize</code> (<var>clip,
+clip data, float cutoff, float damping, float initzoom, bool addzoom, int prev, int
+next, int mirror, int blur, int dxmax, int dymax, float zoommax, float
+rotmax, int subpixel, float pixaspect, &nbsp;int fitlast, float
+tzoom, bool info, string inputlog, int method</var>)
+</p>
+<h4>Parameters of DePanStabilize:</h4>
+<p>
+<var>clip</var> - input clip (the same as input clip for DePanEstimate);<br>
+
+<var>
+data</var> - special service clip with coded motion data, produced by DePanEstimate;<br>
+
+<var>
+cutoff</var> - vibration frequency cutoff , Hertz (default = 1.0);<br>
+
+<var>
+damping</var> - damping ratio (default = 1.0);<br>
+
+<var>initzoom</var>
+- initial (minimal) zoom to fill borders (default = 1.0);<br>
+
+<var>
+addzoom</var> - use additional adaptive zoom (default=false);<br>
+
+<var>
+prev</var> -  max lag of some previous frame to fill empty borders (instead of black):<br>
+&nbsp;&nbsp;&nbsp; 0 - not fill (default ),<br>
+&nbsp;&nbsp;&nbsp; 1 - use nearest previous (n-1)  frame to fill current frame (n) edges,<br>
+&nbsp;&nbsp;&nbsp; 2 - use previous (n-2) frame to fill (not all in range !),<br>
+&nbsp;&nbsp;&nbsp; and so on.<br>
+
+<var>
+next</var> - max lag of some next frame to fill empty borders (instead of black):<br>
+&nbsp;&nbsp;&nbsp; 0 - not fill (default ),<br>
+&nbsp;&nbsp;&nbsp; 1 - use nearest next (n+1) frame to fill current frame (n) edges,<br>
+&nbsp;&nbsp;&nbsp; 2 - use next (n+2) frame to fill (not all in range !),<br>
+&nbsp;&nbsp;&nbsp; and so on.<br>
+
+<var>
+mirror</var> - fill empty borders with mirrored from frame edge pixels (instead of black):<br>
+&nbsp;&nbsp;&nbsp; 0 - no mirror (default);<br>
+&nbsp;&nbsp;&nbsp; 1 - top;<br>
+&nbsp;&nbsp;&nbsp; 2 - bottom;<br>
+&nbsp;&nbsp;&nbsp; 4 - left;<br>
+&nbsp;&nbsp;&nbsp; 8 - right;<br>
+&nbsp;&nbsp;&nbsp; sum any of above - combination (15 - all ).<br>
+
+<var>blur</var> - blur mirrored zone by using given max blur length (default=0, not blur, the good values is above 30)<br>
+
+<var>
+dxmax</var> - limit of horizontal correction, in pixels (default = 60);<br>
+
+<var>
+dymax</var> - limit of vertical correction, in pixels (default = 30);<br>
+
+<var>
+zoommax</var> - limit of zoom correction (only adaptive zoom, default = 1.05);<br>
+
+<var>
+rotmax</var> - limit of rotation correction, in degrees (default = 1.0);<br>
+
+&nbsp;&nbsp;&nbsp; these values limit the correction (since v1.7 - approximately, not strictly )<br>
+
+<var>
+subpixel</var> - pixel interpolation accuracy (default = 2):<br>
+&nbsp;&nbsp;&nbsp; 0 - pixel accuracy (at nearest pixel), no interpolation (fast);<br>
+&nbsp;&nbsp;&nbsp; 1 - subpixel accuracy with bilinear interpolation;<br>
+&nbsp;&nbsp;&nbsp; 2 - subpixel accuracy with bicubic interpolation (best).<br>
+
+<var>
+pixaspect</var> - pixel aspect (default = 1.0);<br>
+
+<var>fitlast</var> - fit some last frames range to original position (integer range, default=0)<br>
+
+<var>tzoom</var> - adaptive zoom rise time, sec (float, default=3.0)<br>
+
+
+<var>
+info</var> - show motion info on frame (default=false).<br>
+
+<var>
+inputlog</var> - name of input log file in Deshaker format (none default,  not read)<br>
+<var>
+method</var> - used method for stabilization:<br>
+&nbsp;&nbsp;&nbsp; 0 - inertial (default);<br>
+&nbsp;&nbsp;&nbsp; 1 - average (new since v1.10). <var>dxmax, dymax, rotmax, zoommax, fitlast</var> parameters are ignored.
+</p>
+<h3>DePanScenes function</h3>
+<p>Generate clip with pixel values =255 for defined plane at scenechange and pixel values =0 at rest frames,<br>
+using motion data previously calculated by DePanEstimate.<br>
+<br>
+May be used by AverageLuma function for conditional processing.</p>
+<h4>Function call:<br>
+</h4>
+<p><code>DePanScenes</code> ( <var>clip, string inputlog, int plane</var>)<br>
+</p>
+<h4>&nbsp;Parameters of DePanScenes:</h4>
+<var>clip</var> - input clip (special service clip with coded motion data, produced by DePanEstimate)<br>
+<var>inputlog</var> - name of input log file in Deshaker format (default - none, not read)<br>
+<var>plane</var> - code of plane to mark (1 - Y, 2 - U, 4 - V, sum - combination, default=1)<br>
+<br>
+
+<h2>Features and limitations</h2>
+
+<p>&nbsp;&nbsp; 1. Works only in YV12 and YUY2 color formats.<br>
+&nbsp;&nbsp;&nbsp; 2. Uses only pan and zoom motion (no rotation), but
+it gives advance in speed and stability. Estimation in zoom mode is not
+very precise.<br>
+&nbsp;&nbsp;&nbsp; 3. The source clip&nbsp; must be same length as motion data clip. <br>
+&nbsp;&nbsp;&nbsp; 4. Directly works only with progressive clips. For
+interlaced sources, you must use AviSynth following function
+<code>SeparateFields</code> and followed <code>Weave</code><br>
+(after motion compensation and denoising), with <code>AssumeTTF</code> and <code>AssumeBFF</code>
+(both may be needed for odd fields offset). Plugin estimates and
+calculates motion from one field to neighbor (by time) field (from same
+or neighbor frame). For preserving fields order (dominance) and best
+denoising, set parameter <var>MatchFields</var>=true.<br>
+&nbsp;&nbsp;&nbsp; 5. <var>Mirror</var> mode is unique but slightly strange :-). 
+The <var>blur</var> is some workaround to hide sharp mirrored details. Note: blur is not implemented for rotation as yet.<br>
+&nbsp;&nbsp;&nbsp; 6. Not very fast, not assembler optimized.<br>
+&nbsp;&nbsp;&nbsp; 7. Tested with Avisynth 2.5.3, 2.5.4, 2.5.5, 2.5.6, 2.5.7.<br>
+&nbsp;&nbsp;&nbsp; 8. Old versions DePanEstimate used free FFT2D code by Takuya Ooura 
+(<cite><a href="http://momonga.t.u-tokyo.ac.jp/%7Eooura/index.html">http://momonga.t.u-tokyo.ac.jp/~ooura/index.html</a></cite>)<br>
+Now DePanEstimate uses only more fast FFTW library version 3 (<cite><a href="http://www.fftw.org">http://www.fftw.org</a></cite>)<br>
+as Windows binary DLL (compiled with gcc under MinGW by Alessio Massaro),<br>
+which support for threads and have AMD K7 (3dNow!) support in addition to SSE/SSE2.<br>
+It may be downloaded from <cite><a href="ftp://ftp.fftw.org/pub/fftw/fftw3win32mingw.zip">ftp://ftp.fftw.org/pub/fftw/fftw3win32mingw.zip</a></cite><br>
+<font color="#ff0000">For using, you must put FFTW3.DLL file from that package to some directory in path (for example, C:\WINDOWS\SYSTEM32). 
+DePanEstimate will NOT work without it!</font><br>
+&nbsp;&nbsp;&nbsp; 9. For best results, you may temporary add Info parameter, analyze info and tune some parameters (<var>Trust</var>, <var>dxmax</var> etc).<br>
+&nbsp;&nbsp;&nbsp; 10. You may use not strictly same clips for motion
+estimation and compensation, for example try add some
+brightness-contrast adjusting, pre-filtering, masking, cropping&nbsp;
+to input clip used for motion estimation only (and use different
+processing for output compensated-stabilized results).<br>
+</p>
+<h2>Using</h2>
+
+<h3>Preparation of interleaved motion compensated clip with following strong temporal denoising</h3>
+<p>1. Load original (input) clip (I),<br>
+2. Make clip (F) with full forward motion compensation,<br>
+3. Make clip (B) with full backward motion compensation,<br>
+4. Make a interleave clip, with compensated frames before and after every original frame;<br>
+We will get a long clip (with triple length), with every 3 successive frames corresponded to same time.<br>
+5. Apply some temporal filter that uses pixel differences between previous, current and next frames,
+for example Fluxsmooth filter.<br>
+6. Select every third (original non-compensated but cleaned) frame to output.<br>
+The cleaned clip will not have a lot of artifacts, produced by global motion with denoising,
+and the denoising will be more strong in most areas (camera's pan  will be compensated.)</p>
+<p>Notes: with <code>DePanInterleave</code>, stages 2,3,4 combined to single. Moreover, the range may be large than 1.</p>
+<h4>Simple sample script for progressive clip:</h4>
+
+<pre>AviSource("input.avi")
+LoadPlugin("depanestimate.dll") # or use autoloading
+LoadPlugin("depan.dll")         # or use autoloading
+LoadPlugin("fluxsmooth.dll")    # or use autoloading
+
+i = ConvertToYV12()
+mdata = DePanEstimate(i)
+DePanInterleave(i, data=mdata)
+FluxSmooth()
+SelectEvery(3, 1)
+</pre>
+<p>For best results, you may temporary add Info parameter, analyze info and tune some parameters (Trust, dxmax etc)</p>
+<h4>Sample script for interlaced clip:</h4>
+
+<pre>AviSource("input.avi")
+LoadPlugin("depanestimate.dll") # or use autoloading
+LoadPlugin("depan.dll")         # or use autoloading
+LoadPlugin("fluxsmooth.dll")
+AssumeTFF()
+SeparateFields()
+i = ConvertToYV12()
+mdata = DePanEstimate(i, range=1, trust=5.5, log="depan.log")
+DePanInterleave(i,data=mdata, prev=1, next=1, matchfields=true)
+FluxSmooth()
+SelectEvery(3, 1)
+Weave()
+</pre>
+<h4>Some suitable temporal denoising filters<br>
+</h4>
+<ul>
+  <li>
+CTMedian (Conditional Temporal Median) by Kevin Atkinson</li>
+  <li>
+  and its new version renamed to DeSpot (by Fizick) - for spot removing</li>
+  <li>
+STMedianFilter by Tom Barry - trbarry@trbarry.com</li>
+  <li>
+FluxSmooth by Ross Thomas &lt;ross@grinfinity.com&gt;</li>
+  <li>
+RemoveDirt by Rainer Wittmann gorw@gmx.de</li>
+  <li>DeGrainMedian by Fizick</li>
+</ul>
+
+<p>Please, make a tests to add filters to the list!<br>
+</p>
+<p>&nbsp;For proposed denoising method with using of the DePan
+(previously with GenMotion),
+such temporal filter must compare pixel with previous and next frame,
+and make some smoothing if difference between previous and next frame
+is small.
+These filters also may make additional internal (small) local motion
+compensation
+(as Dust filter, which may get some speed increasing due to well global
+motion compensation).</p>
+
+<h3>Framerate change</h3>
+<p>DePan  may be used as a tool for framerate converting and similar tasks (only global motion).</p>
+<p>For example, to change framerate with factor=1.5, from 16.6 fps progressive (old 8 mm film) to 25 fps, use script.</p>
+<pre>AviSource("kino.avi")
+i = ConvertToYV12()
+LoadPlugin("depanestimate.dll") # or use autoloading
+LoadPlugin("depan.dll")         # or use autoloading
+data = DePanEstimate(i, range=1, trust=5)
+f1_3 = DePan(i, data, offset=1./3)
+b1_3 = DePan(i, data, offset=-1./3)
+Interleave(f1_3, i, b1_3)
+SelectEvery(6, 0, 1, 2)
+</pre>
+<p>&nbsp;It may by written as a function:
+
+</p>
+<pre>function fps2to3(clip) {
+# change FPS from 2 to 3 (or 16.66 to 25, or 20 to 30 and so on), i.e. with factor=3/2
+# uses global motion compensation
+# input must be YV12 or YUY2 progressive (or separated fields probably ?)
+data = DePanEstimate(clip)
+f1_3 = DePan(clip, data, offset=1./3)
+b1_3 = DePan(clip, data, offset=-1./3)
+Interleave(f1_3, clip, b1_3)
+SelectEvery(6, 0, 1, 2)
+}
+
+AviSource("e:\video.avi")
+LoadPlugin("depanestimate.dll") # or use autoloading
+LoadPlugin("depan.dll")         # or use autoloading
+ConvertToYV12()
+fps2to3()
+</pre>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;Here is a possible function
+for framerate converting (progressive) with factor=5/3, for example
+from 15 fps to 25 fps :
+
+<pre>function fps3to5(clip) {
+# change FPS from 3 to 5 (or 15 to 25, or 18 to 30 and so on), i.e. with factor=5/3
+# uses global motion compensation
+# input must be YV12 or YUY2 progressive (or separated fields probably ?)
+data = DePanEstimate(clip)
+t3_5 = DePan(clip, data, offset=-2./5)
+t6_5 = DePan(clip, data, offset=1./5).trim(2,0)
+t9_5 = DePan(clip, data, offset=-1./5).trim(1,0)
+t12_5 = DePan(clip, data, offset=2./5).trim(3,0)
+Interleave(clip, t3_5, t6_5, t9_5, t12_5)
+SelectEvery(15,0,1,2,3,4)
+}
+
+AviSource("e:\video.avi")
+LoadPlugin("depanestimate.dll") # or use autoloading
+LoadPlugin("depan.dll")         # or use autoloading
+ConvertToYV12()
+fps3to5()</pre>
+<p>Notes. There is more simple and general alternative method: 
+try <code>ChangeFPS</code> with following <code>DePanStabilize</code>.</p>
+
+<h3>Motion stabilization</h3>
+
+<p>DePanStabilize  may be used as a tool for smoothing of global motion. Inertial filtering method is used in current version.</p>
+<p>Simple sample script for progressive clip:</p>
+<pre>AviSource("input.avi")
+LoadPlugin("depanestimate.dll") # or use autoloading
+LoadPlugin("depan.dll")         # or use autoloading
+i = ConvertToYV12()
+mdata = DePanEstimate(i)
+DePanStabilize(i, data=mdata)
+</pre>
+<p>We may add and tune parameters <var>cutoff</var>, <var>dxmax</var>, edges filling method etc, corresponded to your clip and you.</p>
+
+<h3>Scenes detection and logging</h3>
+<p>Create file with numbers of frames at scene changes. Play whole clip.</p>
+<pre>
+LoadPlugin("depanestimate.dll") # or use autoloading
+LoadPlugin("depan.dll")         # or use autoloading
+filename="test.log"
+avisource("g:\test.avi")
+ConvertToYV12(interlaced=false)
+data=DepanEstimate(trust=2.5)
+WriteFileIf(filename, "(AverageLuma(DepanScenes(data))>30)" , "current_frame")
+</pre>
+
+<h3>Using log files</h3>
+<p>DepanEstimate function may write optional log file with motion data,
+in Deshaker - compatible format.
+Moreover, Depan function may read such log files (in this mode it works
+as GenMotion,
+without DepanEstimate, data clip is ignored, and source clip may be
+used as dummy data clip).
+Deshaker log may be loaded in Depan and vice versa. Depan can
+compensate zoom and rotation
+too. Therefore you may load similar AVS script files in VirtualDub, and
+run second pass of Deshaker for anvanced image stabilization (and
+coding) of filtered clip.
+Of course, before you must run first pass of DePanEstimate to make
+Depan.log file,
+which must be selected in Deshaker. Instead of that, you may add
+DePanStabilize(i,data) function to script and run all in one pass !</p>
+<p>Since v1.9.2 it is possible to write extended log file with additional "Trust" data per frame.</p>
+
+<h3>Deshaker log file format (after Gunnar Thalin)</h3>
+<p>During Pass 1 the Deshaker plugin tries to find the panning,
+rotation and zoom
+that, when applied to the current image, makes it look like the
+previous image (almost).
+The values on each line in the file are (from left to right): frame
+number (or fields number), x- and y-panning (in pixels), rotation (in
+degrees) and zoom factor.
+You can edit the log file manually (but use fixed line format). You can
+delete lines that got completely wrong (and that you don't care to try
+to fix in a better way).
+Gaps in the frames numbers are treated as zero-panning, zero rotation
+and no scaling.
+If a frame exists more than once in the log file, the last line is used.</p>
+<p>Note: For interlaced source, info is for every field (A - first, B - second by time)</p>
+
+<h3>DePan and DepanEstimate client-server framebuffer format (mostly for programmers)</h3>
+<p>Depan and DepanEstimate use framebuffer of special clip for storing of motion data. 
+When client (Depan) requests the motion data for frame <code>n</code> from this clip,
+server (DepanEstimate) creates frame and writes such data (from start of framebuffer):
+one header record, and several frame motion data records, from <code>n-range</code> to <code>n+range</code> (<code>nframes = 2*range+1</code> for non-edge frames).
+Definition of motion data parameters is same as in Deshaker log.</p>
+<p>In all versions since 0.6, I use these structures:</p>
+<pre>#define DEPANSIGNATURE "depan06"
+
+typedef struct depanheaderstruct { // structure of header depandata in framebuffer
+char signature[8]; // signature for check
+int reserved; // for future using
+int nframes; // number of records with frames motion data in current framebuffer
+} depanheader;
+
+typedef struct depandatastruct { // structure of every frame motion data record in framebuffer
+int frame; // frame number
+float dx; // x shift (in pixels) for this frame
+float dy; // y shift (in pixels, corresponded to pixel aspect = 1)
+float zoom; // zoom
+float rot; // rotation (in degrees), (now =0 - no rotation estimated data in current version DePanEstimate)
+} depandata;</pre>
+<p>Note 1. Depan uses dx=0.0 as mark of scenechange.<br>
+Note 2. DepanEstimate output is cropped if not in show or info mode.<br>
+See depanio.cpp source code for details.</p>
+
+<h3>Alternative method for Global motion estimation</h3>
+<p>Some time ago I added to local motion estimation <code>MVTools</code> plugin by Manao (to version 0.9.8.2) 
+a new function <code>MVDepan</code> for global motion estimation.
+It is based on local block motion vectors analysis, similar to first pass of DeShaker plugin.
+<code>MVDepan</code> function can be used instead of <code>DepanEstimate</code>. 
+It can estimate pan, zoom and rotation. 
+</p>
+
+<h3>More info about Depan</h3>
+<p>Some discussion about GenMotion and DePan plugins may be found in AviSynth forum at<br> 
+<cite><a href="http://forum.doom9.org/forumdisplay.php?s=&amp;forumid=33"> http://forum.doom9.org/forumdisplay.php?s=&amp;forumid=33</a></cite><br>
+in particular in thread 
+<cite><a href="http://forum.doom9.org/showthread.php?s=&amp;threadid=66686"> http://forum.doom9.org/showthread.php?s=&amp;threadid=66686</a></cite></p>
+<h3>Acknowledgments</h3>
+<p>Thanks to Gunnar Thalin for detailed info about Deshaker log file format and very useful discussions.</p>
+<p>
+Thanks to Takuya Ooura for free and fast FFT2D code used in first versions of DePan.</p>
+<p>Thanks to scharfis_brain and many others for useful discussions and bug reports.</p>
+
+<h3>Version changes:</h3>
+<ul>
+  <li>Version 0.1, April 25, 2004 -
+      first public (beta!).<br>
+  </li>
+  <li>Version 0.2, April 27, 2004 -
+      fixed bug for non-integer <var>Offset</var> values.</li>
+  <li>Version 0.3, May 15, 2004 -
+      fixed bug with DePanStabilize input parameters, set <var>subpixel</var>=2 as default;<br>
+      added zoom estimation and <var>ZoomMax</var> parameter, zoom and rotation compensation,        
+      log file input, <var>MatchFields</var> parameter.<br>
+  </li>
+  <li>Version 0.4, May 16, 2004
+    - fixed bug with <var>MatchFields</var> for big <var>Offset</var>;<br>
+fixed bug with pixel position for nearest and bilinear interpolation;<br>
+set default <var>MatchFields</var>=true, add pixel aspect, Russian doc.<br>
+  </li>
+  <li>Version 0.5, May 22, 2004
+    - fixed some bug with rotation in Depan<br>
+improved DepanStabilize: changed stabilization method to inertial in wide range;<br>
+added parameters <var>freqmax, dxmax, dymax, zoommax, rotmax, inputlog</var>.<br>
+  </li>
+  <li>Version 0.6, May 28, 2004
+    - minor changed and documented client-server format.<br>
+DepanEstimate: added <var>stab</var> parameter, scenechange at sharp trust changes, <var>range</var> may be 0, show correlation, crop output. <br>
+DepanStabilize: <var>Freqmax</var> is renamed to <var>Cutoff</var>, add adaptive zoom, Fill.</li>
+  <li>Version 0.7, May 30, 2004
+    - DepanEstimate: added improve zoom estimation. <br>
+  </li>
+  <li>Version 0.8, June 06, 2004
+    - DepanInterleave: replaced "<var>Range</var>" parameter to "<var>Prev</var>" and "<var>Next</var>".<br>
+  </li>
+  <li>Version 0.9, June 13, 2004
+    - all clients: added "<var>Mirror</var>" parameter to fill empty borders.<br>
+  </li>
+  <li>Version 0.9.1, August 24, 2004 -&nbsp; Fixed bugs with zoom estimation and compensation.<br>
+  </li>
+  <li>Version 1.0, September 3, 2004 -&nbsp; Added option for using of external FFTW library (more fast) .<br>
+  </li>
+  <li>Version 1.1, September 16, 2004 -&nbsp; Added experimental DepanScenes function.<br>
+  </li>
+  <li>Version 1.1.1, October 07, 2004 -&nbsp; fixed bug with compensation near right bottom and top corners,<br>
+&nbsp;changed from FFTW_MEASURE to FFTW_ESTIMATE for more short init, without speed change (for power-2 windows),<br>
+&nbsp;compiled without /G7 flag (as before v.1.0), added FPS script functions to doc. (not public)<br>
+  </li>
+  <li>Version 1.1.2, October 09, 2004 -&nbsp; delayed loading of&nbsp; fftw3.dll (now optional).<br>
+  </li>
+  <li>Version 1.1.3, November 16, 2004 -&nbsp; fixed bug with infinite shift in DePanStabilize.<br>
+  </li>
+  <li>Version 1.1.4, December 15, 2004 -&nbsp; <var>damping</var>
+parameter in DePanStabilize is now variable (was&nbsp; accidentally
+fixed =0.9 in all previous versions :-),&nbsp;&nbsp;&nbsp;&nbsp; added
+notes about MVDepan to documentation.<br>
+  </li>
+  <li>Version 1.1.5, December 31, 2004 -&nbsp; bug fixed in DepanEstimate (erroneous motion data) 
+  for <var>fftw</var>=true with <var>show</var>=false and <var>info</var>=false<br>
+  </li>
+  <li>Version 1.2, April 1, 2005 - added&nbsp; <var>fitlast</var> parameter to fit some last frames range to original position<br>
+  </li>
+  <li>Version 1.3, April 29, 2005 - added&nbsp; <var>blur</var> parameter 
+  to somewhat hide the sharp mirrored details;  blur is horizontal only, at left and right border.<br>
+  </li>
+  <li>Version 1.4, May 7, 2005 (published May 29)- DePanStabilize: Zoom adaptive mode <var>addzoom</var>
+is improved.&nbsp; Adaptive zoom decreasing rate is slower than zoom
+increasing rate now. Thus, the black empty borders are decreased, and
+zoom value is more stable now. <br>
+  </li>
+  <li>Version 1.4.1, May 30, 2005 - DepanEstimate: fixed bug with log
+file (A and B symbols swapped) for BFF (all previous versions). Thanks
+to eugvas for report. <br>
+  </li>
+  <li>Version 1.5, June 4, 2005 - improved adaptive zoom; 
+  added <var>tzoom</var> parameter for the zoom rise time (was equal to 1/<var>cutoff</var>)<br>
+  </li>
+  <li>Version 1.6, August 5, 2005 - added YUY2 support; disabled <var>improved=true</var> mode (was broken);
+  changed default <var>subpixel</var>=1 for DepanInterleave as sufficient for denoising and more fast<br> 
+  </li>
+  <li>
+Version 1.7, September 5, 2005 - DePanStabilize: added parameter <var>initzoom</var> - minimal zoom; <br>
+changed limits <var>dxmax, dymax, zoommax, rotmax</var> from hard to soft with larger slope non-linearity.<br>
+Changed cache.
+  </li>
+  <li>
+Version 1.8, March 14, 2006 - DePanEstimate: set FFTW as default if exist, FFTW_MEASURE, little iSSE optimization<br>
+DePanStabilize: added (undocumented :-) string parameters <var>vdx, vdy, vzoom, vrot</var> for AviSynth variables as requested by AI.<br>
+Fixed bug with subpixel=1 YUY2 mode (memory access on refresh).
+  </li>
+  <li>
+Version 1.8.1, May 8, 2006 - DePanStabilize: now stabilize zoom too.
+  </li>
+  <li>
+Version 1.8.2, June 5, 2006 - DePanStabilize: now stabilize zoom on short interval;<br>
+Fixed old bug with rotation.<br>
+DePanEstimate: dxmax or dymax=0 now means do not estimate motion along this coordinate.
+  </li>
+  <li>
+Version 1.8.3, June 11, 2006 - DePanStabilize: now prev and next define maximal lag.
+  </li>
+  <li>
+Version 1.9.0, November 13, 2006 - Isolated DePanEstimate function to separate plugin DePanEstimate.dll (under GNU GPL),
+removed non-fftw code (now always fftw=true).
+  </li>
+  <li>
+Version 1.9.1, November 27, 2006 - DePanEstimate: more correct processing of <var>dxmax=0</var> or <var>dymax=0</var> 
+  </li>
+  <li>
+DePanEstimate Version 1.9.2, March 25, 2007 - DePanEstimate: parameter <var>extlog</var>
+ to write extended log file with Trust data (as requested by David). 
+  </li>
+  <li>
+DePan Version 1.10 beta, May 8, 2007 - DepanStabilize:  added new average <var>method</var>,<br>
+small bug fixed in edge interpolation.
+ </li>
+  <li>
+DePan Version 1.10.1, January 27, 2008 - fixed bug with <var>blur</var> mode for <var>subpixel=1</var>.
+ </li>
+  <li>
+August 5, 2011 - released Depan source code under GPL v.2.
+ </li>
+</ul>
+<h3>License</h3>
+<p>Depan and DePanEstimate are free software distributed under GNU GPL license. See gpl.txt for details.<br>
+Documentation is distributed under <a href="http://creativecommons.org/licenses/by-sa/3.0/">CreativeCommons BY-SA 3.0 license.</a><br>
+</p>
+<p>Please consider to make some <a href="http://avisynth.org.ru/donate.html">donation</a> for support.</p>
+
+<h3>Download</h3>
+
+<p><a href="depan1101src.zip">Download DePan tools version 1.10.1</a></p>
+<p><a href="depanestimate192.zip">Download DePanEstimate version 1.9.2</a></p>
+
+<p>
+<a href="../">Return to main page</a></p>
+
+</body>
+</html>
