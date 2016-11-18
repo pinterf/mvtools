@@ -461,7 +461,7 @@ PVideoFrame __stdcall MVDepan::GetFrame(int ndest, IScriptEnvironment* env)
   int mask_height;
   int mask_pitch;
 
-  if (vi.IsYUV() && !vi.IsYUY2())
+  if ((vi.IsYUV() || vi.IsYUVA()) && !vi.IsYUY2())
   {
   // copy U
     srcp = src->GetReadPtr(PLANAR_U);
@@ -498,7 +498,7 @@ PVideoFrame __stdcall MVDepan::GetFrame(int ndest, IScriptEnvironment* env)
     }
   }
   else
-  {
+  { // YUY2
     srcp = src->GetReadPtr();
     src_width = src->GetRowSize();
     src_height = src->GetHeight();
@@ -681,32 +681,20 @@ PVideoFrame __stdcall MVDepan::GetFrame(int ndest, IScriptEnvironment* env)
       int xmsg = 0;
       int ymsg = 1;
 
-      sprintf(messagebuf, "MVDepan data");
-      if (vi.IsYUY2())
-        DrawStringYUY2(dst, xmsg, ymsg, messagebuf);
-      else
-        DrawString(dst, xmsg, ymsg, messagebuf);
+      sprintf_s(messagebuf, "MVDepan data");
+      DrawString(dst, vi, xmsg, ymsg, messagebuf);
 
-      sprintf(messagebuf, "fn=%5d iter=%3d error=%7.3f", nframe, iter, errorcur);
+      sprintf_s(messagebuf, "fn=%5d iter=%3d error=%7.3f", nframe, iter, errorcur);
       ymsg++;
-      if (vi.IsYUY2())
-        DrawStringYUY2(dst, xmsg, ymsg, messagebuf);
-      else
-        DrawString(dst, xmsg, ymsg, messagebuf);
+      DrawString(dst, vi, xmsg, ymsg, messagebuf);
 
-      sprintf(messagebuf, "     dx      dy     rot    zoom");
+      sprintf_s(messagebuf, "     dx      dy     rot    zoom");
       ymsg++;
-      if (vi.IsYUY2())
-        DrawStringYUY2(dst, xmsg, ymsg, messagebuf);
-      else
-        DrawString(dst, xmsg, ymsg, messagebuf);
+      DrawString(dst, vi, xmsg, ymsg, messagebuf);
 
-      sprintf(messagebuf, "%7.2f %7.2f %7.3f %7.5f", motionx[nframe], motiony[nframe], motionrot[nframe], motionzoom[nframe]);
+      sprintf_s(messagebuf, "%7.2f %7.2f %7.3f %7.5f", motionx[nframe], motiony[nframe], motionrot[nframe], motionzoom[nframe]);
       ymsg++;
-      if (vi.IsYUY2())
-        DrawStringYUY2(dst, xmsg, ymsg, messagebuf);
-      else
-        DrawString(dst, xmsg, ymsg, messagebuf);
+      DrawString(dst, vi, xmsg, ymsg, messagebuf);
     }
 
   }
