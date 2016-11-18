@@ -427,24 +427,24 @@ void	MVPlane::refine_pel2 (SchedulerRefine::TaskData &td)
 	case	1:
 		switch (nSharp)
 		{
-		case	0: _bilin_hor_ptr   (pPlane[1], pPlane[0], nPitch, nPitch, nExtendedWidth, nExtendedHeight); break;
-		case	1: _bicubic_hor_ptr (pPlane[1], pPlane[0], nPitch, nPitch, nExtendedWidth, nExtendedHeight); break;
-		default: _wiener_hor_ptr  (pPlane[1], pPlane[0], nPitch, nPitch, nExtendedWidth, nExtendedHeight); break;
+		case	0: _bilin_hor_ptr   (pPlane[1], pPlane[0], nPitch, nPitch, nExtendedWidth, nExtendedHeight, bits_per_pixel); break;
+		case	1: _bicubic_hor_ptr (pPlane[1], pPlane[0], nPitch, nPitch, nExtendedWidth, nExtendedHeight, bits_per_pixel); break;
+		default: _wiener_hor_ptr  (pPlane[1], pPlane[0], nPitch, nPitch, nExtendedWidth, nExtendedHeight, bits_per_pixel); break;
 		}
 	case	2:
 		switch (nSharp)
 		{
-		case	0: _bilin_ver_ptr   (pPlane[2], pPlane[0], nPitch, nPitch, nExtendedWidth, nExtendedHeight); break;
-		case	1: _bicubic_ver_ptr (pPlane[2], pPlane[0], nPitch, nPitch, nExtendedWidth, nExtendedHeight); break;
-		default: _wiener_ver_ptr  (pPlane[2], pPlane[0], nPitch, nPitch, nExtendedWidth, nExtendedHeight); break;
+		case	0: _bilin_ver_ptr   (pPlane[2], pPlane[0], nPitch, nPitch, nExtendedWidth, nExtendedHeight, bits_per_pixel); break;
+		case	1: _bicubic_ver_ptr (pPlane[2], pPlane[0], nPitch, nPitch, nExtendedWidth, nExtendedHeight, bits_per_pixel); break;
+		default: _wiener_ver_ptr  (pPlane[2], pPlane[0], nPitch, nPitch, nExtendedWidth, nExtendedHeight, bits_per_pixel); break;
 		}
 		break;
 	case	3:
 		switch (nSharp)
 		{
-		case	0: _bilin_dia_ptr   (pPlane[3], pPlane[0], nPitch, nPitch, nExtendedWidth, nExtendedHeight); break;
-		case	1: _bicubic_hor_ptr (pPlane[3], pPlane[2], nPitch, nPitch, nExtendedWidth, nExtendedHeight); break;	// faster from ready-made horizontal
-		default: _wiener_hor_ptr  (pPlane[3], pPlane[2], nPitch, nPitch, nExtendedWidth, nExtendedHeight); break;	// faster from ready-made horizontal
+		case	0: _bilin_dia_ptr   (pPlane[3], pPlane[0], nPitch, nPitch, nExtendedWidth, nExtendedHeight, bits_per_pixel); break;
+		case	1: _bicubic_hor_ptr (pPlane[3], pPlane[2], nPitch, nPitch, nExtendedWidth, nExtendedHeight, bits_per_pixel); break;	// faster from ready-made horizontal
+		default: _wiener_hor_ptr  (pPlane[3], pPlane[2], nPitch, nPitch, nExtendedWidth, nExtendedHeight, bits_per_pixel); break;	// faster from ready-made horizontal
 		}
 		break;
 	default:
@@ -466,9 +466,9 @@ void	MVPlane::refine_pel4 (SchedulerRefine::TaskData &td)
 	case	2:
 		switch (nSharp)
 		{
-		case	0: _bilin_hor_ptr   (pPlane[ 2], pPlane[ 0], nPitch, nPitch, nExtendedWidth, nExtendedHeight); break;
-		case	1: _bicubic_hor_ptr (pPlane[ 2], pPlane[ 0], nPitch, nPitch, nExtendedWidth, nExtendedHeight); break;
-		default: _wiener_hor_ptr  (pPlane[ 2], pPlane[ 0], nPitch, nPitch, nExtendedWidth, nExtendedHeight); break;
+		case	0: _bilin_hor_ptr   (pPlane[ 2], pPlane[ 0], nPitch, nPitch, nExtendedWidth, nExtendedHeight, bits_per_pixel); break;
+		case	1: _bicubic_hor_ptr (pPlane[ 2], pPlane[ 0], nPitch, nPitch, nExtendedWidth, nExtendedHeight, bits_per_pixel); break;
+		default: _wiener_hor_ptr  (pPlane[ 2], pPlane[ 0], nPitch, nPitch, nExtendedWidth, nExtendedHeight, bits_per_pixel); break;
 		}
 		break;
 	case	3:  _average_ptr (pPlane[ 3], pPlane[ 0] + 1,      pPlane[ 2], nPitch, nExtendedWidth-1, nExtendedHeight); break;
@@ -479,18 +479,18 @@ void	MVPlane::refine_pel4 (SchedulerRefine::TaskData &td)
 	case	8:
 		switch (nSharp)
 		{
-		case	0: _bilin_ver_ptr   (pPlane[ 8], pPlane[ 0], nPitch, nPitch, nExtendedWidth, nExtendedHeight); break;
-		case	1: _bicubic_ver_ptr (pPlane[ 8], pPlane[ 0], nPitch, nPitch, nExtendedWidth, nExtendedHeight); break;
-		default: _wiener_ver_ptr  (pPlane[ 8], pPlane[ 0], nPitch, nPitch, nExtendedWidth, nExtendedHeight); break;
+		case	0: _bilin_ver_ptr   (pPlane[ 8], pPlane[ 0], nPitch, nPitch, nExtendedWidth, nExtendedHeight, bits_per_pixel); break;
+		case	1: _bicubic_ver_ptr (pPlane[ 8], pPlane[ 0], nPitch, nPitch, nExtendedWidth, nExtendedHeight, bits_per_pixel); break;
+		default: _wiener_ver_ptr  (pPlane[ 8], pPlane[ 0], nPitch, nPitch, nExtendedWidth, nExtendedHeight, bits_per_pixel); break;
 		}
 		break;
 	case	9:  _average_ptr (pPlane[ 9], pPlane[ 8],          pPlane[10], nPitch, nExtendedWidth,   nExtendedHeight); break;
 	case	10:
 		switch (nSharp)
 		{
-		case	0: _bilin_dia_ptr   (pPlane[10], pPlane[ 0], nPitch, nPitch, nExtendedWidth, nExtendedHeight); break;
-		case	1: _bicubic_hor_ptr (pPlane[10], pPlane[ 8], nPitch, nPitch, nExtendedWidth, nExtendedHeight); break;	// faster from ready-made horizontal
-		default: _wiener_hor_ptr  (pPlane[10], pPlane[ 8], nPitch, nPitch, nExtendedWidth, nExtendedHeight); break;	// faster from ready-made horizontal
+		case	0: _bilin_dia_ptr   (pPlane[10], pPlane[ 0], nPitch, nPitch, nExtendedWidth, nExtendedHeight, bits_per_pixel); break;
+		case	1: _bicubic_hor_ptr (pPlane[10], pPlane[ 8], nPitch, nPitch, nExtendedWidth, nExtendedHeight, bits_per_pixel); break;	// faster from ready-made horizontal
+		default: _wiener_hor_ptr  (pPlane[10], pPlane[ 8], nPitch, nPitch, nExtendedWidth, nExtendedHeight, bits_per_pixel); break;	// faster from ready-made horizontal
 		}
 		break;
 	case	11: _average_ptr (pPlane[11], pPlane[ 8] + 1,      pPlane[10], nPitch, nExtendedWidth-1, nExtendedHeight  ); break;

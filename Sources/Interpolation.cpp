@@ -787,7 +787,7 @@ void RB2Cubic(
 
 template<typename pixel_t>
 void VerticalBilin(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch,
-                   int nSrcPitch, int nWidth, int nHeight)
+                   int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel)
 {
     pixel_t *pDst = reinterpret_cast<pixel_t *>(pDst8);
     const pixel_t *pSrc = reinterpret_cast<const pixel_t *>(pSrc8);
@@ -809,7 +809,7 @@ void VerticalBilin(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPit
 
 template<typename pixel_t>
 void HorizontalBilin(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch,
-                     int nSrcPitch, int nWidth, int nHeight)
+                     int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel)
 {
     pixel_t *pDst = reinterpret_cast<pixel_t *>(pDst8);
     const pixel_t *pSrc = reinterpret_cast<const pixel_t *>(pSrc8);
@@ -830,7 +830,7 @@ void HorizontalBilin(unsigned char *pDst8, const unsigned char *pSrc8, int nDstP
 
 template<typename pixel_t>
 void DiagonalBilin(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch,
-                   int nSrcPitch, int nWidth, int nHeight)
+                   int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel)
 {
     pixel_t *pDst = reinterpret_cast<pixel_t *>(pDst8);
     const pixel_t *pSrc = reinterpret_cast<const pixel_t *>(pSrc8);
@@ -856,7 +856,7 @@ void DiagonalBilin(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPit
 // invarint simplified, 6 taps. Weights: (1, -5, 20, 20, -5, 1)/32 - added by Fizick
 template<typename pixel_t>
 void VerticalWiener(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch,
-                   int nSrcPitch, int nWidth, int nHeight)
+                   int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel)
 {
     pixel_t *pDst = reinterpret_cast<pixel_t *>(pDst8);
     const pixel_t *pSrc = reinterpret_cast<const pixel_t *>(pSrc8);
@@ -864,7 +864,7 @@ void VerticalWiener(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPi
     nSrcPitch /= sizeof(pixel_t);
     nDstPitch /= sizeof(pixel_t);
 
-    const int max_pixel_value = sizeof(pixel_t) == 1 ? 255 : 65535;
+    const int max_pixel_value = sizeof(pixel_t) == 1 ? 255 : (1 << bits_per_pixel) - 1;
 
     for ( int j = 0; j < 2; j++ )
     {
@@ -902,7 +902,7 @@ void VerticalWiener(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPi
 
 template<typename pixel_t>
 void HorizontalWiener(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch,
-                     int nSrcPitch, int nWidth, int nHeight)
+                     int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel)
 {
     pixel_t *pDst = reinterpret_cast<pixel_t *>(pDst8);
     const pixel_t *pSrc = reinterpret_cast<const pixel_t *>(pSrc8);
@@ -910,7 +910,7 @@ void HorizontalWiener(unsigned char *pDst8, const unsigned char *pSrc8, int nDst
     nSrcPitch /= sizeof(pixel_t);
     nDstPitch /= sizeof(pixel_t);
 
-    const int max_pixel_value = sizeof(pixel_t) == 1 ? 255 : 65535;
+    const int max_pixel_value = sizeof(pixel_t) == 1 ? 255 : (1 << bits_per_pixel) - 1;
 
     for ( int j = 0; j < nHeight; j++ )
     {
@@ -932,7 +932,7 @@ void HorizontalWiener(unsigned char *pDst8, const unsigned char *pSrc8, int nDst
 
 template<typename pixel_t>
 void DiagonalWiener(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch,
-                   int nSrcPitch, int nWidth, int nHeight)
+                   int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel)
 {
     pixel_t *pDst = reinterpret_cast<pixel_t *>(pDst8);
     const pixel_t *pSrc = reinterpret_cast<const pixel_t *>(pSrc8);
@@ -940,7 +940,7 @@ void DiagonalWiener(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPi
     nSrcPitch /= sizeof(pixel_t);
     nDstPitch /= sizeof(pixel_t);
 
-    const int max_pixel_value = sizeof(pixel_t) == 1 ? 255 : 65535;
+    const int max_pixel_value = sizeof(pixel_t) == 1 ? 255 : (1 << bits_per_pixel) - 1;
 
     for ( int j = 0; j < 2; j++ )
     {
@@ -988,7 +988,7 @@ void DiagonalWiener(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPi
 // bicubic (Catmull-Rom 4 taps interpolation)
 template<typename pixel_t>
 void VerticalBicubic(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch,
-                   int nSrcPitch, int nWidth, int nHeight)
+                   int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel)
 {
     pixel_t *pDst = reinterpret_cast<pixel_t *>(pDst8);
     const pixel_t *pSrc = reinterpret_cast<const pixel_t *>(pSrc8);
@@ -996,7 +996,7 @@ void VerticalBicubic(unsigned char *pDst8, const unsigned char *pSrc8, int nDstP
     nSrcPitch /= sizeof(pixel_t);
     nDstPitch /= sizeof(pixel_t);
 
-    const int max_pixel_value = sizeof(pixel_t) == 1 ? 255 : 65535;
+    const int max_pixel_value = sizeof(pixel_t) == 1 ? 255 : (1 << bits_per_pixel) - 1;
 
     for ( int j = 0; j < 1; j++ )
     {
@@ -1032,7 +1032,7 @@ void VerticalBicubic(unsigned char *pDst8, const unsigned char *pSrc8, int nDstP
 
 template<typename pixel_t>
 void HorizontalBicubic(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch,
-                     int nSrcPitch, int nWidth, int nHeight)
+                     int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel)
 {
     pixel_t *pDst = reinterpret_cast<pixel_t *>(pDst8);
     const pixel_t *pSrc = reinterpret_cast<const pixel_t *>(pSrc8);
@@ -1040,7 +1040,7 @@ void HorizontalBicubic(unsigned char *pDst8, const unsigned char *pSrc8, int nDs
     nSrcPitch /= sizeof(pixel_t);
     nDstPitch /= sizeof(pixel_t);
 
-    const int max_pixel_value = sizeof(pixel_t) == 1 ? 255 : 65535;
+    const int max_pixel_value = sizeof(pixel_t) == 1 ? 255 : (1 << bits_per_pixel) - 1;
 
     for ( int j = 0; j < nHeight; j++ )
     {
@@ -1061,7 +1061,7 @@ void HorizontalBicubic(unsigned char *pDst8, const unsigned char *pSrc8, int nDs
 
 template<typename pixel_t>
 void DiagonalBicubic(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch,
-                   int nSrcPitch, int nWidth, int nHeight)
+                   int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel)
 {
     pixel_t *pDst = reinterpret_cast<pixel_t *>(pDst8);
     const pixel_t *pSrc = reinterpret_cast<const pixel_t *>(pSrc8);
@@ -1069,7 +1069,7 @@ void DiagonalBicubic(unsigned char *pDst8, const unsigned char *pSrc8, int nDstP
     nSrcPitch /= sizeof(pixel_t);
     nDstPitch /= sizeof(pixel_t);
 
-    const int max_pixel_value = sizeof(pixel_t) == 1 ? 255 : 65535;
+    const int max_pixel_value = sizeof(pixel_t) == 1 ? 255 : (1 << bits_per_pixel) - 1;
 
     for ( int j = 0; j < 1; j++ )
     {
@@ -1136,14 +1136,14 @@ void Average2(unsigned char *pDst8, const unsigned char *pSrc1_8, const unsigned
 
 
 // instantiate templates defined in cpp
-template void VerticalBilin<uint8_t>(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight);
-template void VerticalBilin<uint16_t>(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight);
+template void VerticalBilin<uint8_t>(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeigh, int bits_per_pixelt);
+template void VerticalBilin<uint16_t>(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
-template void HorizontalBilin<uint8_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight);
-template void HorizontalBilin<uint16_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight);
+template void HorizontalBilin<uint8_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+template void HorizontalBilin<uint16_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
-template void DiagonalBilin<uint8_t>(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight);
-template void DiagonalBilin<uint16_t>(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight);
+template void DiagonalBilin<uint8_t>(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+template void DiagonalBilin<uint16_t>(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
 template void RB2F<uint8_t>(               unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int y_beg, int y_end, bool isse);
 template void RB2F<uint16_t>(               unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int y_beg, int y_end, bool isse);
@@ -1160,23 +1160,23 @@ template void RB2Quadratic<uint16_t>(       unsigned char *pDst, const unsigned 
 template void RB2Cubic<uint8_t>(           unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int y_beg, int y_end, bool isse);
 template void RB2Cubic<uint16_t>(           unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int y_beg, int y_end, bool isse);
 
-template void VerticalWiener<uint8_t>(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight);
-template void VerticalWiener<uint16_t>(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight);
+template void VerticalWiener<uint8_t>(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+template void VerticalWiener<uint16_t>(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
-template void HorizontalWiener<uint8_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight);
-template void HorizontalWiener<uint16_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight);
+template void HorizontalWiener<uint8_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+template void HorizontalWiener<uint16_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
-template void DiagonalWiener<uint8_t>(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight);
-template void DiagonalWiener<uint16_t>(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight);
+template void DiagonalWiener<uint8_t>(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+template void DiagonalWiener<uint16_t>(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
-template void VerticalBicubic<uint8_t>(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight);
-template void VerticalBicubic<uint16_t>(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight);
+template void VerticalBicubic<uint8_t>(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+template void VerticalBicubic<uint16_t>(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
-template void HorizontalBicubic<uint8_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight);
-template void HorizontalBicubic<uint16_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight);
+template void HorizontalBicubic<uint8_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+template void HorizontalBicubic<uint16_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
-template void DiagonalBicubic<uint8_t>(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight);
-template void DiagonalBicubic<uint16_t>(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight);
+template void DiagonalBicubic<uint8_t>(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+template void DiagonalBicubic<uint16_t>(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
 template void Average2<uint8_t>(     unsigned char *pDst, const unsigned char *pSrc1, const unsigned char *pSrc2, int nPitch, int nWidth, int nHeight);
 template void Average2<uint16_t>(     unsigned char *pDst, const unsigned char *pSrc1, const unsigned char *pSrc2, int nPitch, int nWidth, int nHeight);

@@ -125,7 +125,7 @@ private:
 
 	typedef void (*InterpFncPtr) (
 		unsigned char *pDst, const unsigned char *pSrc,
-	   int nDstPitch, int nSrcPitch, int nWidth, int nHeight
+	   int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel
 	);
 
 	typedef void (*ReducePtr) (
