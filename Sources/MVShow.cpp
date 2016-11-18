@@ -145,13 +145,16 @@ PVideoFrame __stdcall MVShow::GetFrame(int n, IScriptEnvironment* env)
 		}
 
 	// Copy the frame into the created frame
-   env->BitBlt(pDst[1], nDstPitches[1], pSrc[1], nSrcPitches[1], vi.width / xRatioUV * pixelsize, vi.height /yRatioUV);
-   env->BitBlt(pDst[2], nDstPitches[2], pSrc[2], nSrcPitches[2], vi.width / xRatioUV * pixelsize, vi.height /yRatioUV);
-//   if ( !nPlane )
-	   env->BitBlt(pDst[0], nDstPitches[0], pSrc[0], nSrcPitches[0], vi.width*pixelsize, vi.height);
+   env->BitBlt(pDst[0], nDstPitches[0], pSrc[0], nSrcPitches[0], vi.width*pixelsize, vi.height);
+   if (!vi.IsY()) {
+      env->BitBlt(pDst[1], nDstPitches[1], pSrc[1], nSrcPitches[1], vi.width / xRatioUV * pixelsize, vi.height / yRatioUV);
+      env->BitBlt(pDst[2], nDstPitches[2], pSrc[2], nSrcPitches[2], vi.width / xRatioUV * pixelsize, vi.height / yRatioUV);
+    }
+  //   if ( !nPlane )
 
    if ( mvClip.IsUsable() )
-      DrawMVs(pDst[0] + nDstPitches[0]*nSuperVPad + nHPadding, nDstPitches[0], pSrc[0] + nSrcPitches[0]*nSuperVPad + nHPadding, nSrcPitches[0]);
+      DrawMVs(pDst[0] + nDstPitches[0]*nSuperVPad + nHPadding*pixelsize, nDstPitches[0], pSrc[0] + nSrcPitches[0]*nSuperVPad + nHPadding*pixelsize, nSrcPitches[0]);
+
 
 		if ( (pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
 		{
@@ -177,11 +180,11 @@ PVideoFrame __stdcall MVShow::GetFrame(int n, IScriptEnvironment* env)
 		 if (sad > ThSCD1)
             nsc += 1;
 	  }
-		sprintf(buf, "%d %d", int(mean / nBlkCount)*8/nBlkSizeX*8/nBlkSizeY, nsc*256/nBlkCount);
+		sprintf_s(buf, "%d %d", int(mean / nBlkCount)*8/nBlkSizeX*8/nBlkSizeY, nsc*256/nBlkCount);
 		if ( (pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
 			DrawStringYUY2(dst, 0, 0, buf);
 		else
-			DrawString(dst, 0, 0, buf);
+			DrawString(dst, vi, 0, 0, buf);
 	}
 
 	if ( number>0 && number <= mvClip.GetBlkCount()) {
@@ -189,32 +192,43 @@ PVideoFrame __stdcall MVShow::GetFrame(int n, IScriptEnvironment* env)
 		FakeBlockData block = mvClip.GetBlock(0, number);
          int x = block.GetX();
          int y = block.GetY();
-		sprintf(buf, "n=%d x=%d y=%d vx=%d vy=%d sad=%d",number, x, y, block.GetMV().x, block.GetMV().y, block.GetSAD());
+		sprintf_s(buf, "n=%d x=%d y=%d vx=%d vy=%d sad=%d",number, x, y, block.GetMV().x, block.GetMV().y, block.GetSAD());
 		if ( (pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
 			DrawStringYUY2(dst, 0, 0, buf);
 		else
-			DrawString(dst, 0, 0, buf);
-        BYTE *pDstWork = pDst[0] + x + y*nDstPitches[0] + nDstPitches[0]*nSuperVPad + nHPadding;
-         for (int h=0; h<nBlkSizeX; h++)
-         {
-             for (int w=0; w<nBlkSizeY; w++)
-                pDstWork[w] = 255; // todo pixelsize aware
-            pDstWork += nDstPitches[0];
-         }
+			DrawString(dst, vi, 0, 0, buf);
+    if (pixelsize == 1) {
+      BYTE *pDstWork = pDst[0] + x + y*nDstPitches[0] + nDstPitches[0] * nSuperVPad + nHPadding;
+      for (int h = 0; h < nBlkSizeX; h++)
+      {
+        for (int w = 0; w < nBlkSizeY; w++)
+          pDstWork[w] = 255; // todo pixelsize aware
+        pDstWork += nDstPitches[0];
+      }
+    }
+    else { // pixelsize == 2
+      uint16_t *pDstWork = (uint16_t *)(pDst[0] + x * pixelsize + y*nDstPitches[0] + nDstPitches[0] * nSuperVPad + nHPadding * pixelsize);
+      int pixel_max = (1 << bits_per_pixel) - 1;
+      for (int h = 0; h < nBlkSizeX; h++)
+      {
+        for (int w = 0; w < nBlkSizeY; w++)
+          pDstWork[w] = pixel_max; // todo pixelsize aware
+        pDstWork += nDstPitches[0] / pixelsize;
+      }
+    }
 
 
 	}
 	return dst;
 }
 
-// todo: bits_per_pixel
+template<typename pixel_t>
 inline void MVShow::DrawPixel(unsigned char *pDst, int nDstPitch, int x, int y, int w, int h, int luma)
 {
 //	if (( x >= 0 ) && ( x < w ) && ( y >= 0 ) && ( y < h )) // disababled in v.2 - it is no more needed with super clip
-		pDst[x + y * nDstPitch] = luma;
+		reinterpret_cast<pixel_t *>(pDst)[x + y * nDstPitch / sizeof(pixel_t)] = luma;
 }
 
-// todo: bits_per_pixel
 // Draw the vector, scaled with the right scalar factor.
 void MVShow::DrawMV(unsigned char *pDst, int nDstPitch, int scale,
 			        int x, int y, int sizex, int sizey, int w, int h, VECTOR vector, int pel)
@@ -242,17 +256,39 @@ void MVShow::DrawMV(unsigned char *pDst, int nDstPitch, int scale,
 	else decInc = (shortLen << 16) / longLen;
 	int j=0;
 	if (yLonger) {
-		for (int i = 0; i != endVal; i += incrementVal) {
-		    int luma = 255 - i *(255-160)/endVal;
-            DrawPixel(pDst, nDstPitch, x0 + (j >> 16), y0 + i, w, h, luma);
-			j += decInc;
-		}
+    if (pixelsize == 1) {
+      for (int i = 0; i != endVal; i += incrementVal) {
+        int luma = 255 - i *(255 - 160) / endVal;
+        DrawPixel<uint8_t>(pDst, nDstPitch, x0 + (j >> 16), y0 + i, w, h, luma);
+        j += decInc;
+      }
+    }
+    else { // pixelsize == 2
+      const int max_pixel_value = (1 << bits_per_pixel) - 1;
+      const int pixel160 = 160 << (bits_per_pixel - 8);
+      for (int i = 0; i != endVal; i += incrementVal) {
+        int luma = max_pixel_value - i *(max_pixel_value - pixel160) / endVal;
+        DrawPixel<uint16_t>(pDst, nDstPitch, x0 + (j >> 16), y0 + i, w, h, luma);
+        j += decInc;
+      }
+    }
 	} else {
-		for (int i = 0; i != endVal; i += incrementVal) {
-		    int luma = 255 - i *(255-160)/endVal;
-            DrawPixel(pDst, nDstPitch, x0 + i, y0 + (j>> 16), w, h, luma);
-			j += decInc;
-		}
+    if (pixelsize == 1) {
+      for (int i = 0; i != endVal; i += incrementVal) {
+        int luma = 255 - i *(255 - 160) / endVal;
+        DrawPixel<uint8_t>(pDst, nDstPitch, x0 + i, y0 + (j >> 16), w, h, luma);
+        j += decInc;
+      }
+    }
+    else { // pixelsize == 2
+      const int max_pixel_value = (1 << bits_per_pixel) - 1;
+      const int pixel160 = 160 << (bits_per_pixel - 8);
+      for (int i = 0; i != endVal; i += incrementVal) {
+        int luma = max_pixel_value - i *(max_pixel_value - pixel160) / endVal;
+        DrawPixel<uint16_t>(pDst, nDstPitch, x0 + i, y0 + (j >> 16), w, h, luma);
+        j += decInc;
+      }
+    }
 	}
 }
 
@@ -283,10 +319,10 @@ void MVShow::DrawMVs(unsigned char *pDst, int nDstPitch, const unsigned char *pS
 	    }
     }
 */
-  // todo: bits_per_pixel
 	for ( int i = 0; i < plane.GetBlockCount(); i++ )
 		if ( plane[i].GetSAD() < nTolerance )
-			DrawMV(pDst + plane.GetBlockSizeX() / 2 * effectiveScale + plane.GetBlockSizeY()/ 2 * effectiveScale*nDstPitch, // changed in v1.8, now address is the center of first block
+      // /2: center
+			DrawMV(pDst + plane.GetBlockSizeX() / 2 * effectiveScale * pixelsize + plane.GetBlockSizeY()/ 2 * effectiveScale*nDstPitch, // changed in v1.8, now address is the center of first block
 			    nDstPitch, nScale * effectiveScale, plane[i].GetX() * effectiveScale,
 				plane[i].GetY() * effectiveScale, (plane.GetBlockSizeX() - plane.GetOverlapX())* effectiveScale,
 				(plane.GetBlockSizeY() - plane.GetOverlapY())* effectiveScale,

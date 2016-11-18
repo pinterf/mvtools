@@ -77,7 +77,8 @@ public:
                  int nSrcPitch);
 	void DrawMV(unsigned char *pDst, int nDstPitch, int scale,
 			    int x, int y, int sizex, int sizey, int w, int h, VECTOR vector, int pel);
-	void DrawPixel(unsigned char *pDst, int nDstPitch, int x, int y, int w, int h, int luma);
+  template<typename pixel_t>
+  void DrawPixel(unsigned char *pDst, int nDstPitch, int x, int y, int w, int h, int luma);
 };
 
 #endif
