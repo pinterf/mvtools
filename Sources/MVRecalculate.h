@@ -128,6 +128,10 @@ public :
 
 	PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
 
+  int __stdcall SetCacheHints(int cachehints, int frame_range) override {
+    return cachehints == CACHE_GET_MTMODE ? MT_MULTI_INSTANCE : 0;
+  }
+
 private:
 
 	void				load_src_frame (MVGroupOfFrames &gof, ::PVideoFrame &src, const MVAnalysisData &ana_data);

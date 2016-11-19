@@ -36,8 +36,11 @@ public:
   );
   ~MDegrainN();
 
-  ::PVideoFrame __stdcall
-    GetFrame(int n, ::IScriptEnvironment* env_ptr);
+  ::PVideoFrame __stdcall GetFrame(int n, ::IScriptEnvironment* env_ptr);
+
+  int __stdcall SetCacheHints(int cachehints, int frame_range) override {
+    return cachehints == CACHE_GET_MTMODE ? MT_MULTI_INSTANCE : 0;
+  }
 
 
 protected:
