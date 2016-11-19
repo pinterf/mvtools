@@ -1,9 +1,15 @@
 /* 
-  DePan plugin for Avisynth 2.6 - global motion compensation
-	Version 1.9, November 5, 2006. 
-	(DePanScenes function)
-	Copyright(c) 2004-2006, A.G. Balakhnin aka Fizick
-	bag@hotmail.ru
+  DePan plugin for Avisynth 2.6 interface - global motion estimation and compensation of camera pan
+  Version 1.9, November 5, 2006.
+  Version 1.10.0, April 29, 2007
+  Version 1.10.1
+  Version 1.13.1, April 6, 2016
+  Version 2.13.1, November 19, 2016 by pinterf
+  (DePanScenes function)
+  Copyright(c)2004-2016, A.G. Balakhnin aka Fizick
+  bag@hotmail.ru
+
+  10-16 bit depth support for Avisynth+ by pinterf
 
 	This program is free software; you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by

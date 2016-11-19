@@ -1,9 +1,14 @@
 /*
-    DePan plugin for Avisynth 2.5 - global motion compensation
+  DePan plugin for Avisynth 2.6 interface - global motion estimation and compensation of camera pan
   Version 1.9, November 5, 2006.
+  Version 1.10.0, April 29, 2007
+  Version 1.13.1, April 6, 2016
+  Version 2.13.1, November 19, 2016 by pinterf
   (DePan and DePanInterleave functions)
-  Copyright(c) 2004-2006, A.G. Balakhnin aka Fizick
+  Copyright(c)2004-2016, A.G. Balakhnin aka Fizick
   bag@hotmail.ru
+
+  10-16 bit depth support for Avisynth+ by pinterf
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -68,6 +73,7 @@
 #include "depan.h"
 #include "yuy2planes.h"
 #if 0
+// moved, common with mvtools yuy2planes
 //------------------------------------------------------------------
 void YUY2ToPlanes(const BYTE* srcp, int src_height, int src_width, int src_pitch,
   BYTE * srcplaneY, int planeYpitch, BYTE *srcplaneU, int planeUpitch, BYTE *srcplaneV, int planeVpitch)
@@ -695,6 +701,7 @@ PVideoFrame __stdcall DePan::GetFrame(int ndest, IScriptEnvironment* env) {
 
   return dst;
 #if 0
+  // PF: old code, kept here for reference
   // ---------------------------------------------------------------------------
       // get original source frame
   src = child->GetFrame(nsrc, env);

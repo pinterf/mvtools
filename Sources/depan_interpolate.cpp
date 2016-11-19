@@ -1,9 +1,15 @@
 /*
-    DePan plugin for Avisynth 2.5 - global motion compensation of camera pan
+  DePan plugin for Avisynth 2.6 interface - global motion estimation and compensation of camera pan
+  Version 1.9, November 5, 2006.
+  Version 1.10.0, April 29, 2007
   Version 1.10.1
+  Version 1.13.1, April 6, 2016
+  Version 2.13.1, November 19, 2016 by pinterf
   (tranformation internal functions)
-  Copyright(c) 2004-2008, A.G. Balakhnin aka Fizick
+  Copyright(c)2004-2016, A.G. Balakhnin aka Fizick
   bag@hotmail.ru
+
+  10-16 bit depth support for Avisynth+ by pinterf
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -35,16 +41,15 @@
 #define MIRROR_RIGHT 8
 */
 
-// todo: template methods should go to .hpp
-template <typename pixel_size>
+template <typename pixel_t>
 void compensate_plane_nearest2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, int src_pitch, int row_size, int height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel)
 {
-  dst_pitch /= sizeof(pixel_size);
-  src_pitch /= sizeof(pixel_size);  // src_pitch = src->GetRowSize(plane) in bytes
-  row_size /= sizeof(pixel_size);   // src_width = src->GetRowSize(plane) in bytes
+  dst_pitch /= sizeof(pixel_t);
+  src_pitch /= sizeof(pixel_t);  // src_pitch = src->GetRowSize(plane) in bytes
+  row_size /= sizeof(pixel_t);   // src_width = src->GetRowSize(plane) in bytes
 
-  pixel_size *dstp = reinterpret_cast<pixel_size *>(dstp8);
-  const pixel_size *srcp = reinterpret_cast<const pixel_size *>(srcp8);
+  pixel_t *dstp = reinterpret_cast<pixel_t *>(dstp8);
+  const pixel_t *srcp = reinterpret_cast<const pixel_t *>(srcp8);
 
   // if border >=0, then we fill empty edge (border) pixels by that value
   // work1row_size is work array, it must have size >= 1*row_size
@@ -275,16 +280,16 @@ void compensate_plane_nearest2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, i
 // with BILINEAR interpolation of discrete neighbour source pixels
 //   t[0] = dxc, t[1] = dxx, t[2] = dxy, t[3] = dyc, t[4] = dyx, t[5] = dyy
 //
-template <typename pixel_size>
+template <typename pixel_t>
 void compensate_plane_bilinear2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, int src_pitch, int row_size, int height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel)
 {
   // work2row_size is work array, it must have size >= 2*row_size
-  dst_pitch /= sizeof(pixel_size);
-  src_pitch /= sizeof(pixel_size);  // src_pitch = src->GetRowSize(plane) in bytes
-  row_size /= sizeof(pixel_size);   // src_width = src->GetRowSize(plane) in bytes
+  dst_pitch /= sizeof(pixel_t);
+  src_pitch /= sizeof(pixel_t);  // src_pitch = src->GetRowSize(plane) in bytes
+  row_size /= sizeof(pixel_t);   // src_width = src->GetRowSize(plane) in bytes
 
-  pixel_size *dstp = reinterpret_cast<pixel_size *>(dstp8);
-  const pixel_size *srcp = reinterpret_cast<const pixel_size *>(srcp8);
+  pixel_t *dstp = reinterpret_cast<pixel_t *>(dstp8);
+  const pixel_t *srcp = reinterpret_cast<const pixel_t *>(srcp8);
 
   int h, row;
   int pixel;
@@ -501,9 +506,9 @@ void compensate_plane_bilinear2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, 
 
           //					xsrc = tr[0]+tr[1]*row;
           rowleft = rowleftwork[row]; //(int)(xsrc);
-                                      //					rowleft = floor(xsrc);
+          //					rowleft = floor(xsrc);
 
-                                      //  x,y point is in square: (rowleft,hlow) to (rowleft+1,hlow+1)
+          //  x,y point is in square: (rowleft,hlow) to (rowleft+1,hlow+1)
 
           if ((rowleft >= 0) && (rowleft < row_size - 1)) {
 
@@ -511,12 +516,12 @@ void compensate_plane_bilinear2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, 
             ix2 = ix2work[row];
             w = w0 + rowleft;
 
-            //						pixel = ( intcoef[iy2]*(intcoef[ix2]*srcp[w] + intcoef[ix2+1]*srcp[w+1] ) + \
-                                    //								intcoef[iy2+1]*(intcoef[ix2]*srcp[w+src_pitch] + intcoef[ix2+1]*srcp[w+src_pitch+1] ) )/1024;
+            // pixel = ( intcoef[iy2]*(intcoef[ix2]*srcp[w] + intcoef[ix2+1]*srcp[w+1] ) + \
+            //           intcoef[iy2+1]*(intcoef[ix2]*srcp[w+src_pitch] + intcoef[ix2+1]*srcp[w+src_pitch+1] ) )/1024;
             pixel = (intcoef2dzoom[ix2] * srcp[w] + intcoef2dzoom[ix2 + 1] * srcp[w + 1] + \
               intcoef2dzoom[ix2 + 66] * srcp[w + src_pitch] + intcoef2dzoom[ix2 + 67] * srcp[w + src_pitch + 1]) >> 10; // v1.6
 
-                                                                                                                        //						dstp[row] = max(min(pixel,255),0);
+            //						dstp[row] = max(min(pixel,255),0);
             dstp[row] = pixel;   // maxmin disabled in v1.6
           }
           else if (rowleft < 0 && mleft) {
@@ -639,16 +644,16 @@ void compensate_plane_bilinear2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, 
 //
 //   t[0] = dxc, t[1] = dxx, t[2] = dxy, t[3] = dyc, t[4] = dyx, t[5] = dyy
 //
-template <typename pixel_size>
+template <typename pixel_t>
 void compensate_plane_bicubic2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, int src_pitch, int row_size, int height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel)
 {
   // work2width1030 is integer work array, it must have size >= 2*row_size+1030
-  dst_pitch /= sizeof(pixel_size);
-  src_pitch /= sizeof(pixel_size);  // src_pitch = src->GetRowSize(plane) in bytes
-  row_size /= sizeof(pixel_size);   // src_width = src->GetRowSize(plane) in bytes
+  dst_pitch /= sizeof(pixel_t);
+  src_pitch /= sizeof(pixel_t);  // src_pitch = src->GetRowSize(plane) in bytes
+  row_size /= sizeof(pixel_t);   // src_width = src->GetRowSize(plane) in bytes
 
-  pixel_size *dstp = reinterpret_cast<pixel_size *>(dstp8);
-  const pixel_size *srcp = reinterpret_cast<const pixel_size *>(srcp8);
+  pixel_t *dstp = reinterpret_cast<pixel_t *>(dstp8);
+  const pixel_t *srcp = reinterpret_cast<const pixel_t *>(srcp8);
 
   int h, row;
   int pixel;
@@ -668,9 +673,9 @@ void compensate_plane_bicubic2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, i
   //int *intcoef = ix4work + row_size;
   int *intcoef = new int[4*(256 + 1)]; //ix4work + row_size;
 
-                                       //     int for pixel_size uint8_t
-                                       // __int64 for pixel_size uint16_t, otherwise int overflow in intermediate calculations
-  std::conditional < sizeof(pixel_size) == 1, int, __int64 >::type ts[4];
+  //     int for pixel_size uint8_t
+  // __int64 for pixel_size uint16_t, otherwise int overflow in intermediate calculations
+  std::conditional < sizeof(pixel_t) == 1, int, __int64 >::type ts[4];
   //__int64 ts[4];         // P.F. 16.06.09 Bicubic 2D force __int64 calc if used
   int intcoef2d[16]; // P.F. 16.06.09 Bicubic 2D + 16 bit pixel -> oveflow: int->_int64  
 
@@ -887,7 +892,7 @@ void compensate_plane_bicubic2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, i
           //					rowleft = floor(xsrc);
           rowleft = rowleftwork[row]; //(int)(xsrc);
 
-                                      //  x,y point is in square: (rowleft,hlow) to (rowleft+1,hlow+1)
+          //  x,y point is in square: (rowleft,hlow) to (rowleft+1,hlow+1)
 
           if ((rowleft >= 1) && (rowleft < row_size - 2)) {
 
@@ -1050,8 +1055,7 @@ void compensate_plane_bicubic2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, i
 
           iy4 = ((int)((ysrc - hlow) * 256)) << 2; //changed to shift in v.1.1.1
 
-                                                   // 16 bit samples: 32 bit overflow
-                                                   //pixel = ((__int64)intcoef[iy4] * ts[0] + (__int64)intcoef[iy4 + 1] * ts[1] + (__int64)intcoef[iy4 + 2] * ts[2] + (__int64)intcoef[iy4 + 3] * ts[3]) >> 22;
+          // 16 bit samples: 32 bit overflow. ts[] is __int64 for word sized pixels
           pixel = (int)((intcoef[iy4] * ts[0] + intcoef[iy4 + 1] * ts[1] + intcoef[iy4 + 2] * ts[2] + intcoef[iy4 + 3] * ts[3]) >> 22); // 22=2*11 scale factor 
           dstp[row] = max(min(pixel, pixel_max), 0); // PF
         }

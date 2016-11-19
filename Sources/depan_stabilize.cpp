@@ -1,9 +1,16 @@
 /*
-  DePan plugin for Avisynth 2.5 - global motion compensation
-  Version 1.13, february 18, 2016.
+  DePan plugin for Avisynth 2.6 interface - global motion estimation and compensation of camera pan
+  Version 1.9, November 5, 2006.
+  Version 1.10.0, April 29, 2007
+  Version 1.10.1
+  Version 1.13, February 18, 2016.
+  Version 1.13.1, April 6, 2016
+  Version 2.13.1, November 19, 2016 by pinterf
   (DePanStabilize function)
   Copyright(c)2004-2016, A.G. Balakhnin aka Fizick
   bag@hotmail.ru
+
+  10-16 bit depth support for Avisynth+ by pinterf
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -1002,7 +1009,9 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
   //int isYUY2 = vi.IsYUY2();//v1.6
   int xmsg;
 
+#ifdef _DEBUG
   _RPT1(0, "DePanStabilize::GetFrame starts: ndest=%d \n", ndest);
+#endif
 
 // correction for fieldbased
 //	if (fieldbased != 0) 	nfields = 2;
@@ -1184,10 +1193,10 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
   else { // prepare stabilization data by estimation and smoothing of cumulative motion
 
     // cumulative transform (position) for all sequence from base
-    _RPT1(0, "-- START: cumulative transform (position) for all sequence from nbase=%d \n", nbase);
 
     // ------ debug!
 #ifdef _DEBUG
+    _RPT1(0, "-- START: cumulative transform (position) for all sequence from nbase=%d \n", nbase);
     if (nbase == 4 && ndest == 6) // !! Specific clip debug!
     {
       _RPT2(0, "DePanStabilize. will be problem nbase=%d ndest=%d\n", nbase, ndest);
@@ -1212,11 +1221,15 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
       LogToFile(debugbuf);
 #endif
     }
+#ifdef _DEBUG
     _RPT0(0, "-- END: cumulative transform (position) for all sequence\n");
+#endif
 
     if (method == 0)// (inertial)
     {
+#ifdef _DEBUG
       _RPT0(0, "DePanStabilize. Inertial\n");
+#endif
       //  if (debuglogfile != NULL) { fprintf(debuglogfile, "DePanStabilize. Inertial\n"); }
       DePanStabilize::Inertial(nbase, ndest, &trdif);
 #ifdef _DEBUG
@@ -1426,29 +1439,20 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
     // -------------
     // copy "frame_to_copy" frame
 
-    VideoInfo vi_src;
-
     src = child->GetFrame(frame_to_copy, env);
-    vi_src = vi;
-    // we are working with PVideoFrame src and VideoInfo vi_src from now on
 
     _RPT5(0, "DePanStabilize phase#%d. subpixel=%d frame=%d dx=%f dy=%f\n", fillprev0next1current2, subpixel, nbase, dxdif, dydif);
 
-      // we are working with 
-      //   PVideoFrame src  
-      //   VideoInfo vi_src 
-      // from now on
-
     int planes[] = { PLANAR_Y, PLANAR_U, PLANAR_V };
-    int plane_count = vi_src.IsY() ? 1 : 3;
+    int plane_count = vi.IsY() ? 1 : 3;
 
     for (int p = 0; p < plane_count; p++)
     {
       const int plane = planes[p];
 
       int blur_current;
-      int width_sub = vi_src.GetPlaneWidthSubsampling(plane);
-      int height_sub = vi_src.GetPlaneHeightSubsampling(plane);
+      int width_sub = vi.GetPlaneWidthSubsampling(plane);
+      int height_sub = vi.GetPlaneHeightSubsampling(plane);
 
       if (notfilled == 0)
         border = -1;  // negative - borders is filled by prev, not by black!

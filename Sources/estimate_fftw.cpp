@@ -1,9 +1,12 @@
 /*
-  DePanEstimate plugin for Avisynth 2.5 - global motion estimation
-  Version 1.10 February 22, 2016
+  DePanEstimate plugin for Avisynth 2.6 interface - global motion estimation
+  Version 1.10, February 22, 2016
+  Version 2.10, November 19, 2016 by pinterf
   (DePanEstimate function)
-  Copyright(c) 2004-2016, A.G. Balakhnin aka Fizick
+  Copyright(c)2004-2016, A.G. Balakhnin aka Fizick
   bag@hotmail.ru
+
+  10-16 bit depth support for Avisynth+ by pinterf
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -33,6 +36,8 @@
     trust - frames correlation at scene change
     winx  - number of columns of fft window (must be power of 2). (width)
     winy  - number of rows of fft window (must be power of 2).    (height)
+    wleft
+    wtop
     dxmax - limit of x shift
     dymax - limit of y shift
     zoommax - maximum zoom factor ( if =1, zoom is not estimated)
@@ -1153,7 +1158,7 @@ PVideoFrame __stdcall DePanEstimate_fftw::GetFrame(int ndest, IScriptEnvironment
 
 // ---------------------------------------------------------------------------
 
-  if (!vi.IsY())
+  if (!vi.IsY() && !isYUY2)
   { // all planar which is not grey
     // Process U plane
     srcp = src->GetReadPtr(PLANAR_U);
