@@ -1,9 +1,12 @@
 /*
-    DePanEstimate plugin for Avisynth 2.5 - global motion estimation
-    Version 1.10, February 22, 2016
-    (plugin interface)
-    Copyright(c)2004-2015, A.G. Balakhnin aka Fizick
-    bag@hotmail.ru
+  DePanEstimate plugin for Avisynth 2.6 interface - global motion estimation
+  Version 1.10, February 22, 2016
+  Version 2.10, November 19, 2016 by pinterf
+  (plugin interface)
+  Copyright(c)2004-2016, A.G. Balakhnin aka Fizick
+  bag@hotmail.ru
+
+  10-16 bit depth support for Avisynth+ by pinterf
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -53,7 +56,6 @@
     show - show correlation sufrace
     fftw - use fftw external DLL library (dummy parameter since v1.9)
     extlog - output extended log file with motion and trust data
-    stacked - input is stacked16 format // PF
 
 */
 
