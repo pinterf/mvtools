@@ -59,13 +59,13 @@ void compensate_plane_bicubic (BYTE *dstp,  int dst_pitch, const BYTE * srcp,  i
 void compensate_plane_bilinear (BYTE *dstp,  int dst_pitch, const BYTE * srcp,  int src_pitch,  int src_width, int src_height, transform tr, int mirror, int border, int * work2width, int blurmax);
 void compensate_plane_nearest (BYTE *dstp,  int dst_pitch, const BYTE * srcp,  int src_pitch,  int src_width, int src_height, transform tr, int mirror, int border, int * work1width, int blurmax);
 */
-template <typename pixel_size>
+template <typename pixel_t>
 void compensate_plane_nearest2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, int src_pitch, int src_width, int src_height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel);
 
-template <typename pixel_size>
+template <typename pixel_t>
 void compensate_plane_bilinear2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, int src_pitch, int row_size, int height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel);
 
-template <typename pixel_size>
+template <typename pixel_t>
 void compensate_plane_bicubic2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, int src_pitch, int row_size, int height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel);
 
 //void compensate_plane_nearest_stacked(BYTE *dstp, int dst_pitch, const BYTE * srcp, int src_pitch, int src_width, int src_height, transform tr, int mirror, int border, int * work1width, int blurmax);
