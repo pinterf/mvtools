@@ -1,7 +1,10 @@
 # mvtools
-Motion estimation and compensation plugin for Avisynth+ and Avisynth v2.6 family. 
+Motion estimation and compensation plugin for Avisynth+ and Avisynth v2.6 family.
+Supporting YUY2, 4:2:0, 4:2:2, 4:4:4 at native 8, 10, 12, 14 and 16 bit depths.
+Still supporting Windows XP.
+x86 and x64 versions
 
-File: mvtools2.dll (both 32 and 64 bit Windows DLLs)
+File: mvtools2.dll
 
 Credits: 
 - Manao, Fizick, Tsp, TSchniede, SEt, Vit, Firesledge, cretindesalpes 
@@ -10,7 +13,19 @@ Modification base:
 - mvtools2, 2.6.0.5 64 bit version from
 http://avisynth.nl/index.php/AviSynth%2B#AviSynth.2B_x64_plugins
 
-Features
+Change log
+- 2.7.5.22 (20161119)
+  Milestone release:
+  General support of 10-16 bit formats with Avisynth Plus (r2294 or newer recommended)
+  with new MDegrain4 and MDegrain5 filters.
+
+  Fix for MSCDetection: scene change filler pixel default value was always 0 (2.7.1.22 regression)
+  MCompensate: possible bugfix bottom padding UV
+  Fix SAD for 10-16 bit depths for horizontal block sizes >= 16
+  Fix nSCD2 (Scene change threshold block count %) (2.7.1.22 regression)
+  MBlockFPS: overlap fixes (right columns and bottom lines)
+  MBlockFPS: overlap fix: missing copy buffer to output, thanks StainlessS
+
 - 2.7.1.22 (20161020)
   Some additional fixes for YV24
   New: MDegrain4, MDegrain5
@@ -53,10 +68,10 @@ Links
 
 For more information see also documents folder.
 
-Current build as of October 20, 2016
-- 2.7.1.22
+Current build as of November 19, 2016
 
 Previous builds
+- 2.7.1.22 (October 20, 2016)
 - 2.7.0.22d (August 16, 2016) 
 - 2.7.0.22c (August 04, 2016)
 - 2.7.0.22 (April 29, 2016): ending number 22 hints to Fizick's 2.5.11.22 version
