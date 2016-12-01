@@ -58,6 +58,7 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
   , yRatioUV(_yRatioUV)
   , nLogyRatioUV(ilog2(_yRatioUV))
   , pixelsize(_pixelsize) // PF
+  , pixelsize_shift(ilog2(pixelsize)) // 161201
   , bits_per_pixel(_bits_per_pixel) // PF
   , _mt_flag(mt_flag)
   , SAD(0)
@@ -1475,7 +1476,7 @@ void	PlaneOfBlocks::estimate_global_mv_doubled_slice(Slicer::TaskData &td)
 
 
 /* fetch the block in the reference frame, which is pointed by the vector (vx, vy) */
-const uint8_t *	PlaneOfBlocks::GetRefBlock(WorkingArea &workarea, int nVx, int nVy)
+__forceinline const uint8_t *	PlaneOfBlocks::GetRefBlock(WorkingArea &workarea, int nVx, int nVy)
 {
   //	return pRefFrame->GetPlane(YPLANE)->GetAbsolutePointer((workarea.x[0]<<nLogPel) + nVx, (workarea.y[0]<<nLogPel) + nVy);
   return (nPel == 2) ? pRefFrame->GetPlane(YPLANE)->GetAbsolutePointerPel <1>((workarea.x[0] << 1) + nVx, (workarea.y[0] << 1) + nVy) :
@@ -1483,25 +1484,26 @@ const uint8_t *	PlaneOfBlocks::GetRefBlock(WorkingArea &workarea, int nVx, int n
     pRefFrame->GetPlane(YPLANE)->GetAbsolutePointerPel <2>((workarea.x[0] << 2) + nVx, (workarea.y[0] << 2) + nVy);
 }
 
-const uint8_t *	PlaneOfBlocks::GetRefBlockU(WorkingArea &workarea, int nVx, int nVy)
+__forceinline const uint8_t *	PlaneOfBlocks::GetRefBlockU(WorkingArea &workarea, int nVx, int nVy)
 {
   //	return pRefFrame->GetPlane(UPLANE)->GetAbsolutePointer((workarea.x[1]<<nLogPel) + (nVx >> 1), (workarea.y[1]<<nLogPel) + (yRatioUV==1 ? nVy : nVy>>1) ); //v.1.2.1
-  return (nPel == 2) ? pRefFrame->GetPlane(UPLANE)->GetAbsolutePointerPel <1>((workarea.x[1] << 1) + (xRatioUV == 1 ? nVx : nVx >> 1), (workarea.y[1] << 1) + (yRatioUV == 1 ? nVy : nVy >> 1)) :
-    (nPel == 1) ? pRefFrame->GetPlane(UPLANE)->GetAbsolutePointerPel <0>((workarea.x[1]) + (xRatioUV == 1 ? nVx : nVx >> 1), (workarea.y[1]) + (yRatioUV == 1 ? nVy : nVy >> 1)) :
-    pRefFrame->GetPlane(UPLANE)->GetAbsolutePointerPel <2>((workarea.x[1] << 2) + (xRatioUV == 1 ? nVx : nVx >> 1), (workarea.y[1] << 2) + (yRatioUV == 1 ? nVy : nVy >> 1));
+  // 161130 bitshifts instead of ternary operator
+  return (nPel == 2) ? pRefFrame->GetPlane(UPLANE)->GetAbsolutePointerPel <1>((workarea.x[1] << 1) + (nVx >> nLogxRatioUV), (workarea.y[1] << 1) + (nVy >> nLogyRatioUV)) :
+    (nPel == 1) ? pRefFrame->GetPlane(UPLANE)->GetAbsolutePointerPel <0>((workarea.x[1]) + (nVx >> nLogxRatioUV), (workarea.y[1]) + (nVy >> nLogyRatioUV)) :
+    pRefFrame->GetPlane(UPLANE)->GetAbsolutePointerPel <2>((workarea.x[1] << 2) + (nVx >> nLogxRatioUV), (workarea.y[1] << 2) + (nVy >> nLogyRatioUV));
   // xRatioUV fix after 2.7.0.22c
 }
 
-const uint8_t *	PlaneOfBlocks::GetRefBlockV(WorkingArea &workarea, int nVx, int nVy)
+__forceinline const uint8_t *	PlaneOfBlocks::GetRefBlockV(WorkingArea &workarea, int nVx, int nVy)
 {
   //	return pRefFrame->GetPlane(VPLANE)->GetAbsolutePointer((workarea.x[2]<<nLogPel) + (nVx >> 1), (workarea.y[2]<<nLogPel) + (yRatioUV==1 ? nVy : nVy>>1) );
-  return (nPel == 2) ? pRefFrame->GetPlane(VPLANE)->GetAbsolutePointerPel <1>((workarea.x[2] << 1) + (xRatioUV == 1 ? nVx : nVx >> 1), (workarea.y[2] << 1) + (yRatioUV == 1 ? nVy : nVy >> 1)) :
-    (nPel == 1) ? pRefFrame->GetPlane(VPLANE)->GetAbsolutePointerPel <0>((workarea.x[2]) + (xRatioUV == 1 ? nVx : nVx >> 1), (workarea.y[2]) + (yRatioUV == 1 ? nVy : nVy >> 1)) :
-    pRefFrame->GetPlane(VPLANE)->GetAbsolutePointerPel <2>((workarea.x[2] << 2) + (xRatioUV == 1 ? nVx : nVx >> 1), (workarea.y[2] << 2) + (yRatioUV == 1 ? nVy : nVy >> 1));
+  return (nPel == 2) ? pRefFrame->GetPlane(VPLANE)->GetAbsolutePointerPel <1>((workarea.x[2] << 1) + (nVx >> nLogxRatioUV), (workarea.y[2] << 1) + (nVy >> nLogyRatioUV)) :
+    (nPel == 1) ? pRefFrame->GetPlane(VPLANE)->GetAbsolutePointerPel <0>((workarea.x[2]) + (nVx >> nLogxRatioUV), (workarea.y[2]) + (nVy >> nLogyRatioUV)) :
+    pRefFrame->GetPlane(VPLANE)->GetAbsolutePointerPel <2>((workarea.x[2] << 2) + (nVx >> nLogxRatioUV), (workarea.y[2] << 2) + (nVy >> nLogyRatioUV));
   // xRatioUV fix after 2.7.0.22c
 }
 
-const uint8_t *	PlaneOfBlocks::GetSrcBlock(int nX, int nY)
+__forceinline const uint8_t *	PlaneOfBlocks::GetSrcBlock(int nX, int nY)
 {
   return pSrcFrame->GetPlane(YPLANE)->GetAbsolutePelPointer(nX, nY);
 }
@@ -1514,14 +1516,16 @@ sad_t	PlaneOfBlocks::LumaSADx(WorkingArea &workarea, const unsigned char *pRef0)
   {
   case 1: // dct SAD
     workarea.DCT->DCTBytes2D(pRef0, nRefPitch[0], &workarea.dctRef[0], dctpitch);
-    sad = (SAD(&workarea.dctSrc[0], dctpitch, &workarea.dctRef[0], dctpitch) + abs(workarea.dctSrc[0] - workarea.dctRef[0]) * 3)*nBlkSizeX / 2; //correct reduced DC component
+    // 161201 correct distance by pixelsize
+    sad = (SAD(&workarea.dctSrc[0], dctpitch, &workarea.dctRef[0], dctpitch) + abs((workarea.dctSrc[0] - workarea.dctRef[0]) >> pixelsize_shift) * 3)*nBlkSizeX / 2; //correct reduced DC component
     break;
   case 2: //  globally (lumaChange) weighted spatial and DCT
     sad = SAD(workarea.pSrc[0], nSrcPitch[0], pRef0, nRefPitch[0]);
     if (dctweight16 > 0)
     {
       workarea.DCT->DCTBytes2D(pRef0, nRefPitch[0], &workarea.dctRef[0], dctpitch);
-      sad_t dctsad = (SAD(&workarea.dctSrc[0], dctpitch, &workarea.dctRef[0], dctpitch) + abs(workarea.dctSrc[0] - workarea.dctRef[0]) * 3)*nBlkSizeX / 2;
+      // 161201 correct distance by pixelsize
+      sad_t dctsad = (SAD(&workarea.dctSrc[0], dctpitch, &workarea.dctRef[0], dctpitch) + abs((workarea.dctSrc[0] - workarea.dctRef[0]) >> pixelsize_shift) * 3)*nBlkSizeX / 2;
       sad = (sad*(16 - dctweight16) + dctsad*dctweight16) / 16;
     }
     break;
@@ -1554,7 +1558,7 @@ sad_t	PlaneOfBlocks::LumaSADx(WorkingArea &workarea, const unsigned char *pRef0)
     if (dctweight16 > 0)
     {
       sad_t dctsad = SATD(workarea.pSrc[0], nSrcPitch[0], pRef0, nRefPitch[0]);
-      sad = (sad*(16 - dctweight16) + dctsad*dctweight16) / 16;
+      sad = (sad*(16 - dctweight16) + dctsad*dctweight16) / 16; // todo check overflow if blocksizes reach 64 or more for uint16_t
     }
     break;
   case 7: // per block adaptive switched from spatial to equal mixed SAD (faster?)
