@@ -107,6 +107,7 @@ private:
   const int      yRatioUV;
   const int      nLogyRatioUV;     // log of yRatioUV (0 for 1 and 1 for 2)
   const int      pixelsize; // PF
+  const int      pixelsize_shift; // log of pixelsize (0,1,2) for shift instead of mul or div
   const int      bits_per_pixel;
   const bool     _mt_flag;         // Allows multithreading
 
