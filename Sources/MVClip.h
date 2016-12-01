@@ -82,7 +82,7 @@ public :
    inline int GetVPadding() const { return nVPadding; }
    inline sad_t GetThSCD1() const { return nSCD1; }
    inline int GetThSCD2() const { return nSCD2; }
-   inline const FakeBlockData& GetBlock(int nLevel, int nBlk) const { return GetPlane(nLevel)[nBlk]; }
+   __forceinline const FakeBlockData& GetBlock(int nLevel, int nBlk) const { return GetPlane(nLevel)[nBlk]; }
    bool IsUsable(sad_t nSCD1_, int nSCD2_) const;
    bool IsUsable() const { return IsUsable(nSCD1, nSCD2); }
    bool IsSceneChange() const { return FakeGroupOfPlanes::IsSceneChange(nSCD1, nSCD2); }

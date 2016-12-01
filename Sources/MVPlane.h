@@ -59,7 +59,7 @@ public:
    void WritePlane(FILE *pFile);
 
 	template <int NPELL2>
-   inline const uint8_t *GetAbsolutePointerPel(int nX, int nY) const
+   __forceinline const uint8_t *GetAbsolutePointerPel(int nX, int nY) const
    {
 		enum {	MASK = (1 << NPELL2) - 1	};
 
@@ -72,12 +72,12 @@ public:
    }
 
 	template <>
-   inline const uint8_t *GetAbsolutePointerPel <0> (int nX, int nY) const
+   __forceinline const uint8_t *GetAbsolutePointerPel <0> (int nX, int nY) const
    {
          return pPlane[0] + (nX << pixelsize_shift) + nY * nPitch;
    }
 
-   inline const uint8_t *GetAbsolutePointer(int nX, int nY) const
+   __forceinline const uint8_t *GetAbsolutePointer(int nX, int nY) const
    {
       if (nPel == 1)
 		{
@@ -94,17 +94,17 @@ public:
    }
 
 	template <int NPELL2>
-   inline const uint8_t *GetPointerPel (int nX, int nY) const
+   __forceinline const uint8_t *GetPointerPel (int nX, int nY) const
    {
       return GetAbsolutePointerPel <NPELL2> (nX + nHPaddingPel, nY + nVPaddingPel);
    }
 
-   inline const uint8_t *GetPointer(int nX, int nY) const
+   __forceinline const uint8_t *GetPointer(int nX, int nY) const
    {
       return GetAbsolutePointer(nX + nHPaddingPel, nY + nVPaddingPel);
    }
 
-   inline const uint8_t *GetAbsolutePelPointer(int nX, int nY) const
+   __forceinline const uint8_t *GetAbsolutePelPointer(int nX, int nY) const
    {
 		return pPlane[0] + (nX << pixelsize_shift) + nY * nPitch;
 	}

@@ -43,7 +43,7 @@ class FakeGroupOfPlanes
 //   const unsigned char *compensatedPlane;
 //   const unsigned char *compensatedPlaneU;
 //   const unsigned char *compensatedPlaneV;
-	inline static bool GetValidity(const int *array) { return (array[1] == 1); }
+	__forceinline static bool GetValidity(const int *array) { return (array[1] == 1); }
    CRITICAL_SECTION cs;
 
 public :
@@ -56,7 +56,7 @@ public :
 	bool Update(const int *array, int data_size);
 	bool IsSceneChange(sad_t nThSCD1, int nThSCD2) const;
 
-	inline const FakePlaneOfBlocks& operator[](const int i) const {
+	__forceinline const FakePlaneOfBlocks& operator[](const int i) const {
 		return *(planes[i]);
 	}
 
@@ -66,9 +66,9 @@ public :
 //   inline const unsigned char *GetCompensatedPlaneU() const { return compensatedPlaneU; }
 //   inline const unsigned char *GetCompensatedPlaneV() const { return compensatedPlaneV; }
    inline int GetPitch() const { return nWidth_B; }
-   inline int GetPitchUV() const { return nWidth_B / xRatioUV_B; } // PFtodo: YV12 and YUY2 specific
+   inline int GetPitchUV() const { return nWidth_B / xRatioUV_B; }
 
-	inline const FakePlaneOfBlocks& GetPlane(int i) const { return *(planes[i]); }
+	__forceinline const FakePlaneOfBlocks& GetPlane(int i) const { return *(planes[i]); }
 };
 
 
