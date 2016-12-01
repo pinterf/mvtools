@@ -1840,7 +1840,7 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
 
 // todo: put together with use_block_uv,  
 // todo: change /xRatioUV and /yRatioUV to bit shifts everywhere
-void	MVDegrainX::use_block_y(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch)
+__forceinline void	MVDegrainX::use_block_y(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch)
 {
   if (isUsable)
   {
@@ -1861,7 +1861,7 @@ void	MVDegrainX::use_block_y(const BYTE * &p, int &np, int &WRef, bool isUsable,
 }
 
 // no difference for 1-2-3
-void	MVDegrainX::use_block_uv(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch)
+__forceinline void	MVDegrainX::use_block_uv(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch)
 {
   if (isUsable)
   {
