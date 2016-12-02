@@ -23,6 +23,7 @@
 #include	"conc/Mutex.h"
 #include "DCTClass.h"
 #include "fftwlite.h"
+#include "types.h"
 
 #define	NOGDI
 #define	NOMINMAX
@@ -34,6 +35,8 @@
 class DCTFFTW
 :	public DCTClass
 {
+  typedef void (DCTFFTW::*Float2BytesFunction)(unsigned char * srcp0, int _pitch, float * realdata);
+  typedef void (DCTFFTW::*Bytes2FloatFunction)(const unsigned char * srcp8, int src_pitch, float * realdata);
 
 	HINSTANCE hinstFFTW3;
 	fftwf_malloc_proc fftwf_malloc_addr;
@@ -56,16 +59,28 @@ class DCTFFTW
 	int dctshift0;
 
     template<typename pixel_t>
-    void Bytes2Float(const unsigned char * srcp0, int _pitch, float * realdata);
+    void Bytes2Float_C(const unsigned char * srcp0, int _pitch, float * realdata);
     
     template<typename pixel_t>
-    void Float2Bytes(unsigned char * srcp0, int _pitch, float * realdata);
+    void Float2Bytes_C(unsigned char * srcp0, int _pitch, float * realdata);
+
+    template<typename pixel_t, int nBlkSizeX>
+    void Bytes2Float_SSE2(const unsigned char * srcp8, int _pitch, float * realdata);
+
+    template <typename pixel_t, int nBlkSizeX, bool hasSSE4>
+    void Float2Bytes_SSE2(unsigned char * dstp0, int dst_pitch, float * realdata);
+
+    DCTFFTW::Float2BytesFunction get_floatToBytesPROC_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
+    DCTFFTW::Float2BytesFunction floatToBytesPROC;
+
+    DCTFFTW::Bytes2FloatFunction get_bytesToFloatPROC_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
+    DCTFFTW::Bytes2FloatFunction bytesToFloatPROC;
 
 	static conc::Mutex _fftw_mutex;
 
 public:
 
-	DCTFFTW(int _sizex, int _sizey, ::HINSTANCE _hFFTW3, int _dctmode, int _pixelsize, int _bits_per_pixel);
+	DCTFFTW(int _sizex, int _sizey, ::HINSTANCE _hFFTW3, int _dctmode, int _pixelsize, int _bits_per_pixel, int cpu);
 	~DCTFFTW();
     // works internally by pixelsize:
 	void DCTBytes2D(const unsigned char *srcp0, int _src_pitch, unsigned char *dctp, int _dct_pitch);
