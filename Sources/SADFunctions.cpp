@@ -111,7 +111,7 @@ static unsigned int x264_pixel_satd_uint16_8x4_c(const uint8_t *pix1, /*intptr_t
 #define PIXEL_SATD_UINT16_C(w,h,sub)\
 static unsigned int x264_pixel_satd_uint16_##w##x##h##_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2 )\
 {\
-    int sum = sub( pix1, i_pix1, pix2, i_pix2 )\
+    unsigned int sum = sub( pix1, i_pix1, pix2, i_pix2 )\
             + sub( pix1+4*i_pix1, i_pix1, pix2+4*i_pix2, i_pix2 );\
     if( w==16 )\
         sum+= sub( pix1+sizeof(uint16_t)*8, i_pix1, pix2+sizeof(uint16_t)*8, i_pix2 )\
@@ -225,7 +225,8 @@ SADFunction* get_sad_function(int BlockX, int BlockY, int pixelsize, arch_t arch
     func_sad[make_tuple(4 , 8 , 2, USE_AVX)] = Sad16_sse2_avx<4 , 8,uint16_t>;
     func_sad[make_tuple(4 , 4 , 2, USE_AVX)] = Sad16_sse2_avx<4 , 4,uint16_t>;
     func_sad[make_tuple(4 , 2 , 2, USE_AVX)] = Sad16_sse2_avx<4 , 2,uint16_t>;
-    
+    //func_sad[make_tuple(4 , 1 , 2, USE_AVX)] = Sad16_sse2_avx<4 , 1,uint16_t>; // 8 bytes with height=1 not supported for SSE2
+
     // PF SAD 16 SIMD intrinsic functions
     // only for >=8 bytes widths
     func_sad[make_tuple(32, 32, 2, USE_SSE2)] = Sad16_sse2<32, 32,uint16_t>;
@@ -245,6 +246,7 @@ SADFunction* get_sad_function(int BlockX, int BlockY, int pixelsize, arch_t arch
     func_sad[make_tuple(4 , 8 , 2, USE_SSE2)] = Sad16_sse2<4 , 8,uint16_t>;
     func_sad[make_tuple(4 , 4 , 2, USE_SSE2)] = Sad16_sse2<4 , 4,uint16_t>;
     func_sad[make_tuple(4 , 2 , 2, USE_SSE2)] = Sad16_sse2<4 , 2,uint16_t>;
+    //func_sad[make_tuple(4 , 1 , 2, USE_SSE2)] = Sad16_sse2<4 , 1,uint16_t>; // 8 bytes with height=1 not supported for SSE2
     
     // PF uint8_t sse2 versions. test. 
     // a bit slower than the existing external asm. At least for MSVC
@@ -297,12 +299,12 @@ SADFunction* get_sad_function(int BlockX, int BlockY, int pixelsize, arch_t arch
     func_sad[make_tuple(16, 8 , 2, USE_AVX2)] = Sad16_avx2<16, 8,uint16_t>;
     func_sad[make_tuple(16, 4 , 2, USE_AVX2)] = Sad16_avx2<16, 4,uint16_t>;
     func_sad[make_tuple(16, 2 , 2, USE_AVX2)] = Sad16_avx2<16, 2,uint16_t>;
-    func_sad[make_tuple(16, 1 , 2, USE_AVX2)] = Sad16_avx2<16, 1,uint16_t>;
+    func_sad[make_tuple(16, 1 , 2, USE_AVX2)] = Sad16_avx2<16, 1,uint16_t>; // 32 bytes with height=1 is OK for AVX2
     func_sad[make_tuple(8 , 16, 2, USE_AVX2)] = Sad16_avx2<8 , 16,uint16_t>;
     func_sad[make_tuple(8 , 8 , 2, USE_AVX2)] = Sad16_avx2<8 , 8,uint16_t>;
     func_sad[make_tuple(8 , 4 , 2, USE_AVX2)] = Sad16_avx2<8 , 4,uint16_t>;
     func_sad[make_tuple(8 , 2 , 2, USE_AVX2)] = Sad16_avx2<8 , 2,uint16_t>;
-    func_sad[make_tuple(8 , 1 , 2, USE_AVX2)] = Sad16_avx2<8 , 1,uint16_t>;
+    //func_sad[make_tuple(8 , 1 , 2, USE_AVX2)] = Sad16_avx2<8 , 1,uint16_t>; // 16 bytes with height=1 not supported for AVX2
     // >=16 bytes
 #ifdef SAD_AVX2_8BIT_INSTINSICS
     func_sad[make_tuple(32, 32, 1, USE_SSE2)] = Sad16_avx2<32, 32,uint8_t>;

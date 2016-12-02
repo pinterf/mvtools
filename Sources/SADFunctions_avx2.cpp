@@ -101,9 +101,12 @@ const __m128 sum = _mm_add_ss(t, _mm_shuffle_ps(t, t, 1));
 template<int nBlkWidth, int nBlkHeight, typename pixel_t>
 unsigned int Sad16_avx2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, int nRefPitch)
 {
+#if 0
+  // check AVX2 result against C
+  unsigned int result2 = Sad_AVX2_C<nBlkWidth, nBlkHeight, pixel_t>(pSrc, nSrcPitch, pRef, nRefPitch);
+#endif
+
   _mm256_zeroupper(); 
-  //__assume_aligned(piMblk, 16);
-  //__assume_aligned(piRef, 16);
   if ((sizeof(pixel_t) == 2 && nBlkWidth < 8) || (sizeof(pixel_t) == 1 && nBlkWidth <= 16)) {
     assert("AVX2 not supported for uint16_t with BlockSize<8 or uint8_t with blocksize<16");
     return 0;
@@ -112,40 +115,27 @@ unsigned int Sad16_avx2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
   __m256i zero = _mm256_setzero_si256();
   __m256i sum = _mm256_setzero_si256(); // 2x or 4x int is probably enough for 32x32
 
-  bool two_rows = (sizeof(pixel_t) == 2 && nBlkWidth == 8) || (sizeof(pixel_t) == 1 && nBlkWidth == 16);
+  bool two_16byte_rows = (sizeof(pixel_t) == 2 && nBlkWidth == 8) || (sizeof(pixel_t) == 1 && nBlkWidth == 16);
+  if (two_16byte_rows && nBlkHeight==1) {
+    assert("AVX2 not supported BlockHeight==1 for uint16_t with BlockSize=8 or uint8_t with blocksize<16");
+    return 0;
+  }
+  const bool one_cycle = (sizeof(pixel_t) * nBlkWidth) <= 32;
+  const bool unroll_by2 = !two_16byte_rows && nBlkHeight>=2; // unroll by 4: slower
 
-  for ( int y = 0; y < nBlkHeight; y++ )
+  for (int y = 0; y < nBlkHeight; y+= ((two_16byte_rows || unroll_by2) ? 2 : 1))
   {
-    for ( int x = 0; x < nBlkWidth*sizeof(pixel_t); x+=32 )
-    {
+    if (two_16byte_rows) {
       __m256i src1, src2;
-      if (two_rows)  {
-        // two 16 byte rows at a time
-        src1 = _mm256_loadu2_m128i((const __m128i *) (pSrc + nSrcPitch + x), (const __m128i *) (pSrc + x));
-        src2 = _mm256_loadu2_m128i((const __m128i *) (pRef + nRefPitch + x), (const __m128i *) (pRef + x));
-      }
-      else {
-        src1 = _mm256_loadu_si256((__m256i *) (pSrc + x));
-        src2 = _mm256_loadu_si256((__m256i *) (pRef + x));
-      }
-      if(sizeof(pixel_t) == 1) {
+      // two 16 byte rows at a time
+      src1 = _mm256_loadu2_m128i((const __m128i *) (pSrc + nSrcPitch), (const __m128i *) (pSrc));
+      src2 = _mm256_loadu2_m128i((const __m128i *) (pRef + nRefPitch), (const __m128i *) (pRef));
+      if (sizeof(pixel_t) == 1) {
         sum = _mm256_add_epi32(sum, _mm256_sad_epu8(src1, src2));
         // result in four 32 bit areas at each 64 bytes
       }
       else {
         // we have 16 words
-#ifdef METHOD1
-        // lower 8 word to 8 int32
-        __m256i src1_lo = _mm256_unpacklo_epi16(src1, zero);
-        __m256i src2_lo = _mm256_unpacklo_epi16(src2, zero);
-        __m256i result_lo = _mm256_abs_epi32(_mm256_sub_epi32(src1_lo, src2_lo));
-        sum = _mm256_add_epi32(sum, result_lo);
-        // high 8 word to 8 int32
-        __m256i src1_hi = _mm256_unpackhi_epi16(src1, zero);
-        __m256i src2_hi = _mm256_unpackhi_epi16(src2, zero);
-        __m256i result_hi = _mm256_abs_epi32(_mm256_sub_epi32(src1_hi, src2_hi));
-        sum = _mm256_add_epi32(sum, result_hi);
-#else
         __m256i greater_t = _mm256_subs_epu16(src1, src2); // unsigned sub with saturation
         __m256i smaller_t = _mm256_subs_epu16(src2, src1);
         __m256i absdiff = _mm256_or_si256(greater_t, smaller_t); //abs(s1-s2)  == (satsub(s1,s2) | satsub(s2,s1))
@@ -153,13 +143,88 @@ unsigned int Sad16_avx2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
         sum = _mm256_add_epi32(sum, _mm256_unpacklo_epi16(absdiff, zero));
         sum = _mm256_add_epi32(sum, _mm256_unpackhi_epi16(absdiff, zero));
         // sum1_32, sum2_32, sum3_32, sum4_32 .. sum8_32
-#endif
       }
     }
-    if(two_rows) {
-      y++;
-      pSrc += nSrcPitch*2;
-      pRef += nRefPitch*2;
+    else if (one_cycle) { // no x loop
+      __m256i src1, src2;
+      src1 = _mm256_loadu_si256((__m256i *) (pSrc));
+      src2 = _mm256_loadu_si256((__m256i *) (pRef));
+      if (sizeof(pixel_t) == 1) {
+        sum = _mm256_add_epi32(sum, _mm256_sad_epu8(src1, src2));
+        // result in four 32 bit areas at each 64 bytes
+      }
+      else {
+        // we have 16 words
+        __m256i greater_t = _mm256_subs_epu16(src1, src2); // unsigned sub with saturation
+        __m256i smaller_t = _mm256_subs_epu16(src2, src1);
+        __m256i absdiff = _mm256_or_si256(greater_t, smaller_t); //abs(s1-s2)  == (satsub(s1,s2) | satsub(s2,s1))
+                                                                 // 16 x uint16 absolute differences
+        sum = _mm256_add_epi32(sum, _mm256_unpacklo_epi16(absdiff, zero));
+        sum = _mm256_add_epi32(sum, _mm256_unpackhi_epi16(absdiff, zero));
+        // sum1_32, sum2_32, sum3_32, sum4_32 .. sum8_32
+      }
+      if (unroll_by2) {
+        src1 = _mm256_loadu_si256((__m256i *) (pSrc+nSrcPitch));
+        src2 = _mm256_loadu_si256((__m256i *) (pRef+nRefPitch));
+        if (sizeof(pixel_t) == 1) {
+          sum = _mm256_add_epi32(sum, _mm256_sad_epu8(src1, src2));
+          // result in four 32 bit areas at each 64 bytes
+        }
+        else {
+          // we have 16 words
+          __m256i greater_t = _mm256_subs_epu16(src1, src2); // unsigned sub with saturation
+          __m256i smaller_t = _mm256_subs_epu16(src2, src1);
+          __m256i absdiff = _mm256_or_si256(greater_t, smaller_t); //abs(s1-s2)  == (satsub(s1,s2) | satsub(s2,s1))
+                                                                   // 16 x uint16 absolute differences
+          sum = _mm256_add_epi32(sum, _mm256_unpacklo_epi16(absdiff, zero));
+          sum = _mm256_add_epi32(sum, _mm256_unpackhi_epi16(absdiff, zero));
+          // sum1_32, sum2_32, sum3_32, sum4_32 .. sum8_32
+        }
+      }
+    }
+    else {
+      for (int x = 0; x < nBlkWidth * sizeof(pixel_t); x += 32)
+      {
+        __m256i src1, src2;
+        src1 = _mm256_loadu_si256((__m256i *) (pSrc + x));
+        src2 = _mm256_loadu_si256((__m256i *) (pRef + x));
+        if (sizeof(pixel_t) == 1) {
+          sum = _mm256_add_epi32(sum, _mm256_sad_epu8(src1, src2));
+          // result in four 32 bit areas at each 64 bytes
+        }
+        else {
+          // we have 16 words
+          __m256i greater_t = _mm256_subs_epu16(src1, src2); // unsigned sub with saturation
+          __m256i smaller_t = _mm256_subs_epu16(src2, src1);
+          __m256i absdiff = _mm256_or_si256(greater_t, smaller_t); //abs(s1-s2)  == (satsub(s1,s2) | satsub(s2,s1))
+                                                                   // 16 x uint16 absolute differences
+          sum = _mm256_add_epi32(sum, _mm256_unpacklo_epi16(absdiff, zero));
+          sum = _mm256_add_epi32(sum, _mm256_unpackhi_epi16(absdiff, zero));
+          // sum1_32, sum2_32, sum3_32, sum4_32 .. sum8_32
+        }
+        if (unroll_by2) {
+          src1 = _mm256_loadu_si256((__m256i *) (pSrc + x + nSrcPitch));
+          src2 = _mm256_loadu_si256((__m256i *) (pRef + x + nRefPitch));
+          if (sizeof(pixel_t) == 1) {
+            sum = _mm256_add_epi32(sum, _mm256_sad_epu8(src1, src2));
+            // result in four 32 bit areas at each 64 bytes
+          }
+          else {
+            // we have 16 words
+            __m256i greater_t = _mm256_subs_epu16(src1, src2); // unsigned sub with saturation
+            __m256i smaller_t = _mm256_subs_epu16(src2, src1);
+            __m256i absdiff = _mm256_or_si256(greater_t, smaller_t); //abs(s1-s2)  == (satsub(s1,s2) | satsub(s2,s1))
+                                                                     // 16 x uint16 absolute differences
+            sum = _mm256_add_epi32(sum, _mm256_unpacklo_epi16(absdiff, zero));
+            sum = _mm256_add_epi32(sum, _mm256_unpackhi_epi16(absdiff, zero));
+            // sum1_32, sum2_32, sum3_32, sum4_32 .. sum8_32
+          }
+        }
+      }
+    }
+    if (two_16byte_rows || unroll_by2) {
+      pSrc += nSrcPitch * 2;
+      pRef += nRefPitch * 2;
     }
     else {
       pSrc += nSrcPitch;
@@ -193,7 +258,14 @@ unsigned int Sad16_avx2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
   __m128i sum_hi = _mm_unpackhi_epi64(sum128, _mm_setzero_si128()); // a1+a5+a3+a7
   sum128 = _mm_add_epi32(sum128, sum_hi); // a0+a4+a2+a6 + a1+a5+a3+a7
 
-  int result = _mm_cvtsi128_si32(sum128);
+  unsigned int result = _mm_cvtsi128_si32(sum128);
+
+#if 0
+  // check AVX2 result against C
+  if (result != result2) {
+    result = result2;
+  }
+#endif
 
   _mm256_zeroupper();
   /* Use VZEROUPPER to avoid the penalty of switching from AVX to SSE */
