@@ -466,10 +466,10 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
     // upsize (bilinear interpolate) vector masks to fullframe size
 
     int dummyplane = PLANAR_Y; // use luma plane resizer code for all planes if we resize from luma small mask
-    upsizer->SimpleResizeDo(VXFullY, nWidthP, nHeightP, VPitchY, VXSmallY, nBlkXP, nBlkXP);
-    upsizer->SimpleResizeDo(VYFullY, nWidthP, nHeightP, VPitchY, VYSmallY, nBlkXP, nBlkXP);
-    upsizerUV->SimpleResizeDo(VXFullUV, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUV, nBlkXP, nBlkXP);
-    upsizerUV->SimpleResizeDo(VYFullUV, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUV, nBlkXP, nBlkXP);
+    upsizer->SimpleResizeDo_uint16(VXFullY, nWidthP, nHeightP, VPitchY, VXSmallY, nBlkXP, nBlkXP);
+    upsizer->SimpleResizeDo_uint16(VYFullY, nWidthP, nHeightP, VPitchY, VYSmallY, nBlkXP, nBlkXP);
+    upsizerUV->SimpleResizeDo_uint16(VXFullUV, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUV, nBlkXP, nBlkXP);
+    upsizerUV->SimpleResizeDo_uint16(VYFullUV, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUV, nBlkXP, nBlkXP);
 
     if (mode == 1)
     {

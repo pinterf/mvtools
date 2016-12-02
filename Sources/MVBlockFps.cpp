@@ -644,8 +644,8 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
 
       PROFILE_START(MOTION_PROFILE_RESIZE);
       // upsize (bilinear interpolate) vector masks to fullframe size
-      upsizer->SimpleResizeDo(MaskFullYF, nWidthP, nHeightP, nPitchY, smallMaskF, nBlkXP, nBlkXP, dummyplane);
-      upsizerUV->SimpleResizeDo(MaskFullUVF, nWidthPUV, nHeightPUV, nPitchUV, smallMaskF, nBlkXP, nBlkXP, dummyplane);
+      upsizer->SimpleResizeDo_uint8(MaskFullYF, nWidthP, nHeightP, nPitchY, smallMaskF, nBlkXP, nBlkXP, dummyplane);
+      upsizerUV->SimpleResizeDo_uint8(MaskFullUVF, nWidthPUV, nHeightPUV, nPitchUV, smallMaskF, nBlkXP, nBlkXP, dummyplane);
       // now we have forward fullframe blured occlusion mask in maskF arrays
       PROFILE_STOP(MOTION_PROFILE_RESIZE);
       PROFILE_START(MOTION_PROFILE_MASK);
@@ -662,8 +662,8 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
       PROFILE_STOP(MOTION_PROFILE_MASK);
       PROFILE_START(MOTION_PROFILE_RESIZE);
       // upsize (bilinear interpolate) vector masks to fullframe size
-      upsizer->SimpleResizeDo(MaskFullYB, nWidthP, nHeightP, nPitchY, smallMaskB, nBlkXP, nBlkXP, dummyplane);
-      upsizerUV->SimpleResizeDo(MaskFullUVB, nWidthPUV, nHeightPUV, nPitchUV, smallMaskB, nBlkXP, nBlkXP, dummyplane);
+      upsizer->SimpleResizeDo_uint8(MaskFullYB, nWidthP, nHeightP, nPitchY, smallMaskB, nBlkXP, nBlkXP, dummyplane);
+      upsizerUV->SimpleResizeDo_uint8(MaskFullUVB, nWidthPUV, nHeightPUV, nPitchUV, smallMaskB, nBlkXP, nBlkXP, dummyplane);
       PROFILE_STOP(MOTION_PROFILE_RESIZE);
     }
     if (mode == 4 || mode == 5 || mode == 7 || mode == 8)
@@ -672,8 +672,8 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
       MultMasks(smallMaskF, smallMaskB, smallMaskO, nBlkXP, nBlkYP);
       //InflateMask(smallMaskO, nBlkXP, nBlkYP);
       // upsize small mask to full frame size
-      upsizer->SimpleResizeDo(MaskOccY, nWidthP, nHeightP, nPitchY, smallMaskO, nBlkXP, nBlkXP, dummyplane);
-      upsizerUV->SimpleResizeDo(MaskOccUV, nWidthPUV, nHeightPUV, nPitchUV, smallMaskO, nBlkXP, nBlkXP, dummyplane);
+      upsizer->SimpleResizeDo_uint8(MaskOccY, nWidthP, nHeightP, nPitchY, smallMaskO, nBlkXP, nBlkXP, dummyplane);
+      upsizerUV->SimpleResizeDo_uint8(MaskOccUV, nWidthPUV, nHeightPUV, nPitchUV, smallMaskO, nBlkXP, nBlkXP, dummyplane);
     }
 
     // pointers

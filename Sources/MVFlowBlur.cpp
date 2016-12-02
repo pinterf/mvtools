@@ -421,15 +421,15 @@ PVideoFrame __stdcall MVFlowBlur::GetFrame(int n, IScriptEnvironment* env)
 
 
     int dummyplane = PLANAR_Y; // use luma plane resizer code for all planes if we resize from luma small mask
-    upsizer->SimpleResizeDo(VXFullYB, nWidth, nHeight, VPitchY, VXSmallYB, nBlkX, nBlkX);
-    upsizer->SimpleResizeDo(VYFullYB, nWidth, nHeight, VPitchY, VYSmallYB, nBlkX, nBlkX);
-    upsizerUV->SimpleResizeDo(VXFullUVB, nWidthUV, nHeightUV, VPitchUV, VXSmallUVB, nBlkX, nBlkX);
-    upsizerUV->SimpleResizeDo(VYFullUVB, nWidthUV, nHeightUV, VPitchUV, VYSmallUVB, nBlkX, nBlkX);
+    upsizer->SimpleResizeDo_uint16(VXFullYB, nWidth, nHeight, VPitchY, VXSmallYB, nBlkX, nBlkX);
+    upsizer->SimpleResizeDo_uint16(VYFullYB, nWidth, nHeight, VPitchY, VYSmallYB, nBlkX, nBlkX);
+    upsizerUV->SimpleResizeDo_uint16(VXFullUVB, nWidthUV, nHeightUV, VPitchUV, VXSmallUVB, nBlkX, nBlkX);
+    upsizerUV->SimpleResizeDo_uint16(VYFullUVB, nWidthUV, nHeightUV, VPitchUV, VYSmallUVB, nBlkX, nBlkX);
 
-    upsizer->SimpleResizeDo(VXFullYF, nWidth, nHeight, VPitchY, VXSmallYF, nBlkX, nBlkX);
-    upsizer->SimpleResizeDo(VYFullYF, nWidth, nHeight, VPitchY, VYSmallYF, nBlkX, nBlkX);
-    upsizerUV->SimpleResizeDo(VXFullUVF, nWidthUV, nHeightUV, VPitchUV, VXSmallUVF, nBlkX, nBlkX);
-    upsizerUV->SimpleResizeDo(VYFullUVF, nWidthUV, nHeightUV, VPitchUV, VYSmallUVF, nBlkX, nBlkX);
+    upsizer->SimpleResizeDo_uint16(VXFullYF, nWidth, nHeight, VPitchY, VXSmallYF, nBlkX, nBlkX);
+    upsizer->SimpleResizeDo_uint16(VYFullYF, nWidth, nHeight, VPitchY, VYSmallYF, nBlkX, nBlkX);
+    upsizerUV->SimpleResizeDo_uint16(VXFullUVF, nWidthUV, nHeightUV, VPitchUV, VXSmallUVF, nBlkX, nBlkX);
+    upsizerUV->SimpleResizeDo_uint16(VYFullUVF, nWidthUV, nHeightUV, VPitchUV, VYSmallUVF, nBlkX, nBlkX);
 
 
     if (pixelsize == 1) {
