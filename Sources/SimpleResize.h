@@ -49,9 +49,9 @@ public:
   void SimpleResizeDo_New(uint8_t *dstp8, int row_size, int height, int dst_pitch,
     const uint8_t* srcp8, int src_row_size, int src_pitch);
 
-  void SimpleResizeDo(uint8_t *dstp,  int dst_row_size, int dst_height, int dst_pitch, 
+  void SimpleResizeDo_uint8(uint8_t *dstp,  int dst_row_size, int dst_height, int dst_pitch, 
 						  const uint8_t* srcp, int src_row_size, int src_pitch, int Plane_Type); 
-  void SimpleResizeDo(short *dstp, int dst_row_size, int dst_height, int dst_pitch,
+  void SimpleResizeDo_uint16(short *dstp, int dst_row_size, int dst_height, int dst_pitch,
     const short* srcp, int src_row_size, int src_pitch);
 
 };
