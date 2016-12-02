@@ -1844,6 +1844,9 @@ void	PlaneOfBlocks::search_mv_slice(Slicer::TaskData &td)
 
   // Functions using float must not be used here
 
+  int nBlkSizeX_Ovr[3] = { (nBlkSizeX - nOverlapX), (nBlkSizeX - nOverlapX) >> nLogxRatioUV, (nBlkSizeX - nOverlapX) >> nLogxRatioUV };
+  int nBlkSizeY_Ovr[3] = { (nBlkSizeY - nOverlapY), (nBlkSizeY - nOverlapY) >> nLogyRatioUV, (nBlkSizeY - nOverlapY) >> nLogyRatioUV };
+
   for (workarea.blky = workarea.blky_beg; workarea.blky < workarea.blky_end; workarea.blky++)
   {
     workarea.blkScanDir = (workarea.blky % 2 == 0 || !_meander_flag) ? 1 : -1;
@@ -1860,11 +1863,11 @@ void	PlaneOfBlocks::search_mv_slice(Slicer::TaskData &td)
     }
     else // start with rightmost block, but it is already set at prev row
     {
-      workarea.x[0] = pSrcFrame->GetPlane(YPLANE)->GetHPadding() + (nBlkSizeX - nOverlapX)*(nBlkX - 1);
+      workarea.x[0] = pSrcFrame->GetPlane(YPLANE)->GetHPadding() + nBlkSizeX_Ovr[0]*(nBlkX - 1);
       if (chroma)
       {
-        workarea.x[1] = pSrcFrame->GetPlane(UPLANE)->GetHPadding() + ((nBlkSizeX - nOverlapX) >> nLogxRatioUV)*(nBlkX - 1);  // PF after 2.7.0.22c
-        workarea.x[2] = pSrcFrame->GetPlane(VPLANE)->GetHPadding() + ((nBlkSizeX - nOverlapX) >> nLogxRatioUV)*(nBlkX - 1);
+        workarea.x[1] = pSrcFrame->GetPlane(UPLANE)->GetHPadding() + nBlkSizeX_Ovr[1]*(nBlkX - 1);
+        workarea.x[2] = pSrcFrame->GetPlane(VPLANE)->GetHPadding() + nBlkSizeX_Ovr[2]*(nBlkX - 1);
       }
     }
 
@@ -1965,9 +1968,9 @@ void	PlaneOfBlocks::search_mv_slice(Slicer::TaskData &td)
       /* increment indexes & pointers */
       if (iblkx < nBlkX - 1)
       {
-        workarea.x[0] += (nBlkSizeX - nOverlapX)*workarea.blkScanDir;
-        workarea.x[1] += (((nBlkSizeX - nOverlapX)*workarea.blkScanDir) >> nLogxRatioUV); // PF after 2.7.0.22c);
-        workarea.x[2] += (((nBlkSizeX - nOverlapX)*workarea.blkScanDir) >> nLogxRatioUV);
+        workarea.x[0] += nBlkSizeX_Ovr[0]*workarea.blkScanDir;
+        workarea.x[1] += nBlkSizeX_Ovr[1]*workarea.blkScanDir;
+        workarea.x[2] += nBlkSizeX_Ovr[2]*workarea.blkScanDir;
       }
     }	// for iblkx
 
@@ -1977,9 +1980,9 @@ void	PlaneOfBlocks::search_mv_slice(Slicer::TaskData &td)
       outfilebuf += nBlkX * 4;// 4 short word per block
     }
 
-    workarea.y[0] += (nBlkSizeY - nOverlapY);
-    workarea.y[1] += ((nBlkSizeY - nOverlapY) >> nLogyRatioUV);
-    workarea.y[2] += ((nBlkSizeY - nOverlapY) >> nLogyRatioUV);
+    workarea.y[0] += nBlkSizeY_Ovr[0];
+    workarea.y[1] += nBlkSizeY_Ovr[1];
+    workarea.y[2] += nBlkSizeY_Ovr[2];
   }	// for workarea.blky
 
   planeSAD += workarea.planeSAD; // PF todo check int overflow
@@ -2058,6 +2061,9 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
   int nPelold = plane.GetPel();
   int nLogPelold = ilog2(nPelold);
 
+  int nBlkSizeX_Ovr[3] = { (nBlkSizeX - nOverlapX), (nBlkSizeX - nOverlapX) >> nLogxRatioUV, (nBlkSizeX - nOverlapX) >> nLogxRatioUV };
+  int nBlkSizeY_Ovr[3] = { (nBlkSizeY - nOverlapY), (nBlkSizeY - nOverlapY) >> nLogyRatioUV, (nBlkSizeY - nOverlapY) >> nLogyRatioUV };
+
   // Functions using float must not be used here
   for (workarea.blky = workarea.blky_beg; workarea.blky < workarea.blky_end; workarea.blky++)
   {
@@ -2075,11 +2081,11 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
     }
     else // start with rightmost block, but it is already set at prev row
     {
-      workarea.x[0] = pSrcFrame->GetPlane(YPLANE)->GetHPadding() + (nBlkSizeX - nOverlapX)*(nBlkX - 1);
+      workarea.x[0] = pSrcFrame->GetPlane(YPLANE)->GetHPadding() + nBlkSizeX_Ovr[0]*(nBlkX - 1);
       if (chroma)
       {
-        workarea.x[1] = pSrcFrame->GetPlane(UPLANE)->GetHPadding() + ((nBlkSizeX - nOverlapX) >> nLogxRatioUV)*(nBlkX - 1);
-        workarea.x[2] = pSrcFrame->GetPlane(VPLANE)->GetHPadding() + ((nBlkSizeX - nOverlapX) >> nLogxRatioUV)*(nBlkX - 1);
+        workarea.x[1] = pSrcFrame->GetPlane(UPLANE)->GetHPadding() + nBlkSizeX_Ovr[1]*(nBlkX - 1);
+        workarea.x[2] = pSrcFrame->GetPlane(VPLANE)->GetHPadding() + nBlkSizeX_Ovr[2]*(nBlkX - 1);
       }
     }
 
@@ -2327,9 +2333,9 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
 
       if (iblkx < nBlkX - 1)
       {
-        workarea.x[0] += (nBlkSizeX - nOverlapX)*workarea.blkScanDir;
-        workarea.x[1] += (((nBlkSizeX - nOverlapX)*workarea.blkScanDir) >> nLogxRatioUV);// PF after 2.7.0.22c);
-        workarea.x[2] += (((nBlkSizeX - nOverlapX)*workarea.blkScanDir) >> nLogxRatioUV);
+        workarea.x[0] += nBlkSizeX_Ovr[0]*workarea.blkScanDir;
+        workarea.x[1] += nBlkSizeX_Ovr[1]*workarea.blkScanDir;
+        workarea.x[2] += nBlkSizeX_Ovr[2]*workarea.blkScanDir;
       }
     }	// for workarea.blkx
 
@@ -2339,9 +2345,9 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
       outfilebuf += nBlkX * 4;// 4 short word per block
     }
 
-    workarea.y[0] += (nBlkSizeY - nOverlapY);
-    workarea.y[1] += ((nBlkSizeY - nOverlapY) >> nLogyRatioUV); // same as /yRatioUV
-    workarea.y[2] += ((nBlkSizeY - nOverlapY) >> nLogyRatioUV);
+    workarea.y[0] += nBlkSizeY_Ovr[0];
+    workarea.y[1] += nBlkSizeY_Ovr[1];
+    workarea.y[2] += nBlkSizeY_Ovr[2];
   }	// for workarea.blky
 
   planeSAD += workarea.planeSAD;
@@ -2441,7 +2447,7 @@ bool	PlaneOfBlocks::WorkingArea::IsVectorOK(int vx, int vy) const
 int	PlaneOfBlocks::WorkingArea::MotionDistorsion(int vx, int vy) const
 {
   int dist = SquareDifferenceNorm(predictor, vx, vy);
-  return (nLambda * dist) >> (16 - bits_per_pixel) /*8*/; // PF
+  return (nLambda * dist) >> (16 - bits_per_pixel) /*8*/; // PF scaling because it appears as a sad addition 
 }
 
 /* computes the length cost of a vector (vx, vy) */
