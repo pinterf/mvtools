@@ -326,7 +326,7 @@ MVRecalculate::MVRecalculate(
     {
       fwrite(&analysisData, sizeof(analysisData), 1, outfile);
       // short vx, short vy, int SAD = 4 words = 8 bytes per block
-      outfilebuf = new short[nBlkX * nBlkY * 4];
+      outfilebuf = new short[nBlkX * nBlkY * (1+1+ sizeof(sad_t)/sizeof(short))];
     }
   }
   else
