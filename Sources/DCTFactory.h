@@ -53,6 +53,7 @@ public:
 
 	int				get_dctmode () const;
 	bool				use_fftw () const;
+  int cpuflags;
 
 
 

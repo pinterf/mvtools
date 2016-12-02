@@ -64,6 +64,7 @@ DCTFactory::DCTFactory (int dctmode, bool isse, int blksizex, int blksizey, int 
 			env.ThrowError ("MAnalyse: Can not load libfftw3f-3.dll or fftw3.DLL!");
 		}
 	}
+  cpuflags = env.GetCPUFlags();
 }
 
 
@@ -101,7 +102,7 @@ DCTClass *	DCTFactory::do_create ()
 {
 	if (_fftw_flag)
 	{
-		return (new DCTFFTW (_blksizex, _blksizey, _fftw_hnd, _dctmode, _pixelsize, _bits_per_pixel));
+		return (new DCTFFTW (_blksizex, _blksizey, _fftw_hnd, _dctmode, _pixelsize, _bits_per_pixel, cpuflags));
 	}
 	return (new DCTINT (_blksizex, _blksizey, _dctmode));
 }
