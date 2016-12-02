@@ -820,8 +820,8 @@ MVDegrainX::MVDegrainX(
   // pixelsize, bits_per_pixel: vector clip data
 
   // SAD is coming from the mv clip analysis. Parameter must be scaled accordingly
-  thSAD = int(thSAD / 255.0 * ((1 << bits_per_pixel) - 1));
-  thSADC = int(thSADC / 255.0 * ((1 << bits_per_pixel) - 1));
+  thSAD = sad_t(thSAD / 255.0 * ((1 << bits_per_pixel) - 1));
+  thSADC = sad_t(thSADC / 255.0 * ((1 << bits_per_pixel) - 1));
   thSADpow2 = thSAD * thSAD;
   thSADCpow2 = thSADC * thSADC;
 
