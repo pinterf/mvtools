@@ -317,7 +317,7 @@ void SimpleResize::SimpleResizeDo_New(uint8_t *dstp8, int row_size, int height, 
       result = _mm_packs_epi32(result, result); // 4xqword ->4xword
       if(sizeof(src_type)==1) {
         // 8 bit version
-        result = _mm_packs_epi16(result, result); // 4xword ->4xbyte
+        result = _mm_packus_epi16(result, result); // 4xword ->4xbyte
         uint32_t final4x8bitpixels = _mm_cvtsi128_si32(result);
         *(uint32_t *)(&dstp[x]) = final4x8bitpixels;
       }
@@ -352,7 +352,7 @@ void SimpleResize::SimpleResizeDo_New(uint8_t *dstp8, int row_size, int height, 
 
 // YV12 Luma, PF: not YV12 specific!
 // srcp2 is the next line to srcp1
-void SimpleResize::SimpleResizeDo(uint8_t *dstp, int row_size, int height, int dst_pitch,
+void SimpleResize::SimpleResizeDo_uint8(uint8_t *dstp, int row_size, int height, int dst_pitch,
   const uint8_t* srcp, int src_row_size, int src_pitch, int Planar_Type)
 {
   // Note: PlanarType is dummy, I (Fizick) do not use croma planes code for resize in MVTools
@@ -815,7 +815,7 @@ a
 
 // brand new in 2.5.11.2 -> 2.5.11.22
 // bilinear resizer for vectors as short integer
-void SimpleResize::SimpleResizeDo(short *dstp, int row_size, int height, int dst_pitch,
+void SimpleResize::SimpleResizeDo_uint16(short *dstp, int row_size, int height, int dst_pitch,
   const short* srcp, int src_row_size, int src_pitch)
 {
   if(SSE2enabled) {
