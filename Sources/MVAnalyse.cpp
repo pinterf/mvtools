@@ -107,8 +107,8 @@ MVAnalyse::MVAnalyse(
   analysisData.nHeight = nHeight;
   analysisData.pixelType = vi.pixel_type;
   if (!vi.IsY()) {
-    analysisData.yRatioUV = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U)); // (vi.IsYV12()) ? 2 : 1; // PF todo YV12 specific!
-    analysisData.xRatioUV = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U)); // for YV12 and YUY2, really do not used and assumed to 2
+    analysisData.yRatioUV = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U));
+    analysisData.xRatioUV = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U));
   }
   else {
     analysisData.yRatioUV = 1; // n/a
@@ -161,10 +161,10 @@ MVAnalyse::MVAnalyse(
 //		analysisData.nDeltaFrame = 1;
 //	}
 
-  if (_overlapx < 0 || _overlapx >= _blksizex
-    || _overlapy < 0 || _overlapy >= _blksizey)
+  if (_overlapx < 0 || _overlapx > _blksizex/2
+    || _overlapy < 0 || _overlapy > _blksizey/2)
   {
-    env->ThrowError("MAnalyse: overlap must be less than block size");
+    env->ThrowError("MAnalyse: overlap must be less or equal than half block size");
   }
 
    //if (_overlapx % 2 || (_overlapy % 2 > 0 && vi.IsYV12 ())) // was: _overlapx % 2
