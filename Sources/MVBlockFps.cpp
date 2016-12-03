@@ -684,15 +684,6 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
     BYTE * pMaskOccY = MaskOccY;
     BYTE * pMaskOccUV = MaskOccUV;
 
-    /*
-    pSrc[0] += nSuperHPad + nSrcPitches[0]*nSuperVPad; // add offset source in super
-    pSrc[1] += (nSuperHPad>>1) + nSrcPitches[1]*(nSuperVPad>>1); // PF todo check: both H and V???? >>1?
-    pSrc[2] += (nSuperHPad>>1) + nSrcPitches[2]*(nSuperVPad>>1);
-    pRef[0] += nSuperHPad + nRefPitches[0]*nSuperVPad;
-    pRef[1] += (nSuperHPad>>1) + nRefPitches[1]*(nSuperVPad>>1);
-    pRef[2] += (nSuperHPad>>1) + nRefPitches[2]*(nSuperVPad>>1);
-    */
-    // PF 161115 xy subsampling ratios
     pSrc[0] += nSuperHPad*pixelsize + nSrcPitches[0] * nSuperVPad; // add offset source in super
     pSrc[1] += (nSuperHPad >> nLogxRatioUV)*pixelsize + nSrcPitches[1] * (nSuperVPad >> nLogyRatioUV);
     pSrc[2] += (nSuperHPad >> nLogxRatioUV)*pixelsize + nSrcPitches[2] * (nSuperVPad >> nLogyRatioUV);
@@ -701,6 +692,9 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
     pRef[2] += (nSuperHPad >> nLogxRatioUV)*pixelsize + nRefPitches[2] * (nSuperVPad >> nLogyRatioUV);
 
     // -----------------------------------------------------------------------------
+    const int nBlkSizeX_UV = nBlkSizeX >> nLogxRatioUV;
+    const int nBlkSizeY_UV = nBlkSizeY >> nLogyRatioUV;
+    
     if (nOverlapX == 0 && nOverlapY == 0)
     {
 
@@ -719,9 +713,9 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
           if (needProcessPlanes[p]) {
             if (pixelsize == 1) {
               ResultBlock<uint8_t>(pDst[p], nDstPitches[p],
-                pPlanesB[p]->GetPointer(p == 0 ? refxB : refxB / xRatioUV, p == 0 ? refyB : refyB / yRatioUV),
+                pPlanesB[p]->GetPointer(p == 0 ? refxB : refxB >> nLogxRatioUV, p == 0 ? refyB : refyB >> nLogyRatioUV),
                 pPlanesB[p]->GetPitch(),
-                pPlanesF[p]->GetPointer(p == 0 ? refxF : refxF / xRatioUV, p == 0 ? refyF : refyF / yRatioUV),
+                pPlanesF[p]->GetPointer(p == 0 ? refxF : refxF >> nLogxRatioUV, p == 0 ? refyF : refyF >> nLogyRatioUV),
                 pPlanesF[p]->GetPitch(),
                 pRef[p], nRefPitches[p],
                 pSrc[p], nSrcPitches[p],
@@ -729,17 +723,17 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
                 p == 0 ? nPitchY : nPitchUV,
                 p == 0 ? pMaskFullYF : pMaskFullUVF,
                 p == 0 ? pMaskOccY : pMaskOccUV,
-                p == 0 ? nBlkSizeX : nBlkSizeX / xRatioUV,
-                p == 0 ? nBlkSizeY : nBlkSizeY / yRatioUV,
+                p == 0 ? nBlkSizeX : nBlkSizeX >> nLogxRatioUV,
+                p == 0 ? nBlkSizeY : nBlkSizeY >> nLogyRatioUV,
                 time256
                 , mode, bits_per_pixel);
             }
             else if (pixelsize == 2)
             {
               ResultBlock<uint16_t>(pDst[p], nDstPitches[p],
-                pPlanesB[p]->GetPointer(p == 0 ? refxB : refxB / xRatioUV, p == 0 ? refyB : refyB / yRatioUV),
+                pPlanesB[p]->GetPointer(p == 0 ? refxB : refxB >> nLogxRatioUV, p == 0 ? refyB : refyB >> nLogyRatioUV),
                 pPlanesB[p]->GetPitch(),
-                pPlanesF[p]->GetPointer(p == 0 ? refxF : refxF / xRatioUV, p == 0 ? refyF : refyF / yRatioUV),
+                pPlanesF[p]->GetPointer(p == 0 ? refxF : refxF >> nLogxRatioUV, p == 0 ? refyF : refyF >> nLogyRatioUV),
                 pPlanesF[p]->GetPitch(),
                 pRef[p], nRefPitches[p],
                 pSrc[p], nSrcPitches[p],
@@ -747,8 +741,8 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
                 p == 0 ? nPitchY : nPitchUV,
                 p == 0 ? pMaskFullYF : pMaskFullUVF,
                 p == 0 ? pMaskOccY : pMaskOccUV,
-                p == 0 ? nBlkSizeX : nBlkSizeX / xRatioUV,
-                p == 0 ? nBlkSizeY : nBlkSizeY / yRatioUV,
+                p == 0 ? nBlkSizeX : nBlkSizeX_UV,
+                p == 0 ? nBlkSizeY : nBlkSizeY_UV,
                 time256
                 , mode, bits_per_pixel);
             }
@@ -756,20 +750,20 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
         }
         // update pDsts
         pDst[0] += nBlkSizeX*pixelsize;
-        pDst[1] += nBlkSizeX / xRatioUV * pixelsize;
-        pDst[2] += nBlkSizeX / xRatioUV * pixelsize;
+        pDst[1] += nBlkSizeX_UV * pixelsize;
+        pDst[2] += nBlkSizeX_UV * pixelsize;
         pRef[0] += nBlkSizeX*pixelsize;
-        pRef[1] += nBlkSizeX / xRatioUV * pixelsize;
-        pRef[2] += nBlkSizeX / xRatioUV * pixelsize;
+        pRef[1] += nBlkSizeX_UV * pixelsize;
+        pRef[2] += nBlkSizeX_UV * pixelsize;
         pSrc[0] += nBlkSizeX *pixelsize;
-        pSrc[1] += nBlkSizeX / xRatioUV * pixelsize;
-        pSrc[2] += nBlkSizeX / xRatioUV * pixelsize;
+        pSrc[1] += nBlkSizeX_UV * pixelsize;
+        pSrc[2] += nBlkSizeX_UV * pixelsize;
         pMaskFullYB += nBlkSizeX;
-        pMaskFullUVB += nBlkSizeX / xRatioUV;
+        pMaskFullUVB += nBlkSizeX_UV;
         pMaskFullYF += nBlkSizeX;
-        pMaskFullUVF += nBlkSizeX / xRatioUV;
+        pMaskFullUVF += nBlkSizeX_UV;
         pMaskOccY += nBlkSizeX;
-        pMaskOccUV += nBlkSizeX / xRatioUV;
+        pMaskOccUV += nBlkSizeX_UV;
 
 
         if (!((i + 1) % nBlkX))
@@ -780,32 +774,32 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
               // blend rest right with time weight
               if (pixelsize == 1)
                 Blend<uint8_t>(pDst[p], pSrc[p], pRef[p],
-                  p == 0 ? nBlkSizeY : nBlkSizeY / yRatioUV,
-                  p == 0 ? nWidth - nBlkSizeX*nBlkX : nWidthUV - (nBlkSizeX / xRatioUV)*nBlkX,
+                  p == 0 ? nBlkSizeY : nBlkSizeY_UV,
+                  p == 0 ? nWidth - nBlkSizeX*nBlkX : nWidthUV - nBlkSizeX_UV*nBlkX,
                   nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256 /*t256_prov_cst*/, isse_flag);
               else if (pixelsize == 2)
                 Blend<uint16_t>(pDst[p], pSrc[p], pRef[p],
-                  p == 0 ? nBlkSizeY : nBlkSizeY / yRatioUV,
-                  p == 0 ? nWidth - nBlkSizeX*nBlkX : nWidthUV - (nBlkSizeX / xRatioUV)*nBlkX,
+                  p == 0 ? nBlkSizeY : nBlkSizeY_UV,
+                  p == 0 ? nWidth - nBlkSizeX*nBlkX : nWidthUV - nBlkSizeX_UV*nBlkX,
                   nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256 /*t256_prov_cst*/, isse_flag);
             }
           }
 
-          pDst[0] += nBlkSizeY * nDstPitches[0] - nBlkSizeX*nBlkX*pixelsize;
-          pDst[1] += (nBlkSizeY / yRatioUV) * nDstPitches[1] - (nBlkSizeX / xRatioUV)*nBlkX*pixelsize;
-          pDst[2] += (nBlkSizeY / yRatioUV) * nDstPitches[2] - (nBlkSizeX / xRatioUV)*nBlkX*pixelsize;
-          pRef[0] += nBlkSizeY * nRefPitches[0] - nBlkSizeX*nBlkX*pixelsize;
-          pRef[1] += (nBlkSizeY / yRatioUV) * nRefPitches[1] - (nBlkSizeX / xRatioUV)*nBlkX*pixelsize;
-          pRef[2] += (nBlkSizeY / yRatioUV) * nRefPitches[2] - (nBlkSizeX / xRatioUV)*nBlkX*pixelsize;
-          pSrc[0] += nBlkSizeY * nSrcPitches[0] - nBlkSizeX*nBlkX*pixelsize;
-          pSrc[1] += (nBlkSizeY / yRatioUV) * nSrcPitches[1] - (nBlkSizeX / xRatioUV)*nBlkX*pixelsize;
-          pSrc[2] += (nBlkSizeY / yRatioUV) * nSrcPitches[2] - (nBlkSizeX / xRatioUV)*nBlkX*pixelsize;
-          pMaskFullYB += nBlkSizeY * nPitchY - nBlkSizeX*nBlkX;
-          pMaskFullUVB += (nBlkSizeY / yRatioUV) * nPitchUV - (nBlkSizeX / xRatioUV)*nBlkX;
-          pMaskFullYF += nBlkSizeY * nPitchY - nBlkSizeX*nBlkX;
-          pMaskFullUVF += (nBlkSizeY / yRatioUV) * nPitchUV - (nBlkSizeX / xRatioUV)*nBlkX;
-          pMaskOccY += nBlkSizeY * nPitchY - nBlkSizeX*nBlkX;
-          pMaskOccUV += (nBlkSizeY / yRatioUV) * nPitchUV - (nBlkSizeX / xRatioUV)*nBlkX;
+          pDst[0] += nBlkSizeY    * nDstPitches[0] - nBlkSizeX   *nBlkX*pixelsize;
+          pDst[1] += nBlkSizeY_UV * nDstPitches[1] - nBlkSizeX_UV*nBlkX*pixelsize;
+          pDst[2] += nBlkSizeY_UV * nDstPitches[2] - nBlkSizeX_UV*nBlkX*pixelsize;
+          pRef[0] += nBlkSizeY    * nRefPitches[0] - nBlkSizeX   *nBlkX*pixelsize;
+          pRef[1] += nBlkSizeY_UV * nRefPitches[1] - nBlkSizeX_UV*nBlkX*pixelsize;
+          pRef[2] += nBlkSizeY_UV * nRefPitches[2] - nBlkSizeX_UV*nBlkX*pixelsize;
+          pSrc[0] += nBlkSizeY    * nSrcPitches[0] - nBlkSizeX   *nBlkX*pixelsize;
+          pSrc[1] += nBlkSizeY_UV * nSrcPitches[1] - nBlkSizeX_UV*nBlkX*pixelsize;
+          pSrc[2] += nBlkSizeY_UV * nSrcPitches[2] - nBlkSizeX_UV*nBlkX*pixelsize;
+          pMaskFullYB  += nBlkSizeY    * nPitchY  - nBlkSizeX    *nBlkX;
+          pMaskFullUVB += nBlkSizeY_UV * nPitchUV - nBlkSizeX_UV *nBlkX;
+          pMaskFullYF  += nBlkSizeY    * nPitchY  - nBlkSizeX    *nBlkX;
+          pMaskFullUVF += nBlkSizeY_UV * nPitchUV - nBlkSizeX_UV *nBlkX;
+          pMaskOccY    += nBlkSizeY    * nPitchY  - nBlkSizeX    *nBlkX;
+          pMaskOccUV   += nBlkSizeY_UV * nPitchUV - nBlkSizeX_UV *nBlkX;
         }
       }
       // blend rest bottom with time weight
@@ -814,12 +808,12 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
         if (needProcessPlanes[p]) {
           if (pixelsize == 1)
             Blend<uint8_t>(pDst[p], pSrc[p], pRef[p],
-              p == 0 ? nHeight - nBlkSizeY*nBlkY : nHeightUV - (nBlkSizeY / yRatioUV)*nBlkY,
+              p == 0 ? nHeight - nBlkSizeY*nBlkY : nHeightUV - nBlkSizeY_UV*nBlkY,
               p == 0 ? nWidth : nWidthUV,
               nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256 /*t256_prov_cst*/, isse_flag);
           else if (pixelsize == 2)
             Blend<uint16_t>(pDst[p], pSrc[p], pRef[p],
-              p == 0 ? nHeight - nBlkSizeY*nBlkY : nHeightUV - (nBlkSizeY / yRatioUV)*nBlkY,
+              p == 0 ? nHeight - nBlkSizeY*nBlkY : nHeightUV - nBlkSizeY_UV*nBlkY,
               p == 0 ? nWidth : nWidthUV,
               nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256 /*t256_prov_cst*/, isse_flag);
         }
@@ -827,6 +821,9 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
     } // overlapx,y == 0
     else // overlap
     {
+      const int nWidth_B_UV = nWidth_B >> nLogxRatioUV;
+      const int nHeight_B_UV = nHeight_B >> nLogyRatioUV;
+
       for (int p = 0; p < 3; p++)
       {
         if (needProcessPlanes[p]) {
@@ -835,27 +832,22 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
           // was:  0 (for U and V)
           // need: nWidth_B / xRatioUV (for U and V) (2.5.11.22 bug)
           if (pixelsize == 1)
-            Blend<uint8_t>(pDst[p] + pixelsize*(p == 0 ? nWidth_B : nWidth_B / xRatioUV),
-              pSrc[p] + pixelsize*(p == 0 ? nWidth_B : nWidth_B / xRatioUV),   // -"-
-              pRef[p] + pixelsize*(p == 0 ? nWidth_B : nWidth_B / xRatioUV),   // -"-
-              p == 0 ? nHeight_B : nHeight_B / yRatioUV, // P.F. nHeight_B is enough, bottom will take care of buttom right edge
-              p == 0 ? nWidth - nWidth_B : nWidthUV - nWidth_B / xRatioUV,
+            Blend<uint8_t>(pDst[p] + pixelsize*(p == 0 ? nWidth_B : nWidth_B_UV),
+              pSrc[p] + pixelsize*(p == 0 ? nWidth_B : nWidth_B_UV),   // -"-
+              pRef[p] + pixelsize*(p == 0 ? nWidth_B : nWidth_B_UV),   // -"-
+              p == 0 ? nHeight_B : nHeight_B_UV, // P.F. nHeight_B is enough, bottom will take care of buttom right edge
+              p == 0 ? nWidth - nWidth_B : nWidthUV - nWidth_B_UV,
               nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256 /*t256_prov_cst*/, isse_flag);
           else if (pixelsize == 2)
-            Blend<uint16_t>(pDst[p] + pixelsize*(p == 0 ? nWidth_B : nWidth_B / xRatioUV),   // PF 161115 nWidth_B / xRatioUV instead of 0 for UV (2.5.11.22 bug)
-              pSrc[p] + pixelsize*(p == 0 ? nWidth_B : nWidth_B / xRatioUV),   // -"-
-              pRef[p] + pixelsize*(p == 0 ? nWidth_B : nWidth_B / xRatioUV),   // -"-
-              p == 0 ? nHeight_B : nHeight_B / yRatioUV,
-              p == 0 ? nWidth - nWidth_B : nWidthUV - nWidth_B / xRatioUV,
+            Blend<uint16_t>(pDst[p] + pixelsize*(p == 0 ? nWidth_B : nWidth_B_UV),   // PF 161115 nWidth_B / xRatioUV instead of 0 for UV (2.5.11.22 bug)
+              pSrc[p] + pixelsize*(p == 0 ? nWidth_B : nWidth_B_UV),   // -"-
+              pRef[p] + pixelsize*(p == 0 ? nWidth_B : nWidth_B_UV),   // -"-
+              p == 0 ? nHeight_B : nHeight_B_UV,
+              p == 0 ? nWidth - nWidth_B : nWidthUV - nWidth_B_UV,
               nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256 /*t256_prov_cst*/, isse_flag);
         }
       }
       // blend rest right with time weight
-      /* pre 161116 cycle
-      Blend(pDst[0] + nWidth_B, pSrc[0] + nWidth_B, pRef[0] + nWidth_B, nHeight_B, nWidth - nWidth_B, nDstPitches[0], nSrcPitches[0], nRefPitches[0], time256, isse_flag);
-      if (nSuperModeYUV & UPLANE) Blend(pDst[1], pSrc[1], pRef[1], nHeight_B / yRatioUV, nWidthUV - nWidth_B / xRatioUV, nDstPitches[1], nSrcPitches[1], nRefPitches[1], time256, isse_flag);
-      if (nSuperModeYUV & VPLANE) Blend(pDst[2], pSrc[2], pRef[2], nHeight_B / yRatioUV, nWidthUV - nWidth_B / xRatioUV, nDstPitches[2], nSrcPitches[2], nRefPitches[2], time256, isse_flag);
-      */
 
       for (int p = 0; p < 3; p++)
       {
@@ -866,29 +858,25 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
           // need: nHeight_B (that is really the bottom) = 716th row O.K.
           if (pixelsize == 1)
             Blend<uint8_t>(pDst[p] + nDstPitches[p] * (p == 0 ? (/*nHeight -*/ nHeight_B) : (/*nHeight -*/ nHeight_B) / yRatioUV),
-              pSrc[p] + nSrcPitches[p] * (p == 0 ? (/*nHeight - */nHeight_B) : (/*nHeight -*/ nHeight_B) / yRatioUV),
-              pRef[p] + nRefPitches[p] * (p == 0 ? (/*nHeight - */nHeight_B) : (/*nHeight -*/ nHeight_B) / yRatioUV),
-              p == 0 ? nHeight - nHeight_B : nHeightUV - nHeight_B / yRatioUV,
+              pSrc[p] + nSrcPitches[p] * (p == 0 ? nHeight_B : nHeight_B_UV),
+              pRef[p] + nRefPitches[p] * (p == 0 ? nHeight_B : nHeight_B_UV),
+              p == 0 ? nHeight - nHeight_B : nHeightUV - nHeight_B_UV,
               p == 0 ? nWidth : nWidthUV,
               nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256 /*t256_prov_cst*/, isse_flag);
           else if (pixelsize == 2)
-            Blend<uint16_t>(pDst[p] + nDstPitches[p] * (p == 0 ? (/*nHeight -*/ nHeight_B) : (/*nHeight -*/ nHeight_B) / yRatioUV),
-              pSrc[p] + nSrcPitches[p] * (p == 0 ? (/*nHeight - */nHeight_B) : (/*nHeight - */nHeight_B) / yRatioUV),
-              pRef[p] + nRefPitches[p] * (p == 0 ? (/*nHeight - */nHeight_B) : (/*nHeight - */nHeight_B) / yRatioUV),
-              p == 0 ? nHeight - nHeight_B : nHeightUV - nHeight_B / yRatioUV,
+            Blend<uint16_t>(pDst[p] + nDstPitches[p] * (p == 0 ? nHeight_B : nHeight_B_UV),
+              pSrc[p] + nSrcPitches[p] * (p == 0 ? nHeight_B : nHeight_B_UV),
+              pRef[p] + nRefPitches[p] * (p == 0 ? nHeight_B : nHeight_B_UV),
+              p == 0 ? nHeight - nHeight_B : nHeightUV - nHeight_B_UV,
               p == 0 ? nWidth : nWidthUV,
               nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256 /*t256_prov_cst*/, isse_flag);
         }
       }
-      /* pre 161116 cycle
-      // blend rest bottom with time weight
-      Blend(pDst[0] + (nHeight - nHeight_B)*nDstPitches[0], pSrc[0] + (nHeight - nHeight_B)*nSrcPitches[0], pRef[0] + (nHeight - nHeight_B)*nRefPitches[0], nHeight - nHeight_B, nWidth, nDstPitches[0], nSrcPitches[0], nRefPitches[0], time256, isse_flag);
-      if (nSuperModeYUV & UPLANE) Blend(pDst[1] + nDstPitches[1] * (nHeight - nHeight_B) / yRatioUV, pSrc[1] + nSrcPitches[1] * (nHeight - nHeight_B) / yRatioUV, pRef[1] + nRefPitches[1] * (nHeight - nHeight_B) / yRatioUV, nHeightUV - nHeight_B / yRatioUV, nWidthUV, nDstPitches[1], nSrcPitches[1], nRefPitches[1], time256, isse_flag);
-      if (nSuperModeYUV & VPLANE) Blend(pDst[2] + nDstPitches[2] * (nHeight - nHeight_B) / yRatioUV, pSrc[2] + nSrcPitches[2] * (nHeight - nHeight_B) / yRatioUV, pRef[2] + nRefPitches[2] * (nHeight - nHeight_B) / yRatioUV, nHeightUV - nHeight_B / yRatioUV, nWidthUV, nDstPitches[2], nSrcPitches[2], nRefPitches[2], time256, isse_flag);
-      */
+      
       MemZoneSet(reinterpret_cast<unsigned char*>(DstShort), 0, nWidth_B * sizeof(short)*pixelsize, nHeight_B, 0, 0, dstShortPitch * sizeof(short)*pixelsize);
-      if (nSuperModeYUV & UPLANE) MemZoneSet(reinterpret_cast<unsigned char*>(DstShortU), 0, nWidth_B * sizeof(short) / xRatioUV *pixelsize, nHeight_B / yRatioUV, 0, 0, dstShortPitchUV * sizeof(short)*pixelsize);
-      if (nSuperModeYUV & VPLANE) MemZoneSet(reinterpret_cast<unsigned char*>(DstShortV), 0, nWidth_B * sizeof(short) / xRatioUV *pixelsize, nHeight_B / yRatioUV, 0, 0, dstShortPitchUV * sizeof(short)*pixelsize);
+      if (nSuperModeYUV & UPLANE) MemZoneSet(reinterpret_cast<unsigned char*>(DstShortU), 0, nWidth_B_UV * sizeof(short) *pixelsize, nHeight_B_UV, 0, 0, dstShortPitchUV * sizeof(short)*pixelsize);
+      if (nSuperModeYUV & VPLANE) MemZoneSet(reinterpret_cast<unsigned char*>(DstShortV), 0, nWidth_B_UV * sizeof(short) *pixelsize, nHeight_B_UV, 0, 0, dstShortPitchUV * sizeof(short)*pixelsize);
+      
       pDstShort = DstShort;   // PF: can be used for Int array instead of short for 8+ bits
       pDstShortU = DstShortU;
       pDstShortV = DstShortV;
@@ -924,9 +912,9 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
               if (p == 0) current_xx = xx; else current_xx = xxUV;
               if (pixelsize == 1) {
                 ResultBlock<uint8_t>(TmpBlock, nBlkPitch*pixelsize,
-                  pPlanesB[p]->GetPointer(p == 0 ? refxB : refxB / xRatioUV, p == 0 ? refyB : refyB / yRatioUV),
+                  pPlanesB[p]->GetPointer(p == 0 ? refxB : refxB >> nLogxRatioUV, p == 0 ? refyB : refyB >> nLogyRatioUV),
                   pPlanesB[p]->GetPitch(),
-                  pPlanesF[p]->GetPointer(p == 0 ? refxF : refxF / xRatioUV, p == 0 ? refyF : refyF / yRatioUV),
+                  pPlanesF[p]->GetPointer(p == 0 ? refxF : refxF >> nLogxRatioUV, p == 0 ? refyF : refyF >> nLogyRatioUV),
                   pPlanesF[p]->GetPitch(),
                   pRef[p] + current_xx*pixelsize, nRefPitches[p],
                   pSrc[p] + current_xx*pixelsize, nSrcPitches[p],
@@ -934,21 +922,21 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
                   (p == 0 ? nPitchY : nPitchUV),
                   (p == 0 ? pMaskFullYF : pMaskFullUVF) + current_xx,
                   (p == 0 ? pMaskOccY : pMaskOccUV) + current_xx,
-                  (p == 0 ? nBlkSizeX : nBlkSizeX / xRatioUV),
-                  (p == 0 ? nBlkSizeY : nBlkSizeY / yRatioUV),
+                  (p == 0 ? nBlkSizeX : nBlkSizeX_UV),
+                  (p == 0 ? nBlkSizeY : nBlkSizeY_UV),
                   time256, mode, bits_per_pixel);
                 // now write result block to short dst with overlap window weight
                 switch (p) {
                 case 0: OVERSLUMA(pDstShort + current_xx, dstShortPitch, TmpBlock, nBlkPitch * pixelsize, winOver, nBlkSizeX); break;
-                case 1: OVERSCHROMA(pDstShortU + current_xx, dstShortPitchUV, TmpBlock, nBlkPitch * pixelsize, winOverUV, nBlkSizeX / xRatioUV); break;
-                case 2: OVERSCHROMA(pDstShortV + current_xx, dstShortPitchUV, TmpBlock, nBlkPitch * pixelsize, winOverUV, nBlkSizeX / xRatioUV); break;
+                case 1: OVERSCHROMA(pDstShortU + current_xx, dstShortPitchUV, TmpBlock, nBlkPitch * pixelsize, winOverUV, nBlkSizeX_UV); break;
+                case 2: OVERSCHROMA(pDstShortV + current_xx, dstShortPitchUV, TmpBlock, nBlkPitch * pixelsize, winOverUV, nBlkSizeX_UV); break;
                 }
               }
               else if (pixelsize == 2) {
                 ResultBlock<uint16_t>(TmpBlock, nBlkPitch*pixelsize,
-                  pPlanesB[p]->GetPointer(p == 0 ? refxB : refxB / xRatioUV, p == 0 ? refyB : refyB / yRatioUV),
+                  pPlanesB[p]->GetPointer(p == 0 ? refxB : refxB >> nLogxRatioUV, p == 0 ? refyB : refyB >> nLogyRatioUV),
                   pPlanesB[p]->GetPitch(),
-                  pPlanesF[p]->GetPointer(p == 0 ? refxF : refxF / xRatioUV, p == 0 ? refyF : refyF / yRatioUV),
+                  pPlanesF[p]->GetPointer(p == 0 ? refxF : refxF >> nLogxRatioUV, p == 0 ? refyF : refyF >> nLogyRatioUV),
                   pPlanesF[p]->GetPitch(),
                   pRef[p] + current_xx*pixelsize, nRefPitches[p],
                   pSrc[p] + current_xx*pixelsize, nSrcPitches[p],
@@ -956,8 +944,8 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
                   (p == 0 ? nPitchY : nPitchUV),
                   (p == 0 ? pMaskFullYF : pMaskFullUVF) + current_xx,
                   (p == 0 ? pMaskOccY : pMaskOccUV) + current_xx,
-                  (p == 0 ? nBlkSizeX : nBlkSizeX / xRatioUV),
-                  (p == 0 ? nBlkSizeY : nBlkSizeY / yRatioUV),
+                  (p == 0 ? nBlkSizeX : nBlkSizeX_UV),
+                  (p == 0 ? nBlkSizeY : nBlkSizeY_UV),
                   time256, mode, bits_per_pixel);
                 // now write result block to short dst with overlap window weight
                 switch (p) { // pitch of TmpBlock is byte-level only, regardless of 8/16 bit 
@@ -968,78 +956,46 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
               } // pixelsize
             } // needprocess
           } // planes
-            /* 16.11.15 pre-loop
-          // chroma u
-          if (nSuperModeYUV & UPLANE)
-          {
-            ResultBlock(TmpBlock, nBlkPitch,
-              pPlanesB[1]->GetPointer((blockB.GetX() * nPel + ((blockB.GetMV().x*(256 - time256)) >> 8)) / xRatioUV, (blockB.GetY() * nPel + ((blockB.GetMV().y*(256 - time256)) >> 8)) / yRatioUV),
-              pPlanesB[1]->GetPitch(),
-              pPlanesF[1]->GetPointer((blockF.GetX() * nPel + ((blockF.GetMV().x*time256) >> 8)) / xRatioUV, (blockF.GetY() * nPel + ((blockF.GetMV().y*time256) >> 8)) / yRatioUV),
-              pPlanesF[1]->GetPitch(),
-              pRef[1] + xxUV, nRefPitches[1],
-              pSrc[1] + xxUV, nSrcPitches[1],
-              pMaskFullUVB + xxUV, nPitchUV,
-              pMaskFullUVF + xxUV, pMaskOccUV + xxUV,
-              nBlkSizeX / xRatioUV, nBlkSizeY / yRatioUV, time256, mode);
-            // now write result block to short dst with overlap window weight
-            OVERSCHROMA(pDstShortU + xxUV, dstShortPitchUV, TmpBlock, nBlkPitch, winOverUV, nBlkSizeX / xRatioUV);
-          }
-
-          // chroma v
-          if (nSuperModeYUV & VPLANE)
-          {
-            ResultBlock(TmpBlock, nBlkPitch,
-              pPlanesB[2]->GetPointer((blockB.GetX() * nPel + ((blockB.GetMV().x*(256 - time256)) >> 8)) / xRatioUV, (blockB.GetY() * nPel + ((blockB.GetMV().y*(256 - time256)) >> 8)) / yRatioUV),
-              pPlanesB[2]->GetPitch(),
-              pPlanesF[2]->GetPointer((blockF.GetX() * nPel + ((blockF.GetMV().x*time256) >> 8)) / xRatioUV, (blockF.GetY() * nPel + ((blockF.GetMV().y*time256) >> 8)) / yRatioUV),
-              pPlanesF[2]->GetPitch(),
-              pRef[2] + xxUV, nRefPitches[2],
-              pSrc[2] + xxUV, nSrcPitches[2],
-              pMaskFullUVB + xxUV, nPitchUV,
-              pMaskFullUVF + xxUV, pMaskOccUV + xxUV,
-              nBlkSizeX / xRatioUV, nBlkSizeY / yRatioUV, time256, mode);
-            // now write result block to short dst with overlap window weight
-            OVERSCHROMA(pDstShortV + xxUV, dstShortPitchUV, TmpBlock, nBlkPitch, winOverUV, nBlkSizeX / xRatioUV);
-          }
-          */
 
           xx += (nBlkSizeX - nOverlapX);
-          xxUV += (nBlkSizeX - nOverlapX) / xRatioUV; // * pixelsize is at the usage place
+          xxUV += (nBlkSizeX - nOverlapX) >> nLogxRatioUV; // * pixelsize is at the usage place
 
         } // for bx
         // update pDsts
-        pDstShort += dstShortPitch*(nBlkSizeY - nOverlapY)*pixelsize; // pointer is short, 10-16bit: really int *, so mul 2x
-        pDstShortU += dstShortPitchUV*(nBlkSizeY - nOverlapY) / yRatioUV*pixelsize;
+        const int nBlkSizeYOverlapDiff = (nBlkSizeY - nOverlapY);
+        const int nBlkSizeYOverlapDiff_UV = (nBlkSizeY - nOverlapY) >> nLogyRatioUV;
+
+        pDstShort += dstShortPitch*nBlkSizeYOverlapDiff*pixelsize; // pointer is short, 10-16bit: really int *, so mul 2x
+        pDstShortU += dstShortPitchUV*nBlkSizeYOverlapDiff_UV*pixelsize;
         pDstShortV += dstShortPitchUV*(nBlkSizeY - nOverlapY) / yRatioUV*pixelsize;
-        pDst[0] += nDstPitches[0] * (nBlkSizeY - nOverlapY);
-        pDst[1] += nDstPitches[1] * (nBlkSizeY - nOverlapY) / yRatioUV;
-        pDst[2] += nDstPitches[2] * (nBlkSizeY - nOverlapY) / yRatioUV;
-        pRef[0] += nRefPitches[0] * (nBlkSizeY - nOverlapY);
-        pRef[1] += nRefPitches[1] * (nBlkSizeY - nOverlapY) / yRatioUV;
-        pRef[2] += nRefPitches[2] * (nBlkSizeY - nOverlapY) / yRatioUV;
-        pSrc[0] += nSrcPitches[0] * (nBlkSizeY - nOverlapY);
-        pSrc[1] += nSrcPitches[1] * (nBlkSizeY - nOverlapY) / yRatioUV;
-        pSrc[2] += nSrcPitches[2] * (nBlkSizeY - nOverlapY) / yRatioUV;
-        pMaskFullYB += nPitchY*(nBlkSizeY - nOverlapY);
-        pMaskFullUVB += nPitchUV*(nBlkSizeY - nOverlapY) / yRatioUV;
-        pMaskFullYF += nPitchY*(nBlkSizeY - nOverlapY);
-        pMaskFullUVF += nPitchUV*(nBlkSizeY - nOverlapY) / yRatioUV;
-        pMaskOccY += nPitchY*(nBlkSizeY - nOverlapY);
-        pMaskOccUV += nPitchUV*(nBlkSizeY - nOverlapY) / yRatioUV;
+        pDst[0] += nDstPitches[0] * nBlkSizeYOverlapDiff;
+        pDst[1] += nDstPitches[1] * nBlkSizeYOverlapDiff_UV;
+        pDst[2] += nDstPitches[2] * nBlkSizeYOverlapDiff_UV;
+        pRef[0] += nRefPitches[0] * nBlkSizeYOverlapDiff;
+        pRef[1] += nRefPitches[1] * nBlkSizeYOverlapDiff_UV;
+        pRef[2] += nRefPitches[2] * nBlkSizeYOverlapDiff_UV;
+        pSrc[0] += nSrcPitches[0] * nBlkSizeYOverlapDiff;
+        pSrc[1] += nSrcPitches[1] * nBlkSizeYOverlapDiff_UV;
+        pSrc[2] += nSrcPitches[2] * nBlkSizeYOverlapDiff_UV;
+        pMaskFullYB += nPitchY*nBlkSizeYOverlapDiff;
+        pMaskFullUVB += nPitchUV*nBlkSizeYOverlapDiff_UV;
+        pMaskFullYF += nPitchY*nBlkSizeYOverlapDiff;
+        pMaskFullUVF += nPitchUV*nBlkSizeYOverlapDiff_UV;
+        pMaskOccY += nPitchY*nBlkSizeYOverlapDiff;
+        pMaskOccUV += nPitchUV*nBlkSizeYOverlapDiff_UV;
       }  // for by
         // post 2.5.1.22 bug: the copy from internal 16 bit array to destination was missing for overlaps!
       if (pixelsize == 1) {
         // nWidth_B and nHeight_B, right and bottom was blended
         Short2Bytes(pDstSave[0], nDstPitches[0], DstShort, dstShortPitch, nWidth_B, nHeight_B);
-        Short2Bytes(pDstSave[1], nDstPitches[1], DstShortU, dstShortPitchUV, nWidth_B / xRatioUV, nHeight_B / yRatioUV);
-        Short2Bytes(pDstSave[2], nDstPitches[2], DstShortV, dstShortPitchUV, nWidth_B / xRatioUV, nHeight_B / yRatioUV);
+        Short2Bytes(pDstSave[1], nDstPitches[1], DstShortU, dstShortPitchUV, nWidth_B_UV, nHeight_B_UV);
+        Short2Bytes(pDstSave[2], nDstPitches[2], DstShortV, dstShortPitchUV, nWidth_B_UV, nHeight_B_UV);
       }
       else if (pixelsize == 2)
       {
         Short2Bytes_Int32toWord16((uint16_t *)(pDstSave[0]), nDstPitches[0], (int *)DstShort, dstShortPitch, nWidth_B, nHeight_B, bits_per_pixel);
-        Short2Bytes_Int32toWord16((uint16_t *)(pDstSave[1]), nDstPitches[1], (int *)DstShortU, dstShortPitchUV, nWidth_B / xRatioUV, nHeight_B / yRatioUV, bits_per_pixel);
-        Short2Bytes_Int32toWord16((uint16_t *)(pDstSave[2]), nDstPitches[2], (int *)DstShortV, dstShortPitchUV, nWidth_B / xRatioUV, nHeight_B / yRatioUV, bits_per_pixel);
+        Short2Bytes_Int32toWord16((uint16_t *)(pDstSave[1]), nDstPitches[1], (int *)DstShortU, dstShortPitchUV, nWidth_B_UV, nHeight_B_UV, bits_per_pixel);
+        Short2Bytes_Int32toWord16((uint16_t *)(pDstSave[2]), nDstPitches[2], (int *)DstShortV, dstShortPitchUV, nWidth_B_UV, nHeight_B_UV, bits_per_pixel);
       }
     }
     PROFILE_STOP(MOTION_PROFILE_COMPENSATION);
@@ -1114,11 +1070,6 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
             }
           }
         }
-#if 0
-        if (nSuperModeYUV & UPLANE) Blend(pDst[1], pSrc[1], pRef[1], nHeightUV, nWidthUV, nDstPitches[1], nSrcPitches[1], nRefPitches[1], time256 /*t256_prov_cst*/, isse_flag);
-        if (nSuperModeYUV & VPLANE) Blend(pDst[2], pSrc[2], pRef[2], nHeightUV, nWidthUV, nDstPitches[2], nSrcPitches[2], nRefPitches[2], time256 /*t256_prov_cst*/, isse_flag);
-#endif
-
       }
       PROFILE_STOP(MOTION_PROFILE_FLOWINTER);
 
