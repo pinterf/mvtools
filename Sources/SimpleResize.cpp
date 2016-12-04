@@ -39,10 +39,14 @@
 #define	WIN32_LEAN_AND_MEAN
 #include "Windows.h"
 #include	"avisynth.h"
-
 #include	"malloc.h"
 #include <emmintrin.h>
-#if 0
+
+#if !(defined(_M_X64))
+//#define OLD_ASM // for testing similarity with old code P.F. 161204
+#endif
+
+#ifdef OLD_ASM
 #if !defined(_M_X64)
 #define rax	eax
 #define rbx	ebx
@@ -370,18 +374,22 @@ bw = sup.MAnalyse(isb=true, delta=1, overlap=4)
 a=a.MFlowInter(sup, bw, fw, time=50, thSCD1=400) # MFlowInter uses SimpleResize
 a
 */
+
+  bool use_c = false;
+#ifndef OLD_ASM
   if (SSE2enabled) {
     SimpleResizeDo_New<uint8_t>(dstp, row_size, height, dst_pitch, srcp, src_row_size, src_pitch);
     return;
   }
-
+#endif
+  use_c = true; 
   typedef unsigned char src_type;
   // later for the other SimpleResizeDo for vectors this is unsigned short
   // typedef short src_type; 
 
   typedef src_type workY_type; // be the same
 
-#if 0
+#ifdef OLD_ASM
   int vWeight1[4];
   int vWeight2[4];
   // not needed for short
@@ -401,9 +409,10 @@ a
   unsigned int* vOffsetsW = vOffsets;
   unsigned int* vWeightsW = vWeights;
 
+#ifdef OLD_ASM
   bool	SSE2enabledW = SSE2enabled;		// in local storage for asm
-//  bool	SSEMMXenabledW = SSEMMXenabled;		// in local storage for asm
-
+  bool	SSEMMXenabledW = SSEMMXenabled;		// in local storage for asm
+#endif
   // Just in case things are not aligned right, maybe turn off sse2
 
   for (int y = 0; y < height; y++)
@@ -411,7 +420,7 @@ a
     int CurrentWeight = vWeightsW[y];
     int invCurrentWeight = 256 - CurrentWeight;
 
-#if 0
+#ifdef OLD_ASM
     // fill 4x(16x2) bit for inline asm 
     // for intrinsic it is not needed anymore
     vWeight1[0] = vWeight1[1] = vWeight1[2] = vWeight1[3] =
@@ -425,7 +434,7 @@ a
     // scrp2 is the next line (check for the most bottom line)
     srcp2 = (y < height - 1) ? srcp1 + src_pitch : srcp1;
 
-    if (true) // always C here
+    if (use_c) // always C here
     {
       // recovered (and commented) C version as sort of doc
       for (int x = 0; x < src_row_size; x++) {
@@ -452,7 +461,7 @@ a
 
 
     }
-#if 0
+#ifdef OLD_ASM
     // inline asm ignored 
     else {
       // Do Vertical. First SSE2 (mod16) then MMX (mod8) then MMX (for last_pos-8)
