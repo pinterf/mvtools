@@ -14,6 +14,18 @@ Modification base:
 http://avisynth.nl/index.php/AviSynth%2B#AviSynth.2B_x64_plugins
 
 Change log
+- 2.7.6.22 (20161204) - fixes and speedup
+  fix: sumLumaChange underflow (used for dct=2,6,9) (regression during 16 bit support)
+  fix: MeanLumaChange scale for 10-16 bits (used for dct=2,6,9)
+  fix: Mask fix: 8 bit mask resizer bug in SIMD intrinsics  - Thx real.finder
+       (regression on inline asm -> SIMD transition)       
+  Fix: dctmode=1,2: pixel distance was not corrected for 16 bit pixel sizes
+  speed: Let's help VS2015 with some __forceinline directives to recognize the truth.
+  speed: Misc optimizations throughout the code (bit shifts instead of div or mul)
+  speed: FFTW DCT: C code replaced with SIMD SSE2/SSE4 (FloatToBytes, BytesToFloat)
+  speed: 16 bit SAD: a few optimizations in SSE2, AVX-coded SSE2 and AVX2 codepath
+  VS2015 compiler: /MT -> /MD (from static to dynamic dlls - now it reallys need VS2015 redistributables)
+
 - 2.7.5.22 (20161119)
   Milestone release:
   General support of 10-16 bit formats with Avisynth Plus (r2294 or newer recommended)
