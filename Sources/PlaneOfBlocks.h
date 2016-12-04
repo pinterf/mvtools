@@ -170,7 +170,7 @@ private:
 
   // PF todo this should be float or double for float format??
   // it is not AtomicInt anymore
-  conc::AtomicInt <bigsad_t> planeSAD;      // summary SAD of plane // P.F. todo check where it is used
+  conc::AtomicInt <bigsad_t> planeSAD;      // summary SAD of plane
   conc::AtomicInt <bigsad_t> sumLumaChange; // luma change sum
   VECTOR _glob_mv_pred_def;
   int _lambda_level;
@@ -210,8 +210,8 @@ private:
 
     VECTOR globalMVPredictor;   // predictor of global motion vector
 
-    bigsad_t planeSAD;               // partial summary SAD of plane
-    bigsad_t sumLumaChange;          // partial luma change sum
+    bigsad_t planeSAD;          // partial summary SAD of plane
+    bigsad_t sumLumaChange;     // partial luma change sum
     int blky_beg;               // First line of blocks to process from this thread
     int blky_end;               // Last line of blocks + 1 to process from this thread
 
