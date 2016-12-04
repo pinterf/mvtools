@@ -226,7 +226,9 @@ void PlaneOfBlocks::SearchMVs(
   zeroMVfieldShifted.y = fieldShift;
   zeroMVfieldShifted.sad = 0; // vs
 #ifdef ALLOW_DCT
-  dctweight16 = std::min((sad_t)16, abs(*pmeanLumaChange) / (nBlkSizeX*nBlkSizeY)); //equal dct and spatial weights for meanLumaChange=8 (empirical)
+  // pMeanLumaChange is scaled by bits_per_pixel
+  // bit we keep this factor in the ~16 range
+  dctweight16 = std::min((sad_t)16, (abs(*pmeanLumaChange) >> (bits_per_pixel-8)) / (nBlkSizeX*nBlkSizeY)); //equal dct and spatial weights for meanLumaChange=8 (empirical)
 #endif	// ALLOW_DCT
 
   badSAD = _badSAD;
@@ -1511,7 +1513,7 @@ __forceinline const uint8_t *	PlaneOfBlocks::GetSrcBlock(int nX, int nY)
 sad_t	PlaneOfBlocks::LumaSADx(WorkingArea &workarea, const unsigned char *pRef0)
 {
   sad_t sad;
-  sad_t refLuma; // int or float/double?
+  sad_t refLuma;
   switch (dctmode)
   {
   case 1: // dct SAD
@@ -1962,7 +1964,25 @@ void	PlaneOfBlocks::search_mv_slice(Slicer::TaskData &td)
 
       if (smallestPlane)
       {
-        workarea.sumLumaChange += LUMA(GetRefBlock(workarea, 0, 0), nRefPitch[0]) - LUMA(workarea.pSrc[0], nSrcPitch[0]);
+        /*
+        int64_t i64_1 = 0;
+        int64_t i64_2 = 0;
+        int32_t i32 = 0;
+        unsigned int a1 = 200;
+        unsigned int a2 = 201;
+
+        i64_1 += a1 - a2; // 0x00000000 FFFFFFFF   !!!!!
+        i64_2 = i64_2 + a1 - a2; // 0xFFFFFFFF FFFFFFFF O.K.!
+        i32 += a1 - a2; // 0xFFFFFFFF
+        */
+
+        // int64_t += uint32_t - uint32_t is not ok, if diff would be negative
+        // LUMA diff can be negative! we should cast from uint32_t
+        // 64 bit cast or else: int64_t += uint32t - uint32_t results in int64_t += (uint32_t)(uint32t - uint32_t)
+        // which is baaaad 0x00000000 FFFFFFFF instead of 0xFFFFFFFF FFFFFFFF
+
+        // 161204 todo check: why is it not abs(lumadiff)?
+        workarea.sumLumaChange += (bigsad_t)LUMA(GetRefBlock(workarea, 0, 0), nRefPitch[0]) - (bigsad_t)LUMA(workarea.pSrc[0], nSrcPitch[0]);
       }
 
       /* increment indexes & pointers */
@@ -2328,7 +2348,9 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
 
       if (smallestPlane)
       {
-        workarea.sumLumaChange += LUMA(GetRefBlock(workarea, 0, 0), nRefPitch[0]) - LUMA(workarea.pSrc[0], nSrcPitch[0]);
+        // int64_t += uint32_t - uint32_t is not ok, if diff would be negative
+        // 161204 todo check: why is it not abs(lumadiff)?
+        workarea.sumLumaChange += (bigsad_t)LUMA(GetRefBlock(workarea, 0, 0), nRefPitch[0]) - (bigsad_t)LUMA(workarea.pSrc[0], nSrcPitch[0]);
       }
 
       if (iblkx < nBlkX - 1)
