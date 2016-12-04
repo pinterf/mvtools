@@ -171,6 +171,7 @@ MVBlockFps::MVBlockFps(
   smallMaskO = new BYTE[nBlkXP*nBlkYP];
 
   const int tmpBlkAlign = 16;
+
   nBlkPitch = AlignNumber(nBlkSizeX, tmpBlkAlign); // padded to 16 , 2.5.11.22
   TmpBlock = (BYTE *)_aligned_malloc(nBlkPitch*nBlkSizeY*pixelsize, tmpBlkAlign); // new BYTE[nBlkPitch*nBlkSizeY*pixelsize]; // may be more padding?
 
@@ -188,6 +189,7 @@ MVBlockFps::MVBlockFps(
   const int tmpDstAlign = 16;
   dstShortPitch = AlignNumber(nWidth, tmpDstAlign); // 2.5.11.22
   dstShortPitchUV = AlignNumber(nWidth / xRatioUV, tmpDstAlign);
+
   if (nOverlapX > 0 || nOverlapY > 0)
   {
     OverWins = new OverlapWindows(nBlkSizeX, nBlkSizeY, nOverlapX, nOverlapY);
@@ -197,9 +199,6 @@ MVBlockFps::MVBlockFps(
     DstShort = (unsigned short *)_aligned_malloc(dstShortPitch*nHeight * sizeof(short)*pixelsize, tmpDstAlign); // PF aligned
     DstShortU = (unsigned short *)_aligned_malloc(dstShortPitchUV*nHeight * sizeof(short)*pixelsize, tmpDstAlign);
     DstShortV = (unsigned short *)_aligned_malloc(dstShortPitchUV*nHeight * sizeof(short)*pixelsize, tmpDstAlign);
-    //DstShort = new unsigned short[dstShortPitch*nHeight*pixelsize];   
-    //DstShortU = new unsigned short[dstShortPitchUV*nHeight*pixelsize];
-    //DstShortV = new unsigned short[dstShortPitchUV*nHeight*pixelsize];
   }
 }
 
@@ -218,7 +217,6 @@ MVBlockFps::~MVBlockFps()
   delete[] smallMaskB;
   delete[] smallMaskO;
 
-  //delete[] TmpBlock;
   _aligned_free(TmpBlock); // PF 161116
 
 
@@ -330,7 +328,6 @@ void MVBlockFps::MultMasks(BYTE *smallmaskF, BYTE *smallmaskB, BYTE *smallmaskO,
   }
 }
 
-// PF todo: needs template<typename pixel_t>
 template<typename pixel_t>
 inline pixel_t MEDIAN(pixel_t a, pixel_t b, pixel_t c)
 {
@@ -574,6 +571,20 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
     }
     else
     {
+      bool isRGB = vi.IsPlanarRGB() || vi.IsPlanarRGBA();
+      const int planesRGB[] = { PLANAR_G, PLANAR_B, PLANAR_R };
+      const int planesYUV[] = { PLANAR_Y, PLANAR_U, PLANAR_V };
+      const int *planes = isRGB ? planesRGB : planesYUV;
+      for (int p = 0; p < vi.IsY() ? 1 : 3; p++) { // grey support
+        int plane = planes[p];
+        pDst[p] = dst->GetWritePtr(plane);
+        nDstPitches[p] = dst->GetPitch(plane);
+        pRef[p] = ref->GetReadPtr(plane);
+        nRefPitches[p] = ref->GetPitch(plane);
+        pSrc[p] = src->GetReadPtr(plane);
+        nSrcPitches[p] = src->GetPitch(plane);
+      }
+      /*
       pDst[0] = YWPLAN(dst);
       pDst[1] = UWPLAN(dst);
       pDst[2] = VWPLAN(dst);
@@ -594,6 +605,7 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
       nSrcPitches[0] = YPITCH(src);
       nSrcPitches[1] = UPITCH(src);
       nSrcPitches[2] = VPITCH(src);
+      */
     }
     PROFILE_STOP(MOTION_PROFILE_YUY2CONVERT);
 

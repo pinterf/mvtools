@@ -35,6 +35,17 @@ Various utility functions related to avisynth clips.
 #define UPITCH(a) ((a)->GetPitch(PLANAR_U))
 #define VPITCH(a) ((a)->GetPitch(PLANAR_V))
 
+// PF 161204 Planar RGB access
+#define GRPLAN(a) ((a)->GetReadPtr(PLANAR_G))
+#define GWPLAN(a) ((a)->GetWritePtr(PLANAR_G))
+#define BRPLAN(a) ((a)->GetReadPtr(PLANAR_B))
+#define BWPLAN(a) ((a)->GetWritePtr(PLANAR_B))
+#define RRPLAN(a) ((a)->GetReadPtr(PLANAR_R))
+#define RWPLAN(a) ((a)->GetWritePtr(PLANAR_R))
+#define GPITCH(a) ((a)->GetPitch(PLANAR_G))
+#define BPITCH(a) ((a)->GetPitch(PLANAR_B))
+#define RPITCH(a) ((a)->GetPitch(PLANAR_R))
+
 
 
 // avisynth.h forward declarations
