@@ -576,7 +576,7 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
       const int planesYUV[] = { PLANAR_Y, PLANAR_U, PLANAR_V };
       const int *planes = isRGB ? planesRGB : planesYUV;
       const int planeCount = vi.IsY() ? 1 : 3;
-      for (int p = 0; p < 3; p++) { // grey support
+      for (int p = 0; p < planeCount; p++) { // grey support
         int plane = planes[p];
         pDst[p] = dst->GetWritePtr(plane);
         nDstPitches[p] = dst->GetPitch(plane);
