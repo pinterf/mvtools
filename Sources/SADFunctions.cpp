@@ -271,18 +271,18 @@ SADFunction* get_sad_function(int BlockX, int BlockY, int pixelsize, arch_t arch
     func_sad[make_tuple(32, 16, 1, USE_SSE2)] = Sad32x16_iSSE;
     func_sad[make_tuple(32, 8 , 1, USE_SSE2)] = Sad32x8_iSSE;
     func_sad[make_tuple(16, 32, 1, USE_SSE2)] = Sad16x32_iSSE;
-    func_sad[make_tuple(16, 16, 1, USE_SSE2)] = Sad16x16_iSSE;
-    func_sad[make_tuple(16, 8 , 1, USE_SSE2)] = Sad16x8_iSSE;
-    func_sad[make_tuple(16, 4 , 1, USE_SSE2)] = Sad16x4_iSSE;
-    func_sad[make_tuple(16, 2 , 1, USE_SSE2)] = Sad16x2_iSSE;
-    func_sad[make_tuple(8 , 16, 1, USE_SSE2)] = Sad8x16_iSSE;
-    func_sad[make_tuple(8 , 8 , 1, USE_SSE2)] = Sad8x8_iSSE;
-    func_sad[make_tuple(8 , 4 , 1, USE_SSE2)] = Sad8x4_iSSE;
+    func_sad[make_tuple(16, 16, 1, USE_SSE2)] = x264_pixel_sad_16x16_sse2;
+    func_sad[make_tuple(16, 8 , 1, USE_SSE2)] = x264_pixel_sad_16x8_sse2;
+    func_sad[make_tuple(16, 4 , 1, USE_SSE2)] = x264_pixel_sad_16x4_mmx2;
+    func_sad[make_tuple(16, 2 , 1, USE_SSE2)] = x264_pixel_sad_16x2_mmx2;
+    func_sad[make_tuple(8,  16, 1, USE_SSE2)] = x264_pixel_sad_8x16_mmx2;
+    func_sad[make_tuple(8 , 8,  1, USE_SSE2)] = x264_pixel_sad_8x8_mmx2;
+    func_sad[make_tuple(8 , 4 , 1, USE_SSE2)] = x264_pixel_sad_8x4_mmx2;
     func_sad[make_tuple(8 , 2 , 1, USE_SSE2)] = Sad8x2_iSSE;
     func_sad[make_tuple(8 , 1 , 1, USE_SSE2)] = Sad8x1_iSSE;
 #endif
-    func_sad[make_tuple(4 , 8 , 1, USE_SSE2)] = Sad4x8_iSSE;
-    func_sad[make_tuple(4 , 4 , 1, USE_SSE2)] = Sad4x4_iSSE;
+    func_sad[make_tuple(4 , 8 , 1, USE_SSE2)] = x264_pixel_sad_4x8_mmx2;
+    func_sad[make_tuple(4 , 4 , 1, USE_SSE2)] = x264_pixel_sad_4x4_mmx2;
     func_sad[make_tuple(4 , 2 , 1, USE_SSE2)] = Sad4x2_iSSE;
     func_sad[make_tuple(2 , 4 , 1, USE_SSE2)] = Sad2x4_iSSE;
     func_sad[make_tuple(2 , 2 , 1, USE_SSE2)] = Sad2x2_iSSE;
