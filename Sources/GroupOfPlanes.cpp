@@ -195,7 +195,10 @@ void	GroupOfPlanes::SearchMVs(
       planes[i + 1]->EstimateGlobalMVDoubled(&globalMV, slicer_glob);
       //			DebugPrintf("SearchMV globalMV %i, %i", globalMV.x, globalMV.y);
     }
-    planes[i]->InterpolatePrediction(*(planes[i + 1]));
+    if(pixelsize==1)
+      planes[i]->InterpolatePrediction<uint8_t>(*(planes[i + 1]));
+    else
+      planes[i]->InterpolatePrediction<uint16_t>(*(planes[i + 1]));
     if (global)
     {
       slicer_glob.wait();
@@ -331,7 +334,7 @@ int GroupOfPlanes::GetArraySize()
 
 // FIND MEDIAN OF 3 ELEMENTS
 //
-inline int	Median3(int a, int b, int c)
+__forceinline int	Median3(int a, int b, int c)
 {
   // b a c || c a b
   if (((b <= a) && (a <= c)) || ((c <= a) && (a <= b)))
