@@ -51,28 +51,28 @@ public :
 	void Update(const int *array);
 	bool IsSceneChange(sad_t nTh1, int nTh2) const;
 
-	inline bool IsInFrame(int i) const
+	__forceinline bool IsInFrame(int i) const
 	{
 		return (( i >= 0 ) && ( i < nBlkCount ));
 	}
 
-	inline const FakeBlockData& operator[](const int i) const {
+	__forceinline const FakeBlockData& operator[](const int i) const {
 		return (blocks[i]);
 	}
 
-	inline int GetBlockCount() const { return nBlkCount; }
-	inline int GetReducedWidth() const { return nBlkX; }
-	inline int GetReducedHeight() const { return nBlkY; }
-	inline int GetWidth() const { return nWidth_Bi; }
-	inline int GetHeight() const { return nHeight_Bi; }
-	inline int GetScaleLevel() const { return nLogScale; }
-	inline int GetEffectiveScale() const { return nScale; }
-	inline int GetBlockSizeX() const { return nBlkSizeX; }
-	inline int GetBlockSizeY() const { return nBlkSizeY; }
-	inline int GetPel() const { return nPel; }
-   inline const FakeBlockData& GetBlock(int i) const { return (blocks[i]); }
-	inline int GetOverlapX() const { return nOverlapX; }
-	inline int GetOverlapY() const { return nOverlapY; }
+	__forceinline int GetBlockCount() const { return nBlkCount; }
+  __forceinline int GetReducedWidth() const { return nBlkX; }
+  __forceinline int GetReducedHeight() const { return nBlkY; }
+  __forceinline int GetWidth() const { return nWidth_Bi; }
+  __forceinline int GetHeight() const { return nHeight_Bi; }
+  __forceinline int GetScaleLevel() const { return nLogScale; }
+  __forceinline int GetEffectiveScale() const { return nScale; }
+  __forceinline int GetBlockSizeX() const { return nBlkSizeX; }
+  __forceinline int GetBlockSizeY() const { return nBlkSizeY; }
+  __forceinline int GetPel() const { return nPel; }
+  __forceinline const FakeBlockData& GetBlock(int i) const { return (blocks[i]); }
+  __forceinline int GetOverlapX() const { return nOverlapX; }
+  __forceinline int GetOverlapY() const { return nOverlapY; }
 };
 
 

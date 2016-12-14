@@ -49,10 +49,10 @@ public :
     void Init(int _x, int _y);
 	void Update(const int *array);
 
-	inline int GetX() const { return x; }
-	inline int GetY() const { return y; }
-	inline VECTOR GetMV() const { return vector; }
-	inline sad_t GetSAD() const { return vector.sad; }
+	__forceinline int GetX() const { return x; }
+	__forceinline int GetY() const { return y; }
+	__forceinline VECTOR GetMV() const { return vector; }
+	__forceinline sad_t GetSAD() const { return vector.sad; }
 //	inline int GetMVLength() const { return nLength; }
 //	inline int GetVariance() const { return nVariance; }
 //	inline int GetLuma() const { return nLuma; }

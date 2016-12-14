@@ -61,12 +61,12 @@ public :
 	}
 
 
-	inline bool IsValid() const { return validity; }
+	__forceinline bool IsValid() const { return validity; }
 //   inline const unsigned char *GetCompensatedPlane() const { return compensatedPlane; }
 //   inline const unsigned char *GetCompensatedPlaneU() const { return compensatedPlaneU; }
 //   inline const unsigned char *GetCompensatedPlaneV() const { return compensatedPlaneV; }
-   inline int GetPitch() const { return nWidth_B; }
-   inline int GetPitchUV() const { return nWidth_B / xRatioUV_B; }
+  __forceinline int GetPitch() const { return nWidth_B; }
+  __forceinline int GetPitchUV() const { return nWidth_B / xRatioUV_B; }
 
 	__forceinline const FakePlaneOfBlocks& GetPlane(int i) const { return *(planes[i]); }
 };
