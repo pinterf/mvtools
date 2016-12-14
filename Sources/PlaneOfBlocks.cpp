@@ -312,7 +312,10 @@ void PlaneOfBlocks::SearchMVs(
   // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
 
   Slicer			slicer(_mt_flag);
-  slicer.start(nBlkY, *this, &PlaneOfBlocks::search_mv_slice, 4);
+  if(bits_per_pixel == 8)
+    slicer.start(nBlkY, *this, &PlaneOfBlocks::search_mv_slice<uint8_t>, 4);
+  else
+    slicer.start(nBlkY, *this, &PlaneOfBlocks::search_mv_slice<uint16_t>, 4);
   slicer.wait();
 
   // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
@@ -415,7 +418,10 @@ void PlaneOfBlocks::RecalculateMVs(
   // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
 
   Slicer			slicer(_mt_flag);
-  slicer.start(nBlkY, *this, &PlaneOfBlocks::recalculate_mv_slice, 4);
+  if(pixelsize==1)
+    slicer.start(nBlkY, *this, &PlaneOfBlocks::recalculate_mv_slice<uint8_t>, 4);
+  else
+    slicer.start(nBlkY, *this, &PlaneOfBlocks::recalculate_mv_slice<uint16_t>, 4);
   slicer.wait();
 
   // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
@@ -423,6 +429,8 @@ void PlaneOfBlocks::RecalculateMVs(
 
 
 
+
+template<typename pixel_t>
 void PlaneOfBlocks::InterpolatePrediction(const PlaneOfBlocks &pob)
 {
   int normFactor = 3 - nLogPel + pob.nLogPel;
@@ -479,14 +487,15 @@ void PlaneOfBlocks::InterpolatePrediction(const PlaneOfBlocks &pob)
         v3 = pob.vectors[iper2 + (jper2 + offy) * pob.nBlkX];
         v4 = pob.vectors[iper2 + offx + (jper2 + offy) * pob.nBlkX];
       }
-      bigsad_t tmp_sad; // 16 bit worst case: 16 * sad_max: 16 * 3x32x32x65536 = 4+5+5+16 > 2^31 over limit
+      typedef typename std::conditional < sizeof(pixel_t) == 1, sad_t, bigsad_t >::type safe_sad_t;
+      safe_sad_t tmp_sad; // 16 bit worst case: 16 * sad_max: 16 * 3x32x32x65536 = 4+5+5+16 > 2^31 over limit
       // in case of BlockSize > 32, e.g. 128x128x65536 is even more: 7+7+16=30 bits
 
       if (nOverlapX == 0 && nOverlapY == 0)
       {
         vectors[index].x = 9 * v1.x + 3 * v2.x + 3 * v3.x + v4.x;
         vectors[index].y = 9 * v1.y + 3 * v2.y + 3 * v3.y + v4.y;
-        tmp_sad = 9 * (bigsad_t)v1.sad + 3 * (bigsad_t)v2.sad + 3 * (bigsad_t)v3.sad + (bigsad_t)v4.sad + 8;
+        tmp_sad = 9 * (safe_sad_t)v1.sad + 3 * (safe_sad_t)v2.sad + 3 * (safe_sad_t)v3.sad + (safe_sad_t)v4.sad + 8;
         
       }
       else if (nOverlapX <= (nBlkSizeX >> 1) && nOverlapY <= (nBlkSizeY >> 1)) // corrected in v1.4.11
@@ -498,13 +507,13 @@ void PlaneOfBlocks::InterpolatePrediction(const PlaneOfBlocks &pob)
         int a11 = ax1*ay1, a12 = ax1*ay2, a21 = ax2*ay1, a22 = ax2*ay2;
         vectors[index].x = (a11*v1.x + a21*v2.x + a12*v3.x + a22*v4.x) / normov;
         vectors[index].y = (a11*v1.y + a21*v2.y + a12*v3.y + a22*v4.y) / normov;
-        tmp_sad = ((bigsad_t)a11*v1.sad + (bigsad_t)a21*v2.sad + (bigsad_t)a12*v3.sad + (bigsad_t)a22*v4.sad) / normov;
+        tmp_sad = ((safe_sad_t)a11*v1.sad + (safe_sad_t)a21*v2.sad + (safe_sad_t)a12*v3.sad + (safe_sad_t)a22*v4.sad) / normov;
       }
       else // large overlap. Weights are not quite correct but let it be
       {
         vectors[index].x = (v1.x + v2.x + v3.x + v4.x) << 2;
         vectors[index].y = (v1.y + v2.y + v3.y + v4.y) << 2;
-        tmp_sad = ((bigsad_t)v1.sad + v2.sad + v3.sad + v4.sad + 2) << 2;
+        tmp_sad = ((safe_sad_t)v1.sad + v2.sad + v3.sad + v4.sad + 2) << 2;
       }
       vectors[index].x = (vectors[index].x >> normFactor) << mulFactor;
       vectors[index].y = (vectors[index].y >> normFactor) << mulFactor;
@@ -513,6 +522,9 @@ void PlaneOfBlocks::InterpolatePrediction(const PlaneOfBlocks &pob)
   }	// for l < nBlkY
 }
 
+// instantiate
+template void PlaneOfBlocks::InterpolatePrediction<uint8_t>(const PlaneOfBlocks &pob);
+template void PlaneOfBlocks::InterpolatePrediction<uint16_t>(const PlaneOfBlocks &pob);
 
 
 void PlaneOfBlocks::WriteHeaderToArray(int *array)
@@ -575,6 +587,8 @@ int PlaneOfBlocks::GetArraySize(int divideMode)
 
 
 
+
+template<typename pixel_t>
 void PlaneOfBlocks::FetchPredictors(WorkingArea &workarea)
 {
   // Left (or right) predictor
@@ -650,7 +664,8 @@ void PlaneOfBlocks::FetchPredictors(WorkingArea &workarea)
     }
   */
   //	if ( workarea.predictor.sad > LSAD ) { workarea.nLambda = 0; } // generalized (was LSAD=400) by Fizick
-  workarea.nLambda = workarea.nLambda*(bigsad_t)LSAD / ((bigsad_t)LSAD + (workarea.predictor.sad >> 1))*LSAD / ((bigsad_t)LSAD + (workarea.predictor.sad >> 1));
+  typedef typename std::conditional < sizeof(pixel_t) == 1, sad_t, bigsad_t >::type safe_sad_t;
+  workarea.nLambda = workarea.nLambda*(safe_sad_t)LSAD / ((safe_sad_t)LSAD + (workarea.predictor.sad >> 1))*LSAD / ((safe_sad_t)LSAD + (workarea.predictor.sad >> 1));
   // replaced hard threshold by soft in v1.10.2 by Fizick (a liitle complex expression to avoid overflow)
   //	int a = LSAD/(LSAD + (workarea.predictor.sad>>1));
   //	workarea.nLambda = workarea.nLambda*a*a;
@@ -733,9 +748,11 @@ void PlaneOfBlocks::Refine(WorkingArea &workarea)
 
 
 
+template<typename pixel_t>
 void PlaneOfBlocks::PseudoEPZSearch(WorkingArea &workarea)
 {
-  FetchPredictors(workarea);
+  typedef typename std::conditional < sizeof(pixel_t) == 1, sad_t, bigsad_t >::type safe_sad_t;
+  FetchPredictors<pixel_t>(workarea);
 
   sad_t sad;
   sad_t saduv;
@@ -763,7 +780,7 @@ void PlaneOfBlocks::PseudoEPZSearch(WorkingArea &workarea)
   sad = LumaSAD(workarea, GetRefBlock(workarea, 0, zeroMVfieldShifted.y));
   sad += saduv;
   workarea.bestMV.sad = sad;
-  workarea.nMinCost = sad + ((penaltyZero*(bigsad_t)sad) >> 8); // v.1.11.0.2
+  workarea.nMinCost = sad + ((penaltyZero*(safe_sad_t)sad) >> 8); // v.1.11.0.2
 
   VECTOR bestMVMany[8];
   int nMinCostMany[8];
@@ -784,7 +801,7 @@ void PlaneOfBlocks::PseudoEPZSearch(WorkingArea &workarea)
       + SADCHROMA(workarea.pSrc[2], nSrcPitch[2], GetRefBlockV(workarea, workarea.globalMVPredictor.x, workarea.globalMVPredictor.y), nRefPitch[2]) : 0;
     sad = LumaSAD(workarea, GetRefBlock(workarea, workarea.globalMVPredictor.x, workarea.globalMVPredictor.y));
     sad += saduv;
-    sad_t cost = sad + ((pglobal*(bigsad_t)sad) >> 8);
+    sad_t cost = sad + ((pglobal*(safe_sad_t)sad) >> 8);
 
     if (cost < workarea.nMinCost || tryMany)
     {
@@ -1801,6 +1818,7 @@ bool	PlaneOfBlocks::IsInFrame(int i)
 
 
 
+template<typename pixel_t>
 void	PlaneOfBlocks::search_mv_slice(Slicer::TaskData &td)
 {
   assert(&td != 0);
@@ -1943,7 +1961,7 @@ void	PlaneOfBlocks::search_mv_slice(Slicer::TaskData &td)
         workarea.predictors[4] = ClipMV(workarea, zeroMV);
       }
 
-      PseudoEPZSearch(workarea);
+      PseudoEPZSearch<pixel_t>(workarea);
       //			workarea.bestMV = zeroMV; // debug
 
       if (outfilebuf != NULL) // write vector to outfile
@@ -1982,7 +2000,8 @@ void	PlaneOfBlocks::search_mv_slice(Slicer::TaskData &td)
         // which is baaaad 0x00000000 FFFFFFFF instead of 0xFFFFFFFF FFFFFFFF
 
         // 161204 todo check: why is it not abs(lumadiff)?
-        workarea.sumLumaChange += (bigsad_t)LUMA(GetRefBlock(workarea, 0, 0), nRefPitch[0]) - (bigsad_t)LUMA(workarea.pSrc[0], nSrcPitch[0]);
+        typedef typename std::conditional < sizeof(pixel_t) == 1, sad_t, bigsad_t >::type safe_sad_t;
+        workarea.sumLumaChange += (safe_sad_t)LUMA(GetRefBlock(workarea, 0, 0), nRefPitch[0]) - (safe_sad_t)LUMA(workarea.pSrc[0], nSrcPitch[0]);
       }
 
       /* increment indexes & pointers */
@@ -2028,6 +2047,7 @@ void	PlaneOfBlocks::search_mv_slice(Slicer::TaskData &td)
 
 
 
+template<typename pixel_t>
 void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
 {
   assert(&td != 0);
@@ -2176,6 +2196,8 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
 
       VECTOR vectorOld; // interpolated or nearest
 
+      typedef typename std::conditional < sizeof(pixel_t) == 1, sad_t, bigsad_t >::type safe_sad_t;
+
       if (_smooth == 1) // interpolate
       {
         VECTOR vectorOld1 = _mv_clip_ptr->GetBlock(0, blkxold1 + blkyold1*nBlkXold).GetMV(); // 4 old nearest vectors (may coinside)
@@ -2186,11 +2208,11 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
         // interpolate
         int vector1_x = vectorOld1.x*nStepXold + deltaX*(vectorOld2.x - vectorOld1.x); // scaled by nStepXold to skip slow division
         int vector1_y = vectorOld1.y*nStepXold + deltaX*(vectorOld2.y - vectorOld1.y);
-        bigsad_t vector1_sad = (bigsad_t)vectorOld1.sad*nStepXold + deltaX*((bigsad_t)vectorOld2.sad - vectorOld1.sad);
+        safe_sad_t vector1_sad = (safe_sad_t)vectorOld1.sad*nStepXold + deltaX*((safe_sad_t)vectorOld2.sad - vectorOld1.sad);
 
         int vector2_x = vectorOld3.x*nStepXold + deltaX*(vectorOld4.x - vectorOld3.x);
         int vector2_y = vectorOld3.y*nStepXold + deltaX*(vectorOld4.y - vectorOld3.y);
-        bigsad_t vector2_sad = (bigsad_t)vectorOld3.sad*nStepXold + deltaX*((bigsad_t)vectorOld4.sad - vectorOld3.sad);
+        safe_sad_t vector2_sad = (safe_sad_t)vectorOld3.sad*nStepXold + deltaX*((safe_sad_t)vectorOld4.sad - vectorOld3.sad);
 
         vectorOld.x = (vector1_x + deltaY*(vector2_x - vector1_x) / nStepYold) / nStepXold;
         vectorOld.y = (vector1_y + deltaY*(vector2_y - vector1_y) / nStepYold) / nStepXold;
@@ -2222,7 +2244,7 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
       vectorOld.y = (vectorOld.y << nLogPel) >> nLogPelold;
 
       workarea.predictor = ClipMV(workarea, vectorOld); // predictor
-      workarea.predictor.sad = (sad_t)((bigsad_t)vectorOld.sad * (nBlkSizeX*nBlkSizeY) / (nBlkSizeXold*nBlkSizeYold)); // normalized to new block size
+      workarea.predictor.sad = (sad_t)((safe_sad_t)vectorOld.sad * (nBlkSizeX*nBlkSizeY) / (nBlkSizeXold*nBlkSizeYold)); // normalized to new block size
 
 //			workarea.bestMV = workarea.predictor; // by pointer?
       workarea.bestMV.x = workarea.predictor.x;
@@ -2350,7 +2372,7 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
       {
         // int64_t += uint32_t - uint32_t is not ok, if diff would be negative
         // 161204 todo check: why is it not abs(lumadiff)?
-        workarea.sumLumaChange += (bigsad_t)LUMA(GetRefBlock(workarea, 0, 0), nRefPitch[0]) - (bigsad_t)LUMA(workarea.pSrc[0], nSrcPitch[0]);
+        workarea.sumLumaChange += (safe_sad_t)LUMA(GetRefBlock(workarea, 0, 0), nRefPitch[0]) - (safe_sad_t)LUMA(workarea.pSrc[0], nSrcPitch[0]);
       }
 
       if (iblkx < nBlkX - 1)
@@ -2455,7 +2477,7 @@ PlaneOfBlocks::WorkingArea::~WorkingArea()
 
 
 /* check if a vector is inside search boundaries */
-bool	PlaneOfBlocks::WorkingArea::IsVectorOK(int vx, int vy) const
+__forceinline bool	PlaneOfBlocks::WorkingArea::IsVectorOK(int vx, int vy) const
 {
   return (
     (vx >= nDxMin)
@@ -2466,7 +2488,7 @@ bool	PlaneOfBlocks::WorkingArea::IsVectorOK(int vx, int vy) const
 }
 
 /* computes the cost of a vector (vx, vy) */
-int	PlaneOfBlocks::WorkingArea::MotionDistorsion(int vx, int vy) const
+__forceinline int	PlaneOfBlocks::WorkingArea::MotionDistorsion(int vx, int vy) const
 {
   int dist = SquareDifferenceNorm(predictor, vx, vy);
   return (nLambda * dist) >> (16 - bits_per_pixel) /*8*/; // PF scaling because it appears as a sad addition 
