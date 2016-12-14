@@ -287,11 +287,15 @@ MK_CPPWRAP(2,2);
 //x264_pixel_sad_16x16_mmx2(   x,y can be: 16 8 4
 SAD_x264(16,16);
 SAD_x264(16,8);
+SAD_x264(16,4);
+SAD_x264(16,2);
 SAD_x264(8,16);
 SAD_x264(8,8);
 SAD_x264(8,4);
+SAD_x264(8,2);
 SAD_x264(4,8);
 SAD_x264(4,4);
+SAD_x264(4,2);
 #undef SAD_x264
 //parameter is function name
 MK_CFUNC(x264_pixel_sad_16x16_sse2); //non optimized cache access, for AMD?
