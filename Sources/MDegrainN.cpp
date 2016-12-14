@@ -218,14 +218,20 @@ void DegrainN_sse2(
           val = _mm_add_epi16(val, s1);
           val = _mm_add_epi16(val, s2);
         }
-        _mm_storel_epi64(
-          (__m128i*)(pDst + x),
-          _mm_packus_epi16(_mm_srli_epi16(val, 8), z)
-        );
-        _mm_storel_epi64(
-          (__m128i*)(pDstLsb + x),
-          _mm_packus_epi16(_mm_and_si128(val, m), z)
-        );
+        if (blockWidth >= 8) {
+          _mm_storel_epi64(
+            (__m128i*)(pDst + x),
+            _mm_packus_epi16(_mm_srli_epi16(val, 8), z)
+          );
+          _mm_storel_epi64(
+            (__m128i*)(pDstLsb + x),
+            _mm_packus_epi16(_mm_and_si128(val, m), z)
+          );
+        }
+        else {
+            *(uint32_t*)(pDst + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_srli_epi16(val, 8), z));
+            *(uint32_t*)(pDstLsb + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_and_si128(val, m), z));
+        }
       }
       pDst += nDstPitch;
       pDstLsb += nDstPitch;
@@ -263,10 +269,15 @@ void DegrainN_sse2(
           val = _mm_add_epi16(val, s1);
           val = _mm_add_epi16(val, s2);
         }
-        _mm_storel_epi64(
-          (__m128i*)(pDst + x),
-          _mm_packus_epi16(_mm_srli_epi16(val, 8), z)
-        );
+        if (blockWidth >= 8) {
+          _mm_storel_epi64(
+            (__m128i*)(pDst + x),
+            _mm_packus_epi16(_mm_srli_epi16(val, 8), z)
+          );
+        }
+        else {
+          *(uint32_t*)(pDst + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_srli_epi16(val, 8), z));
+        }
       }
 
       pDst += nDstPitch;
@@ -365,8 +376,8 @@ MDegrainN::DenoiseNFunction* MDegrainN::get_denoiseN_function(int BlockX, int Bl
   func_degrain[make_tuple(4, 8, 1, USE_SSE2)] = DegrainN_sse2<4, 8>;
   func_degrain[make_tuple(4, 4, 1, USE_SSE2)] = DegrainN_sse2<4, 4>;
   func_degrain[make_tuple(4, 2, 1, USE_SSE2)] = DegrainN_sse2<4, 2>;
-  func_degrain[make_tuple(2, 4, 1, USE_SSE2)] = DegrainN_sse2<2, 4>;
-  func_degrain[make_tuple(2, 2, 1, USE_SSE2)] = DegrainN_sse2<2, 2>;
+  //func_degrain[make_tuple(2, 4, 1, USE_SSE2)] = DegrainN_sse2<2, 4>;  // no 2 byte width, only C
+  //func_degrain[make_tuple(2, 2, 1, USE_SSE2)] = DegrainN_sse2<2, 2>;
 
   DenoiseNFunction* result = nullptr;
   arch_t archlist[] = { USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
