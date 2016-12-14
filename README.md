@@ -14,6 +14,14 @@ Modification base:
 http://avisynth.nl/index.php/AviSynth%2B#AviSynth.2B_x64_plugins
 
 Change log
+- 2.7.7.22 (20161214) - optimizing a bit
+  speed: change some 8 bit SAD functions for the better
+  speed: separating bottleneck 8 bit/16 bit code paths in order not to use slower 
+         int64 calculations for 8 bit, where there are no integer overflow problems
+  speed: more __forceinlines for helping the compiler
+  info:  general speed gain of 5-15% compared to 2.7.6.22, much reduced speed gap
+         compared to the "classic" YV12 8 bit mvtools2 versions
+
 - 2.7.6.22 (20161204) - fixes and speedup
   fix: sumLumaChange underflow (used for dct=2,6,9) (regression during 16 bit support)
   fix: MeanLumaChange scale for 10-16 bits (used for dct=2,6,9)
