@@ -70,6 +70,7 @@ public:
   /* plane initialisation */
 
     /* compute the predictors from the upper plane */
+  template<typename pixel_t>
   void InterpolatePrediction(const PlaneOfBlocks &pob);
 
   void WriteHeaderToArray(int *array);
@@ -77,8 +78,8 @@ public:
   int GetArraySize(int divideExtra);
   // not used void FitReferenceIntoArray(MVFrame *_pRefFrame, int *array);
   void EstimateGlobalMVDoubled(VECTOR *globalMVec, Slicer &slicer); // Fizick
-  inline int GetnBlkX() { return nBlkX; }
-  inline int GetnBlkY() { return nBlkY; }
+  __forceinline int GetnBlkX() { return nBlkX; }
+  __forceinline int GetnBlkY() { return nBlkY; }
 
   void RecalculateMVs(MVClip & mvClip, MVFrame *_pSrcFrame, MVFrame *_pRefFrame, SearchType st,
     int stp, int _lambda, sad_t _lSAD, int _pennew,
@@ -246,8 +247,8 @@ private:
     WorkingArea(int nBlkSizeX, int nBlkSizeY, int dctpitch, int nLogxRatioUV, int xRatioUV, int nLogyRatioUV, int yRatioUV, int pixelsize, int bits_per_pixel);
     virtual			~WorkingArea();
 
-    inline bool IsVectorOK(int vx, int vy) const;
-    inline int MotionDistorsion(int vx, int vy) const;
+    __forceinline bool IsVectorOK(int vx, int vy) const;
+    __forceinline int MotionDistorsion(int vx, int vy) const;
   };
 
   class WorkingAreaFactory
@@ -285,6 +286,7 @@ private:
   /* mv search related functions */
 
     /* fill the predictors array */
+  template<typename pixel_t>
   void FetchPredictors(WorkingArea &workarea);
 
   /* performs a diamond search */
@@ -303,6 +305,7 @@ private:
   void OneTimeSearch(WorkingArea &workarea, int length);
 
   /* performs an epz search */
+  template<typename pixel_t>
   void PseudoEPZSearch(WorkingArea &workarea);
 
   //	void PhaseShiftSearch(int vx, int vy);
@@ -315,28 +318,30 @@ private:
   void UMHSearch(WorkingArea &workarea, int i_me_range, int omx, int omy);
 
   /* inline functions */
-  inline const uint8_t *GetRefBlock(WorkingArea &workarea, int nVx, int nVy);
-  inline const uint8_t *GetRefBlockU(WorkingArea &workarea, int nVx, int nVy);
-  inline const uint8_t *GetRefBlockV(WorkingArea &workarea, int nVx, int nVy);
-  inline const uint8_t *GetSrcBlock(int nX, int nY);
+  __forceinline const uint8_t *GetRefBlock(WorkingArea &workarea, int nVx, int nVy);
+  __forceinline const uint8_t *GetRefBlockU(WorkingArea &workarea, int nVx, int nVy);
+  __forceinline const uint8_t *GetRefBlockV(WorkingArea &workarea, int nVx, int nVy);
+  __forceinline const uint8_t *GetSrcBlock(int nX, int nY);
   //	inline int LengthPenalty(int vx, int vy);
   sad_t LumaSADx(WorkingArea &workarea, const unsigned char *pRef0);
-  inline sad_t LumaSAD(WorkingArea &workarea, const unsigned char *pRef0);
-  inline void CheckMV0(WorkingArea &workarea, int vx, int vy);
-  inline void CheckMV(WorkingArea &workarea, int vx, int vy);
-  inline void CheckMV2(WorkingArea &workarea, int vx, int vy, int *dir, int val);
-  inline void CheckMVdir(WorkingArea &workarea, int vx, int vy, int *dir, int val);
-  inline int ClipMVx(WorkingArea &workarea, int vx);
-  inline int ClipMVy(WorkingArea &workarea, int vy);
-  inline VECTOR ClipMV(WorkingArea &workarea, VECTOR v);
-  inline static int Median(int a, int b, int c);
-  inline static unsigned int SquareDifferenceNorm(const VECTOR& v1, const VECTOR& v2);
-  inline static unsigned int SquareDifferenceNorm(const VECTOR& v1, const int v2x, const int v2y);
-  inline bool IsInFrame(int i);
+  __forceinline sad_t LumaSAD(WorkingArea &workarea, const unsigned char *pRef0);
+  __forceinline void CheckMV0(WorkingArea &workarea, int vx, int vy);
+  __forceinline void CheckMV(WorkingArea &workarea, int vx, int vy);
+  __forceinline void CheckMV2(WorkingArea &workarea, int vx, int vy, int *dir, int val);
+  __forceinline void CheckMVdir(WorkingArea &workarea, int vx, int vy, int *dir, int val);
+  __forceinline int ClipMVx(WorkingArea &workarea, int vx);
+  __forceinline int ClipMVy(WorkingArea &workarea, int vy);
+  __forceinline VECTOR ClipMV(WorkingArea &workarea, VECTOR v);
+  __forceinline static int Median(int a, int b, int c);
+  __forceinline static unsigned int SquareDifferenceNorm(const VECTOR& v1, const VECTOR& v2);
+  __forceinline static unsigned int SquareDifferenceNorm(const VECTOR& v1, const int v2x, const int v2y);
+  __forceinline bool IsInFrame(int i);
 
   void Refine(WorkingArea &workarea);
 
+  template<typename pixel_t>
   void	search_mv_slice(Slicer::TaskData &td);
+  template<typename pixel_t>
   void	recalculate_mv_slice(Slicer::TaskData &td);
 
   void	estimate_global_mv_doubled_slice(Slicer::TaskData &td);
