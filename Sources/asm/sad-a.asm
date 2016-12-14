@@ -103,12 +103,16 @@ cglobal pixel_sad_%1x%2_mmx2, 4,4
 
 SAD 16, 16
 SAD 16,  8
+SAD 16,  4
+SAD 16,  2
 SAD  8, 16
 SAD  8,  8
 SAD  8,  4
+SAD  8,  2
 SAD  4, 16
 SAD  4,  8
 SAD  4,  4
+SAD  4,  2
 
 
 
