@@ -392,7 +392,7 @@
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <PreprocessorDefinitions>AVS16;FORCE_INLINE;WIN32;NDEBUG;_WINDOWS;_USRDLL;MVTOOLS_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <PrecompiledHeader />
@@ -403,7 +403,7 @@
       <GenerateAlternateCodePaths>SSE42</GenerateAlternateCodePaths>
       <AdditionalOptions>/Zc:threadSafeInit- </AdditionalOptions>
       <Parallelization>false</Parallelization>
-      <BufferSecurityCheck>true</BufferSecurityCheck>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
       <UseIntelOptimizedHeaders>false</UseIntelOptimizedHeaders>
       <Optimization>MaxSpeed</Optimization>
       <FloatingPointModel>
@@ -457,7 +457,7 @@
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <PreprocessorDefinitions>AVS16;FORCE_INLINE;WIN32;NDEBUG;_WINDOWS;_USRDLL;MVTOOLS_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <PrecompiledHeader>
@@ -469,7 +469,7 @@
       <GenerateAlternateCodePaths>SSE42</GenerateAlternateCodePaths>
       <AdditionalOptions>/Zc:threadSafeInit- </AdditionalOptions>
       <Parallelization>false</Parallelization>
-      <BufferSecurityCheck>true</BufferSecurityCheck>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
       <UseIntelOptimizedHeaders>false</UseIntelOptimizedHeaders>
       <Optimization>MaxSpeed</Optimization>
       <FloatingPointModel>
@@ -522,7 +522,7 @@
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <PreprocessorDefinitions>FORCE_INLINE;WIN32;NDEBUG;_WINDOWS;_USRDLL;MVTOOLS_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <PrecompiledHeader>
@@ -534,11 +534,11 @@
       <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)\include\</AdditionalIncludeDirectories>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <AdditionalOptions>/Zc:threadSafeInit- </AdditionalOptions>
-      <Optimization>MaxSpeed</Optimization>
+      <Optimization>Full</Optimization>
       <Parallelization>false</Parallelization>
-      <BufferSecurityCheck>true</BufferSecurityCheck>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
       <UseIntelOptimizedHeaders>false</UseIntelOptimizedHeaders>
       <FloatingPointModel>
       </FloatingPointModel>

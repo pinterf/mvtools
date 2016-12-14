@@ -109,7 +109,13 @@ MVDegrainX::Denoise3Function* MVDegrainX::get_denoise3_function(int BlockX, int 
 #endif
 
 
+//
+#ifdef LEVEL_IS_TEMPLATE
+template<int level>
+Denoise1to5Function* MVDegrainX<level>::get_denoise123_function(int BlockX, int BlockY, int _pixelsize, bool _lsb_flag, int _level, arch_t arch)
+#else
 Denoise1to5Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY, int _pixelsize, bool _lsb_flag, int _level, arch_t arch)
+#endif
 {
   // 8 bit only (pixelsize==1)
   //---------- DENOISE/DEGRAIN
@@ -529,11 +535,17 @@ Denoise1to5Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   func_degrain[make_tuple(8, 4, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<8, 4, false, 1>;
   func_degrain[make_tuple(8, 2, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<8, 2, false, 1>;
   func_degrain[make_tuple(8, 1, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<8, 1, false, 1>;
+#ifndef _M_X64
+  func_degrain[make_tuple(4, 8, 1, false, 1, USE_SSE2)] = Degrain1to5_mmx<4, 8, false, 1>;
+  func_degrain[make_tuple(4, 4, 1, false, 1, USE_SSE2)] = Degrain1to5_mmx<4, 4, false, 1>;
+  func_degrain[make_tuple(4, 2, 1, false, 1, USE_SSE2)] = Degrain1to5_mmx<4, 2, false, 1>;
+#else
   func_degrain[make_tuple(4, 8, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<4, 8, false, 1>;
   func_degrain[make_tuple(4, 4, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<4, 4, false, 1>;
   func_degrain[make_tuple(4, 2, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<4, 2, false, 1>;
-  func_degrain[make_tuple(2, 4, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<2, 4, false, 1>;
-  func_degrain[make_tuple(2, 2, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<2, 2, false, 1>;
+#endif
+  //func_degrain[make_tuple(2, 4, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<2, 4, false, 1>; // no for width 2
+  //func_degrain[make_tuple(2, 2, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<2, 2, false, 1>; // no for width 2
   // level1 lsb=true
   func_degrain[make_tuple(32, 32, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<32, 32, true, 1>;
   func_degrain[make_tuple(32, 16, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<32, 16, true, 1>;
@@ -548,11 +560,17 @@ Denoise1to5Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   func_degrain[make_tuple(8, 4, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<8, 4, true, 1>;
   func_degrain[make_tuple(8, 2, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<8, 2, true, 1>;
   func_degrain[make_tuple(8, 1, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<8, 1, true, 1>;
+#ifndef _M_X64
+  func_degrain[make_tuple(4, 8, 1, true, 1, USE_SSE2)] = Degrain1to5_mmx<4, 8, true, 1>;
+  func_degrain[make_tuple(4, 4, 1, true, 1, USE_SSE2)] = Degrain1to5_mmx<4, 4, true, 1>;
+  func_degrain[make_tuple(4, 2, 1, true, 1, USE_SSE2)] = Degrain1to5_mmx<4, 2, true, 1>;
+#else
   func_degrain[make_tuple(4, 8, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<4, 8, true, 1>;
   func_degrain[make_tuple(4, 4, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<4, 4, true, 1>;
   func_degrain[make_tuple(4, 2, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<4, 2, true, 1>;
-  func_degrain[make_tuple(2, 4, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<2, 4, true, 1>;
-  func_degrain[make_tuple(2, 2, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<2, 2, true, 1>;
+#endif
+  //func_degrain[make_tuple(2, 4, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<2, 4, true, 1>; // no for width 2
+  //func_degrain[make_tuple(2, 2, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<2, 2, true, 1>; // no for width 2
 
 
   // level2, lsb=false
@@ -569,11 +587,17 @@ Denoise1to5Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   func_degrain[make_tuple(8, 4, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<8, 4, false, 2>;
   func_degrain[make_tuple(8, 2, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<8, 2, false, 2>;
   func_degrain[make_tuple(8, 1, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<8, 1, false, 2>;
+#ifndef _M_X64
+  func_degrain[make_tuple(4, 8, 1, false, 2, USE_SSE2)] = Degrain1to5_mmx<4, 8, false, 2>;
+  func_degrain[make_tuple(4, 4, 1, false, 2, USE_SSE2)] = Degrain1to5_mmx<4, 4, false, 2>;
+  func_degrain[make_tuple(4, 2, 1, false, 2, USE_SSE2)] = Degrain1to5_mmx<4, 2, false, 2>;
+#else
   func_degrain[make_tuple(4, 8, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<4, 8, false, 2>;
   func_degrain[make_tuple(4, 4, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<4, 4, false, 2>;
   func_degrain[make_tuple(4, 2, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<4, 2, false, 2>;
-  func_degrain[make_tuple(2, 4, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<2, 4, false, 2>;
-  func_degrain[make_tuple(2, 2, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<2, 2, false, 2>;
+#endif
+  //func_degrain[make_tuple(2, 4, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<2, 4, false, 2>; // no for width 2
+  //func_degrain[make_tuple(2, 2, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<2, 2, false, 2>; // no for width 2
   // level2 lsb=true
   func_degrain[make_tuple(32, 32, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<32, 32, true, 2>;
   func_degrain[make_tuple(32, 16, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<32, 16, true, 2>;
@@ -588,11 +612,17 @@ Denoise1to5Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   func_degrain[make_tuple(8, 4, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<8, 4, true, 2>;
   func_degrain[make_tuple(8, 2, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<8, 2, true, 2>;
   func_degrain[make_tuple(8, 1, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<8, 1, true, 2>;
+#ifndef _M_X64
+  func_degrain[make_tuple(4, 8, 1, true, 2, USE_SSE2)] = Degrain1to5_mmx<4, 8, true, 2>;
+  func_degrain[make_tuple(4, 4, 1, true, 2, USE_SSE2)] = Degrain1to5_mmx<4, 4, true, 2>;
+  func_degrain[make_tuple(4, 2, 1, true, 2, USE_SSE2)] = Degrain1to5_mmx<4, 2, true, 2>;
+#else
   func_degrain[make_tuple(4, 8, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<4, 8, true, 2>;
   func_degrain[make_tuple(4, 4, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<4, 4, true, 2>;
   func_degrain[make_tuple(4, 2, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<4, 2, true, 2>;
-  func_degrain[make_tuple(2, 4, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<2, 4, true, 2>;
-  func_degrain[make_tuple(2, 2, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<2, 2, true, 2>;
+#endif
+  //func_degrain[make_tuple(2, 4, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<2, 4, true, 2>; // no for width 2
+  //func_degrain[make_tuple(2, 2, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<2, 2, true, 2>; // no for width 2
 
   // level3, lsb=false
   func_degrain[make_tuple(32, 32, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<32, 32, false, 3>;
@@ -608,11 +638,17 @@ Denoise1to5Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   func_degrain[make_tuple(8, 4, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<8, 4, false, 3>;
   func_degrain[make_tuple(8, 2, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<8, 2, false, 3>;
   func_degrain[make_tuple(8, 1, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<8, 1, false, 3>;
+#ifndef _M_X64
+  func_degrain[make_tuple(4, 8, 1, false, 3, USE_SSE2)] = Degrain1to5_mmx<4, 8, false, 3>;
+  func_degrain[make_tuple(4, 4, 1, false, 3, USE_SSE2)] = Degrain1to5_mmx<4, 4, false, 3>;
+  func_degrain[make_tuple(4, 2, 1, false, 3, USE_SSE2)] = Degrain1to5_mmx<4, 2, false, 3>;
+#else
   func_degrain[make_tuple(4, 8, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<4, 8, false, 3>;
   func_degrain[make_tuple(4, 4, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<4, 4, false, 3>;
   func_degrain[make_tuple(4, 2, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<4, 2, false, 3>;
-  func_degrain[make_tuple(2, 4, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<2, 4, false, 3>;
-  func_degrain[make_tuple(2, 2, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<2, 2, false, 3>;
+#endif
+  //func_degrain[make_tuple(2, 4, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<2, 4, false, 3>; // no for width 2
+  //func_degrain[make_tuple(2, 2, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<2, 2, false, 3>; // no for width 2
   // level3, lsb=true
   func_degrain[make_tuple(32, 32, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<32, 32, true, 3>;
   func_degrain[make_tuple(32, 16, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<32, 16, true, 3>;
@@ -627,11 +663,17 @@ Denoise1to5Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   func_degrain[make_tuple(8, 4, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<8, 4, true, 3>;
   func_degrain[make_tuple(8, 2, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<8, 2, true, 3>;
   func_degrain[make_tuple(8, 1, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<8, 1, true, 3>;
+#ifndef _M_X64
+  func_degrain[make_tuple(4, 8, 1, true, 3, USE_SSE2)] = Degrain1to5_mmx<4, 8, true, 3>;
+  func_degrain[make_tuple(4, 4, 1, true, 3, USE_SSE2)] = Degrain1to5_mmx<4, 4, true, 3>;
+  func_degrain[make_tuple(4, 2, 1, true, 3, USE_SSE2)] = Degrain1to5_mmx<4, 2, true, 3>;
+#else
   func_degrain[make_tuple(4, 8, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<4, 8, true, 3>;
   func_degrain[make_tuple(4, 4, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<4, 4, true, 3>;
   func_degrain[make_tuple(4, 2, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<4, 2, true, 3>;
-  func_degrain[make_tuple(2, 4, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<2, 4, true, 3>;
-  func_degrain[make_tuple(2, 2, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<2, 2, true, 3>;
+#endif
+  //func_degrain[make_tuple(2, 4, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<2, 4, true, 3>; // no for width 2
+  //func_degrain[make_tuple(2, 2, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<2, 2, true, 3>; // no for width 2
 
   // level4, lsb=false
   func_degrain[make_tuple(32, 32, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<32, 32, false, 4>;
@@ -647,11 +689,17 @@ Denoise1to5Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   func_degrain[make_tuple(8, 4, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<8, 4, false, 4>;
   func_degrain[make_tuple(8, 2, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<8, 2, false, 4>;
   func_degrain[make_tuple(8, 1, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<8, 1, false, 4>;
+#ifndef _M_X64
+  func_degrain[make_tuple(4, 8, 1, false, 4, USE_SSE2)] = Degrain1to5_mmx<4, 8, false, 4>;
+  func_degrain[make_tuple(4, 4, 1, false, 4, USE_SSE2)] = Degrain1to5_mmx<4, 4, false, 4>;
+  func_degrain[make_tuple(4, 2, 1, false, 4, USE_SSE2)] = Degrain1to5_mmx<4, 2, false, 4>;
+#else
   func_degrain[make_tuple(4, 8, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<4, 8, false, 4>;
   func_degrain[make_tuple(4, 4, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<4, 4, false, 4>;
   func_degrain[make_tuple(4, 2, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<4, 2, false, 4>;
-  func_degrain[make_tuple(2, 4, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<2, 4, false, 4>;
-  func_degrain[make_tuple(2, 2, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<2, 2, false, 4>;
+#endif
+  //func_degrain[make_tuple(2, 4, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<2, 4, false, 4>; // no for width 2
+  //func_degrain[make_tuple(2, 2, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<2, 2, false, 4>; // no for width 2
   // level4, lsb=true
   func_degrain[make_tuple(32, 32, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<32, 32, true, 4>;
   func_degrain[make_tuple(32, 16, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<32, 16, true, 4>;
@@ -666,11 +714,17 @@ Denoise1to5Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   func_degrain[make_tuple(8, 4, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<8, 4, true, 4>;
   func_degrain[make_tuple(8, 2, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<8, 2, true, 4>;
   func_degrain[make_tuple(8, 1, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<8, 1, true, 4>;
+#ifndef _M_X64
+  func_degrain[make_tuple(4, 8, 1, true, 4, USE_SSE2)] = Degrain1to5_mmx<4, 8, true, 4>;
+  func_degrain[make_tuple(4, 4, 1, true, 4, USE_SSE2)] = Degrain1to5_mmx<4, 4, true, 4>;
+  func_degrain[make_tuple(4, 2, 1, true, 4, USE_SSE2)] = Degrain1to5_mmx<4, 2, true, 4>;
+#else
   func_degrain[make_tuple(4, 8, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<4, 8, true, 4>;
   func_degrain[make_tuple(4, 4, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<4, 4, true, 4>;
   func_degrain[make_tuple(4, 2, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<4, 2, true, 4>;
-  func_degrain[make_tuple(2, 4, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<2, 4, true, 4>;
-  func_degrain[make_tuple(2, 2, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<2, 2, true, 4>;
+#endif
+  //func_degrain[make_tuple(2, 4, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<2, 4, true, 4>; // no for width 2
+  //func_degrain[make_tuple(2, 2, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<2, 2, true, 4>; // no for width 2
 
   // level5, lsb=false
   func_degrain[make_tuple(32, 32, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<32, 32, false, 5>;
@@ -686,11 +740,17 @@ Denoise1to5Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   func_degrain[make_tuple(8, 4, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<8, 4, false, 5>;
   func_degrain[make_tuple(8, 2, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<8, 2, false, 5>;
   func_degrain[make_tuple(8, 1, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<8, 1, false, 5>;
+#ifndef _M_X64
+  func_degrain[make_tuple(4, 8, 1, false, 5, USE_SSE2)] = Degrain1to5_mmx<4, 8, false, 5>;
+  func_degrain[make_tuple(4, 4, 1, false, 5, USE_SSE2)] = Degrain1to5_mmx<4, 4, false, 5>;
+  func_degrain[make_tuple(4, 2, 1, false, 5, USE_SSE2)] = Degrain1to5_mmx<4, 2, false, 5>;
+#else
   func_degrain[make_tuple(4, 8, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<4, 8, false, 5>;
   func_degrain[make_tuple(4, 4, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<4, 4, false, 5>;
   func_degrain[make_tuple(4, 2, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<4, 2, false, 5>;
-  func_degrain[make_tuple(2, 4, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<2, 4, false, 5>;
-  func_degrain[make_tuple(2, 2, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<2, 2, false, 5>;
+#endif
+  //func_degrain[make_tuple(2, 4, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<2, 4, false, 5>; // no for width 2
+  //func_degrain[make_tuple(2, 2, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<2, 2, false, 5>; // no for width 2
   // level5, lsb=true
   func_degrain[make_tuple(32, 32, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<32, 32, true, 5>;
   func_degrain[make_tuple(32, 16, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<32, 16, true, 5>;
@@ -705,11 +765,17 @@ Denoise1to5Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   func_degrain[make_tuple(8, 4, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<8, 4, true, 5>;
   func_degrain[make_tuple(8, 2, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<8, 2, true, 5>;
   func_degrain[make_tuple(8, 1, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<8, 1, true, 5>;
-  func_degrain[make_tuple(4, 8, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<4, 8, true, 5>;
+#ifndef _M_X64
+  func_degrain[make_tuple(4, 8, 1, true, 5, USE_SSE2)] = Degrain1to5_mmx<4, 8, true, 5>; // width 4: mmx
+  func_degrain[make_tuple(4, 4, 1, true, 5, USE_SSE2)] = Degrain1to5_mmx<4, 4, true, 5>;
+  func_degrain[make_tuple(4, 2, 1, true, 5, USE_SSE2)] = Degrain1to5_mmx<4, 2, true, 5>;
+#else
+  func_degrain[make_tuple(4, 8, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<4, 8, true, 5>; // width 4: mmx
   func_degrain[make_tuple(4, 4, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<4, 4, true, 5>;
   func_degrain[make_tuple(4, 2, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<4, 2, true, 5>;
-  func_degrain[make_tuple(2, 4, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<2, 4, true, 5>;
-  func_degrain[make_tuple(2, 2, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<2, 2, true, 5>;
+#endif
+  //func_degrain[make_tuple(2, 4, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<2, 4, true, 5>; // no for width 2
+  //func_degrain[make_tuple(2, 2, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<2, 2, true, 5>; // no for width 2
 
   Denoise1to5Function* result = nullptr;
   arch_t archlist[] = { USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
@@ -732,24 +798,44 @@ Denoise1to5Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
 
 // If mvfw is null, mvbw is assumed to be a radius-3 multi-vector clip.
 
+
+#ifdef LEVEL_IS_TEMPLATE
+template<int level>
+MVDegrainX<level>::MVDegrainX(
+#else
 MVDegrainX::MVDegrainX(
+#endif
   PClip _child, PClip _super, PClip _mvbw, PClip _mvfw, PClip _mvbw2, PClip _mvfw2, PClip _mvbw3, PClip _mvfw3, PClip _mvbw4, PClip _mvfw4, PClip _mvbw5, PClip _mvfw5,
   sad_t _thSAD, sad_t _thSADC, int _YUVplanes, sad_t _nLimit, sad_t _nLimitC,
   sad_t _nSCD1, int _nSCD2, bool _isse2, bool _planar, bool _lsb_flag,
-  bool _mt_flag, int _level, IScriptEnvironment* env_ptr
+  bool _mt_flag, 
+#ifndef LEVEL_IS_TEMPLATE
+  int _level, 
+#endif
+  IScriptEnvironment* env_ptr
 ) : GenericVideoFilter(_child)
   , MVFilter(
     // mvfw/mvfw2/mvfw3/mvfw4/mvfw5
     // MDegrain1/2/3/4/5
+#ifndef LEVEL_IS_TEMPLATE
     (!_mvfw) ? _mvbw : (_level == 1 ? _mvfw : (_level == 2 ? _mvfw2 : (_level == 3 ? _mvfw3 : (_level == 4 ? _mvfw4 : _mvfw5)))),
     _level == 1 ? "MDegrain1" : (_level == 2 ? "MDegrain2" : (_level == 3 ? "MDegrain3" : (_level == 4 ? "MDegrain4" : "MDegrain5"))),
     env_ptr,
     (!_mvfw) ? _level * 2 : 1, 
     (!_mvfw) ? _level * 2 - 1 : 0) // 1/3/5
+#else
+    (!_mvfw) ? _mvbw : (level == 1 ? _mvfw : (level == 2 ? _mvfw2 : (level == 3 ? _mvfw3 : (level == 4 ? _mvfw4 : _mvfw5)))),
+  level == 1 ? "MDegrain1" : (level == 2 ? "MDegrain2" : (level == 3 ? "MDegrain3" : (level == 4 ? "MDegrain4" : "MDegrain5"))),
+  env_ptr,
+  (!_mvfw) ? level * 2 : 1, 
+  (!_mvfw) ? level * 2 - 1 : 0) // 1/3/5
+#endif
   , super(_super)
   , lsb_flag(_lsb_flag)
   , height_lsb_mul(_lsb_flag ? 2 : 1)
+#ifndef LEVEL_IS_TEMPLATE
   , level( _level )
+#endif
 {
   //DstShortAlign32 = nullptr;
   DstShort = nullptr;
@@ -863,11 +949,6 @@ MVDegrainX::MVDegrainX(
     OverWinsUV = new OverlapWindows(nBlkSizeX >> nLogxRatioUV, nBlkSizeY >> nLogyRatioUV, nOverlapX >> nLogxRatioUV, nOverlapY >> nLogyRatioUV);
     if (lsb_flag || pixelsize_super > 1)
     {
-      // Damn '__m256i': object allocated on the heap may not be aligned 32
-      /*
-      DstIntAlign32 = new __m256i[dstIntPitch * nHeight * sizeof(int) / 32]; // force 32 byte alignment
-      DstInt = reinterpret_cast<int *>(DstIntAlign32); // new int[dstIntPitch * nHeight];
-      */
       DstInt = (int *)_aligned_malloc(dstIntPitch * nHeight * sizeof(int), 32); 
     }
     else
@@ -920,6 +1001,7 @@ MVDegrainX::MVDegrainX(
   if (!DEGRAINCHROMA)
     env_ptr->ThrowError("MDegrain%d : no valid DEGRAINCHROMA function for %dx%d, pixelsize=%d, lsb_flag=%d, level=%d", level, nBlkSizeX, nBlkSizeY, pixelsize_super, (int)lsb_flag, level);
 
+#ifndef LEVEL_IS_TEMPLATE
   switch (level) {
   case 1: NORMWEIGHTS = norm_weights<1>; break;
   case 2: NORMWEIGHTS = norm_weights<2>; break;
@@ -927,10 +1009,11 @@ MVDegrainX::MVDegrainX(
   case 4: NORMWEIGHTS = norm_weights<4>; break;
   case 5: NORMWEIGHTS = norm_weights<5>; break;
   }
+#endif
 
   // max blocksize = 32
   const int		tmp_size = 32 * 32 * pixelsize_super;
-  tmpBlock = (uint8_t *)_aligned_malloc(tmp_size * height_lsb_mul, 32); // new BYTE[tmp_size * height_lsb_mul]; PF. 16.10.26
+  tmpBlock = (uint8_t *)_aligned_malloc(tmp_size * height_lsb_mul, 64); // new BYTE[tmp_size * height_lsb_mul]; PF. 16.10.26
   tmpBlockLsb = (lsb_flag) ? (tmpBlock + tmp_size) : 0;
 
   if (lsb_flag)
@@ -940,7 +1023,12 @@ MVDegrainX::MVDegrainX(
 }
 
 
+#ifdef LEVEL_IS_TEMPLATE
+template<int level>
+MVDegrainX<level>::~MVDegrainX()
+#else
 MVDegrainX::~MVDegrainX()
+#endif
 {
   if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2)
   {
@@ -968,7 +1056,12 @@ MVDegrainX::~MVDegrainX()
 
 
 
+#ifdef LEVEL_IS_TEMPLATE
+template<int level>
+PVideoFrame __stdcall MVDegrainX<level>::GetFrame(int n, IScriptEnvironment* env)
+#else
 PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
+#endif
 {
   int nWidth_B = nBlkX*(nBlkSizeX - nOverlapX) + nOverlapX;
   int nHeight_B = nBlkY*(nBlkSizeY - nOverlapY) + nOverlapY;
@@ -1445,7 +1538,11 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
           use_block_y (pB3, npB3, WRefB3, isUsableB3, mvClipB3, i, pPlanesB3 [0], pSrcCur [0], xx, nSrcPitches [0]);
           use_block_y (pF3, npF3, WRefF3, isUsableF3, mvClipF3, i, pPlanesF3 [0], pSrcCur [0], xx, nSrcPitches [0]);
           */
+#ifndef LEVEL_IS_TEMPLATE
           NORMWEIGHTS(WSrc, WRefB, WRefF);
+#else
+          norm_weights<level>(WSrc, WRefB, WRefF);
+#endif
           /*
           if (level == 1)
             norm_weights<1>(WSrc, WRefB, WRefF);
@@ -1527,7 +1624,11 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
             use_block_y(pB[j], npB[j], WRefB[j], isUsableB[j], *mvClipB[j], i, pPlanesB[0][j], pSrcCur[0], xx << pixelsize_super_shift, nSrcPitches[0]);
             use_block_y(pF[j], npF[j], WRefF[j], isUsableF[j], *mvClipF[j], i, pPlanesF[0][j], pSrcCur[0], xx << pixelsize_super_shift, nSrcPitches[0]);
           }
+#ifndef LEVEL_IS_TEMPLATE
           NORMWEIGHTS(WSrc, WRefB, WRefF);
+#else
+          norm_weights<level>(WSrc, WRefB, WRefF);
+#endif
           /*
           use_block_y (pB , npB , WRefB , isUsableB , mvClipB , i, pPlanesB  [0], pSrcCur [0], xx, nSrcPitches [0]);
           use_block_y (pF , npF , WRefF , isUsableF , mvClipF , i, pPlanesF  [0], pSrcCur [0], xx, nSrcPitches [0]);
@@ -1652,9 +1753,16 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
 
 
 
+#ifdef LEVEL_IS_TEMPLATE
+template<int level>
+void	MVDegrainX<level>::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int nDstPitch, const BYTE *pSrc, const BYTE *pSrcCur, int nSrcPitch,
+  bool isUsableB[MAX_DEGRAIN], bool isUsableF[MAX_DEGRAIN], MVPlane *pPlanesB[MAX_DEGRAIN], MVPlane *pPlanesF[MAX_DEGRAIN],
+  int lsb_offset_uv, int nWidth_B, int nHeight_B)
+#else
 void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int nDstPitch, const BYTE *pSrc, const BYTE *pSrcCur, int nSrcPitch,
   bool isUsableB[MAX_DEGRAIN], bool isUsableF[MAX_DEGRAIN], MVPlane *pPlanesB[MAX_DEGRAIN], MVPlane *pPlanesF[MAX_DEGRAIN],
   int lsb_offset_uv, int nWidth_B, int nHeight_B)
+#endif
 {
   if (!(YUVplanes & plane_mask))
   {
@@ -1683,7 +1791,11 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
             use_block_uv(pBV[j], npBV[j], WRefB[j], isUsableB[j], *mvClipB[j], i, pPlanesB[j], pSrcCur, xx << pixelsize_super_shift, nSrcPitch);
             use_block_uv(pFV[j], npFV[j], WRefF[j], isUsableF[j], *mvClipF[j], i, pPlanesF[j], pSrcCur, xx << pixelsize_super_shift, nSrcPitch);
           }
+#ifndef LEVEL_IS_TEMPLATE
           NORMWEIGHTS(WSrc, WRefB, WRefF);
+#else
+          norm_weights<level>(WSrc, WRefB, WRefF);
+#endif
           // chroma
           DEGRAINCHROMA(pDstCur + (xx << pixelsize_super_shift), pDstCur + (xx << pixelsize_super_shift) + lsb_offset_uv,
             lsb_flag, nDstPitch, pSrcCur + (xx << pixelsize_super_shift), nSrcPitch,
@@ -1754,7 +1866,11 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
             use_block_uv(pBV[j], npBV[j], WRefB[j], isUsableB[j], *mvClipB[j], i, pPlanesB[j], pSrcCur, xx << pixelsize_super_shift, nSrcPitch);
             use_block_uv(pFV[j], npFV[j], WRefF[j], isUsableF[j], *mvClipF[j], i, pPlanesF[j], pSrcCur, xx << pixelsize_super_shift, nSrcPitch);
           }
+#ifndef LEVEL_IS_TEMPLATE
           NORMWEIGHTS(WSrc, WRefB, WRefF);
+#else
+          norm_weights<level>(WSrc, WRefB, WRefF);
+#endif
           // chroma
           DEGRAINCHROMA(tmpBlock, tmpBlockLsb, lsb_flag, tmpPitch << pixelsize_super_shift, pSrcCur + (xx << pixelsize_super_shift), nSrcPitch,
             pBV, npBV, pFV, npFV, //pB2V, npB2V, pF2V, npF2V, pB3V, npB3V, pF3V, npF3V,
@@ -1840,7 +1956,12 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
 
 // todo: put together with use_block_uv,  
 // todo: change /xRatioUV and /yRatioUV to bit shifts everywhere
+#ifdef LEVEL_IS_TEMPLATE
+template<int level>
+__forceinline void	MVDegrainX<level>::use_block_y(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch)
+#else
 __forceinline void	MVDegrainX::use_block_y(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch)
+#endif
 {
   if (isUsable)
   {
@@ -1861,7 +1982,12 @@ __forceinline void	MVDegrainX::use_block_y(const BYTE * &p, int &np, int &WRef, 
 }
 
 // no difference for 1-2-3
+#ifdef LEVEL_IS_TEMPLATE
+template<int level>
+__forceinline void	MVDegrainX<level>::use_block_uv(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch)
+#else
 __forceinline void	MVDegrainX::use_block_uv(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch)
+#endif
 {
   if (isUsable)
   {
@@ -1884,7 +2010,7 @@ __forceinline void	MVDegrainX::use_block_uv(const BYTE * &p, int &np, int &WRef,
 
 
 template<int level>
-void	norm_weights(int &WSrc, int(&WRefB)[MAX_DEGRAIN], int(&WRefF)[MAX_DEGRAIN])
+__forceinline void	norm_weights(int &WSrc, int(&WRefB)[MAX_DEGRAIN], int(&WRefF)[MAX_DEGRAIN])
 {
   WSrc = 256;
   int WSum;
@@ -1927,3 +2053,31 @@ void	norm_weights(int &WSrc, int(&WRefB)[MAX_DEGRAIN], int(&WRefF)[MAX_DEGRAIN])
   else if (level == 1)
     WSrc = 256 - WRefB[0] - WRefF[0];
 }
+
+#ifdef LEVEL_IS_TEMPLATE
+
+template class MVDegrainX<1>;
+/*
+(PClip _child, PClip _super, PClip _mvbw, PClip _mvfw, PClip _mvbw2, PClip _mvfw2, PClip _mvbw3, PClip _mvfw3, PClip _mvbw4, PClip _mvfw4, PClip _mvbw5, PClip _mvfw5,
+sad_t _thSAD, sad_t _thSADC, int _YUVplanes, sad_t _nLimit, sad_t _nLimitC,
+sad_t _nSCD1, int _nSCD2, bool _isse2, bool _planar, bool _lsb_flag,
+bool _mt_flag, 
+#ifndef LEVEL_IS_TEMPLATE
+int _level, 
+#endif
+IScriptEnvironment* env);
+*/
+template class MVDegrainX<2>;
+/*
+(PClip _child, PClip _super, PClip _mvbw, PClip _mvfw, PClip _mvbw2, PClip _mvfw2, PClip _mvbw3, PClip _mvfw3, PClip _mvbw4, PClip _mvfw4, PClip _mvbw5, PClip _mvfw5,
+sad_t _thSAD, sad_t _thSADC, int _YUVplanes, sad_t _nLimit, sad_t _nLimitC,
+sad_t _nSCD1, int _nSCD2, bool _isse2, bool _planar, bool _lsb_flag,
+bool _mt_flag, 
+#ifndef LEVEL_IS_TEMPLATE
+int _level, 
+#endif
+IScriptEnvironment* env);
+#endif
+*/
+#endif
+
