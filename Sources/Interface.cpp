@@ -517,9 +517,9 @@ AVSValue __cdecl Create_MVDegrainX(AVSValue args, void* user_data, IScriptEnviro
       args[12 + param_index_shift].AsBool(false), // planar
       args[13 + param_index_shift].AsBool(false), // lsb
       args[14 + param_index_shift].AsBool(true),  // mt
-      //level, // level==3
+                                                  //level, // level==3
       env
-    );
+      );
   case 2:
     return new MVDegrainX<2>(
       args[0].AsClip(),       // source
@@ -545,9 +545,9 @@ AVSValue __cdecl Create_MVDegrainX(AVSValue args, void* user_data, IScriptEnviro
       args[12 + param_index_shift].AsBool(false), // planar
       args[13 + param_index_shift].AsBool(false), // lsb
       args[14 + param_index_shift].AsBool(true),  // mt
-      //level, // level==3
+                                                  //level, // level==3
       env
-    );
+      );
   }
 #else
 	  return new MVDegrainX(
@@ -615,147 +615,147 @@ AVSValue __cdecl Create_MDegrainN (AVSValue args, void* , IScriptEnvironment* en
 	const int		thSADC2 = args [15].AsInt (thSADC); // thSADC2
 
 	// Switch to MDegrain1/2/3/4/5 when possible (faster)
-  if (thSAD2 == thSAD && thSADC == thSADC2)
-  {
-    if (tr <= MAX_DEGRAIN) // up to MDegrain5 160926
+	if (thSAD2 == thSAD && thSADC == thSADC2)
+	{
+    if(tr <= MAX_DEGRAIN) // up to MDegrain5 160926
 #if 0		
-      if (tr == 1)
-      {
-        return new MVDegrain1(
-          args[0].AsClip(),        // source
-          args[1].AsClip(),        // super clip
-          args[2].AsClip(),        // mvbw
-          ::PClip(),                // mvfw
-          thSAD,                     // thSAD
-          thSADC,                    // thSADC
-          YUVplanes,                 // YUV planes
-          limit,                     // limit
-          args[8].AsInt(limit),    // limitC
-          args[9].AsInt(MV_DEFAULT_SCD1),  // thSCD1
-          args[10].AsInt(MV_DEFAULT_SCD2), // thSCD2
-          args[11].AsBool(true),   // isse
-          args[12].AsBool(false),  // planar
-          args[13].AsBool(false),  // lsb
-          args[16].AsBool(true),   // mt
-          env
-        );
-      }
-      else if (tr == 2)
-      {
-        return new MVDegrain2(
-          args[0].AsClip(),        // source
-          args[1].AsClip(),        // super clip
-          args[2].AsClip(),        // mvbw
-          ::PClip(),                // mvfw
-          ::PClip(),                // mvbw2
-          ::PClip(),                // mvfw2
-          thSAD,                     // thSAD
-          thSADC,                    // thSADC
-          YUVplanes,                 // YUV planes
-          limit,                     // limit
-          args[8].AsInt(limit),    // limitC
-          args[9].AsInt(MV_DEFAULT_SCD1),  // thSCD1
-          args[10].AsInt(MV_DEFAULT_SCD2), // thSCD2
-          args[11].AsBool(true),   // isse
-          args[12].AsBool(false),  // planar
-          args[13].AsBool(false),  // lsb
-          args[16].AsBool(true),   // mt
-          env
-        );
-      }
-      else if (tr == 3)
+    if (tr == 1)
+		{
+			return new MVDegrain1 (
+				args [0].AsClip (),        // source
+				args [1].AsClip (),        // super clip
+				args [2].AsClip (),        // mvbw
+				::PClip (),                // mvfw
+				thSAD,                     // thSAD
+				thSADC,                    // thSADC
+				YUVplanes,                 // YUV planes
+				limit,                     // limit
+				args [8].AsInt (limit),    // limitC
+				args [9].AsInt (MV_DEFAULT_SCD1),  // thSCD1
+				args [10].AsInt (MV_DEFAULT_SCD2), // thSCD2
+				args [11].AsBool (true),   // isse
+				args [12].AsBool (false),  // planar
+				args [13].AsBool (false),  // lsb
+				args [16].AsBool (true),   // mt
+				env
+			);
+		}
+		else if (tr == 2)
+		{
+			return new MVDegrain2 (
+				args [0].AsClip (),        // source
+				args [1].AsClip (),        // super clip
+				args [2].AsClip (),        // mvbw
+				::PClip (),                // mvfw
+				::PClip (),                // mvbw2
+				::PClip (),                // mvfw2
+				thSAD,                     // thSAD
+				thSADC,                    // thSADC
+				YUVplanes,                 // YUV planes
+				limit,                     // limit
+				args [8].AsInt (limit),    // limitC
+				args [9].AsInt (MV_DEFAULT_SCD1),  // thSCD1
+				args [10].AsInt (MV_DEFAULT_SCD2), // thSCD2
+				args [11].AsBool (true),   // isse
+				args [12].AsBool (false),  // planar
+				args [13].AsBool (false),  // lsb
+				args [16].AsBool (true),   // mt
+				env
+			);
+		}
+		else if (tr == 3)
 #endif
-      {
+    {
 
 #ifdef LEVEL_IS_TEMPLATE
-        
-        switch (tr) {
-        case 1: 			return new MVDegrainX<1>(
-          args[0].AsClip(),        // source
-          args[1].AsClip(),        // super clip
-          args[2].AsClip(),        // mvbw
-          ::PClip(),                // mvfw
-          tr >= 2 ? ::PClip() : nullptr,                // mvbw2
-          tr >= 2 ? ::PClip() : nullptr,                // mvfw2
-          tr >= 3 ? ::PClip() : nullptr,                // mvbw3
-          tr >= 3 ? ::PClip() : nullptr,                // mvfw3
-          tr >= 4 ? ::PClip() : nullptr,                // mvbw4
-          tr >= 4 ? ::PClip() : nullptr,                // mvfw4
-          tr >= 5 ? ::PClip() : nullptr,                // mvbw5
-          tr >= 5 ? ::PClip() : nullptr,                // mvfw5
-          thSAD,                     // thSAD
-          thSADC,                    // thSADC
-          YUVplanes,                 // YUV planes
-          limit,                     // limit
-          args[8].AsInt(limit),    // limitC
-          args[9].AsInt(MV_DEFAULT_SCD1),  // thSCD1
-          args[10].AsInt(MV_DEFAULT_SCD2), // thSCD2
-          args[11].AsBool(true),   // isse
-          args[12].AsBool(false),  // planar
-          args[13].AsBool(false),  // lsb
-          args[16].AsBool(true),   // mt
-          env
-          );
-        case 2: 			return new MVDegrainX<2>(
-          args[0].AsClip(),        // source
-          args[1].AsClip(),        // super clip
-          args[2].AsClip(),        // mvbw
-          ::PClip(),                // mvfw
-          tr >= 2 ? ::PClip() : nullptr,                // mvbw2
-          tr >= 2 ? ::PClip() : nullptr,                // mvfw2
-          tr >= 3 ? ::PClip() : nullptr,                // mvbw3
-          tr >= 3 ? ::PClip() : nullptr,                // mvfw3
-          tr >= 4 ? ::PClip() : nullptr,                // mvbw4
-          tr >= 4 ? ::PClip() : nullptr,                // mvfw4
-          tr >= 5 ? ::PClip() : nullptr,                // mvbw5
-          tr >= 5 ? ::PClip() : nullptr,                // mvfw5
-          thSAD,                     // thSAD
-          thSADC,                    // thSADC
-          YUVplanes,                 // YUV planes
-          limit,                     // limit
-          args[8].AsInt(limit),    // limitC
-          args[9].AsInt(MV_DEFAULT_SCD1),  // thSCD1
-          args[10].AsInt(MV_DEFAULT_SCD2), // thSCD2
-          args[11].AsBool(true),   // isse
-          args[12].AsBool(false),  // planar
-          args[13].AsBool(false),  // lsb
-          args[16].AsBool(true),   // mt
-          env
-          );
-        }
-        
-#else
-        return new MVDegrainX(
-          args[0].AsClip(),        // source
-          args[1].AsClip(),        // super clip
-          args[2].AsClip(),        // mvbw
-          ::PClip(),                // mvfw
-          tr >= 2 ? ::PClip() : nullptr,                // mvbw2
-          tr >= 2 ? ::PClip() : nullptr,                // mvfw2
-          tr >= 3 ? ::PClip() : nullptr,                // mvbw3
-          tr >= 3 ? ::PClip() : nullptr,                // mvfw3
-          tr >= 4 ? ::PClip() : nullptr,                // mvbw4
-          tr >= 4 ? ::PClip() : nullptr,                // mvfw4
-          tr >= 5 ? ::PClip() : nullptr,                // mvbw5
-          tr >= 5 ? ::PClip() : nullptr,                // mvfw5
-          thSAD,                     // thSAD
-          thSADC,                    // thSADC
-          YUVplanes,                 // YUV planes
-          limit,                     // limit
-          args[8].AsInt(limit),    // limitC
-          args[9].AsInt(MV_DEFAULT_SCD1),  // thSCD1
-          args[10].AsInt(MV_DEFAULT_SCD2), // thSCD2
-          args[11].AsBool(true),   // isse
-          args[12].AsBool(false),  // planar
-          args[13].AsBool(false),  // lsb
-          args[16].AsBool(true),   // mt
-          tr, // PF: level
-          env
+
+      switch (tr) {
+      case 1: 			return new MVDegrainX<1>(
+        args[0].AsClip(),        // source
+        args[1].AsClip(),        // super clip
+        args[2].AsClip(),        // mvbw
+        ::PClip(),                // mvfw
+        tr >= 2 ? ::PClip() : nullptr,                // mvbw2
+        tr >= 2 ? ::PClip() : nullptr,                // mvfw2
+        tr >= 3 ? ::PClip() : nullptr,                // mvbw3
+        tr >= 3 ? ::PClip() : nullptr,                // mvfw3
+        tr >= 4 ? ::PClip() : nullptr,                // mvbw4
+        tr >= 4 ? ::PClip() : nullptr,                // mvfw4
+        tr >= 5 ? ::PClip() : nullptr,                // mvbw5
+        tr >= 5 ? ::PClip() : nullptr,                // mvfw5
+        thSAD,                     // thSAD
+        thSADC,                    // thSADC
+        YUVplanes,                 // YUV planes
+        limit,                     // limit
+        args[8].AsInt(limit),    // limitC
+        args[9].AsInt(MV_DEFAULT_SCD1),  // thSCD1
+        args[10].AsInt(MV_DEFAULT_SCD2), // thSCD2
+        args[11].AsBool(true),   // isse
+        args[12].AsBool(false),  // planar
+        args[13].AsBool(false),  // lsb
+        args[16].AsBool(true),   // mt
+        env
         );
-#endif
+      case 2: 			return new MVDegrainX<2>(
+        args[0].AsClip(),        // source
+        args[1].AsClip(),        // super clip
+        args[2].AsClip(),        // mvbw
+        ::PClip(),                // mvfw
+        tr >= 2 ? ::PClip() : nullptr,                // mvbw2
+        tr >= 2 ? ::PClip() : nullptr,                // mvfw2
+        tr >= 3 ? ::PClip() : nullptr,                // mvbw3
+        tr >= 3 ? ::PClip() : nullptr,                // mvfw3
+        tr >= 4 ? ::PClip() : nullptr,                // mvbw4
+        tr >= 4 ? ::PClip() : nullptr,                // mvfw4
+        tr >= 5 ? ::PClip() : nullptr,                // mvbw5
+        tr >= 5 ? ::PClip() : nullptr,                // mvfw5
+        thSAD,                     // thSAD
+        thSADC,                    // thSADC
+        YUVplanes,                 // YUV planes
+        limit,                     // limit
+        args[8].AsInt(limit),    // limitC
+        args[9].AsInt(MV_DEFAULT_SCD1),  // thSCD1
+        args[10].AsInt(MV_DEFAULT_SCD2), // thSCD2
+        args[11].AsBool(true),   // isse
+        args[12].AsBool(false),  // planar
+        args[13].AsBool(false),  // lsb
+        args[16].AsBool(true),   // mt
+        env
+        );
       }
-  }
-  // Standard MDegrainN
+
+#else
+			return new MVDegrainX (
+				args [0].AsClip (),        // source
+				args [1].AsClip (),        // super clip
+				args [2].AsClip (),        // mvbw
+				::PClip (),                // mvfw
+				tr >= 2 ? ::PClip () : nullptr,                // mvbw2
+        tr >= 2 ? ::PClip () : nullptr,                // mvfw2
+        tr >= 3 ? ::PClip () : nullptr,                // mvbw3
+        tr >= 3 ? ::PClip () : nullptr,                // mvfw3
+        tr >= 4 ? ::PClip () : nullptr,                // mvbw4
+        tr >= 4 ? ::PClip () : nullptr,                // mvfw4
+        tr >= 5 ? ::PClip () : nullptr,                // mvbw5
+        tr >= 5 ? ::PClip () : nullptr,                // mvfw5
+        thSAD,                     // thSAD
+				thSADC,                    // thSADC
+				YUVplanes,                 // YUV planes
+				limit,                     // limit
+				args [8].AsInt (limit),    // limitC
+				args [9].AsInt (MV_DEFAULT_SCD1),  // thSCD1
+				args [10].AsInt (MV_DEFAULT_SCD2), // thSCD2
+				args [11].AsBool (true),   // isse
+				args [12].AsBool (false),  // planar
+				args [13].AsBool (false),  // lsb
+				args [16].AsBool (true),   // mt
+        tr, // PF: level
+				env
+			);
+#endif
+    }
+	}
+	// Standard MDegrainN
 	return new MDegrainN (
 		args [0].AsClip (),        // source
 		args [1].AsClip (),        // super clip

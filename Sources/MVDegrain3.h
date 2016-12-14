@@ -17,11 +17,11 @@ class MVFilter;
 //#define LEVEL_IS_TEMPLATE
 /*
 using Denoise1to5Function = void (*)(
-  BYTE *pDst, BYTE *pDstLsb, bool lsb_flag, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
-  const BYTE *pRefB[MAX_DEGRAIN], int BPitch[MAX_DEGRAIN], const BYTE *pRefF[MAX_DEGRAIN], int FPitch[MAX_DEGRAIN],
-  int WSrc,
-  int WRefB[MAX_DEGRAIN], int WRefF[MAX_DEGRAIN]
-  );
+BYTE *pDst, BYTE *pDstLsb, bool lsb_flag, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
+const BYTE *pRefB[MAX_DEGRAIN], int BPitch[MAX_DEGRAIN], const BYTE *pRefF[MAX_DEGRAIN], int FPitch[MAX_DEGRAIN],
+int WSrc,
+int WRefB[MAX_DEGRAIN], int WRefF[MAX_DEGRAIN]
+);
 */
 typedef void (Denoise1to5Function)(
   BYTE *pDst, BYTE *pDstLsb, bool lsb_flag, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
@@ -31,7 +31,7 @@ typedef void (Denoise1to5Function)(
   );
 
 /*! \brief Filter that denoise the picture
- */
+*/
 
 #ifdef LEVEL_IS_TEMPLATE
 template<int level> // PF level as template
@@ -43,24 +43,24 @@ class MVDegrainX
 private:
   /*
   typedef void (Denoise1Function)(
-    BYTE *pDst, BYTE *pDstLsb, bool lsb_flag, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
-    const BYTE *pRefB, int BPitch, const BYTE *pRefF, int FPitch,
-    int WSrc, int WRefB, int WRefF
-    );
+  BYTE *pDst, BYTE *pDstLsb, bool lsb_flag, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
+  const BYTE *pRefB, int BPitch, const BYTE *pRefF, int FPitch,
+  int WSrc, int WRefB, int WRefF
+  );
   typedef void (Denoise2Function)(
-    BYTE *pDst, BYTE *pDstLsb, bool lsb_flag, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
-    const BYTE *pRefB, int BPitch, const BYTE *pRefF, int FPitch,
-    const BYTE *pRefB2, int B2Pitch, const BYTE *pRefF2, int F2Pitch,
-    int WSrc, int WRefB, int WRefF, int WRefB2, int WRefF2
-    );
+  BYTE *pDst, BYTE *pDstLsb, bool lsb_flag, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
+  const BYTE *pRefB, int BPitch, const BYTE *pRefF, int FPitch,
+  const BYTE *pRefB2, int B2Pitch, const BYTE *pRefF2, int F2Pitch,
+  int WSrc, int WRefB, int WRefF, int WRefB2, int WRefF2
+  );
   typedef void (Denoise3Function)(
-    BYTE *pDst, BYTE *pDstLsb, bool lsb_flag, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
-    const BYTE *pRefB, int BPitch, const BYTE *pRefF, int FPitch,
-    const BYTE *pRefB2, int B2Pitch, const BYTE *pRefF2, int F2Pitch,
-    const BYTE *pRefB3, int B3Pitch, const BYTE *pRefF3, int F3Pitch,
-    int WSrc, int WRefB, int WRefF, int WRefB2, int WRefF2, int WRefB3, int WRefF3
-    );
-    */
+  BYTE *pDst, BYTE *pDstLsb, bool lsb_flag, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
+  const BYTE *pRefB, int BPitch, const BYTE *pRefF, int FPitch,
+  const BYTE *pRefB2, int B2Pitch, const BYTE *pRefF2, int F2Pitch,
+  const BYTE *pRefB3, int B3Pitch, const BYTE *pRefF3, int F3Pitch,
+  int WSrc, int WRefB, int WRefF, int WRefB2, int WRefF2, int WRefB3, int WRefF3
+  );
+  */
   typedef void (norm_weights_Function_t)(int &WSrc, int(&WRefB)[MAX_DEGRAIN], int(&WRefF)[MAX_DEGRAIN]);
 
 
@@ -153,9 +153,9 @@ private:
   __forceinline void	use_block_y(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch);
   __forceinline void	use_block_uv(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch);
   // static inline void	norm_weights(int &WSrc, int &WRefB, int &WRefF, int &WRefB2, int &WRefF2, int &WRefB3, int &WRefF3);
-    //Denoise1Function* get_denoise1_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
-    //Denoise2Function* get_denoise2_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
-    //Denoise3Function* get_denoise3_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
+  //Denoise1Function* get_denoise1_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
+  //Denoise2Function* get_denoise2_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
+  //Denoise3Function* get_denoise3_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
   Denoise1to5Function *get_denoise123_function(int BlockX, int BlockY, int _pixelsize, bool _lsb_flag, int _level, arch_t _arch);
 };
 
@@ -645,7 +645,7 @@ void Degrain1to5_mmx(BYTE *pDst, BYTE *pDstLsb, bool _lsb_flag_not_used_template
       }
       pDst += nDstPitch;
       pSrc += nSrcPitch;
-      
+
       pRefB[0] += BPitch[0];
       pRefF[0] += FPitch[0];
       if (level >= 2) {
@@ -776,10 +776,10 @@ void Degrain1to5_sse2(BYTE *pDst, BYTE *pDstLsb, bool _lsb_flag_not_used_templat
       pSrc += nSrcPitch;
       /*
       for (int i = 0; i < level; i++) {
-        pRefB[i] += BPitch[i];
+      pRefB[i] += BPitch[i];
       }
       for (int i = 0; i < level; i++) {
-        pRefF[i] += FPitch[i];
+      pRefF[i] += FPitch[i];
       }
       */
       pRefB[0] += BPitch[0];
@@ -800,7 +800,7 @@ void Degrain1to5_sse2(BYTE *pDst, BYTE *pDstLsb, bool _lsb_flag_not_used_templat
           pRefF[4] += FPitch[4];
         }
       }
-      
+
     }
   }
 
@@ -946,23 +946,23 @@ __forceinline void norm_weights(int &WSrc, int(&WRefB)[MAX_DEGRAIN], int(&RefF)[
 /*
 template class MVDegrainX<1>
 (PClip _child, PClip _super, PClip _mvbw, PClip _mvfw, PClip _mvbw2, PClip _mvfw2, PClip _mvbw3, PClip _mvfw3, PClip _mvbw4, PClip _mvfw4, PClip _mvbw5, PClip _mvfw5,
-  sad_t _thSAD, sad_t _thSADC, int _YUVplanes, sad_t _nLimit, sad_t _nLimitC,
-  sad_t _nSCD1, int _nSCD2, bool _isse2, bool _planar, bool _lsb_flag,
-  bool _mt_flag, 
+sad_t _thSAD, sad_t _thSADC, int _YUVplanes, sad_t _nLimit, sad_t _nLimitC,
+sad_t _nSCD1, int _nSCD2, bool _isse2, bool _planar, bool _lsb_flag,
+bool _mt_flag, 
 #ifndef LEVEL_IS_TEMPLATE
-  int _level, 
+int _level, 
 #endif
-  IScriptEnvironment* env);
+IScriptEnvironment* env);
 
 template class MVDegrainX<2>
 (PClip _child, PClip _super, PClip _mvbw, PClip _mvfw, PClip _mvbw2, PClip _mvfw2, PClip _mvbw3, PClip _mvfw3, PClip _mvbw4, PClip _mvfw4, PClip _mvbw5, PClip _mvfw5,
-  sad_t _thSAD, sad_t _thSADC, int _YUVplanes, sad_t _nLimit, sad_t _nLimitC,
-  sad_t _nSCD1, int _nSCD2, bool _isse2, bool _planar, bool _lsb_flag,
-  bool _mt_flag, 
+sad_t _thSAD, sad_t _thSADC, int _YUVplanes, sad_t _nLimit, sad_t _nLimitC,
+sad_t _nSCD1, int _nSCD2, bool _isse2, bool _planar, bool _lsb_flag,
+bool _mt_flag, 
 #ifndef LEVEL_IS_TEMPLATE
-  int _level, 
+int _level, 
 #endif
-  IScriptEnvironment* env);
+IScriptEnvironment* env);
 #endif
 
 */
