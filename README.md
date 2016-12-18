@@ -16,6 +16,7 @@ http://avisynth.nl/index.php/AviSynth%2B#AviSynth.2B_x64_plugins
 Change log
 - 2.7.8.22 (20161218)
   Fix: YUY2 input access violation (regression after 2.7.0.22d)
+       Fixed also in Depan.dll
   Fix: MDegrain: free up YUY2 planes only if not planar input (bug inherited from 2.5.11.22 MDegrain3)
        resulting in freeze at script exit
 

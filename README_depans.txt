@@ -17,8 +17,10 @@ Modification base:
 http://avisynth.org.ru/depan/depan.html
 
 Change log
-- Depan: 2.13.1 (20161119)
+- Depan: 2.13.1.1 (20161218) YUY2 input fix, as in MvTools 2.7.8.22
+  Previous build: Depan: 2.13.1 (20161119)
 - DepanEstimate: 2.10 (20161119)
+
   General support of 10-16 bit formats with Avisynth Plus (r2294 or newer recommended)
   First digit of version number became 2, others left untouched, (sync'd with Fizick's version number)
 
