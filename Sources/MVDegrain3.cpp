@@ -836,6 +836,8 @@ MVDegrainX::MVDegrainX(
 #ifndef LEVEL_IS_TEMPLATE
   , level( _level )
 #endif
+  , DstPlanes(0)
+  , SrcPlanes(0)
 {
   //DstShortAlign32 = nullptr;
   DstShort = nullptr;
@@ -1030,7 +1032,7 @@ MVDegrainX<level>::~MVDegrainX()
 MVDegrainX::~MVDegrainX()
 #endif
 {
-  if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2)
+  if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
   {
     delete DstPlanes;
     delete SrcPlanes;
