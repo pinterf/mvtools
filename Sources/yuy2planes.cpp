@@ -136,7 +136,6 @@ void YUY2ToPlanes(const unsigned char *pSrcYUY2, int nSrcPitchYUY2, int nWidth, 
   const unsigned char * dstU, const unsigned char * dstV, int dstPitchUV, bool sse2)
 {
 
-  nWidth <<= 2; // real target width
   if (sse2 && IsPtrAligned(pSrcYUY2, 16)) {
     convert_yuy2_to_yv16_sse2(pSrcYUY2, (unsigned char *)dstY, (unsigned char *)dstU, (unsigned char *)dstV, nSrcPitchYUY2, dstPitchY, dstPitchUV, nWidth, nHeight);
   }
