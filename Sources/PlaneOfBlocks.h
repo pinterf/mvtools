@@ -248,7 +248,8 @@ private:
     virtual			~WorkingArea();
 
     __forceinline bool IsVectorOK(int vx, int vy) const;
-    __forceinline int MotionDistorsion(int vx, int vy) const;
+    template<typename pixel_t>
+    sad_t MotionDistorsion(int vx, int vy) const; // this one is better not forceinlined
   };
 
   class WorkingAreaFactory
@@ -290,6 +291,7 @@ private:
   void FetchPredictors(WorkingArea &workarea);
 
   /* performs a diamond search */
+  template<typename pixel_t>
   void DiamondSearch(WorkingArea &workarea, int step);
 
   /* performs a square search */
@@ -299,9 +301,11 @@ private:
 //	void ExhaustiveSearch(WorkingArea &workarea, int radius); // diameter = 2*radius - 1
 
   /* performs an n-step search */
+  template<typename pixel_t>
   void NStepSearch(WorkingArea &workarea, int stp);
 
   /* performs a one time search */
+  template<typename pixel_t>
   void OneTimeSearch(WorkingArea &workarea, int length);
 
   /* performs an epz search */
@@ -311,10 +315,14 @@ private:
   //	void PhaseShiftSearch(int vx, int vy);
 
     /* performs an exhaustive search */
+  template<typename pixel_t>
   void ExpandingSearch(WorkingArea &workarea, int radius, int step, int mvx, int mvy); // diameter = 2*radius + 1
 
+  template<typename pixel_t>
   void Hex2Search(WorkingArea &workarea, int i_me_range);
+  template<typename pixel_t>
   void CrossSearch(WorkingArea &workarea, int start, int x_max, int y_max, int mvx, int mvy);
+  template<typename pixel_t>
   void UMHSearch(WorkingArea &workarea, int i_me_range, int omx, int omy);
 
   /* inline functions */
@@ -325,18 +333,23 @@ private:
   //	inline int LengthPenalty(int vx, int vy);
   sad_t LumaSADx(WorkingArea &workarea, const unsigned char *pRef0);
   __forceinline sad_t LumaSAD(WorkingArea &workarea, const unsigned char *pRef0);
+  template<typename pixel_t>
   __forceinline void CheckMV0(WorkingArea &workarea, int vx, int vy);
+  template<typename pixel_t>
   __forceinline void CheckMV(WorkingArea &workarea, int vx, int vy);
+  template<typename pixel_t>
   __forceinline void CheckMV2(WorkingArea &workarea, int vx, int vy, int *dir, int val);
+  template<typename pixel_t>
   __forceinline void CheckMVdir(WorkingArea &workarea, int vx, int vy, int *dir, int val);
   __forceinline int ClipMVx(WorkingArea &workarea, int vx);
   __forceinline int ClipMVy(WorkingArea &workarea, int vy);
   __forceinline VECTOR ClipMV(WorkingArea &workarea, VECTOR v);
   __forceinline static int Median(int a, int b, int c);
-  __forceinline static unsigned int SquareDifferenceNorm(const VECTOR& v1, const VECTOR& v2);
+  // __forceinline static unsigned int SquareDifferenceNorm(const VECTOR& v1, const VECTOR& v2); // not used
   __forceinline static unsigned int SquareDifferenceNorm(const VECTOR& v1, const int v2x, const int v2y);
   __forceinline bool IsInFrame(int i);
 
+  template<typename pixel_t>
   void Refine(WorkingArea &workarea);
 
   template<typename pixel_t>

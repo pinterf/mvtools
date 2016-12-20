@@ -673,76 +673,69 @@ void PlaneOfBlocks::FetchPredictors(WorkingArea &workarea)
 
 
 
+template<typename pixel_t>
 void PlaneOfBlocks::Refine(WorkingArea &workarea)
 {
   // then, we refine, according to the search type
-  if (searchType & ONETIME)
-  {
+  switch (searchType) {
+  case ONETIME:
     for (int i = nSearchParam; i > 0; i /= 2)
     {
-      OneTimeSearch(workarea, i);
+      OneTimeSearch<pixel_t>(workarea, i);
     }
-  }
-
-  if (searchType & NSTEP)
-  {
-    NStepSearch(workarea, nSearchParam);
-  }
-
-  if (searchType & LOGARITHMIC)
-  {
+    break;
+  case NSTEP:
+    NStepSearch<pixel_t>(workarea, nSearchParam);
+    break;
+  case LOGARITHMIC:
     for (int i = nSearchParam; i > 0; i /= 2)
     {
-      DiamondSearch(workarea, i);
+      DiamondSearch<pixel_t>(workarea, i);
     }
-  }
-
-  if (searchType & EXHAUSTIVE)
-  {
+    break;
+  case EXHAUSTIVE: {
     //		ExhaustiveSearch(nSearchParam);
     int mvx = workarea.bestMV.x;
     int mvy = workarea.bestMV.y;
     for (int i = 1; i <= nSearchParam; i++)// region is same as exhaustive, but ordered by radius (from near to far)
     {
-      ExpandingSearch(workarea, i, 1, mvx, mvy);
+      ExpandingSearch<pixel_t>(workarea, i, 1, mvx, mvy);
     }
   }
+                   break;
 
-  //	if ( searchType & SQUARE )
-  //	{
-  //		SquareSearch();
-  //	}
-
-  if (searchType & HEX2SEARCH)
-  {
-    Hex2Search(workarea, nSearchParam);
-  }
-
-  if (searchType & UMHSEARCH)
-  {
-    UMHSearch(workarea, nSearchParam, workarea.bestMV.x, workarea.bestMV.y);
-  }
-
-  if (searchType & HSEARCH)
+                   //	if ( searchType & SQUARE )
+                   //	{
+                   //		SquareSearch();
+                   //	}
+  case HEX2SEARCH:
+    Hex2Search<pixel_t>(workarea, nSearchParam);
+    break;
+  case UMHSEARCH:
+    UMHSearch<pixel_t>(workarea, nSearchParam, workarea.bestMV.x, workarea.bestMV.y);
+    break;
+  case HSEARCH:
   {
     int mvx = workarea.bestMV.x;
     int mvy = workarea.bestMV.y;
     for (int i = 1; i <= nSearchParam; i++)// region is same as exhaustive, but ordered by radius (from near to far)
     {
-      CheckMV(workarea, mvx - i, mvy);
-      CheckMV(workarea, mvx + i, mvy);
+      CheckMV<pixel_t>(workarea, mvx - i, mvy);
+      CheckMV<pixel_t>(workarea, mvx + i, mvy);
     }
   }
-
-  if (searchType & VSEARCH)
+  break;
+  case VSEARCH:
   {
     int mvx = workarea.bestMV.x;
     int mvy = workarea.bestMV.y;
     for (int i = 1; i <= nSearchParam; i++)// region is same as exhaustive, but ordered by radius (from near to far)
     {
-      CheckMV(workarea, mvx, mvy - i);
-      CheckMV(workarea, mvx, mvy + i);
+      CheckMV<pixel_t>(workarea, mvx, mvy - i);
+      CheckMV<pixel_t>(workarea, mvx, mvy + i);
     }
+  }
+  break;
   }
 }
 
@@ -788,7 +781,7 @@ void PlaneOfBlocks::PseudoEPZSearch(WorkingArea &workarea)
   if (tryMany)
   {
     //  refine around zero
-    Refine(workarea);
+    Refine<pixel_t>(workarea);
     bestMVMany[0] = workarea.bestMV;    // save bestMV
     nMinCostMany[0] = workarea.nMinCost;
   }
@@ -813,7 +806,7 @@ void PlaneOfBlocks::PseudoEPZSearch(WorkingArea &workarea)
     if (tryMany)
     {
       // refine around global
-      Refine(workarea);    // reset bestMV
+      Refine<pixel_t>(workarea);    // reset bestMV
       bestMVMany[1] = workarea.bestMV;    // save bestMV
       nMinCostMany[1] = workarea.nMinCost;
     }
@@ -840,7 +833,7 @@ void PlaneOfBlocks::PseudoEPZSearch(WorkingArea &workarea)
   if (tryMany)
   {
     // refine around predictor
-    Refine(workarea);    // reset bestMV
+    Refine<pixel_t>(workarea);    // reset bestMV
     bestMVMany[2] = workarea.bestMV;    // save bestMV
     nMinCostMany[2] = workarea.nMinCost;
   }
@@ -854,11 +847,11 @@ void PlaneOfBlocks::PseudoEPZSearch(WorkingArea &workarea)
     {
       workarea.nMinCost = verybigSAD + 1;
     }
-    CheckMV0(workarea, workarea.predictors[i].x, workarea.predictors[i].y);
+    CheckMV0<pixel_t>(workarea, workarea.predictors[i].x, workarea.predictors[i].y);
     if (tryMany)
     {
       // refine around predictor
-      Refine(workarea);    // reset bestMV
+      Refine<pixel_t>(workarea);    // reset bestMV
       bestMVMany[i + 3] = workarea.bestMV;    // save bestMV
       nMinCostMany[i + 3] = workarea.nMinCost;
     }
@@ -880,7 +873,7 @@ void PlaneOfBlocks::PseudoEPZSearch(WorkingArea &workarea)
   else
   {
     // then, we refine, according to the search type
-    Refine(workarea);
+    Refine<pixel_t>(workarea);
   }
 
   sad_t foundSAD = workarea.bestMV.sad;
@@ -918,7 +911,7 @@ void PlaneOfBlocks::PseudoEPZSearch(WorkingArea &workarea)
       {
         // rathe good is not found, lets try around zero
 //				UMHSearch(workarea, badSADRadius, abs(mvx0)%4 - 2, abs(mvy0)%4 - 2);
-        UMHSearch(workarea, badrange*nPel, 0, 0);
+        UMHSearch<pixel_t>(workarea, badrange*nPel, 0, 0);
       }
     }
 
@@ -951,7 +944,7 @@ void PlaneOfBlocks::PseudoEPZSearch(WorkingArea &workarea)
       */
       for (int i = 1; i < -badrange*nPel; i += nPel)// at radius
       {
-        ExpandingSearch(workarea, i, nPel, 0, 0);
+        ExpandingSearch<pixel_t>(workarea, i, nPel, 0, 0);
         if (workarea.bestMV.sad < foundSAD / 4)
         {
           break; // stop search if rathe good is found
@@ -963,7 +956,7 @@ void PlaneOfBlocks::PseudoEPZSearch(WorkingArea &workarea)
     int mvy = workarea.bestMV.y;
     for (int i = 1; i < nPel; i++)// small radius
     {
-      ExpandingSearch(workarea, i, 1, mvx, mvy);
+      ExpandingSearch<pixel_t>(workarea, i, 1, mvx, mvy);
     }
     DebugPrintf("best blk=%d x=%d y=%d sad=%d iter=%d", workarea.blkIdx, workarea.bestMV.x, workarea.bestMV.y, workarea.bestMV.sad, workarea.iter);
   }	// bad vector, try wide search
@@ -978,6 +971,7 @@ void PlaneOfBlocks::PseudoEPZSearch(WorkingArea &workarea)
 
 
 
+template<typename pixel_t>
 void PlaneOfBlocks::DiamondSearch(WorkingArea &workarea, int length)
 {
   // The meaning of the directions are the following :
@@ -1005,10 +999,10 @@ void PlaneOfBlocks::DiamondSearch(WorkingArea &workarea, int length)
     // First, we look the directions that were hinted by the previous step
     // of the algorithm. If we find one, we add it to the set of directions
     // we'll test next
-    if (lastDirection & 1) CheckMV2(workarea, dx + length, dy, &direction, 1);
-    if (lastDirection & 2) CheckMV2(workarea, dx - length, dy, &direction, 2);
-    if (lastDirection & 4) CheckMV2(workarea, dx, dy + length, &direction, 4);
-    if (lastDirection & 8) CheckMV2(workarea, dx, dy - length, &direction, 8);
+    if (lastDirection & 1) CheckMV2<pixel_t>(workarea, dx + length, dy, &direction, 1);
+    if (lastDirection & 2) CheckMV2<pixel_t>(workarea, dx - length, dy, &direction, 2);
+    if (lastDirection & 4) CheckMV2<pixel_t>(workarea, dx, dy + length, &direction, 4);
+    if (lastDirection & 8) CheckMV2<pixel_t>(workarea, dx, dy - length, &direction, 8);
 
     // If one of the directions improves the SAD, we make further tests
     // on the diagonals
@@ -1020,13 +1014,13 @@ void PlaneOfBlocks::DiamondSearch(WorkingArea &workarea, int length)
 
       if (lastDirection & 3)
       {
-        CheckMV2(workarea, dx, dy + length, &direction, 4);
-        CheckMV2(workarea, dx, dy - length, &direction, 8);
+        CheckMV2<pixel_t>(workarea, dx, dy + length, &direction, 4);
+        CheckMV2<pixel_t>(workarea, dx, dy - length, &direction, 8);
       }
       else
       {
-        CheckMV2(workarea, dx + length, dy, &direction, 1);
-        CheckMV2(workarea, dx - length, dy, &direction, 2);
+        CheckMV2<pixel_t>(workarea, dx + length, dy, &direction, 1);
+        CheckMV2<pixel_t>(workarea, dx - length, dy, &direction, 2);
       }
     }
 
@@ -1037,48 +1031,48 @@ void PlaneOfBlocks::DiamondSearch(WorkingArea &workarea, int length)
       switch (lastDirection)
       {
       case 1:
-        CheckMV2(workarea, dx + length, dy + length, &direction, 1 + 4);
-        CheckMV2(workarea, dx + length, dy - length, &direction, 1 + 8);
+        CheckMV2<pixel_t>(workarea, dx + length, dy + length, &direction, 1 + 4);
+        CheckMV2<pixel_t>(workarea, dx + length, dy - length, &direction, 1 + 8);
         break;
       case 2:
-        CheckMV2(workarea, dx - length, dy + length, &direction, 2 + 4);
-        CheckMV2(workarea, dx - length, dy - length, &direction, 2 + 8);
+        CheckMV2<pixel_t>(workarea, dx - length, dy + length, &direction, 2 + 4);
+        CheckMV2<pixel_t>(workarea, dx - length, dy - length, &direction, 2 + 8);
         break;
       case 4:
-        CheckMV2(workarea, dx + length, dy + length, &direction, 1 + 4);
-        CheckMV2(workarea, dx - length, dy + length, &direction, 2 + 4);
+        CheckMV2<pixel_t>(workarea, dx + length, dy + length, &direction, 1 + 4);
+        CheckMV2<pixel_t>(workarea, dx - length, dy + length, &direction, 2 + 4);
         break;
       case 8:
-        CheckMV2(workarea, dx + length, dy - length, &direction, 1 + 8);
-        CheckMV2(workarea, dx - length, dy - length, &direction, 2 + 8);
+        CheckMV2<pixel_t>(workarea, dx + length, dy - length, &direction, 1 + 8);
+        CheckMV2<pixel_t>(workarea, dx - length, dy - length, &direction, 2 + 8);
         break;
       case 1 + 4:
-        CheckMV2(workarea, dx + length, dy + length, &direction, 1 + 4);
-        CheckMV2(workarea, dx - length, dy + length, &direction, 2 + 4);
-        CheckMV2(workarea, dx + length, dy - length, &direction, 1 + 8);
+        CheckMV2<pixel_t>(workarea, dx + length, dy + length, &direction, 1 + 4);
+        CheckMV2<pixel_t>(workarea, dx - length, dy + length, &direction, 2 + 4);
+        CheckMV2<pixel_t>(workarea, dx + length, dy - length, &direction, 1 + 8);
         break;
       case 2 + 4:
-        CheckMV2(workarea, dx + length, dy + length, &direction, 1 + 4);
-        CheckMV2(workarea, dx - length, dy + length, &direction, 2 + 4);
-        CheckMV2(workarea, dx - length, dy - length, &direction, 2 + 8);
+        CheckMV2<pixel_t>(workarea, dx + length, dy + length, &direction, 1 + 4);
+        CheckMV2<pixel_t>(workarea, dx - length, dy + length, &direction, 2 + 4);
+        CheckMV2<pixel_t>(workarea, dx - length, dy - length, &direction, 2 + 8);
         break;
       case 1 + 8:
-        CheckMV2(workarea, dx + length, dy + length, &direction, 1 + 4);
-        CheckMV2(workarea, dx - length, dy - length, &direction, 2 + 8);
-        CheckMV2(workarea, dx + length, dy - length, &direction, 1 + 8);
+        CheckMV2<pixel_t>(workarea, dx + length, dy + length, &direction, 1 + 4);
+        CheckMV2<pixel_t>(workarea, dx - length, dy - length, &direction, 2 + 8);
+        CheckMV2<pixel_t>(workarea, dx + length, dy - length, &direction, 1 + 8);
         break;
       case 2 + 8:
-        CheckMV2(workarea, dx - length, dy - length, &direction, 2 + 8);
-        CheckMV2(workarea, dx - length, dy + length, &direction, 2 + 4);
-        CheckMV2(workarea, dx + length, dy - length, &direction, 1 + 8);
+        CheckMV2<pixel_t>(workarea, dx - length, dy - length, &direction, 2 + 8);
+        CheckMV2<pixel_t>(workarea, dx - length, dy + length, &direction, 2 + 4);
+        CheckMV2<pixel_t>(workarea, dx + length, dy - length, &direction, 1 + 8);
         break;
       default:
         // Even the default case may happen, in the first step of the
         // algorithm for example.
-        CheckMV2(workarea, dx + length, dy + length, &direction, 1 + 4);
-        CheckMV2(workarea, dx - length, dy + length, &direction, 2 + 4);
-        CheckMV2(workarea, dx + length, dy - length, &direction, 1 + 8);
-        CheckMV2(workarea, dx - length, dy - length, &direction, 2 + 8);
+        CheckMV2<pixel_t>(workarea, dx + length, dy + length, &direction, 1 + 4);
+        CheckMV2<pixel_t>(workarea, dx - length, dy + length, &direction, 2 + 4);
+        CheckMV2<pixel_t>(workarea, dx + length, dy - length, &direction, 1 + 8);
+        CheckMV2<pixel_t>(workarea, dx - length, dy - length, &direction, 2 + 8);
         break;
       }
     }	// if ! direction
@@ -1119,6 +1113,7 @@ void PlaneOfBlocks::ExhaustiveSearch(WorkingArea &workarea, int s)// diameter = 
 
 
 
+template<typename pixel_t>
 void PlaneOfBlocks::NStepSearch(WorkingArea &workarea, int stp)
 {
   int dx, dy;
@@ -1128,14 +1123,14 @@ void PlaneOfBlocks::NStepSearch(WorkingArea &workarea, int stp)
     dx = workarea.bestMV.x;
     dy = workarea.bestMV.y;
 
-    CheckMV(workarea, dx + length, dy + length);
-    CheckMV(workarea, dx + length, dy);
-    CheckMV(workarea, dx + length, dy - length);
-    CheckMV(workarea, dx, dy - length);
-    CheckMV(workarea, dx, dy + length);
-    CheckMV(workarea, dx - length, dy + length);
-    CheckMV(workarea, dx - length, dy);
-    CheckMV(workarea, dx - length, dy - length);
+    CheckMV<pixel_t>(workarea, dx + length, dy + length);
+    CheckMV<pixel_t>(workarea, dx + length, dy);
+    CheckMV<pixel_t>(workarea, dx + length, dy - length);
+    CheckMV<pixel_t>(workarea, dx, dy - length);
+    CheckMV<pixel_t>(workarea, dx, dy + length);
+    CheckMV<pixel_t>(workarea, dx - length, dy + length);
+    CheckMV<pixel_t>(workarea, dx - length, dy);
+    CheckMV<pixel_t>(workarea, dx - length, dy - length);
 
     length--;
   }
@@ -1143,14 +1138,16 @@ void PlaneOfBlocks::NStepSearch(WorkingArea &workarea, int stp)
 
 
 
+
+template<typename pixel_t>
 void PlaneOfBlocks::OneTimeSearch(WorkingArea &workarea, int length)
 {
   int direction = 0;
   int dx = workarea.bestMV.x;
   int dy = workarea.bestMV.y;
 
-  CheckMV2(workarea, dx - length, dy, &direction, 2);
-  CheckMV2(workarea, dx + length, dy, &direction, 1);
+  CheckMV2<pixel_t>(workarea, dx - length, dy, &direction, 2);
+  CheckMV2<pixel_t>(workarea, dx + length, dy, &direction, 1);
 
   if (direction == 1)
   {
@@ -1158,7 +1155,7 @@ void PlaneOfBlocks::OneTimeSearch(WorkingArea &workarea, int length)
     {
       direction = 0;
       dx += length;
-      CheckMV2(workarea, dx + length, dy, &direction, 1);
+      CheckMV2<pixel_t>(workarea, dx + length, dy, &direction, 1);
     }
   }
   else if (direction == 2)
@@ -1167,12 +1164,12 @@ void PlaneOfBlocks::OneTimeSearch(WorkingArea &workarea, int length)
     {
       direction = 0;
       dx -= length;
-      CheckMV2(workarea, dx - length, dy, &direction, 1);
+      CheckMV2<pixel_t>(workarea, dx - length, dy, &direction, 1);
     }
   }
 
-  CheckMV2(workarea, dx, dy - length, &direction, 2);
-  CheckMV2(workarea, dx, dy + length, &direction, 1);
+  CheckMV2<pixel_t>(workarea, dx, dy - length, &direction, 2);
+  CheckMV2<pixel_t>(workarea, dx, dy + length, &direction, 1);
 
   if (direction == 1)
   {
@@ -1180,7 +1177,7 @@ void PlaneOfBlocks::OneTimeSearch(WorkingArea &workarea, int length)
     {
       direction = 0;
       dy += length;
-      CheckMV2(workarea, dx, dy + length, &direction, 1);
+      CheckMV2<pixel_t>(workarea, dx, dy + length, &direction, 1);
     }
   }
   else if (direction == 2)
@@ -1189,13 +1186,14 @@ void PlaneOfBlocks::OneTimeSearch(WorkingArea &workarea, int length)
     {
       direction = 0;
       dy -= length;
-      CheckMV2(workarea, dx, dy - length, &direction, 1);
+      CheckMV2<pixel_t>(workarea, dx, dy - length, &direction, 1);
     }
   }
 }
 
 
 
+template<typename pixel_t>
 void PlaneOfBlocks::ExpandingSearch(WorkingArea &workarea, int r, int s, int mvx, int mvy) // diameter = 2*r + 1, step=s
 { // part of true enhaustive search (thin expanding square) around mvx, mvy
   int i, j;
@@ -1204,21 +1202,21 @@ void PlaneOfBlocks::ExpandingSearch(WorkingArea &workarea, int r, int s, int mvx
     // sides of square without corners
   for (i = -r + s; i < r; i += s) // without corners! - v2.1
   {
-    CheckMV(workarea, mvx + i, mvy - r);
-    CheckMV(workarea, mvx + i, mvy + r);
+    CheckMV<pixel_t>(workarea, mvx + i, mvy - r);
+    CheckMV<pixel_t>(workarea, mvx + i, mvy + r);
   }
 
   for (j = -r + s; j < r; j += s)
   {
-    CheckMV(workarea, mvx - r, mvy + j);
-    CheckMV(workarea, mvx + r, mvy + j);
+    CheckMV<pixel_t>(workarea, mvx - r, mvy + j);
+    CheckMV<pixel_t>(workarea, mvx + r, mvy + j);
   }
 
   // then corners - they are more far from cenrer
-  CheckMV(workarea, mvx - r, mvy - r);
-  CheckMV(workarea, mvx - r, mvy + r);
-  CheckMV(workarea, mvx + r, mvy - r);
-  CheckMV(workarea, mvx + r, mvy + r);
+  CheckMV<pixel_t>(workarea, mvx - r, mvy - r);
+  CheckMV<pixel_t>(workarea, mvx - r, mvy + r);
+  CheckMV<pixel_t>(workarea, mvx + r, mvy - r);
+  CheckMV<pixel_t>(workarea, mvx + r, mvy + r);
 }
 
 
@@ -1228,6 +1226,7 @@ static const int mod6m1[8] = { 5,0,1,2,3,4,5,0 };
 /* radius 2 hexagon. repeated entries are to avoid having to compute mod6 every time. */
 static const int hex2[8][2] = { {-1,-2}, {-2,0}, {-1,2}, {1,2}, {2,0}, {1,-2}, {-1,-2}, {-2,0} };
 
+template<typename pixel_t>
 void PlaneOfBlocks::Hex2Search(WorkingArea &workarea, int i_me_range)
 {
   // adopted from x264
@@ -1246,12 +1245,12 @@ void PlaneOfBlocks::Hex2Search(WorkingArea &workarea, int i_me_range)
 //		COPY2_IF_LT( bcost, costs[3], dir, 3 );
 //		COPY2_IF_LT( bcost, costs[4], dir, 4 );
 //		COPY2_IF_LT( bcost, costs[5], dir, 5 );
-    CheckMVdir(workarea, bmx - 2, bmy, &dir, 0);
-    CheckMVdir(workarea, bmx - 1, bmy + 2, &dir, 1);
-    CheckMVdir(workarea, bmx + 1, bmy + 2, &dir, 2);
-    CheckMVdir(workarea, bmx + 2, bmy, &dir, 3);
-    CheckMVdir(workarea, bmx + 1, bmy - 2, &dir, 4);
-    CheckMVdir(workarea, bmx - 1, bmy - 2, &dir, 5);
+    CheckMVdir<pixel_t>(workarea, bmx - 2, bmy, &dir, 0);
+    CheckMVdir<pixel_t>(workarea, bmx - 1, bmy + 2, &dir, 1);
+    CheckMVdir<pixel_t>(workarea, bmx + 1, bmy + 2, &dir, 2);
+    CheckMVdir<pixel_t>(workarea, bmx + 2, bmy, &dir, 3);
+    CheckMVdir<pixel_t>(workarea, bmx + 1, bmy - 2, &dir, 4);
+    CheckMVdir<pixel_t>(workarea, bmx - 1, bmy - 2, &dir, 5);
 
 
     if (dir != -2)
@@ -1272,9 +1271,9 @@ void PlaneOfBlocks::Hex2Search(WorkingArea &workarea, int i_me_range)
         //				COPY2_IF_LT( bcost, costs[1], dir, odir   );
         //				COPY2_IF_LT( bcost, costs[2], dir, odir+1 );
 
-        CheckMVdir(workarea, bmx + hex2[odir + 0][0], bmy + hex2[odir + 0][1], &dir, odir - 1);
-        CheckMVdir(workarea, bmx + hex2[odir + 1][0], bmy + hex2[odir + 1][1], &dir, odir);
-        CheckMVdir(workarea, bmx + hex2[odir + 2][0], bmy + hex2[odir + 2][1], &dir, odir + 1);
+        CheckMVdir<pixel_t>(workarea, bmx + hex2[odir + 0][0], bmy + hex2[odir + 0][1], &dir, odir - 1);
+        CheckMVdir<pixel_t>(workarea, bmx + hex2[odir + 1][0], bmy + hex2[odir + 1][1], &dir, odir);
+        CheckMVdir<pixel_t>(workarea, bmx + hex2[odir + 2][0], bmy + hex2[odir + 2][1], &dir, odir + 1);
         if (dir == -2)
         {
           break;
@@ -1292,28 +1291,29 @@ void PlaneOfBlocks::Hex2Search(WorkingArea &workarea, int i_me_range)
 //	omx = bmx; omy = bmy;
 //	COST_MV_X4(  0,-1,  0,1, -1,0, 1,0 );
 //	COST_MV_X4( -1,-1, -1,1, 1,-1, 1,1 );
-  ExpandingSearch(workarea, 1, 1, bmx, bmy);
+  ExpandingSearch<pixel_t>(workarea, 1, 1, bmx, bmy);
 }
 
 
-
+template<typename pixel_t>
 void PlaneOfBlocks::CrossSearch(WorkingArea &workarea, int start, int x_max, int y_max, int mvx, int mvy)
 {
   // part of umh  search
   for (int i = start; i < x_max; i += 2)
   {
-    CheckMV(workarea, mvx - i, mvy);
-    CheckMV(workarea, mvx + i, mvy);
+    CheckMV<pixel_t>(workarea, mvx - i, mvy);
+    CheckMV<pixel_t>(workarea, mvx + i, mvy);
   }
 
   for (int j = start; j < y_max; j += 2)
   {
-    CheckMV(workarea, mvx, mvy + j);
-    CheckMV(workarea, mvx, mvy + j);
+    CheckMV<pixel_t>(workarea, mvx, mvy + j);
+    CheckMV<pixel_t>(workarea, mvx, mvy + j);
   }
 }
 
 
+template<typename pixel_t>
 void PlaneOfBlocks::UMHSearch(WorkingArea &workarea, int i_me_range, int omx, int omy) // radius
 {
   // Uneven-cross Multi-Hexagon-grid Search (see x264)
@@ -1322,7 +1322,7 @@ void PlaneOfBlocks::UMHSearch(WorkingArea &workarea, int i_me_range, int omx, in
 //	int omx = workarea.bestMV.x;
 //	int omy = workarea.bestMV.y;
   // my mod: do not shift the center after Cross
-  CrossSearch(workarea, 1, i_me_range, i_me_range, omx, omy);
+  CrossSearch<pixel_t>(workarea, 1, i_me_range, i_me_range, omx, omy);
 
   int i = 1;
   do
@@ -1339,7 +1339,7 @@ void PlaneOfBlocks::UMHSearch(WorkingArea &workarea, int i_me_range, int omx, in
     {
       int mx = omx + hex4[j][0] * i;
       int my = omy + hex4[j][1] * i;
-      CheckMV(workarea, mx, my);
+      CheckMV<pixel_t>(workarea, mx, my);
     }
   } while (++i <= i_me_range / 4);
 
@@ -1348,7 +1348,7 @@ void PlaneOfBlocks::UMHSearch(WorkingArea &workarea, int i_me_range, int omx, in
   //		goto me_hex2;
   //	}
 
-  Hex2Search(workarea, i_me_range);
+  Hex2Search<pixel_t>(workarea, i_me_range);
 }
 
 
@@ -1622,7 +1622,7 @@ sad_t	PlaneOfBlocks::LumaSADx(WorkingArea &workarea, const unsigned char *pRef0)
   return sad;
 }
 
-sad_t	PlaneOfBlocks::LumaSAD(WorkingArea &workarea, const unsigned char *pRef0)
+__forceinline sad_t	PlaneOfBlocks::LumaSAD(WorkingArea &workarea, const unsigned char *pRef0)
 {
 #ifdef MOTION_DEBUG
   workarea.iter++;
@@ -1637,7 +1637,8 @@ sad_t	PlaneOfBlocks::LumaSAD(WorkingArea &workarea, const unsigned char *pRef0)
 
 
 /* check if the vector (vx, vy) is better than the best vector found so far without penalty new - renamed in v.2.11*/
-void	PlaneOfBlocks::CheckMV0(WorkingArea &workarea, int vx, int vy)
+template<typename pixel_t>
+__forceinline void	PlaneOfBlocks::CheckMV0(WorkingArea &workarea, int vx, int vy)
 {		//here the chance for default values are high especially for zeroMVfieldShifted (on left/top border)
   if (
 #ifdef ONLY_CHECK_NONDEFAULT_MV
@@ -1647,6 +1648,7 @@ void	PlaneOfBlocks::CheckMV0(WorkingArea &workarea, int vx, int vy)
 #endif
     workarea.IsVectorOK(vx, vy))
   {
+#if 0
     sad_t saduv = (chroma) ? SADCHROMA(workarea.pSrc[1], nSrcPitch[1], GetRefBlockU(workarea, vx, vy), nRefPitch[1])
       + SADCHROMA(workarea.pSrc[2], nSrcPitch[2], GetRefBlockV(workarea, vx, vy), nRefPitch[2]) : 0;
     sad_t sad = LumaSAD(workarea, GetRefBlock(workarea, vx, vy));
@@ -1661,11 +1663,32 @@ void	PlaneOfBlocks::CheckMV0(WorkingArea &workarea, int vx, int vy)
       workarea.nMinCost = cost;
       workarea.bestMV.sad = sad;
     }
+#else
+    // from 2.5.11.9-SVP: no additional SAD calculations if partial sum is already above minCost
+    sad_t cost=workarea.MotionDistorsion<pixel_t>(vx, vy);
+    if(cost>=workarea.nMinCost) return;
+
+    sad_t sad=LumaSAD(workarea, GetRefBlock(workarea, vx, vy));
+    cost+=sad;
+    if(cost>=workarea.nMinCost) return;
+
+    sad_t saduv = (chroma) ? SADCHROMA(workarea.pSrc[1], nSrcPitch[1], GetRefBlockU(workarea, vx, vy), nRefPitch[1])
+      + SADCHROMA(workarea.pSrc[2], nSrcPitch[2], GetRefBlockV(workarea, vx, vy), nRefPitch[2]) : 0;
+    cost += saduv;
+    if(cost>=workarea.nMinCost) return;
+
+    workarea.bestMV.x = vx;
+    workarea.bestMV.y = vy;
+    workarea.nMinCost = cost;
+    workarea.bestMV.sad = sad+saduv;
+
+#endif
   }
 }
 
 /* check if the vector (vx, vy) is better than the best vector found so far */
-void	PlaneOfBlocks::CheckMV(WorkingArea &workarea, int vx, int vy)
+template<typename pixel_t>
+__forceinline void	PlaneOfBlocks::CheckMV(WorkingArea &workarea, int vx, int vy)
 {		//here the chance for default values are high especially for zeroMVfieldShifted (on left/top border)
   if (
 #ifdef ONLY_CHECK_NONDEFAULT_MV
@@ -1675,6 +1698,7 @@ void	PlaneOfBlocks::CheckMV(WorkingArea &workarea, int vx, int vy)
 #endif
     workarea.IsVectorOK(vx, vy))
   {
+#if 0
     sad_t saduv =
       !(chroma) ? 0 :
       SADCHROMA(workarea.pSrc[1], nSrcPitch[1], GetRefBlockU(workarea, vx, vy), nRefPitch[1])
@@ -1691,11 +1715,33 @@ void	PlaneOfBlocks::CheckMV(WorkingArea &workarea, int vx, int vy)
       workarea.nMinCost = cost;
       workarea.bestMV.sad = sad;
     }
+#else
+    // from 2.5.11.9-SVP: no additional SAD calculations if partial sum is already above minCost
+    sad_t cost=workarea.MotionDistorsion<pixel_t>(vx, vy);
+    if(cost>=workarea.nMinCost) return;
+
+    typedef typename std::conditional < sizeof(pixel_t) == 1, sad_t, bigsad_t >::type safe_sad_t;
+
+    sad_t sad=LumaSAD(workarea, GetRefBlock(workarea, vx, vy));
+    cost += sad + ((penaltyNew*(safe_sad_t)sad) >> 8);
+    if(cost>=workarea.nMinCost) return;
+
+    sad_t saduv = (chroma) ? SADCHROMA(workarea.pSrc[1], nSrcPitch[1], GetRefBlockU(workarea, vx, vy), nRefPitch[1])
+      + SADCHROMA(workarea.pSrc[2], nSrcPitch[2], GetRefBlockV(workarea, vx, vy), nRefPitch[2]) : 0;
+    cost += saduv + ((penaltyNew*(safe_sad_t)saduv) >> 8);
+    if(cost>=workarea.nMinCost) return;
+
+    workarea.bestMV.x = vx;
+    workarea.bestMV.y = vy;
+    workarea.nMinCost = cost;
+    workarea.bestMV.sad = sad+saduv;
+#endif
   }
 }
 
 /* check if the vector (vx, vy) is better, and update dir accordingly */
-void	PlaneOfBlocks::CheckMV2(WorkingArea &workarea, int vx, int vy, int *dir, int val)
+template<typename pixel_t>
+__forceinline void	PlaneOfBlocks::CheckMV2(WorkingArea &workarea, int vx, int vy, int *dir, int val)
 {
   if (
 #ifdef ONLY_CHECK_NONDEFAULT_MV
@@ -1705,13 +1751,14 @@ void	PlaneOfBlocks::CheckMV2(WorkingArea &workarea, int vx, int vy, int *dir, in
 #endif
     workarea.IsVectorOK(vx, vy))
   {
+#if 0
     sad_t saduv =
       !(chroma) ? 0 :
       SADCHROMA(workarea.pSrc[1], nSrcPitch[1], GetRefBlockU(workarea, vx, vy), nRefPitch[1])
       + SADCHROMA(workarea.pSrc[2], nSrcPitch[2], GetRefBlockV(workarea, vx, vy), nRefPitch[2]);
     sad_t sad = LumaSAD(workarea, GetRefBlock(workarea, vx, vy));
     sad += saduv;
-    sad_t cost = sad + workarea.MotionDistorsion(vx, vy) + ((penaltyNew*(int64_t)sad) >> 8); // v1.5.8
+    sad_t cost = sad + workarea.MotionDistorsion(vx, vy) + ((penaltyNew*(bigsad_t)sad) >> 8); // v1.5.8
 //		if (sad > LSAD/4) DebugPrintf("%d %d %d %d %d %d %d", workarea.blkIdx, vx, vy, val, workarea.nMinCost, cost, sad);
 //		int cost = sad + sad*workarea.MotionDistorsion(vx, vy)/(nBlkSizeX*nBlkSizeY*4) + ((penaltyNew*sad)>>8); // v1.5.8
     if (cost < workarea.nMinCost)
@@ -1722,11 +1769,34 @@ void	PlaneOfBlocks::CheckMV2(WorkingArea &workarea, int vx, int vy, int *dir, in
       workarea.nMinCost = cost;
       *dir = val;
     }
+#else
+    // from 2.5.11.9-SVP: no additional SAD calculations if partial sum is already above minCost
+    sad_t cost=workarea.MotionDistorsion<pixel_t>(vx, vy);
+    if(cost>=workarea.nMinCost) return;
+
+    typedef typename std::conditional < sizeof(pixel_t) == 1, sad_t, bigsad_t >::type safe_sad_t;
+
+    sad_t sad=LumaSAD(workarea, GetRefBlock(workarea, vx, vy));
+    cost += sad + ((penaltyNew*(safe_sad_t)sad) >> 8);
+    if(cost>=workarea.nMinCost) return;
+
+    sad_t saduv = (chroma) ? SADCHROMA(workarea.pSrc[1], nSrcPitch[1], GetRefBlockU(workarea, vx, vy), nRefPitch[1])
+      + SADCHROMA(workarea.pSrc[2], nSrcPitch[2], GetRefBlockV(workarea, vx, vy), nRefPitch[2]) : 0;
+    cost += saduv+((penaltyNew*(safe_sad_t)saduv) >> 8);
+    if(cost>=workarea.nMinCost) return;
+
+    workarea.bestMV.x = vx;
+    workarea.bestMV.y = vy;
+    workarea.nMinCost = cost;
+    workarea.bestMV.sad = sad + saduv;
+    *dir = val;
+#endif
   }
 }
 
 /* check if the vector (vx, vy) is better, and update dir accordingly, but not workarea.bestMV.x, y */
-void	PlaneOfBlocks::CheckMVdir(WorkingArea &workarea, int vx, int vy, int *dir, int val)
+template<typename pixel_t>
+__forceinline void	PlaneOfBlocks::CheckMVdir(WorkingArea &workarea, int vx, int vy, int *dir, int val)
 {
   if (
 #ifdef ONLY_CHECK_NONDEFAULT_MV
@@ -1736,11 +1806,12 @@ void	PlaneOfBlocks::CheckMVdir(WorkingArea &workarea, int vx, int vy, int *dir, 
 #endif
     workarea.IsVectorOK(vx, vy))
   {
+#if 0
     sad_t saduv = (chroma) ? SADCHROMA(workarea.pSrc[1], nSrcPitch[1], GetRefBlockU(workarea, vx, vy), nRefPitch[1])
       + SADCHROMA(workarea.pSrc[2], nSrcPitch[2], GetRefBlockV(workarea, vx, vy), nRefPitch[2]) : 0;
     sad_t sad = LumaSAD(workarea, GetRefBlock(workarea, vx, vy));
     sad += saduv;
-    sad_t cost = sad + workarea.MotionDistorsion(vx, vy) + ((penaltyNew*(int64_t)sad) >> 8); // v1.5.8
+    sad_t cost = sad + workarea.MotionDistorsion(vx, vy) + ((penaltyNew*(bigsad_t)sad) >> 8); // v1.5.8
 //		if (sad > LSAD/4) DebugPrintf("%d %d %d %d %d %d %d", workarea.blkIdx, vx, vy, val, workarea.nMinCost, cost, sad);
 //		int cost = sad + sad*workarea.MotionDistorsion(vx, vy)/(nBlkSizeX*nBlkSizeY*4) + ((penaltyNew*sad)>>8); // v1.5.8
     if (cost < workarea.nMinCost)
@@ -1749,11 +1820,31 @@ void	PlaneOfBlocks::CheckMVdir(WorkingArea &workarea, int vx, int vy, int *dir, 
       workarea.nMinCost = cost;
       *dir = val;
     }
+#else
+    // from 2.5.11.9-SVP: no additional SAD calculations if partial sum is already above minCost
+    sad_t cost=workarea.MotionDistorsion<pixel_t>(vx, vy);
+    if(cost>=workarea.nMinCost) return;
+
+    typedef typename std::conditional < sizeof(pixel_t) == 1, sad_t, bigsad_t >::type safe_sad_t;
+
+    sad_t sad=LumaSAD(workarea, GetRefBlock(workarea, vx, vy));
+    cost += sad + ((penaltyNew*(safe_sad_t)sad) >> 8);
+    if(cost>=workarea.nMinCost) return;
+
+    sad_t saduv = (chroma) ? SADCHROMA(workarea.pSrc[1], nSrcPitch[1], GetRefBlockU(workarea, vx, vy), nRefPitch[1])
+      + SADCHROMA(workarea.pSrc[2], nSrcPitch[2], GetRefBlockV(workarea, vx, vy), nRefPitch[2]) : 0;
+    cost += saduv+((penaltyNew*(safe_sad_t)saduv) >> 8);
+    if(cost>=workarea.nMinCost) return;
+
+    workarea.nMinCost = cost;
+    workarea.bestMV.sad = sad + saduv;
+    *dir = val;
+#endif
   }
 }
 
 /* clip a vector to the horizontal boundaries */
-int	PlaneOfBlocks::ClipMVx(WorkingArea &workarea, int vx)
+__forceinline int	PlaneOfBlocks::ClipMVx(WorkingArea &workarea, int vx)
 {
   //	return imin(workarea.nDxMax - 1, imax(workarea.nDxMin, vx));
   if (vx < workarea.nDxMin) return workarea.nDxMin;
@@ -1762,7 +1853,7 @@ int	PlaneOfBlocks::ClipMVx(WorkingArea &workarea, int vx)
 }
 
 /* clip a vector to the vertical boundaries */
-int	PlaneOfBlocks::ClipMVy(WorkingArea &workarea, int vy)
+__forceinline int	PlaneOfBlocks::ClipMVy(WorkingArea &workarea, int vy)
 {
   //	return imin(workarea.nDyMax - 1, imax(workarea.nDyMin, vy));
   if (vy < workarea.nDyMin) return workarea.nDyMin;
@@ -1771,7 +1862,7 @@ int	PlaneOfBlocks::ClipMVy(WorkingArea &workarea, int vy)
 }
 
 /* clip a vector to the search boundaries */
-VECTOR	PlaneOfBlocks::ClipMV(WorkingArea &workarea, VECTOR v)
+__forceinline VECTOR	PlaneOfBlocks::ClipMV(WorkingArea &workarea, VECTOR v)
 {
   VECTOR v2;
   v2.x = ClipMVx(workarea, v.x);
@@ -1782,7 +1873,7 @@ VECTOR	PlaneOfBlocks::ClipMV(WorkingArea &workarea, VECTOR v)
 
 
 /* find the median between a, b and c */
-int	PlaneOfBlocks::Median(int a, int b, int c)
+__forceinline int	PlaneOfBlocks::Median(int a, int b, int c)
 {
   //	return a + b + c - imax(a, imax(b, c)) - imin(c, imin(a, b));
   if (a < b)
@@ -1799,19 +1890,21 @@ int	PlaneOfBlocks::Median(int a, int b, int c)
 }
 
 /* computes square distance between two vectors */
-unsigned int	PlaneOfBlocks::SquareDifferenceNorm(const VECTOR& v1, const VECTOR& v2)
+#if 0
+// not used
+__forceinline unsigned int	PlaneOfBlocks::SquareDifferenceNorm(const VECTOR& v1, const VECTOR& v2)
 {
   return (v1.x - v2.x) * (v1.x - v2.x) + (v1.y - v2.y) * (v1.y - v2.y);
 }
-
+#endif
 /* computes square distance between two vectors */
-unsigned int	PlaneOfBlocks::SquareDifferenceNorm(const VECTOR& v1, const int v2x, const int v2y)
+__forceinline unsigned int	PlaneOfBlocks::SquareDifferenceNorm(const VECTOR& v1, const int v2x, const int v2y)
 {
   return (v1.x - v2x) * (v1.x - v2x) + (v1.y - v2y) * (v1.y - v2y);
 }
 
 /* check if an index is inside the block's min and max indexes */
-bool	PlaneOfBlocks::IsInFrame(int i)
+__forceinline bool	PlaneOfBlocks::IsInFrame(int i)
 {
   return ((i >= 0) && (i < nBlkCount));
 }
@@ -2281,24 +2374,26 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
         //				CheckMV(vectorOld3.x, vectorOld3.y);
         //				CheckMV(vectorOld4.x, vectorOld4.y);
                 // then, we refine, according to the search type
+
+        // todo PF: consider switch and not bitfield searchType
         if (searchType & ONETIME)
         {
           for (int i = nSearchParam; i > 0; i /= 2)
           {
-            OneTimeSearch(workarea, i);
+            OneTimeSearch<pixel_t>(workarea, i);
           }
         }
 
         if (searchType & NSTEP)
         {
-          NStepSearch(workarea, nSearchParam);
+          NStepSearch<pixel_t>(workarea, nSearchParam);
         }
 
         if (searchType & LOGARITHMIC)
         {
           for (int i = nSearchParam; i > 0; i /= 2)
           {
-            DiamondSearch(workarea, i);
+            DiamondSearch<pixel_t>(workarea, i);
           }
         }
 
@@ -2309,18 +2404,18 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
           int mvy = workarea.bestMV.y;
           for (int i = 1; i <= nSearchParam; i++)// region is same as exhaustive, but ordered by radius (from near to far)
           {
-            ExpandingSearch(workarea, i, 1, mvx, mvy);
+            ExpandingSearch<pixel_t>(workarea, i, 1, mvx, mvy);
           }
         }
 
         if (searchType & HEX2SEARCH)
         {
-          Hex2Search(workarea, nSearchParam);
+          Hex2Search<pixel_t>(workarea, nSearchParam);
         }
 
         if (searchType & UMHSEARCH)
         {
-          UMHSearch(workarea, nSearchParam, workarea.bestMV.x, workarea.bestMV.y);
+          UMHSearch<pixel_t>(workarea, nSearchParam, workarea.bestMV.x, workarea.bestMV.y);
         }
 
         if (searchType & HSEARCH)
@@ -2329,8 +2424,8 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
           int mvy = workarea.bestMV.y;
           for (int i = 1; i <= nSearchParam; i++)// region is same as exhaustive, but ordered by radius (from near to far)
           {
-            CheckMV(workarea, mvx - i, mvy);
-            CheckMV(workarea, mvx + i, mvy);
+            CheckMV<pixel_t>(workarea, mvx - i, mvy);
+            CheckMV<pixel_t>(workarea, mvx + i, mvy);
           }
         }
 
@@ -2340,8 +2435,8 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
           int mvy = workarea.bestMV.y;
           for (int i = 1; i <= nSearchParam; i++)// region is same as exhaustive, but ordered by radius (from near to far)
           {
-            CheckMV(workarea, mvx, mvy - i);
-            CheckMV(workarea, mvx, mvy + i);
+            CheckMV<pixel_t>(workarea, mvx, mvy - i);
+            CheckMV<pixel_t>(workarea, mvx, mvy + i);
           }
         }
       }	// if bestMV.sad > thSAD
@@ -2488,10 +2583,14 @@ __forceinline bool	PlaneOfBlocks::WorkingArea::IsVectorOK(int vx, int vy) const
 }
 
 /* computes the cost of a vector (vx, vy) */
-__forceinline int	PlaneOfBlocks::WorkingArea::MotionDistorsion(int vx, int vy) const
+template<typename pixel_t>
+sad_t PlaneOfBlocks::WorkingArea::MotionDistorsion(int vx, int vy) const
 {
   int dist = SquareDifferenceNorm(predictor, vx, vy);
-  return (nLambda * dist) >> (16 - bits_per_pixel) /*8*/; // PF scaling because it appears as a sad addition 
+  if(sizeof(pixel_t) == 1)
+    return (nLambda * dist) >> 8; // 8 bit: faster
+  else
+    return (nLambda * dist) >> (16 - bits_per_pixel) /*8*/; // PF scaling because it appears as a sad addition 
 }
 
 /* computes the length cost of a vector (vx, vy) */
