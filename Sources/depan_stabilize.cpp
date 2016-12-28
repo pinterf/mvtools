@@ -582,7 +582,7 @@ void DePanStabilize::Inertial(int nbase, int ndest, transform * ptrdif)
       (1 + nonlin*fabsf(sm1 - cu1));
 #ifdef _DEBUG
     _RPT2(0, "  >>>> trsmoothed[n].dyc %f, %f\n", firstpass, secondpass);
-    sprintf(debugbuf, );
+    sprintf(debugbuf, "  >>>> trsmoothed[n].dyc %f, %f\n", firstpass, secondpass);
     LogToFile(debugbuf);
 #endif
     trsmoothed[n].dyc = secondpass;
@@ -1055,9 +1055,6 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
   //if (debuglogfile != NULL) { fprintf(debuglogfile, "DePanStabilize::GetFrame get motion info about frames in interval from begin source to dest in reverse order. nbase=%d->ndest=%d \n",nbase,ndest); }
   // get motion info about frames in interval from begin source to dest in reverse order
 
-  float max_valid_x_motion = min(dxmax * 3, xcenter / 40); // PF
-  float max_valid_y_motion = min(dymax * 3, ycenter / 40); // PF
-
   for (n = nbase; n <= ndest; n++) {
 
     if (motionx[n] == MOTIONUNKNOWN) { // motion data is unknown for needed frame
@@ -1085,6 +1082,10 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
       LogToFile(debugbuf);
 #endif
 
+#ifdef DETECT_TOO_BIG_SHIFTS
+      float max_valid_x_motion = max(dxmax * 3, xcenter / 2);
+      float max_valid_y_motion = max(dymax * 3, ycenter / 2);
+
       float mx = motionx[n];
       float my = motiony[n];
       /* PF experiment
@@ -1093,10 +1094,13 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
       if (fabs(my) > max_valid_y_motion)
         motiony[n] = my < 0 ? -max_valid_y_motion : max_valid_y_motion; // 16.04.22
       */
+      // PF 161228 caused problems
       if (fabs(mx) > max_valid_x_motion)
         motionx[n] = MOTIONBAD;
       if (fabs(my) > max_valid_y_motion)
         motionx[n] = MOTIONBAD;
+      */
+#endif
     }
 
     //		if (motionx[n] == MOTIONBAD ) break; // if strictly =0,  than no good
