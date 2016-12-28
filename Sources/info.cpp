@@ -1601,7 +1601,7 @@ void DrawDigit(PVideoFrame &dst, int x, int y, int num, int bits_per_pixel, int 
     {
       for (int ty = 0; ty < 20; ty++)
       {
-        int pos = ((x + tx) >> xRatioShift) + (((y + ty) * pitchUV) >> yRatioShift);
+        int pos = ((x + tx) >> xRatioShift) + ((y + ty) >> yRatioShift) * pitchUV;
         pixel_t* dpU = &dstpU[pos];
         pixel_t* dpV = &dstpV[pos];
         if (font[num][ty] & (1 << (15 - tx)))
