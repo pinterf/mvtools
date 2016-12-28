@@ -72,6 +72,7 @@
 #include "depanio.h"
 #include "depan.h"
 #include "yuy2planes.h"
+#include <chrono>
 #if 0
 // moved, common with mvtools yuy2planes
 //------------------------------------------------------------------
@@ -586,9 +587,6 @@ PVideoFrame __stdcall DePan::GetFrame(int ndest, IScriptEnvironment* env) {
     //VideoInfo vi_src;
 
     src = child->GetFrame(frame_to_copy, env);
-    // we are working with PVideoFrame src and VideoInfo vi from now on
-
-    _RPT4(0, "DePanStabilize. YUV compensate things. subpixel=%d frame=%d dx=%f dy=%f\n", subpixel, nbase, dxdif, dydif);
 
     // we are working with 
     //   PVideoFrame src  
@@ -648,7 +646,7 @@ PVideoFrame __stdcall DePan::GetFrame(int ndest, IScriptEnvironment* env) {
         tr_current = &trUV;
       }
 #ifdef _DEBUG
-      t_start = std::chrono::high_resolution_clock::now();
+      auto t_start = std::chrono::high_resolution_clock::now();
 #endif
     // move src frame plane by vector to partially motion compensated position
     // fillprev/next: always "nearest"
@@ -672,7 +670,7 @@ PVideoFrame __stdcall DePan::GetFrame(int ndest, IScriptEnvironment* env) {
           compensate_plane_bicubic2<uint16_t>(dstp_current, dst_pitch_current, srcp, src_pitch, src_width, src_height, *tr_current, mirror, border, blur_current, bits_per_pixel);
       }
 #ifdef _DEBUG
-      t_end = std::chrono::high_resolution_clock::now();
+      auto t_end = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double> elapsed_seconds = t_end - t_start;
       _RPT2(0, "Compensate plane %d %f\r\n", p, elapsed_seconds);
 #endif
