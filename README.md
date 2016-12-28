@@ -14,6 +14,9 @@ Modification base:
 http://avisynth.nl/index.php/AviSynth%2B#AviSynth.2B_x64_plugins
 
 Change log
+- 2.7.10.22 (20161228)
+  Fix: for YV12 the debug info text chroma part was positioned at wrong place
+
 - 2.7.9.22 (20161220)
   Apply 2.5.11.9-svp analysis speedup, mainly when chroma is involved
 

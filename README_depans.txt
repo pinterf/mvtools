@@ -17,6 +17,13 @@ Modification base:
 http://avisynth.org.ru/depan/depan.html
 
 Change log
+- Fix: DepanStabilize: removed too sctrict checking for large motion vectors received from depan
+       that resulted in like scene change
+- Fix: for YV12 the debug info text chroma part was positioned at wrong place
+  Depan: 2.13.1.2 (20161228)
+  DepanEstimate: 2.10.0.1 (20161228)
+
+First release:
 - Depan: 2.13.1.1 (20161218) YUY2 input fix, as in MvTools 2.7.8.22
   Previous build: Depan: 2.13.1 (20161119)
 - DepanEstimate: 2.10 (20161119)
@@ -35,7 +42,7 @@ External dependencies for DepanEstimate:
 - libfftw3f-3.dll (or renamed to FFT3W.DLL)
 from http://www.fftw.org/ or look at ICL builds at http://forum.doom9.org/showthread.php?t=173229
   
-- Require Microsoft Visual C++ Redistributable 2015 Update 3
+- Requires Microsoft Visual C++ Redistributable 2015 Update 3
   
 Source code:
 https://github.com/pinterf/mvtools
