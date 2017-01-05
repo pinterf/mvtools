@@ -34,750 +34,680 @@
 //#include	<mmintrin.h>
 
 // PF 160926: MDegrain3 -> MDegrainX: common 1..5 level MDegrain functions
-
-#if 0
-MVDegrainX::Denoise3Function* MVDegrainX::get_denoise3_function(int BlockX, int BlockY, int _pixelsize, arch_t arch)
-{
-  // 8 bit only (pixelsize==1)
-  //---------- DENOISE/DEGRAIN
-  // BlkSizeX, BlkSizeY, pixelsize, arch_t
-  std::map<std::tuple<int, int, int, arch_t>, Denoise3Function*> func_degrain;
-  using std::make_tuple;
-
-  func_degrain[make_tuple(32, 32, 1, NO_SIMD)] = Degrain3_C<32, 32>;
-  func_degrain[make_tuple(32, 16, 1, NO_SIMD)] = Degrain3_C<32, 16>;
-  func_degrain[make_tuple(32, 8, 1, NO_SIMD)] = Degrain3_C<32, 8>;
-  func_degrain[make_tuple(16, 32, 1, NO_SIMD)] = Degrain3_C<16, 32>;
-  func_degrain[make_tuple(16, 16, 1, NO_SIMD)] = Degrain3_C<16, 16>;
-  func_degrain[make_tuple(16, 8, 1, NO_SIMD)] = Degrain3_C<16, 8>;
-  func_degrain[make_tuple(16, 4, 1, NO_SIMD)] = Degrain3_C<16, 4>;
-  func_degrain[make_tuple(16, 2, 1, NO_SIMD)] = Degrain3_C<16, 2>;
-  func_degrain[make_tuple(8, 16, 1, NO_SIMD)] = Degrain3_C<8, 16>;
-  func_degrain[make_tuple(8, 8, 1, NO_SIMD)] = Degrain3_C<8, 8>;
-  func_degrain[make_tuple(8, 4, 1, NO_SIMD)] = Degrain3_C<8, 4>;
-  func_degrain[make_tuple(8, 2, 1, NO_SIMD)] = Degrain3_C<8, 2>;
-  func_degrain[make_tuple(8, 1, 1, NO_SIMD)] = Degrain3_C<8, 1>;
-  func_degrain[make_tuple(4, 8, 1, NO_SIMD)] = Degrain3_C<4, 8>;
-  func_degrain[make_tuple(4, 4, 1, NO_SIMD)] = Degrain3_C<4, 4>;
-  func_degrain[make_tuple(4, 2, 1, NO_SIMD)] = Degrain3_C<4, 2>;
-  func_degrain[make_tuple(2, 4, 1, NO_SIMD)] = Degrain3_C<2, 4>;
-  func_degrain[make_tuple(2, 2, 1, NO_SIMD)] = Degrain3_C<2, 2>;
-
-#if 0
-#ifndef _M_X64
-  func_degrain[make_tuple(32, 32, 1, USE_MMX)] = Degrain3_mmx<32, 32>;
-  func_degrain[make_tuple(32, 16, 1, USE_MMX)] = Degrain3_mmx<32, 16>;
-  func_degrain[make_tuple(32, 8, 1, USE_MMX)] = Degrain3_mmx<32, 8>;
-  func_degrain[make_tuple(16, 32, 1, USE_MMX)] = Degrain3_mmx<16, 32>;
-  func_degrain[make_tuple(16, 16, 1, USE_MMX)] = Degrain3_mmx<16, 16>;
-  func_degrain[make_tuple(16, 8, 1, USE_MMX)] = Degrain3_mmx<16, 8>;
-  func_degrain[make_tuple(16, 4, 1, USE_MMX)] = Degrain3_mmx<16, 4>;
-  func_degrain[make_tuple(16, 2, 1, USE_MMX)] = Degrain3_mmx<16, 2>;
-  func_degrain[make_tuple(8, 16, 1, USE_MMX)] = Degrain3_mmx<8, 16>;
-  func_degrain[make_tuple(8, 8, 1, USE_MMX)] = Degrain3_mmx<8, 8>;
-  func_degrain[make_tuple(8, 4, 1, USE_MMX)] = Degrain3_mmx<8, 4>;
-  func_degrain[make_tuple(8, 2, 1, USE_MMX)] = Degrain3_mmx<8, 2>;
-  func_degrain[make_tuple(8, 1, 1, USE_MMX)] = Degrain3_mmx<8, 1>;
-  func_degrain[make_tuple(4, 8, 1, USE_MMX)] = Degrain3_mmx<4, 8>;
-  func_degrain[make_tuple(4, 4, 1, USE_MMX)] = Degrain3_mmx<4, 4>;
-  func_degrain[make_tuple(4, 2, 1, USE_MMX)] = Degrain3_mmx<4, 2>;
-  func_degrain[make_tuple(2, 4, 1, USE_MMX)] = Degrain3_mmx<2, 4>;
-  func_degrain[make_tuple(2, 2, 1, USE_MMX)] = Degrain3_mmx<2, 2>;
-#endif
-#endif
-  func_degrain[make_tuple(32, 32, 1, USE_SSE2)] = Degrain3_sse2<32, 32>;
-  func_degrain[make_tuple(32, 16, 1, USE_SSE2)] = Degrain3_sse2<32, 16>;
-  func_degrain[make_tuple(32, 8, 1, USE_SSE2)] = Degrain3_sse2<32, 8>;
-  func_degrain[make_tuple(16, 32, 1, USE_SSE2)] = Degrain3_sse2<16, 32>;
-  func_degrain[make_tuple(16, 16, 1, USE_SSE2)] = Degrain3_sse2<16, 16>;
-  func_degrain[make_tuple(16, 8, 1, USE_SSE2)] = Degrain3_sse2<16, 8>;
-  func_degrain[make_tuple(16, 4, 1, USE_SSE2)] = Degrain3_sse2<16, 4>;
-  func_degrain[make_tuple(16, 2, 1, USE_SSE2)] = Degrain3_sse2<16, 2>;
-  func_degrain[make_tuple(8, 16, 1, USE_SSE2)] = Degrain3_sse2<8, 16>;
-  func_degrain[make_tuple(8, 8, 1, USE_SSE2)] = Degrain3_sse2<8, 8>;
-  func_degrain[make_tuple(8, 4, 1, USE_SSE2)] = Degrain3_sse2<8, 4>;
-  func_degrain[make_tuple(8, 2, 1, USE_SSE2)] = Degrain3_sse2<8, 2>;
-  func_degrain[make_tuple(8, 1, 1, USE_SSE2)] = Degrain3_sse2<8, 1>;
-  func_degrain[make_tuple(4, 8, 1, USE_SSE2)] = Degrain3_sse2<4, 8>;
-  func_degrain[make_tuple(4, 4, 1, USE_SSE2)] = Degrain3_sse2<4, 4>;
-  func_degrain[make_tuple(4, 2, 1, USE_SSE2)] = Degrain3_sse2<4, 2>;
-  func_degrain[make_tuple(2, 4, 1, USE_SSE2)] = Degrain3_sse2<2, 4>;
-  func_degrain[make_tuple(2, 2, 1, USE_SSE2)] = Degrain3_sse2<2, 2>;
-
-  return func_degrain[make_tuple(BlockX, BlockY, _pixelsize, arch)];
-}
-#endif
-
+// 170105: MDegrain6
 
 //
 #ifdef LEVEL_IS_TEMPLATE
 template<int level>
-Denoise1to5Function* MVDegrainX<level>::get_denoise123_function(int BlockX, int BlockY, int _pixelsize, bool _lsb_flag, int _level, arch_t arch)
+Denoise1to6Function* MVDegrainX<level>::get_denoise123_function(int BlockX, int BlockY, int _pixelsize, bool _lsb_flag, int _level, arch_t arch)
 #else
-Denoise1to5Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY, int _pixelsize, bool _lsb_flag, int _level, arch_t arch)
+Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY, int _pixelsize, bool _lsb_flag, int _level, arch_t arch)
 #endif
 {
   // 8 bit only (pixelsize==1)
   //---------- DENOISE/DEGRAIN
   // BlkSizeX, BlkSizeY, pixelsize, lsb_flag, level_of_MDegrain, arch_t
-  std::map<std::tuple<int, int, int, bool, int, arch_t>, Denoise1to5Function*> func_degrain;
+  std::map<std::tuple<int, int, int, bool, int, arch_t>, Denoise1to6Function*> func_degrain;
   using std::make_tuple;
 
   // C, level1, lsb=false
-  func_degrain[make_tuple(32, 32, 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 32, false, 1>;
-  func_degrain[make_tuple(32, 16, 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 16, false, 1>;
-  func_degrain[make_tuple(32, 8, 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 8, false, 1>;
-  func_degrain[make_tuple(16, 32, 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 32, false, 1>;
-  func_degrain[make_tuple(16, 16, 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 16, false, 1>;
-  func_degrain[make_tuple(16, 8, 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 8, false, 1>;
-  func_degrain[make_tuple(16, 4, 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 4, false, 1>;
-  func_degrain[make_tuple(16, 2, 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 2, false, 1>;
-  func_degrain[make_tuple(8, 16, 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 16, false, 1>;
-  func_degrain[make_tuple(8, 8, 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 8, false, 1>;
-  func_degrain[make_tuple(8, 4, 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 4, false, 1>;
-  func_degrain[make_tuple(8, 2, 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 2, false, 1>;
-  func_degrain[make_tuple(8, 1, 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 1, false, 1>;
-  func_degrain[make_tuple(4, 8, 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 4, 8, false, 1>;
-  func_degrain[make_tuple(4, 4, 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 4, 4, false, 1>;
-  func_degrain[make_tuple(4, 2, 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 4, 2, false, 1>;
-  func_degrain[make_tuple(2, 4, 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 2, 4, false, 1>;
-  func_degrain[make_tuple(2, 2, 1, false, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 2, 2, false, 1>;
+  func_degrain[make_tuple(32, 32, 1, false, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 32, false, 1>;
+  func_degrain[make_tuple(32, 16, 1, false, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 16, false, 1>;
+  func_degrain[make_tuple(32, 8, 1, false, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 8, false, 1>;
+  func_degrain[make_tuple(16, 32, 1, false, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 32, false, 1>;
+  func_degrain[make_tuple(16, 16, 1, false, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 16, false, 1>;
+  func_degrain[make_tuple(16, 8, 1, false, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 8, false, 1>;
+  func_degrain[make_tuple(16, 4, 1, false, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 4, false, 1>;
+  func_degrain[make_tuple(16, 2, 1, false, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 2, false, 1>;
+  func_degrain[make_tuple(8, 16, 1, false, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 16, false, 1>;
+  func_degrain[make_tuple(8, 8, 1, false, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 8, false, 1>;
+  func_degrain[make_tuple(8, 4, 1, false, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 4, false, 1>;
+  func_degrain[make_tuple(8, 2, 1, false, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 2, false, 1>;
+  func_degrain[make_tuple(8, 1, 1, false, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 1, false, 1>;
+  func_degrain[make_tuple(4, 8, 1, false, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 8, false, 1>;
+  func_degrain[make_tuple(4, 4, 1, false, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 4, false, 1>;
+  func_degrain[make_tuple(4, 2, 1, false, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 2, false, 1>;
+  func_degrain[make_tuple(2, 4, 1, false, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 4, false, 1>;
+  func_degrain[make_tuple(2, 2, 1, false, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 2, false, 1>;
   // C, level1, lsb=true
-  func_degrain[make_tuple(32, 32, 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 32, true, 1>;
-  func_degrain[make_tuple(32, 16, 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 16, true, 1>;
-  func_degrain[make_tuple(32, 8, 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 8, true, 1>;
-  func_degrain[make_tuple(16, 32, 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 32, true, 1>;
-  func_degrain[make_tuple(16, 16, 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 16, true, 1>;
-  func_degrain[make_tuple(16, 8, 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 8, true, 1>;
-  func_degrain[make_tuple(16, 4, 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 4, true, 1>;
-  func_degrain[make_tuple(16, 2, 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 2, true, 1>;
-  func_degrain[make_tuple(8, 16, 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 16, true, 1>;
-  func_degrain[make_tuple(8, 8, 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 8, true, 1>;
-  func_degrain[make_tuple(8, 4, 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 4, true, 1>;
-  func_degrain[make_tuple(8, 2, 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 2, true, 1>;
-  func_degrain[make_tuple(8, 1, 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 1, true, 1>;
-  func_degrain[make_tuple(4, 8, 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 4, 8, true, 1>;
-  func_degrain[make_tuple(4, 4, 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 4, 4, true, 1>;
-  func_degrain[make_tuple(4, 2, 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 4, 2, true, 1>;
-  func_degrain[make_tuple(2, 4, 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 2, 4, true, 1>;
-  func_degrain[make_tuple(2, 2, 1, true, 1, NO_SIMD)] = Degrain1to5_C<uint8_t, 2, 2, true, 1>;
+  func_degrain[make_tuple(32, 32, 1, true, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 32, true, 1>;
+  func_degrain[make_tuple(32, 16, 1, true, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 16, true, 1>;
+  func_degrain[make_tuple(32, 8, 1, true, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 8, true, 1>;
+  func_degrain[make_tuple(16, 32, 1, true, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 32, true, 1>;
+  func_degrain[make_tuple(16, 16, 1, true, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 16, true, 1>;
+  func_degrain[make_tuple(16, 8, 1, true, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 8, true, 1>;
+  func_degrain[make_tuple(16, 4, 1, true, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 4, true, 1>;
+  func_degrain[make_tuple(16, 2, 1, true, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 2, true, 1>;
+  func_degrain[make_tuple(8, 16, 1, true, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 16, true, 1>;
+  func_degrain[make_tuple(8, 8, 1, true, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 8, true, 1>;
+  func_degrain[make_tuple(8, 4, 1, true, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 4, true, 1>;
+  func_degrain[make_tuple(8, 2, 1, true, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 2, true, 1>;
+  func_degrain[make_tuple(8, 1, 1, true, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 1, true, 1>;
+  func_degrain[make_tuple(4, 8, 1, true, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 8, true, 1>;
+  func_degrain[make_tuple(4, 4, 1, true, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 4, true, 1>;
+  func_degrain[make_tuple(4, 2, 1, true, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 2, true, 1>;
+  func_degrain[make_tuple(2, 4, 1, true, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 4, true, 1>;
+  func_degrain[make_tuple(2, 2, 1, true, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 2, true, 1>;
 
   // C, level2, lsb=false
-  func_degrain[make_tuple(32, 32, 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 32, false, 2>;
-  func_degrain[make_tuple(32, 16, 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 16, false, 2>;
-  func_degrain[make_tuple(32, 8, 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 8, false, 2>;
-  func_degrain[make_tuple(16, 32, 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 32, false, 2>;
-  func_degrain[make_tuple(16, 16, 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 16, false, 2>;
-  func_degrain[make_tuple(16, 8, 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 8, false, 2>;
-  func_degrain[make_tuple(16, 4, 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 4, false, 2>;
-  func_degrain[make_tuple(16, 2, 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 2, false, 2>;
-  func_degrain[make_tuple(8, 16, 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 16, false, 2>;
-  func_degrain[make_tuple(8, 8, 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 8, false, 2>;
-  func_degrain[make_tuple(8, 4, 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 4, false, 2>;
-  func_degrain[make_tuple(8, 2, 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 2, false, 2>;
-  func_degrain[make_tuple(8, 1, 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 1, false, 2>;
-  func_degrain[make_tuple(4, 8, 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 4, 8, false, 2>;
-  func_degrain[make_tuple(4, 4, 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 4, 4, false, 2>;
-  func_degrain[make_tuple(4, 2, 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 4, 2, false, 2>;
-  func_degrain[make_tuple(2, 4, 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 2, 4, false, 2>;
-  func_degrain[make_tuple(2, 2, 1, false, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 2, 2, false, 2>;
+  func_degrain[make_tuple(32, 32, 1, false, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 32, false, 2>;
+  func_degrain[make_tuple(32, 16, 1, false, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 16, false, 2>;
+  func_degrain[make_tuple(32, 8, 1, false, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 8, false, 2>;
+  func_degrain[make_tuple(16, 32, 1, false, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 32, false, 2>;
+  func_degrain[make_tuple(16, 16, 1, false, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 16, false, 2>;
+  func_degrain[make_tuple(16, 8, 1, false, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 8, false, 2>;
+  func_degrain[make_tuple(16, 4, 1, false, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 4, false, 2>;
+  func_degrain[make_tuple(16, 2, 1, false, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 2, false, 2>;
+  func_degrain[make_tuple(8, 16, 1, false, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 16, false, 2>;
+  func_degrain[make_tuple(8, 8, 1, false, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 8, false, 2>;
+  func_degrain[make_tuple(8, 4, 1, false, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 4, false, 2>;
+  func_degrain[make_tuple(8, 2, 1, false, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 2, false, 2>;
+  func_degrain[make_tuple(8, 1, 1, false, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 1, false, 2>;
+  func_degrain[make_tuple(4, 8, 1, false, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 8, false, 2>;
+  func_degrain[make_tuple(4, 4, 1, false, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 4, false, 2>;
+  func_degrain[make_tuple(4, 2, 1, false, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 2, false, 2>;
+  func_degrain[make_tuple(2, 4, 1, false, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 4, false, 2>;
+  func_degrain[make_tuple(2, 2, 1, false, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 2, false, 2>;
   // C, level2, lsb=true
-  func_degrain[make_tuple(32, 32, 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 32, true, 2>;
-  func_degrain[make_tuple(32, 16, 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 16, true, 2>;
-  func_degrain[make_tuple(32, 8, 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 8, true, 2>;
-  func_degrain[make_tuple(16, 32, 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 32, true, 2>;
-  func_degrain[make_tuple(16, 16, 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 16, true, 2>;
-  func_degrain[make_tuple(16, 8, 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 8, true, 2>;
-  func_degrain[make_tuple(16, 4, 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 4, true, 2>;
-  func_degrain[make_tuple(16, 2, 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 2, true, 2>;
-  func_degrain[make_tuple(8, 16, 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 16, true, 2>;
-  func_degrain[make_tuple(8, 8, 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 8, true, 2>;
-  func_degrain[make_tuple(8, 4, 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 4, true, 2>;
-  func_degrain[make_tuple(8, 2, 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 2, true, 2>;
-  func_degrain[make_tuple(8, 1, 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 1, true, 2>;
-  func_degrain[make_tuple(4, 8, 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 4, 8, true, 2>;
-  func_degrain[make_tuple(4, 4, 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 4, 4, true, 2>;
-  func_degrain[make_tuple(4, 2, 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 4, 2, true, 2>;
-  func_degrain[make_tuple(2, 4, 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 2, 4, true, 2>;
-  func_degrain[make_tuple(2, 2, 1, true, 2, NO_SIMD)] = Degrain1to5_C<uint8_t, 2, 2, true, 2>;
+  func_degrain[make_tuple(32, 32, 1, true, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 32, true, 2>;
+  func_degrain[make_tuple(32, 16, 1, true, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 16, true, 2>;
+  func_degrain[make_tuple(32, 8, 1, true, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 8, true, 2>;
+  func_degrain[make_tuple(16, 32, 1, true, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 32, true, 2>;
+  func_degrain[make_tuple(16, 16, 1, true, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 16, true, 2>;
+  func_degrain[make_tuple(16, 8, 1, true, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 8, true, 2>;
+  func_degrain[make_tuple(16, 4, 1, true, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 4, true, 2>;
+  func_degrain[make_tuple(16, 2, 1, true, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 2, true, 2>;
+  func_degrain[make_tuple(8, 16, 1, true, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 16, true, 2>;
+  func_degrain[make_tuple(8, 8, 1, true, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 8, true, 2>;
+  func_degrain[make_tuple(8, 4, 1, true, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 4, true, 2>;
+  func_degrain[make_tuple(8, 2, 1, true, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 2, true, 2>;
+  func_degrain[make_tuple(8, 1, 1, true, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 1, true, 2>;
+  func_degrain[make_tuple(4, 8, 1, true, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 8, true, 2>;
+  func_degrain[make_tuple(4, 4, 1, true, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 4, true, 2>;
+  func_degrain[make_tuple(4, 2, 1, true, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 2, true, 2>;
+  func_degrain[make_tuple(2, 4, 1, true, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 4, true, 2>;
+  func_degrain[make_tuple(2, 2, 1, true, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 2, true, 2>;
 
   // C, level3, lsb=false
-  func_degrain[make_tuple(32, 32, 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 32, false, 3>;
-  func_degrain[make_tuple(32, 16, 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 16, false, 3>;
-  func_degrain[make_tuple(32, 8, 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 8, false, 3>;
-  func_degrain[make_tuple(16, 32, 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 32, false, 3>;
-  func_degrain[make_tuple(16, 16, 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 16, false, 3>;
-  func_degrain[make_tuple(16, 8, 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 8, false, 3>;
-  func_degrain[make_tuple(16, 4, 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 4, false, 3>;
-  func_degrain[make_tuple(16, 2, 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 2, false, 3>;
-  func_degrain[make_tuple(8, 16, 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 16, false, 3>;
-  func_degrain[make_tuple(8, 8, 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 8, false, 3>;
-  func_degrain[make_tuple(8, 4, 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 4, false, 3>;
-  func_degrain[make_tuple(8, 2, 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 2, false, 3>;
-  func_degrain[make_tuple(8, 1, 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 1, false, 3>;
-  func_degrain[make_tuple(4, 8, 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 4, 8, false, 3>;
-  func_degrain[make_tuple(4, 4, 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 4, 4, false, 3>;
-  func_degrain[make_tuple(4, 2, 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 4, 2, false, 3>;
-  func_degrain[make_tuple(2, 4, 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 2, 4, false, 3>;
-  func_degrain[make_tuple(2, 2, 1, false, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 2, 2, false, 3>;
+  func_degrain[make_tuple(32, 32, 1, false, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 32, false, 3>;
+  func_degrain[make_tuple(32, 16, 1, false, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 16, false, 3>;
+  func_degrain[make_tuple(32, 8, 1, false, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 8, false, 3>;
+  func_degrain[make_tuple(16, 32, 1, false, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 32, false, 3>;
+  func_degrain[make_tuple(16, 16, 1, false, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 16, false, 3>;
+  func_degrain[make_tuple(16, 8, 1, false, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 8, false, 3>;
+  func_degrain[make_tuple(16, 4, 1, false, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 4, false, 3>;
+  func_degrain[make_tuple(16, 2, 1, false, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 2, false, 3>;
+  func_degrain[make_tuple(8, 16, 1, false, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 16, false, 3>;
+  func_degrain[make_tuple(8, 8, 1, false, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 8, false, 3>;
+  func_degrain[make_tuple(8, 4, 1, false, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 4, false, 3>;
+  func_degrain[make_tuple(8, 2, 1, false, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 2, false, 3>;
+  func_degrain[make_tuple(8, 1, 1, false, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 1, false, 3>;
+  func_degrain[make_tuple(4, 8, 1, false, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 8, false, 3>;
+  func_degrain[make_tuple(4, 4, 1, false, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 4, false, 3>;
+  func_degrain[make_tuple(4, 2, 1, false, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 2, false, 3>;
+  func_degrain[make_tuple(2, 4, 1, false, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 4, false, 3>;
+  func_degrain[make_tuple(2, 2, 1, false, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 2, false, 3>;
   // C, level3, lsb=true
-  func_degrain[make_tuple(32, 32, 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 32, true, 3>;
-  func_degrain[make_tuple(32, 16, 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 16, true, 3>;
-  func_degrain[make_tuple(32, 8, 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 8, true, 3>;
-  func_degrain[make_tuple(16, 32, 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 32, true, 3>;
-  func_degrain[make_tuple(16, 16, 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 16, true, 3>;
-  func_degrain[make_tuple(16, 8, 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 8, true, 3>;
-  func_degrain[make_tuple(16, 4, 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 4, true, 3>;
-  func_degrain[make_tuple(16, 2, 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 2, true, 3>;
-  func_degrain[make_tuple(8, 16, 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 16, true, 3>;
-  func_degrain[make_tuple(8, 8, 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 8, true, 3>;
-  func_degrain[make_tuple(8, 4, 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 4, true, 3>;
-  func_degrain[make_tuple(8, 2, 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 2, true, 3>;
-  func_degrain[make_tuple(8, 1, 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 1, true, 3>;
-  func_degrain[make_tuple(4, 8, 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 4, 8, true, 3>;
-  func_degrain[make_tuple(4, 4, 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 4, 4, true, 3>;
-  func_degrain[make_tuple(4, 2, 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 4, 2, true, 3>;
-  func_degrain[make_tuple(2, 4, 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 2, 4, true, 3>;
-  func_degrain[make_tuple(2, 2, 1, true, 3, NO_SIMD)] = Degrain1to5_C<uint8_t, 2, 2, true, 3>;
+  func_degrain[make_tuple(32, 32, 1, true, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 32, true, 3>;
+  func_degrain[make_tuple(32, 16, 1, true, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 16, true, 3>;
+  func_degrain[make_tuple(32, 8, 1, true, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 8, true, 3>;
+  func_degrain[make_tuple(16, 32, 1, true, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 32, true, 3>;
+  func_degrain[make_tuple(16, 16, 1, true, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 16, true, 3>;
+  func_degrain[make_tuple(16, 8, 1, true, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 8, true, 3>;
+  func_degrain[make_tuple(16, 4, 1, true, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 4, true, 3>;
+  func_degrain[make_tuple(16, 2, 1, true, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 2, true, 3>;
+  func_degrain[make_tuple(8, 16, 1, true, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 16, true, 3>;
+  func_degrain[make_tuple(8, 8, 1, true, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 8, true, 3>;
+  func_degrain[make_tuple(8, 4, 1, true, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 4, true, 3>;
+  func_degrain[make_tuple(8, 2, 1, true, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 2, true, 3>;
+  func_degrain[make_tuple(8, 1, 1, true, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 1, true, 3>;
+  func_degrain[make_tuple(4, 8, 1, true, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 8, true, 3>;
+  func_degrain[make_tuple(4, 4, 1, true, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 4, true, 3>;
+  func_degrain[make_tuple(4, 2, 1, true, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 2, true, 3>;
+  func_degrain[make_tuple(2, 4, 1, true, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 4, true, 3>;
+  func_degrain[make_tuple(2, 2, 1, true, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 2, true, 3>;
   // C, level4, lsb=false
-  func_degrain[make_tuple(32, 32, 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 32, false, 4>;
-  func_degrain[make_tuple(32, 16, 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 16, false, 4>;
-  func_degrain[make_tuple(32, 8, 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 8, false, 4>;
-  func_degrain[make_tuple(16, 32, 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 32, false, 4>;
-  func_degrain[make_tuple(16, 16, 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 16, false, 4>;
-  func_degrain[make_tuple(16, 8, 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 8, false, 4>;
-  func_degrain[make_tuple(16, 4, 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 4, false, 4>;
-  func_degrain[make_tuple(16, 2, 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 2, false, 4>;
-  func_degrain[make_tuple(8, 16, 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 16, false, 4>;
-  func_degrain[make_tuple(8, 8, 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 8, false, 4>;
-  func_degrain[make_tuple(8, 4, 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 4, false, 4>;
-  func_degrain[make_tuple(8, 2, 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 2, false, 4>;
-  func_degrain[make_tuple(8, 1, 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 1, false, 4>;
-  func_degrain[make_tuple(4, 8, 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 4, 8, false, 4>;
-  func_degrain[make_tuple(4, 4, 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 4, 4, false, 4>;
-  func_degrain[make_tuple(4, 2, 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 4, 2, false, 4>;
-  func_degrain[make_tuple(2, 4, 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 2, 4, false, 4>;
-  func_degrain[make_tuple(2, 2, 1, false, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 2, 2, false, 4>;
+  func_degrain[make_tuple(32, 32, 1, false, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 32, false, 4>;
+  func_degrain[make_tuple(32, 16, 1, false, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 16, false, 4>;
+  func_degrain[make_tuple(32, 8, 1, false, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 8, false, 4>;
+  func_degrain[make_tuple(16, 32, 1, false, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 32, false, 4>;
+  func_degrain[make_tuple(16, 16, 1, false, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 16, false, 4>;
+  func_degrain[make_tuple(16, 8, 1, false, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 8, false, 4>;
+  func_degrain[make_tuple(16, 4, 1, false, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 4, false, 4>;
+  func_degrain[make_tuple(16, 2, 1, false, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 2, false, 4>;
+  func_degrain[make_tuple(8, 16, 1, false, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 16, false, 4>;
+  func_degrain[make_tuple(8, 8, 1, false, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 8, false, 4>;
+  func_degrain[make_tuple(8, 4, 1, false, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 4, false, 4>;
+  func_degrain[make_tuple(8, 2, 1, false, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 2, false, 4>;
+  func_degrain[make_tuple(8, 1, 1, false, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 1, false, 4>;
+  func_degrain[make_tuple(4, 8, 1, false, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 8, false, 4>;
+  func_degrain[make_tuple(4, 4, 1, false, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 4, false, 4>;
+  func_degrain[make_tuple(4, 2, 1, false, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 2, false, 4>;
+  func_degrain[make_tuple(2, 4, 1, false, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 4, false, 4>;
+  func_degrain[make_tuple(2, 2, 1, false, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 2, false, 4>;
   // C, level4, lsb=true
-  func_degrain[make_tuple(32, 32, 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 32, true, 4>;
-  func_degrain[make_tuple(32, 16, 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 16, true, 4>;
-  func_degrain[make_tuple(32, 8, 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 8, true, 4>;
-  func_degrain[make_tuple(16, 32, 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 32, true, 4>;
-  func_degrain[make_tuple(16, 16, 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 16, true, 4>;
-  func_degrain[make_tuple(16, 8, 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 8, true, 4>;
-  func_degrain[make_tuple(16, 4, 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 4, true, 4>;
-  func_degrain[make_tuple(16, 2, 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 2, true, 4>;
-  func_degrain[make_tuple(8, 16, 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 16, true, 4>;
-  func_degrain[make_tuple(8, 8, 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 8, true, 4>;
-  func_degrain[make_tuple(8, 4, 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 4, true, 4>;
-  func_degrain[make_tuple(8, 2, 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 2, true, 4>;
-  func_degrain[make_tuple(8, 1, 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 1, true, 4>;
-  func_degrain[make_tuple(4, 8, 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 4, 8, true, 4>;
-  func_degrain[make_tuple(4, 4, 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 4, 4, true, 4>;
-  func_degrain[make_tuple(4, 2, 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 4, 2, true, 4>;
-  func_degrain[make_tuple(2, 4, 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 2, 4, true, 4>;
-  func_degrain[make_tuple(2, 2, 1, true, 4, NO_SIMD)] = Degrain1to5_C<uint8_t, 2, 2, true, 4>;
+  func_degrain[make_tuple(32, 32, 1, true, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 32, true, 4>;
+  func_degrain[make_tuple(32, 16, 1, true, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 16, true, 4>;
+  func_degrain[make_tuple(32, 8, 1, true, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 8, true, 4>;
+  func_degrain[make_tuple(16, 32, 1, true, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 32, true, 4>;
+  func_degrain[make_tuple(16, 16, 1, true, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 16, true, 4>;
+  func_degrain[make_tuple(16, 8, 1, true, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 8, true, 4>;
+  func_degrain[make_tuple(16, 4, 1, true, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 4, true, 4>;
+  func_degrain[make_tuple(16, 2, 1, true, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 2, true, 4>;
+  func_degrain[make_tuple(8, 16, 1, true, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 16, true, 4>;
+  func_degrain[make_tuple(8, 8, 1, true, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 8, true, 4>;
+  func_degrain[make_tuple(8, 4, 1, true, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 4, true, 4>;
+  func_degrain[make_tuple(8, 2, 1, true, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 2, true, 4>;
+  func_degrain[make_tuple(8, 1, 1, true, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 1, true, 4>;
+  func_degrain[make_tuple(4, 8, 1, true, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 8, true, 4>;
+  func_degrain[make_tuple(4, 4, 1, true, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 4, true, 4>;
+  func_degrain[make_tuple(4, 2, 1, true, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 2, true, 4>;
+  func_degrain[make_tuple(2, 4, 1, true, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 4, true, 4>;
+  func_degrain[make_tuple(2, 2, 1, true, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 2, true, 4>;
 
   // C, level5, lsb=false
-  func_degrain[make_tuple(32, 32, 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 32, false, 5>;
-  func_degrain[make_tuple(32, 16, 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 16, false, 5>;
-  func_degrain[make_tuple(32, 8, 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 8, false, 5>;
-  func_degrain[make_tuple(16, 32, 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 32, false, 5>;
-  func_degrain[make_tuple(16, 16, 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 16, false, 5>;
-  func_degrain[make_tuple(16, 8, 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 8, false, 5>;
-  func_degrain[make_tuple(16, 4, 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 4, false, 5>;
-  func_degrain[make_tuple(16, 2, 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 2, false, 5>;
-  func_degrain[make_tuple(8, 16, 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 16, false, 5>;
-  func_degrain[make_tuple(8, 8, 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 8, false, 5>;
-  func_degrain[make_tuple(8, 4, 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 4, false, 5>;
-  func_degrain[make_tuple(8, 2, 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 2, false, 5>;
-  func_degrain[make_tuple(8, 1, 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 1, false, 5>;
-  func_degrain[make_tuple(4, 8, 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 4, 8, false, 5>;
-  func_degrain[make_tuple(4, 4, 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 4, 4, false, 5>;
-  func_degrain[make_tuple(4, 2, 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 4, 2, false, 5>;
-  func_degrain[make_tuple(2, 4, 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 2, 4, false, 5>;
-  func_degrain[make_tuple(2, 2, 1, false, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 2, 2, false, 5>;
+  func_degrain[make_tuple(32, 32, 1, false, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 32, false, 5>;
+  func_degrain[make_tuple(32, 16, 1, false, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 16, false, 5>;
+  func_degrain[make_tuple(32, 8, 1, false, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 8, false, 5>;
+  func_degrain[make_tuple(16, 32, 1, false, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 32, false, 5>;
+  func_degrain[make_tuple(16, 16, 1, false, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 16, false, 5>;
+  func_degrain[make_tuple(16, 8, 1, false, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 8, false, 5>;
+  func_degrain[make_tuple(16, 4, 1, false, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 4, false, 5>;
+  func_degrain[make_tuple(16, 2, 1, false, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 2, false, 5>;
+  func_degrain[make_tuple(8, 16, 1, false, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 16, false, 5>;
+  func_degrain[make_tuple(8, 8, 1, false, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 8, false, 5>;
+  func_degrain[make_tuple(8, 4, 1, false, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 4, false, 5>;
+  func_degrain[make_tuple(8, 2, 1, false, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 2, false, 5>;
+  func_degrain[make_tuple(8, 1, 1, false, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 1, false, 5>;
+  func_degrain[make_tuple(4, 8, 1, false, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 8, false, 5>;
+  func_degrain[make_tuple(4, 4, 1, false, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 4, false, 5>;
+  func_degrain[make_tuple(4, 2, 1, false, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 2, false, 5>;
+  func_degrain[make_tuple(2, 4, 1, false, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 4, false, 5>;
+  func_degrain[make_tuple(2, 2, 1, false, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 2, false, 5>;
   // C, level5, lsb=true
-  func_degrain[make_tuple(32, 32, 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 32, true, 5>;
-  func_degrain[make_tuple(32, 16, 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 16, true, 5>;
-  func_degrain[make_tuple(32, 8, 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 32, 8, true, 5>;
-  func_degrain[make_tuple(16, 32, 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 32, true, 5>;
-  func_degrain[make_tuple(16, 16, 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 16, true, 5>;
-  func_degrain[make_tuple(16, 8, 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 8, true, 5>;
-  func_degrain[make_tuple(16, 4, 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 4, true, 5>;
-  func_degrain[make_tuple(16, 2, 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 16, 2, true, 5>;
-  func_degrain[make_tuple(8, 16, 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 16, true, 5>;
-  func_degrain[make_tuple(8, 8, 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 8, true, 5>;
-  func_degrain[make_tuple(8, 4, 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 4, true, 5>;
-  func_degrain[make_tuple(8, 2, 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 2, true, 5>;
-  func_degrain[make_tuple(8, 1, 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 8, 1, true, 5>;
-  func_degrain[make_tuple(4, 8, 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 4, 8, true, 5>;
-  func_degrain[make_tuple(4, 4, 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 4, 4, true, 5>;
-  func_degrain[make_tuple(4, 2, 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 4, 2, true, 5>;
-  func_degrain[make_tuple(2, 4, 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 2, 4, true, 5>;
-  func_degrain[make_tuple(2, 2, 1, true, 5, NO_SIMD)] = Degrain1to5_C<uint8_t, 2, 2, true, 5>;
+  func_degrain[make_tuple(32, 32, 1, true, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 32, true, 5>;
+  func_degrain[make_tuple(32, 16, 1, true, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 16, true, 5>;
+  func_degrain[make_tuple(32, 8, 1, true, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 8, true, 5>;
+  func_degrain[make_tuple(16, 32, 1, true, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 32, true, 5>;
+  func_degrain[make_tuple(16, 16, 1, true, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 16, true, 5>;
+  func_degrain[make_tuple(16, 8, 1, true, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 8, true, 5>;
+  func_degrain[make_tuple(16, 4, 1, true, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 4, true, 5>;
+  func_degrain[make_tuple(16, 2, 1, true, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 2, true, 5>;
+  func_degrain[make_tuple(8, 16, 1, true, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 16, true, 5>;
+  func_degrain[make_tuple(8, 8, 1, true, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 8, true, 5>;
+  func_degrain[make_tuple(8, 4, 1, true, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 4, true, 5>;
+  func_degrain[make_tuple(8, 2, 1, true, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 2, true, 5>;
+  func_degrain[make_tuple(8, 1, 1, true, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 1, true, 5>;
+  func_degrain[make_tuple(4, 8, 1, true, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 8, true, 5>;
+  func_degrain[make_tuple(4, 4, 1, true, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 4, true, 5>;
+  func_degrain[make_tuple(4, 2, 1, true, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 2, true, 5>;
+  func_degrain[make_tuple(2, 4, 1, true, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 4, true, 5>;
+  func_degrain[make_tuple(2, 2, 1, true, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 2, true, 5>;
+
+  // C, level6, lsb=false
+  func_degrain[make_tuple(32, 32, 1, false, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 32, false, 6>;
+  func_degrain[make_tuple(32, 16, 1, false, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 16, false, 6>;
+  func_degrain[make_tuple(32, 8, 1, false, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 8, false, 6>;
+  func_degrain[make_tuple(16, 32, 1, false, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 32, false, 6>;
+  func_degrain[make_tuple(16, 16, 1, false, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 16, false, 6>;
+  func_degrain[make_tuple(16, 8, 1, false, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 8, false, 6>;
+  func_degrain[make_tuple(16, 4, 1, false, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 4, false, 6>;
+  func_degrain[make_tuple(16, 2, 1, false, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 2, false, 6>;
+  func_degrain[make_tuple(8, 16, 1, false, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 16, false, 6>;
+  func_degrain[make_tuple(8, 8, 1, false, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 8, false, 6>;
+  func_degrain[make_tuple(8, 4, 1, false, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 4, false, 6>;
+  func_degrain[make_tuple(8, 2, 1, false, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 2, false, 6>;
+  func_degrain[make_tuple(8, 1, 1, false, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 1, false, 6>;
+  func_degrain[make_tuple(4, 8, 1, false, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 8, false, 6>;
+  func_degrain[make_tuple(4, 4, 1, false, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 4, false, 6>;
+  func_degrain[make_tuple(4, 2, 1, false, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 2, false, 6>;
+  func_degrain[make_tuple(2, 4, 1, false, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 4, false, 6>;
+  func_degrain[make_tuple(2, 2, 1, false, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 2, false, 6>;
+  // C, level6, lsb=true
+  func_degrain[make_tuple(32, 32, 1, true, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 32, true, 6>;
+  func_degrain[make_tuple(32, 16, 1, true, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 16, true, 6>;
+  func_degrain[make_tuple(32, 8, 1, true, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 8, true, 6>;
+  func_degrain[make_tuple(16, 32, 1, true, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 32, true, 6>;
+  func_degrain[make_tuple(16, 16, 1, true, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 16, true, 6>;
+  func_degrain[make_tuple(16, 8, 1, true, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 8, true, 6>;
+  func_degrain[make_tuple(16, 4, 1, true, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 4, true, 6>;
+  func_degrain[make_tuple(16, 2, 1, true, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 16, 2, true, 6>;
+  func_degrain[make_tuple(8, 16, 1, true, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 16, true, 6>;
+  func_degrain[make_tuple(8, 8, 1, true, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 8, true, 6>;
+  func_degrain[make_tuple(8, 4, 1, true, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 4, true, 6>;
+  func_degrain[make_tuple(8, 2, 1, true, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 2, true, 6>;
+  func_degrain[make_tuple(8, 1, 1, true, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 8, 1, true, 6>;
+  func_degrain[make_tuple(4, 8, 1, true, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 8, true, 6>;
+  func_degrain[make_tuple(4, 4, 1, true, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 4, true, 6>;
+  func_degrain[make_tuple(4, 2, 1, true, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 4, 2, true, 6>;
+  func_degrain[make_tuple(2, 4, 1, true, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 4, true, 6>;
+  func_degrain[make_tuple(2, 2, 1, true, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 2, true, 6>;
 
   // 16 bit
   // C, level1, lsb=false
-  func_degrain[make_tuple(32, 32, 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 32, false, 1>;
-  func_degrain[make_tuple(32, 16, 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 16, false, 1>;
-  func_degrain[make_tuple(32, 8, 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 8, false, 1>;
-  func_degrain[make_tuple(16, 32, 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 32, false, 1>;
-  func_degrain[make_tuple(16, 16, 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 16, false, 1>;
-  func_degrain[make_tuple(16, 8, 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 8, false, 1>;
-  func_degrain[make_tuple(16, 4, 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 4, false, 1>;
-  func_degrain[make_tuple(16, 2, 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 2, false, 1>;
-  func_degrain[make_tuple(8, 16, 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 16, false, 1>;
-  func_degrain[make_tuple(8, 8, 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 8, false, 1>;
-  func_degrain[make_tuple(8, 4, 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 4, false, 1>;
-  func_degrain[make_tuple(8, 2, 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 2, false, 1>;
-  func_degrain[make_tuple(8, 1, 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 1, false, 1>;
-  func_degrain[make_tuple(4, 8, 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 4, 8, false, 1>;
-  func_degrain[make_tuple(4, 4, 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 4, 4, false, 1>;
-  func_degrain[make_tuple(4, 2, 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 4, 2, false, 1>;
-  func_degrain[make_tuple(2, 4, 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 2, 4, false, 1>;
-  func_degrain[make_tuple(2, 2, 2, false, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 2, 2, false, 1>;
-#if 0
-  // NO lsb + 16 bit 
-  // C, level1, lsb=true
-  func_degrain[make_tuple(32, 32, 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 32, true, 1>;
-  func_degrain[make_tuple(32, 16, 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 16, true, 1>;
-  func_degrain[make_tuple(32, 8, 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 8, true, 1>;
-  func_degrain[make_tuple(16, 32, 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 32, true, 1>;
-  func_degrain[make_tuple(16, 16, 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 16, true, 1>;
-  func_degrain[make_tuple(16, 8, 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 8, true, 1>;
-  func_degrain[make_tuple(16, 4, 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 4, true, 1>;
-  func_degrain[make_tuple(16, 2, 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 2, true, 1>;
-  func_degrain[make_tuple(8, 16, 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 16, true, 1>;
-  func_degrain[make_tuple(8, 8, 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 8, true, 1>;
-  func_degrain[make_tuple(8, 4, 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 4, true, 1>;
-  func_degrain[make_tuple(8, 2, 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 2, true, 1>;
-  func_degrain[make_tuple(8, 1, 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 1, true, 1>;
-  func_degrain[make_tuple(4, 8, 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 4, 8, true, 1>;
-  func_degrain[make_tuple(4, 4, 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 4, 4, true, 1>;
-  func_degrain[make_tuple(4, 2, 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 4, 2, true, 1>;
-  func_degrain[make_tuple(2, 4, 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 2, 4, true, 1>;
-  func_degrain[make_tuple(2, 2, 2, true, 1, NO_SIMD)] = Degrain1to5_C<uint16_t, 2, 2, true, 1>;
-#endif
+  func_degrain[make_tuple(32, 32, 2, false, 1, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 32, false, 1>;
+  func_degrain[make_tuple(32, 16, 2, false, 1, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 16, false, 1>;
+  func_degrain[make_tuple(32, 8, 2, false, 1, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 8, false, 1>;
+  func_degrain[make_tuple(16, 32, 2, false, 1, NO_SIMD)] = Degrain1to6_C<uint16_t, 16, 32, false, 1>;
+  func_degrain[make_tuple(16, 16, 2, false, 1, NO_SIMD)] = Degrain1to6_C<uint16_t, 16, 16, false, 1>;
+  func_degrain[make_tuple(16, 8, 2, false, 1, NO_SIMD)] = Degrain1to6_C<uint16_t, 16, 8, false, 1>;
+  func_degrain[make_tuple(16, 4, 2, false, 1, NO_SIMD)] = Degrain1to6_C<uint16_t, 16, 4, false, 1>;
+  func_degrain[make_tuple(16, 2, 2, false, 1, NO_SIMD)] = Degrain1to6_C<uint16_t, 16, 2, false, 1>;
+  func_degrain[make_tuple(8, 16, 2, false, 1, NO_SIMD)] = Degrain1to6_C<uint16_t, 8, 16, false, 1>;
+  func_degrain[make_tuple(8, 8, 2, false, 1, NO_SIMD)] = Degrain1to6_C<uint16_t, 8, 8, false, 1>;
+  func_degrain[make_tuple(8, 4, 2, false, 1, NO_SIMD)] = Degrain1to6_C<uint16_t, 8, 4, false, 1>;
+  func_degrain[make_tuple(8, 2, 2, false, 1, NO_SIMD)] = Degrain1to6_C<uint16_t, 8, 2, false, 1>;
+  func_degrain[make_tuple(8, 1, 2, false, 1, NO_SIMD)] = Degrain1to6_C<uint16_t, 8, 1, false, 1>;
+  func_degrain[make_tuple(4, 8, 2, false, 1, NO_SIMD)] = Degrain1to6_C<uint16_t, 4, 8, false, 1>;
+  func_degrain[make_tuple(4, 4, 2, false, 1, NO_SIMD)] = Degrain1to6_C<uint16_t, 4, 4, false, 1>;
+  func_degrain[make_tuple(4, 2, 2, false, 1, NO_SIMD)] = Degrain1to6_C<uint16_t, 4, 2, false, 1>;
+  func_degrain[make_tuple(2, 4, 2, false, 1, NO_SIMD)] = Degrain1to6_C<uint16_t, 2, 4, false, 1>;
+  func_degrain[make_tuple(2, 2, 2, false, 1, NO_SIMD)] = Degrain1to6_C<uint16_t, 2, 2, false, 1>;
   // C, level2, lsb=false
-  func_degrain[make_tuple(32, 32, 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 32, false, 2>;
-  func_degrain[make_tuple(32, 16, 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 16, false, 2>;
-  func_degrain[make_tuple(32, 8, 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 8, false, 2>;
-  func_degrain[make_tuple(16, 32, 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 32, false, 2>;
-  func_degrain[make_tuple(16, 16, 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 16, false, 2>;
-  func_degrain[make_tuple(16, 8, 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 8, false, 2>;
-  func_degrain[make_tuple(16, 4, 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 4, false, 2>;
-  func_degrain[make_tuple(16, 2, 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 2, false, 2>;
-  func_degrain[make_tuple(8, 16, 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 16, false, 2>;
-  func_degrain[make_tuple(8, 8, 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 8, false, 2>;
-  func_degrain[make_tuple(8, 4, 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 4, false, 2>;
-  func_degrain[make_tuple(8, 2, 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 2, false, 2>;
-  func_degrain[make_tuple(8, 1, 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 1, false, 2>;
-  func_degrain[make_tuple(4, 8, 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 4, 8, false, 2>;
-  func_degrain[make_tuple(4, 4, 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 4, 4, false, 2>;
-  func_degrain[make_tuple(4, 2, 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 4, 2, false, 2>;
-  func_degrain[make_tuple(2, 4, 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 2, 4, false, 2>;
-  func_degrain[make_tuple(2, 2, 2, false, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 2, 2, false, 2>;
-  // C, level2, lsb=true
-#if 0
-  func_degrain[make_tuple(32, 32, 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 32, true, 2>;
-  func_degrain[make_tuple(32, 16, 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 16, true, 2>;
-  func_degrain[make_tuple(32, 8, 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 8, true, 2>;
-  func_degrain[make_tuple(16, 32, 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 32, true, 2>;
-  func_degrain[make_tuple(16, 16, 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 16, true, 2>;
-  func_degrain[make_tuple(16, 8, 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 8, true, 2>;
-  func_degrain[make_tuple(16, 4, 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 4, true, 2>;
-  func_degrain[make_tuple(16, 2, 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 2, true, 2>;
-  func_degrain[make_tuple(8, 16, 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 16, true, 2>;
-  func_degrain[make_tuple(8, 8, 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 8, true, 2>;
-  func_degrain[make_tuple(8, 4, 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 4, true, 2>;
-  func_degrain[make_tuple(8, 2, 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 2, true, 2>;
-  func_degrain[make_tuple(8, 1, 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 1, true, 2>;
-  func_degrain[make_tuple(4, 8, 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 4, 8, true, 2>;
-  func_degrain[make_tuple(4, 4, 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 4, 4, true, 2>;
-  func_degrain[make_tuple(4, 2, 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 4, 2, true, 2>;
-  func_degrain[make_tuple(2, 4, 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 2, 4, true, 2>;
-  func_degrain[make_tuple(2, 2, 2, true, 2, NO_SIMD)] = Degrain1to5_C<uint16_t, 2, 2, true, 2>;
-#endif
+  func_degrain[make_tuple(32, 32, 2, false, 2, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 32, false, 2>;
+  func_degrain[make_tuple(32, 16, 2, false, 2, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 16, false, 2>;
+  func_degrain[make_tuple(32, 8, 2, false, 2, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 8, false, 2>;
+  func_degrain[make_tuple(16, 32, 2, false, 2, NO_SIMD)] = Degrain1to6_C<uint16_t, 16, 32, false, 2>;
+  func_degrain[make_tuple(16, 16, 2, false, 2, NO_SIMD)] = Degrain1to6_C<uint16_t, 16, 16, false, 2>;
+  func_degrain[make_tuple(16, 8, 2, false, 2, NO_SIMD)] = Degrain1to6_C<uint16_t, 16, 8, false, 2>;
+  func_degrain[make_tuple(16, 4, 2, false, 2, NO_SIMD)] = Degrain1to6_C<uint16_t, 16, 4, false, 2>;
+  func_degrain[make_tuple(16, 2, 2, false, 2, NO_SIMD)] = Degrain1to6_C<uint16_t, 16, 2, false, 2>;
+  func_degrain[make_tuple(8, 16, 2, false, 2, NO_SIMD)] = Degrain1to6_C<uint16_t, 8, 16, false, 2>;
+  func_degrain[make_tuple(8, 8, 2, false, 2, NO_SIMD)] = Degrain1to6_C<uint16_t, 8, 8, false, 2>;
+  func_degrain[make_tuple(8, 4, 2, false, 2, NO_SIMD)] = Degrain1to6_C<uint16_t, 8, 4, false, 2>;
+  func_degrain[make_tuple(8, 2, 2, false, 2, NO_SIMD)] = Degrain1to6_C<uint16_t, 8, 2, false, 2>;
+  func_degrain[make_tuple(8, 1, 2, false, 2, NO_SIMD)] = Degrain1to6_C<uint16_t, 8, 1, false, 2>;
+  func_degrain[make_tuple(4, 8, 2, false, 2, NO_SIMD)] = Degrain1to6_C<uint16_t, 4, 8, false, 2>;
+  func_degrain[make_tuple(4, 4, 2, false, 2, NO_SIMD)] = Degrain1to6_C<uint16_t, 4, 4, false, 2>;
+  func_degrain[make_tuple(4, 2, 2, false, 2, NO_SIMD)] = Degrain1to6_C<uint16_t, 4, 2, false, 2>;
+  func_degrain[make_tuple(2, 4, 2, false, 2, NO_SIMD)] = Degrain1to6_C<uint16_t, 2, 4, false, 2>;
+  func_degrain[make_tuple(2, 2, 2, false, 2, NO_SIMD)] = Degrain1to6_C<uint16_t, 2, 2, false, 2>;
   // C, level3, lsb=false
-  func_degrain[make_tuple(32, 32, 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 32, false, 3>;
-  func_degrain[make_tuple(32, 16, 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 16, false, 3>;
-  func_degrain[make_tuple(32, 8, 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 8, false, 3>;
-  func_degrain[make_tuple(16, 32, 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 32, false, 3>;
-  func_degrain[make_tuple(16, 16, 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 16, false, 3>;
-  func_degrain[make_tuple(16, 8, 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 8, false, 3>;
-  func_degrain[make_tuple(16, 4, 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 4, false, 3>;
-  func_degrain[make_tuple(16, 2, 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 2, false, 3>;
-  func_degrain[make_tuple(8, 16, 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 16, false, 3>;
-  func_degrain[make_tuple(8, 8, 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 8, false, 3>;
-  func_degrain[make_tuple(8, 4, 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 4, false, 3>;
-  func_degrain[make_tuple(8, 2, 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 2, false, 3>;
-  func_degrain[make_tuple(8, 1, 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 1, false, 3>;
-  func_degrain[make_tuple(4, 8, 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 4, 8, false, 3>;
-  func_degrain[make_tuple(4, 4, 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 4, 4, false, 3>;
-  func_degrain[make_tuple(4, 2, 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 4, 2, false, 3>;
-  func_degrain[make_tuple(2, 4, 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 2, 4, false, 3>;
-  func_degrain[make_tuple(2, 2, 2, false, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 2, 2, false, 3>;
-  // C, level3, lsb=true
-#if 0
-  func_degrain[make_tuple(32, 32, 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 32, true, 3>;
-  func_degrain[make_tuple(32, 16, 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 16, true, 3>;
-  func_degrain[make_tuple(32, 8, 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 8, true, 3>;
-  func_degrain[make_tuple(16, 32, 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 32, true, 3>;
-  func_degrain[make_tuple(16, 16, 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 16, true, 3>;
-  func_degrain[make_tuple(16, 8, 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 8, true, 3>;
-  func_degrain[make_tuple(16, 4, 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 4, true, 3>;
-  func_degrain[make_tuple(16, 2, 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 2, true, 3>;
-  func_degrain[make_tuple(8, 16, 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 16, true, 3>;
-  func_degrain[make_tuple(8, 8, 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 8, true, 3>;
-  func_degrain[make_tuple(8, 4, 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 4, true, 3>;
-  func_degrain[make_tuple(8, 2, 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 2, true, 3>;
-  func_degrain[make_tuple(8, 1, 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 1, true, 3>;
-  func_degrain[make_tuple(4, 8, 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 4, 8, true, 3>;
-  func_degrain[make_tuple(4, 4, 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 4, 4, true, 3>;
-  func_degrain[make_tuple(4, 2, 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 4, 2, true, 3>;
-  func_degrain[make_tuple(2, 4, 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 2, 4, true, 3>;
-  func_degrain[make_tuple(2, 2, 2, true, 3, NO_SIMD)] = Degrain1to5_C<uint16_t, 2, 2, true, 3>;
-#endif
+  func_degrain[make_tuple(32, 32, 2, false, 3, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 32, false, 3>;
+  func_degrain[make_tuple(32, 16, 2, false, 3, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 16, false, 3>;
+  func_degrain[make_tuple(32, 8, 2, false, 3, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 8, false, 3>;
+  func_degrain[make_tuple(16, 32, 2, false, 3, NO_SIMD)] = Degrain1to6_C<uint16_t, 16, 32, false, 3>;
+  func_degrain[make_tuple(16, 16, 2, false, 3, NO_SIMD)] = Degrain1to6_C<uint16_t, 16, 16, false, 3>;
+  func_degrain[make_tuple(16, 8, 2, false, 3, NO_SIMD)] = Degrain1to6_C<uint16_t, 16, 8, false, 3>;
+  func_degrain[make_tuple(16, 4, 2, false, 3, NO_SIMD)] = Degrain1to6_C<uint16_t, 16, 4, false, 3>;
+  func_degrain[make_tuple(16, 2, 2, false, 3, NO_SIMD)] = Degrain1to6_C<uint16_t, 16, 2, false, 3>;
+  func_degrain[make_tuple(8, 16, 2, false, 3, NO_SIMD)] = Degrain1to6_C<uint16_t, 8, 16, false, 3>;
+  func_degrain[make_tuple(8, 8, 2, false, 3, NO_SIMD)] = Degrain1to6_C<uint16_t, 8, 8, false, 3>;
+  func_degrain[make_tuple(8, 4, 2, false, 3, NO_SIMD)] = Degrain1to6_C<uint16_t, 8, 4, false, 3>;
+  func_degrain[make_tuple(8, 2, 2, false, 3, NO_SIMD)] = Degrain1to6_C<uint16_t, 8, 2, false, 3>;
+  func_degrain[make_tuple(8, 1, 2, false, 3, NO_SIMD)] = Degrain1to6_C<uint16_t, 8, 1, false, 3>;
+  func_degrain[make_tuple(4, 8, 2, false, 3, NO_SIMD)] = Degrain1to6_C<uint16_t, 4, 8, false, 3>;
+  func_degrain[make_tuple(4, 4, 2, false, 3, NO_SIMD)] = Degrain1to6_C<uint16_t, 4, 4, false, 3>;
+  func_degrain[make_tuple(4, 2, 2, false, 3, NO_SIMD)] = Degrain1to6_C<uint16_t, 4, 2, false, 3>;
+  func_degrain[make_tuple(2, 4, 2, false, 3, NO_SIMD)] = Degrain1to6_C<uint16_t, 2, 4, false, 3>;
+  func_degrain[make_tuple(2, 2, 2, false, 3, NO_SIMD)] = Degrain1to6_C<uint16_t, 2, 2, false, 3>;
   // C, level4, lsb=false
-  func_degrain[make_tuple(32, 32, 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 32, false, 4>;
-  func_degrain[make_tuple(32, 16, 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 16, false, 4>;
-  func_degrain[make_tuple(32, 8, 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 8, false, 4>;
-  func_degrain[make_tuple(16, 32, 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 32, false, 4>;
-  func_degrain[make_tuple(16, 16, 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 16, false, 4>;
-  func_degrain[make_tuple(16, 8, 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 8, false, 4>;
-  func_degrain[make_tuple(16, 4, 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 4, false, 4>;
-  func_degrain[make_tuple(16, 2, 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 2, false, 4>;
-  func_degrain[make_tuple(8, 16, 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 16, false, 4>;
-  func_degrain[make_tuple(8, 8, 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 8, false, 4>;
-  func_degrain[make_tuple(8, 4, 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 4, false, 4>;
-  func_degrain[make_tuple(8, 2, 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 2, false, 4>;
-  func_degrain[make_tuple(8, 1, 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 1, false, 4>;
-  func_degrain[make_tuple(4, 8, 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 4, 8, false, 4>;
-  func_degrain[make_tuple(4, 4, 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 4, 4, false, 4>;
-  func_degrain[make_tuple(4, 2, 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 4, 2, false, 4>;
-  func_degrain[make_tuple(2, 4, 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 2, 4, false, 4>;
-  func_degrain[make_tuple(2, 2, 2, false, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 2, 2, false, 4>;
-  // C, level4, lsb=true
-#if 0
-  func_degrain[make_tuple(32, 32, 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 32, true, 4>;
-  func_degrain[make_tuple(32, 16, 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 16, true, 4>;
-  func_degrain[make_tuple(32, 8, 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 8, true, 4>;
-  func_degrain[make_tuple(16, 32, 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 32, true, 4>;
-  func_degrain[make_tuple(16, 16, 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 16, true, 4>;
-  func_degrain[make_tuple(16, 8, 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 8, true, 4>;
-  func_degrain[make_tuple(16, 4, 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 4, true, 4>;
-  func_degrain[make_tuple(16, 2, 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 2, true, 4>;
-  func_degrain[make_tuple(8, 16, 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 16, true, 4>;
-  func_degrain[make_tuple(8, 8, 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 8, true, 4>;
-  func_degrain[make_tuple(8, 4, 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 4, true, 4>;
-  func_degrain[make_tuple(8, 2, 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 2, true, 4>;
-  func_degrain[make_tuple(8, 1, 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 1, true, 4>;
-  func_degrain[make_tuple(4, 8, 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 4, 8, true, 4>;
-  func_degrain[make_tuple(4, 4, 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 4, 4, true, 4>;
-  func_degrain[make_tuple(4, 2, 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 4, 2, true, 4>;
-  func_degrain[make_tuple(2, 4, 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 2, 4, true, 4>;
-  func_degrain[make_tuple(2, 2, 2, true, 4, NO_SIMD)] = Degrain1to5_C<uint16_t, 2, 2, true, 4>;
-#endif
+  func_degrain[make_tuple(32, 32, 2, false, 4, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 32, false, 4>;
+  func_degrain[make_tuple(32, 16, 2, false, 4, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 16, false, 4>;
+  func_degrain[make_tuple(32, 8, 2, false, 4, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 8, false, 4>;
+  func_degrain[make_tuple(16, 32, 2, false, 4, NO_SIMD)] = Degrain1to6_C<uint16_t, 16, 32, false, 4>;
+  func_degrain[make_tuple(16, 16, 2, false, 4, NO_SIMD)] = Degrain1to6_C<uint16_t, 16, 16, false, 4>;
+  func_degrain[make_tuple(16, 8, 2, false, 4, NO_SIMD)] = Degrain1to6_C<uint16_t, 16, 8, false, 4>;
+  func_degrain[make_tuple(16, 4, 2, false, 4, NO_SIMD)] = Degrain1to6_C<uint16_t, 16, 4, false, 4>;
+  func_degrain[make_tuple(16, 2, 2, false, 4, NO_SIMD)] = Degrain1to6_C<uint16_t, 16, 2, false, 4>;
+  func_degrain[make_tuple(8, 16, 2, false, 4, NO_SIMD)] = Degrain1to6_C<uint16_t, 8, 16, false, 4>;
+  func_degrain[make_tuple(8, 8, 2, false, 4, NO_SIMD)] = Degrain1to6_C<uint16_t, 8, 8, false, 4>;
+  func_degrain[make_tuple(8, 4, 2, false, 4, NO_SIMD)] = Degrain1to6_C<uint16_t, 8, 4, false, 4>;
+  func_degrain[make_tuple(8, 2, 2, false, 4, NO_SIMD)] = Degrain1to6_C<uint16_t, 8, 2, false, 4>;
+  func_degrain[make_tuple(8, 1, 2, false, 4, NO_SIMD)] = Degrain1to6_C<uint16_t, 8, 1, false, 4>;
+  func_degrain[make_tuple(4, 8, 2, false, 4, NO_SIMD)] = Degrain1to6_C<uint16_t, 4, 8, false, 4>;
+  func_degrain[make_tuple(4, 4, 2, false, 4, NO_SIMD)] = Degrain1to6_C<uint16_t, 4, 4, false, 4>;
+  func_degrain[make_tuple(4, 2, 2, false, 4, NO_SIMD)] = Degrain1to6_C<uint16_t, 4, 2, false, 4>;
+  func_degrain[make_tuple(2, 4, 2, false, 4, NO_SIMD)] = Degrain1to6_C<uint16_t, 2, 4, false, 4>;
+  func_degrain[make_tuple(2, 2, 2, false, 4, NO_SIMD)] = Degrain1to6_C<uint16_t, 2, 2, false, 4>;
   // C, level5, lsb=false
-  func_degrain[make_tuple(32, 32, 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 32, false, 5>;
-  func_degrain[make_tuple(32, 16, 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 16, false, 5>;
-  func_degrain[make_tuple(32, 8, 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 8, false, 5>;
-  func_degrain[make_tuple(16, 32, 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 32, false, 5>;
-  func_degrain[make_tuple(16, 16, 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 16, false, 5>;
-  func_degrain[make_tuple(16, 8, 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 8, false, 5>;
-  func_degrain[make_tuple(16, 4, 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 4, false, 5>;
-  func_degrain[make_tuple(16, 2, 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 2, false, 5>;
-  func_degrain[make_tuple(8, 16, 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 16, false, 5>;
-  func_degrain[make_tuple(8, 8, 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 8, false, 5>;
-  func_degrain[make_tuple(8, 4, 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 4, false, 5>;
-  func_degrain[make_tuple(8, 2, 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 2, false, 5>;
-  func_degrain[make_tuple(8, 1, 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 1, false, 5>;
-  func_degrain[make_tuple(4, 8, 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 4, 8, false, 5>;
-  func_degrain[make_tuple(4, 4, 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 4, 4, false, 5>;
-  func_degrain[make_tuple(4, 2, 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 4, 2, false, 5>;
-  func_degrain[make_tuple(2, 4, 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 2, 4, false, 5>;
-  func_degrain[make_tuple(2, 2, 2, false, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 2, 2, false, 5>;
-  // C, level5, lsb=true
-#if 0
-  func_degrain[make_tuple(32, 32, 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 32, true, 5>;
-  func_degrain[make_tuple(32, 16, 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 16, true, 5>;
-  func_degrain[make_tuple(32, 8, 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 32, 8, true, 5>;
-  func_degrain[make_tuple(16, 32, 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 32, true, 5>;
-  func_degrain[make_tuple(16, 16, 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 16, true, 5>;
-  func_degrain[make_tuple(16, 8, 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 8, true, 5>;
-  func_degrain[make_tuple(16, 4, 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 4, true, 5>;
-  func_degrain[make_tuple(16, 2, 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 16, 2, true, 5>;
-  func_degrain[make_tuple(8, 16, 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 16, true, 5>;
-  func_degrain[make_tuple(8, 8, 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 8, true, 5>;
-  func_degrain[make_tuple(8, 4, 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 4, true, 5>;
-  func_degrain[make_tuple(8, 2, 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 2, true, 5>;
-  func_degrain[make_tuple(8, 1, 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 8, 1, true, 5>;
-  func_degrain[make_tuple(4, 8, 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 4, 8, true, 5>;
-  func_degrain[make_tuple(4, 4, 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 4, 4, true, 5>;
-  func_degrain[make_tuple(4, 2, 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 4, 2, true, 5>;
-  func_degrain[make_tuple(2, 4, 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 2, 4, true, 5>;
-  func_degrain[make_tuple(2, 2, 2, true, 5, NO_SIMD)] = Degrain1to5_C<uint16_t, 2, 2, true, 5>;
-#endif
+  func_degrain[make_tuple(32, 32, 2, false, 5, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 32, false, 5>;
+  func_degrain[make_tuple(32, 16, 2, false, 5, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 16, false, 5>;
+  func_degrain[make_tuple(32, 8, 2, false, 5, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 8, false, 5>;
+  func_degrain[make_tuple(16, 32, 2, false, 5, NO_SIMD)] = Degrain1to6_C<uint16_t, 16, 32, false, 5>;
+  func_degrain[make_tuple(16, 16, 2, false, 5, NO_SIMD)] = Degrain1to6_C<uint16_t, 16, 16, false, 5>;
+  func_degrain[make_tuple(16, 8, 2, false, 5, NO_SIMD)] = Degrain1to6_C<uint16_t, 16, 8, false, 5>;
+  func_degrain[make_tuple(16, 4, 2, false, 5, NO_SIMD)] = Degrain1to6_C<uint16_t, 16, 4, false, 5>;
+  func_degrain[make_tuple(16, 2, 2, false, 5, NO_SIMD)] = Degrain1to6_C<uint16_t, 16, 2, false, 5>;
+  func_degrain[make_tuple(8, 16, 2, false, 5, NO_SIMD)] = Degrain1to6_C<uint16_t, 8, 16, false, 5>;
+  func_degrain[make_tuple(8, 8, 2, false, 5, NO_SIMD)] = Degrain1to6_C<uint16_t, 8, 8, false, 5>;
+  func_degrain[make_tuple(8, 4, 2, false, 5, NO_SIMD)] = Degrain1to6_C<uint16_t, 8, 4, false, 5>;
+  func_degrain[make_tuple(8, 2, 2, false, 5, NO_SIMD)] = Degrain1to6_C<uint16_t, 8, 2, false, 5>;
+  func_degrain[make_tuple(8, 1, 2, false, 5, NO_SIMD)] = Degrain1to6_C<uint16_t, 8, 1, false, 5>;
+  func_degrain[make_tuple(4, 8, 2, false, 5, NO_SIMD)] = Degrain1to6_C<uint16_t, 4, 8, false, 5>;
+  func_degrain[make_tuple(4, 4, 2, false, 5, NO_SIMD)] = Degrain1to6_C<uint16_t, 4, 4, false, 5>;
+  func_degrain[make_tuple(4, 2, 2, false, 5, NO_SIMD)] = Degrain1to6_C<uint16_t, 4, 2, false, 5>;
+  func_degrain[make_tuple(2, 4, 2, false, 5, NO_SIMD)] = Degrain1to6_C<uint16_t, 2, 4, false, 5>;
+  func_degrain[make_tuple(2, 2, 2, false, 5, NO_SIMD)] = Degrain1to6_C<uint16_t, 2, 2, false, 5>;
+  // C, level6, lsb=false
+  func_degrain[make_tuple(32, 32, 2, false, 6, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 32, false, 6>;
+  func_degrain[make_tuple(32, 16, 2, false, 6, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 16, false, 6>;
+  func_degrain[make_tuple(32, 8, 2, false, 6, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 8, false, 6>;
+  func_degrain[make_tuple(16, 32, 2, false, 6, NO_SIMD)] = Degrain1to6_C<uint16_t, 16, 32, false, 6>;
+  func_degrain[make_tuple(16, 16, 2, false, 6, NO_SIMD)] = Degrain1to6_C<uint16_t, 16, 16, false, 6>;
+  func_degrain[make_tuple(16, 8, 2, false, 6, NO_SIMD)] = Degrain1to6_C<uint16_t, 16, 8, false, 6>;
+  func_degrain[make_tuple(16, 4, 2, false, 6, NO_SIMD)] = Degrain1to6_C<uint16_t, 16, 4, false, 6>;
+  func_degrain[make_tuple(16, 2, 2, false, 6, NO_SIMD)] = Degrain1to6_C<uint16_t, 16, 2, false, 6>;
+  func_degrain[make_tuple(8, 16, 2, false, 6, NO_SIMD)] = Degrain1to6_C<uint16_t, 8, 16, false, 6>;
+  func_degrain[make_tuple(8, 8, 2, false, 6, NO_SIMD)] = Degrain1to6_C<uint16_t, 8, 8, false, 6>;
+  func_degrain[make_tuple(8, 4, 2, false, 6, NO_SIMD)] = Degrain1to6_C<uint16_t, 8, 4, false, 6>;
+  func_degrain[make_tuple(8, 2, 2, false, 6, NO_SIMD)] = Degrain1to6_C<uint16_t, 8, 2, false, 6>;
+  func_degrain[make_tuple(8, 1, 2, false, 6, NO_SIMD)] = Degrain1to6_C<uint16_t, 8, 1, false, 6>;
+  func_degrain[make_tuple(4, 8, 2, false, 6, NO_SIMD)] = Degrain1to6_C<uint16_t, 4, 8, false, 6>;
+  func_degrain[make_tuple(4, 4, 2, false, 6, NO_SIMD)] = Degrain1to6_C<uint16_t, 4, 4, false, 6>;
+  func_degrain[make_tuple(4, 2, 2, false, 6, NO_SIMD)] = Degrain1to6_C<uint16_t, 4, 2, false, 6>;
+  func_degrain[make_tuple(2, 4, 2, false, 6, NO_SIMD)] = Degrain1to6_C<uint16_t, 2, 4, false, 6>;
+  func_degrain[make_tuple(2, 2, 2, false, 6, NO_SIMD)] = Degrain1to6_C<uint16_t, 2, 2, false, 6>;
 
   // SSE2
   // level1, lsb=false
-  func_degrain[make_tuple(32, 32, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<32, 32, false, 1>;
-  func_degrain[make_tuple(32, 16, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<32, 16, false, 1>;
-  func_degrain[make_tuple(32, 8, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<32, 8, false, 1>;
-  func_degrain[make_tuple(16, 32, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<16, 32, false, 1>;
-  func_degrain[make_tuple(16, 16, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<16, 16, false, 1>;
-  func_degrain[make_tuple(16, 8, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<16, 8, false, 1>;
-  func_degrain[make_tuple(16, 4, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<16, 4, false, 1>;
-  func_degrain[make_tuple(16, 2, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<16, 2, false, 1>;
-  func_degrain[make_tuple(8, 16, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<8, 16, false, 1>;
-  func_degrain[make_tuple(8, 8, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<8, 8, false, 1>;
-  func_degrain[make_tuple(8, 4, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<8, 4, false, 1>;
-  func_degrain[make_tuple(8, 2, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<8, 2, false, 1>;
-  func_degrain[make_tuple(8, 1, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<8, 1, false, 1>;
+  func_degrain[make_tuple(32, 32, 1, false, 1, USE_SSE2)] = Degrain1to6_sse2<32, 32, false, 1>;
+  func_degrain[make_tuple(32, 16, 1, false, 1, USE_SSE2)] = Degrain1to6_sse2<32, 16, false, 1>;
+  func_degrain[make_tuple(32, 8, 1, false, 1, USE_SSE2)] = Degrain1to6_sse2<32, 8, false, 1>;
+  func_degrain[make_tuple(16, 32, 1, false, 1, USE_SSE2)] = Degrain1to6_sse2<16, 32, false, 1>;
+  func_degrain[make_tuple(16, 16, 1, false, 1, USE_SSE2)] = Degrain1to6_sse2<16, 16, false, 1>;
+  func_degrain[make_tuple(16, 8, 1, false, 1, USE_SSE2)] = Degrain1to6_sse2<16, 8, false, 1>;
+  func_degrain[make_tuple(16, 4, 1, false, 1, USE_SSE2)] = Degrain1to6_sse2<16, 4, false, 1>;
+  func_degrain[make_tuple(16, 2, 1, false, 1, USE_SSE2)] = Degrain1to6_sse2<16, 2, false, 1>;
+  func_degrain[make_tuple(8, 16, 1, false, 1, USE_SSE2)] = Degrain1to6_sse2<8, 16, false, 1>;
+  func_degrain[make_tuple(8, 8, 1, false, 1, USE_SSE2)] = Degrain1to6_sse2<8, 8, false, 1>;
+  func_degrain[make_tuple(8, 4, 1, false, 1, USE_SSE2)] = Degrain1to6_sse2<8, 4, false, 1>;
+  func_degrain[make_tuple(8, 2, 1, false, 1, USE_SSE2)] = Degrain1to6_sse2<8, 2, false, 1>;
+  func_degrain[make_tuple(8, 1, 1, false, 1, USE_SSE2)] = Degrain1to6_sse2<8, 1, false, 1>;
 #ifndef _M_X64
-  func_degrain[make_tuple(4, 8, 1, false, 1, USE_SSE2)] = Degrain1to5_mmx<4, 8, false, 1>;
-  func_degrain[make_tuple(4, 4, 1, false, 1, USE_SSE2)] = Degrain1to5_mmx<4, 4, false, 1>;
-  func_degrain[make_tuple(4, 2, 1, false, 1, USE_SSE2)] = Degrain1to5_mmx<4, 2, false, 1>;
+  func_degrain[make_tuple(4, 8, 1, false, 1, USE_SSE2)] = Degrain1to6_mmx<4, 8, false, 1>;
+  func_degrain[make_tuple(4, 4, 1, false, 1, USE_SSE2)] = Degrain1to6_mmx<4, 4, false, 1>;
+  func_degrain[make_tuple(4, 2, 1, false, 1, USE_SSE2)] = Degrain1to6_mmx<4, 2, false, 1>;
 #else
-  func_degrain[make_tuple(4, 8, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<4, 8, false, 1>;
-  func_degrain[make_tuple(4, 4, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<4, 4, false, 1>;
-  func_degrain[make_tuple(4, 2, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<4, 2, false, 1>;
+  func_degrain[make_tuple(4, 8, 1, false, 1, USE_SSE2)] = Degrain1to6_sse2<4, 8, false, 1>;
+  func_degrain[make_tuple(4, 4, 1, false, 1, USE_SSE2)] = Degrain1to6_sse2<4, 4, false, 1>;
+  func_degrain[make_tuple(4, 2, 1, false, 1, USE_SSE2)] = Degrain1to6_sse2<4, 2, false, 1>;
 #endif
   //func_degrain[make_tuple(2, 4, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<2, 4, false, 1>; // no for width 2
   //func_degrain[make_tuple(2, 2, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<2, 2, false, 1>; // no for width 2
   // level1 lsb=true
-  func_degrain[make_tuple(32, 32, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<32, 32, true, 1>;
-  func_degrain[make_tuple(32, 16, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<32, 16, true, 1>;
-  func_degrain[make_tuple(32, 8, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<32, 8, true, 1>;
-  func_degrain[make_tuple(16, 32, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<16, 32, true, 1>;
-  func_degrain[make_tuple(16, 16, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<16, 16, true, 1>;
-  func_degrain[make_tuple(16, 8, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<16, 8, true, 1>;
-  func_degrain[make_tuple(16, 4, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<16, 4, true, 1>;
-  func_degrain[make_tuple(16, 2, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<16, 2, true, 1>;
-  func_degrain[make_tuple(8, 16, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<8, 16, true, 1>;
-  func_degrain[make_tuple(8, 8, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<8, 8, true, 1>;
-  func_degrain[make_tuple(8, 4, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<8, 4, true, 1>;
-  func_degrain[make_tuple(8, 2, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<8, 2, true, 1>;
-  func_degrain[make_tuple(8, 1, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<8, 1, true, 1>;
+  func_degrain[make_tuple(32, 32, 1, true, 1, USE_SSE2)] = Degrain1to6_sse2<32, 32, true, 1>;
+  func_degrain[make_tuple(32, 16, 1, true, 1, USE_SSE2)] = Degrain1to6_sse2<32, 16, true, 1>;
+  func_degrain[make_tuple(32, 8, 1, true, 1, USE_SSE2)] = Degrain1to6_sse2<32, 8, true, 1>;
+  func_degrain[make_tuple(16, 32, 1, true, 1, USE_SSE2)] = Degrain1to6_sse2<16, 32, true, 1>;
+  func_degrain[make_tuple(16, 16, 1, true, 1, USE_SSE2)] = Degrain1to6_sse2<16, 16, true, 1>;
+  func_degrain[make_tuple(16, 8, 1, true, 1, USE_SSE2)] = Degrain1to6_sse2<16, 8, true, 1>;
+  func_degrain[make_tuple(16, 4, 1, true, 1, USE_SSE2)] = Degrain1to6_sse2<16, 4, true, 1>;
+  func_degrain[make_tuple(16, 2, 1, true, 1, USE_SSE2)] = Degrain1to6_sse2<16, 2, true, 1>;
+  func_degrain[make_tuple(8, 16, 1, true, 1, USE_SSE2)] = Degrain1to6_sse2<8, 16, true, 1>;
+  func_degrain[make_tuple(8, 8, 1, true, 1, USE_SSE2)] = Degrain1to6_sse2<8, 8, true, 1>;
+  func_degrain[make_tuple(8, 4, 1, true, 1, USE_SSE2)] = Degrain1to6_sse2<8, 4, true, 1>;
+  func_degrain[make_tuple(8, 2, 1, true, 1, USE_SSE2)] = Degrain1to6_sse2<8, 2, true, 1>;
+  func_degrain[make_tuple(8, 1, 1, true, 1, USE_SSE2)] = Degrain1to6_sse2<8, 1, true, 1>;
 #ifndef _M_X64
-  func_degrain[make_tuple(4, 8, 1, true, 1, USE_SSE2)] = Degrain1to5_mmx<4, 8, true, 1>;
-  func_degrain[make_tuple(4, 4, 1, true, 1, USE_SSE2)] = Degrain1to5_mmx<4, 4, true, 1>;
-  func_degrain[make_tuple(4, 2, 1, true, 1, USE_SSE2)] = Degrain1to5_mmx<4, 2, true, 1>;
+  func_degrain[make_tuple(4, 8, 1, true, 1, USE_SSE2)] = Degrain1to6_mmx<4, 8, true, 1>;
+  func_degrain[make_tuple(4, 4, 1, true, 1, USE_SSE2)] = Degrain1to6_mmx<4, 4, true, 1>;
+  func_degrain[make_tuple(4, 2, 1, true, 1, USE_SSE2)] = Degrain1to6_mmx<4, 2, true, 1>;
 #else
-  func_degrain[make_tuple(4, 8, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<4, 8, true, 1>;
-  func_degrain[make_tuple(4, 4, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<4, 4, true, 1>;
-  func_degrain[make_tuple(4, 2, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<4, 2, true, 1>;
+  func_degrain[make_tuple(4, 8, 1, true, 1, USE_SSE2)] = Degrain1to6_sse2<4, 8, true, 1>;
+  func_degrain[make_tuple(4, 4, 1, true, 1, USE_SSE2)] = Degrain1to6_sse2<4, 4, true, 1>;
+  func_degrain[make_tuple(4, 2, 1, true, 1, USE_SSE2)] = Degrain1to6_sse2<4, 2, true, 1>;
 #endif
   //func_degrain[make_tuple(2, 4, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<2, 4, true, 1>; // no for width 2
   //func_degrain[make_tuple(2, 2, 1, true, 1, USE_SSE2)] = Degrain1to5_sse2<2, 2, true, 1>; // no for width 2
 
 
   // level2, lsb=false
-  func_degrain[make_tuple(32, 32, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<32, 32, false, 2>;
-  func_degrain[make_tuple(32, 16, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<32, 16, false, 2>;
-  func_degrain[make_tuple(32, 8, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<32, 8, false, 2>;
-  func_degrain[make_tuple(16, 32, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<16, 32, false, 2>;
-  func_degrain[make_tuple(16, 16, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<16, 16, false, 2>;
-  func_degrain[make_tuple(16, 8, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<16, 8, false, 2>;
-  func_degrain[make_tuple(16, 4, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<16, 4, false, 2>;
-  func_degrain[make_tuple(16, 2, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<16, 2, false, 2>;
-  func_degrain[make_tuple(8, 16, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<8, 16, false, 2>;
-  func_degrain[make_tuple(8, 8, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<8, 8, false, 2>;
-  func_degrain[make_tuple(8, 4, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<8, 4, false, 2>;
-  func_degrain[make_tuple(8, 2, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<8, 2, false, 2>;
-  func_degrain[make_tuple(8, 1, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<8, 1, false, 2>;
+  func_degrain[make_tuple(32, 32, 1, false, 2, USE_SSE2)] = Degrain1to6_sse2<32, 32, false, 2>;
+  func_degrain[make_tuple(32, 16, 1, false, 2, USE_SSE2)] = Degrain1to6_sse2<32, 16, false, 2>;
+  func_degrain[make_tuple(32, 8, 1, false, 2, USE_SSE2)] = Degrain1to6_sse2<32, 8, false, 2>;
+  func_degrain[make_tuple(16, 32, 1, false, 2, USE_SSE2)] = Degrain1to6_sse2<16, 32, false, 2>;
+  func_degrain[make_tuple(16, 16, 1, false, 2, USE_SSE2)] = Degrain1to6_sse2<16, 16, false, 2>;
+  func_degrain[make_tuple(16, 8, 1, false, 2, USE_SSE2)] = Degrain1to6_sse2<16, 8, false, 2>;
+  func_degrain[make_tuple(16, 4, 1, false, 2, USE_SSE2)] = Degrain1to6_sse2<16, 4, false, 2>;
+  func_degrain[make_tuple(16, 2, 1, false, 2, USE_SSE2)] = Degrain1to6_sse2<16, 2, false, 2>;
+  func_degrain[make_tuple(8, 16, 1, false, 2, USE_SSE2)] = Degrain1to6_sse2<8, 16, false, 2>;
+  func_degrain[make_tuple(8, 8, 1, false, 2, USE_SSE2)] = Degrain1to6_sse2<8, 8, false, 2>;
+  func_degrain[make_tuple(8, 4, 1, false, 2, USE_SSE2)] = Degrain1to6_sse2<8, 4, false, 2>;
+  func_degrain[make_tuple(8, 2, 1, false, 2, USE_SSE2)] = Degrain1to6_sse2<8, 2, false, 2>;
+  func_degrain[make_tuple(8, 1, 1, false, 2, USE_SSE2)] = Degrain1to6_sse2<8, 1, false, 2>;
 #ifndef _M_X64
-  func_degrain[make_tuple(4, 8, 1, false, 2, USE_SSE2)] = Degrain1to5_mmx<4, 8, false, 2>;
-  func_degrain[make_tuple(4, 4, 1, false, 2, USE_SSE2)] = Degrain1to5_mmx<4, 4, false, 2>;
-  func_degrain[make_tuple(4, 2, 1, false, 2, USE_SSE2)] = Degrain1to5_mmx<4, 2, false, 2>;
+  func_degrain[make_tuple(4, 8, 1, false, 2, USE_SSE2)] = Degrain1to6_mmx<4, 8, false, 2>;
+  func_degrain[make_tuple(4, 4, 1, false, 2, USE_SSE2)] = Degrain1to6_mmx<4, 4, false, 2>;
+  func_degrain[make_tuple(4, 2, 1, false, 2, USE_SSE2)] = Degrain1to6_mmx<4, 2, false, 2>;
 #else
-  func_degrain[make_tuple(4, 8, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<4, 8, false, 2>;
-  func_degrain[make_tuple(4, 4, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<4, 4, false, 2>;
-  func_degrain[make_tuple(4, 2, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<4, 2, false, 2>;
+  func_degrain[make_tuple(4, 8, 1, false, 2, USE_SSE2)] = Degrain1to6_sse2<4, 8, false, 2>;
+  func_degrain[make_tuple(4, 4, 1, false, 2, USE_SSE2)] = Degrain1to6_sse2<4, 4, false, 2>;
+  func_degrain[make_tuple(4, 2, 1, false, 2, USE_SSE2)] = Degrain1to6_sse2<4, 2, false, 2>;
 #endif
   //func_degrain[make_tuple(2, 4, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<2, 4, false, 2>; // no for width 2
   //func_degrain[make_tuple(2, 2, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<2, 2, false, 2>; // no for width 2
   // level2 lsb=true
-  func_degrain[make_tuple(32, 32, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<32, 32, true, 2>;
-  func_degrain[make_tuple(32, 16, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<32, 16, true, 2>;
-  func_degrain[make_tuple(32, 8, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<32, 8, true, 2>;
-  func_degrain[make_tuple(16, 32, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<16, 32, true, 2>;
-  func_degrain[make_tuple(16, 16, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<16, 16, true, 2>;
-  func_degrain[make_tuple(16, 8, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<16, 8, true, 2>;
-  func_degrain[make_tuple(16, 4, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<16, 4, true, 2>;
-  func_degrain[make_tuple(16, 2, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<16, 2, true, 2>;
-  func_degrain[make_tuple(8, 16, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<8, 16, true, 2>;
-  func_degrain[make_tuple(8, 8, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<8, 8, true, 2>;
-  func_degrain[make_tuple(8, 4, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<8, 4, true, 2>;
-  func_degrain[make_tuple(8, 2, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<8, 2, true, 2>;
-  func_degrain[make_tuple(8, 1, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<8, 1, true, 2>;
+  func_degrain[make_tuple(32, 32, 1, true, 2, USE_SSE2)] = Degrain1to6_sse2<32, 32, true, 2>;
+  func_degrain[make_tuple(32, 16, 1, true, 2, USE_SSE2)] = Degrain1to6_sse2<32, 16, true, 2>;
+  func_degrain[make_tuple(32, 8, 1, true, 2, USE_SSE2)] = Degrain1to6_sse2<32, 8, true, 2>;
+  func_degrain[make_tuple(16, 32, 1, true, 2, USE_SSE2)] = Degrain1to6_sse2<16, 32, true, 2>;
+  func_degrain[make_tuple(16, 16, 1, true, 2, USE_SSE2)] = Degrain1to6_sse2<16, 16, true, 2>;
+  func_degrain[make_tuple(16, 8, 1, true, 2, USE_SSE2)] = Degrain1to6_sse2<16, 8, true, 2>;
+  func_degrain[make_tuple(16, 4, 1, true, 2, USE_SSE2)] = Degrain1to6_sse2<16, 4, true, 2>;
+  func_degrain[make_tuple(16, 2, 1, true, 2, USE_SSE2)] = Degrain1to6_sse2<16, 2, true, 2>;
+  func_degrain[make_tuple(8, 16, 1, true, 2, USE_SSE2)] = Degrain1to6_sse2<8, 16, true, 2>;
+  func_degrain[make_tuple(8, 8, 1, true, 2, USE_SSE2)] = Degrain1to6_sse2<8, 8, true, 2>;
+  func_degrain[make_tuple(8, 4, 1, true, 2, USE_SSE2)] = Degrain1to6_sse2<8, 4, true, 2>;
+  func_degrain[make_tuple(8, 2, 1, true, 2, USE_SSE2)] = Degrain1to6_sse2<8, 2, true, 2>;
+  func_degrain[make_tuple(8, 1, 1, true, 2, USE_SSE2)] = Degrain1to6_sse2<8, 1, true, 2>;
 #ifndef _M_X64
-  func_degrain[make_tuple(4, 8, 1, true, 2, USE_SSE2)] = Degrain1to5_mmx<4, 8, true, 2>;
-  func_degrain[make_tuple(4, 4, 1, true, 2, USE_SSE2)] = Degrain1to5_mmx<4, 4, true, 2>;
-  func_degrain[make_tuple(4, 2, 1, true, 2, USE_SSE2)] = Degrain1to5_mmx<4, 2, true, 2>;
+  func_degrain[make_tuple(4, 8, 1, true, 2, USE_SSE2)] = Degrain1to6_mmx<4, 8, true, 2>;
+  func_degrain[make_tuple(4, 4, 1, true, 2, USE_SSE2)] = Degrain1to6_mmx<4, 4, true, 2>;
+  func_degrain[make_tuple(4, 2, 1, true, 2, USE_SSE2)] = Degrain1to6_mmx<4, 2, true, 2>;
 #else
-  func_degrain[make_tuple(4, 8, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<4, 8, true, 2>;
-  func_degrain[make_tuple(4, 4, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<4, 4, true, 2>;
-  func_degrain[make_tuple(4, 2, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<4, 2, true, 2>;
+  func_degrain[make_tuple(4, 8, 1, true, 2, USE_SSE2)] = Degrain1to6_sse2<4, 8, true, 2>;
+  func_degrain[make_tuple(4, 4, 1, true, 2, USE_SSE2)] = Degrain1to6_sse2<4, 4, true, 2>;
+  func_degrain[make_tuple(4, 2, 1, true, 2, USE_SSE2)] = Degrain1to6_sse2<4, 2, true, 2>;
 #endif
   //func_degrain[make_tuple(2, 4, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<2, 4, true, 2>; // no for width 2
   //func_degrain[make_tuple(2, 2, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<2, 2, true, 2>; // no for width 2
 
   // level3, lsb=false
-  func_degrain[make_tuple(32, 32, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<32, 32, false, 3>;
-  func_degrain[make_tuple(32, 16, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<32, 16, false, 3>;
-  func_degrain[make_tuple(32, 8, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<32, 8, false, 3>;
-  func_degrain[make_tuple(16, 32, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<16, 32, false, 3>;
-  func_degrain[make_tuple(16, 16, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<16, 16, false, 3>;
-  func_degrain[make_tuple(16, 8, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<16, 8, false, 3>;
-  func_degrain[make_tuple(16, 4, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<16, 4, false, 3>;
-  func_degrain[make_tuple(16, 2, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<16, 2, false, 3>;
-  func_degrain[make_tuple(8, 16, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<8, 16, false, 3>;
-  func_degrain[make_tuple(8, 8, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<8, 8, false, 3>;
-  func_degrain[make_tuple(8, 4, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<8, 4, false, 3>;
-  func_degrain[make_tuple(8, 2, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<8, 2, false, 3>;
-  func_degrain[make_tuple(8, 1, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<8, 1, false, 3>;
+  func_degrain[make_tuple(32, 32, 1, false, 3, USE_SSE2)] = Degrain1to6_sse2<32, 32, false, 3>;
+  func_degrain[make_tuple(32, 16, 1, false, 3, USE_SSE2)] = Degrain1to6_sse2<32, 16, false, 3>;
+  func_degrain[make_tuple(32, 8, 1, false, 3, USE_SSE2)] = Degrain1to6_sse2<32, 8, false, 3>;
+  func_degrain[make_tuple(16, 32, 1, false, 3, USE_SSE2)] = Degrain1to6_sse2<16, 32, false, 3>;
+  func_degrain[make_tuple(16, 16, 1, false, 3, USE_SSE2)] = Degrain1to6_sse2<16, 16, false, 3>;
+  func_degrain[make_tuple(16, 8, 1, false, 3, USE_SSE2)] = Degrain1to6_sse2<16, 8, false, 3>;
+  func_degrain[make_tuple(16, 4, 1, false, 3, USE_SSE2)] = Degrain1to6_sse2<16, 4, false, 3>;
+  func_degrain[make_tuple(16, 2, 1, false, 3, USE_SSE2)] = Degrain1to6_sse2<16, 2, false, 3>;
+  func_degrain[make_tuple(8, 16, 1, false, 3, USE_SSE2)] = Degrain1to6_sse2<8, 16, false, 3>;
+  func_degrain[make_tuple(8, 8, 1, false, 3, USE_SSE2)] = Degrain1to6_sse2<8, 8, false, 3>;
+  func_degrain[make_tuple(8, 4, 1, false, 3, USE_SSE2)] = Degrain1to6_sse2<8, 4, false, 3>;
+  func_degrain[make_tuple(8, 2, 1, false, 3, USE_SSE2)] = Degrain1to6_sse2<8, 2, false, 3>;
+  func_degrain[make_tuple(8, 1, 1, false, 3, USE_SSE2)] = Degrain1to6_sse2<8, 1, false, 3>;
 #ifndef _M_X64
-  func_degrain[make_tuple(4, 8, 1, false, 3, USE_SSE2)] = Degrain1to5_mmx<4, 8, false, 3>;
-  func_degrain[make_tuple(4, 4, 1, false, 3, USE_SSE2)] = Degrain1to5_mmx<4, 4, false, 3>;
-  func_degrain[make_tuple(4, 2, 1, false, 3, USE_SSE2)] = Degrain1to5_mmx<4, 2, false, 3>;
+  func_degrain[make_tuple(4, 8, 1, false, 3, USE_SSE2)] = Degrain1to6_mmx<4, 8, false, 3>;
+  func_degrain[make_tuple(4, 4, 1, false, 3, USE_SSE2)] = Degrain1to6_mmx<4, 4, false, 3>;
+  func_degrain[make_tuple(4, 2, 1, false, 3, USE_SSE2)] = Degrain1to6_mmx<4, 2, false, 3>;
 #else
-  func_degrain[make_tuple(4, 8, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<4, 8, false, 3>;
-  func_degrain[make_tuple(4, 4, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<4, 4, false, 3>;
-  func_degrain[make_tuple(4, 2, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<4, 2, false, 3>;
+  func_degrain[make_tuple(4, 8, 1, false, 3, USE_SSE2)] = Degrain1to6_sse2<4, 8, false, 3>;
+  func_degrain[make_tuple(4, 4, 1, false, 3, USE_SSE2)] = Degrain1to6_sse2<4, 4, false, 3>;
+  func_degrain[make_tuple(4, 2, 1, false, 3, USE_SSE2)] = Degrain1to6_sse2<4, 2, false, 3>;
 #endif
   //func_degrain[make_tuple(2, 4, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<2, 4, false, 3>; // no for width 2
   //func_degrain[make_tuple(2, 2, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<2, 2, false, 3>; // no for width 2
   // level3, lsb=true
-  func_degrain[make_tuple(32, 32, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<32, 32, true, 3>;
-  func_degrain[make_tuple(32, 16, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<32, 16, true, 3>;
-  func_degrain[make_tuple(32, 8, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<32, 8, true, 3>;
-  func_degrain[make_tuple(16, 32, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<16, 32, true, 3>;
-  func_degrain[make_tuple(16, 16, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<16, 16, true, 3>;
-  func_degrain[make_tuple(16, 8, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<16, 8, true, 3>;
-  func_degrain[make_tuple(16, 4, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<16, 4, true, 3>;
-  func_degrain[make_tuple(16, 2, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<16, 2, true, 3>;
-  func_degrain[make_tuple(8, 16, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<8, 16, true, 3>;
-  func_degrain[make_tuple(8, 8, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<8, 8, true, 3>;
-  func_degrain[make_tuple(8, 4, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<8, 4, true, 3>;
-  func_degrain[make_tuple(8, 2, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<8, 2, true, 3>;
-  func_degrain[make_tuple(8, 1, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<8, 1, true, 3>;
+  func_degrain[make_tuple(32, 32, 1, true, 3, USE_SSE2)] = Degrain1to6_sse2<32, 32, true, 3>;
+  func_degrain[make_tuple(32, 16, 1, true, 3, USE_SSE2)] = Degrain1to6_sse2<32, 16, true, 3>;
+  func_degrain[make_tuple(32, 8, 1, true, 3, USE_SSE2)] = Degrain1to6_sse2<32, 8, true, 3>;
+  func_degrain[make_tuple(16, 32, 1, true, 3, USE_SSE2)] = Degrain1to6_sse2<16, 32, true, 3>;
+  func_degrain[make_tuple(16, 16, 1, true, 3, USE_SSE2)] = Degrain1to6_sse2<16, 16, true, 3>;
+  func_degrain[make_tuple(16, 8, 1, true, 3, USE_SSE2)] = Degrain1to6_sse2<16, 8, true, 3>;
+  func_degrain[make_tuple(16, 4, 1, true, 3, USE_SSE2)] = Degrain1to6_sse2<16, 4, true, 3>;
+  func_degrain[make_tuple(16, 2, 1, true, 3, USE_SSE2)] = Degrain1to6_sse2<16, 2, true, 3>;
+  func_degrain[make_tuple(8, 16, 1, true, 3, USE_SSE2)] = Degrain1to6_sse2<8, 16, true, 3>;
+  func_degrain[make_tuple(8, 8, 1, true, 3, USE_SSE2)] = Degrain1to6_sse2<8, 8, true, 3>;
+  func_degrain[make_tuple(8, 4, 1, true, 3, USE_SSE2)] = Degrain1to6_sse2<8, 4, true, 3>;
+  func_degrain[make_tuple(8, 2, 1, true, 3, USE_SSE2)] = Degrain1to6_sse2<8, 2, true, 3>;
+  func_degrain[make_tuple(8, 1, 1, true, 3, USE_SSE2)] = Degrain1to6_sse2<8, 1, true, 3>;
 #ifndef _M_X64
-  func_degrain[make_tuple(4, 8, 1, true, 3, USE_SSE2)] = Degrain1to5_mmx<4, 8, true, 3>;
-  func_degrain[make_tuple(4, 4, 1, true, 3, USE_SSE2)] = Degrain1to5_mmx<4, 4, true, 3>;
-  func_degrain[make_tuple(4, 2, 1, true, 3, USE_SSE2)] = Degrain1to5_mmx<4, 2, true, 3>;
+  func_degrain[make_tuple(4, 8, 1, true, 3, USE_SSE2)] = Degrain1to6_mmx<4, 8, true, 3>;
+  func_degrain[make_tuple(4, 4, 1, true, 3, USE_SSE2)] = Degrain1to6_mmx<4, 4, true, 3>;
+  func_degrain[make_tuple(4, 2, 1, true, 3, USE_SSE2)] = Degrain1to6_mmx<4, 2, true, 3>;
 #else
-  func_degrain[make_tuple(4, 8, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<4, 8, true, 3>;
-  func_degrain[make_tuple(4, 4, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<4, 4, true, 3>;
-  func_degrain[make_tuple(4, 2, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<4, 2, true, 3>;
+  func_degrain[make_tuple(4, 8, 1, true, 3, USE_SSE2)] = Degrain1to6_sse2<4, 8, true, 3>;
+  func_degrain[make_tuple(4, 4, 1, true, 3, USE_SSE2)] = Degrain1to6_sse2<4, 4, true, 3>;
+  func_degrain[make_tuple(4, 2, 1, true, 3, USE_SSE2)] = Degrain1to6_sse2<4, 2, true, 3>;
 #endif
   //func_degrain[make_tuple(2, 4, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<2, 4, true, 3>; // no for width 2
   //func_degrain[make_tuple(2, 2, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<2, 2, true, 3>; // no for width 2
 
   // level4, lsb=false
-  func_degrain[make_tuple(32, 32, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<32, 32, false, 4>;
-  func_degrain[make_tuple(32, 16, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<32, 16, false, 4>;
-  func_degrain[make_tuple(32, 8, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<32, 8, false, 4>;
-  func_degrain[make_tuple(16, 32, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<16, 32, false, 4>;
-  func_degrain[make_tuple(16, 16, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<16, 16, false, 4>;
-  func_degrain[make_tuple(16, 8, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<16, 8, false, 4>;
-  func_degrain[make_tuple(16, 4, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<16, 4, false, 4>;
-  func_degrain[make_tuple(16, 2, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<16, 2, false, 4>;
-  func_degrain[make_tuple(8, 16, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<8, 16, false, 4>;
-  func_degrain[make_tuple(8, 8, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<8, 8, false, 4>;
-  func_degrain[make_tuple(8, 4, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<8, 4, false, 4>;
-  func_degrain[make_tuple(8, 2, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<8, 2, false, 4>;
-  func_degrain[make_tuple(8, 1, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<8, 1, false, 4>;
+  func_degrain[make_tuple(32, 32, 1, false, 4, USE_SSE2)] = Degrain1to6_sse2<32, 32, false, 4>;
+  func_degrain[make_tuple(32, 16, 1, false, 4, USE_SSE2)] = Degrain1to6_sse2<32, 16, false, 4>;
+  func_degrain[make_tuple(32, 8, 1, false, 4, USE_SSE2)] = Degrain1to6_sse2<32, 8, false, 4>;
+  func_degrain[make_tuple(16, 32, 1, false, 4, USE_SSE2)] = Degrain1to6_sse2<16, 32, false, 4>;
+  func_degrain[make_tuple(16, 16, 1, false, 4, USE_SSE2)] = Degrain1to6_sse2<16, 16, false, 4>;
+  func_degrain[make_tuple(16, 8, 1, false, 4, USE_SSE2)] = Degrain1to6_sse2<16, 8, false, 4>;
+  func_degrain[make_tuple(16, 4, 1, false, 4, USE_SSE2)] = Degrain1to6_sse2<16, 4, false, 4>;
+  func_degrain[make_tuple(16, 2, 1, false, 4, USE_SSE2)] = Degrain1to6_sse2<16, 2, false, 4>;
+  func_degrain[make_tuple(8, 16, 1, false, 4, USE_SSE2)] = Degrain1to6_sse2<8, 16, false, 4>;
+  func_degrain[make_tuple(8, 8, 1, false, 4, USE_SSE2)] = Degrain1to6_sse2<8, 8, false, 4>;
+  func_degrain[make_tuple(8, 4, 1, false, 4, USE_SSE2)] = Degrain1to6_sse2<8, 4, false, 4>;
+  func_degrain[make_tuple(8, 2, 1, false, 4, USE_SSE2)] = Degrain1to6_sse2<8, 2, false, 4>;
+  func_degrain[make_tuple(8, 1, 1, false, 4, USE_SSE2)] = Degrain1to6_sse2<8, 1, false, 4>;
 #ifndef _M_X64
-  func_degrain[make_tuple(4, 8, 1, false, 4, USE_SSE2)] = Degrain1to5_mmx<4, 8, false, 4>;
-  func_degrain[make_tuple(4, 4, 1, false, 4, USE_SSE2)] = Degrain1to5_mmx<4, 4, false, 4>;
-  func_degrain[make_tuple(4, 2, 1, false, 4, USE_SSE2)] = Degrain1to5_mmx<4, 2, false, 4>;
+  func_degrain[make_tuple(4, 8, 1, false, 4, USE_SSE2)] = Degrain1to6_mmx<4, 8, false, 4>;
+  func_degrain[make_tuple(4, 4, 1, false, 4, USE_SSE2)] = Degrain1to6_mmx<4, 4, false, 4>;
+  func_degrain[make_tuple(4, 2, 1, false, 4, USE_SSE2)] = Degrain1to6_mmx<4, 2, false, 4>;
 #else
-  func_degrain[make_tuple(4, 8, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<4, 8, false, 4>;
-  func_degrain[make_tuple(4, 4, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<4, 4, false, 4>;
-  func_degrain[make_tuple(4, 2, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<4, 2, false, 4>;
+  func_degrain[make_tuple(4, 8, 1, false, 4, USE_SSE2)] = Degrain1to6_sse2<4, 8, false, 4>;
+  func_degrain[make_tuple(4, 4, 1, false, 4, USE_SSE2)] = Degrain1to6_sse2<4, 4, false, 4>;
+  func_degrain[make_tuple(4, 2, 1, false, 4, USE_SSE2)] = Degrain1to6_sse2<4, 2, false, 4>;
 #endif
   //func_degrain[make_tuple(2, 4, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<2, 4, false, 4>; // no for width 2
   //func_degrain[make_tuple(2, 2, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<2, 2, false, 4>; // no for width 2
   // level4, lsb=true
-  func_degrain[make_tuple(32, 32, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<32, 32, true, 4>;
-  func_degrain[make_tuple(32, 16, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<32, 16, true, 4>;
-  func_degrain[make_tuple(32, 8, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<32, 8, true, 4>;
-  func_degrain[make_tuple(16, 32, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<16, 32, true, 4>;
-  func_degrain[make_tuple(16, 16, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<16, 16, true, 4>;
-  func_degrain[make_tuple(16, 8, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<16, 8, true, 4>;
-  func_degrain[make_tuple(16, 4, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<16, 4, true, 4>;
-  func_degrain[make_tuple(16, 2, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<16, 2, true, 4>;
-  func_degrain[make_tuple(8, 16, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<8, 16, true, 4>;
-  func_degrain[make_tuple(8, 8, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<8, 8, true, 4>;
-  func_degrain[make_tuple(8, 4, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<8, 4, true, 4>;
-  func_degrain[make_tuple(8, 2, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<8, 2, true, 4>;
-  func_degrain[make_tuple(8, 1, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<8, 1, true, 4>;
+  func_degrain[make_tuple(32, 32, 1, true, 4, USE_SSE2)] = Degrain1to6_sse2<32, 32, true, 4>;
+  func_degrain[make_tuple(32, 16, 1, true, 4, USE_SSE2)] = Degrain1to6_sse2<32, 16, true, 4>;
+  func_degrain[make_tuple(32, 8, 1, true, 4, USE_SSE2)] = Degrain1to6_sse2<32, 8, true, 4>;
+  func_degrain[make_tuple(16, 32, 1, true, 4, USE_SSE2)] = Degrain1to6_sse2<16, 32, true, 4>;
+  func_degrain[make_tuple(16, 16, 1, true, 4, USE_SSE2)] = Degrain1to6_sse2<16, 16, true, 4>;
+  func_degrain[make_tuple(16, 8, 1, true, 4, USE_SSE2)] = Degrain1to6_sse2<16, 8, true, 4>;
+  func_degrain[make_tuple(16, 4, 1, true, 4, USE_SSE2)] = Degrain1to6_sse2<16, 4, true, 4>;
+  func_degrain[make_tuple(16, 2, 1, true, 4, USE_SSE2)] = Degrain1to6_sse2<16, 2, true, 4>;
+  func_degrain[make_tuple(8, 16, 1, true, 4, USE_SSE2)] = Degrain1to6_sse2<8, 16, true, 4>;
+  func_degrain[make_tuple(8, 8, 1, true, 4, USE_SSE2)] = Degrain1to6_sse2<8, 8, true, 4>;
+  func_degrain[make_tuple(8, 4, 1, true, 4, USE_SSE2)] = Degrain1to6_sse2<8, 4, true, 4>;
+  func_degrain[make_tuple(8, 2, 1, true, 4, USE_SSE2)] = Degrain1to6_sse2<8, 2, true, 4>;
+  func_degrain[make_tuple(8, 1, 1, true, 4, USE_SSE2)] = Degrain1to6_sse2<8, 1, true, 4>;
 #ifndef _M_X64
-  func_degrain[make_tuple(4, 8, 1, true, 4, USE_SSE2)] = Degrain1to5_mmx<4, 8, true, 4>;
-  func_degrain[make_tuple(4, 4, 1, true, 4, USE_SSE2)] = Degrain1to5_mmx<4, 4, true, 4>;
-  func_degrain[make_tuple(4, 2, 1, true, 4, USE_SSE2)] = Degrain1to5_mmx<4, 2, true, 4>;
+  func_degrain[make_tuple(4, 8, 1, true, 4, USE_SSE2)] = Degrain1to6_mmx<4, 8, true, 4>;
+  func_degrain[make_tuple(4, 4, 1, true, 4, USE_SSE2)] = Degrain1to6_mmx<4, 4, true, 4>;
+  func_degrain[make_tuple(4, 2, 1, true, 4, USE_SSE2)] = Degrain1to6_mmx<4, 2, true, 4>;
 #else
-  func_degrain[make_tuple(4, 8, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<4, 8, true, 4>;
-  func_degrain[make_tuple(4, 4, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<4, 4, true, 4>;
-  func_degrain[make_tuple(4, 2, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<4, 2, true, 4>;
+  func_degrain[make_tuple(4, 8, 1, true, 4, USE_SSE2)] = Degrain1to6_sse2<4, 8, true, 4>;
+  func_degrain[make_tuple(4, 4, 1, true, 4, USE_SSE2)] = Degrain1to6_sse2<4, 4, true, 4>;
+  func_degrain[make_tuple(4, 2, 1, true, 4, USE_SSE2)] = Degrain1to6_sse2<4, 2, true, 4>;
 #endif
   //func_degrain[make_tuple(2, 4, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<2, 4, true, 4>; // no for width 2
   //func_degrain[make_tuple(2, 2, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<2, 2, true, 4>; // no for width 2
 
   // level5, lsb=false
-  func_degrain[make_tuple(32, 32, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<32, 32, false, 5>;
-  func_degrain[make_tuple(32, 16, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<32, 16, false, 5>;
-  func_degrain[make_tuple(32, 8, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<32, 8, false, 5>;
-  func_degrain[make_tuple(16, 32, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<16, 32, false, 5>;
-  func_degrain[make_tuple(16, 16, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<16, 16, false, 5>;
-  func_degrain[make_tuple(16, 8, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<16, 8, false, 5>;
-  func_degrain[make_tuple(16, 4, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<16, 4, false, 5>;
-  func_degrain[make_tuple(16, 2, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<16, 2, false, 5>;
-  func_degrain[make_tuple(8, 16, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<8, 16, false, 5>;
-  func_degrain[make_tuple(8, 8, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<8, 8, false, 5>;
-  func_degrain[make_tuple(8, 4, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<8, 4, false, 5>;
-  func_degrain[make_tuple(8, 2, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<8, 2, false, 5>;
-  func_degrain[make_tuple(8, 1, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<8, 1, false, 5>;
+  func_degrain[make_tuple(32, 32, 1, false, 5, USE_SSE2)] = Degrain1to6_sse2<32, 32, false, 5>;
+  func_degrain[make_tuple(32, 16, 1, false, 5, USE_SSE2)] = Degrain1to6_sse2<32, 16, false, 5>;
+  func_degrain[make_tuple(32, 8, 1, false, 5, USE_SSE2)] = Degrain1to6_sse2<32, 8, false, 5>;
+  func_degrain[make_tuple(16, 32, 1, false, 5, USE_SSE2)] = Degrain1to6_sse2<16, 32, false, 5>;
+  func_degrain[make_tuple(16, 16, 1, false, 5, USE_SSE2)] = Degrain1to6_sse2<16, 16, false, 5>;
+  func_degrain[make_tuple(16, 8, 1, false, 5, USE_SSE2)] = Degrain1to6_sse2<16, 8, false, 5>;
+  func_degrain[make_tuple(16, 4, 1, false, 5, USE_SSE2)] = Degrain1to6_sse2<16, 4, false, 5>;
+  func_degrain[make_tuple(16, 2, 1, false, 5, USE_SSE2)] = Degrain1to6_sse2<16, 2, false, 5>;
+  func_degrain[make_tuple(8, 16, 1, false, 5, USE_SSE2)] = Degrain1to6_sse2<8, 16, false, 5>;
+  func_degrain[make_tuple(8, 8, 1, false, 5, USE_SSE2)] = Degrain1to6_sse2<8, 8, false, 5>;
+  func_degrain[make_tuple(8, 4, 1, false, 5, USE_SSE2)] = Degrain1to6_sse2<8, 4, false, 5>;
+  func_degrain[make_tuple(8, 2, 1, false, 5, USE_SSE2)] = Degrain1to6_sse2<8, 2, false, 5>;
+  func_degrain[make_tuple(8, 1, 1, false, 5, USE_SSE2)] = Degrain1to6_sse2<8, 1, false, 5>;
 #ifndef _M_X64
-  func_degrain[make_tuple(4, 8, 1, false, 5, USE_SSE2)] = Degrain1to5_mmx<4, 8, false, 5>;
-  func_degrain[make_tuple(4, 4, 1, false, 5, USE_SSE2)] = Degrain1to5_mmx<4, 4, false, 5>;
-  func_degrain[make_tuple(4, 2, 1, false, 5, USE_SSE2)] = Degrain1to5_mmx<4, 2, false, 5>;
+  func_degrain[make_tuple(4, 8, 1, false, 5, USE_SSE2)] = Degrain1to6_mmx<4, 8, false, 5>;
+  func_degrain[make_tuple(4, 4, 1, false, 5, USE_SSE2)] = Degrain1to6_mmx<4, 4, false, 5>;
+  func_degrain[make_tuple(4, 2, 1, false, 5, USE_SSE2)] = Degrain1to6_mmx<4, 2, false, 5>;
 #else
-  func_degrain[make_tuple(4, 8, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<4, 8, false, 5>;
-  func_degrain[make_tuple(4, 4, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<4, 4, false, 5>;
-  func_degrain[make_tuple(4, 2, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<4, 2, false, 5>;
+  func_degrain[make_tuple(4, 8, 1, false, 5, USE_SSE2)] = Degrain1to6_sse2<4, 8, false, 5>;
+  func_degrain[make_tuple(4, 4, 1, false, 5, USE_SSE2)] = Degrain1to6_sse2<4, 4, false, 5>;
+  func_degrain[make_tuple(4, 2, 1, false, 5, USE_SSE2)] = Degrain1to6_sse2<4, 2, false, 5>;
 #endif
   //func_degrain[make_tuple(2, 4, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<2, 4, false, 5>; // no for width 2
   //func_degrain[make_tuple(2, 2, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<2, 2, false, 5>; // no for width 2
   // level5, lsb=true
-  func_degrain[make_tuple(32, 32, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<32, 32, true, 5>;
-  func_degrain[make_tuple(32, 16, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<32, 16, true, 5>;
-  func_degrain[make_tuple(32, 8, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<32, 8, true, 5>;
-  func_degrain[make_tuple(16, 32, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<16, 32, true, 5>;
-  func_degrain[make_tuple(16, 16, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<16, 16, true, 5>;
-  func_degrain[make_tuple(16, 8, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<16, 8, true, 5>;
-  func_degrain[make_tuple(16, 4, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<16, 4, true, 5>;
-  func_degrain[make_tuple(16, 2, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<16, 2, true, 5>;
-  func_degrain[make_tuple(8, 16, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<8, 16, true, 5>;
-  func_degrain[make_tuple(8, 8, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<8, 8, true, 5>;
-  func_degrain[make_tuple(8, 4, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<8, 4, true, 5>;
-  func_degrain[make_tuple(8, 2, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<8, 2, true, 5>;
-  func_degrain[make_tuple(8, 1, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<8, 1, true, 5>;
+  func_degrain[make_tuple(32, 32, 1, true, 5, USE_SSE2)] = Degrain1to6_sse2<32, 32, true, 5>;
+  func_degrain[make_tuple(32, 16, 1, true, 5, USE_SSE2)] = Degrain1to6_sse2<32, 16, true, 5>;
+  func_degrain[make_tuple(32, 8, 1, true, 5, USE_SSE2)] = Degrain1to6_sse2<32, 8, true, 5>;
+  func_degrain[make_tuple(16, 32, 1, true, 5, USE_SSE2)] = Degrain1to6_sse2<16, 32, true, 5>;
+  func_degrain[make_tuple(16, 16, 1, true, 5, USE_SSE2)] = Degrain1to6_sse2<16, 16, true, 5>;
+  func_degrain[make_tuple(16, 8, 1, true, 5, USE_SSE2)] = Degrain1to6_sse2<16, 8, true, 5>;
+  func_degrain[make_tuple(16, 4, 1, true, 5, USE_SSE2)] = Degrain1to6_sse2<16, 4, true, 5>;
+  func_degrain[make_tuple(16, 2, 1, true, 5, USE_SSE2)] = Degrain1to6_sse2<16, 2, true, 5>;
+  func_degrain[make_tuple(8, 16, 1, true, 5, USE_SSE2)] = Degrain1to6_sse2<8, 16, true, 5>;
+  func_degrain[make_tuple(8, 8, 1, true, 5, USE_SSE2)] = Degrain1to6_sse2<8, 8, true, 5>;
+  func_degrain[make_tuple(8, 4, 1, true, 5, USE_SSE2)] = Degrain1to6_sse2<8, 4, true, 5>;
+  func_degrain[make_tuple(8, 2, 1, true, 5, USE_SSE2)] = Degrain1to6_sse2<8, 2, true, 5>;
+  func_degrain[make_tuple(8, 1, 1, true, 5, USE_SSE2)] = Degrain1to6_sse2<8, 1, true, 5>;
 #ifndef _M_X64
-  func_degrain[make_tuple(4, 8, 1, true, 5, USE_SSE2)] = Degrain1to5_mmx<4, 8, true, 5>; // width 4: mmx
-  func_degrain[make_tuple(4, 4, 1, true, 5, USE_SSE2)] = Degrain1to5_mmx<4, 4, true, 5>;
-  func_degrain[make_tuple(4, 2, 1, true, 5, USE_SSE2)] = Degrain1to5_mmx<4, 2, true, 5>;
+  func_degrain[make_tuple(4, 8, 1, true, 5, USE_SSE2)] = Degrain1to6_mmx<4, 8, true, 5>; // width 4: mmx
+  func_degrain[make_tuple(4, 4, 1, true, 5, USE_SSE2)] = Degrain1to6_mmx<4, 4, true, 5>;
+  func_degrain[make_tuple(4, 2, 1, true, 5, USE_SSE2)] = Degrain1to6_mmx<4, 2, true, 5>;
 #else
-  func_degrain[make_tuple(4, 8, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<4, 8, true, 5>; // width 4: mmx
-  func_degrain[make_tuple(4, 4, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<4, 4, true, 5>;
-  func_degrain[make_tuple(4, 2, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<4, 2, true, 5>;
+  func_degrain[make_tuple(4, 8, 1, true, 5, USE_SSE2)] = Degrain1to6_sse2<4, 8, true, 5>; // width 4: mmx
+  func_degrain[make_tuple(4, 4, 1, true, 5, USE_SSE2)] = Degrain1to6_sse2<4, 4, true, 5>;
+  func_degrain[make_tuple(4, 2, 1, true, 5, USE_SSE2)] = Degrain1to6_sse2<4, 2, true, 5>;
 #endif
   //func_degrain[make_tuple(2, 4, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<2, 4, true, 5>; // no for width 2
   //func_degrain[make_tuple(2, 2, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<2, 2, true, 5>; // no for width 2
 
-  Denoise1to5Function* result = nullptr;
+  // level6, lsb=false
+  func_degrain[make_tuple(32, 32, 1, false, 6, USE_SSE2)] = Degrain1to6_sse2<32, 32, false, 6>;
+  func_degrain[make_tuple(32, 16, 1, false, 6, USE_SSE2)] = Degrain1to6_sse2<32, 16, false, 6>;
+  func_degrain[make_tuple(32, 8, 1, false, 6, USE_SSE2)] = Degrain1to6_sse2<32, 8, false, 6>;
+  func_degrain[make_tuple(16, 32, 1, false, 6, USE_SSE2)] = Degrain1to6_sse2<16, 32, false, 6>;
+  func_degrain[make_tuple(16, 16, 1, false, 6, USE_SSE2)] = Degrain1to6_sse2<16, 16, false, 6>;
+  func_degrain[make_tuple(16, 8, 1, false, 6, USE_SSE2)] = Degrain1to6_sse2<16, 8, false, 6>;
+  func_degrain[make_tuple(16, 4, 1, false, 6, USE_SSE2)] = Degrain1to6_sse2<16, 4, false, 6>;
+  func_degrain[make_tuple(16, 2, 1, false, 6, USE_SSE2)] = Degrain1to6_sse2<16, 2, false, 6>;
+  func_degrain[make_tuple(8, 16, 1, false, 6, USE_SSE2)] = Degrain1to6_sse2<8, 16, false, 6>;
+  func_degrain[make_tuple(8, 8, 1, false, 6, USE_SSE2)] = Degrain1to6_sse2<8, 8, false, 6>;
+  func_degrain[make_tuple(8, 4, 1, false, 6, USE_SSE2)] = Degrain1to6_sse2<8, 4, false, 6>;
+  func_degrain[make_tuple(8, 2, 1, false, 6, USE_SSE2)] = Degrain1to6_sse2<8, 2, false, 6>;
+  func_degrain[make_tuple(8, 1, 1, false, 6, USE_SSE2)] = Degrain1to6_sse2<8, 1, false, 6>;
+#ifndef _M_X64
+  func_degrain[make_tuple(4, 8, 1, false, 6, USE_SSE2)] = Degrain1to6_mmx<4, 8, false, 6>;
+  func_degrain[make_tuple(4, 4, 1, false, 6, USE_SSE2)] = Degrain1to6_mmx<4, 4, false, 6>;
+  func_degrain[make_tuple(4, 2, 1, false, 6, USE_SSE2)] = Degrain1to6_mmx<4, 2, false, 6>;
+#else
+  func_degrain[make_tuple(4, 8, 1, false, 6, USE_SSE2)] = Degrain1to6_sse2<4, 8, false, 6>;
+  func_degrain[make_tuple(4, 4, 1, false, 6, USE_SSE2)] = Degrain1to6_sse2<4, 4, false, 6>;
+  func_degrain[make_tuple(4, 2, 1, false, 6, USE_SSE2)] = Degrain1to6_sse2<4, 2, false, 6>;
+#endif
+  //func_degrain[make_tuple(2, 4, 1, false, 6, USE_SSE2)] = Degrain1to5_sse2<2, 4, false, 6>; // no for width 2
+  //func_degrain[make_tuple(2, 2, 1, false, 6, USE_SSE2)] = Degrain1to5_sse2<2, 2, false, 6>; // no for width 2
+  // level6, lsb=true
+  func_degrain[make_tuple(32, 32, 1, true, 6, USE_SSE2)] = Degrain1to6_sse2<32, 32, true, 6>;
+  func_degrain[make_tuple(32, 16, 1, true, 6, USE_SSE2)] = Degrain1to6_sse2<32, 16, true, 6>;
+  func_degrain[make_tuple(32, 8, 1, true, 6, USE_SSE2)] = Degrain1to6_sse2<32, 8, true, 6>;
+  func_degrain[make_tuple(16, 32, 1, true, 6, USE_SSE2)] = Degrain1to6_sse2<16, 32, true, 6>;
+  func_degrain[make_tuple(16, 16, 1, true, 6, USE_SSE2)] = Degrain1to6_sse2<16, 16, true, 6>;
+  func_degrain[make_tuple(16, 8, 1, true, 6, USE_SSE2)] = Degrain1to6_sse2<16, 8, true, 6>;
+  func_degrain[make_tuple(16, 4, 1, true, 6, USE_SSE2)] = Degrain1to6_sse2<16, 4, true, 6>;
+  func_degrain[make_tuple(16, 2, 1, true, 6, USE_SSE2)] = Degrain1to6_sse2<16, 2, true, 6>;
+  func_degrain[make_tuple(8, 16, 1, true, 6, USE_SSE2)] = Degrain1to6_sse2<8, 16, true, 6>;
+  func_degrain[make_tuple(8, 8, 1, true, 6, USE_SSE2)] = Degrain1to6_sse2<8, 8, true, 6>;
+  func_degrain[make_tuple(8, 4, 1, true, 6, USE_SSE2)] = Degrain1to6_sse2<8, 4, true, 6>;
+  func_degrain[make_tuple(8, 2, 1, true, 6, USE_SSE2)] = Degrain1to6_sse2<8, 2, true, 6>;
+  func_degrain[make_tuple(8, 1, 1, true, 6, USE_SSE2)] = Degrain1to6_sse2<8, 1, true, 6>;
+#ifndef _M_X64
+  func_degrain[make_tuple(4, 8, 1, true, 6, USE_SSE2)] = Degrain1to6_mmx<4, 8, true, 6>; // width 4: mmx
+  func_degrain[make_tuple(4, 4, 1, true, 6, USE_SSE2)] = Degrain1to6_mmx<4, 4, true, 6>;
+  func_degrain[make_tuple(4, 2, 1, true, 6, USE_SSE2)] = Degrain1to6_mmx<4, 2, true, 6>;
+#else
+  func_degrain[make_tuple(4, 8, 1, true, 6, USE_SSE2)] = Degrain1to6_sse2<4, 8, true, 6>; // width 4: mmx
+  func_degrain[make_tuple(4, 4, 1, true, 6, USE_SSE2)] = Degrain1to6_sse2<4, 4, true, 6>;
+  func_degrain[make_tuple(4, 2, 1, true, 6, USE_SSE2)] = Degrain1to6_sse2<4, 2, true, 6>;
+#endif
+  //func_degrain[make_tuple(2, 4, 1, true, 6, USE_SSE2)] = Degrain1to5_sse2<2, 4, true, 6>; // no for width 2
+  //func_degrain[make_tuple(2, 2, 1, true, 6, USE_SSE2)] = Degrain1to5_sse2<2, 2, true, 6>; // no for width 2
+
+  Denoise1to6Function* result = nullptr;
   arch_t archlist[] = { USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
   int index = 0;
   while (result == nullptr) {
@@ -787,11 +717,6 @@ Denoise1to5Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
     if (result == nullptr && current_arch_try == NO_SIMD)
       break;
   }
-#if 0
-  Denoise1to5Function* result = func_degrain[make_tuple(BlockX, BlockY, _pixelsize, _lsb_flag, _level, arch)];
-  if (!result) // fallback to C
-    result = func_degrain[make_tuple(BlockX, BlockY, _pixelsize, _lsb_flag, _level, NO_SIMD)];
-#endif
   return result;
 }
 
@@ -805,7 +730,8 @@ MVDegrainX<level>::MVDegrainX(
 #else
 MVDegrainX::MVDegrainX(
 #endif
-  PClip _child, PClip _super, PClip _mvbw, PClip _mvfw, PClip _mvbw2, PClip _mvfw2, PClip _mvbw3, PClip _mvfw3, PClip _mvbw4, PClip _mvfw4, PClip _mvbw5, PClip _mvfw5,
+  PClip _child, PClip _super, 
+  PClip _mvbw, PClip _mvfw, PClip _mvbw2, PClip _mvfw2, PClip _mvbw3, PClip _mvfw3, PClip _mvbw4, PClip _mvfw4, PClip _mvbw5, PClip _mvfw5, PClip _mvbw6, PClip _mvfw6,
   sad_t _thSAD, sad_t _thSADC, int _YUVplanes, sad_t _nLimit, sad_t _nLimitC,
   sad_t _nSCD1, int _nSCD2, bool _isse2, bool _planar, bool _lsb_flag,
   bool _mt_flag, 
@@ -815,17 +741,17 @@ MVDegrainX::MVDegrainX(
   IScriptEnvironment* env_ptr
 ) : GenericVideoFilter(_child)
 , MVFilter(
-  // mvfw/mvfw2/mvfw3/mvfw4/mvfw5
-  // MDegrain1/2/3/4/5
+  // mvfw/mvfw2/mvfw3/mvfw4/mvfw5/mvfw6
+  // MDegrain1/2/3/4/5/6
 #ifndef LEVEL_IS_TEMPLATE
-  (!_mvfw) ? _mvbw : (_level == 1 ? _mvfw : (_level == 2 ? _mvfw2 : (_level == 3 ? _mvfw3 : (_level == 4 ? _mvfw4 : _mvfw5)))),
-  _level == 1 ? "MDegrain1" : (_level == 2 ? "MDegrain2" : (_level == 3 ? "MDegrain3" : (_level == 4 ? "MDegrain4" : "MDegrain5"))),
+  (!_mvfw) ? _mvbw : (_level == 1 ? _mvfw : (_level == 2 ? _mvfw2 : (_level == 3 ? _mvfw3 : (_level == 4 ? _mvfw4 : (_level == 5 ? _mvfw5 : _mvfw6))))),
+  _level == 1 ? "MDegrain1" : (_level == 2 ? "MDegrain2" : (_level == 3 ? "MDegrain3" : (_level == 4 ? "MDegrain4" : (_level == 5 ? "MDegrain5" : "MDegrain6")))),
   env_ptr,
   (!_mvfw) ? _level * 2 : 1, 
   (!_mvfw) ? _level * 2 - 1 : 0) // 1/3/5
 #else
-  (!_mvfw) ? _mvbw : (level == 1 ? _mvfw : (level == 2 ? _mvfw2 : (level == 3 ? _mvfw3 : (level == 4 ? _mvfw4 : _mvfw5)))),
-  level == 1 ? "MDegrain1" : (level == 2 ? "MDegrain2" : (level == 3 ? "MDegrain3" : (level == 4 ? "MDegrain4" : "MDegrain5"))),
+  (!_mvfw) ? _mvbw : (level == 1 ? _mvfw : (level == 2 ? _mvfw2 : (level == 3 ? _mvfw3 : (level == 4 ? _mvfw4 : (level == 5 ? _mvfw5 : _mvfw6))))),
+  level == 1 ? "MDegrain1" : (level == 2 ? "MDegrain2" : (level == 3 ? "MDegrain3" : (level == 4 ? "MDegrain4" : (level == 5 ? "MDegrain5" : "MDegrain6")))),
   env_ptr,
   (!_mvfw) ? level * 2 : 1, 
   (!_mvfw) ? level * 2 - 1 : 0) // 1/3/5
@@ -859,6 +785,10 @@ MVDegrainX::MVDegrainX(
         if (level >= 5) {
           mvClipF[4] = new MVClip((!_mvfw) ? _mvbw : _mvfw5, _nSCD1, _nSCD2, env_ptr, (!_mvfw) ? group_len : 1, (!_mvfw) ? 9 : 0);
           mvClipB[4] = new MVClip((!_mvfw) ? _mvbw : _mvbw5, _nSCD1, _nSCD2, env_ptr, (!_mvfw) ? group_len : 1, (!_mvfw) ? 8 : 0);
+          if (level >= 6) {
+            mvClipF[5] = new MVClip((!_mvfw) ? _mvbw : _mvfw6, _nSCD1, _nSCD2, env_ptr, (!_mvfw) ? group_len : 1, (!_mvfw) ? 11 : 0);
+            mvClipB[5] = new MVClip((!_mvfw) ? _mvbw : _mvbw6, _nSCD1, _nSCD2, env_ptr, (!_mvfw) ? group_len : 1, (!_mvfw) ? 10 : 0);
+          }
         }
       }
     }
@@ -889,6 +819,10 @@ MVDegrainX::MVDegrainX(
         if (level >= 5) {
           CheckSimilarity(*mvClipF[4], "mvfw5", env_ptr);
           CheckSimilarity(*mvClipB[4], "mvbw5", env_ptr);
+          if (level >= 6) {
+            CheckSimilarity(*mvClipF[5], "mvfw6", env_ptr);
+            CheckSimilarity(*mvClipB[5], "mvbw6", env_ptr);
+          }
         }
       }
     }
@@ -1010,6 +944,7 @@ MVDegrainX::MVDegrainX(
   case 3: NORMWEIGHTS = norm_weights<3>; break;
   case 4: NORMWEIGHTS = norm_weights<4>; break;
   case 5: NORMWEIGHTS = norm_weights<5>; break;
+  case 6: NORMWEIGHTS = norm_weights<6>; break;
   }
 #endif
 
@@ -1556,6 +1491,8 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
           norm_weights<4>(WSrc, WRefB, WRefF);
           else if (level == 5)
           norm_weights<5>(WSrc, WRefB, WRefF);
+          else if (level == 6)
+          norm_weights<6>(WSrc, WRefB, WRefF);
           */
 
           // luma
@@ -2016,6 +1953,8 @@ __forceinline void	norm_weights(int &WSrc, int(&WRefB)[MAX_DEGRAIN], int(&WRefF)
 {
   WSrc = 256;
   int WSum;
+  if (level == 6)
+    WSum = WRefB[0] + WRefF[0] + WSrc + WRefB[1] + WRefF[1] + WRefB[2] + WRefF[2] + WRefB[3] + WRefF[3] + WRefB[4] + WRefF[4] + WRefB[5] + WRefF[5] + 1;
   if (level == 5)
     WSum = WRefB[0] + WRefF[0] + WSrc + WRefB[1] + WRefF[1] + WRefB[2] + WRefF[2] + WRefB[3] + WRefF[3] + WRefB[4] + WRefF[4] + 1;
   if (level == 4)
@@ -2044,7 +1983,13 @@ __forceinline void	norm_weights(int &WSrc, int(&WRefB)[MAX_DEGRAIN], int(&WRefF)
     WRefB[4] = WRefB[4] * 256 / WSum; // normalize weights to 256
     WRefF[4] = WRefF[4] * 256 / WSum;
   }
-  if (level == 5)
+  if (level >= 6) {
+    WRefB[5] = WRefB[5] * 256 / WSum; // normalize weights to 256
+    WRefF[5] = WRefF[5] * 256 / WSum;
+  }
+  if (level == 6)
+    WSrc = 256 - WRefB[0] - WRefF[0] - WRefB[1] - WRefF[1] - WRefB[2] - WRefF[2] - WRefB[3] - WRefF[3] - WRefB[4] - WRefF[4] - WRefB[5] - WRefF[5];
+  else if (level == 5)
     WSrc = 256 - WRefB[0] - WRefF[0] - WRefB[1] - WRefF[1] - WRefB[2] - WRefF[2] - WRefB[3] - WRefF[3] - WRefB[4] - WRefF[4];
   else if (level == 4)
     WSrc = 256 - WRefB[0] - WRefF[0] - WRefB[1] - WRefF[1] - WRefB[2] - WRefF[2] - WRefB[3] - WRefF[3];

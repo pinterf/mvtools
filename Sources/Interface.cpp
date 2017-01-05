@@ -456,6 +456,7 @@ AVSValue __cdecl Create_MVDegrainX(AVSValue args, void* user_data, IScriptEnviro
 
   int param_index_shift = 0;
   switch (level) {
+    case 6: param_index_shift = 10; break; // new PF 170105 MDegrain6
     case 5: param_index_shift = 8; break; // new PF 160926 MDegrain5
     case 4: param_index_shift = 6; break; // new PF 160926 MDegrain4
     case 3: param_index_shift = 4; break;
@@ -506,6 +507,8 @@ AVSValue __cdecl Create_MVDegrainX(AVSValue args, void* user_data, IScriptEnviro
       level >= 4 ? args[9].AsClip() : nullptr,       // mvfw4
       level >= 5 ? args[10].AsClip() : nullptr,       // mvbw5
       level >= 5 ? args[11].AsClip() : nullptr,       // mvfw5
+      level >= 6 ? args[12].AsClip() : nullptr,       // mvbw6
+      level >= 6 ? args[13].AsClip() : nullptr,       // mvfw6
       thSAD,                  // thSAD
       args[5 + param_index_shift].AsInt(thSAD),   // thSAD
       YUVplanes,              // YUV planes
@@ -534,6 +537,8 @@ AVSValue __cdecl Create_MVDegrainX(AVSValue args, void* user_data, IScriptEnviro
       level >= 4 ? args[9].AsClip() : nullptr,       // mvfw4
       level >= 5 ? args[10].AsClip() : nullptr,       // mvbw5
       level >= 5 ? args[11].AsClip() : nullptr,       // mvfw5
+      level >= 6 ? args[12].AsClip() : nullptr,       // mvbw6
+      level >= 6 ? args[13].AsClip() : nullptr,       // mvfw6
       thSAD,                  // thSAD
       args[5 + param_index_shift].AsInt(thSAD),   // thSAD
       YUVplanes,              // YUV planes
@@ -563,6 +568,8 @@ AVSValue __cdecl Create_MVDegrainX(AVSValue args, void* user_data, IScriptEnviro
       level>=4 ? args[9].AsClip() : nullptr,       // mvfw4
       level>=5 ? args[10].AsClip() : nullptr,       // mvbw5
       level>=5 ? args[11].AsClip() : nullptr,       // mvfw5
+      level>=6 ? args[12].AsClip() : nullptr,       // mvbw6
+      level>=6 ? args[13].AsClip() : nullptr,       // mvfw6
       thSAD,                  // thSAD
 		  args[5+param_index_shift].AsInt(thSAD),   // thSAD
 		  YUVplanes,              // YUV planes
@@ -574,7 +581,7 @@ AVSValue __cdecl Create_MVDegrainX(AVSValue args, void* user_data, IScriptEnviro
         args[12+param_index_shift].AsBool(false), // planar
         args[13+param_index_shift].AsBool(false), // lsb
 		  args[14+param_index_shift].AsBool(true),  // mt
-      level, // level==3
+      level,
 		  env
 	  );
 #endif
@@ -614,10 +621,10 @@ AVSValue __cdecl Create_MDegrainN (AVSValue args, void* , IScriptEnvironment* en
 	const int		thSAD2  = args [14].AsInt (thSAD);  // thSAD2
 	const int		thSADC2 = args [15].AsInt (thSADC); // thSADC2
 
-	// Switch to MDegrain1/2/3/4/5 when possible (faster)
+	// Switch to MDegrain1/2/3/4/5/6 when possible (faster)
 	if (thSAD2 == thSAD && thSADC == thSADC2)
 	{
-    if(tr <= MAX_DEGRAIN) // up to MDegrain5 160926
+    if(tr <= MAX_DEGRAIN) // up to MDegrain5 160926, MDegrain6 170105
 #if 0		
     if (tr == 1)
 		{
@@ -738,6 +745,8 @@ AVSValue __cdecl Create_MDegrainN (AVSValue args, void* , IScriptEnvironment* en
         tr >= 4 ? ::PClip () : nullptr,                // mvfw4
         tr >= 5 ? ::PClip () : nullptr,                // mvbw5
         tr >= 5 ? ::PClip () : nullptr,                // mvfw5
+        tr >= 6 ? ::PClip () : nullptr,                // mvbw6
+        tr >= 6 ? ::PClip () : nullptr,                // mvfw6
         thSAD,                     // thSAD
 				thSADC,                    // thSADC
 				YUVplanes,                 // YUV planes
@@ -949,6 +958,7 @@ AvisynthPluginInit3(IScriptEnvironment* env, const AVS_Linkage* const vectors) {
 	env->AddFunction("MDegrain3",    "cccccccc[thSAD]i[thSADC]i[plane]i[limit]i[limitC]i[thSCD1]i[thSCD2]i[isse]b[planar]b[lsb]b[mt]b", Create_MVDegrainX, (void *)3);
   env->AddFunction("MDegrain4",    "cccccccccc[thSAD]i[thSADC]i[plane]i[limit]i[limitC]i[thSCD1]i[thSCD2]i[isse]b[planar]b[lsb]b[mt]b", Create_MVDegrainX, (void *)4);
   env->AddFunction("MDegrain5",    "cccccccccccc[thSAD]i[thSADC]i[plane]i[limit]i[limitC]i[thSCD1]i[thSCD2]i[isse]b[planar]b[lsb]b[mt]b", Create_MVDegrainX, (void *)5);
+  env->AddFunction("MDegrain6",    "cccccccccccccc[thSAD]i[thSADC]i[plane]i[limit]i[limitC]i[thSCD1]i[thSCD2]i[isse]b[planar]b[lsb]b[mt]b", Create_MVDegrainX, (void *)6);
   env->AddFunction("MDegrainN",    "ccci[thSAD]i[thSADC]i[plane]i[limit]i[limitC]i[thSCD1]i[thSCD2]i[isse]b[planar]b[lsb]b[thsad2]i[thsadc2]i[mt]b", Create_MDegrainN, 0);
 	env->AddFunction("MRecalculate", "cc[thsad]i[smooth]i[blksize]i[blksizeV]i[search]i[searchparam]i[lambda]i[chroma]b[truemotion]b[pnew]i[overlap]i[overlapV]i[outfile]s[dct]i[divide]i[sadx264]i[isse]b[meander]b[tr]i[mt]b", Create_MVRecalculate, 0);
 	env->AddFunction("MBlockFps",    "cccc[num]i[den]i[mode]i[ml]i[blend]b[thSCD1]i[thSCD2]i[isse]b[planar]b[mt]b", Create_MVBlockFps, 0);
