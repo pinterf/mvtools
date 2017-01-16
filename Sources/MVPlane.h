@@ -34,6 +34,7 @@
 
 #include	<cstdio>
 #include <stdint.h>
+#include "def.h"
 
 
 
