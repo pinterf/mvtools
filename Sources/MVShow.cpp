@@ -202,7 +202,7 @@ PVideoFrame __stdcall MVShow::GetFrame(int n, IScriptEnvironment* env)
       for (int h = 0; h < nBlkSizeX; h++)
       {
         for (int w = 0; w < nBlkSizeY; w++)
-          pDstWork[w] = 255; // todo pixelsize aware
+          pDstWork[w] = 255;
         pDstWork += nDstPitches[0];
       }
     }
@@ -212,7 +212,7 @@ PVideoFrame __stdcall MVShow::GetFrame(int n, IScriptEnvironment* env)
       for (int h = 0; h < nBlkSizeX; h++)
       {
         for (int w = 0; w < nBlkSizeY; w++)
-          pDstWork[w] = pixel_max; // todo pixelsize aware
+          pDstWork[w] = pixel_max;
         pDstWork += nDstPitches[0] / pixelsize;
       }
     }
