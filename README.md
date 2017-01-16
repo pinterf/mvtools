@@ -14,6 +14,10 @@ Modification base:
 http://avisynth.nl/index.php/AviSynth%2B#AviSynth.2B_x64_plugins
 
 Change log
+- 2.7.11.22 (20170116)
+  New: MDegrain6
+  Mod: MDegrain1-6 SSE4 for 10-16 bit (was: C. 3-5% gain, wasn't bottleneck)
+
 - 2.7.10.22 (20161228)
   Fix: for YV12 the debug info text chroma part was positioned at wrong place
 
