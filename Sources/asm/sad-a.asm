@@ -241,6 +241,7 @@ cglobal pixel_sad_16x8, 4,4
     SAD_END_SSE2
 %endmacro
 
+; pixel_sad_16x16_sse2, pixel_sad_16x8_sse2
 INIT_XMM sse2
 SAD_W16
 INIT_XMM sse3
