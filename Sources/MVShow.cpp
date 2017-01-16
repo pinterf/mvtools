@@ -223,7 +223,7 @@ PVideoFrame __stdcall MVShow::GetFrame(int n, IScriptEnvironment* env)
 }
 
 template<typename pixel_t>
-inline void MVShow::DrawPixel(unsigned char *pDst, int nDstPitch, int x, int y, int w, int h, int luma)
+MV_FORCEINLINE void MVShow::DrawPixel(unsigned char *pDst, int nDstPitch, int x, int y, int w, int h, int luma)
 {
 //	if (( x >= 0 ) && ( x < w ) && ( y >= 0 ) && ( y < h )) // disababled in v.2 - it is no more needed with super clip
 		reinterpret_cast<pixel_t *>(pDst)[x + y * nDstPitch / sizeof(pixel_t)] = luma;

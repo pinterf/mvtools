@@ -36,7 +36,7 @@
 // vi.num_audio_samples = nHeight + (nHPad<<16) + (nVPad<<24) + ((_int64)(nPel)<<32) + ((_int64)nModeYUV<<40) + ((_int64)nLevels<<48);
 
 // PF: OK
-inline int PlaneHeightLuma(int src_height, int level, int yRatioUV, int vpad)
+MV_FORCEINLINE int PlaneHeightLuma(int src_height, int level, int yRatioUV, int vpad)
 {
 	int height = src_height;
 
@@ -49,7 +49,7 @@ inline int PlaneHeightLuma(int src_height, int level, int yRatioUV, int vpad)
 }
 
 // PF: OK
-inline int PlaneWidthLuma(int src_width, int level, int xRatioUV, int hpad)
+MV_FORCEINLINE int PlaneWidthLuma(int src_width, int level, int xRatioUV, int hpad)
 {
 	int width = src_width;
 
@@ -63,7 +63,7 @@ inline int PlaneWidthLuma(int src_width, int level, int xRatioUV, int hpad)
 
 // PF: OK no need for xRatioUV here
 // returned offset is pixelsize-aware because plane_pitch is in bytes
-inline unsigned int PlaneSuperOffset(bool chroma, int src_height, int level, int pel, int vpad, int plane_pitch, int yRatioUV)
+MV_FORCEINLINE unsigned int PlaneSuperOffset(bool chroma, int src_height, int level, int pel, int vpad, int plane_pitch, int yRatioUV)
 {
 	// storing subplanes in superframes may be implemented by various ways
 	int height = src_height; // luma or chroma

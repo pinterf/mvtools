@@ -7,6 +7,7 @@
 #include "overlap.h"
 #include "yuy2planes.h"
 #include <stdint.h>
+#include "def.h"
 
 class MVGroupOfFrames;
 class MVPlane;
@@ -122,10 +123,10 @@ private:
   inline void process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int nDstPitch, const BYTE *pSrc, const BYTE *pSrcCur, int nSrcPitch,
     bool isUsableB[MAX_DEGRAIN], bool isUsableF[MAX_DEGRAIN], MVPlane *pPlanesB[MAX_DEGRAIN], MVPlane *pPlanesF[MAX_DEGRAIN],
     int lsb_offset_uv, int nWidth_B, int nHeight_B);
-  // inline void	process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int nDstPitch, const BYTE *pSrc, const BYTE *pSrcCur, int nSrcPitch, bool isUsableB, bool isUsableF, bool isUsableB2, bool isUsableF2, bool isUsableB3, bool isUsableF3, MVPlane *pPlanesB, MVPlane *pPlanesF, MVPlane *pPlanesB2, MVPlane *pPlanesF2, MVPlane *pPlanesB3, MVPlane *pPlanesF3, int lsb_offset_uv, int nWidth_B, int nHeight_B);
-  __forceinline void	use_block_y(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch);
-  __forceinline void	use_block_uv(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch);
-  // static inline void	norm_weights(int &WSrc, int &WRefB, int &WRefF, int &WRefB2, int &WRefF2, int &WRefB3, int &WRefF3);
+  // MV_FORCEINLINE void	process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int nDstPitch, const BYTE *pSrc, const BYTE *pSrcCur, int nSrcPitch, bool isUsableB, bool isUsableF, bool isUsableB2, bool isUsableF2, bool isUsableB3, bool isUsableF3, MVPlane *pPlanesB, MVPlane *pPlanesF, MVPlane *pPlanesB2, MVPlane *pPlanesF2, MVPlane *pPlanesB3, MVPlane *pPlanesF3, int lsb_offset_uv, int nWidth_B, int nHeight_B);
+  MV_FORCEINLINE void	use_block_y(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch);
+  MV_FORCEINLINE void	use_block_uv(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch);
+  // static MV_FORCEINLINE void	norm_weights(int &WSrc, int &WRefB, int &WRefF, int &WRefB2, int &WRefF2, int &WRefB3, int &WRefF3);
   Denoise1to6Function *get_denoise123_function(int BlockX, int BlockY, int _pixelsize, bool _lsb_flag, int _level, arch_t _arch);
 };
 
@@ -772,7 +773,7 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, bool _lsb_flag_not_used_templat
 
 // Not really related to overlap, but common to MDegrainX functions
 // PF 160928: this is bottleneck. Could be optimized with precalc thSAD*thSAD
-__forceinline int DegrainWeight(int thSAD, int blockSAD, int bits_per_pixels)
+MV_FORCEINLINE int DegrainWeight(int thSAD, int blockSAD, int bits_per_pixels)
 {
   // Returning directly prevents a divide by 0 if thSAD == blockSAD == 0.
   if (thSAD <= blockSAD)
@@ -804,7 +805,7 @@ __forceinline int DegrainWeight(int thSAD, int blockSAD, int bits_per_pixels)
 }
 
 template<int level>
-__forceinline void norm_weights(int &WSrc, int(&WRefB)[MAX_DEGRAIN], int(&RefF)[MAX_DEGRAIN]);
+MV_FORCEINLINE void norm_weights(int &WSrc, int(&WRefB)[MAX_DEGRAIN], int(&RefF)[MAX_DEGRAIN]);
 
 
 #ifdef LEVEL_IS_TEMPLATE

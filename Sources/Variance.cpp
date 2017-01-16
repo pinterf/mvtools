@@ -20,8 +20,9 @@
 #include "CopyCode.h" // arch_t
 #include <tuple>
 #include <map>
+#include "def.h"
 
-inline unsigned int ABS(const int x)
+MV_FORCEINLINE unsigned int ABS(const int x)
 {
 	return ( x < 0 ) ? -x : x;
 }

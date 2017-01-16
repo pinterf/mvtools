@@ -1495,7 +1495,7 @@ void	PlaneOfBlocks::estimate_global_mv_doubled_slice(Slicer::TaskData &td)
 
 
 /* fetch the block in the reference frame, which is pointed by the vector (vx, vy) */
-__forceinline const uint8_t *	PlaneOfBlocks::GetRefBlock(WorkingArea &workarea, int nVx, int nVy)
+MV_FORCEINLINE const uint8_t *	PlaneOfBlocks::GetRefBlock(WorkingArea &workarea, int nVx, int nVy)
 {
   //	return pRefFrame->GetPlane(YPLANE)->GetAbsolutePointer((workarea.x[0]<<nLogPel) + nVx, (workarea.y[0]<<nLogPel) + nVy);
   return (nPel == 2) ? pRefFrame->GetPlane(YPLANE)->GetAbsolutePointerPel <1>((workarea.x[0] << 1) + nVx, (workarea.y[0] << 1) + nVy) :
@@ -1503,7 +1503,7 @@ __forceinline const uint8_t *	PlaneOfBlocks::GetRefBlock(WorkingArea &workarea, 
     pRefFrame->GetPlane(YPLANE)->GetAbsolutePointerPel <2>((workarea.x[0] << 2) + nVx, (workarea.y[0] << 2) + nVy);
 }
 
-__forceinline const uint8_t *	PlaneOfBlocks::GetRefBlockU(WorkingArea &workarea, int nVx, int nVy)
+MV_FORCEINLINE const uint8_t *	PlaneOfBlocks::GetRefBlockU(WorkingArea &workarea, int nVx, int nVy)
 {
   //	return pRefFrame->GetPlane(UPLANE)->GetAbsolutePointer((workarea.x[1]<<nLogPel) + (nVx >> 1), (workarea.y[1]<<nLogPel) + (yRatioUV==1 ? nVy : nVy>>1) ); //v.1.2.1
   // 161130 bitshifts instead of ternary operator
@@ -1513,7 +1513,7 @@ __forceinline const uint8_t *	PlaneOfBlocks::GetRefBlockU(WorkingArea &workarea,
   // xRatioUV fix after 2.7.0.22c
 }
 
-__forceinline const uint8_t *	PlaneOfBlocks::GetRefBlockV(WorkingArea &workarea, int nVx, int nVy)
+MV_FORCEINLINE const uint8_t *	PlaneOfBlocks::GetRefBlockV(WorkingArea &workarea, int nVx, int nVy)
 {
   //	return pRefFrame->GetPlane(VPLANE)->GetAbsolutePointer((workarea.x[2]<<nLogPel) + (nVx >> 1), (workarea.y[2]<<nLogPel) + (yRatioUV==1 ? nVy : nVy>>1) );
   return (nPel == 2) ? pRefFrame->GetPlane(VPLANE)->GetAbsolutePointerPel <1>((workarea.x[2] << 1) + (nVx >> nLogxRatioUV), (workarea.y[2] << 1) + (nVy >> nLogyRatioUV)) :
@@ -1522,7 +1522,7 @@ __forceinline const uint8_t *	PlaneOfBlocks::GetRefBlockV(WorkingArea &workarea,
   // xRatioUV fix after 2.7.0.22c
 }
 
-__forceinline const uint8_t *	PlaneOfBlocks::GetSrcBlock(int nX, int nY)
+MV_FORCEINLINE const uint8_t *	PlaneOfBlocks::GetSrcBlock(int nX, int nY)
 {
   return pSrcFrame->GetPlane(YPLANE)->GetAbsolutePelPointer(nX, nY);
 }
@@ -1622,7 +1622,7 @@ sad_t	PlaneOfBlocks::LumaSADx(WorkingArea &workarea, const unsigned char *pRef0)
   return sad;
 }
 
-__forceinline sad_t	PlaneOfBlocks::LumaSAD(WorkingArea &workarea, const unsigned char *pRef0)
+MV_FORCEINLINE sad_t	PlaneOfBlocks::LumaSAD(WorkingArea &workarea, const unsigned char *pRef0)
 {
 #ifdef MOTION_DEBUG
   workarea.iter++;
@@ -1638,7 +1638,7 @@ __forceinline sad_t	PlaneOfBlocks::LumaSAD(WorkingArea &workarea, const unsigned
 
 /* check if the vector (vx, vy) is better than the best vector found so far without penalty new - renamed in v.2.11*/
 template<typename pixel_t>
-__forceinline void	PlaneOfBlocks::CheckMV0(WorkingArea &workarea, int vx, int vy)
+MV_FORCEINLINE void	PlaneOfBlocks::CheckMV0(WorkingArea &workarea, int vx, int vy)
 {		//here the chance for default values are high especially for zeroMVfieldShifted (on left/top border)
   if (
 #ifdef ONLY_CHECK_NONDEFAULT_MV
@@ -1688,7 +1688,7 @@ __forceinline void	PlaneOfBlocks::CheckMV0(WorkingArea &workarea, int vx, int vy
 
 /* check if the vector (vx, vy) is better than the best vector found so far */
 template<typename pixel_t>
-__forceinline void	PlaneOfBlocks::CheckMV(WorkingArea &workarea, int vx, int vy)
+MV_FORCEINLINE void	PlaneOfBlocks::CheckMV(WorkingArea &workarea, int vx, int vy)
 {		//here the chance for default values are high especially for zeroMVfieldShifted (on left/top border)
   if (
 #ifdef ONLY_CHECK_NONDEFAULT_MV
@@ -1741,7 +1741,7 @@ __forceinline void	PlaneOfBlocks::CheckMV(WorkingArea &workarea, int vx, int vy)
 
 /* check if the vector (vx, vy) is better, and update dir accordingly */
 template<typename pixel_t>
-__forceinline void	PlaneOfBlocks::CheckMV2(WorkingArea &workarea, int vx, int vy, int *dir, int val)
+MV_FORCEINLINE void	PlaneOfBlocks::CheckMV2(WorkingArea &workarea, int vx, int vy, int *dir, int val)
 {
   if (
 #ifdef ONLY_CHECK_NONDEFAULT_MV
@@ -1796,7 +1796,7 @@ __forceinline void	PlaneOfBlocks::CheckMV2(WorkingArea &workarea, int vx, int vy
 
 /* check if the vector (vx, vy) is better, and update dir accordingly, but not workarea.bestMV.x, y */
 template<typename pixel_t>
-__forceinline void	PlaneOfBlocks::CheckMVdir(WorkingArea &workarea, int vx, int vy, int *dir, int val)
+MV_FORCEINLINE void	PlaneOfBlocks::CheckMVdir(WorkingArea &workarea, int vx, int vy, int *dir, int val)
 {
   if (
 #ifdef ONLY_CHECK_NONDEFAULT_MV
@@ -1844,7 +1844,7 @@ __forceinline void	PlaneOfBlocks::CheckMVdir(WorkingArea &workarea, int vx, int 
 }
 
 /* clip a vector to the horizontal boundaries */
-__forceinline int	PlaneOfBlocks::ClipMVx(WorkingArea &workarea, int vx)
+MV_FORCEINLINE int	PlaneOfBlocks::ClipMVx(WorkingArea &workarea, int vx)
 {
   //	return imin(workarea.nDxMax - 1, imax(workarea.nDxMin, vx));
   if (vx < workarea.nDxMin) return workarea.nDxMin;
@@ -1853,7 +1853,7 @@ __forceinline int	PlaneOfBlocks::ClipMVx(WorkingArea &workarea, int vx)
 }
 
 /* clip a vector to the vertical boundaries */
-__forceinline int	PlaneOfBlocks::ClipMVy(WorkingArea &workarea, int vy)
+MV_FORCEINLINE int	PlaneOfBlocks::ClipMVy(WorkingArea &workarea, int vy)
 {
   //	return imin(workarea.nDyMax - 1, imax(workarea.nDyMin, vy));
   if (vy < workarea.nDyMin) return workarea.nDyMin;
@@ -1862,7 +1862,7 @@ __forceinline int	PlaneOfBlocks::ClipMVy(WorkingArea &workarea, int vy)
 }
 
 /* clip a vector to the search boundaries */
-__forceinline VECTOR	PlaneOfBlocks::ClipMV(WorkingArea &workarea, VECTOR v)
+MV_FORCEINLINE VECTOR	PlaneOfBlocks::ClipMV(WorkingArea &workarea, VECTOR v)
 {
   VECTOR v2;
   v2.x = ClipMVx(workarea, v.x);
@@ -1873,7 +1873,7 @@ __forceinline VECTOR	PlaneOfBlocks::ClipMV(WorkingArea &workarea, VECTOR v)
 
 
 /* find the median between a, b and c */
-__forceinline int	PlaneOfBlocks::Median(int a, int b, int c)
+MV_FORCEINLINE int	PlaneOfBlocks::Median(int a, int b, int c)
 {
   //	return a + b + c - imax(a, imax(b, c)) - imin(c, imin(a, b));
   if (a < b)
@@ -1892,19 +1892,19 @@ __forceinline int	PlaneOfBlocks::Median(int a, int b, int c)
 /* computes square distance between two vectors */
 #if 0
 // not used
-__forceinline unsigned int	PlaneOfBlocks::SquareDifferenceNorm(const VECTOR& v1, const VECTOR& v2)
+MV_FORCEINLINE unsigned int	PlaneOfBlocks::SquareDifferenceNorm(const VECTOR& v1, const VECTOR& v2)
 {
   return (v1.x - v2.x) * (v1.x - v2.x) + (v1.y - v2.y) * (v1.y - v2.y);
 }
 #endif
 /* computes square distance between two vectors */
-__forceinline unsigned int	PlaneOfBlocks::SquareDifferenceNorm(const VECTOR& v1, const int v2x, const int v2y)
+MV_FORCEINLINE unsigned int	PlaneOfBlocks::SquareDifferenceNorm(const VECTOR& v1, const int v2x, const int v2y)
 {
   return (v1.x - v2x) * (v1.x - v2x) + (v1.y - v2y) * (v1.y - v2y);
 }
 
 /* check if an index is inside the block's min and max indexes */
-__forceinline bool	PlaneOfBlocks::IsInFrame(int i)
+MV_FORCEINLINE bool	PlaneOfBlocks::IsInFrame(int i)
 {
   return ((i >= 0) && (i < nBlkCount));
 }
@@ -2572,7 +2572,7 @@ PlaneOfBlocks::WorkingArea::~WorkingArea()
 
 
 /* check if a vector is inside search boundaries */
-__forceinline bool	PlaneOfBlocks::WorkingArea::IsVectorOK(int vx, int vy) const
+MV_FORCEINLINE bool	PlaneOfBlocks::WorkingArea::IsVectorOK(int vx, int vy) const
 {
   return (
     (vx >= nDxMin)
@@ -2594,7 +2594,7 @@ sad_t PlaneOfBlocks::WorkingArea::MotionDistorsion(int vx, int vy) const
 }
 
 /* computes the length cost of a vector (vx, vy) */
-//inline int LengthPenalty(int vx, int vy)
+//MV_FORCEINLINE int LengthPenalty(int vx, int vy)
 //{
 //	return ( (vx*vx + vy*vy)*nLambdaLen) >> 8;
 //}

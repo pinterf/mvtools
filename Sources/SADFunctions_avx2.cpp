@@ -4,8 +4,9 @@
 #include <tuple>
 #include <immintrin.h>
 #include <stdint.h>
+#include "def.h"
 
-inline unsigned int SADABS(int x) {	return ( x < 0 ) ? -x : x; }
+MV_FORCEINLINE unsigned int SADABS(int x) {	return ( x < 0 ) ? -x : x; }
 
 template<int nBlkWidth, int nBlkHeight, typename pixel_t>
 static unsigned int Sad_AVX2_C(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, int nRefPitch)

@@ -26,6 +26,7 @@
 
 #include	<cstdio>
 #include <stdint.h>
+#include "def.h"
 
 
 
@@ -58,7 +59,7 @@ public:
    void ResetState();
    void WriteFrame(FILE *pFile);
 
-   inline MVPlane *GetPlane(MVPlaneSet _nMode)
+   MV_FORCEINLINE MVPlane *GetPlane(MVPlaneSet _nMode)
    {
       // no reason to test for nMode because returning NULL isn't expected in other parts
       // assert(nMode & _nMode & (YPLANE | UPLANE | VPLANE));
@@ -75,7 +76,7 @@ public:
       return 0;
    }
 
-   inline int GetMode() { return nMode; }
+   MV_FORCEINLINE int GetMode() { return nMode; }
 
 };
 

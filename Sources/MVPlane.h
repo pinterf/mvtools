@@ -59,7 +59,7 @@ public:
    void WritePlane(FILE *pFile);
 
 	template <int NPELL2>
-   __forceinline const uint8_t *GetAbsolutePointerPel(int nX, int nY) const
+  MV_FORCEINLINE const uint8_t *GetAbsolutePointerPel(int nX, int nY) const
    {
 		enum {	MASK = (1 << NPELL2) - 1	};
 
@@ -72,12 +72,12 @@ public:
    }
 
 	template <>
-   __forceinline const uint8_t *GetAbsolutePointerPel <0> (int nX, int nY) const
+  MV_FORCEINLINE const uint8_t *GetAbsolutePointerPel <0> (int nX, int nY) const
    {
          return pPlane[0] + (nX << pixelsize_shift) + nY * nPitch;
    }
 
-   __forceinline const uint8_t *GetAbsolutePointer(int nX, int nY) const
+  MV_FORCEINLINE const uint8_t *GetAbsolutePointer(int nX, int nY) const
    {
       if (nPel == 1)
 		{
@@ -94,29 +94,29 @@ public:
    }
 
 	template <int NPELL2>
-   __forceinline const uint8_t *GetPointerPel (int nX, int nY) const
+  MV_FORCEINLINE const uint8_t *GetPointerPel (int nX, int nY) const
    {
       return GetAbsolutePointerPel <NPELL2> (nX + nHPaddingPel, nY + nVPaddingPel);
    }
 
-   __forceinline const uint8_t *GetPointer(int nX, int nY) const
+  MV_FORCEINLINE const uint8_t *GetPointer(int nX, int nY) const
    {
       return GetAbsolutePointer(nX + nHPaddingPel, nY + nVPaddingPel);
    }
 
-   __forceinline const uint8_t *GetAbsolutePelPointer(int nX, int nY) const
+  MV_FORCEINLINE const uint8_t *GetAbsolutePelPointer(int nX, int nY) const
    {
 		return pPlane[0] + (nX << pixelsize_shift) + nY * nPitch;
 	}
 
-   inline int GetPitch() const { return nPitch; }
-   inline int GetWidth() const { return nWidth; }
-   inline int GetHeight() const { return nHeight; }
-   inline int GetExtendedWidth() const { return nExtendedWidth; }
-   inline int GetExtendedHeight() const { return nExtendedHeight; }
-   inline int GetHPadding() const { return nHPadding; }
-   inline int GetVPadding() const { return nVPadding; }
-   inline void ResetState() { isRefined = isFilled = isPadded = false; }
+  MV_FORCEINLINE int GetPitch() const { return nPitch; }
+  MV_FORCEINLINE int GetWidth() const { return nWidth; }
+  MV_FORCEINLINE int GetHeight() const { return nHeight; }
+  MV_FORCEINLINE int GetExtendedWidth() const { return nExtendedWidth; }
+  MV_FORCEINLINE int GetExtendedHeight() const { return nExtendedHeight; }
+  MV_FORCEINLINE int GetHPadding() const { return nHPadding; }
+  MV_FORCEINLINE int GetVPadding() const { return nVPadding; }
+  MV_FORCEINLINE void ResetState() { isRefined = isFilled = isPadded = false; }
 
 private:
 

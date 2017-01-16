@@ -107,31 +107,31 @@ public:
 
 public :
 
-   inline void SetFlags(int _nFlags) { nFlags |= _nFlags; }
-   inline int GetFlags() const { return nFlags; }
-   inline bool IsChromaMotion() const { return (nFlags & MOTION_USE_CHROMA_MOTION) != 0; }
-   inline int GetBlkSizeX() const { return nBlkSizeX; }
-   inline int GetPel() const { return nPel; }
-   inline int GetLevelCount() const { return nLvCount; }
-   inline bool IsBackward() const { return isBackward; }
-   inline int GetMagicKey() const { return nMagicKey; }
-   inline int GetDeltaFrame() const { return nDeltaFrame; }
-   inline int GetWidth() const { return nWidth; }
-   inline int GetHeight() const { return nHeight; }
-   inline int GetOverlapX() const { return nOverlapX; }
-   inline int GetBlkX() const { return nBlkX; }
-   inline int GetBlkY() const { return nBlkY; }
-   inline int GetPixelType() const { return pixelType; }
-   inline int GetYRatioUV() const { return yRatioUV; }
-   inline int GetXRatioUV() const { return xRatioUV; }
-   inline int GetPixelSize() const { return pixelsize; } // PF
-   inline int GetBitsPerPixel() const { return bits_per_pixel; } // PF
-//	inline int GetSharp() const { return sharp; }
-//	inline bool UsePelClip() const { return usePelClip; }
-   inline int GetBlkSizeY() const { return nBlkSizeY; }
-   inline int GetOverlapY() const { return nOverlapY; }
-   inline int GetHPadding() const { return nHPadding; }
-   inline int GetVPadding() const { return nVPadding; }
+   MV_FORCEINLINE void SetFlags(int _nFlags) { nFlags |= _nFlags; }
+   MV_FORCEINLINE int GetFlags() const { return nFlags; }
+   MV_FORCEINLINE bool IsChromaMotion() const { return (nFlags & MOTION_USE_CHROMA_MOTION) != 0; }
+   MV_FORCEINLINE int GetBlkSizeX() const { return nBlkSizeX; }
+   MV_FORCEINLINE int GetPel() const { return nPel; }
+   MV_FORCEINLINE int GetLevelCount() const { return nLvCount; }
+   MV_FORCEINLINE bool IsBackward() const { return isBackward; }
+   MV_FORCEINLINE int GetMagicKey() const { return nMagicKey; }
+   MV_FORCEINLINE int GetDeltaFrame() const { return nDeltaFrame; }
+   MV_FORCEINLINE int GetWidth() const { return nWidth; }
+   MV_FORCEINLINE int GetHeight() const { return nHeight; }
+   MV_FORCEINLINE int GetOverlapX() const { return nOverlapX; }
+   MV_FORCEINLINE int GetBlkX() const { return nBlkX; }
+   MV_FORCEINLINE int GetBlkY() const { return nBlkY; }
+   MV_FORCEINLINE int GetPixelType() const { return pixelType; }
+   MV_FORCEINLINE int GetYRatioUV() const { return yRatioUV; }
+   MV_FORCEINLINE int GetXRatioUV() const { return xRatioUV; }
+   MV_FORCEINLINE int GetPixelSize() const { return pixelsize; } // PF
+   MV_FORCEINLINE int GetBitsPerPixel() const { return bits_per_pixel; } // PF
+//	MV_FORCEINLINE int GetSharp() const { return sharp; }
+//	MV_FORCEINLINE bool UsePelClip() const { return usePelClip; }
+   MV_FORCEINLINE int GetBlkSizeY() const { return nBlkSizeY; }
+   MV_FORCEINLINE int GetOverlapY() const { return nOverlapY; }
+   MV_FORCEINLINE int GetHPadding() const { return nHPadding; }
+   MV_FORCEINLINE int GetVPadding() const { return nVPadding; }
 
 };
 

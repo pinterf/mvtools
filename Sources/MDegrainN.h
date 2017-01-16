@@ -11,6 +11,7 @@
 #include "overlap.h"
 #include "SharedPtr.h"
 #include "yuy2planes.h"
+#include "def.h"
 
 #include	<memory>
 #include	<vector>
@@ -80,9 +81,9 @@ private:
     unsigned char* _lsb_ptr;// Not allocated, it's just a reference to a part of the _d area
   };
 
-  inline int reorder_ref(int index) const;
+  MV_FORCEINLINE int reorder_ref(int index) const;
   template <int P>
-  inline void process_chroma(int plane_mask);
+  MV_FORCEINLINE void process_chroma(int plane_mask);
 
   void process_luma_normal_slice(Slicer::TaskData &td);
   void process_luma_overlap_slice(Slicer::TaskData &td);
@@ -95,18 +96,18 @@ private:
   template <int P>
   void process_chroma_overlap_slice(int y_beg, int y_end);
 
-  __forceinline void
+  MV_FORCEINLINE void
     use_block_y(
       const BYTE * &p, int &np, int &wref, bool usable_flag, const MvClipInfo &c_info,
       int i, const MVPlane *plane_ptr, const BYTE *src_ptr, int xx, int src_pitch
     );
-  __forceinline void
+  MV_FORCEINLINE void
     use_block_uv(
       const BYTE * &p, int &np, int &wref, bool usable_flag, const MvClipInfo &c_info,
       int i, const MVPlane *plane_ptr, const BYTE *src_ptr, int xx, int src_pitch
     );
 
-  static inline void
+  static MV_FORCEINLINE void
     norm_weights(int wref_arr[], int trad);
 
   MvClipArray _mv_clip_arr;

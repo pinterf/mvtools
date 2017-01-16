@@ -20,8 +20,9 @@
 
 #include <stdint.h>
 #include <CopyCode.h> // arch_t
+#include "def.h"
 
-inline unsigned int VARABS(int x) { return x < 0 ? -x : x; }
+MV_FORCEINLINE unsigned int VARABS(int x) { return x < 0 ? -x : x; }
 
 typedef unsigned int (VARFunction)(const unsigned char *pSrc, int nSrcPitch, int *pLuma);
 // PF: VAR is not used

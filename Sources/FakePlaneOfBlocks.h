@@ -51,28 +51,28 @@ public :
 	void Update(const int *array);
 	bool IsSceneChange(sad_t nTh1, int nTh2) const;
 
-	__forceinline bool IsInFrame(int i) const
+  MV_FORCEINLINE bool IsInFrame(int i) const
 	{
 		return (( i >= 0 ) && ( i < nBlkCount ));
 	}
 
-	__forceinline const FakeBlockData& operator[](const int i) const {
+  MV_FORCEINLINE const FakeBlockData& operator[](const int i) const {
 		return (blocks[i]);
 	}
 
-	__forceinline int GetBlockCount() const { return nBlkCount; }
-  __forceinline int GetReducedWidth() const { return nBlkX; }
-  __forceinline int GetReducedHeight() const { return nBlkY; }
-  __forceinline int GetWidth() const { return nWidth_Bi; }
-  __forceinline int GetHeight() const { return nHeight_Bi; }
-  __forceinline int GetScaleLevel() const { return nLogScale; }
-  __forceinline int GetEffectiveScale() const { return nScale; }
-  __forceinline int GetBlockSizeX() const { return nBlkSizeX; }
-  __forceinline int GetBlockSizeY() const { return nBlkSizeY; }
-  __forceinline int GetPel() const { return nPel; }
-  __forceinline const FakeBlockData& GetBlock(int i) const { return (blocks[i]); }
-  __forceinline int GetOverlapX() const { return nOverlapX; }
-  __forceinline int GetOverlapY() const { return nOverlapY; }
+  MV_FORCEINLINE int GetBlockCount() const { return nBlkCount; }
+  MV_FORCEINLINE int GetReducedWidth() const { return nBlkX; }
+  MV_FORCEINLINE int GetReducedHeight() const { return nBlkY; }
+  MV_FORCEINLINE int GetWidth() const { return nWidth_Bi; }
+  MV_FORCEINLINE int GetHeight() const { return nHeight_Bi; }
+  MV_FORCEINLINE int GetScaleLevel() const { return nLogScale; }
+  MV_FORCEINLINE int GetEffectiveScale() const { return nScale; }
+  MV_FORCEINLINE int GetBlockSizeX() const { return nBlkSizeX; }
+  MV_FORCEINLINE int GetBlockSizeY() const { return nBlkSizeY; }
+  MV_FORCEINLINE int GetPel() const { return nPel; }
+  MV_FORCEINLINE const FakeBlockData& GetBlock(int i) const { return (blocks[i]); }
+  MV_FORCEINLINE int GetOverlapX() const { return nOverlapX; }
+  MV_FORCEINLINE int GetOverlapY() const { return nOverlapY; }
 };
 
 

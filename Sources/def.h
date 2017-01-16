@@ -38,8 +38,11 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 const long double	PI  = 3.1415926535897932384626433832795L;
 const long double	LN2 = 0.69314718055994530941723212145818L;
 
-
+#ifndef MV_FORCEINLINE
+#define MV_FORCEINLINE __forceinline
+#endif
 /*
+C++ does not allow macroizing reserved words like inline
 #ifdef FORCE_INLINE // set compiler variable for Release with fastest run speed, but slow compile!
 #define inline __forceinline
 #else

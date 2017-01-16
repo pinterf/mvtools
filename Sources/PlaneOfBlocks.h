@@ -78,8 +78,8 @@ public:
   int GetArraySize(int divideExtra);
   // not used void FitReferenceIntoArray(MVFrame *_pRefFrame, int *array);
   void EstimateGlobalMVDoubled(VECTOR *globalMVec, Slicer &slicer); // Fizick
-  __forceinline int GetnBlkX() { return nBlkX; }
-  __forceinline int GetnBlkY() { return nBlkY; }
+  MV_FORCEINLINE int GetnBlkX() { return nBlkX; }
+  MV_FORCEINLINE int GetnBlkY() { return nBlkY; }
 
   void RecalculateMVs(MVClip & mvClip, MVFrame *_pSrcFrame, MVFrame *_pRefFrame, SearchType st,
     int stp, int _lambda, sad_t _lSAD, int _pennew,
@@ -247,7 +247,7 @@ private:
     WorkingArea(int nBlkSizeX, int nBlkSizeY, int dctpitch, int nLogxRatioUV, int xRatioUV, int nLogyRatioUV, int yRatioUV, int pixelsize, int bits_per_pixel);
     virtual			~WorkingArea();
 
-    __forceinline bool IsVectorOK(int vx, int vy) const;
+    MV_FORCEINLINE bool IsVectorOK(int vx, int vy) const;
     template<typename pixel_t>
     sad_t MotionDistorsion(int vx, int vy) const; // this one is better not forceinlined
   };
@@ -326,28 +326,28 @@ private:
   void UMHSearch(WorkingArea &workarea, int i_me_range, int omx, int omy);
 
   /* inline functions */
-  __forceinline const uint8_t *GetRefBlock(WorkingArea &workarea, int nVx, int nVy);
-  __forceinline const uint8_t *GetRefBlockU(WorkingArea &workarea, int nVx, int nVy);
-  __forceinline const uint8_t *GetRefBlockV(WorkingArea &workarea, int nVx, int nVy);
-  __forceinline const uint8_t *GetSrcBlock(int nX, int nY);
-  //	inline int LengthPenalty(int vx, int vy);
+  MV_FORCEINLINE const uint8_t *GetRefBlock(WorkingArea &workarea, int nVx, int nVy);
+  MV_FORCEINLINE const uint8_t *GetRefBlockU(WorkingArea &workarea, int nVx, int nVy);
+  MV_FORCEINLINE const uint8_t *GetRefBlockV(WorkingArea &workarea, int nVx, int nVy);
+  MV_FORCEINLINE const uint8_t *GetSrcBlock(int nX, int nY);
+  //	MV_FORCEINLINE int LengthPenalty(int vx, int vy);
   sad_t LumaSADx(WorkingArea &workarea, const unsigned char *pRef0);
-  __forceinline sad_t LumaSAD(WorkingArea &workarea, const unsigned char *pRef0);
+  MV_FORCEINLINE sad_t LumaSAD(WorkingArea &workarea, const unsigned char *pRef0);
   template<typename pixel_t>
-  __forceinline void CheckMV0(WorkingArea &workarea, int vx, int vy);
+  MV_FORCEINLINE void CheckMV0(WorkingArea &workarea, int vx, int vy);
   template<typename pixel_t>
-  __forceinline void CheckMV(WorkingArea &workarea, int vx, int vy);
+  MV_FORCEINLINE void CheckMV(WorkingArea &workarea, int vx, int vy);
   template<typename pixel_t>
-  __forceinline void CheckMV2(WorkingArea &workarea, int vx, int vy, int *dir, int val);
+  MV_FORCEINLINE void CheckMV2(WorkingArea &workarea, int vx, int vy, int *dir, int val);
   template<typename pixel_t>
-  __forceinline void CheckMVdir(WorkingArea &workarea, int vx, int vy, int *dir, int val);
-  __forceinline int ClipMVx(WorkingArea &workarea, int vx);
-  __forceinline int ClipMVy(WorkingArea &workarea, int vy);
-  __forceinline VECTOR ClipMV(WorkingArea &workarea, VECTOR v);
-  __forceinline static int Median(int a, int b, int c);
-  // __forceinline static unsigned int SquareDifferenceNorm(const VECTOR& v1, const VECTOR& v2); // not used
-  __forceinline static unsigned int SquareDifferenceNorm(const VECTOR& v1, const int v2x, const int v2y);
-  __forceinline bool IsInFrame(int i);
+  MV_FORCEINLINE void CheckMVdir(WorkingArea &workarea, int vx, int vy, int *dir, int val);
+  MV_FORCEINLINE int ClipMVx(WorkingArea &workarea, int vx);
+  MV_FORCEINLINE int ClipMVy(WorkingArea &workarea, int vy);
+  MV_FORCEINLINE VECTOR ClipMV(WorkingArea &workarea, VECTOR v);
+  MV_FORCEINLINE static int Median(int a, int b, int c);
+  // MV_FORCEINLINE static unsigned int SquareDifferenceNorm(const VECTOR& v1, const VECTOR& v2); // not used
+  MV_FORCEINLINE static unsigned int SquareDifferenceNorm(const VECTOR& v1, const int v2x, const int v2y);
+  MV_FORCEINLINE bool IsInFrame(int i);
 
   template<typename pixel_t>
   void Refine(WorkingArea &workarea);

@@ -22,6 +22,7 @@
 #include <tuple>
 #include "copycode.h"
 #include <cstdio>
+#include "def.h"
 
 // top, middle, botom and left, middle, right windows
 #define OW_TL 0
@@ -55,10 +56,10 @@ public :
 	OverlapWindows(int _nx, int _ny, int _ox, int _oy);
    ~OverlapWindows();
 
-   inline int Getnx() const { return nx; }
-   inline int Getny() const { return ny; }
-   inline int GetSize() const { return size; }
-   inline short *GetWindow(int i) const { return Overlap9Windows + size*i; }
+   MV_FORCEINLINE int Getnx() const { return nx; }
+   MV_FORCEINLINE int Getny() const { return ny; }
+   MV_FORCEINLINE int GetSize() const { return size; }
+   MV_FORCEINLINE short *GetWindow(int i) const { return Overlap9Windows + size*i; }
 };
 
 typedef void (OverlapsFunction)(unsigned short *pDst, int nDstPitch,

@@ -21,6 +21,7 @@
 
 
 #include	"VECTOR.h"
+#include "def.h"
 
 
 
@@ -49,10 +50,10 @@ public :
     void Init(int _x, int _y);
 	void Update(const int *array);
 
-	__forceinline int GetX() const { return x; }
-	__forceinline int GetY() const { return y; }
-	__forceinline VECTOR GetMV() const { return vector; }
-	__forceinline sad_t GetSAD() const { return vector.sad; }
+  MV_FORCEINLINE int GetX() const { return x; }
+  MV_FORCEINLINE int GetY() const { return y; }
+  MV_FORCEINLINE VECTOR GetMV() const { return vector; }
+  MV_FORCEINLINE sad_t GetSAD() const { return vector.sad; }
 //	inline int GetMVLength() const { return nLength; }
 //	inline int GetVariance() const { return nVariance; }
 //	inline int GetLuma() const { return nLuma; }

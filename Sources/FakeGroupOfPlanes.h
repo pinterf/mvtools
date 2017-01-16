@@ -27,6 +27,7 @@
 
 
 #include "types.h"
+#include "def.h"
 
 class FakePlaneOfBlocks;
 
@@ -43,7 +44,7 @@ class FakeGroupOfPlanes
 //   const unsigned char *compensatedPlane;
 //   const unsigned char *compensatedPlaneU;
 //   const unsigned char *compensatedPlaneV;
-	__forceinline static bool GetValidity(const int *array) { return (array[1] == 1); }
+  MV_FORCEINLINE static bool GetValidity(const int *array) { return (array[1] == 1); }
    CRITICAL_SECTION cs;
 
 public :
@@ -56,19 +57,19 @@ public :
 	bool Update(const int *array, int data_size);
 	bool IsSceneChange(sad_t nThSCD1, int nThSCD2) const;
 
-	__forceinline const FakePlaneOfBlocks& operator[](const int i) const {
+  MV_FORCEINLINE const FakePlaneOfBlocks& operator[](const int i) const {
 		return *(planes[i]);
 	}
 
 
-	__forceinline bool IsValid() const { return validity; }
+  MV_FORCEINLINE bool IsValid() const { return validity; }
 //   inline const unsigned char *GetCompensatedPlane() const { return compensatedPlane; }
 //   inline const unsigned char *GetCompensatedPlaneU() const { return compensatedPlaneU; }
 //   inline const unsigned char *GetCompensatedPlaneV() const { return compensatedPlaneV; }
-  __forceinline int GetPitch() const { return nWidth_B; }
-  __forceinline int GetPitchUV() const { return nWidth_B / xRatioUV_B; }
+  MV_FORCEINLINE int GetPitch() const { return nWidth_B; }
+  MV_FORCEINLINE int GetPitchUV() const { return nWidth_B / xRatioUV_B; }
 
-	__forceinline const FakePlaneOfBlocks& GetPlane(int i) const { return *(planes[i]); }
+  MV_FORCEINLINE const FakePlaneOfBlocks& GetPlane(int i) const { return *(planes[i]); }
 };
 
 

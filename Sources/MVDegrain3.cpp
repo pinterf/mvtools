@@ -30,6 +30,7 @@
 #include "overlap.h"
 #include <stdint.h>
 #include <commonfunctions.h>
+#include "def.h"
 
 //#include	<mmintrin.h>
 
@@ -1897,9 +1898,9 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
 // todo: change /xRatioUV and /yRatioUV to bit shifts everywhere
 #ifdef LEVEL_IS_TEMPLATE
 template<int level>
-__forceinline void	MVDegrainX<level>::use_block_y(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch)
+MV_FORCEINLINE void	MVDegrainX<level>::use_block_y(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch)
 #else
-__forceinline void	MVDegrainX::use_block_y(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch)
+MV_FORCEINLINE void	MVDegrainX::use_block_y(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch)
 #endif
 {
   if (isUsable)
@@ -1923,9 +1924,9 @@ __forceinline void	MVDegrainX::use_block_y(const BYTE * &p, int &np, int &WRef, 
 // no difference for 1-2-3
 #ifdef LEVEL_IS_TEMPLATE
 template<int level>
-__forceinline void	MVDegrainX<level>::use_block_uv(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch)
+MV_FORCEINLINE void	MVDegrainX<level>::use_block_uv(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch)
 #else
-__forceinline void	MVDegrainX::use_block_uv(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch)
+MV_FORCEINLINE void	MVDegrainX::use_block_uv(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch)
 #endif
 {
   if (isUsable)
@@ -1949,7 +1950,7 @@ __forceinline void	MVDegrainX::use_block_uv(const BYTE * &p, int &np, int &WRef,
 
 
 template<int level>
-__forceinline void	norm_weights(int &WSrc, int(&WRefB)[MAX_DEGRAIN], int(&WRefF)[MAX_DEGRAIN])
+MV_FORCEINLINE void	norm_weights(int &WSrc, int(&WRefB)[MAX_DEGRAIN], int(&WRefF)[MAX_DEGRAIN])
 {
   WSrc = 256;
   int WSum;

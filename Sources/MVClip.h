@@ -77,12 +77,12 @@ public :
 	void				use_ref_frame (::PVideoFrame &ref, bool &usable_flag, ::PClip &super, int n, ::IScriptEnvironment *env_ptr);
 
    // encapsulation
-   inline int GetBlkCount() const { return nBlkCount; }
-   inline int GetHPadding() const { return nHPadding; }
-   inline int GetVPadding() const { return nVPadding; }
-   inline sad_t GetThSCD1() const { return nSCD1; }
-   inline int GetThSCD2() const { return nSCD2; }
-   __forceinline const FakeBlockData& GetBlock(int nLevel, int nBlk) const { return GetPlane(nLevel)[nBlk]; }
+   MV_FORCEINLINE int GetBlkCount() const { return nBlkCount; }
+   MV_FORCEINLINE int GetHPadding() const { return nHPadding; }
+   MV_FORCEINLINE int GetVPadding() const { return nVPadding; }
+   MV_FORCEINLINE sad_t GetThSCD1() const { return nSCD1; }
+   MV_FORCEINLINE int GetThSCD2() const { return nSCD2; }
+   MV_FORCEINLINE const FakeBlockData& GetBlock(int nLevel, int nBlk) const { return GetPlane(nLevel)[nBlk]; }
    bool IsUsable(sad_t nSCD1_, int nSCD2_) const;
    bool IsUsable() const { return IsUsable(nSCD1, nSCD2); }
    bool IsSceneChange() const { return FakeGroupOfPlanes::IsSceneChange(nSCD1, nSCD2); }

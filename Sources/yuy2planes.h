@@ -19,6 +19,7 @@
 #define __YUY2PLANES_H__
 
 #include <malloc.h>
+#include "def.h"
 
 class YUY2Planes
 {
@@ -36,11 +37,11 @@ public :
 	YUY2Planes(int _nWidth, int _nHeight);
    ~YUY2Planes();
 
-   inline int GetPitch() const { return srcPitch; }
-   inline int GetPitchUV() const { return srcPitchUV; }
-   inline unsigned char *GetPtr() const { return pSrc; }
-   inline unsigned char *GetPtrU() const { return pSrcU; }
-   inline unsigned char *GetPtrV() const { return pSrcV; }
+   MV_FORCEINLINE int GetPitch() const { return srcPitch; }
+   MV_FORCEINLINE int GetPitchUV() const { return srcPitchUV; }
+   MV_FORCEINLINE unsigned char *GetPtr() const { return pSrc; }
+   MV_FORCEINLINE unsigned char *GetPtrU() const { return pSrcU; }
+   MV_FORCEINLINE unsigned char *GetPtrV() const { return pSrcV; }
 
 #if 0
 static	void convYUV422to422(const unsigned char *src, unsigned char *py, unsigned char *pu, unsigned char *pv,

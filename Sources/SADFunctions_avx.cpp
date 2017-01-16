@@ -4,8 +4,9 @@
 #include <tuple>
 
 #include <emmintrin.h>
+#include "def.h"
 
-inline unsigned int SADABS(int x) {	return ( x < 0 ) ? -x : x; }
+MV_FORCEINLINE unsigned int SADABS(int x) {	return ( x < 0 ) ? -x : x; }
 
 // simple AVX still does not support 256 bit integer SIMD versions of SSE2 functions
 // Still the compiler can generate more optimized code

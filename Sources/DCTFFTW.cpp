@@ -30,6 +30,7 @@
 #include <map>
 #include "types.h"
 #include <avisynth.h>
+#include "def.h"
 
 
 conc::Mutex	DCTFFTW::_fftw_mutex;
@@ -198,7 +199,7 @@ void DCTFFTW::Bytes2Float_SSE2(const unsigned char * srcp8, int src_pitch, float
 }
 
 // fake _mm_packus_epi32 (orig is SSE4.1 only)
-__forceinline __m128i _MM_PACKUS_EPI32(__m128i a, __m128i b)
+MV_FORCEINLINE __m128i _MM_PACKUS_EPI32(__m128i a, __m128i b)
 {
   a = _mm_slli_epi32(a, 16);
   a = _mm_srai_epi32(a, 16);

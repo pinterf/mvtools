@@ -334,7 +334,7 @@ int GroupOfPlanes::GetArraySize()
 
 // FIND MEDIAN OF 3 ELEMENTS
 //
-__forceinline int	Median3(int a, int b, int c)
+MV_FORCEINLINE int	Median3(int a, int b, int c)
 {
   // b a c || c a b
   if (((b <= a) && (a <= c)) || ((c <= a) && (a <= b)))

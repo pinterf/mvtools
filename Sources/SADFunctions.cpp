@@ -5,8 +5,9 @@
 #include <map>
 #include <tuple>
 #include <stdint.h>
+#include "def.h"
 
-inline unsigned int SADABS(int x) {	return ( x < 0 ) ? -x : x; }
+MV_FORCEINLINE unsigned int SADABS(int x) {	return ( x < 0 ) ? -x : x; }
 //inline unsigned int SADABS(int x) {	return ( x < -16 ) ? 16 : ( x < 0 ) ? -x : ( x > 16) ? 16 : x; }
 
 template<int nBlkWidth, int nBlkHeight, typename pixel_t>
@@ -51,7 +52,7 @@ typedef uint32_t sum2_t;
 // in: a pseudo-simd number of the form x+(y<<16)
 // return: abs(x)+(abs(y)<<16)
 // or <<32 for 16 bit pixels
-static __forceinline sum2_t abs2( sum2_t a )
+static MV_FORCEINLINE sum2_t abs2( sum2_t a )
 {
   sum2_t s = ((a>>(BITS_PER_SUM-1))&(((sum2_t)1<<BITS_PER_SUM)+1))*((sum_t)-1);
   return (a+s)^s;
