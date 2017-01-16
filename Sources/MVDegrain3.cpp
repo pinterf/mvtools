@@ -400,6 +400,125 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   func_degrain[make_tuple(2, 4, 2, false, 6, NO_SIMD)] = Degrain1to6_C<uint16_t, 2, 4, false, 6>;
   func_degrain[make_tuple(2, 2, 2, false, 6, NO_SIMD)] = Degrain1to6_C<uint16_t, 2, 2, false, 6>;
 
+  // SSE41
+  //-- 16 bit degrain start
+  // level1
+  func_degrain[make_tuple(32, 32, 2, false, 1, USE_SSE41)] = Degrain1to6_16_sse41<32, 32, 1>;
+  func_degrain[make_tuple(32, 16, 2, false, 1, USE_SSE41)] = Degrain1to6_16_sse41<32, 16, 1>;
+  func_degrain[make_tuple(32, 8, 2, false, 1, USE_SSE41)] = Degrain1to6_16_sse41<32, 8, 1>;
+  func_degrain[make_tuple(16, 32, 2, false, 1, USE_SSE41)] = Degrain1to6_16_sse41<16, 32, 1>;
+  func_degrain[make_tuple(16, 16, 2, false, 1, USE_SSE41)] = Degrain1to6_16_sse41<16, 16, 1>;
+  func_degrain[make_tuple(16, 8, 2, false, 1, USE_SSE41)] = Degrain1to6_16_sse41<16, 8, 1>;
+  func_degrain[make_tuple(16, 4, 2, false, 1, USE_SSE41)] = Degrain1to6_16_sse41<16, 4, 1>;
+  func_degrain[make_tuple(16, 2, 2, false, 1, USE_SSE41)] = Degrain1to6_16_sse41<16, 2, 1>;
+  func_degrain[make_tuple(8, 16, 2, false, 1, USE_SSE41)] = Degrain1to6_16_sse41<8, 16, 1>;
+  func_degrain[make_tuple(8, 8, 2, false, 1, USE_SSE41)] = Degrain1to6_16_sse41<8, 8, 1>;
+  func_degrain[make_tuple(8, 4, 2, false, 1, USE_SSE41)] = Degrain1to6_16_sse41<8, 4, 1>;
+  func_degrain[make_tuple(8, 2, 2, false, 1, USE_SSE41)] = Degrain1to6_16_sse41<8, 2, 1>;
+  func_degrain[make_tuple(8, 1, 2, false, 1, USE_SSE41)] = Degrain1to6_16_sse41<8, 1, 1>;
+  func_degrain[make_tuple(4, 8, 2, false, 1, USE_SSE41)] = Degrain1to6_16_sse41<4, 8, 1>;
+  func_degrain[make_tuple(4, 4, 2, false, 1, USE_SSE41)] = Degrain1to6_16_sse41<4, 4, 1>;
+  func_degrain[make_tuple(4, 2, 2, false, 1, USE_SSE41)] = Degrain1to6_16_sse41<4, 2, 1>;
+  func_degrain[make_tuple(2, 4, 2, false, 1, USE_SSE41)] = Degrain1to6_16_sse41<2, 4, 1>;
+  func_degrain[make_tuple(2, 2, 2, false, 1, USE_SSE41)] = Degrain1to6_16_sse41<2, 2, 1>;
+  // level2
+  func_degrain[make_tuple(32, 32, 2, false, 2, USE_SSE41)] = Degrain1to6_16_sse41<32, 32, 2>;
+  func_degrain[make_tuple(32, 16, 2, false, 2, USE_SSE41)] = Degrain1to6_16_sse41<32, 16, 2>;
+  func_degrain[make_tuple(32, 8, 2, false, 2, USE_SSE41)] = Degrain1to6_16_sse41<32, 8, 2>;
+  func_degrain[make_tuple(16, 32, 2, false, 2, USE_SSE41)] = Degrain1to6_16_sse41<16, 32, 2>;
+  func_degrain[make_tuple(16, 16, 2, false, 2, USE_SSE41)] = Degrain1to6_16_sse41<16, 16, 2>;
+  func_degrain[make_tuple(16, 8, 2, false, 2, USE_SSE41)] = Degrain1to6_16_sse41<16, 8, 2>;
+  func_degrain[make_tuple(16, 4, 2, false, 2, USE_SSE41)] = Degrain1to6_16_sse41<16, 4, 2>;
+  func_degrain[make_tuple(16, 2, 2, false, 2, USE_SSE41)] = Degrain1to6_16_sse41<16, 2, 2>;
+  func_degrain[make_tuple(8, 16, 2, false, 2, USE_SSE41)] = Degrain1to6_16_sse41<8, 16, 2>;
+  func_degrain[make_tuple(8, 8, 2, false, 2, USE_SSE41)] = Degrain1to6_16_sse41<8, 8, 2>;
+  func_degrain[make_tuple(8, 4, 2, false, 2, USE_SSE41)] = Degrain1to6_16_sse41<8, 4, 2>;
+  func_degrain[make_tuple(8, 2, 2, false, 2, USE_SSE41)] = Degrain1to6_16_sse41<8, 2, 2>;
+  func_degrain[make_tuple(8, 1, 2, false, 2, USE_SSE41)] = Degrain1to6_16_sse41<8, 1, 2>;
+  func_degrain[make_tuple(4, 8, 2, false, 2, USE_SSE41)] = Degrain1to6_16_sse41<4, 8, 2>;
+  func_degrain[make_tuple(4, 4, 2, false, 2, USE_SSE41)] = Degrain1to6_16_sse41<4, 4, 2>;
+  func_degrain[make_tuple(4, 2, 2, false, 2, USE_SSE41)] = Degrain1to6_16_sse41<4, 2, 2>;
+  func_degrain[make_tuple(2, 4, 2, false, 2, USE_SSE41)] = Degrain1to6_16_sse41<2, 4, 2>;
+  func_degrain[make_tuple(2, 2, 2, false, 2, USE_SSE41)] = Degrain1to6_16_sse41<2, 2, 2>;
+  // level3
+  func_degrain[make_tuple(32, 32, 2, false, 3, USE_SSE41)] = Degrain1to6_16_sse41<32, 32, 3>;
+  func_degrain[make_tuple(32, 16, 2, false, 3, USE_SSE41)] = Degrain1to6_16_sse41<32, 16, 3>;
+  func_degrain[make_tuple(32, 8, 2, false, 3, USE_SSE41)] = Degrain1to6_16_sse41<32, 8, 3>;
+  func_degrain[make_tuple(16, 32, 2, false, 3, USE_SSE41)] = Degrain1to6_16_sse41<16, 32, 3>;
+  func_degrain[make_tuple(16, 16, 2, false, 3, USE_SSE41)] = Degrain1to6_16_sse41<16, 16, 3>;
+  func_degrain[make_tuple(16, 8, 2, false, 3, USE_SSE41)] = Degrain1to6_16_sse41<16, 8, 3>;
+  func_degrain[make_tuple(16, 4, 2, false, 3, USE_SSE41)] = Degrain1to6_16_sse41<16, 4, 3>;
+  func_degrain[make_tuple(16, 2, 2, false, 3, USE_SSE41)] = Degrain1to6_16_sse41<16, 2, 3>;
+  func_degrain[make_tuple(8, 16, 2, false, 3, USE_SSE41)] = Degrain1to6_16_sse41<8, 16, 3>;
+  func_degrain[make_tuple(8, 8, 2, false, 3, USE_SSE41)] = Degrain1to6_16_sse41<8, 8, 3>;
+  func_degrain[make_tuple(8, 4, 2, false, 3, USE_SSE41)] = Degrain1to6_16_sse41<8, 4, 3>;
+  func_degrain[make_tuple(8, 2, 2, false, 3, USE_SSE41)] = Degrain1to6_16_sse41<8, 2, 3>;
+  func_degrain[make_tuple(8, 1, 2, false, 3, USE_SSE41)] = Degrain1to6_16_sse41<8, 1, 3>;
+  func_degrain[make_tuple(4, 8, 2, false, 3, USE_SSE41)] = Degrain1to6_16_sse41<4, 8, 3>;
+  func_degrain[make_tuple(4, 4, 2, false, 3, USE_SSE41)] = Degrain1to6_16_sse41<4, 4, 3>;
+  func_degrain[make_tuple(4, 2, 2, false, 3, USE_SSE41)] = Degrain1to6_16_sse41<4, 2, 3>;
+  func_degrain[make_tuple(2, 4, 2, false, 3, USE_SSE41)] = Degrain1to6_16_sse41<2, 4, 3>;
+  func_degrain[make_tuple(2, 2, 2, false, 3, USE_SSE41)] = Degrain1to6_16_sse41<2, 2, 3>;
+  // level4
+  func_degrain[make_tuple(32, 32, 2, false, 4, USE_SSE41)] = Degrain1to6_16_sse41<32, 32, 4>;
+  func_degrain[make_tuple(32, 16, 2, false, 4, USE_SSE41)] = Degrain1to6_16_sse41<32, 16, 4>;
+  func_degrain[make_tuple(32, 8, 2, false, 4, USE_SSE41)] = Degrain1to6_16_sse41<32, 8, 4>;
+  func_degrain[make_tuple(16, 32, 2, false, 4, USE_SSE41)] = Degrain1to6_16_sse41<16, 32, 4>;
+  func_degrain[make_tuple(16, 16, 2, false, 4, USE_SSE41)] = Degrain1to6_16_sse41<16, 16, 4>;
+  func_degrain[make_tuple(16, 8, 2, false, 4, USE_SSE41)] = Degrain1to6_16_sse41<16, 8, 4>;
+  func_degrain[make_tuple(16, 4, 2, false, 4, USE_SSE41)] = Degrain1to6_16_sse41<16, 4, 4>;
+  func_degrain[make_tuple(16, 2, 2, false, 4, USE_SSE41)] = Degrain1to6_16_sse41<16, 2, 4>;
+  func_degrain[make_tuple(8, 16, 2, false, 4, USE_SSE41)] = Degrain1to6_16_sse41<8, 16, 4>;
+  func_degrain[make_tuple(8, 8, 2, false, 4, USE_SSE41)] = Degrain1to6_16_sse41<8, 8, 4>;
+  func_degrain[make_tuple(8, 4, 2, false, 4, USE_SSE41)] = Degrain1to6_16_sse41<8, 4, 4>;
+  func_degrain[make_tuple(8, 2, 2, false, 4, USE_SSE41)] = Degrain1to6_16_sse41<8, 2, 4>;
+  func_degrain[make_tuple(8, 1, 2, false, 4, USE_SSE41)] = Degrain1to6_16_sse41<8, 1, 4>;
+  func_degrain[make_tuple(4, 8, 2, false, 4, USE_SSE41)] = Degrain1to6_16_sse41<4, 8, 4>;
+  func_degrain[make_tuple(4, 4, 2, false, 4, USE_SSE41)] = Degrain1to6_16_sse41<4, 4, 4>;
+  func_degrain[make_tuple(4, 2, 2, false, 4, USE_SSE41)] = Degrain1to6_16_sse41<4, 2, 4>;
+  func_degrain[make_tuple(2, 4, 2, false, 4, USE_SSE41)] = Degrain1to6_16_sse41<2, 4, 4>;
+  func_degrain[make_tuple(2, 2, 2, false, 4, USE_SSE41)] = Degrain1to6_16_sse41<2, 2, 4>;
+  // level5
+  func_degrain[make_tuple(32, 32, 2, false, 5, USE_SSE41)] = Degrain1to6_16_sse41<32, 32, 5>;
+  func_degrain[make_tuple(32, 16, 2, false, 5, USE_SSE41)] = Degrain1to6_16_sse41<32, 16, 5>;
+  func_degrain[make_tuple(32, 8, 2, false, 5, USE_SSE41)] = Degrain1to6_16_sse41<32, 8, 5>;
+  func_degrain[make_tuple(16, 32, 2, false, 5, USE_SSE41)] = Degrain1to6_16_sse41<16, 32, 5>;
+  func_degrain[make_tuple(16, 16, 2, false, 5, USE_SSE41)] = Degrain1to6_16_sse41<16, 16, 5>;
+  func_degrain[make_tuple(16, 8, 2, false, 5, USE_SSE41)] = Degrain1to6_16_sse41<16, 8, 5>;
+  func_degrain[make_tuple(16, 4, 2, false, 5, USE_SSE41)] = Degrain1to6_16_sse41<16, 4, 5>;
+  func_degrain[make_tuple(16, 2, 2, false, 5, USE_SSE41)] = Degrain1to6_16_sse41<16, 2, 5>;
+  func_degrain[make_tuple(8, 16, 2, false, 5, USE_SSE41)] = Degrain1to6_16_sse41<8, 16, 5>;
+  func_degrain[make_tuple(8, 8, 2, false, 5, USE_SSE41)] = Degrain1to6_16_sse41<8, 8, 5>;
+  func_degrain[make_tuple(8, 4, 2, false, 5, USE_SSE41)] = Degrain1to6_16_sse41<8, 4, 5>;
+  func_degrain[make_tuple(8, 2, 2, false, 5, USE_SSE41)] = Degrain1to6_16_sse41<8, 2, 5>;
+  func_degrain[make_tuple(8, 1, 2, false, 5, USE_SSE41)] = Degrain1to6_16_sse41<8, 1, 5>;
+  func_degrain[make_tuple(4, 8, 2, false, 5, USE_SSE41)] = Degrain1to6_16_sse41<4, 8, 5>;
+  func_degrain[make_tuple(4, 4, 2, false, 5, USE_SSE41)] = Degrain1to6_16_sse41<4, 4, 5>;
+  func_degrain[make_tuple(4, 2, 2, false, 5, USE_SSE41)] = Degrain1to6_16_sse41<4, 2, 5>;
+  func_degrain[make_tuple(2, 4, 2, false, 5, USE_SSE41)] = Degrain1to6_16_sse41<2, 4, 5>;
+  func_degrain[make_tuple(2, 2, 2, false, 5, USE_SSE41)] = Degrain1to6_16_sse41<2, 2, 5>;
+  // level6
+  func_degrain[make_tuple(32, 32, 2, false, 6, USE_SSE41)] = Degrain1to6_16_sse41<32, 32, 6>;
+  func_degrain[make_tuple(32, 16, 2, false, 6, USE_SSE41)] = Degrain1to6_16_sse41<32, 16, 6>;
+  func_degrain[make_tuple(32, 8, 2, false, 6, USE_SSE41)] = Degrain1to6_16_sse41<32, 8, 6>;
+  func_degrain[make_tuple(16, 32, 2, false, 6, USE_SSE41)] = Degrain1to6_16_sse41<16, 32, 6>;
+  func_degrain[make_tuple(16, 16, 2, false, 6, USE_SSE41)] = Degrain1to6_16_sse41<16, 16, 6>;
+  func_degrain[make_tuple(16, 8, 2, false, 6, USE_SSE41)] = Degrain1to6_16_sse41<16, 8, 6>;
+  func_degrain[make_tuple(16, 4, 2, false, 6, USE_SSE41)] = Degrain1to6_16_sse41<16, 4, 6>;
+  func_degrain[make_tuple(16, 2, 2, false, 6, USE_SSE41)] = Degrain1to6_16_sse41<16, 2, 6>;
+  func_degrain[make_tuple(8, 16, 2, false, 6, USE_SSE41)] = Degrain1to6_16_sse41<8, 16, 6>;
+  func_degrain[make_tuple(8, 8, 2, false, 6, USE_SSE41)] = Degrain1to6_16_sse41<8, 8, 6>;
+  func_degrain[make_tuple(8, 4, 2, false, 6, USE_SSE41)] = Degrain1to6_16_sse41<8, 4, 6>;
+  func_degrain[make_tuple(8, 2, 2, false, 6, USE_SSE41)] = Degrain1to6_16_sse41<8, 2, 6>;
+  func_degrain[make_tuple(8, 1, 2, false, 6, USE_SSE41)] = Degrain1to6_16_sse41<8, 1, 6>;
+  func_degrain[make_tuple(4, 8, 2, false, 6, USE_SSE41)] = Degrain1to6_16_sse41<4, 8, 6>;
+  func_degrain[make_tuple(4, 4, 2, false, 6, USE_SSE41)] = Degrain1to6_16_sse41<4, 4, 6>;
+  func_degrain[make_tuple(4, 2, 2, false, 6, USE_SSE41)] = Degrain1to6_16_sse41<4, 2, 6>;
+  func_degrain[make_tuple(2, 4, 2, false, 6, USE_SSE41)] = Degrain1to6_16_sse41<2, 4, 6>;
+  func_degrain[make_tuple(2, 2, 2, false, 6, USE_SSE41)] = Degrain1to6_16_sse41<2, 2, 6>;
+
+  //-- 16 bit degrain end
+
   // SSE2
   // level1, lsb=false
   func_degrain[make_tuple(32, 32, 1, false, 1, USE_SSE2)] = Degrain1to6_sse2<32, 32, false, 1>;
