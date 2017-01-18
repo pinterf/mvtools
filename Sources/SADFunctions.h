@@ -320,6 +320,7 @@ MK_CFUNC(x264_pixel_sad_8x4_cache64_mmx2);
 
 //1.9.5.3: added ssd & SATD (TSchniede)
 /* alternative to SAD - SSD: squared sum of differences, VERY sensitive to noise */
+#if 0
 MK_CFUNC(x264_pixel_ssd_16x16_mmx);
 MK_CFUNC(x264_pixel_ssd_16x8_mmx);
 MK_CFUNC(x264_pixel_ssd_8x16_mmx);
@@ -327,6 +328,7 @@ MK_CFUNC(x264_pixel_ssd_8x8_mmx);
 MK_CFUNC(x264_pixel_ssd_8x4_mmx);
 MK_CFUNC(x264_pixel_ssd_4x8_mmx);
 MK_CFUNC(x264_pixel_ssd_4x4_mmx);
+#endif
 
 /* SATD: Sum of Absolute Transformed Differences, more sensitive to noise, frequency domain based - replacement to dct/SAD */
 #if 0
@@ -342,32 +344,67 @@ MK_CFUNC(x264_pixel_satd_32x32_mmx2);
 MK_CFUNC(x264_pixel_satd_32x16_mmx2);
 #endif
 #define SATD_SSE(blsizex, blsizey, type) extern "C" unsigned int __cdecl x264_pixel_satd_##blsizex##x##blsizey##_##type##(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
-
-//x264_pixel_satd_16x16_%1
+// Make extern functions from the satd pixel-a.asm
+// See function selector "get_satd_function" in SadFunctions.cpp
+// hard to find where they implemented, pixel-a.asm is macro-world :)
+// find x264_pixel_satd_16x16_%1
+// 32x32, 32x16, 32x8, 16x32 and 16x4 are not macroised in pixel-a.asm
+SATD_SSE(32, 32, sse2);
+SATD_SSE(32, 16, sse2);
+SATD_SSE(32, 8, sse2);
+SATD_SSE(16, 32, sse2);
 SATD_SSE(16, 16, sse2);
 SATD_SSE(16,  8, sse2);
+SATD_SSE(16,  4, sse2);
 SATD_SSE( 8, 16, sse2);
 SATD_SSE( 8,  8, sse2);
 SATD_SSE( 8,  4, sse2);
+
+SATD_SSE(4, 8, mmx2);
+SATD_SSE(4, 4, mmx2);
+
+SATD_SSE(32, 32, sse4);
+SATD_SSE(32, 16, sse4);
+SATD_SSE(32, 8 , sse4);
+SATD_SSE(16, 32, sse4);
+SATD_SSE(16, 16, sse4);
+SATD_SSE(16,  8, sse4);
+SATD_SSE(16,  4, sse4);
+SATD_SSE( 8, 16, sse4);
+SATD_SSE( 8,  8, sse4);
+SATD_SSE( 8,  4, sse4);
+
+SATD_SSE(32, 32, avx);
+SATD_SSE(32, 16, avx);
+SATD_SSE(32, 8, avx);
+SATD_SSE(16, 32, avx);
+SATD_SSE(16, 16, avx);
+SATD_SSE(16,  8, avx);
+SATD_SSE(16,  4, avx);
+SATD_SSE( 8, 16, avx);
+SATD_SSE( 8,  8, avx);
+SATD_SSE( 8,  4, avx);
+
+SATD_SSE(32, 32, avx2);
+SATD_SSE(32, 16, avx2);
+SATD_SSE(32, 8, avx2);
+SATD_SSE(16, 32, avx2);
+SATD_SSE(16, 16, avx2);
+SATD_SSE(16,  8, avx2);
+SATD_SSE(16,  4, avx2);
+SATD_SSE( 8, 16, avx2);
+SATD_SSE( 8,  8, avx2);
+//SATD_SSE( 8,  4, avx2); no such
+
+/*
+SATD_SSE(32, 32, ssse3);
+SATD_SSE(32, 16, ssse3);
 SATD_SSE(16, 16, ssse3);
 SATD_SSE(16,  8, ssse3);
 SATD_SSE( 8, 16, ssse3);
 SATD_SSE( 8,  8, ssse3);
 SATD_SSE( 8,  4, ssse3);
-#if 0
-SATD_SSE(16, 16, ssse3_phadd); //identical to ssse3, for Penryn useful only?
-SATD_SSE(16,  8, ssse3_phadd); //identical to ssse3
-SATD_SSE( 8, 16, ssse3_phadd);
-SATD_SSE( 8,  8, ssse3_phadd);
-SATD_SSE( 8,  4, ssse3_phadd);
-#endif
-
-SATD_SSE(32, 32, sse2);
-SATD_SSE(32, 16, sse2);
-SATD_SSE(32, 32, ssse3);
-SATD_SSE(32, 16, ssse3);
-SATD_SSE(32, 32, ssse3_phadd);
-SATD_SSE(32, 16, ssse3_phadd);
+*/
 #undef SATD_SSE
 
 //dummy for testing and deactivate SAD
