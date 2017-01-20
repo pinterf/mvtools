@@ -228,13 +228,6 @@ unsigned int Sad16_sse2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
 } // end of SSE2 Sad16
 
 
-template<int nBlkSize, typename pixel_t>
-unsigned int Sad_C(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef,
-                    int nRefPitch)
-{
-   return Sad_C<nBlkSize, nBlkSize, pixel_t>(pSrc, pRef, nSrcPitch, nRefPitch);
-}
-
 #define MK_CFUNC(functionname) extern "C" unsigned int __cdecl functionname (const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 
 #define SAD_ISSE(blsizex, blsizey) extern "C" unsigned int __cdecl Sad##blsizex##x##blsizey##_iSSE(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
