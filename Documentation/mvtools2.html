@@ -15,11 +15,11 @@
 
 <table class="n">
 <tr><td class="n"><b>Authors:      </b></td><td class="n">&nbsp;</td><td class="n">Manao, Tsp, TSchniede, SEt, Fizick (Alexander Balakhnin), Vit, Firesledge, pinterf</td></tr>
-<tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.0.22d</td></tr>
+<tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.12.22</td></tr>
 <tr><td class="n"><b>Base versions:</b></td><td class="n">&nbsp;</td><td class="n">2.6.0.5 + 2.5.11.22</td></tr>
 <tr><td class="n"><b>Base download:</b></td><td class="n">&nbsp;</td><td class="n">Contained in the Dither package, <a href="http://ldesoras.free.fr/prod.html#src_ditheravsi">http://ldesoras.free.fr/prod.html</a></td></tr>
 <tr><td class="n"><b>Category:     </b></td><td class="n">&nbsp;</td><td class="n">Misc Plugins</td></tr>
-<tr><td class="n"><b>Requirements: </b></td><td class="n">&nbsp;</td><td class="n">YV12, YV16, YV24 or YUY2 Color format</td></tr>
+<tr><td class="n"><b>Requirements: </b></td><td class="n">&nbsp;</td><td class="n">YV12, YV16, YV24 or YUY2 Color format, YUV420P10-16, YUV422P10-16, YUV444P10-16</td></tr>
 <tr><td class="n"><b>License:      </b></td><td class="n">&nbsp;</td><td class="n">GPL</td></tr>
 </table>
 
@@ -93,15 +93,17 @@ forum.
 In particular see <a href="http://forum.doom9.org/showthread.php?t=76041">old
 MVTools thread</a>,
 <a href="http://forum.doom9.org/showthread.php?t=102071">true motion thread</a>,
-<a href="http://forum.doom9.org/showthread.php?t=84770">new MVTools thread</a>
+<a href="http://forum.doom9.org/showthread.php?t=84770">new MVTools thread</a>,
+<a href="https://forum.doom9.org/showthread.php?t=173356">MVTools-pfmod thread</a>
 and some other.
 Try read postings in addition to this documentation and ask for support there.
 If you really interested in motion estimation and compensation topics, you can
 easy find numerous scientific publications (use WWW search).</p>
 
 <p>Notes: The plugin is still under development.
-Current version has some limitations.
-Only progressive YV12, YUY2 video is supported.
+Classic version have some limitations, only progressive YV12, YUY2 video is supported.
+Versions from 2.7.5.22 support all 420, 422, 444 planar YUV formats, 8 and 10-16 bits
+with recent Avisynth Plus versions.
 Use color format conversion and try using (smart) bob-deinterlace for
 interlaced video (<code>SeparateFields</code> may works too with or without
 <code>SelectEven</code>/<code>SelectOdd</code>).
@@ -1317,7 +1319,7 @@ Maximal step between compensated blurred pixels.
 
 
 
-<h3>MDeGrain1, MDeGrain2, MDegrain3 and MDegrainN</h3>
+<h3>MDeGrain1, MDeGrain2, MDegrain3, MDegrain4, MDegrain5, MDegrain6 and MDegrainN</h3>
 
 <table class="n" width="100%">
 <tr>
@@ -1359,7 +1361,7 @@ Maximal step between compensated blurred pixels.
 )</pre></td>
 </tr>
 <tr>
-<td class="n"><pre class="proto">MDeGrain3 (
+<td class="n"><pre class="proto">MDeGrain3...MDeGrain6 (
 	clip,
 	clip super,
 	clip mvbw,
@@ -1368,6 +1370,12 @@ Maximal step between compensated blurred pixels.
 	clip mvfw2,
 	clip mvbw3,
 	clip mvfw3,
+	[clip mvbw4,]
+	[clip mvfw4,]
+	[clip mvbw5,]
+	[clip mvfw5,]
+	[clip mvbw6,]
+	[clip mvfw6,]
 	int  thSAD (400),
 	int  thSADC (thSAD),
 	int  plane (4),
@@ -1424,9 +1432,9 @@ Functions support overlapped blocks mode.</p>
 <p><code>MDeGrain2</code> has temporal radius of 2 and uses vectors of two previous
 <var>mvfw2, mvfw</var> and two next <var>mvbw, mvbw2</var> frames.</p>
 
-<p><code>MDeGrain3</code> has temporal radius of 3 and uses vectors of three previous
-<var>mvfw3, mvfw2, mvfw</var> and three next <var>mvbw, mvbw2, mvbw3</var>
-frames.
+<p><code>MDeGrain3</code> .. <code>MDeGrain6</code> has temporal radius of 3..6 and 
+uses vectors of previous <var>mvfw6, ... mvfw3, mvfw2, mvfw</var> and 
+next <var>mvbw, mvbw2, mvbw3 ... mvbw6</var> frames.
 It is slower, but produces a little better results (stronger denoising).</p>
 
 <p><code>MDeGrainN</code> has a temporal radius given by the <var>tr</var>
@@ -2000,6 +2008,75 @@ Some parts of the code are under the WTFPL, too.</p>
 
 
 <h2><a name="revisions"></a>VI) Revisions</h2>
+
+<p>2.7.12.22 (20170120)</p>
+<ul>
+<li>New: Faster SATD (dct=5..10) 8 bit: updated x264 function selectors, SSE2/4/AVX/AVX2, +10% speed for a whole typical MDegrain3 process on i7-3770</li>
+<li>New: Much Faster SATD (dct=5..10) 10-16 bit: SSE2/SSE4 instead of C, +50% speed for a whole typical MDegrain3 process (which is approx half speed of 8 bit)</li>
+</ul>
+
+<p>2.7.11.22 (20170116)</p>
+<ul>
+<li>New: MDegrain6</li>
+<li>Mod: MDegrain1-6 SSE4 for 10-16 bit (was: C. 3-5% gain, wasn't bottleneck)</li>
+</ul>
+
+<p>2.7.10.22 (20161228)</p>
+<ul>
+<li>Fix: for YV12 the debug info text chroma part was positioned at wrong place</li>
+</ul>
+
+<p>2.7.9.22 (20161220)</p>
+<ul>
+<li>Apply 2.5.11.9-svp analysis speedup, mainly when chroma is involved</li>
+</ul>
+
+<p>2.7.8.22 (20161218)</p>
+<ul>
+<li>Fix: YUY2 input access violation (regression after 2.7.0.22d)</li>
+<li>Fix: MDegrain: free up YUY2 planes only if not planar input (bug inherited from 2.5.11.22 MDegrain3) resulting in freeze at script exit</li>
+</ul>
+
+<p>2.7.7.22 (20161214) - optimizing a bit</p>
+<ul>
+<li>speed: change some 8 bit SAD functions for the better</li>
+<li>speed: separating bottleneck 8 bit/16 bit code paths in order not to use slower int64 calculations for 8 bit, where there are no integer overflow problems</li>
+<li>speed: more __forceinlines for helping the compiler</li>
+<li>info:  general speed gain of 5-15% compared to 2.7.6.22, much reduced speed gap compared to the "classic" YV12 8 bit mvtools2 versions</li>
+</ul>
+
+<p>2.7.6.22 (20161204) - fixes and speedup</p>
+<ul>
+<li>fix: sumLumaChange underflow (used for dct=2,6,9) (regression during 16 bit support)</li>
+<li>fix: MeanLumaChange scale for 10-16 bits (used for dct=2,6,9)</li>
+<li>fix: Mask fix: 8 bit mask resizer bug in SIMD intrinsics  - Thx real.finder (regression on inline asm -> SIMD transition)</li>
+<li>Fix: dctmode=1,2: pixel distance was not corrected for 16 bit pixel sizes</li>
+<li>speed: Let's help VS2015 with some __forceinline directives to recognize the truth.</li>
+<li>speed: Misc optimizations throughout the code (bit shifts instead of div or mul)</li>
+<li>speed: FFTW DCT: C code replaced with SIMD SSE2/SSE4 (FloatToBytes, BytesToFloat)</li>
+<li>speed: 16 bit SAD: a few optimizations in SSE2, AVX-coded SSE2 and AVX2 codepath</li>
+<li>VS2015 compiler: /MT -> /MD (from static to dynamic dlls - now it reallys need VS2015 redistributables)</li>
+</ul>
+
+<p>2.7.5.22 (20161119)</p>
+<ul>
+<li>Milestone release:</li>
+<li>General support of 10-16 bit formats with Avisynth Plus (r2294 or newer recommended) with new MDegrain4 and MDegrain5 filters.</li>
+<li>Fix for MSCDetection: scene change filler pixel default value was always 0 (2.7.1.22 regression)</li>
+<li>MCompensate: possible bugfix bottom padding UV</li>
+<li>Fix SAD for 10-16 bit depths for horizontal block sizes >= 16</li>
+<li>Fix nSCD2 (Scene change threshold block count %) (2.7.1.22 regression)</li>
+<li>MBlockFPS: overlap fixes (right columns and bottom lines)</li>
+<li>MBlockFPS: overlap fix: missing copy buffer to output, thanks StainlessS</li>
+</ul>
+
+<p>2.7.1.22 (20161020)</p>
+<ul>
+<li>Some additional fixes for YV24</li>
+<li>New: MDegrain4, MDegrain5</li>
+<li>Experimental native 10-16 bit support (MSuper, MAnalyze, MDegrain1-5, MDegrainN) including 16 bit SATD (slow C) and SSE2 optimized regular SAD for 8+, for 10+ bits you need at least Avisynth+ r2290)</li>
+<li>Inline assembly rewritten to intrinsics -> 64 bit build is possible in VS2015. (External assembly untouched)</li>
+</ul>
 
 <p>2.7.0.22d (2016.08.16 by pinterf)</p>
 <ul>
