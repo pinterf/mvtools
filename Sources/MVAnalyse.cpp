@@ -146,15 +146,6 @@ MVAnalyse::MVAnalyse(
     );
   }
 
-  if (_dctmode >= 5 && _dctmode <= 10) {
-    if(_blksizex/analysisData.xRatioUV < 4 ||
-       _blksizey/analysisData.yRatioUV < 4)
-      env->ThrowError(
-        "MAnalyse: Block size is too small for this subsampling factor. "
-        "For dct >= 5 minimum block size is 4x4 after subsampling"
-      );
-  }
-
   analysisData.nPel = nSuperPel;
   if (analysisData.nPel != 1
     && analysisData.nPel != 2
