@@ -1104,10 +1104,6 @@ MVDegrainX::~MVDegrainX()
     delete pRefBGOF[i];
     delete pRefFGOF[i];
   }
-  //delete pRefB2GOF;
-  //delete pRefF2GOF;
-  //delete pRefB3GOF;
-  //delete pRefF3GOF;
 }
 
 
@@ -1128,19 +1124,13 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
   const BYTE *pSrc[3];
   const BYTE *pRefB[MAX_DEGRAIN][3];
   const BYTE *pRefF[MAX_DEGRAIN][3];
-  //const BYTE *pRefB2[3];
-  //const BYTE *pRefF2[3];
-  //const BYTE *pRefB3[3];
-  //const BYTE *pRefF3[3];
   int nDstPitches[3], nSrcPitches[3];
   int nRefBPitches[MAX_DEGRAIN][3], nRefFPitches[MAX_DEGRAIN][3];
-  //int nRefB2Pitches[3], nRefF2Pitches[3];
-  //int nRefB3Pitches[3], nRefF3Pitches[3];
   unsigned char *pDstYUY2;
   const unsigned char *pSrcYUY2;
   int nDstPitchYUY2;
   int nSrcPitchYUY2;
-  bool isUsableB[MAX_DEGRAIN], isUsableF[MAX_DEGRAIN]; // , isUsableB2, isUsableF2, isUsableB3, isUsableF3;
+  bool isUsableB[MAX_DEGRAIN], isUsableF[MAX_DEGRAIN];
 
   PVideoFrame mvF[MAX_DEGRAIN];
   PVideoFrame mvB[MAX_DEGRAIN];
@@ -1161,33 +1151,6 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
     isUsableB[j] = mvClipB[j]->IsUsable();
     mvB[j] = 0;
   }
-  /*
-  PVideoFrame mvF3 = mvClipF3.GetFrame(n, env);
-  mvClipF3.Update(mvF3, env);
-  isUsableF3 = mvClipF3.IsUsable();
-  mvF3 = 0; // v2.0.9.2 -  it seems, we do not need in vectors clip anymore when we finished copiing them to fakeblockdatas
-  PVideoFrame mvF2 = mvClipF2.GetFrame(n, env);
-  mvClipF2.Update(mvF2, env);
-  isUsableF2 = mvClipF2.IsUsable();
-  mvF2 =0;
-  PVideoFrame mvF = mvClipF.GetFrame(n, env);
-  mvClipF.Update(mvF, env);
-  isUsableF = mvClipF.IsUsable();
-  mvF =0;
-
-  PVideoFrame mvB = mvClipB.GetFrame(n, env);
-  mvClipB.Update(mvB, env);
-  isUsableB = mvClipB.IsUsable();
-  mvB =0;
-  PVideoFrame mvB2 = mvClipB2.GetFrame(n, env);
-  mvClipB2.Update(mvB2, env);
-  isUsableB2 = mvClipB2.IsUsable();
-  mvB2 =0;
-  PVideoFrame mvB3 = mvClipB3.GetFrame(n, env);
-  mvClipB3.Update(mvB3, env);
-  isUsableB3 = mvClipB3.IsUsable();
-  mvB3 =0;
-  */
   int				lsb_offset_y = 0;
   int				lsb_offset_u = 0;
   int				lsb_offset_v = 0;
@@ -1272,14 +1235,7 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
     mvClipF[j]->use_ref_frame(refF[j], isUsableF[j], super, n, env);
   for (int j = 0; j < level; j++)
     mvClipB[j]->use_ref_frame(refB[j], isUsableB[j], super, n, env);
-  /*
-  mvClipF3.use_ref_frame (refF3, isUsableF3, super, n, env);
-  mvClipF2.use_ref_frame (refF2, isUsableF2, super, n, env);
-  mvClipF. use_ref_frame (refF,  isUsableF,  super, n, env);
-  mvClipB. use_ref_frame (refB,  isUsableB,  super, n, env);
-  mvClipB2.use_ref_frame (refB2, isUsableB2, super, n, env);
-  mvClipB3.use_ref_frame (refB3, isUsableB3, super, n, env);
-  */
+
   if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2)
   {
     for (int j = level - 1; j >= 0; j--)
@@ -1294,35 +1250,6 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
         nRefFPitches[j][2] = nRefFPitches[j][0];
       }
     }
-    /*
-    if (isUsableF3)
-    {
-    pRefF3[0] = refF3->GetReadPtr();
-    pRefF3[1] = pRefF3[0] + refF3->GetRowSize()/2;
-    pRefF3[2] = pRefF3[1] + refF3->GetRowSize()/4;
-    nRefF3Pitches[0]  = refF3->GetPitch();
-    nRefF3Pitches[1]  = nRefF3Pitches[0];
-    nRefF3Pitches[2]  = nRefF3Pitches[0];
-    }
-    if (isUsableF2)
-    {
-    pRefF2[0] = refF2->GetReadPtr();
-    pRefF2[1] = pRefF2[0] + refF2->GetRowSize()/2;
-    pRefF2[2] = pRefF2[1] + refF2->GetRowSize()/4;
-    nRefF2Pitches[0]  = refF2->GetPitch();
-    nRefF2Pitches[1]  = nRefF2Pitches[0];
-    nRefF2Pitches[2]  = nRefF2Pitches[0];
-    }
-    if (isUsableF)
-    {
-    pRefF[0] = refF->GetReadPtr();
-    pRefF[1] = pRefF[0] + refF->GetRowSize()/2;
-    pRefF[2] = pRefF[1] + refF->GetRowSize()/4;
-    nRefFPitches[0]  = refF->GetPitch();
-    nRefFPitches[1]  = nRefFPitches[0];
-    nRefFPitches[2]  = nRefFPitches[0];
-    }
-    */
     for (int j = 0; j < level; j++)
     {
       if (isUsableB[j])
@@ -1335,35 +1262,6 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
         nRefBPitches[j][2] = nRefBPitches[j][0];
       }
     }
-    /*
-    if (isUsableB)
-    {
-    pRefB[0] = refB->GetReadPtr();
-    pRefB[1] = pRefB[0] + refB->GetRowSize()/2;
-    pRefB[2] = pRefB[1] + refB->GetRowSize()/4;
-    nRefBPitches[0]  = refB->GetPitch();
-    nRefBPitches[1]  = nRefBPitches[0];
-    nRefBPitches[2]  = nRefBPitches[0];
-    }
-    if (isUsableB2)
-    {
-    pRefB2[0] = refB2->GetReadPtr();
-    pRefB2[1] = pRefB2[0] + refB2->GetRowSize()/2;
-    pRefB2[2] = pRefB2[1] + refB2->GetRowSize()/4;
-    nRefB2Pitches[0]  = refB2->GetPitch();
-    nRefB2Pitches[1]  = nRefB2Pitches[0];
-    nRefB2Pitches[2]  = nRefB2Pitches[0];
-    }
-    if (isUsableB3)
-    {
-    pRefB3[0] = refB3->GetReadPtr();
-    pRefB3[1] = pRefB3[0] + refB3->GetRowSize()/2;
-    pRefB3[2] = pRefB3[1] + refB3->GetRowSize()/4;
-    nRefB3Pitches[0]  = refB3->GetPitch();
-    nRefB3Pitches[1]  = nRefB3Pitches[0];
-    nRefB3Pitches[2]  = nRefB3Pitches[0];
-    }
-    */
   }
   else
   {
@@ -1379,35 +1277,7 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
         nRefFPitches[j][2] = VPITCH(refF[j]);
       }
     }
-    /*
-    if (isUsableF3)
-    {
-    pRefF3[0] = YRPLAN(refF3);
-    pRefF3[1] = URPLAN(refF3);
-    pRefF3[2] = VRPLAN(refF3);
-    nRefF3Pitches[0] = YPITCH(refF3);
-    nRefF3Pitches[1] = UPITCH(refF3);
-    nRefF3Pitches[2] = VPITCH(refF3);
-    }
-    if (isUsableF2)
-    {
-    pRefF2[0] = YRPLAN(refF2);
-    pRefF2[1] = URPLAN(refF2);
-    pRefF2[2] = VRPLAN(refF2);
-    nRefF2Pitches[0] = YPITCH(refF2);
-    nRefF2Pitches[1] = UPITCH(refF2);
-    nRefF2Pitches[2] = VPITCH(refF2);
-    }
-    if (isUsableF)
-    {
-    pRefF[0] = YRPLAN(refF);
-    pRefF[1] = URPLAN(refF);
-    pRefF[2] = VRPLAN(refF);
-    nRefFPitches[0] = YPITCH(refF);
-    nRefFPitches[1] = UPITCH(refF);
-    nRefFPitches[2] = VPITCH(refF);
-    }
-    */
+
     for (int j = 0; j < level; j++)
     {
       if (isUsableB[j])
@@ -1420,45 +1290,11 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
         nRefBPitches[j][2] = VPITCH(refB[j]);
       }
     }
-    /*
-    if (isUsableB)
-    {
-    pRefB[0] = YRPLAN(refB);
-    pRefB[1] = URPLAN(refB);
-    pRefB[2] = VRPLAN(refB);
-    nRefBPitches[0] = YPITCH(refB);
-    nRefBPitches[1] = UPITCH(refB);
-    nRefBPitches[2] = VPITCH(refB);
-    }
-    if (isUsableB2)
-    {
-    pRefB2[0] = YRPLAN(refB2);
-    pRefB2[1] = URPLAN(refB2);
-    pRefB2[2] = VRPLAN(refB2);
-    nRefB2Pitches[0] = YPITCH(refB2);
-    nRefB2Pitches[1] = UPITCH(refB2);
-    nRefB2Pitches[2] = VPITCH(refB2);
-    }
-    if (isUsableB3)
-    {
-    pRefB3[0] = YRPLAN(refB3);
-    pRefB3[1] = URPLAN(refB3);
-    pRefB3[2] = VRPLAN(refB3);
-    nRefB3Pitches[0] = YPITCH(refB3);
-    nRefB3Pitches[1] = UPITCH(refB3);
-    nRefB3Pitches[2] = VPITCH(refB3);
-    }
-    */
   }
 
   MVPlane *pPlanesB[3][MAX_DEGRAIN] = { 0 };
   MVPlane *pPlanesF[3][MAX_DEGRAIN] = { 0 };
-  /*
-  MVPlane *pPlanesB2[3] = { 0 };
-  MVPlane *pPlanesF2[3] = { 0 };
-  MVPlane *pPlanesB3[3] = { 0 };
-  MVPlane *pPlanesF3[3] = { 0 };
-  */
+
   for (int j = level - 1; j >= 0; j--)
   {
     if (isUsableF[j])
@@ -1472,38 +1308,7 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
         pPlanesF[2][j] = pRefFGOF[j]->GetFrame(0)->GetPlane(VPLANE);
     }
   }
-  /*
-  if (isUsableF3)
-  {
-  pRefF3GOF->Update(YUVplanes, (BYTE*)pRefF3[0], nRefF3Pitches[0], (BYTE*)pRefF3[1], nRefF3Pitches[1], (BYTE*)pRefF3[2], nRefF3Pitches[2]);
-  if (YUVplanes & YPLANE)
-  pPlanesF3[0] = pRefF3GOF->GetFrame(0)->GetPlane(YPLANE);
-  if (YUVplanes & UPLANE)
-  pPlanesF3[1] = pRefF3GOF->GetFrame(0)->GetPlane(UPLANE);
-  if (YUVplanes & VPLANE)
-  pPlanesF3[2] = pRefF3GOF->GetFrame(0)->GetPlane(VPLANE);
-  }
-  if (isUsableF2)
-  {
-  pRefF2GOF->Update(YUVplanes, (BYTE*)pRefF2[0], nRefF2Pitches[0], (BYTE*)pRefF2[1], nRefF2Pitches[1], (BYTE*)pRefF2[2], nRefF2Pitches[2]);
-  if (YUVplanes & YPLANE)
-  pPlanesF2[0] = pRefF2GOF->GetFrame(0)->GetPlane(YPLANE);
-  if (YUVplanes & UPLANE)
-  pPlanesF2[1] = pRefF2GOF->GetFrame(0)->GetPlane(UPLANE);
-  if (YUVplanes & VPLANE)
-  pPlanesF2[2] = pRefF2GOF->GetFrame(0)->GetPlane(VPLANE);
-  }
-  if (isUsableF)
-  {
-  pRefFGOF->Update(YUVplanes, (BYTE*)pRefF[0], nRefFPitches[0], (BYTE*)pRefF[1], nRefFPitches[1], (BYTE*)pRefF[2], nRefFPitches[2]);
-  if (YUVplanes & YPLANE)
-  pPlanesF[0] = pRefFGOF->GetFrame(0)->GetPlane(YPLANE);
-  if (YUVplanes & UPLANE)
-  pPlanesF[1] = pRefFGOF->GetFrame(0)->GetPlane(UPLANE);
-  if (YUVplanes & VPLANE)
-  pPlanesF[2] = pRefFGOF->GetFrame(0)->GetPlane(VPLANE);
-  }
-  */
+
   for (int j = 0; j < level; j++)
   {
     if (isUsableB[j])
@@ -1517,38 +1322,6 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
         pPlanesB[2][j] = pRefBGOF[j]->GetFrame(0)->GetPlane(VPLANE);
     }
   }
-  /*
-  if (isUsableB)
-  {
-  pRefBGOF->Update(YUVplanes, (BYTE*)pRefB[0], nRefBPitches[0], (BYTE*)pRefB[1], nRefBPitches[1], (BYTE*)pRefB[2], nRefBPitches[2]);// v2.0
-  if (YUVplanes & YPLANE)
-  pPlanesB[0] = pRefBGOF->GetFrame(0)->GetPlane(YPLANE);
-  if (YUVplanes & UPLANE)
-  pPlanesB[1] = pRefBGOF->GetFrame(0)->GetPlane(UPLANE);
-  if (YUVplanes & VPLANE)
-  pPlanesB[2] = pRefBGOF->GetFrame(0)->GetPlane(VPLANE);
-  }
-  if (isUsableB2)
-  {
-  pRefB2GOF->Update(YUVplanes, (BYTE*)pRefB2[0], nRefB2Pitches[0], (BYTE*)pRefB2[1], nRefB2Pitches[1], (BYTE*)pRefB2[2], nRefB2Pitches[2]);// v2.0
-  if (YUVplanes & YPLANE)
-  pPlanesB2[0] = pRefB2GOF->GetFrame(0)->GetPlane(YPLANE);
-  if (YUVplanes & UPLANE)
-  pPlanesB2[1] = pRefB2GOF->GetFrame(0)->GetPlane(UPLANE);
-  if (YUVplanes & VPLANE)
-  pPlanesB2[2] = pRefB2GOF->GetFrame(0)->GetPlane(VPLANE);
-  }
-  if (isUsableB3)
-  {
-  pRefB3GOF->Update(YUVplanes, (BYTE*)pRefB3[0], nRefB3Pitches[0], (BYTE*)pRefB3[1], nRefB3Pitches[1], (BYTE*)pRefB3[2], nRefB3Pitches[2]);// v2.0
-  if (YUVplanes & YPLANE)
-  pPlanesB3[0] = pRefB3GOF->GetFrame(0)->GetPlane(YPLANE);
-  if (YUVplanes & UPLANE)
-  pPlanesB3[1] = pRefB3GOF->GetFrame(0)->GetPlane(UPLANE);
-  if (YUVplanes & VPLANE)
-  pPlanesB3[2] = pRefB3GOF->GetFrame(0)->GetPlane(VPLANE);
-  }
-  */
 
   PROFILE_START(MOTION_PROFILE_COMPENSATION);
   pDstCur[0] = pDst[0];
