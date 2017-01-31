@@ -67,6 +67,8 @@ MVFilter(vectors, "MShow", env, 1, 0)
 	int nSuperWidth = vi.width; // really super
 	int nSuperHeight = vi.height;
 
+  nTolerance = nTolerance << (vi.BitsPerComponent() - 8); // scale sad tolerance
+
 	if (nHeight != nHeightS || nWidth != nSuperWidth-nSuperHPad*2)
 		env->ThrowError("MShow : wrong super frame clip");
 
