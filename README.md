@@ -16,6 +16,7 @@ http://avisynth.nl/index.php/AviSynth%2B#AviSynth.2B_x64_plugins
 Change log
 - 2.7.13.22 (20170201)
   Fix: MDegrain1-6,N 10-16 bit thSCD scaling
+  Fix: MVShow: tolerance scaling for 10-16 bits
 
 - 2.7.12.22 (20170120)
   New: Faster SATD (dct=5..10) 8 bit: updated x264 function selectors, SSE2/4/AVX/AVX2
