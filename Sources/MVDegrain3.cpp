@@ -917,7 +917,7 @@ MVDegrainX::MVDegrainX(
   // e.g. 10000*999999 is too much
   thSAD = (uint64_t)_thSAD * mvClipB[0]->GetThSCD1() / _nSCD1; // normalize to block SAD
   thSADC = (uint64_t)_thSADC * mvClipB[0]->GetThSCD1() / _nSCD1; // chroma
-                                                                 // later these are modified for 10-16 bit scale
+  // nSCD1 is already scaled in MVClip constructor, no further scale is needed
 
   YUVplanes = _YUVplanes;
   nLimit = _nLimit;
@@ -962,8 +962,11 @@ MVDegrainX::MVDegrainX(
   // pixelsize, bits_per_pixel: vector clip data
 
   // SAD is coming from the mv clip analysis. Parameter must be scaled accordingly
+  // hmm. no. nSCD1 is already scaled in MVClip constructor
+  /* must be good from 2.7.13.22
   thSAD = sad_t(thSAD / 255.0 * ((1 << bits_per_pixel) - 1));
   thSADC = sad_t(thSADC / 255.0 * ((1 << bits_per_pixel) - 1));
+  */
   thSADpow2 = thSAD * thSAD;
   thSADCpow2 = thSADC * thSADC;
 
@@ -1848,11 +1851,11 @@ MV_FORCEINLINE void	norm_weights(int &WSrc, int(&WRefB)[MAX_DEGRAIN], int(&WRefF
   int WSum;
   if (level == 6)
     WSum = WRefB[0] + WRefF[0] + WSrc + WRefB[1] + WRefF[1] + WRefB[2] + WRefF[2] + WRefB[3] + WRefF[3] + WRefB[4] + WRefF[4] + WRefB[5] + WRefF[5] + 1;
-  if (level == 5)
+  else if (level == 5)
     WSum = WRefB[0] + WRefF[0] + WSrc + WRefB[1] + WRefF[1] + WRefB[2] + WRefF[2] + WRefB[3] + WRefF[3] + WRefB[4] + WRefF[4] + 1;
-  if (level == 4)
+  else if (level == 4)
     WSum = WRefB[0] + WRefF[0] + WSrc + WRefB[1] + WRefF[1] + WRefB[2] + WRefF[2] + WRefB[3] + WRefF[3] + 1;
-  if (level == 3)
+  else if (level == 3)
     WSum = WRefB[0] + WRefF[0] + WSrc + WRefB[1] + WRefF[1] + WRefB[2] + WRefF[2] + 1;
   else if (level == 2)
     WSum = WRefB[0] + WRefF[0] + WSrc + WRefB[1] + WRefF[1] + 1;
