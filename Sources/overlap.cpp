@@ -195,6 +195,7 @@ void Short2Bytes_Int32toWord16(uint16_t *pDst, int nDstPitch, int *pDstInt, int 
   {
     for (int i=0; i<nWidth; i++)
     {
+      //const int		a = (pDstInt [i] + (1 << 10)) >> (5+6); //scale back do we need 1<<10 round?)
       const int		a = pDstInt [i] >> (5+6); //scale back
       pDst [i] = min(a, max_pixel_value); // no need 8*shift
     }
