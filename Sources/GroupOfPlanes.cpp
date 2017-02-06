@@ -381,7 +381,16 @@ void GroupOfPlanes::ExtraDivide(int *out, int flags)
   }
 
   int *          inp = out + 1;	// finest estimated plane
-  out += out[0] + 1;	// position for divided sublocks data
+  
+  // P.F. 17.02.06 missing length for DivideExtra data
+  // in SearchMVs: BlockLength is set as
+  // out[0] = GetArraySize();
+  out += out[0];	// position for divided sublocks data
+
+  // special meaning for length, checked in FakeGroupOfPlanes::Update
+  // from 2.7.14.22
+  out[0] = 0xFFFFFFFF;
+  out++; // skip length
 
   int            nBlkY = planes[0]->GetnBlkY();
   int            nBlkXN = planes[0]->GetnBlkX() * N_PER_BLOCK;	// 6 stored variables

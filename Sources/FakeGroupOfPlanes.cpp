@@ -89,8 +89,15 @@ bool FakeGroupOfPlanes::Update(const int *array, int data_size)
 
 	for ( int i = nLvCount_ - 1; i >= 0 && ok_flag; i-- )
 	{
-		pA += pA[0];
-		ok_flag = (pA - array <= data_size);
+    int length = pA[0];
+    // special case for length set in GroupOfPlanes::ExtraDivide
+    // from 2.7.14.22
+    if (length == 0xFFFFFFFF && i == 0) 
+      ok_flag = true;
+    else {
+      pA += length;
+      ok_flag = (pA - array <= data_size);
+    }
 	}
 
 //   compensatedPlane = reinterpret_cast<const unsigned char *>(pA);
@@ -104,8 +111,10 @@ bool FakeGroupOfPlanes::Update(const int *array, int data_size)
 		pA += 2;
 		for ( int i = nLvCount_ - 1; i >= 0; i-- )
 		{
-			planes[i]->Update(pA + 1);
-			pA += pA[0];
+      planes[i]->Update(pA + 1);
+      int length = pA[0];
+      if (!(length == 0xFFFFFFFF && i == 0)) // extradivide case
+        pA += length;
 		}
 	}
 
