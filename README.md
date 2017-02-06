@@ -14,6 +14,12 @@ Modification base:
 http://avisynth.nl/index.php/AviSynth%2B#AviSynth.2B_x64_plugins
 
 Change log
+- 2.7.14.22 (20170206)
+  Fix: MAnalyze divide=2 showed "vector clip is too small"
+       (inherited from 2.6.0.5, sanity check was done but length was not filled for divideextra data)
+  Fix: MFlow access violation in internal mv resizer when resizing factor was big (MCaWarpSharp3 4x supersampling case)
+       (bug introduced in upstream 2.5.11.22)
+
 - 2.7.13.22 (20170201)
   Fix: MDegrain1-6,N 10-16 bit thSCD scaling
   Fix: MVShow: tolerance scaling for 10-16 bits
