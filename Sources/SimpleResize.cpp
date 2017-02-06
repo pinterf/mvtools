@@ -138,6 +138,7 @@ void SimpleResize::SimpleResizeDo_New(uint8_t *dstp8, int row_size, int height, 
   unsigned int* vOffsetsW = vOffsets;
   unsigned int* vWeightsW = vWeights;
 
+  unsigned int last_vOffsetsW = vOffsetsW[height - 1];
   for (int y = 0; y < height; y++)
   {
     int CurrentWeight = vWeightsW[y];
@@ -145,8 +146,18 @@ void SimpleResize::SimpleResizeDo_New(uint8_t *dstp8, int row_size, int height, 
 
     srcp1 = srcp + vOffsetsW[y] * src_pitch;
 
-    // scrp2 is the next line (check for the most bottom line)
-    srcp2 = (y < height - 1) ? srcp1 + src_pitch : srcp1; // pitch is uchar/short-aware
+    // When height /oldheight ratio is too big, (e.g. x10e0/0x438) then the (y-1)th offset is already the last row.
+    // bug: we set the srcp2 pointer to the last row+1, thus resulting in access violator
+    // Reason: before 2.7.14.22 checks for y-1, but condition may fail sooner
+    //   vOffsetsW[0x10dd]	0x00000436
+    //   vOffsetsW[0x10de]	0x00000437   <<- y-1, already the last, we cannot use text pitch 0x438!
+    //   vOffsetsW[0x10df]	0x00000437
+    // Bug was probably introduced in the original 2.5.11.22
+    // bad: srcp2 = (y < height - 1) ? srcp1 + src_pitch : srcp1; // pitch is uchar/short-aware
+
+    // scrp2 is the next line if applicable
+    bool UseNextLine = vOffsetsW[y] < last_vOffsetsW;
+    srcp2 = UseNextLine ? srcp1 + src_pitch : srcp; // pitch is uchar/short-aware
 
     int mod8or16w = src_row_size / (16 / sizeof(workY_type)) * (16 / sizeof(workY_type));
     __m128i FPround1 = _mm_set1_epi16(0x0080);
@@ -415,6 +426,8 @@ a
 #endif
   // Just in case things are not aligned right, maybe turn off sse2
 
+  unsigned int last_vOffsetsW = vOffsetsW[height - 1];
+
   for (int y = 0; y < height; y++)
   {
     int CurrentWeight = vWeightsW[y];
@@ -431,8 +444,10 @@ a
 #endif
     srcp1 = srcp + vOffsetsW[y] * src_pitch;
 
-    // scrp2 is the next line (check for the most bottom line)
-    srcp2 = (y < height - 1) ? srcp1 + src_pitch : srcp1;
+    // fix in 2.7.14.22: srcp2 may reach beyond block
+    // see comment in SimpleResizeDo_New
+    bool UseNextLine = vOffsetsW[y] < last_vOffsetsW;
+    srcp2 = UseNextLine ? srcp1 + src_pitch : srcp; // pitch is uchar/short-aware
 
     if (use_c) // always C here
     {
@@ -834,7 +849,7 @@ void SimpleResize::SimpleResizeDo_uint16(short *dstp, int row_size, int height, 
     SimpleResizeDo_New<short>((uint8_t *)dstp, row_size, height, dst_pitch, (uint8_t *)srcp, src_row_size, src_pitch);
     return;
   }
-
+  
   int vWeight1[4];
   int vWeight2[4];
   const __int64 FPround2[2] = { 0x0000008000000080,0x0000008000000080 };// round dwords
@@ -848,6 +863,8 @@ void SimpleResize::SimpleResizeDo_uint16(short *dstp, int row_size, int height, 
   unsigned int* vOffsetsW = vOffsets;
 
   unsigned int* vWeightsW = vWeights;
+
+  unsigned int last_vOffsetsW = vOffsetsW[height - 1];
 
   for (int y = 0; y < height; y++)
   {
@@ -865,8 +882,10 @@ void SimpleResize::SimpleResizeDo_uint16(short *dstp, int row_size, int height, 
 
     srcp1 = srcp + vOffsetsW[y] * src_pitch;
 
-    // scrp2 is the next line (check for the most bottom line)
-    srcp2 = (y < height - 1) ? srcp1 + src_pitch : srcp1;
+    // fix in 2.7.14.22: srcp2 may reach beyond block
+    // see comment in SimpleResizeDo_New
+    bool UseNextLine = vOffsetsW[y] < last_vOffsetsW;
+    srcp2 = UseNextLine ? srcp1 + src_pitch : srcp; // pitch is uchar/short-aware
 
     if (true) // make it true for C version
     {
@@ -1138,6 +1157,37 @@ void SimpleResize::InitTables(void)
 
   // For YV12 we need separate Luma and chroma tables
   // First Luma Table
+  //
+  /* PF todo check it is OK? (does not seem to be symmetric at the beginning and the end)
+    vOffsetsW[0x0000]	0x00000000
+    vOffsetsW[0x0001]	0x00000000
+    vOffsetsW[0x0002]	0x00000000
+    vOffsetsW[0x0003]	0x00000000
+    vOffsetsW[0x0004]	0x00000000
+    vOffsetsW[0x0005]	0x00000000
+    vOffsetsW[0x0006]	0x00000001
+    vOffsetsW[0x0007]	0x00000001
+    vOffsetsW[0x0008]	0x00000001
+    vOffsetsW[0x0009]	0x00000001
+    vOffsetsW[0x000a]	0x00000002
+    vOffsetsW[0x000b]	0x00000002
+    vOffsetsW[0x000c]	0x00000002
+    vOffsetsW[0x000d]	0x00000002
+    vOffsetsW[0x000e]	0x00000003
+    vOffsetsW[0x000f]	0x00000003
+      ...
+    vOffsetsW[0x10d9]	0x00000435
+    vOffsetsW[0x10da]	0x00000436
+    vOffsetsW[0x10db]	0x00000436
+    vOffsetsW[0x10dc]	0x00000436
+    vOffsetsW[0x10dd]	0x00000436
+    vOffsetsW[0x10de]	0x00000437
+    vOffsetsW[0x10df]	0x00000437
+      */
+
+
+
+
 
   for (i = 0; i < newheight; ++i)
   {
