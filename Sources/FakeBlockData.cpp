@@ -43,6 +43,7 @@ FakeBlockData::~FakeBlockData()
 
 }
 
+/* moved to header because of forceinline
 void FakeBlockData::Update(const int *array)
 {
 	vector.x   = array [0];
@@ -52,4 +53,5 @@ void FakeBlockData::Update(const int *array)
 //	nPitch     = pitch;
 //	pRef       = ref + x + y * pitch;
 }
+*/
 

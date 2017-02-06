@@ -48,7 +48,14 @@ public :
     ~FakeBlockData();
 
     void Init(int _x, int _y);
-	void Update(const int *array);
+    MV_FORCEINLINE void Update(const int *array) {
+        vector.x = array[0];
+        vector.y = array[1];
+        vector.sad = *(sad_t *)(&array[2]);
+        //	nLength    = SquareLength(vector);
+        //	nPitch     = pitch;
+        //	pRef       = ref + x + y * pitch;
+    }
 
   MV_FORCEINLINE int GetX() const { return x; }
   MV_FORCEINLINE int GetY() const { return y; }
