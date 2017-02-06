@@ -305,7 +305,7 @@ static void FlowInterExtra_NPel(
 
 
 
-
+// todo SSE2
 template <typename pixel_t, /*class T256P,*/ int NPELL2>
 static void FlowInterSimple_NPel(
 	uint8_t * pdst8, int dst_pitch, const uint8_t *prefB8, const uint8_t *prefF8, int ref_pitch,

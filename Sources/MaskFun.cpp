@@ -643,6 +643,7 @@ void Create_LUTV(int time256, short *LUTVB, short *LUTVF)
 
 /* was: in maskfun.hpp (template)*/
 
+// todo: SSE2
 // pitches: byte offsets
 template<typename pixel_t>
 void Blend(uint8_t * pdst8, const uint8_t * psrc8, const uint8_t * pref8, int height, int width, int dst_pitch, int src_pitch, int ref_pitch, int time256, bool isse)
