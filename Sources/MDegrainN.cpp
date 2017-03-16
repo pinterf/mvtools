@@ -589,16 +589,15 @@ MDegrainN::MDegrainN(
     // OverlapsFunction
     // in M(V)DegrainX: DenoiseXFunction
   arch_t arch;
-  if ((((env_ptr->GetCPUFlags() & CPUF_AVX2) != 0) & isse_flag))
+  int avs_cpu_flag = env_ptr->GetCPUFlags();
+  if ((((avs_cpu_flag & CPUF_AVX2) != 0) & isse_flag))
     arch = USE_AVX2;
-  else if ((((env_ptr->GetCPUFlags() & CPUF_AVX) != 0) & isse_flag))
+  else if ((((avs_cpu_flag & CPUF_AVX) != 0) & isse_flag))
     arch = USE_AVX;
-  else if ((((env_ptr->GetCPUFlags() & CPUF_SSE4_1) != 0) & isse_flag))
+  else if ((((avs_cpu_flag & CPUF_SSE4_1) != 0) & isse_flag))
     arch = USE_SSE41;
-  else if ((((env_ptr->GetCPUFlags() & CPUF_SSE2) != 0) & isse_flag))
+  else if ((((avs_cpu_flag & CPUF_SSE2) != 0) & isse_flag))
     arch = USE_SSE2;
-/*  else if ((pixelsize == 1) && _isse_flag) // PF no MMX support
-    arch = USE_MMX;*/
   else
     arch = NO_SIMD;
 
