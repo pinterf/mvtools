@@ -68,11 +68,12 @@ unsigned int Sad16_sse2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
 
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128(); // 2x or 4x int is probably enough for 32x32
+  
   const bool two_8byte_rows = (sizeof(pixel_t) == 2 && nBlkWidth <= 4) || (sizeof(pixel_t) == 1 && nBlkWidth <= 8);
   const bool one_cycle = (sizeof(pixel_t) * nBlkWidth) == 16;
   const bool unroll_by2 = !two_8byte_rows && nBlkHeight>=2; // unroll by 4: slower
 
-    for (int y = 0; y < nBlkHeight; y += (two_8byte_rows ? 2 : 1))
+    for (int y = 0; y < nBlkHeight; y += (two_8byte_rows || unroll_by2) ? 2 : 1)
     {
       if (two_8byte_rows) { // no x cycle
         __m128i src1, src2;
