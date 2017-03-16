@@ -198,8 +198,28 @@ void DCTFFTW::Bytes2Float_SSE2(const unsigned char * srcp8, int src_pitch, float
   }
 }
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4309)
+#endif
 // fake _mm_packus_epi32 (orig is SSE4.1 only)
 MV_FORCEINLINE __m128i _MM_PACKUS_EPI32(__m128i a, __m128i b)
+{
+  const static __m128i val_32 = _mm_set1_epi32(0x8000);
+  const static __m128i val_16 = _mm_set1_epi16(0x8000);
+
+  a = _mm_sub_epi32(a, val_32);
+  b = _mm_sub_epi32(b, val_32);
+  a = _mm_packs_epi32(a, b);
+  a = _mm_add_epi16(a, val_16);
+  return a;
+}
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+// fake _mm_packus_epi32 (orig is SSE4.1 only)
+// only for packing 00000000..0000FFFF range integers, does not clamp properly above that, e.g. 00010001
+MV_FORCEINLINE __m128i _MM_PACKUS_EPI32_SRC_TRUEWORD(__m128i a, __m128i b)
 {
   a = _mm_slli_epi32(a, 16);
   a = _mm_srai_epi32(a, 16);
