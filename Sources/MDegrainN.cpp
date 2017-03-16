@@ -543,8 +543,12 @@ MDegrainN::MDegrainN(
     env_ptr->ThrowError("MDegrainN : wrong source or super frame size");
   }
 
-  if(lsb_flag && pixelsize != 1)
+  if(lsb_flag && (pixelsize != 1 || pixelsize_super != 1))
     env_ptr->ThrowError("MDegrainN : lsb_flag only for 8 bit sources");
+
+  if (bits_per_pixel_super != bits_per_pixel) {
+    env_ptr->ThrowError("MDegrainN : clip and super clip have different bit depths");
+  }
 
   if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !_planar_flag)
   {

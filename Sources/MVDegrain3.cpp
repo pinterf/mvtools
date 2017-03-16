@@ -914,7 +914,7 @@ MVDegrainX::MVDegrainX(
     }
   }
 
-  // e.g. 10000*999999 is too much
+    // e.g. 10000*999999 is too much
   thSAD = (uint64_t)_thSAD * mvClipB[0]->GetThSCD1() / _nSCD1; // normalize to block SAD
   thSADC = (uint64_t)_thSADC * mvClipB[0]->GetThSCD1() / _nSCD1; // chroma
   // nSCD1 is already scaled in MVClip constructor, no further scale is needed
@@ -993,6 +993,13 @@ MVDegrainX::MVDegrainX(
     || nPel != nSuperPel)
   {
     env_ptr->ThrowError("MDegrainX : wrong source or super frame size");
+  }
+
+  if (lsb_flag && (pixelsize != 1 || pixelsize_super != 1))
+    env_ptr->ThrowError("MDegrainX : lsb_flag only for 8 bit sources");
+
+  if (bits_per_pixel_super != bits_per_pixel) {
+    env_ptr->ThrowError("MDegrainX : clip and super clip have different bit depths");
   }
 
   if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
