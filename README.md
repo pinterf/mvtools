@@ -16,7 +16,7 @@ http://avisynth.nl/index.php/AviSynth%2B#AviSynth.2B_x64_plugins
 Change log
 - 2.7.15.22 (20170316)
   Fix: 16 bit SAD for non-AVX code path
-  Misc: add error on lsb_flag=true for non-8 bit sources
+  Misc: MDegrain1-6: add error on lsb_flag=true for non-8 bit sources
   
 - 2.7.14.22 (20170206)
   Fix: MAnalyze divide=2 showed "vector clip is too small"
