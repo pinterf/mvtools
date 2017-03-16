@@ -495,8 +495,7 @@ MDegrainN::MDegrainN(
   const int nSuperLevels = params.nLevels;
   _nsupermodeyuv = params.nModeYUV;
 
-  // SAD is coming from the mv clip analysis. Parameter must be scaled accordingly
-  // hmm. no. nSCD1 is already scaled in MVClip constructor
+  // no need for SAD scaling, it is coming from the mv clip analysis. nSCD1 is already scaled in MVClip constructor
   /* must be good from 2.7.13.22
   thsad = sad_t(thsad / 255.0 * ((1 << bits_per_pixel) - 1));
   thsadc = sad_t(thsadc / 255.0 * ((1 << bits_per_pixel) - 1));
