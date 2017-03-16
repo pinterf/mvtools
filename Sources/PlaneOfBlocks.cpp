@@ -88,9 +88,9 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
   // half must be more than max vector length, which is (framewidth + Padding) * nPel
   freqArray[0].resize(8192 * _nPel * 2);
   freqArray[1].resize(8192 * _nPel * 2);
-
+  // for nFlags, we use CPU_xxxx constants instead of Avisynth's CPUF_xxx values, because there are extra bits here
   bool sse2 = (bool)(nFlags & CPU_SSE2); // no tricks for really old processors. If SSE2 is reported, use it
-  bool sse41 = (bool)(nFlags & CPUF_SSE4_1); 
+  bool sse41 = (bool)(nFlags & CPU_SSE4); 
   bool avx = (bool)(nFlags & CPU_AVX);
   bool avx2 = (bool)(nFlags & CPU_AVX2);
   bool ssd = (bool)(nFlags & MOTION_USE_SSD);

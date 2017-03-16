@@ -314,6 +314,8 @@ MVAnalyse::MVAnalyse(
   analysisData.nFlags |= (analysisData.isBackward) ? MOTION_IS_BACKWARD : 0;
   analysisData.nFlags |= (chroma) ? MOTION_USE_CHROMA_MOTION : 0;
   analysisData.nFlags |= cpu_detect(); // 161002 get rid of sadx264, no effect
+  // This cpu_detect has different layout that Avisynth's layout.
+  // Never mix CPU_xxxx and CPUF_xxxx constants!
 #if 0
   if (_sadx264 == 0)
   {
