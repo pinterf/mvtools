@@ -1019,10 +1019,6 @@ MVDegrainX::MVDegrainX(
     }
     else
     {
-      /*
-      DstShortAlign32 = new __m256i[dstShortPitch * nHeight * sizeof(short) / 32]; // force 32 byte alignment
-      DstShort = reinterpret_cast<unsigned short *>(DstShortAlign32); // new unsigned short[dstShortPitch*nHeight];
-      */
       DstShort = (unsigned short *)_aligned_malloc(dstShortPitch * nHeight * sizeof(short), 32); 
     }
   }
@@ -1040,8 +1036,6 @@ MVDegrainX::MVDegrainX(
     arch = USE_SSE41;
   else if ((((env_ptr->GetCPUFlags() & CPUF_SSE2) != 0) & isse_flag))
     arch = USE_SSE2;
-  /*  else if ((pixelsize == 1) && _isse_flag) // PF no MMX support
-  arch = USE_MMX;*/
   else
     arch = NO_SIMD;
 
@@ -1106,10 +1100,10 @@ MVDegrainX::~MVDegrainX()
   {
     delete OverWins;
     delete OverWinsUV;
-    _aligned_free(DstShort); //  delete[] DstShortAlign32;
-    _aligned_free(DstInt); // delete[] DstIntAlign32;
+    _aligned_free(DstShort);
+    _aligned_free(DstInt);
   }
-  _aligned_free(tmpBlock); //delete[] tmpBlock; PF 16.10.26
+  _aligned_free(tmpBlock);
   for (int i = 0; i < level; i++) {
     delete pRefBGOF[i];
     delete pRefFGOF[i];
@@ -1361,48 +1355,26 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
         for (int bx = 0; bx < nBlkX; bx++)
         {
           int i = by*nBlkX + bx;
-          const BYTE * pB[MAX_DEGRAIN], *pF[MAX_DEGRAIN]; // , *pB2, *pF2, *pB3, *pF3;
-          int npB[MAX_DEGRAIN], npF[MAX_DEGRAIN]; // , npB2, npF2, npB3, npF3;
+          const BYTE * pB[MAX_DEGRAIN], *pF[MAX_DEGRAIN];
+          int npB[MAX_DEGRAIN], npF[MAX_DEGRAIN];
           int WSrc;
-          int WRefB[MAX_DEGRAIN], WRefF[MAX_DEGRAIN]; // , WRefB2, WRefF2, WRefB3, WRefF3;
+          int WRefB[MAX_DEGRAIN], WRefF[MAX_DEGRAIN];
 
           for (int j = 0; j < level; j++) {
             use_block_y(pB[j], npB[j], WRefB[j], isUsableB[j], *mvClipB[j], i, pPlanesB[0][j], pSrcCur[0], xx << pixelsize_super_shift, nSrcPitches[0]);
             use_block_y(pF[j], npF[j], WRefF[j], isUsableF[j], *mvClipF[j], i, pPlanesF[0][j], pSrcCur[0], xx << pixelsize_super_shift, nSrcPitches[0]);
           }
-          /*
-          use_block_y (pB , npB , WRefB , isUsableB , mvClipB , i, pPlanesB  [0], pSrcCur [0], xx, nSrcPitches [0]);
-          use_block_y (pF , npF , WRefF , isUsableF , mvClipF , i, pPlanesF  [0], pSrcCur [0], xx, nSrcPitches [0]);
-          use_block_y (pB2, npB2, WRefB2, isUsableB2, mvClipB2, i, pPlanesB2 [0], pSrcCur [0], xx, nSrcPitches [0]);
-          use_block_y (pF2, npF2, WRefF2, isUsableF2, mvClipF2, i, pPlanesF2 [0], pSrcCur [0], xx, nSrcPitches [0]);
-          use_block_y (pB3, npB3, WRefB3, isUsableB3, mvClipB3, i, pPlanesB3 [0], pSrcCur [0], xx, nSrcPitches [0]);
-          use_block_y (pF3, npF3, WRefF3, isUsableF3, mvClipF3, i, pPlanesF3 [0], pSrcCur [0], xx, nSrcPitches [0]);
-          */
 #ifndef LEVEL_IS_TEMPLATE
           NORMWEIGHTS(WSrc, WRefB, WRefF);
 #else
           norm_weights<level>(WSrc, WRefB, WRefF);
 #endif
-          /*
-          if (level == 1)
-          norm_weights<1>(WSrc, WRefB, WRefF);
-          else if (level == 2)
-          norm_weights<2>(WSrc, WRefB, WRefF);
-          else if (level == 3)
-          norm_weights<3>(WSrc, WRefB, WRefF);
-          else if (level == 4)
-          norm_weights<4>(WSrc, WRefB, WRefF);
-          else if (level == 5)
-          norm_weights<5>(WSrc, WRefB, WRefF);
-          else if (level == 6)
-          norm_weights<6>(WSrc, WRefB, WRefF);
-          */
 
           // luma
           DEGRAINLUMA(pDstCur[0] + (xx << pixelsize_super_shift), pDstCur[0] + lsb_offset_y + (xx << pixelsize_super_shift),
             lsb_flag, nDstPitches[0], pSrcCur[0] + (xx << pixelsize_super_shift), nSrcPitches[0],
-            pB, npB, pF, npF, //pB2, npB2, pF2, npF2, pB3, npB3, pF3, npF3,
-            WSrc, WRefB, WRefF //, WRefB2, WRefF2, WRefB3, WRefF3
+            pB, npB, pF, npF,
+            WSrc, WRefB, WRefF
           );
 
           xx += nBlkSizeX; // xx: indexing offset
@@ -1457,10 +1429,10 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
 
           int i = by*nBlkX + bx;
 
-          const BYTE * pB[MAX_DEGRAIN], *pF[MAX_DEGRAIN]; // , *pB2, *pF2, *pB3, *pF3;
-          int npB[MAX_DEGRAIN], npF[MAX_DEGRAIN]; // , npB2, npF2, npB3, npF3;
+          const BYTE * pB[MAX_DEGRAIN], *pF[MAX_DEGRAIN];
+          int npB[MAX_DEGRAIN], npF[MAX_DEGRAIN];
           int WSrc;
-          int WRefB[MAX_DEGRAIN], WRefF[MAX_DEGRAIN]; // , WRefB2, WRefF2, WRefB3, WRefF3;
+          int WRefB[MAX_DEGRAIN], WRefF[MAX_DEGRAIN];
 
           for (int j = 0; j < level; j++) {
             use_block_y(pB[j], npB[j], WRefB[j], isUsableB[j], *mvClipB[j], i, pPlanesB[0][j], pSrcCur[0], xx << pixelsize_super_shift, nSrcPitches[0]);
@@ -1471,21 +1443,11 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
 #else
           norm_weights<level>(WSrc, WRefB, WRefF);
 #endif
-          /*
-          use_block_y (pB , npB , WRefB , isUsableB , mvClipB , i, pPlanesB  [0], pSrcCur [0], xx, nSrcPitches [0]);
-          use_block_y (pF , npF , WRefF , isUsableF , mvClipF , i, pPlanesF  [0], pSrcCur [0], xx, nSrcPitches [0]);
-          use_block_y (pB2, npB2, WRefB2, isUsableB2, mvClipB2, i, pPlanesB2 [0], pSrcCur [0], xx, nSrcPitches [0]);
-          use_block_y (pF2, npF2, WRefF2, isUsableF2, mvClipF2, i, pPlanesF2 [0], pSrcCur [0], xx, nSrcPitches [0]);
-          use_block_y (pB3, npB3, WRefB3, isUsableB3, mvClipB3, i, pPlanesB3 [0], pSrcCur [0], xx, nSrcPitches [0]);
-          use_block_y (pF3, npF3, WRefF3, isUsableF3, mvClipF3, i, pPlanesF3 [0], pSrcCur [0], xx, nSrcPitches [0]);
-          norm_weights (WSrc, WRefB, WRefF, WRefB2, WRefF2, WRefB3, WRefF3);
-          */
           // luma
           DEGRAINLUMA(tmpBlock, tmpBlockLsb, lsb_flag, tmpPitch << pixelsize_super_shift, pSrcCur[0] + (xx << pixelsize_super_shift), nSrcPitches[0],
-            pB, npB, pF, npF, // pB2, npB2, pF2, npF2, pB3, npB3, pF3, npF3,
+            pB, npB, pF, npF,
             WSrc,
             WRefB, WRefF
-            //, WRefB2, WRefF2, WRefB3, WRefF3
           );
           if (lsb_flag)
           {
@@ -1559,8 +1521,8 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
   process_chroma(
     UPLANE & nSuperModeYUV,
     pDst[1], pDstCur[1], nDstPitches[1], pSrc[1], pSrcCur[1], nSrcPitches[1],
-    isUsableB, isUsableF, // isUsableB2, isUsableF2, isUsableB3, isUsableF3,
-    pPlanesB[1], pPlanesF[1], //, pPlanesB2 [1], pPlanesF2 [1], pPlanesB3 [1], pPlanesF3 [1],
+    isUsableB, isUsableF,
+    pPlanesB[1], pPlanesF[1],
     lsb_offset_u, nWidth_B, nHeight_B
   );
 
@@ -1571,8 +1533,8 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
   process_chroma(
     VPLANE & nSuperModeYUV,
     pDst[2], pDstCur[2], nDstPitches[2], pSrc[2], pSrcCur[2], nSrcPitches[2],
-    isUsableB, isUsableF, //, isUsableB2, isUsableF2, isUsableB3, isUsableF3,
-    pPlanesB[2], pPlanesF[2], //, pPlanesB2 [2], pPlanesF2 [2], pPlanesB3 [2], pPlanesF3 [2],
+    isUsableB, isUsableF,
+    pPlanesB[2], pPlanesF[2],
     lsb_offset_v, nWidth_B, nHeight_B
   );
 
@@ -1624,9 +1586,9 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
         for (int bx = 0; bx < nBlkX; bx++)
         {
           int i = by*nBlkX + bx;
-          const BYTE * pBV[MAX_DEGRAIN], *pFV[MAX_DEGRAIN]; // , *pB2V, *pF2V, *pB3V, *pF3V;
-          int npBV[MAX_DEGRAIN], npFV[MAX_DEGRAIN]; // , npB2V, npF2V, npB3V, npF3V;
-          int WSrc, WRefB[MAX_DEGRAIN], WRefF[MAX_DEGRAIN]; // , WRefB2, WRefF2, WRefB3, WRefF3;
+          const BYTE * pBV[MAX_DEGRAIN], *pFV[MAX_DEGRAIN];
+          int npBV[MAX_DEGRAIN], npFV[MAX_DEGRAIN];
+          int WSrc, WRefB[MAX_DEGRAIN], WRefF[MAX_DEGRAIN];
 
           for (int j = 0; j < level; j++) {
             // xx: byte granularity pointer shift
@@ -1641,8 +1603,8 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
           // chroma
           DEGRAINCHROMA(pDstCur + (xx << pixelsize_super_shift), pDstCur + (xx << pixelsize_super_shift) + lsb_offset_uv,
             lsb_flag, nDstPitch, pSrcCur + (xx << pixelsize_super_shift), nSrcPitch,
-            pBV, npBV, pFV, npFV, //pB2V, npB2V, pF2V, npF2V, pB3V, npB3V, pF3V, npF3V,
-            WSrc, WRefB, WRefF //, WRefB2, WRefF2, WRefB3, WRefF3
+            pBV, npBV, pFV, npFV,
+            WSrc, WRefB, WRefF
           );
 
           xx += (nBlkSizeX >> nLogxRatioUV); // xx: indexing offset
@@ -1700,9 +1662,9 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
           short *winOverUV = OverWinsUV->GetWindow(wby + wbx);
 
           int i = by*nBlkX + bx;
-          const BYTE * pBV[MAX_DEGRAIN], *pFV[MAX_DEGRAIN]; // , *pB2V, *pF2V, *pB3V, *pF3V;
-          int npBV[MAX_DEGRAIN], npFV[MAX_DEGRAIN]; // , npB2V, npF2V, npB3V, npF3V;
-          int WSrc, WRefB[MAX_DEGRAIN], WRefF[MAX_DEGRAIN]; // , WRefB2, WRefF2, WRefB3, WRefF3;
+          const BYTE * pBV[MAX_DEGRAIN], *pFV[MAX_DEGRAIN];
+          int npBV[MAX_DEGRAIN], npFV[MAX_DEGRAIN];
+          int WSrc, WRefB[MAX_DEGRAIN], WRefF[MAX_DEGRAIN];
 
           for (int j = 0; j < level; j++) {
             use_block_uv(pBV[j], npBV[j], WRefB[j], isUsableB[j], *mvClipB[j], i, pPlanesB[j], pSrcCur, xx << pixelsize_super_shift, nSrcPitch);
@@ -1715,8 +1677,8 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
 #endif
           // chroma
           DEGRAINCHROMA(tmpBlock, tmpBlockLsb, lsb_flag, tmpPitch << pixelsize_super_shift, pSrcCur + (xx << pixelsize_super_shift), nSrcPitch,
-            pBV, npBV, pFV, npFV, //pB2V, npB2V, pF2V, npF2V, pB3V, npB3V, pF3V, npF3V,
-            WSrc, WRefB, WRefF //, WRefB2, WRefF2, WRefB3, WRefF3
+            pBV, npBV, pFV, npFV,
+            WSrc, WRefB, WRefF
           );
           if (lsb_flag)
           { // no pixelsize here pointers Int or short
