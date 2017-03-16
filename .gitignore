@@ -17,6 +17,7 @@ CMakeFiles/*
 [Dd]ebug/
 [Dd]ebugPublic/
 [Rr]elease/
+[Rr]eleaseWithDebugInfo/
 [Rr]eleases/
 x64/
 x86/
