@@ -142,6 +142,52 @@ OverlapWindows::~OverlapWindows()
 	delete [] fWin1UVylast;
 }
 
+void Short2Bytes_sse2(unsigned char *pDst, int nDstPitch, unsigned short *pDstShort, int dstShortPitch, int nWidth, int nHeight)
+{
+  /*
+  for (int h=0; h<nHeight; h++)
+  {
+    for (int i=0; i<nWidth; i++)
+    {
+      int a = (pDstShort[i])>>5;
+      pDst[i] = min(255, a); // PF everyone can understand it
+    }
+    pDst += nDstPitch;
+    pDstShort += dstShortPitch;
+  }
+  */
+
+  const int nSrcPitch = dstShortPitch * sizeof(short); // back to byte size
+  BYTE *pSrc8 = reinterpret_cast<BYTE *>(pDstShort);
+  BYTE *pDst8 = reinterpret_cast<BYTE *>(pDst);
+  int wMod16 = (nWidth / 16) * 16;
+  int wMod8 = (nWidth / 8) * 8;
+  for (int y = 0; y < nHeight; y++)
+  {
+    for (int x = 0; x < wMod16; x += 16) { // 32 source bytes = 8 short sized pixels, 16 bytes of 8*uint16_t destination
+                                            // 2*4 int -> 8 uint16_t
+      __m128i src07 = _mm_loadu_si128((__m128i *)(pSrc8 + x*2)); // 8 short pixels
+      __m128i src8f = _mm_loadu_si128((__m128i *)(pSrc8 + x*2 + 16)); // 8 short pixels
+      __m128i res07 = _mm_srai_epi16(src07, 5); // shift and limit
+      __m128i res8f = _mm_srai_epi16(src8f, 5); // shift and limit
+      __m128i res = _mm_packus_epi16(res07, res8f);
+      _mm_store_si128((__m128i *)(pDst8 + x), res);
+    }
+    if (wMod8 != wMod16) {
+      __m128i src07 = _mm_loadu_si128((__m128i *)(pSrc8 + wMod8 * 2)); // 8 short pixels
+      __m128i res07 = _mm_srai_epi16(src07, 5); // shift and limit
+      __m128i res = _mm_packus_epi16(res07, res07);
+      _mm_storel_epi64((__m128i *)(pDst8 + wMod8), res);
+    }
+    for (int x = wMod8; x < nWidth; x++) {
+      int a = (reinterpret_cast<unsigned short *>(pSrc8)[x]) >> 5;
+      pDst8[x] = min(255, a);
+    }
+    pDst8 += nDstPitch;
+    pSrc8 += nSrcPitch;
+  }
+}
+
 void Short2Bytes(unsigned char *pDst, int nDstPitch, unsigned short *pDstShort, int dstShortPitch, int nWidth, int nHeight)
 {
 	for (int h=0; h<nHeight; h++)
@@ -149,22 +195,7 @@ void Short2Bytes(unsigned char *pDst, int nDstPitch, unsigned short *pDstShort, 
 		for (int i=0; i<nWidth; i++)
 		{
 			int a = (pDstShort[i])>>5;
-//			pDst[i] = a | ((255-a) >> (sizeof(int)*8-1)); // tricky but conditional move can be faster nowadays
-      /*
-      mov	ecx, 255				; 000000ffH
-      shr	edx, 5
-      sub	ecx, edx
-      sar	ecx, 31					; 0000001fH
-      or	cl, dl
-      mov	BYTE PTR [eax+esi], cl
-      */
-			pDst[i] = min(255, a); // PF everyone can understand it
-/*
-cmp	edx, ebp
-movzx	ecx, dl
-cmovg	ecx, ebp
-mov	BYTE PTR [eax+esi], cl
-*/
+      pDst[i] = min(255, a); // PF everyone can understand it
 		}
 		pDst += nDstPitch;
 		pDstShort += dstShortPitch;
