@@ -1473,8 +1473,11 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
         Short2BytesLsb(pDst[0], pDst[0] + lsb_offset_y, nDstPitches[0], DstInt, dstIntPitch, nWidth_B, nHeight_B);
       }
       else if (pixelsize_super == 1)
-      {
-        Short2Bytes(pDst[0], nDstPitches[0], DstShort, dstShortPitch, nWidth_B, nHeight_B);
+      { 
+        if(isse_flag)
+          Short2Bytes_sse2(pDst[0], nDstPitches[0], DstShort, dstShortPitch, nWidth_B, nHeight_B);
+        else
+          Short2Bytes(pDst[0], nDstPitches[0], DstShort, dstShortPitch, nWidth_B, nHeight_B);
       }
       else if (pixelsize_super == 2)
       {
@@ -1708,7 +1711,10 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
       }
       else if (pixelsize_super == 1)
       { // pixelsize
-        Short2Bytes(pDst, nDstPitch, DstShort, dstShortPitch, nWidth_B >> nLogxRatioUV, nHeight_B >> nLogyRatioUV);
+        if (isse_flag)
+          Short2Bytes_sse2(pDst, nDstPitch, DstShort, dstShortPitch, nWidth_B >> nLogxRatioUV, nHeight_B >> nLogyRatioUV);
+        else
+          Short2Bytes(pDst, nDstPitch, DstShort, dstShortPitch, nWidth_B >> nLogxRatioUV, nHeight_B >> nLogyRatioUV);
       }
       else if (pixelsize_super == 2)
       { 
