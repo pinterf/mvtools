@@ -14,6 +14,12 @@ Modification base:
 http://avisynth.nl/index.php/AviSynth%2B#AviSynth.2B_x64_plugins
 
 Change log
+- 2.7.16.22 (20170423)
+  Fix: MMask 10-16 bits
+  Fix: MRecalculate 14-16 bits passed nSCD1=999999 internally which caused overflow (scene change problems later)
+       Fix is done by clamping SCD1 to 8*8*(255-0) (maximum value of sum of SADs on a 8x8 block)
+  Misc: MDegrainX 8 bits: internal 16 bit buffer to 8 bits: SSE2
+
 - 2.7.15.22 (20170316)
   Fix: 16 bit SAD for non-AVX code path
   Misc: MDegrain1-6: add error on lsb_flag=true for non-8 bit sources
@@ -123,8 +129,6 @@ Links
 - http://avisynth.nl/index.php/MVTools
 
 For more information see also documents folder.
-
-Current build as of November 19, 2016
 
 Previous builds
 - 2.7.1.22 (October 20, 2016)

@@ -15,7 +15,7 @@
 
 <table class="n">
 <tr><td class="n"><b>Authors:      </b></td><td class="n">&nbsp;</td><td class="n">Manao, Tsp, TSchniede, SEt, Fizick (Alexander Balakhnin), Vit, Firesledge, pinterf</td></tr>
-<tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.12.22</td></tr>
+<tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.16.22</td></tr>
 <tr><td class="n"><b>Base versions:</b></td><td class="n">&nbsp;</td><td class="n">2.6.0.5 + 2.5.11.22</td></tr>
 <tr><td class="n"><b>Base download:</b></td><td class="n">&nbsp;</td><td class="n">Contained in the Dither package, <a href="http://ldesoras.free.fr/prod.html#src_ditheravsi">http://ldesoras.free.fr/prod.html</a></td></tr>
 <tr><td class="n"><b>Category:     </b></td><td class="n">&nbsp;</td><td class="n">Misc Plugins</td></tr>
@@ -42,7 +42,7 @@ don't force you to learn it either)</a></li>
 
 <h2><a name="MVTools"></a>I) About MVTools</h2>
 
-<p>MVTools plugin for AviSynth 2.5 is collection of functions for estimation
+<p>MVTools plugin for AviSynth 2.6 is collection of functions for estimation
 and compensation of objects motion in video clips.
 Motion compensation may be used for strong temporal denoising, advanced
 framerate conversions, image restoration and other tasks.</p>
@@ -2008,6 +2008,35 @@ Some parts of the code are under the WTFPL, too.</p>
 
 
 <h2><a name="revisions"></a>VI) Revisions</h2>
+
+<p>2.7.16.22 (20170423)</p>
+<ul>
+<li>Fix: MMask 10-16 bits</li>
+<li>Fix: MRecalculate 14-16 bits passed nSCD1=999999 internally which caused overflow (scene change problems later)
+Fix is done by clamping SCD1 to 8*8*(255-0) (maximum value of sum of SADs on a 8x8 block)</li>
+<li>Misc: MDegrainX 8 bits: internal 16 bit buffer to 8 bits: SSE2</li>
+</ul>  
+ 
+
+<p>2.7.15.22 (20170316)</p>
+<ul>
+<li>Fix: 16 bit SAD for non-AVX code path</li>
+<li>Misc: MDegrain1-6: add error on lsb_flag=true for non-8 bit sources</li>
+</ul>  
+  
+<p>2.7.14.22 (20170206)</p>
+<ul>
+<li>Fix: MAnalyze divide=2 showed "vector clip is too small
+(inherited from 2.6.0.5, sanity check was done but length was not filled for divideextra data)"</li>
+<li>Fix: MFlow access violation in internal mv resizer when resizing factor was big (MCaWarpSharp3 4x supersampling case)
+(bug introduced in upstream 2.5.11.22)</li>
+</ul>  
+  
+<p>2.7.13.22 (20170201)</p>
+<ul>
+<li>Fix: MDegrain1-6,N 10-16 bit thSCD scaling</li>
+<li>Fix: MVShow: tolerance scaling for 10-16 bits</li>
+</ul>
 
 <p>2.7.12.22 (20170120)</p>
 <ul>
