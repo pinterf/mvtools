@@ -57,8 +57,9 @@ MVRecalculate::MVRecalculate(
   for (int srd_index = 0; srd_index < _nbr_srd; ++srd_index)
   {
     SrcRefData &	srd = _srd_arr[srd_index];
+    const sad_t max_nSCD1 = 8 * 8 * (255 - 0);
     srd._clip_sptr = SharedPtr <MVClip>(
-      new MVClip(_vectors, 999999, 255, env, _nbr_srd, srd_index)
+      new MVClip(_vectors, max_nSCD1, 255, env, _nbr_srd, srd_index)
       );
   }
 

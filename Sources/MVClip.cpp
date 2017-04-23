@@ -19,7 +19,8 @@
 
 #include "MVClip.h"
 
-#include	<cassert>
+#include <cassert>
+#include <algorithm>
 
 
 
@@ -59,7 +60,8 @@ MVClip::MVClip(const PClip &vectors, sad_t _nSCD1, int _nSCD2, IScriptEnvironmen
 	update_analysis_data (*pAnalyseFilter);
 
    // SCD thresholds
-    nSCD1 = _nSCD1;
+   // when nScd was 999999 (called from MRecalc) then this one would overflow at bits >= 12!
+    nSCD1 = std::min(_nSCD1, 8*8*(255-0)); // max for 8 bits, normalized to 8x8 blocksize, avoid overflow later
     if (pixelsize == 2)
         nSCD1 = sad_t(nSCD1 / 255.0 * ((1 << bits_per_pixel) - 1));
     nSCD1 = nSCD1 * (nBlkSizeX * nBlkSizeY) / (8 * 8); // this is normalized to 8x8 block sizes
