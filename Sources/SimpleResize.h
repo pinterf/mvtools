@@ -45,9 +45,12 @@ public:
 	SimpleResize(int _newwidth, int _newheight, int _oldwidth, int _oldheight, long CPUFlags);
 	~SimpleResize();
 
-  template<typename src_type>
+  template<typename src_type, typename dst_type>
   void SimpleResizeDo_New(uint8_t *dstp8, int row_size, int height, int dst_pitch,
-    const uint8_t* srcp8, int src_row_size, int src_pitch);
+    const uint8_t* srcp8, int src_row_size, int src_pitch, int bits_per_pixel);
+
+  void SimpleResizeDo_uint8_to_uint16(uint8_t *dstp, int dst_row_size, int dst_height, int dst_pitch,
+    const uint8_t* srcp, int src_row_size, int src_pitch, int Plane_Type, int bits_per_pixel);
 
   void SimpleResizeDo_uint8(uint8_t *dstp,  int dst_row_size, int dst_height, int dst_pitch, 
 						  const uint8_t* srcp, int src_row_size, int src_pitch, int Plane_Type); 

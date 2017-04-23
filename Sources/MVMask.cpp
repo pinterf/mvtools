@@ -193,6 +193,7 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
 #endif
   if (mvClip.IsUsable())
   {
+    // smallMask is 8 bits, this is the target
     if (kind == 0) // vector length mask
     {
       for (int j = 0; j < nBlkCount; j++)
@@ -236,45 +237,77 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
       env->BitBlt(pDst[0], nDstPitches[0], pSrc[0], nSrcPitches[0], nWidth*pixelsize, nHeight);
     }
     else {
-      upsizer->SimpleResizeDo_uint8(pDst[0], nWidthB, nHeightB, nDstPitches[0], smallMask, nBlkX, nBlkX, dummyplane);
-      if (nWidth > nWidthB)
-        for (int h = 0; h < nHeight; h++)
-          for (int w = nWidthB; w < nWidth; w++)
-            *(pDst[0] + h*nDstPitches[0] + w) = *(pDst[0] + h*nDstPitches[0] + nWidthB - 1);
-      if (nHeight > nHeightB)
-        env->BitBlt(pDst[0] + nHeightB*nDstPitches[0], nDstPitches[0], pDst[0] + (nHeightB - 1)*nDstPitches[0], nDstPitches[0], nWidth, nHeight - nHeightB);
+      // different upsizers to scale smallMask from 8 bit-only to bits_per_pixel
+      if (pixelsize == 1) {
+        upsizer->SimpleResizeDo_uint8(pDst[0], nWidthB, nHeightB, nDstPitches[0], smallMask, nBlkX, nBlkX, dummyplane);
+        if (nWidth > nWidthB)
+          for (int h = 0; h < nHeight; h++)
+            for (int w = nWidthB; w < nWidth; w++)
+              *(pDst[0] + h*nDstPitches[0] + w) = *(pDst[0] + h*nDstPitches[0] + (nWidthB - 1));
+        if (nHeight > nHeightB)
+          env->BitBlt(pDst[0] + nHeightB*nDstPitches[0], nDstPitches[0], pDst[0] + (nHeightB - 1)*nDstPitches[0], nDstPitches[0], nWidth, nHeight - nHeightB);
+      }
+      else if (pixelsize == 2) {
+        // 8 bit source, 10-16 bit target
+        upsizer->SimpleResizeDo_uint8_to_uint16(pDst[0], nWidthB, nHeightB, nDstPitches[0], smallMask, nBlkX, nBlkX, dummyplane, bits_per_pixel);
+        if (nWidth > nWidthB)
+          for (int h = 0; h < nHeight; h++)
+            for (int w = nWidthB; w < nWidth; w++)
+              *(uint16_t *)(pDst[0] + h*nDstPitches[0] + w*pixelsize) = *(uint16_t *)(pDst[0] + h*nDstPitches[0] + (nWidthB - 1) * pixelsize);
+        if (nHeight > nHeightB)
+          env->BitBlt(pDst[0] + nHeightB*nDstPitches[0], nDstPitches[0], pDst[0] + (nHeightB - 1)*nDstPitches[0], nDstPitches[0], nWidth*pixelsize, nHeight - nHeightB);
+      }
     }
 
-    // chroma
-    upsizerUV->SimpleResizeDo_uint8(pDst[1], nWidthBUV, nHeightBUV, nDstPitches[1], smallMask, nBlkX, nBlkX, dummyplane);
 
-    if (kind == 5)
-      upsizerUV->SimpleResizeDo_uint8(pDst[2], nWidthBUV, nHeightBUV, nDstPitches[2], smallMaskV, nBlkX, nBlkX, dummyplane);
-    else
-      upsizerUV->SimpleResizeDo_uint8(pDst[2], nWidthBUV, nHeightBUV, nDstPitches[2], smallMask, nBlkX, nBlkX, dummyplane);
+    if (pixelsize == 1) {
+      // chroma
+      upsizerUV->SimpleResizeDo_uint8(pDst[1], nWidthBUV, nHeightBUV, nDstPitches[1], smallMask, nBlkX, nBlkX, dummyplane);
 
-    if (nWidthUV > nWidthBUV)
-      for (int h = 0; h < nHeightUV; h++)
-        for (int w = nWidthBUV; w < nWidthUV; w++)
-        {
-          *(pDst[1] + h*nDstPitches[1] + w) = *(pDst[1] + h*nDstPitches[1] + nWidthBUV - 1);
-          *(pDst[2] + h*nDstPitches[2] + w) = *(pDst[2] + h*nDstPitches[2] + nWidthBUV - 1);
-        }
+      if (kind == 5)
+        upsizerUV->SimpleResizeDo_uint8(pDst[2], nWidthBUV, nHeightBUV, nDstPitches[2], smallMaskV, nBlkX, nBlkX, dummyplane);
+      else
+        upsizerUV->SimpleResizeDo_uint8(pDst[2], nWidthBUV, nHeightBUV, nDstPitches[2], smallMask, nBlkX, nBlkX, dummyplane);
+      if (nWidthUV > nWidthBUV)
+        for (int h = 0; h < nHeightUV; h++)
+          for (int w = nWidthBUV; w < nWidthUV; w++)
+          {
+            *(pDst[1] + h*nDstPitches[1] + w) = *(pDst[1] + h*nDstPitches[1] + nWidthBUV - 1);
+            *(pDst[2] + h*nDstPitches[2] + w) = *(pDst[2] + h*nDstPitches[2] + nWidthBUV - 1);
+          }
+    }
+    else {
+      // chroma
+      upsizerUV->SimpleResizeDo_uint8_to_uint16(pDst[1], nWidthBUV, nHeightBUV, nDstPitches[1], smallMask, nBlkX, nBlkX, dummyplane, bits_per_pixel);
+
+      if (kind == 5)
+        upsizerUV->SimpleResizeDo_uint8_to_uint16(pDst[2], nWidthBUV, nHeightBUV, nDstPitches[2], smallMaskV, nBlkX, nBlkX, dummyplane, bits_per_pixel);
+      else
+        upsizerUV->SimpleResizeDo_uint8_to_uint16(pDst[2], nWidthBUV, nHeightBUV, nDstPitches[2], smallMask, nBlkX, nBlkX, dummyplane, bits_per_pixel);
+      if (nWidthUV > nWidthBUV)
+        for (int h = 0; h < nHeightUV; h++)
+          for (int w = nWidthBUV; w < nWidthUV; w++)
+          {
+            *(uint16_t *)(pDst[1] + h*nDstPitches[1] + w*pixelsize) = *(uint16_t *)(pDst[1] + h*nDstPitches[1] + (nWidthBUV - 1)*pixelsize);
+            *(uint16_t *)(pDst[2] + h*nDstPitches[2] + w*pixelsize) = *(uint16_t *)(pDst[2] + h*nDstPitches[2] + (nWidthBUV - 1)*pixelsize);
+          }
+    }
     if (nHeightUV > nHeightBUV)
     {
-      env->BitBlt(pDst[1] + nHeightBUV*nDstPitches[1], nDstPitches[1], pDst[1] + (nHeightBUV - 1)*nDstPitches[1], nDstPitches[1], nWidthUV, nHeightUV - nHeightBUV);
-      env->BitBlt(pDst[2] + nHeightBUV*nDstPitches[2], nDstPitches[2], pDst[2] + (nHeightBUV - 1)*nDstPitches[2], nDstPitches[2], nWidthUV, nHeightUV - nHeightBUV);
+      env->BitBlt(pDst[1] + nHeightBUV*nDstPitches[1], nDstPitches[1], pDst[1] + (nHeightBUV - 1)*nDstPitches[1], nDstPitches[1], nWidthUV*pixelsize, nHeightUV - nHeightBUV);
+      env->BitBlt(pDst[2] + nHeightBUV*nDstPitches[2], nDstPitches[2], pDst[2] + (nHeightBUV - 1)*nDstPitches[2], nDstPitches[2], nWidthUV*pixelsize, nHeightUV - nHeightBUV);
     }
+
 
   }
   else {
     if (kind == 5)
-      env->BitBlt(pDst[0], nDstPitches[0], pSrc[0], nSrcPitches[0], nWidth, nHeight);
+      env->BitBlt(pDst[0], nDstPitches[0], pSrc[0], nSrcPitches[0], nWidth*pixelsize, nHeight);
     else
-      MemZoneSet(pDst[0], nSceneChangeValue, nWidth, nHeight, 0, 0, nDstPitches[0]);
+      MemZoneSet(pDst[0], nSceneChangeValue, nWidth*pixelsize, nHeight, 0, 0, nDstPitches[0]);
 
-    MemZoneSet(pDst[1], nSceneChangeValue, nWidthUV, nHeightUV, 0, 0, nDstPitches[1]);
-    MemZoneSet(pDst[2], nSceneChangeValue, nWidthUV, nHeightUV, 0, 0, nDstPitches[2]);
+    MemZoneSet(pDst[1], nSceneChangeValue, nWidthUV*pixelsize, nHeightUV, 0, 0, nDstPitches[1]);
+    MemZoneSet(pDst[2], nSceneChangeValue, nWidthUV*pixelsize, nHeightUV, 0, 0, nDstPitches[2]);
   }
 
 

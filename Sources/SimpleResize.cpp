@@ -41,6 +41,8 @@
 #include	"avisynth.h"
 #include	"malloc.h"
 #include <emmintrin.h>
+#include <smmintrin.h>
+#include "def.h"
 
 #if !(defined(_M_X64))
 //#define OLD_ASM // for testing similarity with old code P.F. 161204
@@ -107,14 +109,25 @@ SimpleResize::~SimpleResize()
   _aligned_free(vWeights);
 }
 
+template<int cpuflags>
+static MV_FORCEINLINE __m128i simd_blend_epi8(__m128i const &selector, __m128i const &a, __m128i const &b) {
+  if (cpuflags >= CPUF_SSE4_1) {
+    return _mm_blendv_epi8(b, a, selector);
+  }
+  else {
+    return _mm_or_si128(_mm_and_si128(selector, a), _mm_andnot_si128(selector, b));
+  }
+}
+
 // Intrinsics by PF
 // unsigned char
 // or short
-template<typename src_type>
+// or 8->16 bits: for MMask, scaling 8 bit masks to 10-16 bits
+template<typename src_type, typename dst_type>
 void SimpleResize::SimpleResizeDo_New(uint8_t *dstp8, int row_size, int height, int dst_pitch,
-  const uint8_t* srcp8, int src_row_size, int src_pitch)
+  const uint8_t* srcp8, int src_row_size, int src_pitch, int bits_per_pixel)
 {
-  src_type *dstp = reinterpret_cast<src_type *>(dstp8);
+  dst_type *dstp = reinterpret_cast<dst_type *>(dstp8);
   const src_type *srcp = reinterpret_cast<const src_type *>(srcp8);
   // Note: PlanarType is dummy, I (Fizick) do not use croma planes code for resize in MVTools
   /*
@@ -333,14 +346,27 @@ void SimpleResize::SimpleResizeDo_New(uint8_t *dstp8, int row_size, int height, 
       else
         result = _mm_srai_epi32(result, 8);  // 16 bit: arithmetic shift as in orig asm
       result = _mm_packs_epi32(result, result); // 4xqword ->4xword
-      if (sizeof(src_type) == 1) {
+      if (sizeof(src_type) == 1 && sizeof(dst_type) == 1) {
         // 8 bit version
         result = _mm_packus_epi16(result, result); // 4xword ->4xbyte
         uint32_t final4x8bitpixels = _mm_cvtsi128_si32(result);
         *(uint32_t *)(&dstp[x]) = final4x8bitpixels;
       }
+      else if (sizeof(src_type) == 1 && sizeof(dst_type) == 2) {
+        // 8 bit mask to 16 bit clip (MMask)
+        // We have 4 words here, but range is 0..255
+        // difference from 8bits->8bits: data should be converted to bits_per_pixel uint16_size
+        auto mask_max = _mm_cmpgt_epi16(_mm_set1_epi16(0x00FF), result); // (255 > b0) ? 0xffff : 0x0
+        result = _mm_slli_epi16(result, bits_per_pixel - 8); // scale 8 bits to bits_per_pixel
+        // ensure that over max mask value returns 16 bit max_pixel_value
+        // original values==255 have to be max_pixel_value, shift is not exact enough
+        // this could be CPUF_SSE4_1, but we have only SSE2 here
+        result = simd_blend_epi8<CPUF_SSE2>(mask_max, result, _mm_set1_epi16((1 << bits_per_pixel) - 1));
+        _mm_storel_epi64(reinterpret_cast<__m128i *>(&dstp[x]), result);
+
+      }
       else {
-        // for short version: 
+        // for short to short version: 
         _mm_storel_epi64(reinterpret_cast<__m128i *>(&dstp[x]), result);
       }
     }
@@ -359,13 +385,31 @@ void SimpleResize::SimpleResizeDo_New(uint8_t *dstp8, int row_size, int height, 
       }
       unsigned int wY1 = pc & 0x0000ffff; //low
       unsigned int wY2 = pc >> 16; //high
-      dstp[x] = (vWorkYW[offs] * wY1 + vWorkYW[offs + 1] * wY2 + 128) >> 8;
+      if (sizeof(src_type) == 1 && sizeof(dst_type) == 2) {
+        // 8 to 16 bits
+        int val = ((vWorkYW[offs] * wY1 + vWorkYW[offs + 1] * wY2 + 128) >> 8);
+        if (val >= 255)
+          dstp[x] = (1 << bits_per_pixel) - 1;
+        else
+          dstp[x] = val << (bits_per_pixel - 8);
+
+      }
+      else {
+        dstp[x] = (vWorkYW[offs] * wY1 + vWorkYW[offs + 1] * wY2 + 128) >> 8;
+      }
     }
     // rework end
 
     dstp += dst_pitch;
 
   } // for y
+}
+
+void SimpleResize::SimpleResizeDo_uint8_to_uint16(uint8_t *dstp, int row_size, int height, int dst_pitch,
+  const uint8_t* srcp, int src_row_size, int src_pitch, int Planar_Type, int bits_per_pixel) {
+  dst_pitch /= sizeof(uint16_t);  // pitch from byte granularity to uint16 for SimpleResizeDo
+  SimpleResizeDo_New<uint8_t, uint16_t>(dstp, row_size, height, dst_pitch, srcp, src_row_size, src_pitch, bits_per_pixel);
+  return;
 }
 
 // YV12 Luma, PF: not YV12 specific!
@@ -389,7 +433,7 @@ a
   bool use_c = false;
 #ifndef OLD_ASM
   if (SSE2enabled) {
-    SimpleResizeDo_New<uint8_t>(dstp, row_size, height, dst_pitch, srcp, src_row_size, src_pitch);
+    SimpleResizeDo_New<uint8_t, uint8_t>(dstp, row_size, height, dst_pitch, srcp, src_row_size, src_pitch, 8);
     return;
   }
 #endif
@@ -846,7 +890,7 @@ void SimpleResize::SimpleResizeDo_uint16(short *dstp, int row_size, int height, 
   const short* srcp, int src_row_size, int src_pitch)
 {
   if (SSE2enabled) {
-    SimpleResizeDo_New<short>((uint8_t *)dstp, row_size, height, dst_pitch, (uint8_t *)srcp, src_row_size, src_pitch);
+    SimpleResizeDo_New<short, short>((uint8_t *)dstp, row_size, height, dst_pitch, (uint8_t *)srcp, src_row_size, src_pitch, 16);
     return;
   }
   
