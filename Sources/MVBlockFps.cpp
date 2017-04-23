@@ -410,6 +410,7 @@ void MVBlockFps::ResultBlock(BYTE *pDst8, int dst_pitch, const BYTE * pMCB8, int
     {
       for (int w = 0; w < nBlkSizeX; w++)
       {
+        // remark: maskF/maskB are 8 bits!
         pDst[w] = (((maskB[w] * pMCF[w] + (255 - maskB[w])*pMCB[w] + 255) >> 8)*time256 +
           ((maskF[w] * pMCB[w] + (255 - maskF[w])*pMCF[w] + 255) >> 8)*(256 - time256)) >> 8;
       }
@@ -428,6 +429,7 @@ void MVBlockFps::ResultBlock(BYTE *pDst8, int dst_pitch, const BYTE * pMCB8, int
     {
       for (int w = 0; w < nBlkSizeX; w++)
       {
+        // remark: maskF/maskB,pOcc are 8 bits!
         int f = (maskF[w] * pMCB[w] + (255 - maskF[w])*pMCF[w] + 255) >> 8;
         int b = (maskB[w] * pMCF[w] + (255 - maskB[w])*pMCB[w] + 255) >> 8;
         int avg = (pRef[w] * time256 + pSrc[w] * (256 - time256) + 255) >> 8; // simple temporal non-MC average
@@ -450,6 +452,7 @@ void MVBlockFps::ResultBlock(BYTE *pDst8, int dst_pitch, const BYTE * pMCB8, int
     {
       for (int w = 0; w < nBlkSizeX; w++)
       {
+        // remark: maskF/maskB,pOcc are 8 bits!
         if (sizeof(pixel_t) == 1)
           pDst[w] = pOcc[w];
         else
