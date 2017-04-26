@@ -174,10 +174,10 @@ void Short2Bytes_sse2(unsigned char *pDst, int nDstPitch, unsigned short *pDstSh
       _mm_store_si128((__m128i *)(pDst8 + x), res);
     }
     if (wMod8 != wMod16) {
-      __m128i src07 = _mm_loadu_si128((__m128i *)(pSrc8 + wMod8 * 2)); // 8 short pixels
+      __m128i src07 = _mm_loadu_si128((__m128i *)(pSrc8 + wMod16 * 2)); // 8 short pixels
       __m128i res07 = _mm_srai_epi16(src07, 5); // shift and limit
       __m128i res = _mm_packus_epi16(res07, res07);
-      _mm_storel_epi64((__m128i *)(pDst8 + wMod8), res);
+      _mm_storel_epi64((__m128i *)(pDst8 + wMod16), res);
     }
     for (int x = wMod8; x < nWidth; x++) {
       int a = (reinterpret_cast<unsigned short *>(pSrc8)[x]) >> 5;
