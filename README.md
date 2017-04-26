@@ -14,6 +14,10 @@ Modification base:
 http://avisynth.nl/index.php/AviSynth%2B#AviSynth.2B_x64_plugins
 
 Change log
+- 2.7.17.22 (20170426)
+  Fix: Regression in 2.7.16.22: MDegrain right pixel artifacts on non-modulo 16 widths
+  Misc: MMask, mode SADMask output is normalized further by video subsampling (YV16/YV24 has larger SAD value due to bigger chroma part that classic YV12)
+
 - 2.7.16.22 (20170423)
   Fix: MMask 10-16 bits
   Fix: MRecalculate 14-16 bits passed nSCD1=999999 internally which caused overflow (scene change problems later)
