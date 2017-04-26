@@ -38,6 +38,7 @@ private:
 	double fGamma;
 	double fMaskNormFactor;
 	double fMaskNormFactor2;
+  double fSADMaskNormFactor; // 2.7.17.22
 //	bool showsad;
 	int kind; // new param instead of showsad - Fizick
   int time256;

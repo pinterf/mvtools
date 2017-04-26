@@ -41,6 +41,9 @@ MVMask::MVMask(
   isse = _isse;
   fMaskNormFactor = 1.0f / ml; // Fizick
   fMaskNormFactor2 = fMaskNormFactor*fMaskNormFactor;
+  
+  // base: YY12 luma+chroma 8x8 -> 2, proportionally bigger with ((1<<bits_per_pixel)-8) and (nBlkSizeX*nBlkSizeY)
+  fSADMaskNormFactor = (double)mvClip.GetThSCD1() / nSCD1 / 3 * 8*8 * 2; // 2.7.17.22 correction for YV16/YV24 (4:2:2/4:4:4)
 
 //	nLengthMax = pow((double(ml),gm);
 
@@ -191,6 +194,7 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
 #ifndef _M_X64
   _mm_empty();
 #endif
+
   if (mvClip.IsUsable())
   {
     // smallMask is 8 bits, this is the target
@@ -202,8 +206,11 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
     else if (kind == 1) // SAD mask
     {
       //for ( int j = 0; j < nBlkCount; j++)
-      //	smallMask[j] = SAD(mvClip.GetBlock(0, j).GetSAD()); // PF 161115 bits_per_pixel scale through dSADNormFactor
-      MakeSADMaskTime(mvClip, nBlkX, nBlkY, 4.0*fMaskNormFactor / (nBlkSizeX*nBlkSizeY) / (1 << (bits_per_pixel - 8)), fGamma, nPel, smallMask, nBlkX, time256, nBlkSizeX - nOverlapX, nBlkSizeY - nOverlapY);
+      //	smallMask[j] = SAD(mvClip.GetBlock(0, j).GetSAD()); 
+      double factor_corrected = 4.0*fMaskNormFactor / fSADMaskNormFactor; // normalize for other format's (4:2:2/4:4:4) bigger luma part and/or chroma=false. Base: YV12's luma+chroma SAD
+      double factor_old = 4.0*fMaskNormFactor / (nBlkSizeX*nBlkSizeY) / (1 << (bits_per_pixel - 8)); // kept for reference. factor_corrected is the same for old YV12 (compatibility)
+
+      MakeSADMaskTime(mvClip, nBlkX, nBlkY, factor_corrected, fGamma, nPel, smallMask, nBlkX, time256, nBlkSizeX - nOverlapX, nBlkSizeY - nOverlapY);
     }
     else if (kind == 2) // occlusion mask
     {
