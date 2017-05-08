@@ -437,9 +437,15 @@ void DCTFFTW::DCTBytes2D(const unsigned char *srcp, int src_pitch, unsigned char
     Float2Bytes_C<uint16_t>(dctp, dct_pitch, fSrcDCT);
   }
 #else
+#ifndef _M_X64 
+  _mm_empty(); // this one still have to be here. dct slowdown between 2.7.5-2.7.17
+#endif
   // calling member function pointer
   (this->*bytesToFloatPROC)(srcp, src_pitch, fSrc); // selected variable function
   fftwf_execute_r2r_addr(dctplan, fSrc, fSrcDCT);
   (this->*floatToBytesPROC)(dctp, dct_pitch, fSrcDCT); // selected variable function
+#ifndef _M_X64 
+  _mm_empty(); // paranoia
+#endif
 #endif
 }
