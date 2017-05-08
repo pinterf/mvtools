@@ -165,7 +165,7 @@ func_luma[make_tuple(x, y, 2, NO_SIMD)] = Luma_C<x, y, uint16_t>;
       MAKE_LUMA_FN(2, 4)
       MAKE_LUMA_FN(2, 2)
       MAKE_LUMA_FN(2, 1)
-#undef MAKE_SAD_FN
+#undef MAKE_LUMA_FN
 
     func_luma[make_tuple(64, 64, 1, USE_SSE2)] = Luma16_sse2<64, 64, uint8_t>;
     func_luma[make_tuple(64, 32, 1, USE_SSE2)] = Luma16_sse2<64, 32, uint8_t>;
@@ -235,7 +235,7 @@ func_luma[make_tuple(x, y, 2, NO_SIMD)] = Luma_C<x, y, uint16_t>;
       //MAKE_LUMA_FN(2, 4)
       //MAKE_LUMA_FN(2, 2)
       //MAKE_LUMA_FN(2, 1)
-#undef MAKE_SAD_FN
+#undef MAKE_LUMA_FN
 
     LUMAFunction *result = nullptr;
     arch_t archlist[] = { USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
