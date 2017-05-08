@@ -194,6 +194,9 @@ AVSValue __cdecl Create_MVAnalyse(AVSValue args, void* user_data, IScriptEnviron
 		args[29].AsBool(false),  // try many
 		args[30].AsBool(false),  // multi
 		args[31].AsBool(true),   // mt
+#ifdef SCALECHROMASAD
+     args[32].AsInt(0),   // scalechromasad
+#endif
 		env
 	);
 }
@@ -808,28 +811,31 @@ AVSValue __cdecl Create_MVRecalculate(AVSValue args, void* , IScriptEnvironment*
 		lambda = args[ 8].AsInt(0);
 		pnew   = args[11].AsInt(0);
 	}
-   return new MVRecalculate (
-		args[ 0].AsClip(),       // super
-		args[ 1].AsClip(),       // vectors
-		args[ 2].AsInt(200),     // thSAD
-		args[ 3].AsInt(1),       // smooth
-		blksize,
-		blksizeV,                // v.1.7
-		args[ 6].AsInt(4),       // search type
-		args[ 7].AsInt(2),       // search parameter
-		lambda,                  // lambda
-		args[ 9].AsBool(true),   // chroma = true since v1.0.1
-		pnew,                    // pnew - cost penalty for new candidate vector - added by Fizick
-		overlap,                 // overlap horizontal
-		args[13].AsInt(overlap), // overlap vertical - v1.7
-		args[14].AsString(""),   // outfile - v1.2.6
-		args[15].AsInt(0),       // dct
-		args[16].AsInt(0),       // divide
-		args[17].AsInt(0),       // sadx264
-		args[18].AsBool(true),   // isse2
-		args[19].AsBool(true),   // meander
-		args[20].AsInt(0),       // tr
-		args[21].AsBool(true),   // mt
+  return new MVRecalculate(
+    args[0].AsClip(),       // super
+    args[1].AsClip(),       // vectors
+    args[2].AsInt(200),     // thSAD
+    args[3].AsInt(1),       // smooth
+    blksize,
+    blksizeV,                // v.1.7
+    args[6].AsInt(4),       // search type
+    args[7].AsInt(2),       // search parameter
+    lambda,                  // lambda
+    args[9].AsBool(true),   // chroma = true since v1.0.1
+    pnew,                    // pnew - cost penalty for new candidate vector - added by Fizick
+    overlap,                 // overlap horizontal
+    args[13].AsInt(overlap), // overlap vertical - v1.7
+    args[14].AsString(""),   // outfile - v1.2.6
+    args[15].AsInt(0),       // dct
+    args[16].AsInt(0),       // divide
+    args[17].AsInt(0),       // sadx264
+    args[18].AsBool(true),   // isse2
+    args[19].AsBool(true),   // meander
+    args[20].AsInt(0),       // tr
+    args[21].AsBool(true),   // mt
+#ifdef SCALECHROMASAD
+    args[22].AsInt(0), // chromaSADScale
+#endif
 		env
 	);
 }
@@ -944,7 +950,7 @@ AvisynthPluginInit3(IScriptEnvironment* env, const AVS_Linkage* const vectors) {
 	AVS_linkage = vectors;
 #endif
 	env->AddFunction("MShow",        "cc[scale]i[sil]i[tol]i[showsad]b[number]i[thSCD1]i[thSCD2]i[isse]b[planar]b", Create_MVShow, 0);
-	env->AddFunction("MAnalyse",     "c[blksize]i[blksizeV]i[levels]i[search]i[searchparam]i[pelsearch]i[isb]b[lambda]i[chroma]b[delta]i[truemotion]b[lsad]i[plevel]i[global]b[pnew]i[pzero]i[pglobal]i[overlap]i[overlapV]i[outfile]s[dct]i[divide]i[sadx264]i[badSAD]i[badrange]i[isse]b[meander]b[temporal]b[trymany]b[multi]b[mt]b", Create_MVAnalyse, 0);
+	env->AddFunction("MAnalyse",     "c[blksize]i[blksizeV]i[levels]i[search]i[searchparam]i[pelsearch]i[isb]b[lambda]i[chroma]b[delta]i[truemotion]b[lsad]i[plevel]i[global]b[pnew]i[pzero]i[pglobal]i[overlap]i[overlapV]i[outfile]s[dct]i[divide]i[sadx264]i[badSAD]i[badrange]i[isse]b[meander]b[temporal]b[trymany]b[multi]b[mt]b[scaleCSAD]i", Create_MVAnalyse, 0);
   env->AddFunction("MMask",        "cc[ml]f[gamma]f[kind]i[time]f[Ysc]i[thSCD1]i[thSCD2]i[isse]b[planar]b", Create_MVMask, 0);
   env->AddFunction("MCompensate",  "ccc[scbehavior]b[recursion]f[thSAD]i[fields]b[time]f[thSCD1]i[thSCD2]i[isse]b[planar]b[mt]b[tr]i[center]b[cclip]c[thSAD2]i", Create_MVCompensate, 0);
   env->AddFunction("MSCDetection", "cc[Yth]i[thSCD1]i[thSCD2]i[isse]b", Create_MVSCDetection, 0);
@@ -960,7 +966,7 @@ AvisynthPluginInit3(IScriptEnvironment* env, const AVS_Linkage* const vectors) {
   env->AddFunction("MDegrain5",    "cccccccccccc[thSAD]i[thSADC]i[plane]i[limit]i[limitC]i[thSCD1]i[thSCD2]i[isse]b[planar]b[lsb]b[mt]b", Create_MVDegrainX, (void *)5);
   env->AddFunction("MDegrain6",    "cccccccccccccc[thSAD]i[thSADC]i[plane]i[limit]i[limitC]i[thSCD1]i[thSCD2]i[isse]b[planar]b[lsb]b[mt]b", Create_MVDegrainX, (void *)6);
   env->AddFunction("MDegrainN",    "ccci[thSAD]i[thSADC]i[plane]i[limit]i[limitC]i[thSCD1]i[thSCD2]i[isse]b[planar]b[lsb]b[thsad2]i[thsadc2]i[mt]b", Create_MDegrainN, 0);
-	env->AddFunction("MRecalculate", "cc[thsad]i[smooth]i[blksize]i[blksizeV]i[search]i[searchparam]i[lambda]i[chroma]b[truemotion]b[pnew]i[overlap]i[overlapV]i[outfile]s[dct]i[divide]i[sadx264]i[isse]b[meander]b[tr]i[mt]b", Create_MVRecalculate, 0);
+	env->AddFunction("MRecalculate", "cc[thsad]i[smooth]i[blksize]i[blksizeV]i[search]i[searchparam]i[lambda]i[chroma]b[truemotion]b[pnew]i[overlap]i[overlapV]i[outfile]s[dct]i[divide]i[sadx264]i[isse]b[meander]b[tr]i[mt]b[scaleCSAD]i", Create_MVRecalculate, 0);
 	env->AddFunction("MBlockFps",    "cccc[num]i[den]i[mode]i[ml]i[blend]b[thSCD1]i[thSCD2]i[isse]b[planar]b[mt]b", Create_MVBlockFps, 0);
   env->AddFunction("MSuper",       "c[hpad]i[vpad]i[pel]i[levels]i[chroma]b[sharp]i[rfilter]i[pelclip]c[isse]b[planar]b[mt]b", Create_MVSuper, 0);
 	env->AddFunction("MStoreVect",   "c+[vccs]s", Create_MStoreVect, 0);
