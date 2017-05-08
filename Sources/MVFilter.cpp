@@ -53,6 +53,7 @@ MVFilter::MVFilter(const PClip &vector, const char *filterName, IScriptEnvironme
    pixelType = mvClip.GetPixelType();
    xRatioUV = mvClip.GetXRatioUV(); // PF
    yRatioUV = mvClip.GetYRatioUV();
+   chromaSADScale = mvClip.GetChromaSADScale(); // 170504
    nLogxRatioUV = ilog2 (xRatioUV); // SubSampling shift
    nLogyRatioUV = ilog2 (yRatioUV);
    pixelsize = mvClip.GetPixelSize(); // PF

@@ -22,7 +22,15 @@
 #include <cassert>
 #include <algorithm>
 
-
+MV_FORCEINLINE sad_t ScaleSadChroma(sad_t sad, int effective_scale) {
+  // effective scale: 1 -> div 2
+  //                  2 -> div 4 (YV24 default)
+  //                 -2 -> *4
+  //                 -1 -> *2
+  if (effective_scale == 0) return sad;
+  if (effective_scale > 0) return sad >> effective_scale;
+  return sad << (-effective_scale);
+}
 
 MVClip::MVClip(const PClip &vectors, sad_t _nSCD1, int _nSCD2, IScriptEnvironment *env, int group_len, int group_ofs)
 :	GenericVideoFilter(vectors) 
@@ -65,8 +73,13 @@ MVClip::MVClip(const PClip &vectors, sad_t _nSCD1, int _nSCD2, IScriptEnvironmen
     if (pixelsize == 2)
         nSCD1 = sad_t(nSCD1 / 255.0 * ((1 << bits_per_pixel) - 1));
     nSCD1 = nSCD1 * (nBlkSizeX * nBlkSizeY) / (8 * 8); // this is normalized to 8x8 block sizes
-    if (pAnalyseFilter->IsChromaMotion())
-        nSCD1 += nSCD1 / (xRatioUV * yRatioUV) * 2; // *2: two additional planes: UV
+    if (pAnalyseFilter->IsChromaMotion()) {
+#ifdef SCALECHROMASAD
+      nSCD1 += ScaleSadChroma(nSCD1 * 2, chromaSADScale) / 4; // base: YV12
+#else
+      nSCD1 += nSCD1 / (xRatioUV * yRatioUV) * 2; // *2: two additional planes: UV
+#endif
+    }
 
    // Threshold which sets how many blocks have to change for the frame to be considered as a scene change. 
    // It is ranged from 0 to 255, 0 meaning 0 %, 255 meaning 100 %. Default is 130 (which means 51 %).
@@ -121,6 +134,7 @@ void	MVClip::update_analysis_data (const MVAnalysisData &adata)
    pixelType   = adata.GetPixelType();
    xRatioUV    = adata.GetXRatioUV(); // PF
    yRatioUV    = adata.GetYRatioUV(); 
+   chromaSADScale = adata.GetChromaSADScale(); // 17.05.04
    pixelsize = adata.GetPixelSize();
    bits_per_pixel = adata.GetBitsPerPixel();
 //	sharp       = adata.GetSharp();

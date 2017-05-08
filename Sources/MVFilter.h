@@ -69,6 +69,7 @@ protected:
    int pixelType;
    int xRatioUV; // PF
    int yRatioUV;
+   int chromaSADScale; // 170504
    int nLogxRatioUV;
    int nLogyRatioUV;
    int pixelsize; // PF

@@ -92,8 +92,10 @@ public:
    int pixelType; // color format
 
    int yRatioUV; // ratio of luma plane height to chroma plane height
-
    int xRatioUV; // ratio of luma plane height to chroma plane width (fixed to 2 for YV12 and YUY2) PF used!
+
+   int chromaSADScale; // P.F. chroma SAD ratio, 0:stay(YV12) 1:div2 2:div4(e.g.YV24)
+
    int pixelsize; // PF
    int bits_per_pixel;
 
@@ -125,6 +127,7 @@ public :
    MV_FORCEINLINE int GetPixelType() const { return pixelType; }
    MV_FORCEINLINE int GetYRatioUV() const { return yRatioUV; }
    MV_FORCEINLINE int GetXRatioUV() const { return xRatioUV; }
+   MV_FORCEINLINE int GetChromaSADScale() const { return chromaSADScale; }
    MV_FORCEINLINE int GetPixelSize() const { return pixelsize; } // PF
    MV_FORCEINLINE int GetBitsPerPixel() const { return bits_per_pixel; } // PF
 //	MV_FORCEINLINE int GetSharp() const { return sharp; }

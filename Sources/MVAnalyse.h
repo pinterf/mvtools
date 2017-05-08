@@ -127,7 +127,7 @@ public :
 		int _overlapx, int _overlapy, const char* _outfilename, int _dctmode,
 		int _divide, int _sadx264, sad_t _badSAD, int _badrange, bool _isse,
 		bool _meander, bool temporal_flag, bool _tryMany, bool multi_flag,
-		bool mt_flag, IScriptEnvironment* env);
+		bool mt_flag, int _chromaSADScale, IScriptEnvironment* env);
 	~MVAnalyse();
 
 	::PVideoFrame __stdcall	GetFrame (int n, ::IScriptEnvironment* env);
