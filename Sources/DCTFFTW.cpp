@@ -349,10 +349,12 @@ DCTFFTW::Float2BytesFunction DCTFFTW::get_floatToBytesPROC_function(int BlockX, 
   // SSE4
 
   // uint8_t
+  func[make_tuple(64, 1, USE_SSE41)] = &DCTFFTW::Float2Bytes_SSE2<uint8_t, 64, true>;
   func[make_tuple(32, 1, USE_SSE41)] = &DCTFFTW::Float2Bytes_SSE2<uint8_t, 32, true>;
   func[make_tuple(16, 1, USE_SSE41)] = &DCTFFTW::Float2Bytes_SSE2<uint8_t, 16, true>;
   func[make_tuple(8, 1, USE_SSE41)] = &DCTFFTW::Float2Bytes_SSE2<uint8_t, 8, true>;
   // uint16_t
+  func[make_tuple(64, 2, USE_SSE41)] = &DCTFFTW::Float2Bytes_SSE2<uint16_t, 64, true>;
   func[make_tuple(32, 2, USE_SSE41)] = &DCTFFTW::Float2Bytes_SSE2<uint16_t, 32, true>;
   func[make_tuple(16, 2, USE_SSE41)] = &DCTFFTW::Float2Bytes_SSE2<uint16_t, 16, true>;
   func[make_tuple(8, 2, USE_SSE41)] = &DCTFFTW::Float2Bytes_SSE2<uint16_t, 8, true>;
@@ -360,10 +362,12 @@ DCTFFTW::Float2BytesFunction DCTFFTW::get_floatToBytesPROC_function(int BlockX, 
   // SSE2
 
   // uint8_t
+  func[make_tuple(64, 1, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<uint8_t, 64, false>;
   func[make_tuple(32, 1, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<uint8_t, 32, false>;
   func[make_tuple(16, 1, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<uint8_t, 16, false>;
   func[make_tuple(8, 1, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<uint8_t, 8, false>;
   // uint16_t
+  func[make_tuple(64, 2, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<uint16_t, 64, false>;
   func[make_tuple(32, 2, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<uint16_t, 32, false>;
   func[make_tuple(16, 2, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<uint16_t, 16, false>;
   func[make_tuple(8, 2, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<uint16_t, 8, false>;
@@ -393,11 +397,13 @@ DCTFFTW::Bytes2FloatFunction DCTFFTW::get_bytesToFloatPROC_function(int BlockX, 
   // SSE2
 
   // uint8_t
+  func[make_tuple(64, 1, USE_SSE2)] = &DCTFFTW::Bytes2Float_SSE2<uint8_t, 64>;
   func[make_tuple(32, 1, USE_SSE2)] = &DCTFFTW::Bytes2Float_SSE2<uint8_t, 32>;
   func[make_tuple(16, 1, USE_SSE2)] = &DCTFFTW::Bytes2Float_SSE2<uint8_t, 16>;
   func[make_tuple(8, 1, USE_SSE2)] = &DCTFFTW::Bytes2Float_SSE2<uint8_t, 8>;
   func[make_tuple(4, 1, USE_SSE2)] = &DCTFFTW::Bytes2Float_SSE2<uint8_t, 4>;
   // uint16_t
+  func[make_tuple(64, 2, USE_SSE2)] = &DCTFFTW::Bytes2Float_SSE2<uint16_t, 64>;
   func[make_tuple(32, 2, USE_SSE2)] = &DCTFFTW::Bytes2Float_SSE2<uint16_t, 32>;
   func[make_tuple(16, 2, USE_SSE2)] = &DCTFFTW::Bytes2Float_SSE2<uint16_t, 16>;
   func[make_tuple(8, 2, USE_SSE2)] = &DCTFFTW::Bytes2Float_SSE2<uint16_t, 8>;
