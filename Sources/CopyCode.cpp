@@ -375,6 +375,10 @@ COPYFunction* get_copy_function(int BlockX, int BlockY, int pixelsize, arch_t ar
     std::map<std::tuple<int, int, int, arch_t>, COPYFunction*> func_copy;
     using std::make_tuple;
 
+    func_copy[make_tuple(64, 64, 1, NO_SIMD)] = Copy_C<64, 64, uint8_t>;
+    func_copy[make_tuple(64, 32, 1, NO_SIMD)] = Copy_C<64, 32, uint8_t>;
+    func_copy[make_tuple(64, 16, 1, NO_SIMD)] = Copy_C<64, 16, uint8_t>;
+    func_copy[make_tuple(32, 64, 1, NO_SIMD)] = Copy_C<32, 64, uint8_t>;
     func_copy[make_tuple(32, 32, 1, NO_SIMD)] = Copy_C<32, 32,uint8_t>;
     func_copy[make_tuple(32, 16, 1, NO_SIMD)] = Copy_C<32, 16,uint8_t>;
     func_copy[make_tuple(32, 8 , 1, NO_SIMD)] = Copy_C<32, 8,uint8_t>;
@@ -395,6 +399,10 @@ COPYFunction* get_copy_function(int BlockX, int BlockY, int pixelsize, arch_t ar
     func_copy[make_tuple(2 , 2 , 1, NO_SIMD)] = Copy_C<2 , 2,uint8_t>;
     func_copy[make_tuple(2 , 1 , 1, NO_SIMD)] = Copy_C<2 , 1,uint8_t>;
 
+    func_copy[make_tuple(64, 64, 2, NO_SIMD)] = Copy_C<64, 64, uint16_t>;
+    func_copy[make_tuple(64, 32, 2, NO_SIMD)] = Copy_C<64, 32, uint16_t>;
+    func_copy[make_tuple(64, 16, 2, NO_SIMD)] = Copy_C<64, 16, uint16_t>;
+    func_copy[make_tuple(32, 64, 2, NO_SIMD)] = Copy_C<32, 64, uint16_t>;
     func_copy[make_tuple(32, 32, 2, NO_SIMD)] = Copy_C<32, 32,uint16_t>;
     func_copy[make_tuple(32, 16, 2, NO_SIMD)] = Copy_C<32, 16,uint16_t>;
     func_copy[make_tuple(32, 8 , 2, NO_SIMD)] = Copy_C<32, 8,uint16_t>;
@@ -416,6 +424,7 @@ COPYFunction* get_copy_function(int BlockX, int BlockY, int pixelsize, arch_t ar
     func_copy[make_tuple(2 , 1 , 2, NO_SIMD)] = Copy_C<2 , 1,uint16_t>;
     
     // we could even ignore copy sse2 assemblers, compilers are smart nowadays
+    // no mmx copy for block sizes over 32
     func_copy[make_tuple(32, 32, 1, USE_SSE2)] = Copy32x32_sse2;
     func_copy[make_tuple(32, 16, 1, USE_SSE2)] = Copy32x16_sse2;
     func_copy[make_tuple(32, 8 , 1, USE_SSE2)] = Copy32x8_sse2;
