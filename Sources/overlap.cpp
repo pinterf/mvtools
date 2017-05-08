@@ -23,6 +23,7 @@
 #include <tuple>
 #include <map>
 #include "avs\minmax.h"
+#include <cassert>
 
 #ifndef min
 #define min(a,b)            (((a) < (b)) ? (a) : (b))
@@ -466,13 +467,18 @@ void Overlaps_sse4(unsigned short *pDst0, int nDstPitch, const unsigned char *pS
   target_t *pDst = reinterpret_cast<target_t *>(pDst0);
   __m128i zero = _mm_setzero_si128();
   //const int stride = BlockWidth * sizeof(pixel_t); // back to byte size
+  assert(sizeof(pixel_t) != 1);
 
-  for (int j=0; j<blockHeight; j++)
+  for (int j = 0; j < blockHeight; j++)
   {
     __m128i dst;
     __m128i win, src;
 
-    if (sizeof(pixel_t) == 2) {
+    if (sizeof(pixel_t) == 1) {
+      assert(0); // not implemented
+    }
+    else if (sizeof(pixel_t) == 2)
+    {
       if (blockWidth == 4) // half of 1x16 byte
       {
         win = _mm_loadl_epi64(reinterpret_cast<__m128i *>(pWin)); // 4x16 short: Window
@@ -570,6 +576,10 @@ OverlapsFunction *get_overlaps_function(int BlockX, int BlockY, int pixelsize, a
     // BlkSizeX, BlkSizeY, pixelsize, arch_t
     std::map<std::tuple<int, int, int, arch_t>, OverlapsFunction*> func_overlaps;
     using std::make_tuple;
+    func_overlaps[make_tuple(64, 64, 1, NO_SIMD)] = Overlaps_C<uint8_t, 64, 64>;
+    func_overlaps[make_tuple(64, 32, 1, NO_SIMD)] = Overlaps_C<uint8_t, 64, 32>;
+    func_overlaps[make_tuple(64, 16, 1, NO_SIMD)] = Overlaps_C<uint8_t, 64, 16>;
+    func_overlaps[make_tuple(32, 64, 1, NO_SIMD)] = Overlaps_C<uint8_t, 32, 64>;
     func_overlaps[make_tuple(32, 32, 1, NO_SIMD)] = Overlaps_C<uint8_t, 32, 32>;
     func_overlaps[make_tuple(32, 16, 1, NO_SIMD)] = Overlaps_C<uint8_t, 32, 16>;
     func_overlaps[make_tuple(32, 8 , 1, NO_SIMD)] = Overlaps_C<uint8_t, 32, 8>;
@@ -589,6 +599,10 @@ OverlapsFunction *get_overlaps_function(int BlockX, int BlockY, int pixelsize, a
     func_overlaps[make_tuple(2 , 4 , 1, NO_SIMD)] = Overlaps_C<uint8_t, 2 , 4>;
     func_overlaps[make_tuple(2 , 2 , 1, NO_SIMD)] = Overlaps_C<uint8_t, 2 , 2>;
 
+    func_overlaps[make_tuple(64, 64, 2, NO_SIMD)] = Overlaps_C<uint16_t, 64, 64>;
+    func_overlaps[make_tuple(64, 32, 2, NO_SIMD)] = Overlaps_C<uint16_t, 64, 32>;
+    func_overlaps[make_tuple(64, 16, 2, NO_SIMD)] = Overlaps_C<uint16_t, 64, 16>;
+    func_overlaps[make_tuple(32, 64, 2, NO_SIMD)] = Overlaps_C<uint16_t, 32, 64>;
     func_overlaps[make_tuple(32, 32, 2, NO_SIMD)] = Overlaps_C<uint16_t, 32, 32>;
     func_overlaps[make_tuple(32, 16, 2, NO_SIMD)] = Overlaps_C<uint16_t, 32, 16>;
     func_overlaps[make_tuple(32, 8 , 2, NO_SIMD)] = Overlaps_C<uint16_t, 32, 8>;
@@ -608,6 +622,14 @@ OverlapsFunction *get_overlaps_function(int BlockX, int BlockY, int pixelsize, a
     func_overlaps[make_tuple(2 , 4 , 2, NO_SIMD)] = Overlaps_C<uint16_t, 2 , 4>;
     func_overlaps[make_tuple(2 , 2 , 2, NO_SIMD)] = Overlaps_C<uint16_t, 2 , 2>;
 
+    //func_overlaps[make_tuple(64, 64, 1, USE_SSE41)] = Overlaps_sse4<uint8_t, 64, 64>; // not implemented for 8 bits
+    //func_overlaps[make_tuple(64, 32, 1, USE_SSE41)] = Overlaps_sse4<uint8_t, 64, 32>;
+    //func_overlaps[make_tuple(64, 16, 1, USE_SSE41)] = Overlaps_sse4<uint8_t, 64, 16>;
+    //func_overlaps[make_tuple(32, 64, 1, USE_SSE41)] = Overlaps_sse4<uint8_t, 32, 64>;
+    func_overlaps[make_tuple(64, 64, 1, USE_SSE2)] = Overlaps64x64_sse2; // in overlap-a.asm
+    func_overlaps[make_tuple(64, 32, 1, USE_SSE2)] = Overlaps64x32_sse2;
+    func_overlaps[make_tuple(64, 16, 1, USE_SSE2)] = Overlaps64x16_sse2;
+    func_overlaps[make_tuple(32, 64, 1, USE_SSE2)] = Overlaps32x64_sse2;
     func_overlaps[make_tuple(32, 32, 1, USE_SSE2)] = Overlaps32x32_sse2;
     func_overlaps[make_tuple(32, 16, 1, USE_SSE2)] = Overlaps32x16_sse2;
     func_overlaps[make_tuple(32, 8 , 1, USE_SSE2)] = Overlaps32x8_sse2;
@@ -627,6 +649,10 @@ OverlapsFunction *get_overlaps_function(int BlockX, int BlockY, int pixelsize, a
     func_overlaps[make_tuple(2 , 4 , 1, USE_SSE2)] = Overlaps2x4_sse2;
     func_overlaps[make_tuple(2 , 2 , 1, USE_SSE2)] = Overlaps2x2_sse2;
     
+    func_overlaps[make_tuple(64, 64, 2, USE_SSE41)] = Overlaps_sse4<uint16_t, 64, 64>;
+    func_overlaps[make_tuple(64, 32, 2, USE_SSE41)] = Overlaps_sse4<uint16_t, 64, 32>;
+    func_overlaps[make_tuple(64, 16, 2, USE_SSE41)] = Overlaps_sse4<uint16_t, 64, 16>;
+    func_overlaps[make_tuple(32, 64, 2, USE_SSE41)] = Overlaps_sse4<uint16_t, 32, 64>;
     func_overlaps[make_tuple(32, 32, 2, USE_SSE41)] = Overlaps_sse4<uint16_t, 32, 32>;
     func_overlaps[make_tuple(32, 16, 2, USE_SSE41)] = Overlaps_sse4<uint16_t, 32, 16>;
     func_overlaps[make_tuple(32, 8 , 2, USE_SSE41)] = Overlaps_sse4<uint16_t, 32, 8>;
@@ -645,31 +671,7 @@ OverlapsFunction *get_overlaps_function(int BlockX, int BlockY, int pixelsize, a
     func_overlaps[make_tuple(4 , 2 , 2, USE_SSE41)] = Overlaps_sse4<uint16_t, 4 , 2>;
     //func_overlaps[make_tuple(2 , 4 , 2, NO_SIMD)] = Overlaps_C<uint16_t, 2 , 4>;
     //func_overlaps[make_tuple(2 , 2 , 2, NO_SIMD)] = Overlaps_C<uint16_t, 2 , 2>;
-    
 
-
-#if 0
-    // Why did the original code used sse2 named functions for overlaps 
-    // when no CPUF_SSE2 was detected bit isse param is true?
-    func_overlaps[make_tuple(32, 32, 1, USE_MMX)] = Overlaps32x32_sse2;
-    func_overlaps[make_tuple(32, 16, 1, USE_MMX)] = Overlaps32x16_sse2;
-    func_overlaps[make_tuple(32, 8 , 1, USE_MMX)] = Overlaps32x8_sse2;
-    func_overlaps[make_tuple(16, 32, 1, USE_MMX)] = Overlaps16x32_sse2;
-    func_overlaps[make_tuple(16, 16, 1, USE_MMX)] = Overlaps16x16_sse2;
-    func_overlaps[make_tuple(16, 8 , 1, USE_MMX)] = Overlaps16x8_sse2;
-    func_overlaps[make_tuple(16, 4 , 1, USE_MMX)] = Overlaps16x4_sse2;
-    func_overlaps[make_tuple(16, 2 , 1, USE_MMX)] = Overlaps16x2_sse2;
-    func_overlaps[make_tuple(8 , 16, 1, USE_MMX)] = Overlaps8x16_sse2;
-    func_overlaps[make_tuple(8 , 8 , 1, USE_MMX)] = Overlaps8x8_sse2;
-    func_overlaps[make_tuple(8 , 4 , 1, USE_MMX)] = Overlaps8x4_sse2;
-    func_overlaps[make_tuple(8 , 2 , 1, USE_MMX)] = Overlaps8x2_sse2;
-    func_overlaps[make_tuple(8 , 1 , 1, USE_MMX)] = Overlaps8x1_sse2;
-    func_overlaps[make_tuple(4 , 8 , 1, USE_MMX)] = Overlaps4x8_sse2;
-    func_overlaps[make_tuple(4 , 4 , 1, USE_MMX)] = Overlaps4x4_sse2;
-    func_overlaps[make_tuple(4 , 2 , 1, USE_MMX)] = Overlaps4x2_sse2;
-    func_overlaps[make_tuple(2 , 4 , 1, USE_MMX)] = Overlaps2x4_sse2;
-    func_overlaps[make_tuple(2 , 2 , 1, USE_MMX)] = Overlaps2x2_sse2;
-#endif
     OverlapsFunction *result = nullptr;
 
     arch_t archlist[] = { USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
@@ -681,38 +683,6 @@ OverlapsFunction *get_overlaps_function(int BlockX, int BlockY, int pixelsize, a
       if (result == nullptr && current_arch_try == NO_SIMD)
         break;
     }
-#if 0
-    OverlapsFunction *result = func_overlaps[std::make_tuple(BlockX, BlockY, pixelsize, arch)];
-    arch_t arch_orig = arch;
-    // no AVX2 -> try AVX
-    if (result == nullptr && (arch==USE_AVX2 || arch_orig==USE_AVX)) {
-      arch = USE_AVX;
-      result = func_overlaps[make_tuple(BlockX, BlockY, pixelsize, USE_AVX)];
-    }
-    // no AVX -> try SSE41
-    if (result == nullptr && (arch==USE_AVX || arch_orig==USE_SSE41)) {
-      arch = USE_SSE41;
-      result = func_overlaps[make_tuple(BlockX, BlockY, pixelsize, USE_SSE41)];
-    }
-    // no SSE41 -> try SSE2
-    if (result == nullptr && (arch==USE_SSE41 || arch_orig==USE_SSE2)) {
-      arch = USE_SSE2;
-      result = func_overlaps[make_tuple(BlockX, BlockY, pixelsize, USE_SSE2)];
-    }
-    // no SSE2 -> try C
-    if (result == nullptr && (arch==USE_SSE2 || arch_orig==NO_SIMD)) {
-      arch = NO_SIMD;
-      /* C version variations are only working in SAD
-      // priority: C version compiled to avx2, avx
-      if(arch_orig==USE_AVX2)
-      result = get_luma_avx2_C_function(BlockX, BlockY, pixelsize, NO_SIMD);
-      else if(arch_orig==USE_AVX)
-      result = get_luma_avx_C_function(BlockX, BlockY, pixelsize, NO_SIMD);
-      */
-      if(result == nullptr)
-        result = func_overlaps[make_tuple(BlockX, BlockY, pixelsize, NO_SIMD)]; // fallback to C
-    }
-#endif
     return result;
 }
 
@@ -722,6 +692,10 @@ OverlapsLsbFunction *get_overlaps_lsb_function(int BlockX, int BlockY, int pixel
     // BlkSizeX, BlkSizeY, pixelsize, arch_t
     std::map<std::tuple<int, int, int, arch_t>, OverlapsLsbFunction*> func_overlaps_lsb;
     using std::make_tuple;
+    func_overlaps_lsb[make_tuple(64, 64, 1, NO_SIMD)] = OverlapsLsb_C<64, 64>;
+    func_overlaps_lsb[make_tuple(64, 32, 1, NO_SIMD)] = OverlapsLsb_C<64, 32>;
+    func_overlaps_lsb[make_tuple(64, 16, 1, NO_SIMD)] = OverlapsLsb_C<64, 16>;
+    func_overlaps_lsb[make_tuple(32, 64, 1, NO_SIMD)] = OverlapsLsb_C<32, 64>;
     func_overlaps_lsb[make_tuple(32, 32, 1, NO_SIMD)] = OverlapsLsb_C<32, 32>;
     func_overlaps_lsb[make_tuple(32, 16, 1, NO_SIMD)] = OverlapsLsb_C<32, 16>;
     func_overlaps_lsb[make_tuple(32, 8 , 1, NO_SIMD)] = OverlapsLsb_C<32, 8>;
@@ -752,11 +726,6 @@ OverlapsLsbFunction *get_overlaps_lsb_function(int BlockX, int BlockY, int pixel
         break;
     }
 
-#if 0
-    OverlapsLsbFunction *result = func_overlaps_lsb[std::make_tuple(BlockX, BlockY, pixelsize, arch)];
-    if (result == nullptr)
-        result = func_overlaps_lsb[std::make_tuple(BlockX, BlockY, pixelsize, NO_SIMD)]; // fallback to C
-#endif
     return result;
 }
 
