@@ -31,8 +31,6 @@
 #include "types.h"
 #include <stdint.h>
 
-typedef unsigned int (SADFunction)(const uint8_t *pSrc, int nSrcPitch,
-								    const uint8_t *pRef, int nRefPitch);
 SADFunction* get_sad_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
 
 SADFunction* get_satd_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
@@ -56,6 +54,11 @@ float hsum_ps_sse3(__m128 v) {
   const __m128 sum = _mm_add_ss(t, _mm_shuffle_ps(t, t, 1));
 }
 */
+// 170505
+static unsigned int SadDummy(const uint8_t *, int , const uint8_t *, int )
+{
+  return 0;
+}
 
 // above width==4 for uint16_t and width==8 for uint8_t
 template<int nBlkWidth, int nBlkHeight, typename pixel_t>
@@ -233,6 +236,7 @@ unsigned int Sad16_sse2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
 
 #define SAD_ISSE(blsizex, blsizey) extern "C" unsigned int __cdecl Sad##blsizex##x##blsizey##_iSSE(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 //Sad16x16_iSSE( x,y can be: 32 16 8 4 2
+// used only for *1 or *2
 SAD_ISSE(32,32);
 SAD_ISSE(16,32);
 SAD_ISSE(32,16);
@@ -253,56 +257,99 @@ SAD_ISSE(4,2);
 SAD_ISSE(2,4);
 SAD_ISSE(2,2);
 
-MK_CFUNC(Sad2x2_iSSE_T); //only work with packed, aligned source block copy
-MK_CFUNC(Sad2x4_iSSE_T);
-//MK_CFUNC(Sad2x2_iSSE_O);
 
 
 #undef SAD_ISSE
-/* //allows simple wrapping SAD functions, implementation in SADFunctions.h
-#define MK_CPPWRAP(blkx, blky) unsigned int  Sad##blkx##x##blky##_wrap(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
-MK_CPPWRAP(16,16);
-MK_CPPWRAP(16,8);
-MK_CPPWRAP(16,2);
-MK_CPPWRAP(8,16);
-MK_CPPWRAP(8,8);
-MK_CPPWRAP(8,4);
-MK_CPPWRAP(8,2);
-MK_CPPWRAP(8,1);
-MK_CPPWRAP(4,8);
-MK_CPPWRAP(4,4);
-MK_CPPWRAP(4,2);
-MK_CPPWRAP(2,4);
-MK_CPPWRAP(2,2);
-#undef MK_CPPWRAP
-*/
-/* included from x264 */
-#define SAD_x264(blsizex, blsizey) extern "C" unsigned int __cdecl x264_pixel_sad_##blsizex##x##blsizey##_mmx2(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
-//x264_pixel_sad_16x16_mmx2(   x,y can be: 16 8 4
-SAD_x264(16,16);
-SAD_x264(16,8);
-SAD_x264(16,4);
-SAD_x264(16,2);
-SAD_x264(8,16);
-SAD_x264(8,8);
-SAD_x264(8,4);
-SAD_x264(8,2);
-SAD_x264(4,8);
-SAD_x264(4,4);
-SAD_x264(4,2);
+/* included from x264/x265 */
+#define SAD_x264(blsizex, blsizey, type) extern "C" unsigned int __cdecl x264_pixel_sad_##blsizex##x##blsizey##_##type##(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+
+// AVX2: Supported: 64x64, 64x48, 64x32, 64x16
+SAD_x264(64, 64, avx2);
+SAD_x264(64, 48, avx2);
+SAD_x264(64, 32, avx2);
+SAD_x264(64, 16, avx2);
+// SSE2: Supported: 64x64, 64x48, 64x32, 64x16
+SAD_x264(64, 64, sse2);
+SAD_x264(64, 48, sse2);
+SAD_x264(64, 32, sse2);
+SAD_x264(64, 16, sse2);
+
+// 48*x
+SAD_x264(48, 64, avx2);
+SAD_x264(48, 64, sse2);
+
+// 32*x
+// AVX2
+SAD_x264(32, 64, avx2);
+SAD_x264(32, 32, avx2);
+SAD_x264(32, 24, avx2);
+SAD_x264(32, 16, avx2);
+SAD_x264(32, 8, avx2);
+// SSE3
+SAD_x264(32, 64, sse3);
+SAD_x264(32, 32, sse3);
+SAD_x264(32, 24, sse3);
+SAD_x264(32, 16, sse3);
+SAD_x264(32,  8, sse3);
+// SSE2
+SAD_x264(32, 64, sse2);
+SAD_x264(32, 32, sse2);
+SAD_x264(32, 24, sse2);
+SAD_x264(32, 16, sse2);
+SAD_x264(32,  8, sse2);
+
+// 24*x
+SAD_x264(24, 32, sse2);
+
+// 16*x
+// SSE3
+SAD_x264(16, 64, sse3);
+SAD_x264(16, 32, sse3);
+SAD_x264(16, 16, sse3);
+SAD_x264(16, 12, sse3);
+SAD_x264(16, 8, sse3);
+SAD_x264(16, 4, sse3);
+// SSE2/mmx2
+SAD_x264(16, 64, sse2);
+SAD_x264(16, 32, sse2);
+//SAD_x264(16, 16, mmx2);
+SAD_x264(16, 16, sse2);
+SAD_x264(16, 12, sse2);
+//SAD_x264(16, 8, mmx2);
+SAD_x264(16, 8, sse2);
+SAD_x264(16, 4, sse2);
+
+// 12*x
+SAD_x264(12, 16, sse2);
+
+// 8*x
+SAD_x264(8, 32, sse2);
+SAD_x264(8, 16, sse2);
+//SAD_x264(8, 16, mmx2);
+SAD_x264(8, 8, mmx2);
+SAD_x264(8, 4, mmx2);
+
+// 4*x
+SAD_x264(4, 16, mmx2);
+SAD_x264(4, 8, mmx2);
+SAD_x264(4, 4, mmx2);
 #undef SAD_x264
+/*
 //parameter is function name
 MK_CFUNC(x264_pixel_sad_16x16_sse2); //non optimized cache access, for AMD?
 MK_CFUNC(x264_pixel_sad_16x8_sse2);	 //non optimized cache access, for AMD?
 MK_CFUNC(x264_pixel_sad_16x16_sse3); //LDDQU Pentium4E (Core1?), not for Core2!
 MK_CFUNC(x264_pixel_sad_16x8_sse3);  //LDDQU Pentium4E (Core1?), not for Core2!
-MK_CFUNC(x264_pixel_sad_16x16_cache64_sse2);//core2 optimized
+*/
+/*MK_CFUNC(x264_pixel_sad_16x16_cache64_sse2);//core2 optimized
 MK_CFUNC(x264_pixel_sad_16x8_cache64_sse2);//core2 optimized
 MK_CFUNC(x264_pixel_sad_16x16_cache64_ssse3);//core2 optimized
 MK_CFUNC(x264_pixel_sad_16x8_cache64_ssse3); //core2 optimized
+*/
 
 //MK_CFUNC(x264_pixel_sad_16x16_cache32_mmx2);
 //MK_CFUNC(x264_pixel_sad_16x8_cache32_mmx2);
+/*
 MK_CFUNC(x264_pixel_sad_16x16_cache64_mmx2);
 MK_CFUNC(x264_pixel_sad_16x8_cache64_mmx2);
 MK_CFUNC(x264_pixel_sad_8x16_cache32_mmx2);
@@ -311,7 +358,7 @@ MK_CFUNC(x264_pixel_sad_8x4_cache32_mmx2);
 MK_CFUNC(x264_pixel_sad_8x16_cache64_mmx2);
 MK_CFUNC(x264_pixel_sad_8x8_cache64_mmx2);
 MK_CFUNC(x264_pixel_sad_8x4_cache64_mmx2);
-
+*/
 //1.9.5.3: added ssd & SATD (TSchniede)
 /* alternative to SAD - SSD: squared sum of differences, VERY sensitive to noise */
 #if 0
@@ -325,70 +372,75 @@ MK_CFUNC(x264_pixel_ssd_4x4_mmx);
 #endif
 
 /* SATD: Sum of Absolute Transformed Differences, more sensitive to noise, frequency domain based - replacement to dct/SAD */
-#if 0
-MK_CFUNC(x264_pixel_satd_16x16_mmx2);
-MK_CFUNC(x264_pixel_satd_16x8_mmx2);
-MK_CFUNC(x264_pixel_satd_8x16_mmx2);
-MK_CFUNC(x264_pixel_satd_8x8_mmx2);
-MK_CFUNC(x264_pixel_satd_8x4_mmx2);
-MK_CFUNC(x264_pixel_satd_4x8_mmx2);
-MK_CFUNC(x264_pixel_satd_4x4_mmx2);
-
-MK_CFUNC(x264_pixel_satd_32x32_mmx2);
-MK_CFUNC(x264_pixel_satd_32x16_mmx2);
-#endif
 #define SATD_SSE(blsizex, blsizey, type) extern "C" unsigned int __cdecl x264_pixel_satd_##blsizex##x##blsizey##_##type##(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 // Make extern functions from the satd pixel-a.asm
 // See function selector "get_satd_function" in SadFunctions.cpp
 // hard to find where they implemented, pixel-a.asm is macro-world :)
 // find x264_pixel_satd_16x16_%1
 // 32x32, 32x16, 32x8, 16x32 and 16x4 are not macroised in pixel-a.asm
+// already instantiated in pixel-a.asm
+// combinations of 4, 8, 16, 32
+// todo: combinations of 
+
 SATD_SSE(32, 32, sse2);
 SATD_SSE(32, 16, sse2);
-SATD_SSE(32, 8, sse2);
+SATD_SSE(32,  8, sse2);
+//SATD_SSE(32,  4, sse2); no such
 SATD_SSE(16, 32, sse2);
 SATD_SSE(16, 16, sse2);
 SATD_SSE(16,  8, sse2);
 SATD_SSE(16,  4, sse2);
+SATD_SSE( 8, 32, sse2);
 SATD_SSE( 8, 16, sse2);
 SATD_SSE( 8,  8, sse2);
 SATD_SSE( 8,  4, sse2);
-
-SATD_SSE(4, 8, mmx2);
-SATD_SSE(4, 4, mmx2);
+#ifndef _M_X64
+SATD_SSE( 4, 32, sse2); // simulated
+#endif
+SATD_SSE( 4, 16, sse2); // in 2014 this was not
+SATD_SSE( 4,  8, sse2); // in 2014 this was already mmx2
+SATD_SSE( 4,  4, mmx2); // in 2017 pixel-a.asm, only this one is mmx
 
 SATD_SSE(32, 32, sse4);
 SATD_SSE(32, 16, sse4);
 SATD_SSE(32, 8 , sse4);
+// SATD_SSE(32, 4 , sse4); no such
 SATD_SSE(16, 32, sse4);
 SATD_SSE(16, 16, sse4);
 SATD_SSE(16,  8, sse4);
 SATD_SSE(16,  4, sse4);
+SATD_SSE( 8, 32, sse4);
 SATD_SSE( 8, 16, sse4);
 SATD_SSE( 8,  8, sse4);
 SATD_SSE( 8,  4, sse4);
+SATD_SSE( 4,  8, sse4);
+SATD_SSE( 4,  4, sse4);
 
 SATD_SSE(32, 32, avx);
 SATD_SSE(32, 16, avx);
-SATD_SSE(32, 8, avx);
+SATD_SSE(32,  8, avx);
+// SATD_SSE(32,  4, avx); no such
 SATD_SSE(16, 32, avx);
 SATD_SSE(16, 16, avx);
 SATD_SSE(16,  8, avx);
 SATD_SSE(16,  4, avx);
+SATD_SSE( 8, 32, avx);
 SATD_SSE( 8, 16, avx);
 SATD_SSE( 8,  8, avx);
 SATD_SSE( 8,  4, avx);
 
+// no x4 versions
 SATD_SSE(32, 32, avx2);
 SATD_SSE(32, 16, avx2);
 SATD_SSE(32, 8, avx2);
-SATD_SSE(16, 32, avx2);
+#ifdef _M_X64
+SATD_SSE(16, 32, avx2); // only in x64
+#endif
 SATD_SSE(16, 16, avx2);
 SATD_SSE(16,  8, avx2);
-SATD_SSE(16,  4, avx2);
+//SATD_SSE( 8, 32, avx2); no such
 SATD_SSE( 8, 16, avx2);
 SATD_SSE( 8,  8, avx2);
-//SATD_SSE( 8,  4, avx2); no such
 
 /*
 SATD_SSE(32, 32, ssse3);
@@ -402,7 +454,7 @@ SATD_SSE( 8,  4, ssse3);
 #undef SATD_SSE
 
 //dummy for testing and deactivate SAD
-MK_CFUNC(SadDummy);
+//MK_CFUNC(SadDummy);
 #undef MK_CFUNC
 
 

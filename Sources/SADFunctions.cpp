@@ -590,6 +590,9 @@ static unsigned int x264_pixel_satd_uint16_32x16_c(const uint8_t *pix1, int i_pi
 static unsigned int x264_pixel_satd_uint16_32x8_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
   return x264_pixel_satd_uint16_NxN_by_8x4_c<32, 8>(pix1, i_pix1, pix2, i_pix2); 
 }
+static unsigned int x264_pixel_satd_uint16_32x4_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return x264_pixel_satd_uint16_NxN_by_8x4_c<32, 4>(pix1, i_pix1, pix2, i_pix2);
+}
 static unsigned int x264_pixel_satd_uint16_16x32_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
   return x264_pixel_satd_uint16_NxN_by_8x4_c<16, 32>(pix1, i_pix1, pix2, i_pix2); 
 }
@@ -602,6 +605,9 @@ static unsigned int x264_pixel_satd_uint16_16x8_c(const uint8_t *pix1, int i_pix
 static unsigned int x264_pixel_satd_uint16_16x4_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
   return x264_pixel_satd_uint16_NxN_by_8x4_c<16, 4>(pix1, i_pix1, pix2, i_pix2); 
 }
+static unsigned int x264_pixel_satd_uint16_8x32_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return x264_pixel_satd_uint16_NxN_by_8x4_c<8, 32>(pix1, i_pix1, pix2, i_pix2);
+}
 static unsigned int x264_pixel_satd_uint16_8x16_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
   return x264_pixel_satd_uint16_NxN_by_8x4_c<8, 16>(pix1, i_pix1, pix2, i_pix2); 
 }
@@ -613,6 +619,12 @@ static unsigned int x264_pixel_satd_uint16_8x4_c(const uint8_t *pix1, int i_pix1
   return x264_pixel_satd_uint16_NxN_by_8x4_c<8, 4>(pix1, i_pix1, pix2, i_pix2); 
 }
 */
+static unsigned int x264_pixel_satd_uint16_4x32_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return x264_pixel_satd_uint16_NxN_by_4x4_c<4, 32>(pix1, i_pix1, pix2, i_pix2);
+}
+static unsigned int x264_pixel_satd_uint16_4x16_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return x264_pixel_satd_uint16_NxN_by_4x4_c<4, 16>(pix1, i_pix1, pix2, i_pix2);
+}
 static unsigned int x264_pixel_satd_uint16_4x8_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
   return x264_pixel_satd_uint16_NxN_by_4x4_c<4, 8>(pix1, i_pix1, pix2, i_pix2); 
 }
@@ -679,94 +691,84 @@ SADFunction* get_sad_function(int BlockX, int BlockY, int pixelsize, arch_t arch
 
     // BlkSizeX, BlkSizeY, pixelsize, arch_t
     std::map<std::tuple<int, int, int, arch_t>, SADFunction*> func_sad;
+#define MAKE_SAD_FN(x, y) func_sad[make_tuple(x, y, 1, NO_SIMD)] = Sad_C<x, y, uint8_t>; \
+func_sad[make_tuple(x, y, 2, NO_SIMD)] = Sad_C<x, y, uint16_t>;
+      MAKE_SAD_FN(64, 64)
+      MAKE_SAD_FN(64, 48)
+      MAKE_SAD_FN(64, 32)
+      MAKE_SAD_FN(64, 16)
+      MAKE_SAD_FN(48, 64)
+      MAKE_SAD_FN(32, 64)
+      MAKE_SAD_FN(32, 32)
+      MAKE_SAD_FN(32, 24)
+      MAKE_SAD_FN(32, 16)
+      MAKE_SAD_FN(32, 8)
+      MAKE_SAD_FN(24, 32)
+      MAKE_SAD_FN(16, 64)
+      MAKE_SAD_FN(16, 32)
+      MAKE_SAD_FN(16, 16)
+      MAKE_SAD_FN(16, 12)
+      MAKE_SAD_FN(16, 8)
+      MAKE_SAD_FN(16, 4)
+      MAKE_SAD_FN(16, 2)
+      MAKE_SAD_FN(16, 1)
+      MAKE_SAD_FN(12, 16)
+      MAKE_SAD_FN(8, 32)
+      MAKE_SAD_FN(8, 16)
+      MAKE_SAD_FN(8, 8)
+      MAKE_SAD_FN(8, 4)
+      MAKE_SAD_FN(8, 2)
+      MAKE_SAD_FN(8, 1)
+      MAKE_SAD_FN(4, 8)
+      MAKE_SAD_FN(4, 4)
+      MAKE_SAD_FN(4, 2)
+      MAKE_SAD_FN(4, 1)
+      MAKE_SAD_FN(2, 4)
+      MAKE_SAD_FN(2, 2)
+      MAKE_SAD_FN(2, 1)
+#undef MAKE_SAD_FN
 
-    func_sad[make_tuple(32, 32, 1, NO_SIMD)] = Sad_C<32, 32,uint8_t>;
-    func_sad[make_tuple(32, 16, 1, NO_SIMD)] = Sad_C<32, 16,uint8_t>;
-    func_sad[make_tuple(32, 8 , 1, NO_SIMD)] = Sad_C<32, 8,uint8_t>;
-    func_sad[make_tuple(16, 32, 1, NO_SIMD)] = Sad_C<16, 32,uint8_t>;
-    func_sad[make_tuple(16, 16, 1, NO_SIMD)] = Sad_C<16, 16,uint8_t>;
-    func_sad[make_tuple(16, 8 , 1, NO_SIMD)] = Sad_C<16, 8,uint8_t>;
-    func_sad[make_tuple(16, 4 , 1, NO_SIMD)] = Sad_C<16, 4,uint8_t>;
-    func_sad[make_tuple(16, 2 , 1, NO_SIMD)] = Sad_C<16, 2,uint8_t>;
-    func_sad[make_tuple(16, 1 , 1, NO_SIMD)] = Sad_C<16, 1,uint8_t>;
-    func_sad[make_tuple(8 , 16, 1, NO_SIMD)] = Sad_C<8 , 16,uint8_t>;
-    func_sad[make_tuple(8 , 8 , 1, NO_SIMD)] = Sad_C<8 , 8,uint8_t>;
-    func_sad[make_tuple(8 , 4 , 1, NO_SIMD)] = Sad_C<8 , 4,uint8_t>;
-    func_sad[make_tuple(8 , 2 , 1, NO_SIMD)] = Sad_C<8 , 2,uint8_t>;
-    func_sad[make_tuple(8 , 1 , 1, NO_SIMD)] = Sad_C<8 , 1,uint8_t>;
-    func_sad[make_tuple(4 , 8 , 1, NO_SIMD)] = Sad_C<4 , 8,uint8_t>;
-    func_sad[make_tuple(4 , 4 , 1, NO_SIMD)] = Sad_C<4 , 4,uint8_t>;
-    func_sad[make_tuple(4 , 2 , 1, NO_SIMD)] = Sad_C<4 , 2,uint8_t>;
-    func_sad[make_tuple(4 , 1 , 1, NO_SIMD)] = Sad_C<4 , 1,uint8_t>;
-    func_sad[make_tuple(2 , 4 , 1, NO_SIMD)] = Sad_C<2 , 4,uint8_t>;
-    func_sad[make_tuple(2 , 2 , 1, NO_SIMD)] = Sad_C<2 , 2,uint8_t>;
-    func_sad[make_tuple(2 , 1 , 1, NO_SIMD)] = Sad_C<2 , 1,uint8_t>;
+// PF SAD 16 SIMD intrinsic functions
+// only for >=8 bytes widths
+// AVX compiled SSE2 code and regular SSE2
+// avx is instantiated in SADFunctions_avx.h
+#define MAKE_SAD_FN(x, y) func_sad[make_tuple(x, y, 2, USE_AVX)] = Sad16_sse2_avx<x, y, uint16_t>; \
+func_sad[make_tuple(x, y, 2, USE_SSE2)] = Sad16_sse2<x, y, uint16_t>;
+        MAKE_SAD_FN(64, 64)
+        MAKE_SAD_FN(64, 48)
+        MAKE_SAD_FN(64, 32)
+        MAKE_SAD_FN(64, 16)
+        MAKE_SAD_FN(48, 64)
+        MAKE_SAD_FN(32, 64)
+        MAKE_SAD_FN(32, 32)
+        MAKE_SAD_FN(32, 24)
+        MAKE_SAD_FN(32, 16)
+        MAKE_SAD_FN(32, 8)
+        MAKE_SAD_FN(24, 32)
+        MAKE_SAD_FN(16, 64)
+        MAKE_SAD_FN(16, 32)
+        MAKE_SAD_FN(16, 16)
+        MAKE_SAD_FN(16, 12)
+        MAKE_SAD_FN(16, 8)
+        MAKE_SAD_FN(16, 4)
+        MAKE_SAD_FN(16, 2)
+        MAKE_SAD_FN(16, 1)
+        MAKE_SAD_FN(12, 16)
+        MAKE_SAD_FN(8, 32)
+        MAKE_SAD_FN(8, 16)
+        MAKE_SAD_FN(8, 8)
+        MAKE_SAD_FN(8, 4)
+        MAKE_SAD_FN(8, 2)
+        MAKE_SAD_FN(8, 1)
+        MAKE_SAD_FN(4, 8)
+        MAKE_SAD_FN(4, 4)
+        MAKE_SAD_FN(4, 2)
+        //MAKE_SAD_FN(4, 1)  // 8 bytes with height=1 not supported for SSE2
+        //MAKE_SAD_FN(2, 4)  // 2 pixels 4 bytes not supported with SSE2
+        //MAKE_SAD_FN(2, 2)
+        //MAKE_SAD_FN(2, 1)
+#undef MAKE_SAD_FN
 
-    func_sad[make_tuple(32, 32, 2, NO_SIMD)] = Sad_C<32, 32,uint16_t>;
-    func_sad[make_tuple(32, 16, 2, NO_SIMD)] = Sad_C<32, 16,uint16_t>;
-    func_sad[make_tuple(32, 8 , 2, NO_SIMD)] = Sad_C<32, 8,uint16_t>;
-    func_sad[make_tuple(16, 32, 2, NO_SIMD)] = Sad_C<16, 32,uint16_t>;
-    func_sad[make_tuple(16, 16, 2, NO_SIMD)] = Sad_C<16, 16,uint16_t>;
-    func_sad[make_tuple(16, 8 , 2, NO_SIMD)] = Sad_C<16, 8,uint16_t>;
-    func_sad[make_tuple(16, 4 , 2, NO_SIMD)] = Sad_C<16, 4,uint16_t>;
-    func_sad[make_tuple(16, 2 , 2, NO_SIMD)] = Sad_C<16, 2,uint16_t>;
-    func_sad[make_tuple(16, 1 , 2, NO_SIMD)] = Sad_C<16, 1,uint16_t>;
-    func_sad[make_tuple(8 , 16, 2, NO_SIMD)] = Sad_C<8 , 16,uint16_t>;
-    func_sad[make_tuple(8 , 8 , 2, NO_SIMD)] = Sad_C<8 , 8,uint16_t>;
-    func_sad[make_tuple(8 , 4 , 2, NO_SIMD)] = Sad_C<8 , 4,uint16_t>;
-    func_sad[make_tuple(8 , 2 , 2, NO_SIMD)] = Sad_C<8 , 2,uint16_t>;
-    func_sad[make_tuple(8 , 1 , 2, NO_SIMD)] = Sad_C<8 , 1,uint16_t>;
-    func_sad[make_tuple(4 , 8 , 2, NO_SIMD)] = Sad_C<4 , 8,uint16_t>;
-    func_sad[make_tuple(4 , 4 , 2, NO_SIMD)] = Sad_C<4 , 4,uint16_t>;
-    func_sad[make_tuple(4 , 2 , 2, NO_SIMD)] = Sad_C<4 , 2,uint16_t>;
-    func_sad[make_tuple(4 , 1 , 2, NO_SIMD)] = Sad_C<4 , 1,uint16_t>;
-    func_sad[make_tuple(2 , 4 , 2, NO_SIMD)] = Sad_C<2 , 4,uint16_t>;
-    func_sad[make_tuple(2 , 2 , 2, NO_SIMD)] = Sad_C<2 , 2,uint16_t>;
-    func_sad[make_tuple(2 , 1 , 2, NO_SIMD)] = Sad_C<2 , 1,uint16_t>;
-
-    // PF SAD 16 SIMD intrinsic functions
-    // only for >=8 bytes widths
-    // AVX compiled SSE2 code
-    func_sad[make_tuple(32, 32, 2, USE_AVX)] = Sad16_sse2_avx<32, 32,uint16_t>;
-    func_sad[make_tuple(32, 16, 2, USE_AVX)] = Sad16_sse2_avx<32, 16,uint16_t>;
-    func_sad[make_tuple(32, 8 , 2, USE_AVX)] = Sad16_sse2_avx<32, 8,uint16_t>;
-    func_sad[make_tuple(16, 32, 2, USE_AVX)] = Sad16_sse2_avx<16, 32,uint16_t>;
-    func_sad[make_tuple(16, 16, 2, USE_AVX)] = Sad16_sse2_avx<16, 16,uint16_t>;
-    func_sad[make_tuple(16, 8 , 2, USE_AVX)] = Sad16_sse2_avx<16, 8,uint16_t>;
-    func_sad[make_tuple(16, 4 , 2, USE_AVX)] = Sad16_sse2_avx<16, 4,uint16_t>;
-    func_sad[make_tuple(16, 2 , 2, USE_AVX)] = Sad16_sse2_avx<16, 2,uint16_t>;
-    func_sad[make_tuple(16, 1 , 2, USE_AVX)] = Sad16_sse2_avx<16, 1,uint16_t>;
-    func_sad[make_tuple(8 , 16, 2, USE_AVX)] = Sad16_sse2_avx<8 , 16,uint16_t>;
-    func_sad[make_tuple(8 , 8 , 2, USE_AVX)] = Sad16_sse2_avx<8 , 8,uint16_t>;
-    func_sad[make_tuple(8 , 4 , 2, USE_AVX)] = Sad16_sse2_avx<8 , 4,uint16_t>;
-    func_sad[make_tuple(8 , 2 , 2, USE_AVX)] = Sad16_sse2_avx<8 , 2,uint16_t>;
-    func_sad[make_tuple(8 , 1 , 2, USE_AVX)] = Sad16_sse2_avx<8 , 1,uint16_t>;
-    func_sad[make_tuple(4 , 8 , 2, USE_AVX)] = Sad16_sse2_avx<4 , 8,uint16_t>;
-    func_sad[make_tuple(4 , 4 , 2, USE_AVX)] = Sad16_sse2_avx<4 , 4,uint16_t>;
-    func_sad[make_tuple(4 , 2 , 2, USE_AVX)] = Sad16_sse2_avx<4 , 2,uint16_t>;
-    //func_sad[make_tuple(4 , 1 , 2, USE_AVX)] = Sad16_sse2_avx<4 , 1,uint16_t>; // 8 bytes with height=1 not supported for SSE2
-
-    // PF SAD 16 SIMD intrinsic functions
-    // only for >=8 bytes widths
-    func_sad[make_tuple(32, 32, 2, USE_SSE2)] = Sad16_sse2<32, 32,uint16_t>;
-    func_sad[make_tuple(32, 16, 2, USE_SSE2)] = Sad16_sse2<32, 16,uint16_t>;
-    func_sad[make_tuple(32, 8 , 2, USE_SSE2)] = Sad16_sse2<32, 8,uint16_t>;
-    func_sad[make_tuple(16, 32, 2, USE_SSE2)] = Sad16_sse2<16, 32,uint16_t>;
-    func_sad[make_tuple(16, 16, 2, USE_SSE2)] = Sad16_sse2<16, 16,uint16_t>;
-    func_sad[make_tuple(16, 8 , 2, USE_SSE2)] = Sad16_sse2<16, 8,uint16_t>;
-    func_sad[make_tuple(16, 4 , 2, USE_SSE2)] = Sad16_sse2<16, 4,uint16_t>;
-    func_sad[make_tuple(16, 2 , 2, USE_SSE2)] = Sad16_sse2<16, 2,uint16_t>;
-    func_sad[make_tuple(16, 1 , 2, USE_SSE2)] = Sad16_sse2<16, 1,uint16_t>;
-    func_sad[make_tuple(8 , 16, 2, USE_SSE2)] = Sad16_sse2<8 , 16,uint16_t>;
-    func_sad[make_tuple(8 , 8 , 2, USE_SSE2)] = Sad16_sse2<8 , 8,uint16_t>;
-    func_sad[make_tuple(8 , 4 , 2, USE_SSE2)] = Sad16_sse2<8 , 4,uint16_t>;
-    func_sad[make_tuple(8 , 2 , 2, USE_SSE2)] = Sad16_sse2<8 , 2,uint16_t>;
-    func_sad[make_tuple(8 , 1 , 2, USE_SSE2)] = Sad16_sse2<8 , 1,uint16_t>;
-    func_sad[make_tuple(4 , 8 , 2, USE_SSE2)] = Sad16_sse2<4 , 8,uint16_t>;
-    func_sad[make_tuple(4 , 4 , 2, USE_SSE2)] = Sad16_sse2<4 , 4,uint16_t>;
-    func_sad[make_tuple(4 , 2 , 2, USE_SSE2)] = Sad16_sse2<4 , 2,uint16_t>;
-    //func_sad[make_tuple(4 , 1 , 2, USE_SSE2)] = Sad16_sse2<4 , 1,uint16_t>; // 8 bytes with height=1 not supported for SSE2
-    
     // PF uint8_t sse2 versions. test. 
     // a bit slower than the existing external asm. At least for MSVC
     // >=8 bytes
@@ -786,44 +788,131 @@ SADFunction* get_sad_function(int BlockX, int BlockY, int pixelsize, arch_t arch
     func_sad[make_tuple(8 , 2 , 1, USE_SSE2)] = Sad16_sse2<8 , 2,uint8_t>;
     func_sad[make_tuple(8 , 1 , 1, USE_SSE2)] = Sad16_sse2<8 , 1,uint8_t>;
 #else
-    func_sad[make_tuple(32, 32, 1, USE_SSE2)] = Sad32x32_iSSE;
-    func_sad[make_tuple(32, 16, 1, USE_SSE2)] = Sad32x16_iSSE;
-    func_sad[make_tuple(32, 8 , 1, USE_SSE2)] = Sad32x8_iSSE;
-    func_sad[make_tuple(16, 32, 1, USE_SSE2)] = Sad16x32_iSSE;
+    // Block Size: 64*x
+    // AVX2: Supported: 64x64, 64x48, 64x32, 64x16
+    func_sad[make_tuple(64, 64, 1, USE_AVX2)] = x264_pixel_sad_64x64_avx2;
+    func_sad[make_tuple(64, 48, 1, USE_AVX2)] = x264_pixel_sad_64x48_avx2;
+    func_sad[make_tuple(64, 32, 1, USE_AVX2)] = x264_pixel_sad_64x32_avx2;
+    func_sad[make_tuple(64, 16, 1, USE_AVX2)] = x264_pixel_sad_64x16_avx2;
+    // SSE2: Supported: 64x64, 64x48, 64x32, 64x16
+    func_sad[make_tuple(64, 64, 1, USE_SSE2)] = x264_pixel_sad_64x64_sse2;
+    func_sad[make_tuple(64, 48, 1, USE_SSE2)] = x264_pixel_sad_64x48_sse2;
+    func_sad[make_tuple(64, 32, 1, USE_SSE2)] = x264_pixel_sad_64x32_sse2;
+    func_sad[make_tuple(64, 16, 1, USE_SSE2)] = x264_pixel_sad_64x16_sse2;
+
+    // Block Size: 48*x
+    // Supported: 48x64
+    func_sad[make_tuple(48, 64, 1, USE_AVX2)] = x264_pixel_sad_48x64_avx2;
+    func_sad[make_tuple(48, 64, 1, USE_SSE2)] = x264_pixel_sad_48x64_sse2;
+
+    // Block Size: 32*x
+    // Supported: 32x64, 32x32, 32x24, 32x16, 32x8
+    // AVX2
+    func_sad[make_tuple(32, 64, 1, USE_AVX2)] = x264_pixel_sad_32x64_avx2;
+    func_sad[make_tuple(32, 32, 1, USE_AVX2)] = x264_pixel_sad_32x32_avx2;
+    func_sad[make_tuple(32, 24, 1, USE_AVX2)] = x264_pixel_sad_32x24_avx2;
+    func_sad[make_tuple(32, 16, 1, USE_AVX2)] = x264_pixel_sad_32x16_avx2;
+    func_sad[make_tuple(32, 8, 1, USE_AVX2)] = x264_pixel_sad_32x8_avx2;
+    // SSE3
+    func_sad[make_tuple(32, 64, 1, USE_SSE41)] = x264_pixel_sad_32x64_sse3;
+    func_sad[make_tuple(32, 32, 1, USE_SSE41)] = x264_pixel_sad_32x32_sse3;
+    func_sad[make_tuple(32, 24, 1, USE_SSE41)] = x264_pixel_sad_32x24_sse3;
+    func_sad[make_tuple(32, 16, 1, USE_SSE41)] = x264_pixel_sad_32x16_sse3;
+    func_sad[make_tuple(32, 8, 1, USE_SSE41)] = x264_pixel_sad_32x8_sse3;
+    // SSE2
+    func_sad[make_tuple(32, 64, 1, USE_SSE2)] = x264_pixel_sad_32x64_sse2;
+    func_sad[make_tuple(32, 32, 1, USE_SSE2)] = x264_pixel_sad_32x32_sse2;
+    func_sad[make_tuple(32, 24, 1, USE_SSE2)] = x264_pixel_sad_32x24_sse2;
+    func_sad[make_tuple(32, 16, 1, USE_SSE2)] = x264_pixel_sad_32x16_sse2;
+    func_sad[make_tuple(32, 8 , 1, USE_SSE2)] = x264_pixel_sad_32x8_sse2;
+
+    // Block Size: 24*x
+    // Supported: 24x32
+    func_sad[make_tuple(24, 32, 1, USE_SSE2)] = x264_pixel_sad_24x32_sse2;
+
+    // Supported: 16x64, 16x32, 16x16, 16x12, 16x8, 16x4
+    // SSE3
+    func_sad[make_tuple(16, 64, 1, USE_SSE41)] = x264_pixel_sad_16x64_sse3;
+    func_sad[make_tuple(16, 32, 1, USE_SSE41)] = x264_pixel_sad_16x32_sse3;
+    func_sad[make_tuple(16, 16, 1, USE_SSE41)] = x264_pixel_sad_16x16_sse3;
+    func_sad[make_tuple(16, 12, 1, USE_SSE41)] = x264_pixel_sad_16x12_sse3;
+    func_sad[make_tuple(16, 8, 1, USE_SSE41)] = x264_pixel_sad_16x8_sse3;
+    func_sad[make_tuple(16, 4, 1, USE_SSE41)] = x264_pixel_sad_16x4_sse3;
+    // SSE2
+    func_sad[make_tuple(16, 64, 1, USE_SSE2)] = x264_pixel_sad_16x64_sse2;
+    func_sad[make_tuple(16, 32, 1, USE_SSE2)] = x264_pixel_sad_16x32_sse2;
     func_sad[make_tuple(16, 16, 1, USE_SSE2)] = x264_pixel_sad_16x16_sse2;
+    func_sad[make_tuple(16, 12, 1, USE_SSE2)] = x264_pixel_sad_16x12_sse2;
     func_sad[make_tuple(16, 8 , 1, USE_SSE2)] = x264_pixel_sad_16x8_sse2;
-    func_sad[make_tuple(16, 4 , 1, USE_SSE2)] = x264_pixel_sad_16x4_mmx2;
-    func_sad[make_tuple(16, 2 , 1, USE_SSE2)] = x264_pixel_sad_16x2_mmx2;
-    func_sad[make_tuple(8,  16, 1, USE_SSE2)] = x264_pixel_sad_8x16_mmx2;
+    func_sad[make_tuple(16, 4, 1, USE_SSE2)] = x264_pixel_sad_16x4_sse2;//mmx2;
+    func_sad[make_tuple(16, 2, 1, USE_SSE2)] = Sad16x2_iSSE;
+
+    // Block Size: 12*x
+    // Supported: 12x16
+    func_sad[make_tuple(12, 16, 1, USE_SSE2)] = x264_pixel_sad_12x16_sse2;
+
+    // Block Size: 8*x
+    // Supported: 8x32, 8x16, 8x8, 8x4, (8x2, 8x1)
+    func_sad[make_tuple(8, 32, 1, USE_SSE2)] = x264_pixel_sad_8x32_sse2;
+    func_sad[make_tuple(8, 16, 1, USE_SSE2)] = x264_pixel_sad_8x16_sse2; // or mmx2 check which is faster
     func_sad[make_tuple(8 , 8,  1, USE_SSE2)] = x264_pixel_sad_8x8_mmx2;
     func_sad[make_tuple(8 , 4 , 1, USE_SSE2)] = x264_pixel_sad_8x4_mmx2;
+    
     func_sad[make_tuple(8 , 2 , 1, USE_SSE2)] = Sad8x2_iSSE;
     func_sad[make_tuple(8 , 1 , 1, USE_SSE2)] = Sad8x1_iSSE;
 #endif
+    // Block Size: 4*x
+    // Supported: 4x8, 4x4, 4x2
     func_sad[make_tuple(4 , 8 , 1, USE_SSE2)] = x264_pixel_sad_4x8_mmx2;
     func_sad[make_tuple(4 , 4 , 1, USE_SSE2)] = x264_pixel_sad_4x4_mmx2;
     func_sad[make_tuple(4 , 2 , 1, USE_SSE2)] = Sad4x2_iSSE;
+    // Block Size: 2*x
+    // Supported: 2x4, 2x2
     func_sad[make_tuple(2 , 4 , 1, USE_SSE2)] = Sad2x4_iSSE;
     func_sad[make_tuple(2 , 2 , 1, USE_SSE2)] = Sad2x2_iSSE;
 #undef SAD_8BIT_INSTINSICS
+
+
     //---------------- AVX2
     // PF SAD 16 SIMD intrinsic functions
     // only for >=16 bytes widths (2x16 byte still OK)
     // templates in SADFunctions_avx2
-    func_sad[make_tuple(32, 32, 2, USE_AVX2)] = Sad16_avx2<32, 32,uint16_t>;
-    func_sad[make_tuple(32, 16, 2, USE_AVX2)] = Sad16_avx2<32, 16,uint16_t>;
-    func_sad[make_tuple(32, 8 , 2, USE_AVX2)] = Sad16_avx2<32, 8,uint16_t>;
-    func_sad[make_tuple(16, 32, 2, USE_AVX2)] = Sad16_avx2<16, 32,uint16_t>;
-    func_sad[make_tuple(16, 16, 2, USE_AVX2)] = Sad16_avx2<16, 16,uint16_t>;
-    func_sad[make_tuple(16, 8 , 2, USE_AVX2)] = Sad16_avx2<16, 8,uint16_t>;
-    func_sad[make_tuple(16, 4 , 2, USE_AVX2)] = Sad16_avx2<16, 4,uint16_t>;
-    func_sad[make_tuple(16, 2 , 2, USE_AVX2)] = Sad16_avx2<16, 2,uint16_t>;
-    func_sad[make_tuple(16, 1 , 2, USE_AVX2)] = Sad16_avx2<16, 1,uint16_t>; // 32 bytes with height=1 is OK for AVX2
-    func_sad[make_tuple(8 , 16, 2, USE_AVX2)] = Sad16_avx2<8 , 16,uint16_t>;
-    func_sad[make_tuple(8 , 8 , 2, USE_AVX2)] = Sad16_avx2<8 , 8,uint16_t>;
-    func_sad[make_tuple(8 , 4 , 2, USE_AVX2)] = Sad16_avx2<8 , 4,uint16_t>;
-    func_sad[make_tuple(8 , 2 , 2, USE_AVX2)] = Sad16_avx2<8 , 2,uint16_t>;
-    //func_sad[make_tuple(8 , 1 , 2, USE_AVX2)] = Sad16_avx2<8 , 1,uint16_t>; // 16 bytes with height=1 not supported for AVX2
+#define MAKE_SAD_FN(x, y) func_sad[make_tuple(x, y, 2, USE_AVX2)] = Sad16_avx2<x, y,uint16_t>;
+    MAKE_SAD_FN(64, 64)
+      MAKE_SAD_FN(64, 48)
+      MAKE_SAD_FN(64, 32)
+      MAKE_SAD_FN(64, 16)
+      // MAKE_SAD_FN(48, 64) // not mod 32 bytes
+      MAKE_SAD_FN(32, 64)
+      MAKE_SAD_FN(32, 32)
+      MAKE_SAD_FN(32, 24)
+      MAKE_SAD_FN(32, 16)
+      MAKE_SAD_FN(32, 8)
+      // MAKE_SAD_FN(24, 32) // not mod 32 bytes
+      MAKE_SAD_FN(16, 64)
+      MAKE_SAD_FN(16, 32)
+      MAKE_SAD_FN(16, 16)
+      MAKE_SAD_FN(16, 12)
+      MAKE_SAD_FN(16, 8)
+      MAKE_SAD_FN(16, 4)
+      MAKE_SAD_FN(16, 2)
+      MAKE_SAD_FN(16, 1) // 32 bytes with height=1 is OK for AVX2
+      //MAKE_SAD_FN(12, 16) not mod 32 bytes
+      MAKE_SAD_FN(8, 32)
+      MAKE_SAD_FN(8, 16)
+      MAKE_SAD_FN(8, 8)
+      MAKE_SAD_FN(8, 4)
+      MAKE_SAD_FN(8, 2)
+      // MAKE_SAD_FN(8, 1) // 16 bytes with height=1 not supported for AVX2
+      //MAKE_SAD_FN(4, 8)
+      //MAKE_SAD_FN(4, 4)
+      //MAKE_SAD_FN(4, 2)
+      //MAKE_SAD_FN(4, 1)  // 8 bytes with height=1 not supported for SSE2
+      //MAKE_SAD_FN(2, 4)  // 2 pixels 4 bytes not supported with SSE2
+      //MAKE_SAD_FN(2, 2)
+      //MAKE_SAD_FN(2, 1)
+#undef MAKE_SAD_FN
+
     // >=16 bytes
 #ifdef SAD_AVX2_8BIT_INSTINSICS
     func_sad[make_tuple(32, 32, 1, USE_SSE2)] = Sad16_avx2<32, 32,uint8_t>;
@@ -859,36 +948,57 @@ SADFunction* get_sad_function(int BlockX, int BlockY, int pixelsize, arch_t arch
       }
     }
 
-#if 0
-    result = func_sad[make_tuple(BlockX, BlockY, pixelsize, arch)];
-
-    arch_t arch_orig = arch;
-
-    // no AVX2 -> try AVX
-    if (result == nullptr && (arch==USE_AVX2 || arch_orig==USE_AVX)) {
-      arch = USE_AVX;
-      result = func_sad[make_tuple(BlockX, BlockY, pixelsize, USE_AVX)];
-    }
-    // no AVX -> try SSE2
-    if (result == nullptr && (arch==USE_AVX || arch_orig==USE_SSE2)) {
-      arch = USE_SSE2;
-      result = func_sad[make_tuple(BlockX, BlockY, pixelsize, USE_SSE2)];
-    }
-    // no SSE2 -> try C
-    if (result == nullptr && (arch==USE_SSE2 || arch_orig==NO_SIMD)) {
-      arch = NO_SIMD;
-      // priority: C version compiled to avx2, avx
-      if(arch_orig==USE_AVX2)
-        result = get_sad_avx2_C_function(BlockX, BlockY, pixelsize, NO_SIMD);
-      else if(arch_orig==USE_AVX)
-        result = get_sad_avx_C_function(BlockX, BlockY, pixelsize, NO_SIMD);
-
-      if(result == nullptr)
-        result = func_sad[make_tuple(BlockX, BlockY, pixelsize, NO_SIMD)]; // fallback to C
-    }
-#endif
     return result;
 }
+
+// SATD functions for blocks over 16x16 are not defined in pixel-a.asm,
+// so as a poor man's substitute, we use a sum of smaller SATD functions.
+// 8 bit only
+#define	SATD_REC_FUNC(blsizex, blsizey, sblx, sbly, type)	extern "C" unsigned int __cdecl	x264_pixel_satd_##blsizex##x##blsizey##_##type (const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)	\
+{	\
+	const int		sum =	\
+		  x264_pixel_satd_##sblx##x##sbly##_##type (pSrc,                     nSrcPitch, pRef,                     nRefPitch)	\
+		+ x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+sblx,                nSrcPitch, pRef+sblx,                nRefPitch)	\
+		+ x264_pixel_satd_##sblx##x##sbly##_##type (pSrc     +sbly*nSrcPitch, nSrcPitch, pRef     +sbly*nRefPitch, nRefPitch)	\
+		+ x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+sblx+sbly*nSrcPitch, nSrcPitch, pRef+sblx+sbly*nRefPitch, nRefPitch);	\
+	return (sum);	\
+}
+
+#define	SATD_REC_FUNC_VERT_ONLY(blsizex, blsizey, sblx, sbly, type)	extern "C" unsigned int __cdecl	x264_pixel_satd_##blsizex##x##blsizey##_##type (const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)	\
+{	\
+	const int		sum =	\
+		  x264_pixel_satd_##sblx##x##sbly##_##type (pSrc,                     nSrcPitch, pRef,                     nRefPitch)	\
+		+ x264_pixel_satd_##sblx##x##sbly##_##type (pSrc     +sbly*nSrcPitch, nSrcPitch, pRef     +sbly*nRefPitch, nRefPitch);\
+	return (sum);	\
+}
+
+#define	SATD_REC_FUNC_HORIZ_ONLY(blsizex, blsizey, sblx, sbly, type)	extern "C" unsigned int __cdecl	x264_pixel_satd_##blsizex##x##blsizey##_##type (const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)	\
+{	\
+	const int		sum =	\
+		  x264_pixel_satd_##sblx##x##sbly##_##type (pSrc,                     nSrcPitch, pRef,                     nRefPitch)	\
+		+ x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+sblx,                nSrcPitch, pRef+sblx,                nRefPitch);\
+	return (sum);	\
+}
+
+SATD_REC_FUNC_HORIZ_ONLY(32, 4, 16, 4, sse2)
+SATD_REC_FUNC_HORIZ_ONLY(32, 4, 16, 4, sse4)
+SATD_REC_FUNC_HORIZ_ONLY(32, 4, 16, 4, avx)
+// Some satd block sizes do no exist in x86/x64
+#ifndef _M_X64
+// these are working in x64 mode, no need for simulation
+SATD_REC_FUNC(32, 32, 16, 16, avx2)
+SATD_REC_FUNC_HORIZ_ONLY(32, 16, 16, 16, avx2)
+SATD_REC_FUNC_HORIZ_ONLY(32, 8, 16, 8, avx2)
+SATD_REC_FUNC_VERT_ONLY(16, 32, 16, 16, avx2)
+#endif
+#ifdef _M_X64
+SATD_REC_FUNC_VERT_ONLY(4, 32, 4, 16, sse2)
+#endif
+SATD_REC_FUNC_VERT_ONLY(8, 32, 8, 16, avx2)
+
+#undef SATD_REC_FUNC
+
+
 
 SADFunction* get_satd_function(int BlockX, int BlockY, int pixelsize, arch_t arch)
 {
@@ -900,25 +1010,27 @@ SADFunction* get_satd_function(int BlockX, int BlockY, int pixelsize, arch_t arc
     //made C callable function prototypes in SadFunction.h
     //Not implemented asm macros are in separate functions (e.g. 32x32 = 16x16 + 16x16 + 16x16 + 16x16) 
     //x264_pixel_satd_##blksizex##x##blksizey##_sse2/sse4/ssse3/avx/avx2
-
+    
+    // avx2: no *4 versions 
     func_satd[make_tuple(32, 32, 1, USE_AVX2)] = x264_pixel_satd_32x32_avx2;
     func_satd[make_tuple(32, 16, 1, USE_AVX2)] = x264_pixel_satd_32x16_avx2;
     func_satd[make_tuple(32,  8, 1, USE_AVX2)] = x264_pixel_satd_32x8_avx2;
     func_satd[make_tuple(16, 32, 1, USE_AVX2)] = x264_pixel_satd_16x32_avx2;
     func_satd[make_tuple(16, 16, 1, USE_AVX2)] = x264_pixel_satd_16x16_avx2;
     func_satd[make_tuple(16, 8 , 1, USE_AVX2)] = x264_pixel_satd_16x8_avx2;
-    //func_satd[make_tuple(16, 4 , 1, USE_AVX2)] = x264_pixel_satd_16x4_avx2; no such
+    func_satd[make_tuple(8,  32, 1, USE_AVX2)] = x264_pixel_satd_8x32_avx2;
     func_satd[make_tuple(8 , 16, 1, USE_AVX2)] = x264_pixel_satd_8x16_avx2;
     func_satd[make_tuple(8 , 8 , 1, USE_AVX2)] = x264_pixel_satd_8x8_avx2;
-    //func_satd[make_tuple(8 , 4 , 1, USE_AVX2)] = x264_pixel_satd_8x4_avx2; no such
 
     func_satd[make_tuple(32, 32, 1, USE_AVX)] = x264_pixel_satd_32x32_avx;
     func_satd[make_tuple(32, 16, 1, USE_AVX)] = x264_pixel_satd_32x16_avx;
     func_satd[make_tuple(32,  8, 1, USE_AVX)] = x264_pixel_satd_32x8_avx;
+    func_satd[make_tuple(32,  4, 1, USE_AVX)] = x264_pixel_satd_32x4_avx;
     func_satd[make_tuple(16, 32, 1, USE_AVX)] = x264_pixel_satd_16x32_avx;
     func_satd[make_tuple(16, 16, 1, USE_AVX)] = x264_pixel_satd_16x16_avx;
     func_satd[make_tuple(16, 8 , 1, USE_AVX)] = x264_pixel_satd_16x8_avx;
     func_satd[make_tuple(16, 4 , 1, USE_AVX)] = x264_pixel_satd_16x4_avx;
+    func_satd[make_tuple(8 , 32, 1, USE_AVX)] = x264_pixel_satd_8x32_avx;
     func_satd[make_tuple(8 , 16, 1, USE_AVX)] = x264_pixel_satd_8x16_avx;
     func_satd[make_tuple(8 , 8 , 1, USE_AVX)] = x264_pixel_satd_8x8_avx;
     func_satd[make_tuple(8 , 4 , 1, USE_AVX)] = x264_pixel_satd_8x4_avx;
@@ -926,37 +1038,49 @@ SADFunction* get_satd_function(int BlockX, int BlockY, int pixelsize, arch_t arc
     func_satd[make_tuple(32, 32, 1, USE_SSE41)] = x264_pixel_satd_32x32_sse4;
     func_satd[make_tuple(32, 16, 1, USE_SSE41)] = x264_pixel_satd_32x16_sse4;
     func_satd[make_tuple(32,  8, 1, USE_SSE41)] = x264_pixel_satd_32x8_sse4;
+    func_satd[make_tuple(32,  4, 1, USE_SSE41)] = x264_pixel_satd_32x4_sse4;
     func_satd[make_tuple(16, 32, 1, USE_SSE41)] = x264_pixel_satd_16x32_sse4;
     func_satd[make_tuple(16, 16, 1, USE_SSE41)] = x264_pixel_satd_16x16_sse4;
     func_satd[make_tuple(16, 8 , 1, USE_SSE41)] = x264_pixel_satd_16x8_sse4;
     func_satd[make_tuple(16, 4 , 1, USE_SSE41)] = x264_pixel_satd_16x4_sse4;
+    func_satd[make_tuple(8 , 32, 1, USE_SSE41)] = x264_pixel_satd_8x32_sse4;
     func_satd[make_tuple(8 , 16, 1, USE_SSE41)] = x264_pixel_satd_8x16_sse4;
     func_satd[make_tuple(8 , 8 , 1, USE_SSE41)] = x264_pixel_satd_8x8_sse4;
     func_satd[make_tuple(8 , 4 , 1, USE_SSE41)] = x264_pixel_satd_8x4_sse4;
+    func_satd[make_tuple(4,  8 , 1, USE_SSE41)] = x264_pixel_satd_4x8_sse4;
+    func_satd[make_tuple(4,  4 , 1, USE_SSE41)] = x264_pixel_satd_4x4_sse4;
 
     func_satd[make_tuple(32, 32, 1, USE_SSE2)] = x264_pixel_satd_32x32_sse2;
     func_satd[make_tuple(32, 16, 1, USE_SSE2)] = x264_pixel_satd_32x16_sse2;
     func_satd[make_tuple(32,  8, 1, USE_SSE2)] = x264_pixel_satd_32x8_sse2;
+    func_satd[make_tuple(32,  4, 1, USE_SSE2)] = x264_pixel_satd_32x4_sse2;
     func_satd[make_tuple(16, 32, 1, USE_SSE2)] = x264_pixel_satd_16x32_sse2;
     func_satd[make_tuple(16, 16, 1, USE_SSE2)] = x264_pixel_satd_16x16_sse2;
     func_satd[make_tuple(16, 8 , 1, USE_SSE2)] = x264_pixel_satd_16x8_sse2;
     func_satd[make_tuple(16, 4 , 1, USE_SSE2)] = x264_pixel_satd_16x4_sse2;
+    func_satd[make_tuple(8 , 32, 1, USE_SSE2)] = x264_pixel_satd_8x32_sse2;
     func_satd[make_tuple(8 , 16, 1, USE_SSE2)] = x264_pixel_satd_8x16_sse2;
     func_satd[make_tuple(8 , 8 , 1, USE_SSE2)] = x264_pixel_satd_8x8_sse2;
     func_satd[make_tuple(8 , 4 , 1, USE_SSE2)] = x264_pixel_satd_8x4_sse2;
-    func_satd[make_tuple(4 , 8 , 1, USE_SSE2)] = x264_pixel_satd_4x8_mmx2;
+    func_satd[make_tuple(4 , 32, 1, USE_SSE2)] = x264_pixel_satd_4x32_sse2;
+    func_satd[make_tuple(4 , 16, 1, USE_SSE2)] = x264_pixel_satd_4x16_sse2;
+    func_satd[make_tuple(4 , 8 , 1, USE_SSE2)] = x264_pixel_satd_4x8_sse2;
     func_satd[make_tuple(4 , 4 , 1, USE_SSE2)] = x264_pixel_satd_4x4_mmx2;
 
     func_satd[make_tuple(32, 32, 2, NO_SIMD)] = x264_pixel_satd_uint16_32x32_c;
     func_satd[make_tuple(32, 16, 2, NO_SIMD)] = x264_pixel_satd_uint16_32x16_c;
     func_satd[make_tuple(32, 8 , 2, NO_SIMD)] = x264_pixel_satd_uint16_32x8_c;
+    func_satd[make_tuple(32, 4 , 2, NO_SIMD)] = x264_pixel_satd_uint16_32x4_c;
     func_satd[make_tuple(16, 32, 2, NO_SIMD)] = x264_pixel_satd_uint16_16x32_c;
     func_satd[make_tuple(16, 16, 2, NO_SIMD)] = x264_pixel_satd_uint16_16x16_c;
     func_satd[make_tuple(16, 8 , 2, NO_SIMD)] = x264_pixel_satd_uint16_16x8_c;
     func_satd[make_tuple(16, 4 , 2, NO_SIMD)] = x264_pixel_satd_uint16_16x4_c;
+    func_satd[make_tuple(8 , 32, 2, NO_SIMD)] = x264_pixel_satd_uint16_8x32_c;
     func_satd[make_tuple(8 , 16, 2, NO_SIMD)] = x264_pixel_satd_uint16_8x16_c;
     func_satd[make_tuple(8 , 8 , 2, NO_SIMD)] = x264_pixel_satd_uint16_8x8_c;
     func_satd[make_tuple(8 , 4 , 2, NO_SIMD)] = x264_pixel_satd_uint16_8x4_c;
+    func_satd[make_tuple(4,  32, 2, NO_SIMD)] = x264_pixel_satd_uint16_4x32_c;
+    func_satd[make_tuple(4,  16, 2, NO_SIMD)] = x264_pixel_satd_uint16_4x16_c;
     func_satd[make_tuple(4 , 8 , 2, NO_SIMD)] = x264_pixel_satd_uint16_4x8_c;
     func_satd[make_tuple(4 , 4 , 2, NO_SIMD)] = x264_pixel_satd_uint16_4x4_c;
 
@@ -1006,65 +1130,4 @@ SADFunction* get_satd_function(int BlockX, int BlockY, int pixelsize, arch_t arc
     return result;
 }
 
-
-// SATD functions for blocks over 16x16 are not defined in pixel-a.asm,
-// so as a poor man's substitute, we use a sum of smaller SATD functions.
-// 8 bit only
-#define	SATD_REC_FUNC(blsizex, blsizey, sblx, sbly, type)	extern "C" unsigned int __cdecl	x264_pixel_satd_##blsizex##x##blsizey##_##type (const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)	\
-{	\
-	const int		sum =	\
-		  x264_pixel_satd_##sblx##x##sbly##_##type (pSrc,                     nSrcPitch, pRef,                     nRefPitch)	\
-		+ x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+sblx,                nSrcPitch, pRef+sblx,                nRefPitch)	\
-		+ x264_pixel_satd_##sblx##x##sbly##_##type (pSrc     +sbly*nSrcPitch, nSrcPitch, pRef     +sbly*nRefPitch, nRefPitch)	\
-		+ x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+sblx+sbly*nSrcPitch, nSrcPitch, pRef+sblx+sbly*nRefPitch, nRefPitch);	\
-	return (sum);	\
-}
-
-#define	SATD_REC_FUNC_VERT_ONLY(blsizex, blsizey, sblx, sbly, type)	extern "C" unsigned int __cdecl	x264_pixel_satd_##blsizex##x##blsizey##_##type (const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)	\
-{	\
-	const int		sum =	\
-		  x264_pixel_satd_##sblx##x##sbly##_##type (pSrc,                     nSrcPitch, pRef,                     nRefPitch)	\
-		+ x264_pixel_satd_##sblx##x##sbly##_##type (pSrc     +sbly*nSrcPitch, nSrcPitch, pRef     +sbly*nRefPitch, nRefPitch);\
-	return (sum);	\
-}
-
-#define	SATD_REC_FUNC_HORIZ_ONLY(blsizex, blsizey, sblx, sbly, type)	extern "C" unsigned int __cdecl	x264_pixel_satd_##blsizex##x##blsizey##_##type (const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)	\
-{	\
-	const int		sum =	\
-		  x264_pixel_satd_##sblx##x##sbly##_##type (pSrc,                     nSrcPitch, pRef,                     nRefPitch)	\
-		+ x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+sblx,                nSrcPitch, pRef+sblx,                nRefPitch);\
-	return (sum);	\
-}
-
-// 32x32, 32x16, 32x8, 16x32 and 16x4 are not macroised in pixel-a.asm
-// Non-missing regular functions: see SadFunction.h
-
-SATD_REC_FUNC (32, 32, 16, 16, sse2)
-SATD_REC_FUNC_HORIZ_ONLY (32, 16, 16, 16, sse2)
-SATD_REC_FUNC_HORIZ_ONLY (32, 8, 16,  8, sse2)
-SATD_REC_FUNC_VERT_ONLY (16, 32, 16, 16, sse2)
-SATD_REC_FUNC_HORIZ_ONLY (16, 4, 8, 4, sse2)
-
-SATD_REC_FUNC (32, 32, 16, 16, sse4)
-SATD_REC_FUNC_HORIZ_ONLY (32, 16, 16, 16, sse4)
-SATD_REC_FUNC_HORIZ_ONLY (32, 8, 16,  8, sse4)
-SATD_REC_FUNC_VERT_ONLY (16, 32, 16, 16, sse4)
-SATD_REC_FUNC_HORIZ_ONLY (16, 4, 8, 4, sse4)
-
-SATD_REC_FUNC (32, 32, 16, 16, avx)
-SATD_REC_FUNC_HORIZ_ONLY (32, 16, 16, 16, avx)
-SATD_REC_FUNC_HORIZ_ONLY (32, 8, 16,  8, avx)
-SATD_REC_FUNC_VERT_ONLY (16, 32, 16, 16, avx)
-SATD_REC_FUNC_HORIZ_ONLY (16, 4, 8, 4, avx)
-
-SATD_REC_FUNC (32, 32, 16, 16, avx2)
-SATD_REC_FUNC_HORIZ_ONLY (32, 16, 16, 16, avx2)
-SATD_REC_FUNC_HORIZ_ONLY (32, 8, 16,  8, avx2)
-SATD_REC_FUNC_VERT_ONLY (16, 32, 16, 16, avx2)
-//SATD_REC_FUNC_HORIZ_ONLY (16, 4, 8, 4, avx2) no such
-
-//SATD_REC_FUNC (32, 32, 16, 16, ssse3)
-//SATD_REC_FUNC (32, 16, 16,  8, ssse3)
-
-#undef SATD_REC_FUNC
 

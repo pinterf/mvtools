@@ -30,47 +30,49 @@
 
 #include "types.h"
 #include <stdint.h>
-#include "SADFunctions.h"
 #include <immintrin.h>
 #include <cassert>
 
 SADFunction* get_sad_avx2_C_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
 
-// static
-/*
-template<int nBlkWidth, int nBlkHeight, typename pixel_t>
-unsigned int Sad_AVX2_C(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
-*/
 template<int nBlkWidth, int nBlkHeight, typename pixel_t>
 unsigned int Sad16_avx2(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
 
-template unsigned int Sad16_avx2<32, 32, uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
-template unsigned int Sad16_avx2<32, 16, uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
-template unsigned int Sad16_avx2<32, 8, uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
-template unsigned int Sad16_avx2<16, 32,uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
-template unsigned int Sad16_avx2<16, 16,uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
-template unsigned int Sad16_avx2<16, 8,uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
-template unsigned int Sad16_avx2<16, 4,uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
-template unsigned int Sad16_avx2<16, 2,uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
-template unsigned int Sad16_avx2<16, 1,uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
-template unsigned int Sad16_avx2<8 , 16,uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
-template unsigned int Sad16_avx2<8 , 8,uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
-template unsigned int Sad16_avx2<8 , 4,uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
-template unsigned int Sad16_avx2<8 , 2,uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
-template unsigned int Sad16_avx2<8 , 1,uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
-// >=16 bytes
-#ifdef SAD_AVX2_8BIT_INSTINSICS
-template unsigned int Sad16_avx2<32, 32, uint8_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
-template unsigned int Sad16_avx2<32, 16, uint8_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
-template unsigned int Sad16_avx2<32, 8, uint8_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
-template unsigned int Sad16_avx2<16, 32,uint8_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
-template unsigned int Sad16_avx2<16, 16,uint8_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
-template unsigned int Sad16_avx2<16, 8,uint8_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
-template unsigned int Sad16_avx2<16, 4,uint8_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
-template unsigned int Sad16_avx2<16, 2,uint8_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
-template unsigned int Sad16_avx2<16, 1,uint8_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
-#endif
-
-//inline unsigned int SADABS(int x) {	return ( x < -16 ) ? 16 : ( x < 0 ) ? -x : ( x > 16) ? 16 : x; }
+// match with SADFunctions.cpp
+#define MAKE_SAD_FN(x, y) template unsigned int Sad16_avx2<x, y, uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+MAKE_SAD_FN(64, 64)
+MAKE_SAD_FN(64, 48)
+MAKE_SAD_FN(64, 32)
+MAKE_SAD_FN(64, 16)
+// MAKE_SAD_FN(48, 64) // not mod 32 bytes
+MAKE_SAD_FN(32, 64)
+MAKE_SAD_FN(32, 32)
+MAKE_SAD_FN(32, 24)
+MAKE_SAD_FN(32, 16)
+MAKE_SAD_FN(32, 8)
+// MAKE_SAD_FN(24, 32) // not mod 32 bytes
+MAKE_SAD_FN(16, 64)
+MAKE_SAD_FN(16, 32)
+MAKE_SAD_FN(16, 16)
+MAKE_SAD_FN(16, 12)
+MAKE_SAD_FN(16, 8)
+MAKE_SAD_FN(16, 4)
+MAKE_SAD_FN(16, 2)
+MAKE_SAD_FN(16, 1) // 32 bytes with height=1 is OK for AVX2
+                   //MAKE_SAD_FN(12, 16) not mod 32 bytes
+  MAKE_SAD_FN(8, 32)
+  MAKE_SAD_FN(8, 16)
+  MAKE_SAD_FN(8, 8)
+  MAKE_SAD_FN(8, 4)
+  MAKE_SAD_FN(8, 2)
+  // MAKE_SAD_FN(8, 1) // 16 bytes with height=1 not supported for AVX2
+  //MAKE_SAD_FN(4, 8)
+  //MAKE_SAD_FN(4, 4)
+  //MAKE_SAD_FN(4, 2)
+  //MAKE_SAD_FN(4, 1)  // 8 bytes with height=1 not supported for SSE2
+  //MAKE_SAD_FN(2, 4)  // 2 pixels 4 bytes not supported with SSE2
+  //MAKE_SAD_FN(2, 2)
+  //MAKE_SAD_FN(2, 1)
+#undef MAKE_SAD_FN
 
 #endif

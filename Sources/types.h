@@ -55,6 +55,8 @@ typedef __int64				int64_t;
 
 */
 
+typedef unsigned int (SADFunction)(const uint8_t *pSrc, int nSrcPitch,
+  const uint8_t *pRef, int nRefPitch);
 
 #endif	// types_HEADER_INCLUDED
 
