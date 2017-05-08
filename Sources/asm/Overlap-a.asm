@@ -680,3 +680,324 @@ cglobal Overlaps32x32_sse2, 6, 6, 8, dstp, dst_stride, srcp, src_stride, winp, w
     OVERS32
 
     RET
+
+;PF 170507
+INIT_XMM
+cglobal Overlaps32x64_sse2, 6, 6, 8, dstp, dst_stride, srcp, src_stride, winp, win_stride
+
+%if ARCH_X86_64
+	movsxd dst_strideq, dst_strided
+	movsxd src_strideq, src_strided
+	movsxd win_strideq, win_strided
+%endif
+
+    ; prepare constants
+    movdqa m6, [dword256]
+    pxor m7, m7
+
+    ; They're in pixels, apparently.
+    add dst_strideq, dst_strideq
+    add win_strideq, win_strideq
+
+	;1-32
+    OVERS32
+    OVERS32
+    OVERS32
+    OVERS32
+
+    OVERS32
+    OVERS32
+    OVERS32
+    OVERS32
+
+    OVERS32
+    OVERS32
+    OVERS32
+    OVERS32
+
+    OVERS32
+    OVERS32
+    OVERS32
+    OVERS32
+
+    OVERS32
+    OVERS32
+    OVERS32
+    OVERS32
+
+    OVERS32
+    OVERS32
+    OVERS32
+    OVERS32
+
+    OVERS32
+    OVERS32
+    OVERS32
+    OVERS32
+
+    OVERS32
+    OVERS32
+    OVERS32
+    OVERS32
+
+	;33-64
+    OVERS32
+    OVERS32
+    OVERS32
+    OVERS32
+
+    OVERS32
+    OVERS32
+    OVERS32
+    OVERS32
+
+    OVERS32
+    OVERS32
+    OVERS32
+    OVERS32
+
+    OVERS32
+    OVERS32
+    OVERS32
+    OVERS32
+
+    OVERS32
+    OVERS32
+    OVERS32
+    OVERS32
+
+    OVERS32
+    OVERS32
+    OVERS32
+    OVERS32
+
+    OVERS32
+    OVERS32
+    OVERS32
+    OVERS32
+
+    OVERS32
+    OVERS32
+    OVERS32
+    OVERS32
+
+    RET
+
+; added 170507 PF
+; OVERS64 is eight OVERS8 per line.
+%macro OVERS64 0
+    OVERS8 0
+    OVERS8 16
+    OVERS8 32
+    OVERS8 48
+    OVERS8 64
+    OVERS8 80
+    OVERS8 96
+    OVERS8 112
+
+    add dstpq, dst_strideq
+    add srcpq, src_strideq
+    add winpq, win_strideq
+%endmacro
+
+;PF 170507
+INIT_XMM
+cglobal Overlaps64x16_sse2, 6, 6, 8, dstp, dst_stride, srcp, src_stride, winp, win_stride
+
+%if ARCH_X86_64
+	movsxd dst_strideq, dst_strided
+	movsxd src_strideq, src_strided
+	movsxd win_strideq, win_strided
+%endif
+
+    ; prepare constants
+    movdqa m6, [dword256]
+    pxor m7, m7
+
+    ; They're in pixels, apparently.
+    add dst_strideq, dst_strideq
+    add win_strideq, win_strideq
+
+    OVERS64
+    OVERS64
+    OVERS64
+    OVERS64
+
+    OVERS64
+    OVERS64
+    OVERS64
+    OVERS64
+
+    OVERS64
+    OVERS64
+    OVERS64
+    OVERS64
+
+    OVERS64
+    OVERS64
+    OVERS64
+    OVERS64
+
+    RET
+
+
+INIT_XMM
+cglobal Overlaps64x32_sse2, 6, 6, 8, dstp, dst_stride, srcp, src_stride, winp, win_stride
+
+%if ARCH_X86_64
+	movsxd dst_strideq, dst_strided
+	movsxd src_strideq, src_strided
+	movsxd win_strideq, win_strided
+%endif
+
+    ; prepare constants
+    movdqa m6, [dword256]
+    pxor m7, m7
+
+    ; They're in pixels, apparently.
+    add dst_strideq, dst_strideq
+    add win_strideq, win_strideq
+
+    OVERS64
+    OVERS64
+    OVERS64
+    OVERS64
+
+    OVERS64
+    OVERS64
+    OVERS64
+    OVERS64
+
+    OVERS64
+    OVERS64
+    OVERS64
+    OVERS64
+
+    OVERS64
+    OVERS64
+    OVERS64
+    OVERS64
+
+    OVERS64
+    OVERS64
+    OVERS64
+    OVERS64
+
+    OVERS64
+    OVERS64
+    OVERS64
+    OVERS64
+
+    OVERS64
+    OVERS64
+    OVERS64
+    OVERS64
+
+    OVERS64
+    OVERS64
+    OVERS64
+    OVERS64
+
+    RET
+
+;PF 170507
+INIT_XMM
+cglobal Overlaps64x64_sse2, 6, 6, 8, dstp, dst_stride, srcp, src_stride, winp, win_stride
+
+%if ARCH_X86_64
+	movsxd dst_strideq, dst_strided
+	movsxd src_strideq, src_strided
+	movsxd win_strideq, win_strided
+%endif
+
+    ; prepare constants
+    movdqa m6, [dword256]
+    pxor m7, m7
+
+    ; They're in pixels, apparently.
+    add dst_strideq, dst_strideq
+    add win_strideq, win_strideq
+
+	;1-32
+    OVERS64
+    OVERS64
+    OVERS64
+    OVERS64
+
+    OVERS64
+    OVERS64
+    OVERS64
+    OVERS64
+
+    OVERS64
+    OVERS64
+    OVERS64
+    OVERS64
+
+    OVERS64
+    OVERS64
+    OVERS64
+    OVERS64
+
+    OVERS64
+    OVERS64
+    OVERS64
+    OVERS64
+
+    OVERS64
+    OVERS64
+    OVERS64
+    OVERS64
+
+    OVERS64
+    OVERS64
+    OVERS64
+    OVERS64
+
+    OVERS64
+    OVERS64
+    OVERS64
+    OVERS64
+
+	;33-64
+    OVERS64
+    OVERS64
+    OVERS64
+    OVERS64
+
+    OVERS64
+    OVERS64
+    OVERS64
+    OVERS64
+
+    OVERS64
+    OVERS64
+    OVERS64
+    OVERS64
+
+    OVERS64
+    OVERS64
+    OVERS64
+    OVERS64
+
+    OVERS64
+    OVERS64
+    OVERS64
+    OVERS64
+
+    OVERS64
+    OVERS64
+    OVERS64
+    OVERS64
+
+    OVERS64
+    OVERS64
+    OVERS64
+    OVERS64
+
+    OVERS64
+    OVERS64
+    OVERS64
+    OVERS64
+
+    RET
