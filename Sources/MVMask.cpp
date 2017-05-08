@@ -210,7 +210,12 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
       double factor_corrected = 4.0*fMaskNormFactor / fSADMaskNormFactor; // normalize for other format's (4:2:2/4:4:4) bigger luma part and/or chroma=false. Base: YV12's luma+chroma SAD
       double factor_old = 4.0*fMaskNormFactor / (nBlkSizeX*nBlkSizeY) / (1 << (bits_per_pixel - 8)); // kept for reference. factor_corrected is the same for old YV12 (compatibility)
 
+#ifdef SCALECHROMASAD
       MakeSADMaskTime(mvClip, nBlkX, nBlkY, factor_corrected, fGamma, nPel, smallMask, nBlkX, time256, nBlkSizeX - nOverlapX, nBlkSizeY - nOverlapY);
+//      MakeSADMaskTime(mvClip, nBlkX, nBlkY, factor_old, fGamma, nPel, smallMask, nBlkX, time256, nBlkSizeX - nOverlapX, nBlkSizeY - nOverlapY);
+#else
+      MakeSADMaskTime(mvClip, nBlkX, nBlkY, factor_corrected, fGamma, nPel, smallMask, nBlkX, time256, nBlkSizeX - nOverlapX, nBlkSizeY - nOverlapY);
+#endif
     }
     else if (kind == 2) // occlusion mask
     {
