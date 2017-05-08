@@ -14,6 +14,37 @@ Modification base:
 http://avisynth.nl/index.php/AviSynth%2B#AviSynth.2B_x64_plugins
 
 Change log
+
+- 2.7.18.22 (201705??)
+  Fix: DCT is fast again for non 8x8 blocksizes. Regression since 2.7.5.22.
+  New: Chroma SAD is now always half of luma SAD, regardless of video format
+       Without this: YV24's luma:chroma SAD ratio is 4:8 instead of 4:2 (of YV12)
+  New: MAnalyze, MRecalculate new parameter: "scaleCSAD" integer, default 0
+       Fine tune chroma SAD weight relative to luma SAD.
+       ScaleCSAD values for luma:chroma SAD ratio
+       -2: 4:0.5
+       -1: 4:1
+        0: 4:2 (default, same as the native ratio for YV12)
+        1: 4:4
+        2: 4:8
+  New: Block size 64 and other exotic sizes.
+       MAnalyze/MRecalculate new block sizes (normal SAD, not for SATD at the moment)
+       All block sizes (please, take into consideration the horizontal and vertial subsampling)
+         64x64, 64x48, 64x32, 64x16
+         48x64
+         32x64, 32x32, 32x24, 32x16, 32x8
+         24x32
+         16x64, 16x32, 16x16, 16x12, 16x8, 16x4, (16x2)
+         12x16
+         8x32, 8x16, 8x8, 8x4, (8x2, 8x1)
+         4x8, 4x4, 4x2
+         2x4, 2x2
+  New: Block size 64 for MDegrain1-6, MDegrainN, and MScaleVect
+  New: Changed to 2017 version of asm files for 8 bit SAD functions from x265 project
+       For some block sizes AVX2 and SSE4 is supported (AVX2 if reported under AviSynth+)
+       e.g. BlkSize 32 is faster now.
+  New: MMask SAD Mask to give identical weights for other-than-YV12 formats, e.g. for YV24
+
 - 2.7.17.22 (20170426)
   Fix: Regression in 2.7.16.22: MDegrain right pixel artifacts on non-modulo 16 widths
   Misc: MMask, mode SADMask output is normalized further by video subsampling (YV16/YV24 has larger SAD value due to bigger chroma part that classic YV12)
