@@ -45,7 +45,7 @@ MScaleVect::MScaleVect( PClip Child, double ScaleX, double ScaleY, ScaleMode Mod
 		if (mMode == IncreaseBlockSize)
 		{
 			// Scale to larger frame, check that result will be valid
-			if (mVectorsInfo.nBlkSizeX * iScaleX > 32 || mVectorsInfo.nBlkSizeY * iScaleY > 32)
+			if (mVectorsInfo.nBlkSizeX * iScaleX > MAX_BLOCK_SIZE || mVectorsInfo.nBlkSizeY * iScaleY > MAX_BLOCK_SIZE)
 				Env->ThrowError("MScaleVect: Scaling creates too large a blocksize");
 
 			mVectorsInfo.nBlkSizeX = mVectorsInfo.nBlkSizeX * iScaleX;
