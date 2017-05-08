@@ -55,7 +55,7 @@ public:
 
   typedef	MTSlicer <PlaneOfBlocks>	Slicer;
 
-  PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSizeY, int _nPel, int _nLevel, int _nFlags, int _nOverlapX, int _nOverlapY, int _xRatioUV, int _yRatioUV, int _pixelsize, int _bits_per_pixel, conc::ObjPool <DCTClass> *dct_pool_ptr, bool mt_flag);
+  PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSizeY, int _nPel, int _nLevel, int _nFlags, int _nOverlapX, int _nOverlapY, int _xRatioUV, int _yRatioUV, int _pixelsize, int _bits_per_pixel, conc::ObjPool <DCTClass> *dct_pool_ptr, bool mt_flag, int _chromaSADscale);
 
   ~PlaneOfBlocks();
 
@@ -111,6 +111,8 @@ private:
   const int      pixelsize_shift; // log of pixelsize (0,1,2) for shift instead of mul or div
   const int      bits_per_pixel;
   const bool     _mt_flag;         // Allows multithreading
+  const int      chromaSADscale;   // PF experimental 2.7.18.22 allow e.g. YV24 chroma to have the same magnitude as for YV12
+  int            effective_chromaSADscale;   // PF experimental 2.7.18.22 allow e.g. YV24 chroma to have the same magnitude as for YV12
 
   SADFunction *  SAD;              /* function which computes the sad */
   LUMAFunction * LUMA;             /* function which computes the mean luma */
@@ -295,10 +297,10 @@ private:
   void DiamondSearch(WorkingArea &workarea, int step);
 
   /* performs a square search */
-//	void SquareSearch(WorkingArea &workarea);
+  //	void SquareSearch(WorkingArea &workarea);
 
   /* performs an exhaustive search */
-//	void ExhaustiveSearch(WorkingArea &workarea, int radius); // diameter = 2*radius - 1
+  //	void ExhaustiveSearch(WorkingArea &workarea, int radius); // diameter = 2*radius - 1
 
   /* performs an n-step search */
   template<typename pixel_t>
@@ -314,7 +316,7 @@ private:
 
   //	void PhaseShiftSearch(int vx, int vy);
 
-    /* performs an exhaustive search */
+  /* performs an exhaustive search */
   template<typename pixel_t>
   void ExpandingSearch(WorkingArea &workarea, int radius, int step, int mvx, int mvy); // diameter = 2*radius + 1
 
