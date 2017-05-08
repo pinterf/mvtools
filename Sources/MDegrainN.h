@@ -74,7 +74,7 @@ private:
   class TmpBlock
   {
   public:
-    enum { MAX_SIZE = 32 };
+    enum { MAX_SIZE = MAX_BLOCK_SIZE };
     enum { AREA = MAX_SIZE * MAX_SIZE };
     TmpBlock() : _lsb_ptr(&_d[AREA]) {}
     unsigned char  _d[MAX_SIZE * MAX_SIZE * 2]; // * 2 for 8 bit MSB and LSB parts, or for 1*uint16_t
