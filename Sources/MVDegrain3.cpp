@@ -52,6 +52,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   using std::make_tuple;
 
   // C, level1, lsb=false
+  func_degrain[make_tuple(64, 64, 1, false, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 64, false, 1>;
+  func_degrain[make_tuple(64, 32, 1, false, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 32, false, 1>;
+  func_degrain[make_tuple(64, 16, 1, false, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 16, false, 1>;
+  func_degrain[make_tuple(32, 64, 1, false, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 64, false, 1>;
   func_degrain[make_tuple(32, 32, 1, false, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 32, false, 1>;
   func_degrain[make_tuple(32, 16, 1, false, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 16, false, 1>;
   func_degrain[make_tuple(32, 8, 1, false, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 8, false, 1>;
@@ -71,6 +75,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   func_degrain[make_tuple(2, 4, 1, false, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 4, false, 1>;
   func_degrain[make_tuple(2, 2, 1, false, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 2, false, 1>;
   // C, level1, lsb=true
+  func_degrain[make_tuple(64, 64, 1, true, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 64, true, 1>;
+  func_degrain[make_tuple(64, 32, 1, true, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 32, true, 1>;
+  func_degrain[make_tuple(64, 16, 1, true, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 16, true, 1>;
+  func_degrain[make_tuple(32, 64, 1, true, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 64, true, 1>;
   func_degrain[make_tuple(32, 32, 1, true, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 32, true, 1>;
   func_degrain[make_tuple(32, 16, 1, true, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 16, true, 1>;
   func_degrain[make_tuple(32, 8, 1, true, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 8, true, 1>;
@@ -91,6 +99,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   func_degrain[make_tuple(2, 2, 1, true, 1, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 2, true, 1>;
 
   // C, level2, lsb=false
+  func_degrain[make_tuple(64, 64, 1, false, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 64, false, 2>;
+  func_degrain[make_tuple(64, 32, 1, false, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 32, false, 2>;
+  func_degrain[make_tuple(64, 16, 1, false, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 16, false, 2>;
+  func_degrain[make_tuple(32, 64, 1, false, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 64, false, 2>;
   func_degrain[make_tuple(32, 32, 1, false, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 32, false, 2>;
   func_degrain[make_tuple(32, 16, 1, false, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 16, false, 2>;
   func_degrain[make_tuple(32, 8, 1, false, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 8, false, 2>;
@@ -110,6 +122,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   func_degrain[make_tuple(2, 4, 1, false, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 4, false, 2>;
   func_degrain[make_tuple(2, 2, 1, false, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 2, false, 2>;
   // C, level2, lsb=true
+  func_degrain[make_tuple(64, 64, 1, true, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 64, true, 2>;
+  func_degrain[make_tuple(64, 32, 1, true, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 32, true, 2>;
+  func_degrain[make_tuple(64, 16, 1, true, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 16, true, 2>;
+  func_degrain[make_tuple(32, 64, 1, true, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 64, true, 2>;
   func_degrain[make_tuple(32, 32, 1, true, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 32, true, 2>;
   func_degrain[make_tuple(32, 16, 1, true, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 16, true, 2>;
   func_degrain[make_tuple(32, 8, 1, true, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 8, true, 2>;
@@ -130,6 +146,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   func_degrain[make_tuple(2, 2, 1, true, 2, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 2, true, 2>;
 
   // C, level3, lsb=false
+  func_degrain[make_tuple(64, 64, 1, false, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 64, false, 3>;
+  func_degrain[make_tuple(64, 32, 1, false, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 32, false, 3>;
+  func_degrain[make_tuple(64, 16, 1, false, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 16, false, 3>;
+  func_degrain[make_tuple(32, 64, 1, false, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 64, false, 3>;
   func_degrain[make_tuple(32, 32, 1, false, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 32, false, 3>;
   func_degrain[make_tuple(32, 16, 1, false, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 16, false, 3>;
   func_degrain[make_tuple(32, 8, 1, false, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 8, false, 3>;
@@ -149,6 +169,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   func_degrain[make_tuple(2, 4, 1, false, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 4, false, 3>;
   func_degrain[make_tuple(2, 2, 1, false, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 2, false, 3>;
   // C, level3, lsb=true
+  func_degrain[make_tuple(64, 64, 1, true, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 64, true, 3>;
+  func_degrain[make_tuple(64, 32, 1, true, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 32, true, 3>;
+  func_degrain[make_tuple(64, 16, 1, true, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 16, true, 3>;
+  func_degrain[make_tuple(32, 64, 1, true, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 64, true, 3>;
   func_degrain[make_tuple(32, 32, 1, true, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 32, true, 3>;
   func_degrain[make_tuple(32, 16, 1, true, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 16, true, 3>;
   func_degrain[make_tuple(32, 8, 1, true, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 8, true, 3>;
@@ -168,6 +192,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   func_degrain[make_tuple(2, 4, 1, true, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 4, true, 3>;
   func_degrain[make_tuple(2, 2, 1, true, 3, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 2, true, 3>;
   // C, level4, lsb=false
+  func_degrain[make_tuple(64, 64, 1, false, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 64, false, 4>;
+  func_degrain[make_tuple(64, 32, 1, false, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 32, false, 4>;
+  func_degrain[make_tuple(64, 16, 1, false, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 16, false, 4>;
+  func_degrain[make_tuple(32, 64, 1, false, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 64, false, 4>;
   func_degrain[make_tuple(32, 32, 1, false, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 32, false, 4>;
   func_degrain[make_tuple(32, 16, 1, false, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 16, false, 4>;
   func_degrain[make_tuple(32, 8, 1, false, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 8, false, 4>;
@@ -187,6 +215,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   func_degrain[make_tuple(2, 4, 1, false, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 4, false, 4>;
   func_degrain[make_tuple(2, 2, 1, false, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 2, false, 4>;
   // C, level4, lsb=true
+  func_degrain[make_tuple(64, 64, 1, true, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 64, true, 4>;
+  func_degrain[make_tuple(64, 32, 1, true, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 32, true, 4>;
+  func_degrain[make_tuple(64, 16, 1, true, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 16, true, 4>;
+  func_degrain[make_tuple(32, 64, 1, true, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 64, true, 4>;
   func_degrain[make_tuple(32, 32, 1, true, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 32, true, 4>;
   func_degrain[make_tuple(32, 16, 1, true, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 16, true, 4>;
   func_degrain[make_tuple(32, 8, 1, true, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 8, true, 4>;
@@ -207,6 +239,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   func_degrain[make_tuple(2, 2, 1, true, 4, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 2, true, 4>;
 
   // C, level5, lsb=false
+  func_degrain[make_tuple(64, 64, 1, false, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 64, false, 5>;
+  func_degrain[make_tuple(64, 32, 1, false, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 32, false, 5>;
+  func_degrain[make_tuple(64, 16, 1, false, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 16, false, 5>;
+  func_degrain[make_tuple(32, 64, 1, false, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 64, false, 5>;
   func_degrain[make_tuple(32, 32, 1, false, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 32, false, 5>;
   func_degrain[make_tuple(32, 16, 1, false, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 16, false, 5>;
   func_degrain[make_tuple(32, 8, 1, false, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 8, false, 5>;
@@ -226,6 +262,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   func_degrain[make_tuple(2, 4, 1, false, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 4, false, 5>;
   func_degrain[make_tuple(2, 2, 1, false, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 2, false, 5>;
   // C, level5, lsb=true
+  func_degrain[make_tuple(64, 64, 1, true, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 64, true, 5>;
+  func_degrain[make_tuple(64, 32, 1, true, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 32, true, 5>;
+  func_degrain[make_tuple(64, 16, 1, true, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 16, true, 5>;
+  func_degrain[make_tuple(32, 64, 1, true, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 64, true, 5>;
   func_degrain[make_tuple(32, 32, 1, true, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 32, true, 5>;
   func_degrain[make_tuple(32, 16, 1, true, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 16, true, 5>;
   func_degrain[make_tuple(32, 8, 1, true, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 8, true, 5>;
@@ -246,6 +286,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   func_degrain[make_tuple(2, 2, 1, true, 5, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 2, true, 5>;
 
   // C, level6, lsb=false
+  func_degrain[make_tuple(64, 64, 1, false, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 64, false, 6>;
+  func_degrain[make_tuple(64, 32, 1, false, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 32, false, 6>;
+  func_degrain[make_tuple(64, 16, 1, false, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 16, false, 6>;
+  func_degrain[make_tuple(32, 64, 1, false, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 64, false, 6>;
   func_degrain[make_tuple(32, 32, 1, false, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 32, false, 6>;
   func_degrain[make_tuple(32, 16, 1, false, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 16, false, 6>;
   func_degrain[make_tuple(32, 8, 1, false, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 8, false, 6>;
@@ -265,6 +309,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   func_degrain[make_tuple(2, 4, 1, false, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 4, false, 6>;
   func_degrain[make_tuple(2, 2, 1, false, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, 2, false, 6>;
   // C, level6, lsb=true
+  func_degrain[make_tuple(64, 64, 1, true, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 64, true, 6>;
+  func_degrain[make_tuple(64, 32, 1, true, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 32, true, 6>;
+  func_degrain[make_tuple(64, 16, 1, true, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 64, 16, true, 6>;
+  func_degrain[make_tuple(32, 64, 1, true, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 64, true, 6>;
   func_degrain[make_tuple(32, 32, 1, true, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 32, true, 6>;
   func_degrain[make_tuple(32, 16, 1, true, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 16, true, 6>;
   func_degrain[make_tuple(32, 8, 1, true, 6, NO_SIMD)] = Degrain1to6_C<uint8_t, 32, 8, true, 6>;
@@ -286,6 +334,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
 
   // 16 bit
   // C, level1, lsb=false
+  func_degrain[make_tuple(64, 64, 2, false, 1, NO_SIMD)] = Degrain1to6_C<uint16_t, 64, 64, false, 1>;
+  func_degrain[make_tuple(64, 32, 2, false, 1, NO_SIMD)] = Degrain1to6_C<uint16_t, 64, 32, false, 1>;
+  func_degrain[make_tuple(64, 16, 2, false, 1, NO_SIMD)] = Degrain1to6_C<uint16_t, 64, 16, false, 1>;
+  func_degrain[make_tuple(32, 64, 2, false, 1, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 64, false, 1>;
   func_degrain[make_tuple(32, 32, 2, false, 1, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 32, false, 1>;
   func_degrain[make_tuple(32, 16, 2, false, 1, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 16, false, 1>;
   func_degrain[make_tuple(32, 8, 2, false, 1, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 8, false, 1>;
@@ -305,6 +357,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   func_degrain[make_tuple(2, 4, 2, false, 1, NO_SIMD)] = Degrain1to6_C<uint16_t, 2, 4, false, 1>;
   func_degrain[make_tuple(2, 2, 2, false, 1, NO_SIMD)] = Degrain1to6_C<uint16_t, 2, 2, false, 1>;
   // C, level2, lsb=false
+  func_degrain[make_tuple(64, 64, 2, false, 2, NO_SIMD)] = Degrain1to6_C<uint16_t, 64, 64, false, 2>;
+  func_degrain[make_tuple(64, 32, 2, false, 2, NO_SIMD)] = Degrain1to6_C<uint16_t, 64, 32, false, 2>;
+  func_degrain[make_tuple(64, 16, 2, false, 2, NO_SIMD)] = Degrain1to6_C<uint16_t, 64, 16, false, 2>;
+  func_degrain[make_tuple(32, 64, 2, false, 2, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 64, false, 2>;
   func_degrain[make_tuple(32, 32, 2, false, 2, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 32, false, 2>;
   func_degrain[make_tuple(32, 16, 2, false, 2, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 16, false, 2>;
   func_degrain[make_tuple(32, 8, 2, false, 2, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 8, false, 2>;
@@ -324,6 +380,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   func_degrain[make_tuple(2, 4, 2, false, 2, NO_SIMD)] = Degrain1to6_C<uint16_t, 2, 4, false, 2>;
   func_degrain[make_tuple(2, 2, 2, false, 2, NO_SIMD)] = Degrain1to6_C<uint16_t, 2, 2, false, 2>;
   // C, level3, lsb=false
+  func_degrain[make_tuple(64, 64, 2, false, 3, NO_SIMD)] = Degrain1to6_C<uint16_t, 64, 64, false, 3>;
+  func_degrain[make_tuple(64, 32, 2, false, 3, NO_SIMD)] = Degrain1to6_C<uint16_t, 64, 32, false, 3>;
+  func_degrain[make_tuple(64, 16, 2, false, 3, NO_SIMD)] = Degrain1to6_C<uint16_t, 64, 16, false, 3>;
+  func_degrain[make_tuple(32, 64, 2, false, 3, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 64, false, 3>;
   func_degrain[make_tuple(32, 32, 2, false, 3, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 32, false, 3>;
   func_degrain[make_tuple(32, 16, 2, false, 3, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 16, false, 3>;
   func_degrain[make_tuple(32, 8, 2, false, 3, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 8, false, 3>;
@@ -343,6 +403,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   func_degrain[make_tuple(2, 4, 2, false, 3, NO_SIMD)] = Degrain1to6_C<uint16_t, 2, 4, false, 3>;
   func_degrain[make_tuple(2, 2, 2, false, 3, NO_SIMD)] = Degrain1to6_C<uint16_t, 2, 2, false, 3>;
   // C, level4, lsb=false
+  func_degrain[make_tuple(64, 64, 2, false, 4, NO_SIMD)] = Degrain1to6_C<uint16_t, 64, 64, false, 4>;
+  func_degrain[make_tuple(64, 32, 2, false, 4, NO_SIMD)] = Degrain1to6_C<uint16_t, 64, 32, false, 4>;
+  func_degrain[make_tuple(64, 16, 2, false, 4, NO_SIMD)] = Degrain1to6_C<uint16_t, 64, 16, false, 4>;
+  func_degrain[make_tuple(32, 64, 2, false, 4, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 64, false, 4>;
   func_degrain[make_tuple(32, 32, 2, false, 4, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 32, false, 4>;
   func_degrain[make_tuple(32, 16, 2, false, 4, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 16, false, 4>;
   func_degrain[make_tuple(32, 8, 2, false, 4, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 8, false, 4>;
@@ -362,6 +426,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   func_degrain[make_tuple(2, 4, 2, false, 4, NO_SIMD)] = Degrain1to6_C<uint16_t, 2, 4, false, 4>;
   func_degrain[make_tuple(2, 2, 2, false, 4, NO_SIMD)] = Degrain1to6_C<uint16_t, 2, 2, false, 4>;
   // C, level5, lsb=false
+  func_degrain[make_tuple(64, 64, 2, false, 5, NO_SIMD)] = Degrain1to6_C<uint16_t, 64, 64, false, 5>;
+  func_degrain[make_tuple(64, 32, 2, false, 5, NO_SIMD)] = Degrain1to6_C<uint16_t, 64, 32, false, 5>;
+  func_degrain[make_tuple(64, 16, 2, false, 5, NO_SIMD)] = Degrain1to6_C<uint16_t, 64, 16, false, 5>;
+  func_degrain[make_tuple(32, 64, 2, false, 5, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 64, false, 5>;
   func_degrain[make_tuple(32, 32, 2, false, 5, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 32, false, 5>;
   func_degrain[make_tuple(32, 16, 2, false, 5, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 16, false, 5>;
   func_degrain[make_tuple(32, 8, 2, false, 5, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 8, false, 5>;
@@ -381,6 +449,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   func_degrain[make_tuple(2, 4, 2, false, 5, NO_SIMD)] = Degrain1to6_C<uint16_t, 2, 4, false, 5>;
   func_degrain[make_tuple(2, 2, 2, false, 5, NO_SIMD)] = Degrain1to6_C<uint16_t, 2, 2, false, 5>;
   // C, level6, lsb=false
+  func_degrain[make_tuple(64, 64, 2, false, 6, NO_SIMD)] = Degrain1to6_C<uint16_t, 64, 64, false, 6>;
+  func_degrain[make_tuple(64, 32, 2, false, 6, NO_SIMD)] = Degrain1to6_C<uint16_t, 64, 32, false, 6>;
+  func_degrain[make_tuple(64, 16, 2, false, 6, NO_SIMD)] = Degrain1to6_C<uint16_t, 64, 16, false, 6>;
+  func_degrain[make_tuple(32, 64, 2, false, 6, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 64, false, 6>;
   func_degrain[make_tuple(32, 32, 2, false, 6, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 32, false, 6>;
   func_degrain[make_tuple(32, 16, 2, false, 6, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 16, false, 6>;
   func_degrain[make_tuple(32, 8, 2, false, 6, NO_SIMD)] = Degrain1to6_C<uint16_t, 32, 8, false, 6>;
@@ -403,6 +475,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   // SSE41
   //-- 16 bit degrain start
   // level1
+  func_degrain[make_tuple(64, 64, 2, false, 1, USE_SSE41)] = Degrain1to6_16_sse41<64, 64, 1>;
+  func_degrain[make_tuple(64, 32, 2, false, 1, USE_SSE41)] = Degrain1to6_16_sse41<64, 32, 1>;
+  func_degrain[make_tuple(64, 16, 2, false, 1, USE_SSE41)] = Degrain1to6_16_sse41<64, 16, 1>;
+  func_degrain[make_tuple(32, 64, 2, false, 1, USE_SSE41)] = Degrain1to6_16_sse41<32, 64, 1>;
   func_degrain[make_tuple(32, 32, 2, false, 1, USE_SSE41)] = Degrain1to6_16_sse41<32, 32, 1>;
   func_degrain[make_tuple(32, 16, 2, false, 1, USE_SSE41)] = Degrain1to6_16_sse41<32, 16, 1>;
   func_degrain[make_tuple(32, 8, 2, false, 1, USE_SSE41)] = Degrain1to6_16_sse41<32, 8, 1>;
@@ -422,6 +498,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   func_degrain[make_tuple(2, 4, 2, false, 1, USE_SSE41)] = Degrain1to6_16_sse41<2, 4, 1>;
   func_degrain[make_tuple(2, 2, 2, false, 1, USE_SSE41)] = Degrain1to6_16_sse41<2, 2, 1>;
   // level2
+  func_degrain[make_tuple(64, 64, 2, false, 2, USE_SSE41)] = Degrain1to6_16_sse41<64, 64, 2>;
+  func_degrain[make_tuple(64, 32, 2, false, 2, USE_SSE41)] = Degrain1to6_16_sse41<64, 32, 2>;
+  func_degrain[make_tuple(64, 16, 2, false, 2, USE_SSE41)] = Degrain1to6_16_sse41<64, 16, 2>;
+  func_degrain[make_tuple(32, 64, 2, false, 2, USE_SSE41)] = Degrain1to6_16_sse41<32, 64, 2>;
   func_degrain[make_tuple(32, 32, 2, false, 2, USE_SSE41)] = Degrain1to6_16_sse41<32, 32, 2>;
   func_degrain[make_tuple(32, 16, 2, false, 2, USE_SSE41)] = Degrain1to6_16_sse41<32, 16, 2>;
   func_degrain[make_tuple(32, 8, 2, false, 2, USE_SSE41)] = Degrain1to6_16_sse41<32, 8, 2>;
@@ -441,6 +521,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   func_degrain[make_tuple(2, 4, 2, false, 2, USE_SSE41)] = Degrain1to6_16_sse41<2, 4, 2>;
   func_degrain[make_tuple(2, 2, 2, false, 2, USE_SSE41)] = Degrain1to6_16_sse41<2, 2, 2>;
   // level3
+  func_degrain[make_tuple(64, 64, 2, false, 3, USE_SSE41)] = Degrain1to6_16_sse41<64, 64, 3>;
+  func_degrain[make_tuple(64, 32, 2, false, 3, USE_SSE41)] = Degrain1to6_16_sse41<64, 32, 3>;
+  func_degrain[make_tuple(64, 16, 2, false, 3, USE_SSE41)] = Degrain1to6_16_sse41<64, 16, 3>;
+  func_degrain[make_tuple(32, 64, 2, false, 3, USE_SSE41)] = Degrain1to6_16_sse41<32, 64, 3>;
   func_degrain[make_tuple(32, 32, 2, false, 3, USE_SSE41)] = Degrain1to6_16_sse41<32, 32, 3>;
   func_degrain[make_tuple(32, 16, 2, false, 3, USE_SSE41)] = Degrain1to6_16_sse41<32, 16, 3>;
   func_degrain[make_tuple(32, 8, 2, false, 3, USE_SSE41)] = Degrain1to6_16_sse41<32, 8, 3>;
@@ -460,6 +544,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   func_degrain[make_tuple(2, 4, 2, false, 3, USE_SSE41)] = Degrain1to6_16_sse41<2, 4, 3>;
   func_degrain[make_tuple(2, 2, 2, false, 3, USE_SSE41)] = Degrain1to6_16_sse41<2, 2, 3>;
   // level4
+  func_degrain[make_tuple(64, 64, 2, false, 4, USE_SSE41)] = Degrain1to6_16_sse41<64, 64, 4>;
+  func_degrain[make_tuple(64, 32, 2, false, 4, USE_SSE41)] = Degrain1to6_16_sse41<64, 32, 4>;
+  func_degrain[make_tuple(64, 16, 2, false, 4, USE_SSE41)] = Degrain1to6_16_sse41<64, 16, 4>;
+  func_degrain[make_tuple(32, 64, 2, false, 4, USE_SSE41)] = Degrain1to6_16_sse41<32, 64, 4>;
   func_degrain[make_tuple(32, 32, 2, false, 4, USE_SSE41)] = Degrain1to6_16_sse41<32, 32, 4>;
   func_degrain[make_tuple(32, 16, 2, false, 4, USE_SSE41)] = Degrain1to6_16_sse41<32, 16, 4>;
   func_degrain[make_tuple(32, 8, 2, false, 4, USE_SSE41)] = Degrain1to6_16_sse41<32, 8, 4>;
@@ -479,6 +567,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   func_degrain[make_tuple(2, 4, 2, false, 4, USE_SSE41)] = Degrain1to6_16_sse41<2, 4, 4>;
   func_degrain[make_tuple(2, 2, 2, false, 4, USE_SSE41)] = Degrain1to6_16_sse41<2, 2, 4>;
   // level5
+  func_degrain[make_tuple(64, 64, 2, false, 5, USE_SSE41)] = Degrain1to6_16_sse41<64, 64, 5>;
+  func_degrain[make_tuple(64, 32, 2, false, 5, USE_SSE41)] = Degrain1to6_16_sse41<64, 32, 5>;
+  func_degrain[make_tuple(64, 16, 2, false, 5, USE_SSE41)] = Degrain1to6_16_sse41<64, 16, 5>;
+  func_degrain[make_tuple(32, 64, 2, false, 5, USE_SSE41)] = Degrain1to6_16_sse41<32, 64, 5>;
   func_degrain[make_tuple(32, 32, 2, false, 5, USE_SSE41)] = Degrain1to6_16_sse41<32, 32, 5>;
   func_degrain[make_tuple(32, 16, 2, false, 5, USE_SSE41)] = Degrain1to6_16_sse41<32, 16, 5>;
   func_degrain[make_tuple(32, 8, 2, false, 5, USE_SSE41)] = Degrain1to6_16_sse41<32, 8, 5>;
@@ -498,6 +590,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   func_degrain[make_tuple(2, 4, 2, false, 5, USE_SSE41)] = Degrain1to6_16_sse41<2, 4, 5>;
   func_degrain[make_tuple(2, 2, 2, false, 5, USE_SSE41)] = Degrain1to6_16_sse41<2, 2, 5>;
   // level6
+  func_degrain[make_tuple(64, 64, 2, false, 6, USE_SSE41)] = Degrain1to6_16_sse41<64, 64, 6>;
+  func_degrain[make_tuple(64, 32, 2, false, 6, USE_SSE41)] = Degrain1to6_16_sse41<64, 32, 6>;
+  func_degrain[make_tuple(64, 16, 2, false, 6, USE_SSE41)] = Degrain1to6_16_sse41<64, 16, 6>;
+  func_degrain[make_tuple(32, 64, 2, false, 6, USE_SSE41)] = Degrain1to6_16_sse41<32, 64, 6>;
   func_degrain[make_tuple(32, 32, 2, false, 6, USE_SSE41)] = Degrain1to6_16_sse41<32, 32, 6>;
   func_degrain[make_tuple(32, 16, 2, false, 6, USE_SSE41)] = Degrain1to6_16_sse41<32, 16, 6>;
   func_degrain[make_tuple(32, 8, 2, false, 6, USE_SSE41)] = Degrain1to6_16_sse41<32, 8, 6>;
@@ -521,6 +617,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
 
   // SSE2
   // level1, lsb=false
+  func_degrain[make_tuple(64, 64, 1, false, 1, USE_SSE2)] = Degrain1to6_sse2<64, 64, false, 1>;
+  func_degrain[make_tuple(64, 32, 1, false, 1, USE_SSE2)] = Degrain1to6_sse2<64, 32, false, 1>;
+  func_degrain[make_tuple(64, 16, 1, false, 1, USE_SSE2)] = Degrain1to6_sse2<64, 16, false, 1>;
+  func_degrain[make_tuple(32, 64, 1, false, 1, USE_SSE2)] = Degrain1to6_sse2<32, 64, false, 1>;
   func_degrain[make_tuple(32, 32, 1, false, 1, USE_SSE2)] = Degrain1to6_sse2<32, 32, false, 1>;
   func_degrain[make_tuple(32, 16, 1, false, 1, USE_SSE2)] = Degrain1to6_sse2<32, 16, false, 1>;
   func_degrain[make_tuple(32, 8, 1, false, 1, USE_SSE2)] = Degrain1to6_sse2<32, 8, false, 1>;
@@ -546,6 +646,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   //func_degrain[make_tuple(2, 4, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<2, 4, false, 1>; // no for width 2
   //func_degrain[make_tuple(2, 2, 1, false, 1, USE_SSE2)] = Degrain1to5_sse2<2, 2, false, 1>; // no for width 2
   // level1 lsb=true
+  func_degrain[make_tuple(64, 64, 1, true, 1, USE_SSE2)] = Degrain1to6_sse2<64, 64, true, 1>;
+  func_degrain[make_tuple(64, 32, 1, true, 1, USE_SSE2)] = Degrain1to6_sse2<64, 32, true, 1>;
+  func_degrain[make_tuple(64, 16, 1, true, 1, USE_SSE2)] = Degrain1to6_sse2<64, 16, true, 1>;
+  func_degrain[make_tuple(32, 64, 1, true, 1, USE_SSE2)] = Degrain1to6_sse2<32, 64, true, 1>;
   func_degrain[make_tuple(32, 32, 1, true, 1, USE_SSE2)] = Degrain1to6_sse2<32, 32, true, 1>;
   func_degrain[make_tuple(32, 16, 1, true, 1, USE_SSE2)] = Degrain1to6_sse2<32, 16, true, 1>;
   func_degrain[make_tuple(32, 8, 1, true, 1, USE_SSE2)] = Degrain1to6_sse2<32, 8, true, 1>;
@@ -573,6 +677,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
 
 
   // level2, lsb=false
+  func_degrain[make_tuple(64, 64, 1, false, 2, USE_SSE2)] = Degrain1to6_sse2<64, 64, false, 2>;
+  func_degrain[make_tuple(64, 32, 1, false, 2, USE_SSE2)] = Degrain1to6_sse2<64, 32, false, 2>;
+  func_degrain[make_tuple(64, 16, 1, false, 2, USE_SSE2)] = Degrain1to6_sse2<64, 16, false, 2>;
+  func_degrain[make_tuple(32, 64, 1, false, 2, USE_SSE2)] = Degrain1to6_sse2<32, 64, false, 2>;
   func_degrain[make_tuple(32, 32, 1, false, 2, USE_SSE2)] = Degrain1to6_sse2<32, 32, false, 2>;
   func_degrain[make_tuple(32, 16, 1, false, 2, USE_SSE2)] = Degrain1to6_sse2<32, 16, false, 2>;
   func_degrain[make_tuple(32, 8, 1, false, 2, USE_SSE2)] = Degrain1to6_sse2<32, 8, false, 2>;
@@ -598,6 +706,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   //func_degrain[make_tuple(2, 4, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<2, 4, false, 2>; // no for width 2
   //func_degrain[make_tuple(2, 2, 1, false, 2, USE_SSE2)] = Degrain1to5_sse2<2, 2, false, 2>; // no for width 2
   // level2 lsb=true
+  func_degrain[make_tuple(64, 64, 1, true, 2, USE_SSE2)] = Degrain1to6_sse2<64, 64, true, 2>;
+  func_degrain[make_tuple(64, 32, 1, true, 2, USE_SSE2)] = Degrain1to6_sse2<64, 32, true, 2>;
+  func_degrain[make_tuple(64, 16, 1, true, 2, USE_SSE2)] = Degrain1to6_sse2<64, 16, true, 2>;
+  func_degrain[make_tuple(32, 64, 1, true, 2, USE_SSE2)] = Degrain1to6_sse2<32, 64, true, 2>;
   func_degrain[make_tuple(32, 32, 1, true, 2, USE_SSE2)] = Degrain1to6_sse2<32, 32, true, 2>;
   func_degrain[make_tuple(32, 16, 1, true, 2, USE_SSE2)] = Degrain1to6_sse2<32, 16, true, 2>;
   func_degrain[make_tuple(32, 8, 1, true, 2, USE_SSE2)] = Degrain1to6_sse2<32, 8, true, 2>;
@@ -624,6 +736,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   //func_degrain[make_tuple(2, 2, 1, true, 2, USE_SSE2)] = Degrain1to5_sse2<2, 2, true, 2>; // no for width 2
 
   // level3, lsb=false
+  func_degrain[make_tuple(64, 64, 1, false, 3, USE_SSE2)] = Degrain1to6_sse2<64, 64, false, 3>;
+  func_degrain[make_tuple(64, 32, 1, false, 3, USE_SSE2)] = Degrain1to6_sse2<64, 32, false, 3>;
+  func_degrain[make_tuple(64, 16, 1, false, 3, USE_SSE2)] = Degrain1to6_sse2<64, 16, false, 3>;
+  func_degrain[make_tuple(32, 64, 1, false, 3, USE_SSE2)] = Degrain1to6_sse2<32, 64, false, 3>;
   func_degrain[make_tuple(32, 32, 1, false, 3, USE_SSE2)] = Degrain1to6_sse2<32, 32, false, 3>;
   func_degrain[make_tuple(32, 16, 1, false, 3, USE_SSE2)] = Degrain1to6_sse2<32, 16, false, 3>;
   func_degrain[make_tuple(32, 8, 1, false, 3, USE_SSE2)] = Degrain1to6_sse2<32, 8, false, 3>;
@@ -649,6 +765,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   //func_degrain[make_tuple(2, 4, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<2, 4, false, 3>; // no for width 2
   //func_degrain[make_tuple(2, 2, 1, false, 3, USE_SSE2)] = Degrain1to5_sse2<2, 2, false, 3>; // no for width 2
   // level3, lsb=true
+  func_degrain[make_tuple(64, 64, 1, true, 3, USE_SSE2)] = Degrain1to6_sse2<64, 64, true, 3>;
+  func_degrain[make_tuple(64, 32, 1, true, 3, USE_SSE2)] = Degrain1to6_sse2<64, 32, true, 3>;
+  func_degrain[make_tuple(64, 16, 1, true, 3, USE_SSE2)] = Degrain1to6_sse2<64, 16, true, 3>;
+  func_degrain[make_tuple(32, 64, 1, true, 3, USE_SSE2)] = Degrain1to6_sse2<32, 64, true, 3>;
   func_degrain[make_tuple(32, 32, 1, true, 3, USE_SSE2)] = Degrain1to6_sse2<32, 32, true, 3>;
   func_degrain[make_tuple(32, 16, 1, true, 3, USE_SSE2)] = Degrain1to6_sse2<32, 16, true, 3>;
   func_degrain[make_tuple(32, 8, 1, true, 3, USE_SSE2)] = Degrain1to6_sse2<32, 8, true, 3>;
@@ -675,6 +795,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   //func_degrain[make_tuple(2, 2, 1, true, 3, USE_SSE2)] = Degrain1to5_sse2<2, 2, true, 3>; // no for width 2
 
   // level4, lsb=false
+  func_degrain[make_tuple(64, 64, 1, false, 4, USE_SSE2)] = Degrain1to6_sse2<64, 64, false, 4>;
+  func_degrain[make_tuple(64, 32, 1, false, 4, USE_SSE2)] = Degrain1to6_sse2<64, 32, false, 4>;
+  func_degrain[make_tuple(64, 16, 1, false, 4, USE_SSE2)] = Degrain1to6_sse2<64, 16, false, 4>;
+  func_degrain[make_tuple(32, 64, 1, false, 4, USE_SSE2)] = Degrain1to6_sse2<32, 64, false, 4>;
   func_degrain[make_tuple(32, 32, 1, false, 4, USE_SSE2)] = Degrain1to6_sse2<32, 32, false, 4>;
   func_degrain[make_tuple(32, 16, 1, false, 4, USE_SSE2)] = Degrain1to6_sse2<32, 16, false, 4>;
   func_degrain[make_tuple(32, 8, 1, false, 4, USE_SSE2)] = Degrain1to6_sse2<32, 8, false, 4>;
@@ -700,6 +824,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   //func_degrain[make_tuple(2, 4, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<2, 4, false, 4>; // no for width 2
   //func_degrain[make_tuple(2, 2, 1, false, 4, USE_SSE2)] = Degrain1to5_sse2<2, 2, false, 4>; // no for width 2
   // level4, lsb=true
+  func_degrain[make_tuple(64, 64, 1, true, 4, USE_SSE2)] = Degrain1to6_sse2<64, 64, true, 4>;
+  func_degrain[make_tuple(64, 32, 1, true, 4, USE_SSE2)] = Degrain1to6_sse2<64, 32, true, 4>;
+  func_degrain[make_tuple(64, 16, 1, true, 4, USE_SSE2)] = Degrain1to6_sse2<64, 16, true, 4>;
+  func_degrain[make_tuple(32, 64, 1, true, 4, USE_SSE2)] = Degrain1to6_sse2<32, 64, true, 4>;
   func_degrain[make_tuple(32, 32, 1, true, 4, USE_SSE2)] = Degrain1to6_sse2<32, 32, true, 4>;
   func_degrain[make_tuple(32, 16, 1, true, 4, USE_SSE2)] = Degrain1to6_sse2<32, 16, true, 4>;
   func_degrain[make_tuple(32, 8, 1, true, 4, USE_SSE2)] = Degrain1to6_sse2<32, 8, true, 4>;
@@ -726,6 +854,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   //func_degrain[make_tuple(2, 2, 1, true, 4, USE_SSE2)] = Degrain1to5_sse2<2, 2, true, 4>; // no for width 2
 
   // level5, lsb=false
+  func_degrain[make_tuple(64, 64, 1, false, 5, USE_SSE2)] = Degrain1to6_sse2<64, 64, false, 5>;
+  func_degrain[make_tuple(64, 32, 1, false, 5, USE_SSE2)] = Degrain1to6_sse2<64, 32, false, 5>;
+  func_degrain[make_tuple(64, 16, 1, false, 5, USE_SSE2)] = Degrain1to6_sse2<64, 16, false, 5>;
+  func_degrain[make_tuple(32, 64, 1, false, 5, USE_SSE2)] = Degrain1to6_sse2<32, 64, false, 5>;
   func_degrain[make_tuple(32, 32, 1, false, 5, USE_SSE2)] = Degrain1to6_sse2<32, 32, false, 5>;
   func_degrain[make_tuple(32, 16, 1, false, 5, USE_SSE2)] = Degrain1to6_sse2<32, 16, false, 5>;
   func_degrain[make_tuple(32, 8, 1, false, 5, USE_SSE2)] = Degrain1to6_sse2<32, 8, false, 5>;
@@ -751,6 +883,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   //func_degrain[make_tuple(2, 4, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<2, 4, false, 5>; // no for width 2
   //func_degrain[make_tuple(2, 2, 1, false, 5, USE_SSE2)] = Degrain1to5_sse2<2, 2, false, 5>; // no for width 2
   // level5, lsb=true
+  func_degrain[make_tuple(64, 64, 1, true, 5, USE_SSE2)] = Degrain1to6_sse2<64, 64, true, 5>;
+  func_degrain[make_tuple(64, 32, 1, true, 5, USE_SSE2)] = Degrain1to6_sse2<64, 32, true, 5>;
+  func_degrain[make_tuple(64, 16, 1, true, 5, USE_SSE2)] = Degrain1to6_sse2<64, 16, true, 5>;
+  func_degrain[make_tuple(32, 64, 1, true, 5, USE_SSE2)] = Degrain1to6_sse2<32, 64, true, 5>;
   func_degrain[make_tuple(32, 32, 1, true, 5, USE_SSE2)] = Degrain1to6_sse2<32, 32, true, 5>;
   func_degrain[make_tuple(32, 16, 1, true, 5, USE_SSE2)] = Degrain1to6_sse2<32, 16, true, 5>;
   func_degrain[make_tuple(32, 8, 1, true, 5, USE_SSE2)] = Degrain1to6_sse2<32, 8, true, 5>;
@@ -777,6 +913,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   //func_degrain[make_tuple(2, 2, 1, true, 5, USE_SSE2)] = Degrain1to5_sse2<2, 2, true, 5>; // no for width 2
 
   // level6, lsb=false
+  func_degrain[make_tuple(64, 64, 1, false, 6, USE_SSE2)] = Degrain1to6_sse2<64, 64, false, 6>;
+  func_degrain[make_tuple(64, 32, 1, false, 6, USE_SSE2)] = Degrain1to6_sse2<64, 32, false, 6>;
+  func_degrain[make_tuple(64, 16, 1, false, 6, USE_SSE2)] = Degrain1to6_sse2<64, 16, false, 6>;
+  func_degrain[make_tuple(32, 64, 1, false, 6, USE_SSE2)] = Degrain1to6_sse2<32, 64, false, 6>;
   func_degrain[make_tuple(32, 32, 1, false, 6, USE_SSE2)] = Degrain1to6_sse2<32, 32, false, 6>;
   func_degrain[make_tuple(32, 16, 1, false, 6, USE_SSE2)] = Degrain1to6_sse2<32, 16, false, 6>;
   func_degrain[make_tuple(32, 8, 1, false, 6, USE_SSE2)] = Degrain1to6_sse2<32, 8, false, 6>;
@@ -802,6 +942,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   //func_degrain[make_tuple(2, 4, 1, false, 6, USE_SSE2)] = Degrain1to5_sse2<2, 4, false, 6>; // no for width 2
   //func_degrain[make_tuple(2, 2, 1, false, 6, USE_SSE2)] = Degrain1to5_sse2<2, 2, false, 6>; // no for width 2
   // level6, lsb=true
+  func_degrain[make_tuple(64, 64, 1, true, 6, USE_SSE2)] = Degrain1to6_sse2<64, 64, true, 6>;
+  func_degrain[make_tuple(64, 32, 1, true, 6, USE_SSE2)] = Degrain1to6_sse2<64, 32, true, 6>;
+  func_degrain[make_tuple(64, 16, 1, true, 6, USE_SSE2)] = Degrain1to6_sse2<64, 16, true, 6>;
+  func_degrain[make_tuple(32, 64, 1, true, 6, USE_SSE2)] = Degrain1to6_sse2<32, 64, true, 6>;
   func_degrain[make_tuple(32, 32, 1, true, 6, USE_SSE2)] = Degrain1to6_sse2<32, 32, true, 6>;
   func_degrain[make_tuple(32, 16, 1, true, 6, USE_SSE2)] = Degrain1to6_sse2<32, 16, true, 6>;
   func_degrain[make_tuple(32, 8, 1, true, 6, USE_SSE2)] = Degrain1to6_sse2<32, 8, true, 6>;
@@ -1072,8 +1216,8 @@ MVDegrainX::MVDegrainX(
   }
 #endif
 
-  // max blocksize = 32
-  const int		tmp_size = 32 * 32 * pixelsize_super;
+  // max blocksize = 32, 170507: 64 (moved to const)
+  const int		tmp_size = MAX_BLOCK_SIZE * MAX_BLOCK_SIZE * pixelsize_super;
   tmpBlock = (uint8_t *)_aligned_malloc(tmp_size * height_lsb_mul, 64); // new BYTE[tmp_size * height_lsb_mul]; PF. 16.10.26
   tmpBlockLsb = (lsb_flag) ? (tmpBlock + tmp_size) : 0;
 
