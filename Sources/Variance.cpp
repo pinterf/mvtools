@@ -130,61 +130,67 @@ LUMAFunction* get_luma_function(int BlockX, int BlockY, int pixelsize, arch_t ar
     std::map<std::tuple<int, int, int, arch_t>, LUMAFunction*> func_luma;
     using std::make_tuple;
 
-    func_luma[make_tuple(32, 32, 1, NO_SIMD)] = Luma_C<32, 32,uint8_t>;
-    func_luma[make_tuple(32, 16, 1, NO_SIMD)] = Luma_C<32, 16,uint8_t>;
-    func_luma[make_tuple(32, 8 , 1, NO_SIMD)] = Luma_C<32, 8,uint8_t>;
-    func_luma[make_tuple(16, 32, 1, NO_SIMD)] = Luma_C<16, 32,uint8_t>;
-    func_luma[make_tuple(16, 16, 1, NO_SIMD)] = Luma_C<16, 16,uint8_t>;
-    func_luma[make_tuple(16, 8 , 1, NO_SIMD)] = Luma_C<16, 8,uint8_t>;
-    func_luma[make_tuple(16, 4 , 1, NO_SIMD)] = Luma_C<16, 4,uint8_t>;
-    func_luma[make_tuple(16, 2 , 1, NO_SIMD)] = Luma_C<16, 2,uint8_t>;
-    func_luma[make_tuple(16, 1 , 1, NO_SIMD)] = Luma_C<16, 1,uint8_t>;
-    func_luma[make_tuple(8 , 16, 1, NO_SIMD)] = Luma_C<8 , 16,uint8_t>;
-    func_luma[make_tuple(8 , 8 , 1, NO_SIMD)] = Luma_C<8 , 8,uint8_t>;
-    func_luma[make_tuple(8 , 4 , 1, NO_SIMD)] = Luma_C<8 , 4,uint8_t>;
-    func_luma[make_tuple(8 , 2 , 1, NO_SIMD)] = Luma_C<8 , 2,uint8_t>;
-    func_luma[make_tuple(8 , 1 , 1, NO_SIMD)] = Luma_C<8 , 1,uint8_t>;
-    func_luma[make_tuple(4 , 8 , 1, NO_SIMD)] = Luma_C<4 , 8,uint8_t>;
-    func_luma[make_tuple(4 , 4 , 1, NO_SIMD)] = Luma_C<4 , 4,uint8_t>;
-    func_luma[make_tuple(4 , 2 , 1, NO_SIMD)] = Luma_C<4 , 2,uint8_t>;
-    func_luma[make_tuple(4 , 1 , 1, NO_SIMD)] = Luma_C<4 , 1,uint8_t>;
-    func_luma[make_tuple(2 , 4 , 1, NO_SIMD)] = Luma_C<2 , 4,uint8_t>;
-    func_luma[make_tuple(2 , 2 , 1, NO_SIMD)] = Luma_C<2 , 2,uint8_t>;
-    func_luma[make_tuple(2 , 1 , 1, NO_SIMD)] = Luma_C<2 , 1,uint8_t>;
+#define MAKE_LUMA_FN(x, y) func_luma[make_tuple(x, y, 1, NO_SIMD)] = Luma_C<x, y, uint8_t>; \
+func_luma[make_tuple(x, y, 2, NO_SIMD)] = Luma_C<x, y, uint16_t>;
+    MAKE_LUMA_FN(64, 64)
+      MAKE_LUMA_FN(64, 48)
+      MAKE_LUMA_FN(64, 32)
+      MAKE_LUMA_FN(64, 16)
+      MAKE_LUMA_FN(48, 64)
+      MAKE_LUMA_FN(32, 64)
+      MAKE_LUMA_FN(32, 32)
+      MAKE_LUMA_FN(32, 24)
+      MAKE_LUMA_FN(32, 16)
+      MAKE_LUMA_FN(32, 8)
+      MAKE_LUMA_FN(24, 32)
+      MAKE_LUMA_FN(16, 64)
+      MAKE_LUMA_FN(16, 32)
+      MAKE_LUMA_FN(16, 16)
+      MAKE_LUMA_FN(16, 12)
+      MAKE_LUMA_FN(16, 8)
+      MAKE_LUMA_FN(16, 4)
+      MAKE_LUMA_FN(16, 2)
+      MAKE_LUMA_FN(16, 1)
+      MAKE_LUMA_FN(12, 16)
+      MAKE_LUMA_FN(8, 32)
+      MAKE_LUMA_FN(8, 16)
+      MAKE_LUMA_FN(8, 8)
+      MAKE_LUMA_FN(8, 4)
+      MAKE_LUMA_FN(8, 2)
+      MAKE_LUMA_FN(8, 1)
+      MAKE_LUMA_FN(4, 8)
+      MAKE_LUMA_FN(4, 4)
+      MAKE_LUMA_FN(4, 2)
+      MAKE_LUMA_FN(4, 1)
+      MAKE_LUMA_FN(2, 4)
+      MAKE_LUMA_FN(2, 2)
+      MAKE_LUMA_FN(2, 1)
+#undef MAKE_SAD_FN
 
-    func_luma[make_tuple(32, 32, 2, NO_SIMD)] = Luma_C<32, 32,uint16_t>;
-    func_luma[make_tuple(32, 16, 2, NO_SIMD)] = Luma_C<32, 16,uint16_t>;
-    func_luma[make_tuple(32, 8 , 2, NO_SIMD)] = Luma_C<32, 8,uint16_t>;
-    func_luma[make_tuple(16, 32, 2, NO_SIMD)] = Luma_C<16, 32,uint16_t>;
-    func_luma[make_tuple(16, 16, 2, NO_SIMD)] = Luma_C<16, 16,uint16_t>;
-    func_luma[make_tuple(16, 8 , 2, NO_SIMD)] = Luma_C<16, 8,uint16_t>;
-    func_luma[make_tuple(16, 4 , 2, NO_SIMD)] = Luma_C<16, 4,uint16_t>;
-    func_luma[make_tuple(16, 2 , 2, NO_SIMD)] = Luma_C<16, 2,uint16_t>;
-    func_luma[make_tuple(16, 1 , 2, NO_SIMD)] = Luma_C<16, 1,uint16_t>;
-    func_luma[make_tuple(8 , 16, 2, NO_SIMD)] = Luma_C<8 , 16,uint16_t>;
-    func_luma[make_tuple(8 , 8 , 2, NO_SIMD)] = Luma_C<8 , 8,uint16_t>;
-    func_luma[make_tuple(8 , 4 , 2, NO_SIMD)] = Luma_C<8 , 4,uint16_t>;
-    func_luma[make_tuple(8 , 2 , 2, NO_SIMD)] = Luma_C<8 , 2,uint16_t>;
-    func_luma[make_tuple(8 , 1 , 2, NO_SIMD)] = Luma_C<8 , 1,uint16_t>;
-    func_luma[make_tuple(4 , 8 , 2, NO_SIMD)] = Luma_C<4 , 8,uint16_t>;
-    func_luma[make_tuple(4 , 4 , 2, NO_SIMD)] = Luma_C<4 , 4,uint16_t>;
-    func_luma[make_tuple(4 , 2 , 2, NO_SIMD)] = Luma_C<4 , 2,uint16_t>;
-    func_luma[make_tuple(4 , 1 , 2, NO_SIMD)] = Luma_C<4 , 1,uint16_t>;
-    func_luma[make_tuple(2 , 4 , 2, NO_SIMD)] = Luma_C<2 , 4,uint16_t>;
-    func_luma[make_tuple(2 , 2 , 2, NO_SIMD)] = Luma_C<2 , 2,uint16_t>;
-    func_luma[make_tuple(2 , 1 , 2, NO_SIMD)] = Luma_C<2 , 1,uint16_t>;
-
+    func_luma[make_tuple(64, 64, 1, USE_SSE2)] = Luma16_sse2<64, 64, uint8_t>;
+    func_luma[make_tuple(64, 32, 1, USE_SSE2)] = Luma16_sse2<64, 32, uint8_t>;
+    func_luma[make_tuple(64, 16, 1, USE_SSE2)] = Luma16_sse2<64, 16, uint8_t>;
+    func_luma[make_tuple(48, 64, 1, USE_SSE2)] = Luma16_sse2<48, 64, uint8_t>;
+    func_luma[make_tuple(32, 64, 1, USE_SSE2)] = Luma16_sse2<32, 64, uint8_t>;
     func_luma[make_tuple(32, 32, 1, USE_SSE2)] = Luma32x32_sse2;
+    func_luma[make_tuple(32, 24, 1, USE_SSE2)] = Luma16_sse2<32, 24, uint8_t>;
     func_luma[make_tuple(32, 16, 1, USE_SSE2)] = Luma32x16_sse2;
-    //func_luma[make_tuple(32, 8 , 1, USE_SSE2)] = Luma32x8_sse2;
+    func_luma[make_tuple(32, 8, 1, USE_SSE2)] = Luma16_sse2<32, 8, uint8_t>;
+    //func_luma[make_tuple(24, 32, 1, USE_SSE2)] = Luma16_sse2<24, 32, uint8_t>; // non mod16 w
+    func_luma[make_tuple(16, 64, 1, USE_SSE2)] = Luma16_sse2<16, 64, uint8_t>;
     func_luma[make_tuple(16, 32, 1, USE_SSE2)] = Luma16x32_sse2;
     func_luma[make_tuple(16, 16, 1, USE_SSE2)] = Luma16x16_sse2;
+    func_luma[make_tuple(16, 12, 1, USE_SSE2)] = Luma16_sse2<16, 12, uint8_t>;
     func_luma[make_tuple(16, 8 , 1, USE_SSE2)] = Luma16x8_sse2;
-    //func_luma[make_tuple(16, 4 , 1, USE_SSE2)] = Luma16x4_sse2;
+    func_luma[make_tuple(16, 4, 1, USE_SSE2)] = Luma16_sse2<16, 4, uint8_t>;
     func_luma[make_tuple(16, 2 , 1, USE_SSE2)] = Luma16x2_sse2;
+    func_luma[make_tuple(16, 1, 1, USE_SSE2)] = Luma16_sse2<16, 1, uint8_t>;
     //func_luma[make_tuple(8 , 16, 1, USE_SSE2)] = Luma8x16_sse2;
+    func_luma[make_tuple(8, 32, 1, USE_SSE2)] = Luma16_sse2<8, 32, uint8_t>;
+    func_luma[make_tuple(8, 16, 1, USE_SSE2)] = Luma16_sse2<8, 16, uint8_t>;
     func_luma[make_tuple(8 , 8 , 1, USE_SSE2)] = Luma8x8_sse2;
     func_luma[make_tuple(8 , 4 , 1, USE_SSE2)] = Luma8x4_sse2;
+    func_luma[make_tuple(8, 2, 1, USE_SSE2)] = Luma16_sse2<8, 2, uint8_t>;
     //func_luma[make_tuple(8 , 2 , 1, USE_SSE2)] = Luma8x2_sse2;
     //func_luma[make_tuple(8 , 1 , 1, USE_SSE2)] = Luma8x1_sse2;
     //func_luma[make_tuple(4 , 8 , 1, USE_SSE2)] = Luma4x8_sse2;
@@ -192,26 +198,45 @@ LUMAFunction* get_luma_function(int BlockX, int BlockY, int pixelsize, arch_t ar
     //func_luma[make_tuple(4 , 2 , 1, USE_SSE2)] = Luma4x2_sse2;
     //func_luma[make_tuple(2 , 4 , 1, USE_SSE2)] = Luma2x4_sse2;
     //func_luma[make_tuple(2 , 2 , 1, USE_SSE2)] = Luma2x2_sse2;
-    
-    func_luma[make_tuple(32, 32, 2, USE_SSE2)] = Luma16_sse2<32, 32,uint16_t>;
-    func_luma[make_tuple(32, 16, 2, USE_SSE2)] = Luma16_sse2<32, 16,uint16_t>;
-    func_luma[make_tuple(32, 8 , 2, USE_SSE2)] = Luma16_sse2<32, 8,uint16_t>;
-    func_luma[make_tuple(16, 32, 2, USE_SSE2)] = Luma16_sse2<16, 32,uint16_t>;
-    func_luma[make_tuple(16, 16, 2, USE_SSE2)] = Luma16_sse2<16, 16,uint16_t>;
-    func_luma[make_tuple(16, 8 , 2, USE_SSE2)] = Luma16_sse2<16, 8,uint16_t>;
-    func_luma[make_tuple(16, 4 , 2, USE_SSE2)] = Luma16_sse2<16, 4,uint16_t>;
-    func_luma[make_tuple(16, 2 , 2, USE_SSE2)] = Luma16_sse2<16, 2,uint16_t>;
-    func_luma[make_tuple(16, 1 , 2, USE_SSE2)] = Luma16_sse2<16, 1,uint16_t>;
-    func_luma[make_tuple(8 , 16, 2, USE_SSE2)] = Luma16_sse2<8 , 16,uint16_t>;
-    func_luma[make_tuple(8 , 8 , 2, USE_SSE2)] = Luma16_sse2<8 , 8,uint16_t>;
-    func_luma[make_tuple(8 , 4 , 2, USE_SSE2)] = Luma16_sse2<8 , 4,uint16_t>;
-    func_luma[make_tuple(8 , 2 , 2, USE_SSE2)] = Luma16_sse2<8 , 2,uint16_t>;
-    func_luma[make_tuple(8 , 1 , 2, USE_SSE2)] = Luma16_sse2<8 , 1,uint16_t>;
-    func_luma[make_tuple(4 , 8 , 2, USE_SSE2)] = Luma16_sse2<4 , 8,uint16_t>;
-    func_luma[make_tuple(4 , 4 , 2, USE_SSE2)] = Luma16_sse2<4 , 4,uint16_t>;
-    func_luma[make_tuple(4 , 2 , 2, USE_SSE2)] = Luma16_sse2<4 , 2,uint16_t>;
+
     // no 4,1 or 2,x,x for uint16_t
-    
+    // nor 12*
+#define MAKE_LUMA_FN(x, y) func_luma[make_tuple(x, y, 2, USE_SSE2)] = Luma16_sse2<x, y, uint16_t>;
+    MAKE_LUMA_FN(64, 64)
+      MAKE_LUMA_FN(64, 48)
+      MAKE_LUMA_FN(64, 32)
+      MAKE_LUMA_FN(64, 16)
+      MAKE_LUMA_FN(48, 64)
+      MAKE_LUMA_FN(32, 64)
+      MAKE_LUMA_FN(32, 32)
+      MAKE_LUMA_FN(32, 24)
+      MAKE_LUMA_FN(32, 16)
+      MAKE_LUMA_FN(32, 8)
+      MAKE_LUMA_FN(24, 32)
+      MAKE_LUMA_FN(16, 64)
+      MAKE_LUMA_FN(16, 32)
+      MAKE_LUMA_FN(16, 16)
+      MAKE_LUMA_FN(16, 12)
+      MAKE_LUMA_FN(16, 8)
+      MAKE_LUMA_FN(16, 4)
+      MAKE_LUMA_FN(16, 2)
+      MAKE_LUMA_FN(16, 1)
+      //MAKE_LUMA_FN(12, 16)
+      MAKE_LUMA_FN(8, 32)
+      MAKE_LUMA_FN(8, 16)
+      MAKE_LUMA_FN(8, 8)
+      MAKE_LUMA_FN(8, 4)
+      MAKE_LUMA_FN(8, 2)
+      MAKE_LUMA_FN(8, 1)
+      MAKE_LUMA_FN(4, 8)
+      MAKE_LUMA_FN(4, 4)
+      MAKE_LUMA_FN(4, 2)
+      //MAKE_LUMA_FN(4, 1)
+      //MAKE_LUMA_FN(2, 4)
+      //MAKE_LUMA_FN(2, 2)
+      //MAKE_LUMA_FN(2, 1)
+#undef MAKE_SAD_FN
+
     LUMAFunction *result = nullptr;
     arch_t archlist[] = { USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
     int index = 0;
@@ -223,35 +248,6 @@ LUMAFunction* get_luma_function(int BlockX, int BlockY, int pixelsize, arch_t ar
         break;
     }
 
-#if 0
-    LUMAFunction *result = func_luma[make_tuple(BlockX, BlockY, pixelsize, arch)];
-
-    arch_t arch_orig = arch;
-
-    // no AVX2 -> try AVX
-    if (result == nullptr && (arch==USE_AVX2 || arch_orig==USE_AVX)) {
-      arch = USE_AVX;
-      result = func_luma[make_tuple(BlockX, BlockY, pixelsize, USE_AVX)];
-    }
-    // no AVX -> try SSE2
-    if (result == nullptr && (arch==USE_AVX || arch_orig==USE_SSE2)) {
-      arch = USE_SSE2;
-      result = func_luma[make_tuple(BlockX, BlockY, pixelsize, USE_SSE2)];
-    }
-    // no SSE2 -> try C
-    if (result == nullptr && (arch==USE_SSE2 || arch_orig==NO_SIMD)) {
-      arch = NO_SIMD;
-      /* C version variations are only working in SAD
-      // priority: C version compiled to avx2, avx
-      if(arch_orig==USE_AVX2)
-      result = get_luma_avx2_C_function(BlockX, BlockY, pixelsize, NO_SIMD);
-      else if(arch_orig==USE_AVX)
-      result = get_luma_avx_C_function(BlockX, BlockY, pixelsize, NO_SIMD);
-      */
-      if(result == nullptr)
-        result = func_luma[make_tuple(BlockX, BlockY, pixelsize, NO_SIMD)]; // fallback to C
-    }
-#endif
     return result;
 }
 
