@@ -937,7 +937,10 @@ MV_FORCEINLINE int DegrainWeight(int thSAD, int blockSAD, int bits_per_pixels)
   {
     return 0;
   }
-  if(bits_per_pixels <= 8) {
+  // here thSAD > blockSAD
+  if(/*bits_per_pixels <= 8 &&*/ thSAD <= 0x7FFF) { // 170507 avoid overflow even in 8 bits! in sqr
+    // can occur even for 32x32 block size
+    // problem emerged in blksize=64 tests
     const int thSAD2    = thSAD    * thSAD;
     const int blockSAD2 = blockSAD * blockSAD;
     const int num = thSAD2 - blockSAD2;
