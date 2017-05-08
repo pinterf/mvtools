@@ -298,7 +298,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>AVS16;WIN32;_DEBUG;_WINDOWS;_USRDLL;MVTOOLS_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>SCALECHROMASAD;AVS16;WIN32;_DEBUG;_WINDOWS;_USRDLL;MVTOOLS_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader />
@@ -339,7 +339,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;MVTOOLS_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>SCALECHROMASAD;WIN32;_DEBUG;_WINDOWS;_USRDLL;MVTOOLS_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader>
@@ -390,7 +390,7 @@
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>true</WholeProgramOptimization>
-      <PreprocessorDefinitions>AVS16;FORCE_INLINE;WIN32;NDEBUG;_WINDOWS;_USRDLL;MVTOOLS_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>SCALECHROMASAD;AVS16;FORCE_INLINE;WIN32;NDEBUG;_WINDOWS;_USRDLL;MVTOOLS_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -520,7 +520,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <OmitFramePointers>true</OmitFramePointers>
       <WholeProgramOptimization>true</WholeProgramOptimization>
-      <PreprocessorDefinitions>FORCE_INLINE;WIN32;NDEBUG;_WINDOWS;_USRDLL;MVTOOLS_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>SCALECHROMASAD;FORCE_INLINE;WIN32;NDEBUG;_WINDOWS;_USRDLL;MVTOOLS_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -660,28 +660,6 @@
       <Debug Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</Debug>
       <Debug Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">true</Debug>
     </YASM>
-    <YASM Include="asm\const-a.asm">
-      <Debug Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</Debug>
-      <Debug Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">true</Debug>
-      <Debug Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</Debug>
-      <Debug Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">true</Debug>
-      <IncludePaths Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.</IncludePaths>
-      <IncludePaths Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">.</IncludePaths>
-      <IncludePaths Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.</IncludePaths>
-      <IncludePaths Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">.</IncludePaths>
-      <IncludePaths Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.</IncludePaths>
-      <IncludePaths Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">.</IncludePaths>
-      <IncludePaths Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.</IncludePaths>
-      <IncludePaths Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">.</IncludePaths>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ARCH_X86_64=1;NO_FUNCTION_PREFIX;BIT_DEPTH=8</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">ARCH_X86_64=1;NO_FUNCTION_PREFIX;BIT_DEPTH=8</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ARCH_X86_64=1;NO_FUNCTION_PREFIX;BIT_DEPTH=8</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">ARCH_X86_64=1;NO_FUNCTION_PREFIX;BIT_DEPTH=8</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">ARCH_X86_64=0;NO_FUNCTION_PREFIX;BIT_DEPTH=8</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">ARCH_X86_64=0;NO_FUNCTION_PREFIX;BIT_DEPTH=8</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ARCH_X86_64=0;NO_FUNCTION_PREFIX;BIT_DEPTH=8</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">ARCH_X86_64=0;NO_FUNCTION_PREFIX;BIT_DEPTH=8</Defines>
-    </YASM>
     <YASM Include="asm\CopyCode-a.asm">
       <Debug Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</Debug>
       <Debug Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">true</Debug>
@@ -695,20 +673,6 @@
       <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">ARCH_X86_64=0;NO_FUNCTION_PREFIX</Defines>
       <Defines Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ARCH_X86_64=0;NO_FUNCTION_PREFIX</Defines>
       <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">ARCH_X86_64=0;NO_FUNCTION_PREFIX</Defines>
-    </YASM>
-    <YASM Include="asm\cpu-a.asm">
-      <Debug Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</Debug>
-      <Debug Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">true</Debug>
-      <Debug Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</Debug>
-      <Debug Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">true</Debug>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ARCH_X86_64=1</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">ARCH_X86_64=1</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ARCH_X86_64=1</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">ARCH_X86_64=1</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">ARCH_X86_64=0</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">ARCH_X86_64=0</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ARCH_X86_64=0</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">ARCH_X86_64=0</Defines>
     </YASM>
     <YASM Include="asm\fdct_mmx.asm">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -809,74 +773,28 @@
       <Debug Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">true</Debug>
       <Debug Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</Debug>
       <Debug Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">true</Debug>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ARCH_X86_64=1;HIGH_BIT_DEPTH=0;BIT_DEPTH=8</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">ARCH_X86_64=1;HIGH_BIT_DEPTH=0;BIT_DEPTH=8</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ARCH_X86_64=1;HIGH_BIT_DEPTH=0;BIT_DEPTH=8</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">ARCH_X86_64=1;HIGH_BIT_DEPTH=0;BIT_DEPTH=8</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">ARCH_X86_64=0;HIGH_BIT_DEPTH=0;BIT_DEPTH=8</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">ARCH_X86_64=0;HIGH_BIT_DEPTH=0;BIT_DEPTH=8</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ARCH_X86_64=0;HIGH_BIT_DEPTH=0;BIT_DEPTH=8</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">ARCH_X86_64=0;HIGH_BIT_DEPTH=0;BIT_DEPTH=8</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">private_prefix=x264;ARCH_X86_64=1;HIGH_BIT_DEPTH=0;BIT_DEPTH=8</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">private_prefix=x264;ARCH_X86_64=1;HIGH_BIT_DEPTH=0;BIT_DEPTH=8</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Release|x64'">private_prefix=x264;ARCH_X86_64=1;HIGH_BIT_DEPTH=0;BIT_DEPTH=8</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">private_prefix=x264;ARCH_X86_64=1;HIGH_BIT_DEPTH=0;BIT_DEPTH=8</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">private_prefix=x264;ARCH_X86_64=0;HIGH_BIT_DEPTH=0;BIT_DEPTH=8</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">private_prefix=x264;ARCH_X86_64=0;HIGH_BIT_DEPTH=0;BIT_DEPTH=8</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">private_prefix=x264;ARCH_X86_64=0;HIGH_BIT_DEPTH=0;BIT_DEPTH=8</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">private_prefix=x264;ARCH_X86_64=0;HIGH_BIT_DEPTH=0;BIT_DEPTH=8</Defines>
     </YASM>
     <YASM Include="asm\sad-a.asm">
       <Debug Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</Debug>
       <Debug Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">true</Debug>
       <Debug Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</Debug>
       <Debug Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">true</Debug>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ARCH_X86_64=1;BIT_DEPTH=8;HIGH_BIT_DEPTH=0</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">ARCH_X86_64=1;BIT_DEPTH=8;HIGH_BIT_DEPTH=0</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ARCH_X86_64=1;BIT_DEPTH=8;HIGH_BIT_DEPTH=0</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">ARCH_X86_64=1;BIT_DEPTH=8;HIGH_BIT_DEPTH=0</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">ARCH_X86_64=0;BIT_DEPTH=8;HIGH_BIT_DEPTH=0</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">ARCH_X86_64=0;BIT_DEPTH=8;HIGH_BIT_DEPTH=0</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ARCH_X86_64=0;BIT_DEPTH=8;HIGH_BIT_DEPTH=0</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">ARCH_X86_64=0;BIT_DEPTH=8;HIGH_BIT_DEPTH=0</Defines>
-    </YASM>
-    <YASM Include="asm\SAD_iSSE.asm">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">true</ExcludedFromBuild>
-      <Debug Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</Debug>
-      <Debug Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">true</Debug>
-      <Debug Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</Debug>
-      <Debug Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">true</Debug>
-    </YASM>
-    <YASM Include="asm\SAD_iSSE_x64.asm">
-      <UnDefines Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </UnDefines>
-      <UnDefines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">
-      </UnDefines>
-      <UnDefines Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      </UnDefines>
-      <UnDefines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">
-      </UnDefines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NO_PREFIX</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">NO_PREFIX</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NO_PREFIX</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">NO_PREFIX</Defines>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">true</ExcludedFromBuild>
-      <Debug Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</Debug>
-      <Debug Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">true</Debug>
-      <Debug Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</Debug>
-      <Debug Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">true</Debug>
-    </YASM>
-    <YASM Include="asm\Variance-a.asm">
-      <Debug Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</Debug>
-      <Debug Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">true</Debug>
-      <Debug Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</Debug>
-      <Debug Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">true</Debug>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ARCH_X86_64=1;NO_FUNCTION_PREFIX</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">ARCH_X86_64=1;NO_FUNCTION_PREFIX</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ARCH_X86_64=1;NO_FUNCTION_PREFIX</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">ARCH_X86_64=1;NO_FUNCTION_PREFIX</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">ARCH_X86_64=0;NO_FUNCTION_PREFIX</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">ARCH_X86_64=0;NO_FUNCTION_PREFIX</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ARCH_X86_64=0;NO_FUNCTION_PREFIX</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">ARCH_X86_64=0;NO_FUNCTION_PREFIX</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">private_prefix=x264;ARCH_X86_64=1;BIT_DEPTH=8;HIGH_BIT_DEPTH=0</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">private_prefix=x264;ARCH_X86_64=1;BIT_DEPTH=8;HIGH_BIT_DEPTH=0</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Release|x64'">private_prefix=x264;ARCH_X86_64=1;BIT_DEPTH=8;HIGH_BIT_DEPTH=0</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">private_prefix=x264;ARCH_X86_64=1;BIT_DEPTH=8;HIGH_BIT_DEPTH=0</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">private_prefix=x264;ARCH_X86_64=0;BIT_DEPTH=8;HIGH_BIT_DEPTH=0</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">private_prefix=x264;ARCH_X86_64=0;BIT_DEPTH=8;HIGH_BIT_DEPTH=0</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">private_prefix=x264;ARCH_X86_64=0;BIT_DEPTH=8;HIGH_BIT_DEPTH=0</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">private_prefix=x264;ARCH_X86_64=0;BIT_DEPTH=8;HIGH_BIT_DEPTH=0</Defines>
     </YASM>
   </ItemGroup>
   <ItemGroup>
@@ -1094,6 +1012,85 @@
     <ClInclude Include="VECTOR.h" />
     <ClInclude Include="version.h" />
     <ClInclude Include="yuy2planes.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <YASM Include="asm\const-a.asm">
+      <FileType>Document</FileType>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">private_prefix=x264;ARCH_X86_64=0;BIT_DEPTH=8</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">private_prefix=x264;ARCH_X86_64=0;BIT_DEPTH=8</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">private_prefix=x264;ARCH_X86_64=0;BIT_DEPTH=8</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">private_prefix=x264;ARCH_X86_64=0;BIT_DEPTH=8</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">private_prefix=x264;ARCH_X86_64=1;BIT_DEPTH=8</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">private_prefix=x264;ARCH_X86_64=1;BIT_DEPTH=8</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Release|x64'">private_prefix=x264;ARCH_X86_64=1;BIT_DEPTH=8</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">private_prefix=x264;ARCH_X86_64=1;BIT_DEPTH=8</Defines>
+    </YASM>
+  </ItemGroup>
+  <ItemGroup>
+    <YASM Include="asm\cpu-a.asm">
+      <FileType>Document</FileType>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">private_prefix=x264;ARCH_X86_64=0</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">private_prefix=x264;ARCH_X86_64=0</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">private_prefix=x264;ARCH_X86_64=0</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">private_prefix=x264;ARCH_X86_64=0</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">private_prefix=x264;ARCH_X86_64=1</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">private_prefix=x264;ARCH_X86_64=1</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Release|x64'">private_prefix=x264;ARCH_X86_64=1</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">private_prefix=x264;ARCH_X86_64=1</Defines>
+    </YASM>
+  </ItemGroup>
+  <ItemGroup>
+    <YASM Include="asm\Variance-a.asm">
+      <FileType>Document</FileType>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">ARCH_X86_64=0;BIT_DEPTH=8;HIGH_BIT_DEPTH=0;NO_FUNCTION_PREFIX</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">ARCH_X86_64=0;BIT_DEPTH=8;HIGH_BIT_DEPTH=0;NO_FUNCTION_PREFIX</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ARCH_X86_64=0;BIT_DEPTH=8;HIGH_BIT_DEPTH=0;NO_FUNCTION_PREFIX</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">ARCH_X86_64=0;BIT_DEPTH=8;HIGH_BIT_DEPTH=0;NO_FUNCTION_PREFIX</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ARCH_X86_64=1;BIT_DEPTH=8;HIGH_BIT_DEPTH=0;NO_FUNCTION_PREFIX</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">ARCH_X86_64=1;BIT_DEPTH=8;HIGH_BIT_DEPTH=0;NO_FUNCTION_PREFIX</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ARCH_X86_64=1;BIT_DEPTH=8;HIGH_BIT_DEPTH=0;NO_FUNCTION_PREFIX</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">ARCH_X86_64=1;BIT_DEPTH=8;HIGH_BIT_DEPTH=0;NO_FUNCTION_PREFIX</Defines>
+    </YASM>
+  </ItemGroup>
+  <ItemGroup>
+    <YASM Include="asm\SAD_iSSE.asm">
+      <FileType>Document</FileType>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">
+      </Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">
+      </Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">
+      </Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+      </Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">
+      </Defines>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">true</ExcludedFromBuild>
+    </YASM>
+    <YASM Include="asm\SAD_iSSE_x64.asm">
+      <FileType>Document</FileType>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NO_PREFIX</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">NO_PREFIX</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NO_PREFIX</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">NO_PREFIX</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NO_PREFIX</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">NO_PREFIX</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NO_PREFIX</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">NO_PREFIX</Defines>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">true</ExcludedFromBuild>
+    </YASM>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

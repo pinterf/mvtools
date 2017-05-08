@@ -44,12 +44,6 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <YASM Include="asm\const-a.asm">
-      <Filter>Assembler</Filter>
-    </YASM>
-    <YASM Include="asm\cpu-a.asm">
-      <Filter>Assembler</Filter>
-    </YASM>
     <YASM Include="asm\pixel-a.asm">
       <Filter>Assembler</Filter>
     </YASM>
@@ -71,16 +65,7 @@
     <YASM Include="asm\Overlap-a.asm">
       <Filter>Assembler</Filter>
     </YASM>
-    <YASM Include="asm\Variance-a.asm">
-      <Filter>Assembler</Filter>
-    </YASM>
     <YASM Include="asm\MVDegrains-a.asm">
-      <Filter>Assembler</Filter>
-    </YASM>
-    <YASM Include="asm\SAD_iSSE.asm">
-      <Filter>Assembler</Filter>
-    </YASM>
-    <YASM Include="asm\SAD_iSSE_x64.asm">
       <Filter>Assembler</Filter>
     </YASM>
     <YASM Include="asm\Bilinear.asm">
@@ -93,6 +78,21 @@
       <Filter>Assembler</Filter>
     </YASM>
     <YASM Include="asm\fdct_mmx_x64.asm">
+      <Filter>Assembler</Filter>
+    </YASM>
+    <YASM Include="asm\const-a.asm">
+      <Filter>Assembler</Filter>
+    </YASM>
+    <YASM Include="asm\cpu-a.asm">
+      <Filter>Assembler</Filter>
+    </YASM>
+    <YASM Include="asm\Variance-a.asm">
+      <Filter>Assembler</Filter>
+    </YASM>
+    <YASM Include="asm\SAD_iSSE.asm">
+      <Filter>Assembler</Filter>
+    </YASM>
+    <YASM Include="asm\SAD_iSSE_x64.asm">
       <Filter>Assembler</Filter>
     </YASM>
   </ItemGroup>
