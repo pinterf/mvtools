@@ -43,7 +43,7 @@ MVAnalyse::MVAnalyse(
   int _overlapx, int _overlapy, const char* _outfilename, int _dctmode,
   int _divide, int _sadx264, sad_t _badSAD, int _badrange, bool _isse,
   bool _meander, bool temporal_flag, bool _tryMany, bool multi_flag,
-  bool mt_flag, IScriptEnvironment* env
+  bool mt_flag, int _chromaSADScale, IScriptEnvironment* env
 )
   : ::GenericVideoFilter(_child)
   , _srd_arr(1)
@@ -117,6 +117,8 @@ MVAnalyse::MVAnalyse(
   analysisData.pixelsize = pixelsize;
   analysisData.bits_per_pixel = bits_per_pixel;
 
+  analysisData.chromaSADScale = _chromaSADScale;
+
 //	env->ThrowError ("MVAnalyse: %d, %d, %d, %d, %d", nPrepHPad, nPrepVPad, nPrepPel, nPrepModeYUV, nPrepLevels);
   pSrcGOF = new MVGroupOfFrames(
     nSuperLevels, analysisData.nWidth, analysisData.nHeight,
@@ -129,8 +131,14 @@ MVAnalyse::MVAnalyse(
     _isse, analysisData.xRatioUV, analysisData.yRatioUV, pixelsize, bits_per_pixel, mt_flag
   );
 
+  if(analysisData.chromaSADScale<-2 || analysisData.chromaSADScale>2)
+    env->ThrowError(
+      "MAnalyse: chromaSADScale must be -2..2"
+    );
+
   analysisData.nBlkSizeX = _blksizex;
   analysisData.nBlkSizeY = _blksizey;
+#if 0
   if ((analysisData.nBlkSizeX != 4 || analysisData.nBlkSizeY != 4)
     && (analysisData.nBlkSizeX != 8 || analysisData.nBlkSizeY != 4)
     && (analysisData.nBlkSizeX != 8 || analysisData.nBlkSizeY != 8)
@@ -145,7 +153,41 @@ MVAnalyse::MVAnalyse(
       "4x4, 8x4, 8x8, 16x2, 16x8, 16x16, 32x16, 32x32"
     );
   }
-
+#endif
+  // same blocksize check in MAnalyze and MRecalculate
+  const std::vector< std::pair< int, int > > allowed_blksizes = 
+  { {64, 64}, {64,32}, {64,32}, {64,16},
+  {48,64},
+  {32,64}, {32,32}, {32,24}, {32,16}, {32,8},
+  {24,32},
+  {16,64}, {16,32}, {16,16}, {16,12}, {16,8}, {16,4}, {16,2},
+  { 12,16 },
+  { 8,32 },{ 8,16 },{ 8,8 },{ 8,4 },{ 8,2 },{8,1},
+  { 4,8 },{ 4,4 },{ 4,2 },
+  { 2,4 },{ 2,2 }
+  };
+  bool found;
+  for (int i = 0; i < allowed_blksizes.size(); i++) {
+    if (analysisData.nBlkSizeX == allowed_blksizes[i].first && analysisData.nBlkSizeY == allowed_blksizes[i].second) {
+      found = true;
+      break;
+    }
+  }
+  if (!found) {
+    env->ThrowError(
+      "MAnalyse: Invalid block size: %d x %d", analysisData.nBlkSizeX, analysisData.nBlkSizeY);
+  }
+  /*
+    64x64, 64x48, 64x32, 64x16
+    48x64
+    32x64, 32x32, 32x24, 32x16, 32x8
+    24x32
+    16x64, 16x32, 16x16, 16x12, 16x8, 16x4, (16x2)
+    12x16
+    8x32, 8x16, 8x8, 8x4, (8x2, 8x1)
+    4x8, 4x4, 4x2
+    2x4, 2x2
+  */
   analysisData.nPel = nSuperPel;
   if (analysisData.nPel != 1
     && analysisData.nPel != 2
@@ -372,7 +414,8 @@ MVAnalyse::MVAnalyse(
     analysisData.pixelsize, // PF
     analysisData.bits_per_pixel,
     (_dct_factory_ptr.get() != 0) ? &_dct_pool : 0,
-    _mt_flag
+    _mt_flag,
+    analysisData.chromaSADScale
   ));
 
   analysisData.nMagicKey = MVAnalysisData::MOTION_MAGIC_KEY;

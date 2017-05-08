@@ -36,6 +36,16 @@
 #include <cstdio>
 
 
+MV_FORCEINLINE sad_t ScaleSadChroma(sad_t sad, int effective_scale) {
+  // effective scale: 1 -> div 2
+  //                  2 -> div 4 (YV24 default)
+  //                 -2 -> *4
+  //                 -1 -> *2
+  if (effective_scale == 0) return sad;
+  if (effective_scale > 0) return sad >> effective_scale;
+  return sad << (-effective_scale);
+}
+
 //extern MVCore mvCore;
 
 MVRecalculate::MVRecalculate(
@@ -43,7 +53,7 @@ MVRecalculate::MVRecalculate(
   int _blksizex, int _blksizey, int st, int stp, int lambda, bool chroma,
   int _pnew, int _overlapx, int _overlapy, const char* _outfilename,
   int _dctmode, int _divide, int _sadx264, bool _isse, bool _meander,
-  int trad, bool mt_flag, IScriptEnvironment* env
+  int trad, bool mt_flag, int _chromaSADScale, IScriptEnvironment* env
 )
   : GenericVideoFilter(_super)
   , _srd_arr()
@@ -54,17 +64,18 @@ MVRecalculate::MVRecalculate(
   , _mt_flag(mt_flag)
 {
   _srd_arr.resize(_nbr_srd);
+
+  pixelsize = vi.ComponentSize();
+  bits_per_pixel = vi.BitsPerComponent();
+
   for (int srd_index = 0; srd_index < _nbr_srd; ++srd_index)
   {
     SrcRefData &	srd = _srd_arr[srd_index];
-    const sad_t max_nSCD1 = 8 * 8 * (255 - 0);
+    const sad_t max_nSCD1 = 8 * 8 * (255 - 0); // normalized to blocksize and bits_per_pixel in MvClip
     srd._clip_sptr = SharedPtr <MVClip>(
       new MVClip(_vectors, max_nSCD1, 255, env, _nbr_srd, srd_index)
       );
   }
-
-  pixelsize = vi.ComponentSize();
-  bits_per_pixel = vi.BitsPerComponent();
 
   MVAnalysisData &	analysisData = _srd_arr[0]._analysis_data;
   MVAnalysisData &	analysisDataDivided = _srd_arr[0]._analysis_data_divided;
@@ -123,6 +134,13 @@ MVRecalculate::MVRecalculate(
   analysisData.pixelsize = pixelsize;
   analysisData.bits_per_pixel = bits_per_pixel;
 
+  if (_chromaSADScale<-2 || _chromaSADScale>2)
+    env->ThrowError(
+      "MVRecalculate: chromaSADScale must be -2..2"
+    );
+
+  analysisData.chromaSADScale = _chromaSADScale;
+
   pSrcGOF = new MVGroupOfFrames(
     nSuperLevels, analysisData.nWidth, analysisData.nHeight,
     nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV,
@@ -148,6 +166,7 @@ MVRecalculate::MVRecalculate(
 
   analysisData.nBlkSizeX = _blksizex;
   analysisData.nBlkSizeY = _blksizey;
+  /*
   if ((analysisData.nBlkSizeX != 4 || analysisData.nBlkSizeY != 4)
     && (analysisData.nBlkSizeX != 8 || analysisData.nBlkSizeY != 4)
     && (analysisData.nBlkSizeX != 8 || analysisData.nBlkSizeY != 8)
@@ -161,6 +180,30 @@ MVRecalculate::MVRecalculate(
       "MVRecalculate: Block's size must be "
       "4x4, 8x4, 8x8, 16x2, 16x8, 16x16, 32x16, 32x32"
     );
+  }
+  */
+  // same blocksize check in MAnalyze and MRecalculate
+  const std::vector< std::pair< int, int > > allowed_blksizes =
+  { { 64, 64 },{ 64,32 },{ 64,32 },{ 64,16 },
+  { 48,64 },
+  { 32,64 },{ 32,32 },{ 32,24 },{ 32,16 },{ 32,8 },
+  { 24,32 },
+  { 16,64 },{ 16,32 },{ 16,16 },{ 16,12 },{ 16,8 },{ 16,4 },{ 16,2 },
+  { 12,16 },
+  { 8,32 },{ 8,16 },{ 8,8 },{ 8,4 },{ 8,2 },{ 8,1 },
+  { 4,8 },{ 4,4 },{ 4,2 },
+  { 2,4 },{ 2,2 }
+  };
+  bool found;
+  for (int i = 0; i < allowed_blksizes.size(); i++) {
+    if (analysisData.nBlkSizeX == allowed_blksizes[i].first && analysisData.nBlkSizeY == allowed_blksizes[i].second) {
+      found = true;
+      break;
+    }
+  }
+  if (!found) {
+    env->ThrowError(
+      "MRecalculate: Invalid block size: %d x %d", analysisData.nBlkSizeX, analysisData.nBlkSizeY);
   }
 
   analysisData.nPel = nSuperPel;	//pAnalyseFilter->GetPel();
@@ -305,7 +348,8 @@ MVRecalculate::MVRecalculate(
     analysisData.pixelsize,
     analysisData.bits_per_pixel,
     (_dct_factory_ptr.get() != 0) ? &_dct_pool : 0,
-    _mt_flag
+    _mt_flag,
+    analysisData.chromaSADScale
   ));
 
   analysisData.nMagicKey = MVAnalysisData::MOTION_MAGIC_KEY;
@@ -397,7 +441,11 @@ MVRecalculate::MVRecalculate(
       * (1 + analysisData.yRatioUV) / analysisData.yRatioUV; // YUY,YV12 assumes xRatioUV=2
           same as thSAD_orig + thSAD_orig/yRatioUV;
         */
+#ifdef SCALECHROMASAD
+    thSAD += ScaleSadChroma(thSAD * 2, analysisData.chromaSADScale) / 4; // base: YV12
+#else
     thSAD += thSAD / (analysisData.xRatioUV * analysisData.yRatioUV) * 2; // *2: two additional planes: UV
+#endif
   }
 }
 
