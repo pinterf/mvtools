@@ -1,10 +1,12 @@
 ;*****************************************************************************
 ;* x86util.asm: x86 utility macros
 ;*****************************************************************************
-;* Copyright (C) 2008-2014 x264 project
+;* Copyright (C) 2003-2013 x264 project
+;* Copyright (C) 2013-2017 MulticoreWare, Inc
 ;*
 ;* Authors: Holger Lubitz <holger@lubitz.org>
 ;*          Loren Merritt <lorenm@u.washington.edu>
+;*          Min Chen <chenm003@163.com>
 ;*
 ;* This program is free software; you can redistribute it and/or modify
 ;* it under the terms of the GNU General Public License as published by
@@ -21,10 +23,10 @@
 ;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111, USA.
 ;*
 ;* This program is also available under a commercial proprietary license.
-;* For more information, contact us at licensing@x264.com.
+;* For more information, contact us at license @ x265.com.
 ;*****************************************************************************
 
-%assign FENC_STRIDE 16
+%assign FENC_STRIDE 64
 %assign FDEC_STRIDE 32
 
 %assign SIZEOF_PIXEL 1
@@ -290,6 +292,13 @@
     pminsw %1, %3
 %endmacro
 
+%macro CLIPW2 4 ;(dst0, dst1, min, max)
+    pmaxsw %1, %3
+    pmaxsw %2, %3
+    pminsw %1, %4
+    pminsw %2, %4
+%endmacro
+
 %macro HADDD 2 ; sum junk
 %if sizeof%1 == 32
 %define %2 xmm%2
@@ -304,7 +313,7 @@
     movhlps %2, %1
     paddd   %1, %2
 %endif
-%if notcpuflag(xop) || sizeof%1 != 16
+%if notcpuflag(xop)
     PSHUFLW %2, %1, q0032
     paddd   %1, %2
 %endif
@@ -351,11 +360,11 @@
 %if sizeof%1==32
                                  ; %3 = abcdefgh ijklmnop (lower address)
                                  ; %2 = ABCDEFGH IJKLMNOP (higher address)
-;   vperm2i128 %5, %2, %3, q0003 ; %5 = ijklmnop ABCDEFGH
-%if %4 < 16
-    palignr    %1, %5, %3, %4    ; %1 = bcdefghi jklmnopA
+    vperm2i128 %4, %1, %2, q0003 ; %4 = ijklmnop ABCDEFGH
+%if %3 < 16
+    palignr    %1, %4, %2, %3    ; %1 = bcdefghi jklmnopA
 %else
-    palignr    %1, %2, %5, %4-16 ; %1 = pABCDEFG HIJKLMNO
+    palignr    %1, %2, %4, %3-16 ; %1 = pABCDEFG HIJKLMNO
 %endif
 %elif cpuflag(ssse3)
     %if %0==5
@@ -872,4 +881,15 @@
 %else
     SWAP       %2, %3
 %endif
+%endmacro
+
+; IACA support
+%macro IACA_START 0
+    mov ebx, 111
+    db 0x64, 0x67, 0x90
+%endmacro
+
+%macro IACA_END 0
+    mov ebx, 222
+    db 0x64, 0x67, 0x90
 %endmacro
