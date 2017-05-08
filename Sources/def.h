@@ -41,6 +41,9 @@ const long double	LN2 = 0.69314718055994530941723212145818L;
 #ifndef MV_FORCEINLINE
 #define MV_FORCEINLINE __forceinline
 #endif
+
+#define MAX_BLOCK_SIZE 64
+
 /*
 C++ does not allow macroizing reserved words like inline
 #ifdef FORCE_INLINE // set compiler variable for Release with fastest run speed, but slow compile!
