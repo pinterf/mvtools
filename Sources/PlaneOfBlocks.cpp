@@ -177,7 +177,7 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
   BLITLUMA = get_copy_function(nBlkSizeX, nBlkSizeY, pixelsize, arch);
   BLITCHROMA = get_copy_function(nBlkSizeX / xRatioUV, nBlkSizeY / yRatioUV, pixelsize, arch);
   //VAR        = get_var_function(nBlkSizeX/xRatioUV, nBlkSizeY/yRatioUV, pixelsize, arch); // variance.h PF: no VAR
-  LUMA = get_luma_function(nBlkSizeX / xRatioUV, nBlkSizeY / yRatioUV, pixelsize, arch); // variance.h
+  LUMA = get_luma_function(nBlkSizeX, nBlkSizeY, pixelsize, arch); // variance.h
   SATD = get_satd_function(nBlkSizeX, nBlkSizeY, pixelsize, arch); // P.F. 2.7.0.22d SATD made live
   if (SATD == nullptr)
     SATD = SadDummy;
