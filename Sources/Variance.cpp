@@ -168,6 +168,7 @@ func_luma[make_tuple(x, y, 2, NO_SIMD)] = Luma_C<x, y, uint16_t>;
 #undef MAKE_LUMA_FN
 
     func_luma[make_tuple(64, 64, 1, USE_SSE2)] = Luma16_sse2<64, 64, uint8_t>;
+    func_luma[make_tuple(64, 48, 1, USE_SSE2)] = Luma16_sse2<64, 48, uint8_t>;
     func_luma[make_tuple(64, 32, 1, USE_SSE2)] = Luma16_sse2<64, 32, uint8_t>;
     func_luma[make_tuple(64, 16, 1, USE_SSE2)] = Luma16_sse2<64, 16, uint8_t>;
     func_luma[make_tuple(48, 64, 1, USE_SSE2)] = Luma16_sse2<48, 64, uint8_t>;
