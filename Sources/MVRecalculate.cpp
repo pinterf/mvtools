@@ -136,7 +136,7 @@ MVRecalculate::MVRecalculate(
 
   if (_chromaSADScale<-2 || _chromaSADScale>2)
     env->ThrowError(
-      "MVRecalculate: chromaSADScale must be -2..2"
+      "MVRecalculate: scaleCSAD must be -2..2"
     );
 
   analysisData.chromaSADScale = _chromaSADScale;
@@ -194,7 +194,7 @@ MVRecalculate::MVRecalculate(
   { 4,8 },{ 4,4 },{ 4,2 },
   { 2,4 },{ 2,2 }
   };
-  bool found;
+  bool found = false;
   for (int i = 0; i < allowed_blksizes.size(); i++) {
     if (analysisData.nBlkSizeX == allowed_blksizes[i].first && analysisData.nBlkSizeY == allowed_blksizes[i].second) {
       found = true;
@@ -349,7 +349,8 @@ MVRecalculate::MVRecalculate(
     analysisData.bits_per_pixel,
     (_dct_factory_ptr.get() != 0) ? &_dct_pool : 0,
     _mt_flag,
-    analysisData.chromaSADScale
+    analysisData.chromaSADScale,
+    env
   ));
 
   analysisData.nMagicKey = MVAnalysisData::MOTION_MAGIC_KEY;
