@@ -119,27 +119,35 @@ void OverlapsLsb_C(int *pDst, int nDstPitch, const unsigned char *pSrc, const un
 
 
 extern "C" void __cdecl  Overlaps64x64_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps64x48_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
 extern "C" void __cdecl  Overlaps64x32_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
 extern "C" void __cdecl  Overlaps64x16_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps48x64_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
 extern "C" void __cdecl  Overlaps32x64_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
 extern "C" void __cdecl  Overlaps32x32_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps16x32_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps32x24_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
 extern "C" void __cdecl  Overlaps32x16_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
 extern "C" void __cdecl  Overlaps32x8_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps24x32_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps16x64_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps16x32_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
 extern "C" void __cdecl  Overlaps16x16_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps8x16_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps8x8_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps4x8_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps4x4_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps2x4_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps2x2_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps8x4_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps4x2_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps16x12_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
 extern "C" void __cdecl  Overlaps16x8_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
 extern "C" void __cdecl  Overlaps16x4_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
 extern "C" void __cdecl  Overlaps16x2_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps12x16_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps8x32_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps8x16_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps8x8_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps8x4_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
 extern "C" void __cdecl  Overlaps8x2_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
 extern "C" void __cdecl  Overlaps8x1_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps4x8_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps4x4_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps4x2_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps2x4_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps2x2_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
 
 void Short2Bytes_sse2(unsigned char *pDst, int nDstPitch, unsigned short *pDstShort, int dstShortPitch, int nWidth, int nHeight);
 void Short2Bytes(unsigned char *pDst, int nDstPitch, unsigned short *pDstShort, int dstShortPitch, int nWidth, int nHeight);
