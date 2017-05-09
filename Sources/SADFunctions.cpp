@@ -345,8 +345,43 @@ MV_FORCEINLINE int32_t calc_satd16_4x4_blocks(const unsigned char *src, int syst
 
 // later these could move to macros, but they are not debuggable easily
 template<bool hasSSSE3>
+static uint32_t satd16_64x64_sse2(const unsigned char *src, int systride, const unsigned char *ref, int rystride) {
+  return calc_satd16_4x4_blocks<64, 64, hasSSSE3>(src, systride, ref, rystride);
+}
+
+template<bool hasSSSE3>
+static uint32_t satd16_64x48_sse2(const unsigned char *src, int systride, const unsigned char *ref, int rystride) {
+  return calc_satd16_4x4_blocks<64, 48, hasSSSE3>(src, systride, ref, rystride);
+}
+
+template<bool hasSSSE3>
+static uint32_t satd16_64x32_sse2(const unsigned char *src, int systride, const unsigned char *ref, int rystride) {
+  return calc_satd16_4x4_blocks<64, 32, hasSSSE3>(src, systride, ref, rystride);
+}
+
+template<bool hasSSSE3>
+static uint32_t satd16_64x16_sse2(const unsigned char *src, int systride, const unsigned char *ref, int rystride) {
+  return calc_satd16_4x4_blocks<64, 16, hasSSSE3>(src, systride, ref, rystride);
+}
+
+template<bool hasSSSE3>
+static uint32_t satd16_48x64_sse2(const unsigned char *src, int systride, const unsigned char *ref, int rystride) {
+  return calc_satd16_4x4_blocks<48, 64, hasSSSE3>(src, systride, ref, rystride);
+}
+
+template<bool hasSSSE3>
+static uint32_t satd16_32x64_sse2(const unsigned char *src, int systride, const unsigned char *ref, int rystride) {
+  return calc_satd16_4x4_blocks<32, 64, hasSSSE3>(src, systride, ref, rystride);
+}
+
+template<bool hasSSSE3>
 static uint32_t satd16_32x32_sse2(const unsigned char *src, int systride, const unsigned char *ref, int rystride) {
   return calc_satd16_4x4_blocks<32,32,hasSSSE3>(src, systride, ref, rystride);
+}
+
+template<bool hasSSSE3>
+static uint32_t satd16_32x24_sse2(const unsigned char *src, int systride, const unsigned char *ref, int rystride) {
+  return calc_satd16_4x4_blocks<32, 24, hasSSSE3>(src, systride, ref, rystride);
 }
 
 template<bool hasSSSE3>
@@ -360,6 +395,16 @@ static uint32_t satd16_32x8_sse2(const unsigned char *src, int systride, const u
 }
 
 template<bool hasSSSE3>
+static uint32_t satd16_24x32_sse2(const unsigned char *src, int systride, const unsigned char *ref, int rystride) {
+  return calc_satd16_4x4_blocks<24, 32, hasSSSE3>(src, systride, ref, rystride);
+}
+
+template<bool hasSSSE3>
+static uint32_t satd16_16x64_sse2(const unsigned char *src, int systride, const unsigned char *ref, int rystride) {
+  return calc_satd16_4x4_blocks<16, 64, hasSSSE3>(src, systride, ref, rystride);
+}
+
+template<bool hasSSSE3>
 static uint32_t satd16_16x32_sse2(const unsigned char *src, int systride, const unsigned char *ref, int rystride) {
   return calc_satd16_4x4_blocks<16,32,hasSSSE3>(src, systride, ref, rystride);
 }
@@ -367,6 +412,11 @@ static uint32_t satd16_16x32_sse2(const unsigned char *src, int systride, const 
 template<bool hasSSSE3>
 static uint32_t satd16_16x16_sse2(const unsigned char *src, int systride, const unsigned char *ref, int rystride) {
   return calc_satd16_4x4_blocks<16,16,hasSSSE3>(src, systride, ref, rystride);
+}
+
+template<bool hasSSSE3>
+static uint32_t satd16_16x12_sse2(const unsigned char *src, int systride, const unsigned char *ref, int rystride) {
+  return calc_satd16_4x4_blocks<16, 12, hasSSSE3>(src, systride, ref, rystride);
 }
 
 template<bool hasSSSE3>
@@ -382,6 +432,16 @@ static uint32_t satd16_16x4_sse2(const unsigned char *src, int systride, const u
 template<bool hasSSSE3>
 static uint32_t satd16_8x16_sse2(const unsigned char *src, int systride, const unsigned char *ref, int rystride) {
   return calc_satd16_4x4_blocks<8,16,hasSSSE3>(src, systride, ref, rystride);
+}
+
+template<bool hasSSSE3>
+static uint32_t satd16_12x16_sse2(const unsigned char *src, int systride, const unsigned char *ref, int rystride) {
+  return calc_satd16_4x4_blocks<12, 16, hasSSSE3>(src, systride, ref, rystride);
+}
+
+template<bool hasSSSE3>
+static uint32_t satd16_8x32_sse2(const unsigned char *src, int systride, const unsigned char *ref, int rystride) {
+  return calc_satd16_4x4_blocks<8, 32, hasSSSE3>(src, systride, ref, rystride);
 }
 
 template<bool hasSSSE3>
@@ -581,8 +641,29 @@ static unsigned int x264_pixel_satd_uint16_NxN_by_4x4_c(const uint8_t *pix1, int
   return sum;
 }
 
+static unsigned int x264_pixel_satd_uint16_64x64_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return x264_pixel_satd_uint16_NxN_by_8x4_c<64, 64>(pix1, i_pix1, pix2, i_pix2);
+}
+static unsigned int x264_pixel_satd_uint16_64x48_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return x264_pixel_satd_uint16_NxN_by_8x4_c<64, 48>(pix1, i_pix1, pix2, i_pix2);
+}
+static unsigned int x264_pixel_satd_uint16_64x32_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return x264_pixel_satd_uint16_NxN_by_8x4_c<64, 32>(pix1, i_pix1, pix2, i_pix2);
+}
+static unsigned int x264_pixel_satd_uint16_64x16_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return x264_pixel_satd_uint16_NxN_by_8x4_c<64, 16>(pix1, i_pix1, pix2, i_pix2);
+}
+static unsigned int x264_pixel_satd_uint16_48x64_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return x264_pixel_satd_uint16_NxN_by_8x4_c<48, 64>(pix1, i_pix1, pix2, i_pix2);
+}
+static unsigned int x264_pixel_satd_uint16_32x64_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return x264_pixel_satd_uint16_NxN_by_8x4_c<32, 64>(pix1, i_pix1, pix2, i_pix2);
+}
 static unsigned int x264_pixel_satd_uint16_32x32_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
   return x264_pixel_satd_uint16_NxN_by_8x4_c<32, 32>(pix1, i_pix1, pix2, i_pix2); 
+}
+static unsigned int x264_pixel_satd_uint16_32x24_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return x264_pixel_satd_uint16_NxN_by_8x4_c<32, 24>(pix1, i_pix1, pix2, i_pix2);
 }
 static unsigned int x264_pixel_satd_uint16_32x16_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
   return x264_pixel_satd_uint16_NxN_by_8x4_c<32, 16>(pix1, i_pix1, pix2, i_pix2); 
@@ -593,17 +674,29 @@ static unsigned int x264_pixel_satd_uint16_32x8_c(const uint8_t *pix1, int i_pix
 static unsigned int x264_pixel_satd_uint16_32x4_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
   return x264_pixel_satd_uint16_NxN_by_8x4_c<32, 4>(pix1, i_pix1, pix2, i_pix2);
 }
+static unsigned int x264_pixel_satd_uint16_24x32_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return x264_pixel_satd_uint16_NxN_by_8x4_c<24, 32>(pix1, i_pix1, pix2, i_pix2);
+}
+static unsigned int x264_pixel_satd_uint16_16x64_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return x264_pixel_satd_uint16_NxN_by_8x4_c<16, 64>(pix1, i_pix1, pix2, i_pix2);
+}
 static unsigned int x264_pixel_satd_uint16_16x32_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
   return x264_pixel_satd_uint16_NxN_by_8x4_c<16, 32>(pix1, i_pix1, pix2, i_pix2); 
 }
 static unsigned int x264_pixel_satd_uint16_16x16_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
   return x264_pixel_satd_uint16_NxN_by_8x4_c<16, 16>(pix1, i_pix1, pix2, i_pix2); 
 }
+static unsigned int x264_pixel_satd_uint16_16x12_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return x264_pixel_satd_uint16_NxN_by_8x4_c<16, 12>(pix1, i_pix1, pix2, i_pix2); 
+}
 static unsigned int x264_pixel_satd_uint16_16x8_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return x264_pixel_satd_uint16_NxN_by_8x4_c<16, 8>(pix1, i_pix1, pix2, i_pix2); 
+  return x264_pixel_satd_uint16_NxN_by_8x4_c<16, 8>(pix1, i_pix1, pix2, i_pix2);
 }
 static unsigned int x264_pixel_satd_uint16_16x4_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
   return x264_pixel_satd_uint16_NxN_by_8x4_c<16, 4>(pix1, i_pix1, pix2, i_pix2); 
+}
+static unsigned int x264_pixel_satd_uint16_12x16_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return x264_pixel_satd_uint16_NxN_by_4x4_c<12, 16>(pix1, i_pix1, pix2, i_pix2);
 }
 static unsigned int x264_pixel_satd_uint16_8x32_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
   return x264_pixel_satd_uint16_NxN_by_8x4_c<8, 32>(pix1, i_pix1, pix2, i_pix2);
@@ -955,29 +1048,115 @@ func_sad[make_tuple(x, y, 2, USE_SSE2)] = Sad16_sse2<x, y, uint16_t>;
 // so as a poor man's substitute, we use a sum of smaller SATD functions.
 // 8 bit only
 #define	SATD_REC_FUNC(blsizex, blsizey, sblx, sbly, type)	extern "C" unsigned int __cdecl	x264_pixel_satd_##blsizex##x##blsizey##_##type (const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)	\
-{	\
-	const int		sum =	\
-		  x264_pixel_satd_##sblx##x##sbly##_##type (pSrc,                     nSrcPitch, pRef,                     nRefPitch)	\
-		+ x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+sblx,                nSrcPitch, pRef+sblx,                nRefPitch)	\
-		+ x264_pixel_satd_##sblx##x##sbly##_##type (pSrc     +sbly*nSrcPitch, nSrcPitch, pRef     +sbly*nRefPitch, nRefPitch)	\
-		+ x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+sblx+sbly*nSrcPitch, nSrcPitch, pRef+sblx+sbly*nRefPitch, nRefPitch);	\
-	return (sum);	\
+{ \
+  if(blsizex / sblx == 2 && blsizey / sbly == 2) \
+    return \
+      x264_pixel_satd_##sblx##x##sbly##_##type (pSrc,                     nSrcPitch, pRef,                     nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+sblx,                nSrcPitch, pRef+sblx,                nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc     +sbly*nSrcPitch, nSrcPitch, pRef     +sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+sblx+sbly*nSrcPitch, nSrcPitch, pRef+sblx+sbly*nRefPitch, nRefPitch);\
+  else if(blsizex / sblx == 4 && blsizey / sbly == 4) \
+    return \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+0*sblx     +0*sbly*nSrcPitch, nSrcPitch, pRef+0*sblx     +0*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+1*sblx     +0*sbly*nSrcPitch, nSrcPitch, pRef+1*sblx     +0*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+2*sblx     +0*sbly*nSrcPitch, nSrcPitch, pRef+2*sblx     +0*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+3*sblx     +0*sbly*nSrcPitch, nSrcPitch, pRef+3*sblx     +0*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+0*sblx     +1*sbly*nSrcPitch, nSrcPitch, pRef+0*sblx     +1*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+1*sblx     +1*sbly*nSrcPitch, nSrcPitch, pRef+1*sblx     +1*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+2*sblx     +1*sbly*nSrcPitch, nSrcPitch, pRef+2*sblx     +1*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+3*sblx     +1*sbly*nSrcPitch, nSrcPitch, pRef+3*sblx     +1*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+0*sblx     +2*sbly*nSrcPitch, nSrcPitch, pRef+0*sblx     +2*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+1*sblx     +2*sbly*nSrcPitch, nSrcPitch, pRef+1*sblx     +2*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+2*sblx     +2*sbly*nSrcPitch, nSrcPitch, pRef+2*sblx     +2*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+3*sblx     +2*sbly*nSrcPitch, nSrcPitch, pRef+3*sblx     +2*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+0*sblx     +3*sbly*nSrcPitch, nSrcPitch, pRef+0*sblx     +3*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+1*sblx     +3*sbly*nSrcPitch, nSrcPitch, pRef+1*sblx     +3*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+2*sblx     +3*sbly*nSrcPitch, nSrcPitch, pRef+2*sblx     +3*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+3*sblx     +3*sbly*nSrcPitch, nSrcPitch, pRef+3*sblx     +3*sbly*nRefPitch, nRefPitch); \
+  else if(blsizex / sblx == 2 && blsizey / sbly == 4) \
+    return \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+0*sblx     +0*sbly*nSrcPitch, nSrcPitch, pRef+0*sblx     +0*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+1*sblx     +0*sbly*nSrcPitch, nSrcPitch, pRef+1*sblx     +0*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+0*sblx     +1*sbly*nSrcPitch, nSrcPitch, pRef+0*sblx     +1*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+1*sblx     +1*sbly*nSrcPitch, nSrcPitch, pRef+1*sblx     +1*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+0*sblx     +2*sbly*nSrcPitch, nSrcPitch, pRef+0*sblx     +2*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+1*sblx     +2*sbly*nSrcPitch, nSrcPitch, pRef+1*sblx     +2*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+0*sblx     +3*sbly*nSrcPitch, nSrcPitch, pRef+0*sblx     +3*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+1*sblx     +3*sbly*nSrcPitch, nSrcPitch, pRef+1*sblx     +3*sbly*nRefPitch, nRefPitch); \
+  else if(blsizex / sblx == 4 && blsizey / sbly == 2) \
+    return \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+0*sblx     +0*sbly*nSrcPitch, nSrcPitch, pRef+0*sblx     +0*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+1*sblx     +0*sbly*nSrcPitch, nSrcPitch, pRef+1*sblx     +0*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+2*sblx     +0*sbly*nSrcPitch, nSrcPitch, pRef+2*sblx     +0*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+3*sblx     +0*sbly*nSrcPitch, nSrcPitch, pRef+3*sblx     +0*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+0*sblx     +1*sbly*nSrcPitch, nSrcPitch, pRef+0*sblx     +1*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+1*sblx     +1*sbly*nSrcPitch, nSrcPitch, pRef+1*sblx     +1*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+2*sblx     +1*sbly*nSrcPitch, nSrcPitch, pRef+2*sblx     +1*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+3*sblx     +1*sbly*nSrcPitch, nSrcPitch, pRef+3*sblx     +1*sbly*nRefPitch, nRefPitch);\
+  assert(0); \
+  return 0; \
 }
 
+// compound SATD when final blocksize is build from vertical base block arrangement
+// blsizex, blsizey: final blocksize
+// sblx, sbly: building stone
 #define	SATD_REC_FUNC_VERT_ONLY(blsizex, blsizey, sblx, sbly, type)	extern "C" unsigned int __cdecl	x264_pixel_satd_##blsizex##x##blsizey##_##type (const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)	\
-{	\
-	const int		sum =	\
-		  x264_pixel_satd_##sblx##x##sbly##_##type (pSrc,                     nSrcPitch, pRef,                     nRefPitch)	\
-		+ x264_pixel_satd_##sblx##x##sbly##_##type (pSrc     +sbly*nSrcPitch, nSrcPitch, pRef     +sbly*nRefPitch, nRefPitch);\
-	return (sum);	\
+{ \
+  if (blsizex != sblx) \
+    assert(0); \
+  else if(blsizey / sbly == 2) \
+    return \
+      x264_pixel_satd_##sblx##x##sbly##_##type (pSrc,                     nSrcPitch, pRef,                     nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc     +sbly*nSrcPitch, nSrcPitch, pRef     +sbly*nRefPitch, nRefPitch);\
+  else if(blsizey / sbly == 4) \
+    return \
+      x264_pixel_satd_##sblx##x##sbly##_##type (pSrc,                       nSrcPitch, pRef,                       nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc       +sbly*nSrcPitch, nSrcPitch, pRef       +sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc     +2*sbly*nSrcPitch, nSrcPitch, pRef     +2*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc     +3*sbly*nSrcPitch, nSrcPitch, pRef     +3*sbly*nRefPitch, nRefPitch);\
+  else if(blsizey / sbly == 8) \
+    return \
+      x264_pixel_satd_##sblx##x##sbly##_##type (pSrc,                       nSrcPitch, pRef,                       nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc       +sbly*nSrcPitch, nSrcPitch, pRef       +sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc     +2*sbly*nSrcPitch, nSrcPitch, pRef     +2*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc     +3*sbly*nSrcPitch, nSrcPitch, pRef     +3*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc     +4*sbly*nSrcPitch, nSrcPitch, pRef     +4*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc     +5*sbly*nSrcPitch, nSrcPitch, pRef     +5*sbly*nRefPitch, nRefPitch) \
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc     +6*sbly*nSrcPitch, nSrcPitch, pRef     +6*sbly*nRefPitch, nRefPitch)\
+    + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc     +7*sbly*nSrcPitch, nSrcPitch, pRef     +7*sbly*nRefPitch, nRefPitch);\
+  assert(0); \
+  return 0; \
 }
 
+// compound SATD when final blocksize is build from horizontal base block arrangement
+// blsizex, blsizey: final blocksize
+// sblx, sbly: building stone
 #define	SATD_REC_FUNC_HORIZ_ONLY(blsizex, blsizey, sblx, sbly, type)	extern "C" unsigned int __cdecl	x264_pixel_satd_##blsizex##x##blsizey##_##type (const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)	\
-{	\
-	const int		sum =	\
-		  x264_pixel_satd_##sblx##x##sbly##_##type (pSrc,                     nSrcPitch, pRef,                     nRefPitch)	\
-		+ x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+sblx,                nSrcPitch, pRef+sblx,                nRefPitch);\
-	return (sum);	\
+{ \
+  if (blsizex != sblx) \
+    assert(0); \
+  else if(blsizex / sblx == 2) \
+    return \
+    x264_pixel_satd_##sblx##x##sbly##_##type (pSrc,                     nSrcPitch, pRef,                     nRefPitch)\
+  + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+sblx,                nSrcPitch, pRef+sblx,                nRefPitch);\
+  else if(blsizex / sblx == 4) \
+    return \
+    x264_pixel_satd_##sblx##x##sbly##_##type (pSrc,                       nSrcPitch, pRef,                       nRefPitch)\
+  + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+sblx,                  nSrcPitch, pRef+sblx,                  nRefPitch)\
+  + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+2*sblx,                nSrcPitch, pRef+2*sblx,                nRefPitch)\
+  + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+3*sblx,                nSrcPitch, pRef+3*sblx,                nRefPitch);\
+  else if(blsizex / sblx == 8) \
+    return \
+    x264_pixel_satd_##sblx##x##sbly##_##type (pSrc,                       nSrcPitch, pRef,                       nRefPitch)\
+  + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+sblx,                  nSrcPitch, pRef+sblx,                  nRefPitch)\
+  + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+2*sblx,                nSrcPitch, pRef+2*sblx,                nRefPitch)\
+  + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+3*sblx,                nSrcPitch, pRef+3*sblx,                nRefPitch)\
+  + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+4*sblx,                nSrcPitch, pRef+4*sblx,                nRefPitch)\
+  + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+5*sblx,                nSrcPitch, pRef+5*sblx,                nRefPitch)\
+  + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+6*sblx,                nSrcPitch, pRef+6*sblx,                nRefPitch)\
+  + x264_pixel_satd_##sblx##x##sbly##_##type (pSrc+7*sblx,                nSrcPitch, pRef+7*sblx,                nRefPitch);\
+  assert(0); \
+  return 0; \
 }
 
 SATD_REC_FUNC_HORIZ_ONLY(32, 4, 16, 4, sse2)
@@ -989,7 +1168,9 @@ SATD_REC_FUNC_HORIZ_ONLY(32, 4, 16, 4, avx)
 SATD_REC_FUNC(32, 32, 16, 16, avx2)
 SATD_REC_FUNC_HORIZ_ONLY(32, 16, 16, 16, avx2)
 SATD_REC_FUNC_HORIZ_ONLY(32, 8, 16, 8, avx2)
+SATD_REC_FUNC_VERT_ONLY(16, 64, 16, 16, avx2)
 SATD_REC_FUNC_VERT_ONLY(16, 32, 16, 16, avx2)
+SATD_REC_FUNC_VERT_ONLY(32, 64, 16, 16, avx2)
 #endif
 #ifdef _M_X64
 SATD_REC_FUNC_VERT_ONLY(4, 32, 4, 16, sse2)
@@ -1011,10 +1192,17 @@ SADFunction* get_satd_function(int BlockX, int BlockY, int pixelsize, arch_t arc
     //Not implemented asm macros are in separate functions (e.g. 32x32 = 16x16 + 16x16 + 16x16 + 16x16) 
     //x264_pixel_satd_##blksizex##x##blksizey##_sse2/sse4/ssse3/avx/avx2
     
-    // avx2: no *4 versions 
+    // avx2: no 64* and *4 versions 
+    //func_satd[make_tuple(64, 64, 1, USE_AVX2)] = x264_pixel_satd_64x64_avx2;
+    //func_satd[make_tuple(64, 32, 1, USE_AVX2)] = x264_pixel_satd_64x32_avx2;
+    //func_satd[make_tuple(64, 16, 1, USE_AVX2)] = x264_pixel_satd_64x16_avx2;
+    //func_satd[make_tuple(64, 8, 1, USE_AVX2)] = x264_pixel_satd_64x8_avx2;
+    func_satd[make_tuple(32, 64, 1, USE_AVX2)] = x264_pixel_satd_32x64_avx2;
+
     func_satd[make_tuple(32, 32, 1, USE_AVX2)] = x264_pixel_satd_32x32_avx2;
     func_satd[make_tuple(32, 16, 1, USE_AVX2)] = x264_pixel_satd_32x16_avx2;
     func_satd[make_tuple(32,  8, 1, USE_AVX2)] = x264_pixel_satd_32x8_avx2;
+    func_satd[make_tuple(16, 32, 1, USE_AVX2)] = x264_pixel_satd_16x64_avx2;
     func_satd[make_tuple(16, 32, 1, USE_AVX2)] = x264_pixel_satd_16x32_avx2;
     func_satd[make_tuple(16, 16, 1, USE_AVX2)] = x264_pixel_satd_16x16_avx2;
     func_satd[make_tuple(16, 8 , 1, USE_AVX2)] = x264_pixel_satd_16x8_avx2;
@@ -1022,27 +1210,51 @@ SADFunction* get_satd_function(int BlockX, int BlockY, int pixelsize, arch_t arc
     func_satd[make_tuple(8 , 16, 1, USE_AVX2)] = x264_pixel_satd_8x16_avx2;
     func_satd[make_tuple(8 , 8 , 1, USE_AVX2)] = x264_pixel_satd_8x8_avx2;
 
+    func_satd[make_tuple(64, 64, 1, USE_AVX)] = x264_pixel_satd_64x64_avx;
+    func_satd[make_tuple(64, 48, 1, USE_AVX)] = x264_pixel_satd_64x48_avx;
+    func_satd[make_tuple(64, 32, 1, USE_AVX)] = x264_pixel_satd_64x32_avx;
+    func_satd[make_tuple(64, 16, 1, USE_AVX)] = x264_pixel_satd_64x16_avx;
+    //func_satd[make_tuple(64, 8, 1, USE_AVX)] = x264_pixel_satd_64x8_avx;
+    func_satd[make_tuple(48, 64, 1, USE_AVX)] = x264_pixel_satd_48x64_avx;
+    func_satd[make_tuple(32, 64, 1, USE_AVX)] = x264_pixel_satd_32x64_avx;
     func_satd[make_tuple(32, 32, 1, USE_AVX)] = x264_pixel_satd_32x32_avx;
+    func_satd[make_tuple(32, 24, 1, USE_AVX)] = x264_pixel_satd_32x24_avx;
     func_satd[make_tuple(32, 16, 1, USE_AVX)] = x264_pixel_satd_32x16_avx;
     func_satd[make_tuple(32,  8, 1, USE_AVX)] = x264_pixel_satd_32x8_avx;
     func_satd[make_tuple(32,  4, 1, USE_AVX)] = x264_pixel_satd_32x4_avx;
+    func_satd[make_tuple(24, 32, 1, USE_AVX)] = x264_pixel_satd_24x32_avx;
+    func_satd[make_tuple(16, 64, 1, USE_AVX)] = x264_pixel_satd_16x64_avx;
     func_satd[make_tuple(16, 32, 1, USE_AVX)] = x264_pixel_satd_16x32_avx;
     func_satd[make_tuple(16, 16, 1, USE_AVX)] = x264_pixel_satd_16x16_avx;
+    func_satd[make_tuple(16, 12, 1, USE_AVX)] = x264_pixel_satd_16x12_avx;
     func_satd[make_tuple(16, 8 , 1, USE_AVX)] = x264_pixel_satd_16x8_avx;
     func_satd[make_tuple(16, 4 , 1, USE_AVX)] = x264_pixel_satd_16x4_avx;
+    func_satd[make_tuple(12, 16, 1, USE_AVX)] = x264_pixel_satd_12x16_avx;
     func_satd[make_tuple(8 , 32, 1, USE_AVX)] = x264_pixel_satd_8x32_avx;
     func_satd[make_tuple(8 , 16, 1, USE_AVX)] = x264_pixel_satd_8x16_avx;
     func_satd[make_tuple(8 , 8 , 1, USE_AVX)] = x264_pixel_satd_8x8_avx;
     func_satd[make_tuple(8 , 4 , 1, USE_AVX)] = x264_pixel_satd_8x4_avx;
 
+    func_satd[make_tuple(64, 64, 1, USE_SSE41)] = x264_pixel_satd_64x64_sse4;
+    func_satd[make_tuple(64, 48, 1, USE_SSE41)] = x264_pixel_satd_64x48_sse4;
+    func_satd[make_tuple(64, 32, 1, USE_SSE41)] = x264_pixel_satd_64x32_sse4;
+    func_satd[make_tuple(64, 16, 1, USE_SSE41)] = x264_pixel_satd_64x16_sse4;
+    //func_satd[make_tuple(64, 8, 1, USE_SSE41)] = x264_pixel_satd_64x8_sse4;
+    func_satd[make_tuple(48, 64, 1, USE_SSE41)] = x264_pixel_satd_48x64_sse4;
+    func_satd[make_tuple(32, 64, 1, USE_SSE41)] = x264_pixel_satd_32x64_sse4;
     func_satd[make_tuple(32, 32, 1, USE_SSE41)] = x264_pixel_satd_32x32_sse4;
+    func_satd[make_tuple(32, 24, 1, USE_SSE41)] = x264_pixel_satd_32x24_sse4;
     func_satd[make_tuple(32, 16, 1, USE_SSE41)] = x264_pixel_satd_32x16_sse4;
     func_satd[make_tuple(32,  8, 1, USE_SSE41)] = x264_pixel_satd_32x8_sse4;
     func_satd[make_tuple(32,  4, 1, USE_SSE41)] = x264_pixel_satd_32x4_sse4;
+    func_satd[make_tuple(24, 32, 1, USE_SSE41)] = x264_pixel_satd_24x32_sse4;
+    func_satd[make_tuple(16, 64, 1, USE_SSE41)] = x264_pixel_satd_16x64_sse4;
     func_satd[make_tuple(16, 32, 1, USE_SSE41)] = x264_pixel_satd_16x32_sse4;
     func_satd[make_tuple(16, 16, 1, USE_SSE41)] = x264_pixel_satd_16x16_sse4;
+    func_satd[make_tuple(16, 12, 1, USE_SSE41)] = x264_pixel_satd_16x12_sse4;
     func_satd[make_tuple(16, 8 , 1, USE_SSE41)] = x264_pixel_satd_16x8_sse4;
     func_satd[make_tuple(16, 4 , 1, USE_SSE41)] = x264_pixel_satd_16x4_sse4;
+    func_satd[make_tuple(12, 16, 1, USE_SSE41)] = x264_pixel_satd_12x16_sse4;
     func_satd[make_tuple(8 , 32, 1, USE_SSE41)] = x264_pixel_satd_8x32_sse4;
     func_satd[make_tuple(8 , 16, 1, USE_SSE41)] = x264_pixel_satd_8x16_sse4;
     func_satd[make_tuple(8 , 8 , 1, USE_SSE41)] = x264_pixel_satd_8x8_sse4;
@@ -1050,14 +1262,26 @@ SADFunction* get_satd_function(int BlockX, int BlockY, int pixelsize, arch_t arc
     func_satd[make_tuple(4,  8 , 1, USE_SSE41)] = x264_pixel_satd_4x8_sse4;
     func_satd[make_tuple(4,  4 , 1, USE_SSE41)] = x264_pixel_satd_4x4_sse4;
 
+    func_satd[make_tuple(64, 64, 1, USE_SSE2)] = x264_pixel_satd_64x64_sse2;
+    func_satd[make_tuple(64, 48, 1, USE_SSE2)] = x264_pixel_satd_64x48_sse2;
+    func_satd[make_tuple(64, 32, 1, USE_SSE2)] = x264_pixel_satd_64x32_sse2;
+    func_satd[make_tuple(64, 16, 1, USE_SSE2)] = x264_pixel_satd_64x16_sse2;
+    //func_satd[make_tuple(64, 8, 1, USE_SSE2)] = x264_pixel_satd_64x8_sse2;
+    func_satd[make_tuple(48, 64, 1, USE_SSE2)] = x264_pixel_satd_48x64_sse2;
+    func_satd[make_tuple(32, 64, 1, USE_SSE2)] = x264_pixel_satd_32x64_sse2;
     func_satd[make_tuple(32, 32, 1, USE_SSE2)] = x264_pixel_satd_32x32_sse2;
     func_satd[make_tuple(32, 16, 1, USE_SSE2)] = x264_pixel_satd_32x16_sse2;
+    func_satd[make_tuple(32, 24, 1, USE_SSE2)] = x264_pixel_satd_32x24_sse2;
     func_satd[make_tuple(32,  8, 1, USE_SSE2)] = x264_pixel_satd_32x8_sse2;
     func_satd[make_tuple(32,  4, 1, USE_SSE2)] = x264_pixel_satd_32x4_sse2;
+    func_satd[make_tuple(24, 32, 1, USE_SSE2)] = x264_pixel_satd_24x32_sse2;
+    func_satd[make_tuple(16, 64, 1, USE_SSE2)] = x264_pixel_satd_16x64_sse2;
     func_satd[make_tuple(16, 32, 1, USE_SSE2)] = x264_pixel_satd_16x32_sse2;
     func_satd[make_tuple(16, 16, 1, USE_SSE2)] = x264_pixel_satd_16x16_sse2;
+    func_satd[make_tuple(16, 12, 1, USE_SSE2)] = x264_pixel_satd_16x12_sse2;
     func_satd[make_tuple(16, 8 , 1, USE_SSE2)] = x264_pixel_satd_16x8_sse2;
     func_satd[make_tuple(16, 4 , 1, USE_SSE2)] = x264_pixel_satd_16x4_sse2;
+    func_satd[make_tuple(12, 16, 1, USE_SSE2)] = x264_pixel_satd_12x16_sse2;
     func_satd[make_tuple(8 , 32, 1, USE_SSE2)] = x264_pixel_satd_8x32_sse2;
     func_satd[make_tuple(8 , 16, 1, USE_SSE2)] = x264_pixel_satd_8x16_sse2;
     func_satd[make_tuple(8 , 8 , 1, USE_SSE2)] = x264_pixel_satd_8x8_sse2;
@@ -1067,14 +1291,26 @@ SADFunction* get_satd_function(int BlockX, int BlockY, int pixelsize, arch_t arc
     func_satd[make_tuple(4 , 8 , 1, USE_SSE2)] = x264_pixel_satd_4x8_sse2;
     func_satd[make_tuple(4 , 4 , 1, USE_SSE2)] = x264_pixel_satd_4x4_mmx2;
 
+    func_satd[make_tuple(64, 64, 2, NO_SIMD)] = x264_pixel_satd_uint16_64x64_c;
+    func_satd[make_tuple(64, 48, 2, NO_SIMD)] = x264_pixel_satd_uint16_64x48_c;
+    func_satd[make_tuple(64, 32, 2, NO_SIMD)] = x264_pixel_satd_uint16_64x32_c;
+    func_satd[make_tuple(64, 16, 2, NO_SIMD)] = x264_pixel_satd_uint16_64x16_c;
+    //func_satd[make_tuple(64, 8, 2, NO_SIMD)] = x264_pixel_satd_uint16_64x8_c;
+    func_satd[make_tuple(48, 64, 2, NO_SIMD)] = x264_pixel_satd_uint16_48x64_c;
+    func_satd[make_tuple(32, 64, 2, NO_SIMD)] = x264_pixel_satd_uint16_32x64_c;
     func_satd[make_tuple(32, 32, 2, NO_SIMD)] = x264_pixel_satd_uint16_32x32_c;
+    func_satd[make_tuple(32, 24, 2, NO_SIMD)] = x264_pixel_satd_uint16_32x24_c;
     func_satd[make_tuple(32, 16, 2, NO_SIMD)] = x264_pixel_satd_uint16_32x16_c;
     func_satd[make_tuple(32, 8 , 2, NO_SIMD)] = x264_pixel_satd_uint16_32x8_c;
     func_satd[make_tuple(32, 4 , 2, NO_SIMD)] = x264_pixel_satd_uint16_32x4_c;
+    func_satd[make_tuple(24, 32, 2, NO_SIMD)] = x264_pixel_satd_uint16_24x32_c;
+    func_satd[make_tuple(16, 64, 2, NO_SIMD)] = x264_pixel_satd_uint16_16x64_c;
     func_satd[make_tuple(16, 32, 2, NO_SIMD)] = x264_pixel_satd_uint16_16x32_c;
     func_satd[make_tuple(16, 16, 2, NO_SIMD)] = x264_pixel_satd_uint16_16x16_c;
+    func_satd[make_tuple(16, 12, 2, NO_SIMD)] = x264_pixel_satd_uint16_16x12_c;
     func_satd[make_tuple(16, 8 , 2, NO_SIMD)] = x264_pixel_satd_uint16_16x8_c;
     func_satd[make_tuple(16, 4 , 2, NO_SIMD)] = x264_pixel_satd_uint16_16x4_c;
+    func_satd[make_tuple(12, 16, 2, NO_SIMD)] = x264_pixel_satd_uint16_12x16_c;
     func_satd[make_tuple(8 , 32, 2, NO_SIMD)] = x264_pixel_satd_uint16_8x32_c;
     func_satd[make_tuple(8 , 16, 2, NO_SIMD)] = x264_pixel_satd_uint16_8x16_c;
     func_satd[make_tuple(8 , 8 , 2, NO_SIMD)] = x264_pixel_satd_uint16_8x8_c;
@@ -1085,26 +1321,52 @@ SADFunction* get_satd_function(int BlockX, int BlockY, int pixelsize, arch_t arc
     func_satd[make_tuple(4 , 4 , 2, NO_SIMD)] = x264_pixel_satd_uint16_4x4_c;
 
     // this is really SSSE3
+    func_satd[make_tuple(64, 64, 2, USE_SSE41)] = satd16_64x64_sse2<true>;
+    func_satd[make_tuple(64, 48, 2, USE_SSE41)] = satd16_64x48_sse2<true>;
+    func_satd[make_tuple(64, 32, 2, USE_SSE41)] = satd16_64x32_sse2<true>;
+    func_satd[make_tuple(64, 16, 2, USE_SSE41)] = satd16_64x16_sse2<true>;
+    //func_satd[make_tuple(64, 8, 2, USE_SSE41)] = satd16_64x8_sse2<true>;
+    func_satd[make_tuple(48, 64, 2, USE_SSE41)] = satd16_48x64_sse2<true>;
+    func_satd[make_tuple(32, 64, 2, USE_SSE41)] = satd16_32x64_sse2<true>;
     func_satd[make_tuple(32, 32, 2, USE_SSE41)] = satd16_32x32_sse2<true>;
+    func_satd[make_tuple(32, 24, 2, USE_SSE41)] = satd16_32x24_sse2<true>;
     func_satd[make_tuple(32, 16, 2, USE_SSE41)] = satd16_32x16_sse2<true>;
     func_satd[make_tuple(32, 8 , 2, USE_SSE41)] = satd16_32x8_sse2<true>;
+    func_satd[make_tuple(24, 32, 2, USE_SSE41)] = satd16_24x32_sse2<true>;
+    func_satd[make_tuple(16, 64, 2, USE_SSE41)] = satd16_16x64_sse2<true>;
     func_satd[make_tuple(16, 32, 2, USE_SSE41)] = satd16_16x32_sse2<true>;
     func_satd[make_tuple(16, 16, 2, USE_SSE41)] = satd16_16x16_sse2<true>;
+    func_satd[make_tuple(16, 12, 2, USE_SSE41)] = satd16_16x12_sse2<true>;
     func_satd[make_tuple(16, 8 , 2, USE_SSE41)] = satd16_16x8_sse2<true>;
     func_satd[make_tuple(16, 4 , 2, USE_SSE41)] = satd16_16x4_sse2<true>;
+    func_satd[make_tuple(12, 16, 2, USE_SSE41)] = satd16_12x16_sse2<true>;
+    func_satd[make_tuple(8 , 32, 2, USE_SSE41)] = satd16_8x32_sse2<true>;
     func_satd[make_tuple(8 , 16, 2, USE_SSE41)] = satd16_8x16_sse2<true>;
     func_satd[make_tuple(8 , 8 , 2, USE_SSE41)] = satd16_8x8_sse2<true>;
     func_satd[make_tuple(8 , 4 , 2, USE_SSE41)] = satd16_8x4_sse2<true>;
     func_satd[make_tuple(4 , 8 , 2, USE_SSE41)] = satd16_4x8_sse2<true>;
     func_satd[make_tuple(4 , 4 , 2, USE_SSE41)] = satd16_4x4_sse2<true>;
 
+    func_satd[make_tuple(64, 64, 2, USE_SSE2)] = satd16_64x64_sse2<false>;
+    func_satd[make_tuple(64, 48, 2, USE_SSE2)] = satd16_64x48_sse2<false>;
+    func_satd[make_tuple(64, 32, 2, USE_SSE2)] = satd16_64x32_sse2<false>;
+    func_satd[make_tuple(64, 16, 2, USE_SSE2)] = satd16_64x16_sse2<false>;
+    //func_satd[make_tuple(64, 8, 2, USE_SSE2)] = satd16_64x8_sse2<false>;
+    func_satd[make_tuple(48, 64, 2, USE_SSE2)] = satd16_48x64_sse2<false>;
+    func_satd[make_tuple(32, 64, 2, USE_SSE2)] = satd16_32x64_sse2<false>;
     func_satd[make_tuple(32, 32, 2, USE_SSE2)] = satd16_32x32_sse2<false>;
+    func_satd[make_tuple(32, 24, 2, USE_SSE2)] = satd16_32x24_sse2<false>;
     func_satd[make_tuple(32, 16, 2, USE_SSE2)] = satd16_32x16_sse2<false>;
     func_satd[make_tuple(32, 8 , 2, USE_SSE2)] = satd16_32x8_sse2<false>;
+    func_satd[make_tuple(24, 32, 2, USE_SSE2)] = satd16_24x32_sse2<false>;
+    func_satd[make_tuple(16, 64, 2, USE_SSE2)] = satd16_16x64_sse2<false>;
     func_satd[make_tuple(16, 32, 2, USE_SSE2)] = satd16_16x32_sse2<false>;
     func_satd[make_tuple(16, 16, 2, USE_SSE2)] = satd16_16x16_sse2<false>;
+    func_satd[make_tuple(16, 12, 2, USE_SSE2)] = satd16_16x12_sse2<false>;
     func_satd[make_tuple(16, 8 , 2, USE_SSE2)] = satd16_16x8_sse2<false>;
     func_satd[make_tuple(16, 4 , 2, USE_SSE2)] = satd16_16x4_sse2<false>;
+    func_satd[make_tuple(12, 16, 2, USE_SSE2)] = satd16_12x16_sse2<false>;
+    func_satd[make_tuple(8, 32, 2, USE_SSE2)] = satd16_8x32_sse2<false>;
     func_satd[make_tuple(8 , 16, 2, USE_SSE2)] = satd16_8x16_sse2<false>;
     func_satd[make_tuple(8 , 8 , 2, USE_SSE2)] = satd16_8x8_sse2<false>;
     func_satd[make_tuple(8 , 4 , 2, USE_SSE2)] = satd16_8x4_sse2<false>;

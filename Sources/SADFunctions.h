@@ -382,14 +382,26 @@ MK_CFUNC(x264_pixel_ssd_4x4_mmx);
 // combinations of 4, 8, 16, 32
 // todo: combinations of 
 
+SATD_SSE(64, 64, sse2);
+SATD_SSE(64, 48, sse2);
+SATD_SSE(64, 32, sse2);
+SATD_SSE(64, 16, sse2);
+//SATD_SSE(64,  8, sse2); no such
+SATD_SSE(48, 64, sse2);
+SATD_SSE(32, 64, sse2);
 SATD_SSE(32, 32, sse2);
+SATD_SSE(32, 24, sse2);
 SATD_SSE(32, 16, sse2);
 SATD_SSE(32,  8, sse2);
 //SATD_SSE(32,  4, sse2); no such
+SATD_SSE(24, 32, sse2);
+SATD_SSE(16, 64, sse2);
 SATD_SSE(16, 32, sse2);
 SATD_SSE(16, 16, sse2);
+SATD_SSE(16, 12, sse2);
 SATD_SSE(16,  8, sse2);
 SATD_SSE(16,  4, sse2);
+SATD_SSE(12, 16, sse2);
 SATD_SSE( 8, 32, sse2);
 SATD_SSE( 8, 16, sse2);
 SATD_SSE( 8,  8, sse2);
@@ -401,14 +413,26 @@ SATD_SSE( 4, 16, sse2); // in 2014 this was not
 SATD_SSE( 4,  8, sse2); // in 2014 this was already mmx2
 SATD_SSE( 4,  4, mmx2); // in 2017 pixel-a.asm, only this one is mmx
 
+SATD_SSE(64, 64, sse4);
+SATD_SSE(64, 48, sse4);
+SATD_SSE(64, 32, sse4);
+SATD_SSE(64, 16, sse4);
+//SATD_SSE(64,  8, sse4); no such
+SATD_SSE(48, 64, sse4);
+SATD_SSE(32, 64, sse4);
 SATD_SSE(32, 32, sse4);
+SATD_SSE(32, 24, sse4);
 SATD_SSE(32, 16, sse4);
 SATD_SSE(32, 8 , sse4);
 // SATD_SSE(32, 4 , sse4); no such
+SATD_SSE(24, 32, sse4);
+SATD_SSE(16, 64, sse4);
 SATD_SSE(16, 32, sse4);
 SATD_SSE(16, 16, sse4);
+SATD_SSE(16, 12, sse4);
 SATD_SSE(16,  8, sse4);
 SATD_SSE(16,  4, sse4);
+SATD_SSE(12, 16, sse4);
 SATD_SSE( 8, 32, sse4);
 SATD_SSE( 8, 16, sse4);
 SATD_SSE( 8,  8, sse4);
@@ -416,24 +440,44 @@ SATD_SSE( 8,  4, sse4);
 SATD_SSE( 4,  8, sse4);
 SATD_SSE( 4,  4, sse4);
 
+SATD_SSE(64, 64, avx);
+SATD_SSE(64, 48, avx);
+SATD_SSE(64, 32, avx);
+SATD_SSE(64, 16, avx);
+//SATD_SSE(64, 8, avx); no such
+SATD_SSE(48, 64, avx);
+SATD_SSE(32, 64, avx);
 SATD_SSE(32, 32, avx);
+SATD_SSE(32, 24, avx);
 SATD_SSE(32, 16, avx);
 SATD_SSE(32,  8, avx);
 // SATD_SSE(32,  4, avx); no such
+SATD_SSE(24, 32, avx);
+SATD_SSE(16, 64, avx);
 SATD_SSE(16, 32, avx);
 SATD_SSE(16, 16, avx);
+SATD_SSE(16, 12, avx);
 SATD_SSE(16,  8, avx);
 SATD_SSE(16,  4, avx);
+SATD_SSE(12, 16, avx);
 SATD_SSE( 8, 32, avx);
 SATD_SSE( 8, 16, avx);
 SATD_SSE( 8,  8, avx);
 SATD_SSE( 8,  4, avx);
 
 // no x4 versions
+//SATD_SSE(64, 64, avx2); no such
+//SATD_SSE(64, 32, avx2); no such
+//SATD_SSE(64, 16, avx2); no such
+//SATD_SSE(64, 8, avx2); no such
+#ifdef _M_X64
+SATD_SSE(32, 64, avx2);
 SATD_SSE(32, 32, avx2);
 SATD_SSE(32, 16, avx2);
 SATD_SSE(32, 8, avx2);
+#endif
 #ifdef _M_X64
+SATD_SSE(16, 64, avx2); // only in x64
 SATD_SSE(16, 32, avx2); // only in x64
 #endif
 SATD_SSE(16, 16, avx2);
