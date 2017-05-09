@@ -113,7 +113,7 @@ unsigned int Sad16_sse2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
       else if (one_cycle)
       {
         __m128i src1, src2;
-        src1 = _mm_loadu_si128((__m128i *) (pSrc)); // no x
+        src1 = _mm_load_si128((__m128i *) (pSrc)); // no x
         src2 = _mm_loadu_si128((__m128i *) (pRef));
         if (sizeof(pixel_t) == 1) {
           // this is uint_16 specific, but will test on uint8_t against external .asm SAD functions)
@@ -131,7 +131,7 @@ unsigned int Sad16_sse2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
         }
         if (unroll_by2) {
           // unroll#2
-          src1 = _mm_loadu_si128((__m128i *) (pSrc+nSrcPitch)); // no x
+          src1 = _mm_load_si128((__m128i *) (pSrc+nSrcPitch)); // no x
           src2 = _mm_loadu_si128((__m128i *) (pRef+nRefPitch));
           if (sizeof(pixel_t) == 1) {
             // this is uint_16 specific, but will test on uint8_t against external .asm SAD functions)
@@ -153,7 +153,7 @@ unsigned int Sad16_sse2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
         for (int x = 0; x < nBlkWidth * sizeof(pixel_t); x += 16)
         {
           __m128i src1, src2;
-          src1 = _mm_loadu_si128((__m128i *) (pSrc + x));
+          src1 = _mm_load_si128((__m128i *) (pSrc + x));
           src2 = _mm_loadu_si128((__m128i *) (pRef + x));
           if (sizeof(pixel_t) == 1) {
             // this is uint_16 specific, but will test on uint8_t against external .asm SAD functions)
@@ -173,7 +173,7 @@ unsigned int Sad16_sse2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
           if (unroll_by2)
           {
             // unroll#2
-            src1 = _mm_loadu_si128((__m128i *) (pSrc + nSrcPitch + x));
+            src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch + x));
             src2 = _mm_loadu_si128((__m128i *) (pRef + nRefPitch + x));
             if (sizeof(pixel_t) == 1) {
               // this is uint_16 specific, but will test on uint8_t against external .asm SAD functions)
