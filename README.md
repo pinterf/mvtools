@@ -28,7 +28,7 @@ Change log
         1: 4:4
         2: 4:8
   New: Block size 64 and other exotic sizes.
-       MAnalyze/MRecalculate new block sizes (normal SAD, not for SATD at the moment)
+       MAnalyze/MRecalculate new block sizes (SATD: min 4x4)
        All block sizes (please, take into consideration the horizontal and vertial subsampling)
          64x64, 64x48, 64x32, 64x16
          48x64
