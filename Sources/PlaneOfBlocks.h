@@ -31,6 +31,7 @@
 #endif	// ALIGN_SOURCEBLOCK
 
 #include	<vector>
+#include "avisynth.h"
 
 
 
@@ -55,7 +56,7 @@ public:
 
   typedef	MTSlicer <PlaneOfBlocks>	Slicer;
 
-  PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSizeY, int _nPel, int _nLevel, int _nFlags, int _nOverlapX, int _nOverlapY, int _xRatioUV, int _yRatioUV, int _pixelsize, int _bits_per_pixel, conc::ObjPool <DCTClass> *dct_pool_ptr, bool mt_flag, int _chromaSADscale);
+  PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSizeY, int _nPel, int _nLevel, int _nFlags, int _nOverlapX, int _nOverlapY, int _xRatioUV, int _yRatioUV, int _pixelsize, int _bits_per_pixel, conc::ObjPool <DCTClass> *dct_pool_ptr, bool mt_flag, int _chromaSADscale, IScriptEnvironment* env);
 
   ~PlaneOfBlocks();
 

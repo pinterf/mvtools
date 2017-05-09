@@ -51,7 +51,7 @@ MV_FORCEINLINE sad_t ScaleSadChroma(sad_t sad, int effective_scale) {
 }
 
 
-PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSizeY, int _nPel, int _nLevel, int _nFlags, int _nOverlapX, int _nOverlapY, int _xRatioUV, int _yRatioUV, int _pixelsize, int _bits_per_pixel, conc::ObjPool <DCTClass> *dct_pool_ptr, bool mt_flag, int _chromaSADscale)
+PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSizeY, int _nPel, int _nLevel, int _nFlags, int _nOverlapX, int _nOverlapY, int _xRatioUV, int _yRatioUV, int _pixelsize, int _bits_per_pixel, conc::ObjPool <DCTClass> *dct_pool_ptr, bool mt_flag, int _chromaSADscale, IScriptEnvironment* env)
   : nBlkX(_nBlkX)
   , nBlkY(_nBlkY)
   , nBlkSizeX(_nBlkSizeX)
@@ -84,7 +84,7 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
   //,	mmx ((_nFlags & MOTION_USE_MMX) != 0)
   , isse((_nFlags & MOTION_USE_ISSE) != 0)
   , chroma((_nFlags & MOTION_USE_CHROMA_MOTION) != 0)
-  , dctpitch(std::max(_nBlkSizeX, 16))
+  , dctpitch(AlignNumber(_nBlkSizeX, 16))
   , _dct_pool_ptr(dct_pool_ptr)
   , verybigSAD(_nBlkSizeX * _nBlkSizeY * (pixelsize == 4 ? 1 : (1 << bits_per_pixel))) // * 256, pixelsize==2 -> 65536. Float:1
   , freqArray()
@@ -181,7 +181,16 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
   SATD = get_satd_function(nBlkSizeX, nBlkSizeY, pixelsize, arch); // P.F. 2.7.0.22d SATD made live
   if (SATD == nullptr)
     SATD = SadDummy;
-
+  if (chroma) {
+    if (BLITCHROMA == nullptr) {
+      // we don't have env ptr here
+      env->ThrowError("MVTools: no BLITCHROMA function for block size %dx%d", nBlkSizeX / xRatioUV, nBlkSizeY / yRatioUV);
+    }
+    if (SADCHROMA == nullptr) {
+      // we don't have env ptr here
+      env->ThrowError("MVTools: no SADCHROMA function for block size %dx%d", nBlkSizeX / xRatioUV, nBlkSizeY / yRatioUV);
+    }
+  }
   if (!chroma)
   {
     SADCHROMA = SadDummy;
@@ -303,6 +312,10 @@ void PlaneOfBlocks::SearchMVs(
   nSrcPitch[0] = pixelsize * nBlkSizeX;
   nSrcPitch[1] = pixelsize * nBlkSizeX / xRatioUV; // PF xRatio instead of /2: after 2.7.0.22c;
   nSrcPitch[2] = pixelsize * nBlkSizeX / xRatioUV;
+  for (int i = 0; i < 3; i++) {
+    if (nSrcPitch[i] > 8)
+      nSrcPitch[i] = AlignNumber(nSrcPitch[i], 16); // e.g. align reference block pitch to mod16 e.g. at blksize 24
+  }
 #else	// ALIGN_SOURCEBLOCK
   nSrcPitch[0] = pSrcFrame->GetPlane(YPLANE)->GetPitch();
   if (chroma)
@@ -417,6 +430,10 @@ void PlaneOfBlocks::RecalculateMVs(
   nSrcPitch[0] = pixelsize * nBlkSizeX;
   nSrcPitch[1] = pixelsize * nBlkSizeX / xRatioUV; // PF after 2.7.0.22c
   nSrcPitch[2] = pixelsize * nBlkSizeX / xRatioUV; // PF after 2.7.0.22c
+  for (int i = 0; i < 3; i++) {
+    if (nSrcPitch[i] > 8)
+      nSrcPitch[i] = AlignNumber(nSrcPitch[i], 16); // e.g. align reference block pitch to mod16 e.g. at blksize 24
+  }
 #else	// ALIGN_SOURCEBLOCK
   nSrcPitch[0] = pSrcFrame->GetPlane(YPLANE)->GetPitch();
   if (chroma)
@@ -2568,8 +2585,12 @@ PlaneOfBlocks::WorkingArea::WorkingArea(int nBlkSizeX, int nBlkSizeY, int dctpit
   , bits_per_pixel(_bits_per_pixel)
 {
 #if (ALIGN_SOURCEBLOCK > 1)
-  int blocksize = nBlkSizeX*nBlkSizeY*pixelsize; // for memory allocation pixelsize needed
-  int UVblocksize = blocksize >> (nLogxRatioUV + nLogyRatioUV); // >> nx >> ny
+  int xPitch = nBlkSizeX*pixelsize;  // for memory allocation pixelsize needed
+  if (xPitch > 8) xPitch = AlignNumber(xPitch, 16); // e.g. allocate 32 for BlkSize 24
+  int xPitchUV = (nBlkSizeX*pixelsize) >> nLogxRatioUV;
+  if (xPitchUV > 8) xPitchUV = AlignNumber(xPitchUV, 16); // e.g. allocate 32 for BlkSize 24
+  int blocksize = xPitch*nBlkSizeY;
+  int UVblocksize = xPitchUV * (nBlkSizeY >> nLogyRatioUV); // >> nx >> ny
   int sizeAlignedBlock = blocksize + (ALIGN_SOURCEBLOCK - (blocksize%ALIGN_SOURCEBLOCK)) +
     2 * UVblocksize + (ALIGN_SOURCEBLOCK - (UVblocksize%ALIGN_SOURCEBLOCK));
   // int sizeAlignedBlock=blocksize+(ALIGN_SOURCEBLOCK-(blocksize%ALIGN_SOURCEBLOCK))+
@@ -2579,30 +2600,6 @@ PlaneOfBlocks::WorkingArea::WorkingArea(int nBlkSizeX, int nBlkSizeY, int dctpit
   pSrc_temp[1] = (uint8_t *)((((uintptr_t)pSrc_temp[0]) + blocksize + ALIGN_SOURCEBLOCK - 1)&(~(ALIGN_SOURCEBLOCK - 1)));
   pSrc_temp[2] = (uint8_t *)(((((uintptr_t)pSrc_temp[1]) + UVblocksize + ALIGN_SOURCEBLOCK - 1)&(~(ALIGN_SOURCEBLOCK - 1))));
 #endif	// ALIGN_SOURCEBLOCK
-  /* VS
-#ifdef ALIGN_SOURCEBLOCK
-    dctpitch = max(nBlkSizeX, 16) * bytesPerSample;
-    dctSrc_base = new uint8_t[nBlkSizeY*dctpitch+ALIGN_PLANES-1];
-    dctRef_base = new uint8_t[nBlkSizeY*dctpitch+ALIGN_PLANES-1];
-    dctSrc = (uint8_t *)(((((intptr_t)dctSrc_base) + ALIGN_PLANES - 1)&(~(ALIGN_PLANES - 1))));//aligned like this means, that it will have optimum fit in the cache
-    dctRef = (uint8_t *)(((((intptr_t)dctRef_base) + ALIGN_PLANES - 1)&(~(ALIGN_PLANES - 1))));
-
-    int blocksize = nBlkSizeX * nBlkSizeY * bytesPerSample;
-    int blocksizeUV = blocksize >> (nLogxRatioUV + nLogyRatioUV);
-    int sizeAlignedBlock = blocksize + (ALIGN_SOURCEBLOCK - (blocksize % ALIGN_SOURCEBLOCK))
-        + 2 * blocksizeUV + (ALIGN_SOURCEBLOCK - (blocksizeUV % ALIGN_SOURCEBLOCK));
-
-    pSrc_temp_base = new uint8_t[sizeAlignedBlock + ALIGN_PLANES - 1];
-    pSrc_temp[0] = (uint8_t *)(((intptr_t)pSrc_temp_base + ALIGN_PLANES - 1) & (~(ALIGN_PLANES - 1)));
-    pSrc_temp[1] = (uint8_t *)(((intptr_t)pSrc_temp[0] + blocksize + ALIGN_SOURCEBLOCK - 1) & (~(ALIGN_SOURCEBLOCK - 1)));
-    pSrc_temp[2] = (uint8_t *)(((intptr_t)pSrc_temp[1] + blocksizeUV + ALIGN_SOURCEBLOCK - 1) & (~(ALIGN_SOURCEBLOCK - 1)));
-#else
-    dctpitch = max(nBlkSizeX, 16) * bytesPerSample;
-    dctSrc = new uint8_t[nBlkSizeY*dctpitch];
-    dctRef = new uint8_t[nBlkSizeY*dctpitch];
-#endif
-*/
-
 }
 
 
