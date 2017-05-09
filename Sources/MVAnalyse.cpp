@@ -156,7 +156,7 @@ MVAnalyse::MVAnalyse(
 #endif
   // same blocksize check in MAnalyze and MRecalculate
   const std::vector< std::pair< int, int > > allowed_blksizes = 
-  { {64, 64}, {64,32}, {64,32}, {64,16},
+  { {64, 64}, {64,48}, {64,32}, {64,16},
   {48,64},
   {32,64}, {32,32}, {32,24}, {32,16}, {32,8},
   {24,32},
