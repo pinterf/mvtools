@@ -334,7 +334,9 @@ private:
   MV_FORCEINLINE const uint8_t *GetRefBlockV(WorkingArea &workarea, int nVx, int nVy);
   MV_FORCEINLINE const uint8_t *GetSrcBlock(int nX, int nY);
   //	MV_FORCEINLINE int LengthPenalty(int vx, int vy);
+  template<typename pixel_t>
   sad_t LumaSADx(WorkingArea &workarea, const unsigned char *pRef0);
+  template<typename pixel_t>
   MV_FORCEINLINE sad_t LumaSAD(WorkingArea &workarea, const unsigned char *pRef0);
   template<typename pixel_t>
   MV_FORCEINLINE void CheckMV0(WorkingArea &workarea, int vx, int vy);
