@@ -35,17 +35,6 @@
 #include <cmath>
 #include <cstdio>
 
-
-MV_FORCEINLINE sad_t ScaleSadChroma(sad_t sad, int effective_scale) {
-  // effective scale: 1 -> div 2
-  //                  2 -> div 4 (YV24 default)
-  //                 -2 -> *4
-  //                 -1 -> *2
-  if (effective_scale == 0) return sad;
-  if (effective_scale > 0) return sad >> effective_scale;
-  return sad << (-effective_scale);
-}
-
 //extern MVCore mvCore;
 
 MVRecalculate::MVRecalculate(
@@ -438,15 +427,8 @@ MVRecalculate::MVRecalculate(
     / (8 * 8);  // normalize to 8x8 block size
   if (chroma)
   {
-    /*thSAD = _thSAD * (analysisData.nBlkSizeX * analysisData.nBlkSizeY) / (8 * 8)
-      * (1 + analysisData.yRatioUV) / analysisData.yRatioUV; // YUY,YV12 assumes xRatioUV=2
-          same as thSAD_orig + thSAD_orig/yRatioUV;
-        */
-#ifdef SCALECHROMASAD
     thSAD += ScaleSadChroma(thSAD * 2, analysisData.chromaSADScale) / 4; // base: YV12
-#else
-    thSAD += thSAD / (analysisData.xRatioUV * analysisData.yRatioUV) * 2; // *2: two additional planes: UV
-#endif
+    //thSAD += thSAD / (analysisData.xRatioUV * analysisData.yRatioUV) * 2; // *2: two additional planes: UV
   }
 }
 

@@ -26,6 +26,7 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
+#include "types.h"
 
 
 
@@ -43,6 +44,16 @@ const long double	LN2 = 0.69314718055994530941723212145818L;
 #endif
 
 #define MAX_BLOCK_SIZE 64
+
+MV_FORCEINLINE sad_t ScaleSadChroma(sad_t sad, int effective_scale) {
+  // effective scale: 1 -> div 2
+  //                  2 -> div 4 (YV24 default)
+  //                 -2 -> *4
+  //                 -1 -> *2
+  if (effective_scale == 0) return sad;
+  if (effective_scale > 0) return sad >> effective_scale;
+  return sad << (-effective_scale);
+}
 
 /*
 C++ does not allow macroizing reserved words like inline
