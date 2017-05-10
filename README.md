@@ -16,6 +16,7 @@ http://avisynth.nl/index.php/AviSynth%2B#AviSynth.2B_x64_plugins
 Change log
 
 - 2.7.18.22 (201705??)
+  Fix: 10-16 bit: DCT buffer possible overflow
   Fix: DCT is fast again for non 8x8 blocksizes. Regression since 2.7.5.22.
   New: Chroma SAD is now always half of luma SAD, regardless of video format
        Without this: YV24's luma:chroma SAD ratio is 4:8 instead of 4:2 (of YV12)
@@ -27,9 +28,9 @@ Change log
         0: 4:2 (default, same as the native ratio for YV12)
         1: 4:4
         2: 4:8
-  New: Block size 64 and other exotic sizes.
+  New: Block size 64 and other exotic sizes (note: MDegrains still work on classical 2^n block sizes)
        MAnalyze/MRecalculate new block sizes (SATD: min 4x4)
-       All block sizes (please, take into consideration the horizontal and vertial subsampling)
+       List of all block sizes (please, take into consideration the horizontal and vertial subsampling)
          64x64, 64x48, 64x32, 64x16
          48x64
          32x64, 32x32, 32x24, 32x16, 32x8
