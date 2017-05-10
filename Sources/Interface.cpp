@@ -194,9 +194,7 @@ AVSValue __cdecl Create_MVAnalyse(AVSValue args, void* user_data, IScriptEnviron
 		args[29].AsBool(false),  // try many
 		args[30].AsBool(false),  // multi
 		args[31].AsBool(true),   // mt
-#ifdef SCALECHROMASAD
-     args[32].AsInt(0),   // scalechromasad
-#endif
+    args[32].AsInt(0),   // scaleCSAD
 		env
 	);
 }
@@ -833,9 +831,7 @@ AVSValue __cdecl Create_MVRecalculate(AVSValue args, void* , IScriptEnvironment*
     args[19].AsBool(true),   // meander
     args[20].AsInt(0),       // tr
     args[21].AsBool(true),   // mt
-#ifdef SCALECHROMASAD
-    args[22].AsInt(0), // chromaSADScale
-#endif
+    args[22].AsInt(0), // scaleCSAD
 		env
 	);
 }
