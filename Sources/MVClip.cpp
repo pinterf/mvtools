@@ -22,16 +22,6 @@
 #include <cassert>
 #include <algorithm>
 
-MV_FORCEINLINE sad_t ScaleSadChroma(sad_t sad, int effective_scale) {
-  // effective scale: 1 -> div 2
-  //                  2 -> div 4 (YV24 default)
-  //                 -2 -> *4
-  //                 -1 -> *2
-  if (effective_scale == 0) return sad;
-  if (effective_scale > 0) return sad >> effective_scale;
-  return sad << (-effective_scale);
-}
-
 MVClip::MVClip(const PClip &vectors, sad_t _nSCD1, int _nSCD2, IScriptEnvironment *env, int group_len, int group_ofs)
 :	GenericVideoFilter(vectors) 
 ,	_group_len (group_len)
@@ -72,13 +62,14 @@ MVClip::MVClip(const PClip &vectors, sad_t _nSCD1, int _nSCD2, IScriptEnvironmen
     nSCD1 = std::min(_nSCD1, 8*8*(255-0)); // max for 8 bits, normalized to 8x8 blocksize, avoid overflow later
     if (pixelsize == 2)
         nSCD1 = sad_t(nSCD1 / 255.0 * ((1 << bits_per_pixel) - 1));
-    nSCD1 = nSCD1 * (nBlkSizeX * nBlkSizeY) / (8 * 8); // this is normalized to 8x8 block sizes
+    nSCD1 = (uint64_t)nSCD1 * (nBlkSizeX * nBlkSizeY) / (8 * 8); // this is normalized to 8x8 block sizes
     if (pAnalyseFilter->IsChromaMotion()) {
-#ifdef SCALECHROMASAD
       nSCD1 += ScaleSadChroma(nSCD1 * 2, chromaSADScale) / 4; // base: YV12
-#else
-      nSCD1 += nSCD1 / (xRatioUV * yRatioUV) * 2; // *2: two additional planes: UV
-#endif
+      // nSCD1 += nSCD1 / (xRatioUV * yRatioUV) * 2; // *2: two additional planes: UV
+    }
+    if (nSCD1 < 0)
+    {
+      nSCD1 += 1;
     }
 
    // Threshold which sets how many blocks have to change for the frame to be considered as a scene change. 
