@@ -21,6 +21,7 @@
 
 #include "MaskFun.h"
 #include <emmintrin.h>
+#include <cassert>
 
 #if !defined(_M_X64)
 #define rax	eax
@@ -380,27 +381,57 @@ static void Merge4PlanesToBig_c(
   }
 }
 
-// todo, todo, todo, etc..
 template<typename pixel_t>
 static void Merge4PlanesToBig_sse2(
   uint8_t *pel2Plane, int pel2Pitch, const uint8_t *pPlane0, const uint8_t *pPlane1,
   const uint8_t *pPlane2, const uint8_t * pPlane3, int width, int height, int pitch, int bits_per_pixel)
 {
-  int mod8width = width
-  for (int h=0; h<height; h++)
+  int mod8width = width;
+  const int simd_width = width * sizeof(pixel_t);
+  const int mod16width = (simd_width / 16) * 16;
+  // copy refined planes to big one plane
+  // P =  p0 p1 p0 p1 p0 p1 p0 p1...
+  //      p2 p3 p2 p3 p2 p3 p2 p3
+  for (int h = 0; h < height; h++)
   {
-    for (int w=0; w<width; w++)
+    for (int x = 0; x < mod16width; x += 16)
     {
-      reinterpret_cast<pixel_t *>(pel2Plane)[w<<1] = reinterpret_cast<const pixel_t *>(pPlane0)[w];
-      reinterpret_cast<pixel_t *>(pel2Plane)[(w<<1) +1] = reinterpret_cast<const pixel_t *>(pPlane1)[w];
+      // 0-1
+      __m128i src0 = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pPlane0 + x));
+      __m128i src1 = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pPlane1 + x));
+      __m128i mix_lo, mix_hi;
+      if (sizeof(pixel_t) == 1) {
+        mix_lo = _mm_unpacklo_epi8(src0, src1);
+        mix_hi = _mm_unpackhi_epi8(src0, src1);
+      }
+      else {
+        mix_lo = _mm_unpacklo_epi16(src0, src1);
+        mix_hi = _mm_unpackhi_epi16(src0, src1);
+      }
+      _mm_storeu_si128(reinterpret_cast<__m128i *>(pel2Plane + x * 2), mix_lo);
+      _mm_storeu_si128(reinterpret_cast<__m128i *>(pel2Plane + x * 2 + 16), mix_hi);
+      // 2-3
+      __m128i src2 = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pPlane2 + x));
+      __m128i src3 = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pPlane3 + x));
+      if (sizeof(pixel_t) == 1) {
+        mix_lo = _mm_unpacklo_epi8(src2, src3);
+        mix_hi = _mm_unpackhi_epi8(src2, src3);
+      }
+      else {
+        mix_lo = _mm_unpacklo_epi16(src2, src3);
+        mix_hi = _mm_unpackhi_epi16(src2, src3);
+      }
+      _mm_storeu_si128(reinterpret_cast<__m128i *>(pel2Plane + pel2Pitch + x * 2), mix_lo);
+      _mm_storeu_si128(reinterpret_cast<__m128i *>(pel2Plane + pel2Pitch + x * 2 + 16), mix_hi);
     }
-    pel2Plane += pel2Pitch;
-    for (int w=0; w<width; w++)
+    for (int w = mod16width / sizeof(pixel_t); w < width; w++)
     {
-      reinterpret_cast<pixel_t *>(pel2Plane)[w<<1] = reinterpret_cast<const pixel_t *>(pPlane2)[w];
-      reinterpret_cast<pixel_t *>(pel2Plane)[(w<<1) +1] = reinterpret_cast<const pixel_t *>(pPlane3)[w];
+      reinterpret_cast<pixel_t *>(pel2Plane)[(w << 1)] = reinterpret_cast<const pixel_t *>(pPlane0)[w];
+      reinterpret_cast<pixel_t *>(pel2Plane)[(w << 1) + 1] = reinterpret_cast<const pixel_t *>(pPlane1)[w];
+      reinterpret_cast<pixel_t *>(pel2Plane)[(w << 1) + pel2Pitch / sizeof(pixel_t)] = reinterpret_cast<const pixel_t *>(pPlane2)[w];
+      reinterpret_cast<pixel_t *>(pel2Plane)[(w << 1) + pel2Pitch / sizeof(pixel_t) + 1] = reinterpret_cast<const pixel_t *>(pPlane3)[w];
     }
-    pel2Plane += pel2Pitch;
+    pel2Plane += 2 * pel2Pitch;
     pPlane0 += pitch;
     pPlane1 += pitch;
     pPlane2 += pitch;
@@ -416,12 +447,7 @@ void Merge4PlanesToBig(
   // P =  p0 p1 p0 p1 p0 p1 p0 p1...
   //      p2 p3 p2 p3 p2 p3 p2 p3
   // 
-#if defined(_M_X64) && defined(_MSC_VER)
-  isse = false;
-  // todo: Merge4PlanesToBig_sse2
-#endif
-
-	if (!isse || pixelsize>1)
+	if (!isse || pixelsize == 4)
 	{
     if(pixelsize==1)
       Merge4PlanesToBig_c<uint8_t>(pel2Plane, pel2Pitch, pPlane0, pPlane1, pPlane2, pPlane3, width, height, pitch, pixelsize);
@@ -429,7 +455,18 @@ void Merge4PlanesToBig(
       Merge4PlanesToBig_c<uint16_t>(pel2Plane, pel2Pitch, pPlane0, pPlane1, pPlane2, pPlane3, width, height, pitch, pixelsize);
     else if(pixelsize==4)
       Merge4PlanesToBig_c<float>(pel2Plane, pel2Pitch, pPlane0, pPlane1, pPlane2, pPlane3, width, height, pitch, pixelsize);
-	}
+    return;
+  }
+  else {
+    if (pixelsize == 1)
+      Merge4PlanesToBig_sse2<uint8_t>(pel2Plane, pel2Pitch, pPlane0, pPlane1, pPlane2, pPlane3, width, height, pitch, pixelsize);
+    else if (pixelsize == 2)
+      Merge4PlanesToBig_sse2<uint16_t>(pel2Plane, pel2Pitch, pPlane0, pPlane1, pPlane2, pPlane3, width, height, pitch, pixelsize);
+    else
+      assert(0);
+  }
+  return;
+#if 0
 #if !(defined(_M_X64) && defined(_MSC_VER))
   else // isse - not very optimized
 	{
@@ -520,6 +557,7 @@ loopw2:
 		}
 	}
 #endif // inline assembly MSVC X64 ignore
+#endif // if 0
 }
 
 
@@ -628,7 +666,7 @@ unsigned char SADToMask(sad_t sad, sad_t sadnorm1024)
 	// sadnorm1024 = 255 * (4*1024)/(mlSAD*nBlkSize*nBlkSize*chromablockfactor)
   // Check todo: bits_per_pixel? pixelsize?
 	sad_t l = sadnorm1024*sad/1024;
-	return (unsigned char)((l > 255) ? 255 : l); // todo PF: mask clip is 8 bit always?
+	return (unsigned char)((l > 255) ? 255 : l); // internally mask clip is 8 bit always, even for 10+ bit clips
 }
 
 
@@ -660,13 +698,11 @@ void Blend(uint8_t * pdst8, const uint8_t * psrc8, const uint8_t * pref8, int he
   {
     for (w = 0; w<width; w++)
     {
-      //const int		time256 = t256_provider.get_t (w);
       pdst[w] =(pixel_t)( (psrc[w] * (256 - time256) + pref[w] * time256) >> 8);
     }
     pdst += dst_pitch;
     psrc += src_pitch;
     pref += ref_pitch;
-    //t256_provider.jump_to_next_row ();
   }
 }
 
@@ -674,114 +710,102 @@ void Blend(uint8_t * pdst8, const uint8_t * psrc8, const uint8_t * pref8, int he
 template void Blend<uint8_t>(uint8_t * pdst8, const uint8_t * psrc8, const uint8_t * pref8, int height, int width, int dst_pitch, int src_pitch, int ref_pitch, int time256, bool isse);
 template void Blend<uint16_t>(uint8_t * pdst8, const uint8_t * psrc8, const uint8_t * pref8, int height, int width, int dst_pitch, int src_pitch, int ref_pitch, int time256, bool isse);
 
-
-/*template <class T256P>
-void FlowInter(
-uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
-uint8_t *VXFullB, uint8_t *VXFullF, uint8_t *VYFullB, uint8_t *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
-int VPitch, int width, int height, int nPel, T256P &t256_provider)
-*/
-// no template -> goes to cpp
 template<typename pixel_t>
 void FlowInter(
   uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
   short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
-  int VPitch, int width, int height, int time256, int nPel) // order change 2.6.0.5: first pel, second time. 2.5.11.22: time,pel
+  int VPitch, int width, int height, int time256, int nPel)
 {
   if (nPel == 1)
   {
-    FlowInter_NPel <pixel_t,/*T256P,*/ 0>(
+    FlowInter_NPel <pixel_t, 0>(
       pdst, dst_pitch, prefB, prefF, ref_pitch,
       VXFullB, VXFullF, VYFullB, VYFullF, MaskB, MaskF,
-      VPitch, width, height, time256 /*t256_provider*/
+      VPitch, width, height, time256
       );
   }
   else if (nPel == 2)
   {
-    FlowInter_NPel <pixel_t,/*T256P,*/ 1>(
+    FlowInter_NPel <pixel_t, 1>(
       pdst, dst_pitch, prefB, prefF, ref_pitch,
       VXFullB, VXFullF, VYFullB, VYFullF, MaskB, MaskF,
-      VPitch, width, height, time256 /*t256_provider*/
+      VPitch, width, height, time256
       );
   }
   else if (nPel == 4)
   {
-    FlowInter_NPel <pixel_t,/*T256P,*/ 2>(
+    FlowInter_NPel <pixel_t, 2>(
       pdst, dst_pitch, prefB, prefF, ref_pitch,
       VXFullB, VXFullF, VYFullB, VYFullF, MaskB, MaskF,
-      VPitch, width, height, time256 /*t256_provider*/
+      VPitch, width, height, time256
       );
   }
 }
 
-//template <class T256P>
-// no template -> from hpp to cpp
 template<typename pixel_t>
 void FlowInterExtra(
   uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
   short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
-  int VPitch, int width, int height, int time256, int nPel /*T256P &t256_provider*/, // order change! 2.6.0.5 back to 2.5.11.22
+  int VPitch, int width, int height, int time256, int nPel,
   short *VXFullBB, short *VXFullFF, short *VYFullBB, short *VYFullFF)
 {
   if (nPel == 1)
   {
-    FlowInterExtra_NPel <pixel_t,/*T256P,*/ 0>(
+    FlowInterExtra_NPel <pixel_t, 0>(
       pdst, dst_pitch, prefB, prefF, ref_pitch,
       VXFullB, VXFullF, VYFullB, VYFullF, MaskB, MaskF,
-      VPitch, width, height, time256 /*t256_provider*/,
+      VPitch, width, height, time256,
       VXFullBB, VXFullFF, VYFullBB, VYFullFF
       );
   }
   else if (nPel == 2)
   {
-    FlowInterExtra_NPel <pixel_t,/*T256P,*/ 1>(
+    FlowInterExtra_NPel <pixel_t, 1>(
       pdst, dst_pitch, prefB, prefF, ref_pitch,
       VXFullB, VXFullF, VYFullB, VYFullF, MaskB, MaskF,
-      VPitch, width, height, time256 /*t256_provider*/,
+      VPitch, width, height, time256,
       VXFullBB, VXFullFF, VYFullBB, VYFullFF
       );
   }
   else if (nPel == 4)
   {
-    FlowInterExtra_NPel <pixel_t,/*T256P,9*/ 2>(
+    FlowInterExtra_NPel <pixel_t, 2>(
       pdst, dst_pitch, prefB, prefF, ref_pitch,
       VXFullB, VXFullF, VYFullB, VYFullF, MaskB, MaskF,
-      VPitch, width, height, time256 /*t256_provider*/,
+      VPitch, width, height, time256,
       VXFullBB, VXFullFF, VYFullBB, VYFullFF
       );
   }
 }
 
-//template <class T256P>
-// no template -> goes from hpp to cpp
 template<typename pixel_t>
 void FlowInterSimple(
   uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
   short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
-  int VPitch, int width, int height, int time256, int nPel /*, T256P &t256_provider*/) // 2.6.0.5: order change time256 and nPel
+  int VPitch, int width, int height, int time256, int nPel)
 {
   if (nPel == 1)
   {
     FlowInterSimple_Pel1<pixel_t>(
       pdst, dst_pitch, prefB, prefF, ref_pitch,
       VXFullB, VXFullF, VYFullB, VYFullF, MaskB, MaskF,
-      VPitch, width, height, time256 /*t256_provider*/
+      VPitch, width, height, time256
       );
   }
   else if (nPel == 2)
   {
-    FlowInterSimple_NPel <pixel_t,/*T256P, */1>(
+    FlowInterSimple_NPel <pixel_t, 1>(
       pdst, dst_pitch, prefB, prefF, ref_pitch,
       VXFullB, VXFullF, VYFullB, VYFullF, MaskB, MaskF,
-      VPitch, width, height, time256 /* t256_provider*/
+      VPitch, width, height, time256
       );
   }
   else if (nPel == 4)
   {
-    FlowInterSimple_NPel <pixel_t,/*T256P,*/ 2>(
+    FlowInterSimple_NPel <pixel_t, 2>(
       pdst, dst_pitch, prefB, prefF, ref_pitch,
       VXFullB, VXFullF, VYFullB, VYFullF, MaskB, MaskF,
-      VPitch, width, height, time256 /* t256_provider*/
+      VPitch, width, height, time256
       );
   }
 }
@@ -789,25 +813,25 @@ void FlowInterSimple(
 // instantiate
 template void FlowInterSimple<uint8_t>(uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
   short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
-  int VPitch, int width, int height, int time256 /*T256P &t256_provider*/, int nPel );
+  int VPitch, int width, int height, int time256, int nPel );
 template void FlowInterSimple<uint16_t>(uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
   short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
-  int VPitch, int width, int height, int time256 /*T256P &t256_provider*/, int nPel );
+  int VPitch, int width, int height, int time256, int nPel );
 
 template void FlowInter<uint8_t>(uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
   short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
-  int VPitch, int width, int height, int time256 /*T256P &t256_provider*/, int nPel );
+  int VPitch, int width, int height, int time256, int nPel );
 template void FlowInter<uint16_t>(uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
   short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
-  int VPitch, int width, int height, int time256 /*T256P &t256_provider*/, int nPel );
+  int VPitch, int width, int height, int time256, int nPel );
 
 template void FlowInterExtra<uint8_t>(uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
   short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
-  int VPitch, int width, int height, int time256 /*T256P &t256_provider*/, int nPel,
+  int VPitch, int width, int height, int time256, int nPel,
   short *VXFullBB, short *VXFullFF, short *VYFullBB, short *VYFullFF);
 template void FlowInterExtra<uint16_t>(uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
   short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
-  int VPitch, int width, int height, int time256 /*T256P &t256_provider*/, int nPel,
+  int VPitch, int width, int height, int time256, int nPel,
   short *VXFullBB, short *VXFullFF, short *VYFullBB, short *VYFullFF);
 
 
