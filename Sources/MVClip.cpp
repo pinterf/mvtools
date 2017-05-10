@@ -65,11 +65,7 @@ MVClip::MVClip(const PClip &vectors, sad_t _nSCD1, int _nSCD2, IScriptEnvironmen
     nSCD1 = (uint64_t)nSCD1 * (nBlkSizeX * nBlkSizeY) / (8 * 8); // this is normalized to 8x8 block sizes
     if (pAnalyseFilter->IsChromaMotion()) {
       nSCD1 += ScaleSadChroma(nSCD1 * 2, chromaSADScale) / 4; // base: YV12
-      // nSCD1 += nSCD1 / (xRatioUV * yRatioUV) * 2; // *2: two additional planes: UV
-    }
-    if (nSCD1 < 0)
-    {
-      nSCD1 += 1;
+      // nSCD1 += nSCD1 / (xRatioUV * yRatioUV) * 2; // Old method: *2: two additional planes: UV
     }
 
    // Threshold which sets how many blocks have to change for the frame to be considered as a scene change. 
