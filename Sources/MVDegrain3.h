@@ -603,26 +603,58 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, bool _lsb_flag_not_used_templat
                 _mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[0] + x)), z), wf1)));
         }
 
-        if (blockWidth >= 8) {
+        if (blockWidth == 12) {
+          // 8 from the first, 4 from the second cycle
+          if (x == 0) { // 1st 8 bytes
+            _mm_storel_epi64((__m128i*)(pDst + x), _mm_packus_epi16(_mm_srli_epi16(val, 8), z));
+            _mm_storel_epi64((__m128i*)(pDstLsb + x), _mm_packus_epi16(_mm_and_si128(val, m), z));
+          }
+          else { // 2nd 4 bytes
+            *(uint32_t *)(pDst + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_srli_epi16(val, 8), z));
+            *(uint32_t *)(pDstLsb + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_and_si128(val, m), z));
+          }
+        } else if (blockWidth >= 8) {
+          // 8, 16, 24, ....
           _mm_storel_epi64((__m128i*)(pDst + x), _mm_packus_epi16(_mm_srli_epi16(val, 8), z));
           _mm_storel_epi64((__m128i*)(pDstLsb + x), _mm_packus_epi16(_mm_and_si128(val, m), z));
-        } 
-        else {
+        } else if (blockWidth == 6) {
+          // x is always 0
+          // 4+2 bytes
+          __m128i upper = _mm_packus_epi16(_mm_srli_epi16(val, 8), z);
+          __m128i lower = _mm_packus_epi16(_mm_and_si128(val, m), z);
+            *(uint32_t *)(pDst + x) = _mm_cvtsi128_si32(upper);
+            *(uint32_t *)(pDstLsb + x) = _mm_cvtsi128_si32(lower);
+            *(uint16_t *)(pDst + x + 4) = (uint16_t)_mm_cvtsi128_si32(_mm_srli_si128(upper,4));
+            *(uint16_t *)(pDstLsb + x + 4 ) = (uint16_t)_mm_cvtsi128_si32(_mm_srli_si128(lower,4));
+        }
+        else if (blockWidth == 4) {
+          // x is always 0
           *(uint32_t *)(pDst + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_srli_epi16(val, 8), z));
-          *(uint32_t *)(pDstLsb + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_srli_epi16(val, 8), z));
+          *(uint32_t *)(pDstLsb + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_and_si128(val, m), z));
+        }
+        else if (blockWidth == 3) {
+          // x is always 0
+          // 2 + 1 bytes
+          uint32_t reslo = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_srli_epi16(val, 8), z));
+          uint32_t reshi = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_and_si128(val, m), z));
+          *(uint16_t *)(pDst + x) = (uint16_t)reslo;
+          *(uint16_t *)(pDstLsb + x) = (uint16_t)reshi;
+          *(uint8_t *)(pDst + x + 2) = (uint8_t)(reslo >> 16);
+          *(uint8_t *)(pDstLsb + x + 2) = (uint8_t)(reshi >> 16);
+        }
+        else if (blockWidth == 2) {
+          // x is always 0
+          // 2 bytes
+          uint32_t reslo = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_srli_epi16(val, 8), z));
+          uint32_t reshi = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_and_si128(val, m), z));
+          *(uint16_t *)(pDst + x) = (uint16_t)reslo;
+          *(uint16_t *)(pDstLsb + x) = (uint16_t)reshi;
         }
       }
       pDst += nDstPitch;
       pDstLsb += nDstPitch;
       pSrc += nSrcPitch;
-      /*
-      for (int i = 0; i < level; i++) {
-      pRefB[i] += BPitch[i];
-      }
-      for (int i = 0; i < level; i++) {
-      pRefF[i] += FPitch[i];
-      }
-      */
+
       pRefB[0] += BPitch[0];
       pRefF[0] += FPitch[0];
       if (level >= 2) {
@@ -732,19 +764,47 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, bool _lsb_flag_not_used_templat
                   o))), 8), z);
           //				 pDst[x] = (pRefF[x]*WRefF + pSrc[x]*WSrc + pRefB[x]*WRefB + 128)>>8;// weighted (by SAD) average
         }
-        if(blockWidth >= 8)
+
+        if (blockWidth == 12) {
+          // 8 from the first, 4 from the second cycle
+          if (x == 0) { // 1st 8 bytes
+            _mm_storel_epi64((__m128i*)(pDst + x), res);
+          }
+          else { // 2nd 4 bytes
+            *(uint32_t *)(pDst + x) = _mm_cvtsi128_si32(res);
+          }
+        }
+        else if (blockWidth >= 8) {
+          // 8, 16, 24, ....
           _mm_storel_epi64((__m128i*)(pDst + x), res);
-        else
+        }
+        else if (blockWidth == 6) {
+          // x is always 0
+          // 4+2 bytes
           *(uint32_t *)(pDst + x) = _mm_cvtsi128_si32(res);
+          *(uint16_t *)(pDst + x + 4) = (uint16_t)_mm_cvtsi128_si32(_mm_srli_si128(res, 4));
+        }
+        else if (blockWidth == 4) {
+          // x is always 0
+          *(uint32_t *)(pDst + x) = _mm_cvtsi128_si32(res);
+        }
+        else if (blockWidth == 3) {
+          // x is always 0
+          // 2+1 bytes
+          uint32_t res32 = _mm_cvtsi128_si32(res);
+          *(uint16_t *)(pDst + x) = (uint16_t)res32;
+          *(uint8_t *)(pDst + x + 2) = (uint8_t)(res32 >> 16);
+        }
+        else if (blockWidth == 2) {
+          // x is always 0
+          // 2 bytes
+          uint32_t res32 = _mm_cvtsi128_si32(res);
+          *(uint16_t *)(pDst + x) = (uint16_t)res32;
+        }
       }
       pDst += nDstPitch;
       pSrc += nSrcPitch;
-      /*
-      for (int i = 0; i < level; i++) {
-      pRefB[i] += BPitch[i];
-      pRefF[i] += FPitch[i];
-      }
-      */
+
       pRefB[0] += BPitch[0];
       pRefF[0] += FPitch[0];
       if (level >= 2) {
@@ -812,88 +872,104 @@ void Degrain1to6_16_sse41(BYTE *pDst, BYTE *pDstLsb, bool _lsb_flag_not_used, in
   __m128i o = _mm_set1_epi32(128); // rounding: 128 (mul by 8 bit wref scale back)
   for (int h = 0; h < blockHeight; h++)
   {
-    for (int x = 0; x < blockWidth; x += 8/sizeof(uint16_t))
+    for (int x = 0; x < blockWidth; x += 8 / sizeof(uint16_t))
     {
       __m128i res;
       if (level == 6) {
         res = _mm_packus_epi32(_mm_srli_epi32(
-          _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pSrc +x*sizeof(uint16_t))), z), ws),
-            _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[0] +x*sizeof(uint16_t))), z), wb1),
-              _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[0] +x*sizeof(uint16_t))), z), wf1),
-                _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[1] +x*sizeof(uint16_t))), z), wb2),
-                  _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[1] +x*sizeof(uint16_t))), z), wf2),
-                    _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[2] +x*sizeof(uint16_t))), z), wb3),
-                      _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[2] +x*sizeof(uint16_t))), z), wf3),
-                        _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[3] +x*sizeof(uint16_t))), z), wb4),
-                          _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[3] +x*sizeof(uint16_t))), z), wf4),
-                            _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[4] +x*sizeof(uint16_t))), z), wb5),
-                              _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[4] +x*sizeof(uint16_t))), z), wf5),
-                                _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[5] +x*sizeof(uint16_t))), z), wb6),
-                                  _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[5] +x*sizeof(uint16_t))), z), wf6),
+          _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pSrc + x * sizeof(uint16_t))), z), ws),
+            _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[0] + x * sizeof(uint16_t))), z), wb1),
+              _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[0] + x * sizeof(uint16_t))), z), wf1),
+                _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[1] + x * sizeof(uint16_t))), z), wb2),
+                  _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[1] + x * sizeof(uint16_t))), z), wf2),
+                    _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[2] + x * sizeof(uint16_t))), z), wb3),
+                      _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[2] + x * sizeof(uint16_t))), z), wf3),
+                        _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[3] + x * sizeof(uint16_t))), z), wb4),
+                          _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[3] + x * sizeof(uint16_t))), z), wf4),
+                            _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[4] + x * sizeof(uint16_t))), z), wb5),
+                              _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[4] + x * sizeof(uint16_t))), z), wf5),
+                                _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[5] + x * sizeof(uint16_t))), z), wb6),
+                                  _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[5] + x * sizeof(uint16_t))), z), wf6),
                                     o))))))))))))), 8), z);
       }
       if (level == 5) {
         res = _mm_packus_epi32(_mm_srli_epi32(
-          _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pSrc +x*sizeof(uint16_t))), z), ws),
-            _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[0] +x*sizeof(uint16_t))), z), wb1),
-              _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[0] +x*sizeof(uint16_t))), z), wf1),
-                _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[1] +x*sizeof(uint16_t))), z), wb2),
-                  _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[1] +x*sizeof(uint16_t))), z), wf2),
-                    _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[2] +x*sizeof(uint16_t))), z), wb3),
-                      _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[2] +x*sizeof(uint16_t))), z), wf3),
-                        _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[3] +x*sizeof(uint16_t))), z), wb4),
-                          _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[3] +x*sizeof(uint16_t))), z), wf4),
-                            _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[4] +x*sizeof(uint16_t))), z), wb5),
-                              _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[4] +x*sizeof(uint16_t))), z), wf5),
+          _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pSrc + x * sizeof(uint16_t))), z), ws),
+            _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[0] + x * sizeof(uint16_t))), z), wb1),
+              _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[0] + x * sizeof(uint16_t))), z), wf1),
+                _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[1] + x * sizeof(uint16_t))), z), wb2),
+                  _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[1] + x * sizeof(uint16_t))), z), wf2),
+                    _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[2] + x * sizeof(uint16_t))), z), wb3),
+                      _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[2] + x * sizeof(uint16_t))), z), wf3),
+                        _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[3] + x * sizeof(uint16_t))), z), wb4),
+                          _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[3] + x * sizeof(uint16_t))), z), wf4),
+                            _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[4] + x * sizeof(uint16_t))), z), wb5),
+                              _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[4] + x * sizeof(uint16_t))), z), wf5),
                                 o))))))))))), 8), z);
       }
       else if (level == 4) {
         res = _mm_packus_epi32(_mm_srli_epi32(
-          _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pSrc +x*sizeof(uint16_t))), z), ws),
-            _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[0] +x*sizeof(uint16_t))), z), wb1),
-              _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[0] +x*sizeof(uint16_t))), z), wf1),
-                _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[1] +x*sizeof(uint16_t))), z), wb2),
-                  _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[1] +x*sizeof(uint16_t))), z), wf2),
-                    _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[2] +x*sizeof(uint16_t))), z), wb3),
-                      _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[2] +x*sizeof(uint16_t))), z), wf3),
-                        _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[3] +x*sizeof(uint16_t))), z), wb4),
-                          _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[3] +x*sizeof(uint16_t))), z), wf4),
+          _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pSrc + x * sizeof(uint16_t))), z), ws),
+            _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[0] + x * sizeof(uint16_t))), z), wb1),
+              _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[0] + x * sizeof(uint16_t))), z), wf1),
+                _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[1] + x * sizeof(uint16_t))), z), wb2),
+                  _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[1] + x * sizeof(uint16_t))), z), wf2),
+                    _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[2] + x * sizeof(uint16_t))), z), wb3),
+                      _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[2] + x * sizeof(uint16_t))), z), wf3),
+                        _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[3] + x * sizeof(uint16_t))), z), wb4),
+                          _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[3] + x * sizeof(uint16_t))), z), wf4),
                             o))))))))), 8), z);
       }
       else if (level == 3) {
         res = _mm_packus_epi32(_mm_srli_epi32(
-          _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pSrc +x*sizeof(uint16_t))), z), ws),
-            _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[0] +x*sizeof(uint16_t))), z), wb1),
-              _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[0] +x*sizeof(uint16_t))), z), wf1),
-                _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[1] +x*sizeof(uint16_t))), z), wb2),
-                  _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[1] +x*sizeof(uint16_t))), z), wf2),
-                    _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[2] +x*sizeof(uint16_t))), z), wb3),
-                      _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[2] +x*sizeof(uint16_t))), z), wf3),
+          _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pSrc + x * sizeof(uint16_t))), z), ws),
+            _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[0] + x * sizeof(uint16_t))), z), wb1),
+              _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[0] + x * sizeof(uint16_t))), z), wf1),
+                _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[1] + x * sizeof(uint16_t))), z), wb2),
+                  _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[1] + x * sizeof(uint16_t))), z), wf2),
+                    _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[2] + x * sizeof(uint16_t))), z), wb3),
+                      _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[2] + x * sizeof(uint16_t))), z), wf3),
                         o))))))), 8), z);
         //			 pDst[x] = (pRefF[x]*WRefF + pSrc[x]*WSrc + pRefB[x]*WRefB + pRefF2[x]*WRefF2 + pRefB2[x]*WRefB2 + pRefF3[x]*WRefF3 + pRefB3[x]*WRefB3 + 128)>>8;
       }
       else if (level == 2) {
         res = _mm_packus_epi32(_mm_srli_epi32(
-          _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pSrc +x*sizeof(uint16_t))), z), ws),
-            _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[0] +x*sizeof(uint16_t))), z), wb1),
-              _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[0] +x*sizeof(uint16_t))), z), wf1),
-                _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[1] +x*sizeof(uint16_t))), z), wb2),
-                  _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[1] +x*sizeof(uint16_t))), z), wf2),
+          _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pSrc + x * sizeof(uint16_t))), z), ws),
+            _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[0] + x * sizeof(uint16_t))), z), wb1),
+              _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[0] + x * sizeof(uint16_t))), z), wf1),
+                _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[1] + x * sizeof(uint16_t))), z), wb2),
+                  _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[1] + x * sizeof(uint16_t))), z), wf2),
                     o))))), 8), z);
         //			 pDst[x] = (pRefF[x]*WRefF + pSrc[x]*WSrc + pRefB[x]*WRefB + pRefF2[x]*WRefF2 + pRefB2[x]*WRefB2 + 128)>>8;
       }
       else if (level == 1) {
         res = _mm_packus_epi32(_mm_srli_epi32(
-          _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pSrc +x*sizeof(uint16_t))), z), ws),
-            _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[0] +x*sizeof(uint16_t))), z), wb1),
-              _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[0] +x*sizeof(uint16_t))), z), wf1),
+          _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pSrc + x * sizeof(uint16_t))), z), ws),
+            _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[0] + x * sizeof(uint16_t))), z), wb1),
+              _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[0] + x * sizeof(uint16_t))), z), wf1),
                 o))), 8), z);
         //				 pDst[x] = (pRefF[x]*WRefF + pSrc[x]*WSrc + pRefB[x]*WRefB + 128)>>8;// weighted (by SAD) average
       }
-      if(blockWidth >= 8 / sizeof(uint16_t)) // block 4 is already 8 bytes
-        _mm_storel_epi64((__m128i*)(pDst + x*sizeof(uint16_t)), res);
-      else // blockwidth 2 is 4 bytes
-        *(uint32_t *)(pDst + x*sizeof(uint16_t)) = _mm_cvtsi128_si32(res);
+      if (blockWidth == 6) {
+        // special, 4+2
+        if (x == 0)
+          _mm_storel_epi64((__m128i*)(pDst + x * sizeof(uint16_t)), res);
+        else
+          *(uint32_t *)(pDst + x * sizeof(uint16_t)) = _mm_cvtsi128_si32(res);
+      }
+      else if (blockWidth >= 8 / sizeof(uint16_t)) { // block 4 is already 8 bytes
+        // 4, 8, 12, ...
+        _mm_storel_epi64((__m128i*)(pDst + x * sizeof(uint16_t)), res);
+      }
+      else if (blockWidth == 3) { // blockwidth 3 is 6 bytes
+        // x == 0 always
+        *(uint32_t *)(pDst) = _mm_cvtsi128_si32(res); // 1-4 bytes
+        uint32_t res32 = _mm_cvtsi128_si32(_mm_srli_si128(res,4)); // 5-8 byte
+        *(uint16_t *)(pDst + sizeof(uint32_t)) = (uint16_t)res32; // 2 bytes needed
+      }
+      else { // blockwidth 2 is 4 bytes
+        *(uint32_t *)(pDst + x * sizeof(uint16_t)) = _mm_cvtsi128_si32(res);
+      }
     }
     pDst += nDstPitch;
     pSrc += nSrcPitch;
