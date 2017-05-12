@@ -374,71 +374,60 @@ COPYFunction* get_copy_function(int BlockX, int BlockY, int pixelsize, arch_t ar
     // BlkSizeX, BlkSizeY, pixelsize, arch_t
     std::map<std::tuple<int, int, int, arch_t>, COPYFunction*> func_copy;
     using std::make_tuple;
+#define MAKE_COPY_FN(x, y) func_copy[make_tuple(x, y, 1, NO_SIMD)] = Copy_C<x, y, uint8_t>; \
+func_copy[make_tuple(x, y, 2, NO_SIMD)] = Copy_C<x, y, uint16_t>;
+// same list as in overlap.cpp SadFunction.cpp, Sad_C selector
+    MAKE_COPY_FN(64, 64)
+      MAKE_COPY_FN(64, 48)
+      MAKE_COPY_FN(64, 32)
+      MAKE_COPY_FN(64, 16)
+      MAKE_COPY_FN(48, 64)
+      MAKE_COPY_FN(48, 48)
+      MAKE_COPY_FN(48, 24)
+      MAKE_COPY_FN(48, 12)
+      MAKE_COPY_FN(32, 64)
+      MAKE_COPY_FN(32, 32)
+      MAKE_COPY_FN(32, 24)
+      MAKE_COPY_FN(32, 16)
+      MAKE_COPY_FN(32, 8)
+      MAKE_COPY_FN(24, 48)
+      MAKE_COPY_FN(24, 32)
+      MAKE_COPY_FN(24, 24)
+      MAKE_COPY_FN(24, 12)
+      MAKE_COPY_FN(24, 6)
+      MAKE_COPY_FN(16, 64)
+      MAKE_COPY_FN(16, 32)
+      MAKE_COPY_FN(16, 16)
+      MAKE_COPY_FN(16, 12)
+      MAKE_COPY_FN(16, 8)
+      MAKE_COPY_FN(16, 4)
+      MAKE_COPY_FN(16, 2)
+      MAKE_COPY_FN(16, 1)
+      MAKE_COPY_FN(12, 48)
+      MAKE_COPY_FN(12, 24)
+      MAKE_COPY_FN(12, 16)
+      MAKE_COPY_FN(12, 12)
+      MAKE_COPY_FN(12, 6)
+      MAKE_COPY_FN(8, 32)
+      MAKE_COPY_FN(8, 16)
+      MAKE_COPY_FN(8, 8)
+      MAKE_COPY_FN(8, 4)
+      MAKE_COPY_FN(8, 2)
+      MAKE_COPY_FN(8, 1)
+      MAKE_COPY_FN(6, 12)
+      MAKE_COPY_FN(6, 6)
+      MAKE_COPY_FN(6, 3)
+      MAKE_COPY_FN(4, 8)
+      MAKE_COPY_FN(4, 4)
+      MAKE_COPY_FN(4, 2)
+      MAKE_COPY_FN(4, 1)
+      MAKE_COPY_FN(3, 6)
+      MAKE_COPY_FN(3, 3)
+      MAKE_COPY_FN(2, 4)
+      MAKE_COPY_FN(2, 2)
+      MAKE_COPY_FN(2, 1)
+#undef MAKE_COPY_FN
 
-    func_copy[make_tuple(64, 64, 1, NO_SIMD)] = Copy_C<64, 64, uint8_t>;
-    func_copy[make_tuple(64, 48, 1, NO_SIMD)] = Copy_C<64, 48, uint8_t>;
-    func_copy[make_tuple(64, 32, 1, NO_SIMD)] = Copy_C<64, 32, uint8_t>;
-    func_copy[make_tuple(64, 16, 1, NO_SIMD)] = Copy_C<64, 16, uint8_t>;
-    func_copy[make_tuple(48, 64, 1, NO_SIMD)] = Copy_C<48, 64, uint8_t>;
-    func_copy[make_tuple(32, 64, 1, NO_SIMD)] = Copy_C<32, 64, uint8_t>;
-    func_copy[make_tuple(32, 32, 1, NO_SIMD)] = Copy_C<32, 32,uint8_t>;
-    func_copy[make_tuple(32, 24, 1, NO_SIMD)] = Copy_C<32, 24, uint8_t>;
-    func_copy[make_tuple(32, 16, 1, NO_SIMD)] = Copy_C<32, 16,uint8_t>;
-    func_copy[make_tuple(32, 8 , 1, NO_SIMD)] = Copy_C<32, 8,uint8_t>;
-    func_copy[make_tuple(24, 32, 1, NO_SIMD)] = Copy_C<24, 32, uint8_t>;
-    func_copy[make_tuple(16, 64, 1, NO_SIMD)] = Copy_C<16, 64, uint8_t>;
-    func_copy[make_tuple(16, 32, 1, NO_SIMD)] = Copy_C<16, 32,uint8_t>;
-    func_copy[make_tuple(16, 16, 1, NO_SIMD)] = Copy_C<16, 16,uint8_t>;
-    func_copy[make_tuple(16, 12, 1, NO_SIMD)] = Copy_C<16, 12, uint8_t>;
-    func_copy[make_tuple(16, 8 , 1, NO_SIMD)] = Copy_C<16, 8,uint8_t>;
-    func_copy[make_tuple(16, 4 , 1, NO_SIMD)] = Copy_C<16, 4,uint8_t>;
-    func_copy[make_tuple(16, 2 , 1, NO_SIMD)] = Copy_C<16, 2,uint8_t>;
-    func_copy[make_tuple(12, 16, 1, NO_SIMD)] = Copy_C<12, 16, uint8_t>;
-    func_copy[make_tuple(8,  32, 1, NO_SIMD)] = Copy_C<8, 32, uint8_t>;
-    func_copy[make_tuple(8 , 16, 1, NO_SIMD)] = Copy_C<8 , 16,uint8_t>;
-    func_copy[make_tuple(8 , 8 , 1, NO_SIMD)] = Copy_C<8 , 8,uint8_t>;
-    func_copy[make_tuple(8 , 4 , 1, NO_SIMD)] = Copy_C<8 , 4,uint8_t>;
-    func_copy[make_tuple(8 , 2 , 1, NO_SIMD)] = Copy_C<8 , 2,uint8_t>;
-    func_copy[make_tuple(8 , 1 , 1, NO_SIMD)] = Copy_C<8 , 1,uint8_t>;
-    func_copy[make_tuple(4 , 8 , 1, NO_SIMD)] = Copy_C<4 , 8,uint8_t>;
-    func_copy[make_tuple(4 , 4 , 1, NO_SIMD)] = Copy_C<4 , 4,uint8_t>;
-    func_copy[make_tuple(4 , 2 , 1, NO_SIMD)] = Copy_C<4 , 2,uint8_t>;
-    func_copy[make_tuple(2 , 4 , 1, NO_SIMD)] = Copy_C<2 , 4,uint8_t>;
-    func_copy[make_tuple(2 , 2 , 1, NO_SIMD)] = Copy_C<2 , 2,uint8_t>;
-    func_copy[make_tuple(2 , 1 , 1, NO_SIMD)] = Copy_C<2 , 1,uint8_t>;
-
-    func_copy[make_tuple(64, 64, 2, NO_SIMD)] = Copy_C<64, 64, uint16_t>;
-    func_copy[make_tuple(64, 48, 2, NO_SIMD)] = Copy_C<64, 48, uint16_t>;
-    func_copy[make_tuple(64, 32, 2, NO_SIMD)] = Copy_C<64, 32, uint16_t>;
-    func_copy[make_tuple(64, 16, 2, NO_SIMD)] = Copy_C<64, 16, uint16_t>;
-    func_copy[make_tuple(48, 64, 2, NO_SIMD)] = Copy_C<48, 64, uint16_t>;
-    func_copy[make_tuple(32, 64, 2, NO_SIMD)] = Copy_C<32, 64, uint16_t>;
-    func_copy[make_tuple(32, 32, 2, NO_SIMD)] = Copy_C<32, 32,uint16_t>;
-    func_copy[make_tuple(32, 24, 2, NO_SIMD)] = Copy_C<32, 24, uint16_t>;
-    func_copy[make_tuple(32, 16, 2, NO_SIMD)] = Copy_C<32, 16,uint16_t>;
-    func_copy[make_tuple(32, 8 , 2, NO_SIMD)] = Copy_C<32, 8,uint16_t>;
-    func_copy[make_tuple(24, 32, 2, NO_SIMD)] = Copy_C<24, 32, uint16_t>;
-    func_copy[make_tuple(16, 64, 2, NO_SIMD)] = Copy_C<16, 64, uint16_t>;
-    func_copy[make_tuple(16, 32, 2, NO_SIMD)] = Copy_C<16, 32,uint16_t>;
-    func_copy[make_tuple(16, 16, 2, NO_SIMD)] = Copy_C<16, 16,uint16_t>;
-    func_copy[make_tuple(16, 12, 2, NO_SIMD)] = Copy_C<16, 12, uint16_t>;
-    func_copy[make_tuple(16, 8 , 2, NO_SIMD)] = Copy_C<16, 8,uint16_t>;
-    func_copy[make_tuple(16, 4 , 2, NO_SIMD)] = Copy_C<16, 4,uint16_t>;
-    func_copy[make_tuple(16, 2 , 2, NO_SIMD)] = Copy_C<16, 2,uint16_t>;
-    func_copy[make_tuple(12, 16, 2, NO_SIMD)] = Copy_C<12, 16, uint16_t>;
-    func_copy[make_tuple(8, 32, 2, NO_SIMD)] = Copy_C<8, 32, uint16_t>;
-    func_copy[make_tuple(8 , 16, 2, NO_SIMD)] = Copy_C<8 , 16,uint16_t>;
-    func_copy[make_tuple(8 , 8 , 2, NO_SIMD)] = Copy_C<8 , 8,uint16_t>;
-    func_copy[make_tuple(8 , 4 , 2, NO_SIMD)] = Copy_C<8 , 4,uint16_t>;
-    func_copy[make_tuple(8 , 2 , 2, NO_SIMD)] = Copy_C<8 , 2,uint16_t>;
-    func_copy[make_tuple(8 , 1 , 2, NO_SIMD)] = Copy_C<8 , 1,uint16_t>;
-    func_copy[make_tuple(4 , 8 , 2, NO_SIMD)] = Copy_C<4 , 8,uint16_t>;
-    func_copy[make_tuple(4 , 4 , 2, NO_SIMD)] = Copy_C<4 , 4,uint16_t>;
-    func_copy[make_tuple(4 , 2 , 2, NO_SIMD)] = Copy_C<4 , 2,uint16_t>;
-    func_copy[make_tuple(2 , 4 , 2, NO_SIMD)] = Copy_C<2 , 4,uint16_t>;
-    func_copy[make_tuple(2 , 2 , 2, NO_SIMD)] = Copy_C<2 , 2,uint16_t>;
-    func_copy[make_tuple(2 , 1 , 2, NO_SIMD)] = Copy_C<2 , 1,uint16_t>;
-    
     // we could even ignore copy sse2 assemblers, compilers are smart nowadays
     // no mmx copy for block sizes over 32
     func_copy[make_tuple(32, 32, 1, USE_SSE2)] = Copy32x32_sse2;
@@ -471,42 +460,6 @@ COPYFunction* get_copy_function(int BlockX, int BlockY, int pixelsize, arch_t ar
       if (result == nullptr && current_arch_try == NO_SIMD)
         break;
     }
-#if 0
-    COPYFunction *result = func_copy[make_tuple(BlockX, BlockY, pixelsize, arch)];
-
-    arch_t arch_orig = arch;
-
-
-
-    // no AVX2 -> try AVX
-    if (result == nullptr && (arch==USE_AVX2 || arch_orig==USE_AVX)) {
-      arch = USE_AVX;
-      result = func_copy[make_tuple(BlockX, BlockY, pixelsize, USE_AVX)];
-    }
-    // no AVX -> try SSE41
-    if (result == nullptr && (arch==USE_AVX || arch_orig==USE_SSE41)) {
-      arch = USE_SSE41;
-      result = func_copy[make_tuple(BlockX, BlockY, pixelsize, USE_SSE41)];
-    }
-    // no SSE41 -> try SSE2
-    if (result == nullptr && (arch==USE_SSE41 || arch_orig==USE_SSE2)) {
-      arch = USE_SSE2;
-      result = func_copy[make_tuple(BlockX, BlockY, pixelsize, USE_SSE2)];
-    }
-    // no SSE2 -> try C
-    if (result == nullptr && (arch==USE_SSE2 || arch_orig==NO_SIMD)) {
-      arch = NO_SIMD;
-      /* C version variations are only working in SAD
-      // priority: C version compiled to avx2, avx
-      if(arch_orig==USE_AVX2)
-        result = get_copy_avx2_C_function(BlockX, BlockY, pixelsize, NO_SIMD);
-      else if(arch_orig==USE_AVX)
-        result = get_copy_avx_C_function(BlockX, BlockY, pixelsize, NO_SIMD);
-      */
-      if(result == nullptr)
-        result = func_copy[make_tuple(BlockX, BlockY, pixelsize, NO_SIMD)]; // fallback to C
-    }
-#endif
 
     return result;
 }
