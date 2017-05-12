@@ -2575,9 +2575,15 @@ PlaneOfBlocks::WorkingArea::WorkingArea(int nBlkSizeX, int nBlkSizeY, int dctpit
 {
 #if (ALIGN_SOURCEBLOCK > 1)
   int xPitch = nBlkSizeX*pixelsize;  // for memory allocation pixelsize needed
-  if (xPitch > 8) xPitch = AlignNumber(xPitch, 16); // e.g. allocate 32 for BlkSize 24
+  if (xPitch > 8) // 12
+    xPitch = AlignNumber(xPitch, 16); // e.g. allocate 32 for BlkSize 24
+  else if (xPitch > 4)
+    xPitch = AlignNumber(xPitch, 8);
   int xPitchUV = (nBlkSizeX*pixelsize) >> nLogxRatioUV;
-  if (xPitchUV > 8) xPitchUV = AlignNumber(xPitchUV, 16); // e.g. allocate 32 for BlkSize 24
+  if (xPitchUV > 8) 
+    xPitchUV = AlignNumber(xPitchUV, 16); // e.g. allocate 32 for BlkSize 24
+  else if(xPitchUV > 4)
+    xPitchUV = AlignNumber(xPitchUV, 8);
   int blocksize = xPitch*nBlkSizeY;
   int UVblocksize = xPitchUV * (nBlkSizeY >> nLogyRatioUV); // >> nx >> ny
   int sizeAlignedBlock = blocksize + (ALIGN_SOURCEBLOCK - (blocksize%ALIGN_SOURCEBLOCK)) +
