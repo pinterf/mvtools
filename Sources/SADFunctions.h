@@ -72,30 +72,34 @@ unsigned int Sad16_sse2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
 
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128(); // 2x or 4x int is probably enough for 32x32
-  
+  // 16 bit width=12: as 3x4, no mask needed
+  __m128i mask12_8_bit = _mm_set_epi8(0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF);
+  __m128i mask6_16bit = _mm_set_epi16(0, 0, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF);
+  __m128i mask6_8bit = _mm_set_epi8(0, 0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF);
+
   const bool two_8byte_rows = (sizeof(pixel_t) == 2 && nBlkWidth <= 4) || (sizeof(pixel_t) == 1 && nBlkWidth <= 8);
-  const bool one_cycle = (sizeof(pixel_t) * nBlkWidth) == 16;
+  const bool one_cycle = (sizeof(pixel_t) * nBlkWidth) > 8 && (sizeof(pixel_t) * nBlkWidth) <= 16; // 8 bit: 12,16 pixel, 16 bit: 6,8 pixel
   const bool unroll_by2 = !two_8byte_rows && nBlkHeight>=2; // unroll by 4: slower
 
     for (int y = 0; y < nBlkHeight; y += (two_8byte_rows || unroll_by2) ? 2 : 1)
     {
       if (two_8byte_rows) { // no x cycle
+        // 8 bit: width<=8 (4,6,8)
+        // 16 bits: width <= 4
         __m128i src1, src2;
         // (8 bytes or 4 words) * 2 rows
-#if 0
-        src1 = _mm_or_si128(_mm_loadl_epi64((__m128i *) (pSrc)), _mm_slli_si128(_mm_loadl_epi64((__m128i *) (pSrc + nSrcPitch)), 8));
-        src2 = _mm_or_si128(_mm_loadl_epi64((__m128i *) (pRef)), _mm_slli_si128(_mm_loadl_epi64((__m128i *) (pRef + nRefPitch)), 8));
-#else
-        // 16.12.01 unpack
         if (sizeof(pixel_t) == 1) {
+          // blksize <= 8
           src1 = _mm_unpacklo_epi8(_mm_loadl_epi64((__m128i *) (pSrc)), _mm_loadl_epi64((__m128i *) (pSrc + nSrcPitch)));
+          if (nBlkWidth == 6)
+            src1 = _mm_and_si128(src1, mask6_8bit);
           src2 = _mm_unpacklo_epi8(_mm_loadl_epi64((__m128i *) (pRef)), _mm_loadl_epi64((__m128i *) (pRef + nRefPitch)));
         }
         else if (sizeof(pixel_t) == 2) {
+          // blksize <= 4
           src1 = _mm_unpacklo_epi16(_mm_loadl_epi64((__m128i *) (pSrc)), _mm_loadl_epi64((__m128i *) (pSrc + nSrcPitch)));
           src2 = _mm_unpacklo_epi16(_mm_loadl_epi64((__m128i *) (pRef)), _mm_loadl_epi64((__m128i *) (pRef + nRefPitch)));
         }
-#endif
         if (sizeof(pixel_t) == 1) {
           // this is uint_16 specific, but will test on uint8_t against external .asm SAD functions)
           sum = _mm_add_epi32(sum, _mm_sad_epu8(src1, src2)); // yihhaaa, existing SIMD   sum1_32, 0, sum2_32, 0
@@ -113,15 +117,25 @@ unsigned int Sad16_sse2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
       }
       else if (one_cycle)
       {
+        // 8 bit: 8 < blksize <= 16
+        // 16 bit: 4 < blksize <= 8
         __m128i src1, src2;
         src1 = _mm_load_si128((__m128i *) (pSrc)); // no x
         src2 = _mm_loadu_si128((__m128i *) (pRef));
         if (sizeof(pixel_t) == 1) {
+          if (nBlkWidth == 12) {
+            src1 = _mm_and_si128(src1, mask12_8_bit);
+            src2 = _mm_and_si128(src2, mask12_8_bit);
+          }
           // this is uint_16 specific, but will test on uint8_t against external .asm SAD functions)
           sum = _mm_add_epi32(sum, _mm_sad_epu8(src1, src2)); // yihhaaa, existing SIMD   sum1_32, 0, sum2_32, 0
                                                               // result in two 32 bit areas at the upper and lower 64 bytes
         }
         else {
+          if (nBlkWidth == 6) {
+            src1 = _mm_and_si128(src1, mask6_16bit);
+            src2 = _mm_and_si128(src2, mask6_16bit);
+          }
           __m128i greater_t = _mm_subs_epu16(src1, src2); // unsigned sub with saturation
           __m128i smaller_t = _mm_subs_epu16(src2, src1);
           __m128i absdiff = _mm_or_si128(greater_t, smaller_t); //abs(s1-s2)  == (satsub(s1,s2) | satsub(s2,s1))
@@ -135,11 +149,19 @@ unsigned int Sad16_sse2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
           src1 = _mm_load_si128((__m128i *) (pSrc+nSrcPitch)); // no x
           src2 = _mm_loadu_si128((__m128i *) (pRef+nRefPitch));
           if (sizeof(pixel_t) == 1) {
+            if (nBlkWidth == 12) {
+              src1 = _mm_and_si128(src1, mask12_8_bit);
+              src2 = _mm_and_si128(src2, mask12_8_bit);
+            }
             // this is uint_16 specific, but will test on uint8_t against external .asm SAD functions)
             sum = _mm_add_epi32(sum, _mm_sad_epu8(src1, src2)); // yihhaaa, existing SIMD   sum1_32, 0, sum2_32, 0
                                                                 // result in two 32 bit areas at the upper and lower 64 bytes
           }
           else {
+            if (nBlkWidth == 6) {
+              src1 = _mm_and_si128(src1, mask6_16bit);
+              src2 = _mm_and_si128(src2, mask6_16bit);
+            }
             __m128i greater_t = _mm_subs_epu16(src1, src2); // unsigned sub with saturation
             __m128i smaller_t = _mm_subs_epu16(src2, src1);
             __m128i absdiff = _mm_or_si128(greater_t, smaller_t); //abs(s1-s2)  == (satsub(s1,s2) | satsub(s2,s1))
@@ -194,7 +216,7 @@ unsigned int Sad16_sse2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
         }
       }
       else if ((nBlkWidth * sizeof(pixel_t)) % 8 == 0) {
-        // e.g. 12x16 uint16
+        // e.g. 12x16 uint16 -> 3x4
         for (int x = 0; x < nBlkWidth * sizeof(pixel_t); x += 8)
         {
           __m128i src1, src2;
@@ -220,7 +242,6 @@ unsigned int Sad16_sse2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
             src1 = _mm_loadl_epi64((__m128i *) (pSrc + nSrcPitch + x));
             src2 = _mm_loadl_epi64((__m128i *) (pRef + nRefPitch + x));
             if (sizeof(pixel_t) == 1) {
-              // this is uint_16 specific, but will test on uint8_t against external .asm SAD functions)
               sum = _mm_add_epi32(sum, _mm_sad_epu8(src1, src2)); // yihhaaa, existing SIMD   sum1_32, 0, sum2_32, 0
                                                                   // result in two 32 bit areas at the upper and lower 64 bytes
             }
@@ -323,6 +344,12 @@ SAD_x264(64, 16, sse2);
 // 48*x
 SAD_x264(48, 64, avx2);
 SAD_x264(48, 64, sse2);
+SAD_x264(48, 48, avx2);
+SAD_x264(48, 48, sse2);
+SAD_x264(48, 24, avx2);
+SAD_x264(48, 24, sse2);
+SAD_x264(48, 12, avx2);
+SAD_x264(48, 12, sse2);
 
 // 32*x
 // AVX2
@@ -345,7 +372,11 @@ SAD_x264(32, 16, sse2);
 SAD_x264(32,  8, sse2);
 
 // 24*x
+SAD_x264(24, 48, sse2);
 SAD_x264(24, 32, sse2);
+SAD_x264(24, 24, sse2);
+SAD_x264(24, 12, sse2);
+SAD_x264(24, 6, sse2);
 
 // 16*x
 // SSE3
@@ -366,7 +397,11 @@ SAD_x264(16, 8, sse2);
 SAD_x264(16, 4, sse2);
 
 // 12*x
+SAD_x264(12, 48, sse2);
+SAD_x264(12, 24, sse2);
 SAD_x264(12, 16, sse2);
+SAD_x264(12, 12, sse2);
+SAD_x264(12, 6, sse2);
 
 // 8*x
 SAD_x264(8, 32, sse2);
@@ -374,6 +409,11 @@ SAD_x264(8, 16, sse2);
 //SAD_x264(8, 16, mmx2);
 SAD_x264(8, 8, mmx2);
 SAD_x264(8, 4, mmx2);
+
+// 12*x
+SAD_x264(6, 24, sse2);
+SAD_x264(6, 12, sse2);
+SAD_x264(6, 6, sse2);
 
 // 4*x
 SAD_x264(4, 16, mmx2);
@@ -434,19 +474,26 @@ SATD_SSE(64, 32, sse2);
 SATD_SSE(64, 16, sse2);
 //SATD_SSE(64,  8, sse2); no such
 SATD_SSE(48, 64, sse2);
+SATD_SSE(48, 48, sse2);
+SATD_SSE(48, 24, sse2);
+SATD_SSE(48, 12, sse2);
 SATD_SSE(32, 64, sse2);
 SATD_SSE(32, 32, sse2);
 SATD_SSE(32, 24, sse2);
 SATD_SSE(32, 16, sse2);
 SATD_SSE(32,  8, sse2);
 //SATD_SSE(32,  4, sse2); no such
+SATD_SSE(24, 48, sse2);
 SATD_SSE(24, 32, sse2);
+SATD_SSE(24, 24, sse2);
+SATD_SSE(24, 12, sse2);
 SATD_SSE(16, 64, sse2);
 SATD_SSE(16, 32, sse2);
 SATD_SSE(16, 16, sse2);
 SATD_SSE(16, 12, sse2);
 SATD_SSE(16,  8, sse2);
 SATD_SSE(16,  4, sse2);
+// no 12x12 or 12x24 from x265
 SATD_SSE(12, 16, sse2);
 SATD_SSE( 8, 32, sse2);
 SATD_SSE( 8, 16, sse2);
@@ -465,19 +512,28 @@ SATD_SSE(64, 32, sse4);
 SATD_SSE(64, 16, sse4);
 //SATD_SSE(64,  8, sse4); no such
 SATD_SSE(48, 64, sse4);
+SATD_SSE(48, 48, sse4);
+SATD_SSE(48, 24, sse4);
+SATD_SSE(48, 12, sse4);
+
 SATD_SSE(32, 64, sse4);
 SATD_SSE(32, 32, sse4);
 SATD_SSE(32, 24, sse4);
 SATD_SSE(32, 16, sse4);
 SATD_SSE(32, 8 , sse4);
 // SATD_SSE(32, 4 , sse4); no such
+SATD_SSE(24, 48, sse4);
 SATD_SSE(24, 32, sse4);
+SATD_SSE(24, 24, sse4);
+SATD_SSE(24, 12, sse4);
+
 SATD_SSE(16, 64, sse4);
 SATD_SSE(16, 32, sse4);
 SATD_SSE(16, 16, sse4);
 SATD_SSE(16, 12, sse4);
 SATD_SSE(16,  8, sse4);
 SATD_SSE(16,  4, sse4);
+// no 12x12 or 12x24 from x265
 SATD_SSE(12, 16, sse4);
 SATD_SSE( 8, 32, sse4);
 SATD_SSE( 8, 16, sse4);
@@ -490,57 +546,58 @@ SATD_SSE(64, 64, avx);
 SATD_SSE(64, 48, avx);
 SATD_SSE(64, 32, avx);
 SATD_SSE(64, 16, avx);
-//SATD_SSE(64, 8, avx); no such
 SATD_SSE(48, 64, avx);
+SATD_SSE(48, 48, avx);
+SATD_SSE(48, 24, avx);
+SATD_SSE(48, 12, avx);
+
 SATD_SSE(32, 64, avx);
 SATD_SSE(32, 32, avx);
 SATD_SSE(32, 24, avx);
 SATD_SSE(32, 16, avx);
 SATD_SSE(32,  8, avx);
 // SATD_SSE(32,  4, avx); no such
+SATD_SSE(24, 48, avx);
 SATD_SSE(24, 32, avx);
+SATD_SSE(24, 24, avx);
+SATD_SSE(24, 12, avx);
 SATD_SSE(16, 64, avx);
 SATD_SSE(16, 32, avx);
 SATD_SSE(16, 16, avx);
 SATD_SSE(16, 12, avx);
 SATD_SSE(16,  8, avx);
 SATD_SSE(16,  4, avx);
+// no 12x12 or 12x24 from x265
 SATD_SSE(12, 16, avx);
 SATD_SSE( 8, 32, avx);
 SATD_SSE( 8, 16, avx);
 SATD_SSE( 8,  8, avx);
 SATD_SSE( 8,  4, avx);
 
-// no x4 versions
 //SATD_SSE(64, 64, avx2); no such
 //SATD_SSE(64, 32, avx2); no such
 //SATD_SSE(64, 16, avx2); no such
-//SATD_SSE(64, 8, avx2); no such
 #ifdef _M_X64
+SATD_SSE(64, 64, avx2);
+SATD_SSE(64, 48, avx2);
+SATD_SSE(64, 32, avx2);
+SATD_SSE(64, 16, avx2);
+SATD_SSE(48, 64, avx2);
+SATD_SSE(48, 48, avx2);
+SATD_SSE(48, 24, avx2);
+SATD_SSE(48, 12, avx2);
 SATD_SSE(32, 64, avx2);
 SATD_SSE(32, 32, avx2);
 SATD_SSE(32, 16, avx2);
 SATD_SSE(32, 8, avx2);
-#endif
-#ifdef _M_X64
-SATD_SSE(16, 64, avx2); // only in x64
-SATD_SSE(16, 32, avx2); // only in x64
+SATD_SSE(16, 64, avx2);
+SATD_SSE(16, 32, avx2);
 #endif
 SATD_SSE(16, 16, avx2);
 SATD_SSE(16,  8, avx2);
-//SATD_SSE( 8, 32, avx2); no such
 SATD_SSE( 8, 16, avx2);
 SATD_SSE( 8,  8, avx2);
 
-/*
-SATD_SSE(32, 32, ssse3);
-SATD_SSE(32, 16, ssse3);
-SATD_SSE(16, 16, ssse3);
-SATD_SSE(16,  8, ssse3);
-SATD_SSE( 8, 16, ssse3);
-SATD_SSE( 8,  8, ssse3);
-SATD_SSE( 8,  4, ssse3);
-*/
 #undef SATD_SSE
 
 //dummy for testing and deactivate SAD

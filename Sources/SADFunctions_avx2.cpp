@@ -36,12 +36,19 @@ func_sad[make_tuple(x, y, 2, NO_SIMD)] = Sad_AVX2_C<x, y, uint16_t>;
       MAKE_SAD_FN(64, 32)
       MAKE_SAD_FN(64, 16)
       MAKE_SAD_FN(48, 64)
+      MAKE_SAD_FN(48, 48)
+      MAKE_SAD_FN(48, 24)
+      MAKE_SAD_FN(48, 12)
       MAKE_SAD_FN(32, 64)
       MAKE_SAD_FN(32, 32)
       MAKE_SAD_FN(32, 24)
       MAKE_SAD_FN(32, 16)
       MAKE_SAD_FN(32, 8)
+      MAKE_SAD_FN(24, 48)
       MAKE_SAD_FN(24, 32)
+      MAKE_SAD_FN(24, 24)
+      MAKE_SAD_FN(24, 12)
+      MAKE_SAD_FN(24, 6)
       MAKE_SAD_FN(16, 64)
       MAKE_SAD_FN(16, 32)
       MAKE_SAD_FN(16, 16)
@@ -50,17 +57,25 @@ func_sad[make_tuple(x, y, 2, NO_SIMD)] = Sad_AVX2_C<x, y, uint16_t>;
       MAKE_SAD_FN(16, 4)
       MAKE_SAD_FN(16, 2)
       MAKE_SAD_FN(16, 1)
+      MAKE_SAD_FN(12, 48)
+      MAKE_SAD_FN(12, 24)
       MAKE_SAD_FN(12, 16)
+      MAKE_SAD_FN(12, 6)
       MAKE_SAD_FN(8, 32)
       MAKE_SAD_FN(8, 16)
       MAKE_SAD_FN(8, 8)
       MAKE_SAD_FN(8, 4)
       MAKE_SAD_FN(8, 2)
       MAKE_SAD_FN(8, 1)
+      MAKE_SAD_FN(6, 12)
+      MAKE_SAD_FN(6, 6)
+      MAKE_SAD_FN(6, 3)
       MAKE_SAD_FN(4, 8)
       MAKE_SAD_FN(4, 4)
       MAKE_SAD_FN(4, 2)
       MAKE_SAD_FN(4, 1)
+      MAKE_SAD_FN(3, 6)
+      MAKE_SAD_FN(3, 3)
       MAKE_SAD_FN(2, 4)
       MAKE_SAD_FN(2, 2)
       MAKE_SAD_FN(2, 1)
@@ -176,7 +191,12 @@ unsigned int Sad16_avx2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
         }
       }
     }
-    else {
+    else if ((nBlkWidth * sizeof(pixel_t)) % 32 == 0) {
+      // 16*2 bytes yes,
+      // 24*2 bytes no
+      // 32*2 bytes yes
+      // 48*2 bytes yes
+      // 64*2 bytes yes
       for (int x = 0; x < nBlkWidth * sizeof(pixel_t); x += 32)
       {
         __m256i src1, src2;
@@ -215,6 +235,9 @@ unsigned int Sad16_avx2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
           }
         }
       }
+    }
+    else {
+      assert(0);
     }
     if (two_16byte_rows || unroll_by2) {
       pSrc += nSrcPitch * 2;
