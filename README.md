@@ -15,11 +15,14 @@ http://avisynth.nl/index.php/AviSynth%2B#AviSynth.2B_x64_plugins
 
 Change log
 
-- 2.7.18.22 (201705??)
+- 2.7.18.22 (20170512)
   Fix: 10-16 bit: DCT buffer possible overflow
+
   Fix: DCT is fast again for non 8x8 blocksizes. Regression since 2.7.5.22.
+
   New: Chroma SAD is now always half of luma SAD, regardless of video format
        Without this: YV24's luma:chroma SAD ratio is 4:8 instead of 4:2 (of YV12)
+
   New: MAnalyze, MRecalculate new parameter: "scaleCSAD" integer, default 0
        Fine tune chroma SAD weight relative to luma SAD.
        ScaleCSAD values for luma:chroma SAD ratio
@@ -28,22 +31,31 @@ Change log
         0: 4:2 (default, same as the native ratio for YV12)
         1: 4:4
         2: 4:8
-  New: Block size 64 and other exotic sizes (note: MDegrains still work on classical 2^n block sizes)
-       MAnalyze/MRecalculate new block sizes (SATD: min 4x4)
-       List of all block sizes (please, take into consideration the horizontal and vertial subsampling)
+
+  New: Block sizes 64, 48, 24, 12, 6
+       MAnalyze/MRecalculate new block sizes (SATD support mod4 sizes)
+       List of available block sizes
          64x64, 64x48, 64x32, 64x16
-         48x64
+         48x64, 48x48, 48x24, 48x12
          32x64, 32x32, 32x24, 32x16, 32x8
-         24x32
-         16x64, 16x32, 16x16, 16x12, 16x8, 16x4, (16x2)
-         12x16
-         8x32, 8x16, 8x8, 8x4, (8x2, 8x1)
+         24x48, 24x24, 24x32, 24x12, 24x6
+         16x64, 16x32, 16x16, 16x12, 16x8, 16x4, 16x2
+         12x48, 12x24, 12x16, 12x12, 12x6
+         8x32, 8x16, 8x8, 8x4, 8x2, 8x1
+         6x24, 6x12, 6x6, 6x3
          4x8, 4x4, 4x2
+         3x6, 3x3
          2x4, 2x2
-  New: Block size 64 for MDegrain1-6, MDegrainN, and MScaleVect
-  New: Changed to 2017 version of asm files for 8 bit SAD functions from x265 project
+
+       Note: some smaller block sizes can only be available in 4:4:4 formats, due to block size division (chroma subsampling)
+
+  New: All block sizes are supported in MDegrain1-6, MDegrainN, and MScaleVect
+
+  New: Changed to 2017 version of asm files for 8 bit SAD/SATD functions from x265 project.
+       Added not implemented asm code for 12, 24, 48 sizes
        For some block sizes AVX2 and SSE4 is supported (AVX2 if reported under AviSynth+)
        e.g. BlkSize 32 is faster now.
+
   New: MMask SAD Mask to give identical weights for other-than-YV12 formats, e.g. for YV24
 
 - 2.7.17.22 (20170426)
