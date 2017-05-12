@@ -34,6 +34,7 @@
 SECTION_RODATA 32
 
 MSK:                  db 255,255,255,255,255,255,255,255,255,255,255,255,0,0,0,0
+MSK6:                 db 255,255,255,255,255,255,0,0,0,0,0,0,0,0,0,0 ;mvtools2 extra
 
 SECTION .text
 
@@ -120,6 +121,26 @@ SAD  4,  4
     RET
 %endmacro
 
+;mvtools2 extra
+;no final pointer increase
+%macro PROCESS_SAD_12x2 0
+    movu    m1,  [r2]
+    movu    m2,  [r0]
+    pand    m1,  m4
+    pand    m2,  m4
+    psadbw  m1,  m2
+    paddd   m0,  m1
+    lea     r2,  [r2 + r3]
+    lea     r0,  [r0 + r1]
+    movu    m1,  [r2]
+    movu    m2,  [r0]
+    pand    m1,  m4
+    pand    m2,  m4
+    psadbw  m1,  m2
+    paddd   m0,  m1
+%endmacro
+
+;no final pointer increase
 %macro PROCESS_SAD_12x4 0
     movu    m1,  [r2]
     movu    m2,  [r0]
@@ -172,6 +193,7 @@ SAD  4,  4
     lea     r0,  [r0 + 2 * r1]
 %endmacro
 
+;no final pointer increase
 %macro PROCESS_SAD_24x4 0
     movu        m1,  [r2]
     movq        m2,  [r2 + 16]
@@ -192,6 +214,27 @@ SAD  4,  4
     lea         r2,  [r2 + r3]
     lea         r0,  [r0 + r1]
 
+    movu        m1,  [r2]
+    movq        m2,  [r2 + 16]
+    lea         r2,  [r2 + r3]
+    movu        m3,  [r2]
+    movq        m4,  [r2 + 16]
+    psadbw      m1,  [r0]
+    psadbw      m3,  [r0 + r1]
+    paddd       m0,  m1
+    paddd       m0,  m3
+    movq        m1,  [r0 + 16]
+    lea         r0,  [r0 + r1]
+    movq        m3,  [r0 + 16]
+    punpcklqdq  m2,  m4
+    punpcklqdq  m1,  m3
+    psadbw      m2, m1
+    paddd       m0, m2
+%endmacro
+
+; mvtools2 extra
+;no final pointer increase
+%macro PROCESS_SAD_24x2 0
     movu        m1,  [r2]
     movq        m2,  [r2 + 16]
     lea         r2,  [r2 + r3]
@@ -245,6 +288,7 @@ SAD  4,  4
     lea     r0,  [r0 + r1]
 %endmacro
 
+;no final pointer increase
 %macro PROCESS_SAD_48x4 0
     movu    m1,  [r2]
     movu    m2,  [r2 + 16]
@@ -309,6 +353,39 @@ SAD  4,  4
     lea         r2, [r2 + 2 * r3]
     movq        m3, [r0]
     movq        m4, [r0 + r1]
+    lea         r0, [r0 + 2 * r1]
+    punpcklqdq  m1, m2
+    punpcklqdq  m3, m4
+    psadbw      m1, m3
+    paddd       m0, m1
+%endmacro
+
+;mvtools2 extra
+%macro PROCESS_SAD_8x2 0
+    movq        m1, [r2]
+    movq        m2, [r2 + r3]
+    lea         r2, [r2 + 2 * r3]
+    movq        m3, [r0]
+    movq        m4, [r0 + r1]
+    lea         r0, [r0 + 2 * r1]
+    punpcklqdq  m1, m2
+    punpcklqdq  m3, m4
+    psadbw      m1, m3
+    paddd       m0, m1
+%endmacro
+
+;mvtools2 extra
+;mask in m5
+%macro PROCESS_SAD_6x2 0
+    movq        m1, [r2]
+    movq        m2, [r2 + r3]
+    pand        m1,  m5
+    pand        m2,  m5
+    lea         r2, [r2 + 2 * r3]
+    movq        m3, [r0]
+    movq        m4, [r0 + r1]
+    pand        m3,  m5
+    pand        m4,  m5
     lea         r0, [r0 + 2 * r1]
     punpcklqdq  m1, m2
     punpcklqdq  m3, m4
@@ -756,6 +833,118 @@ jnz .loop
     RET
 
 ;-----------------------------------------------------------------------------
+; int pixel_sad_48x48( uint8_t *, intptr_t, uint8_t *, intptr_t )
+;-----------------------------------------------------------------------------
+; mvtools2 extra
+cglobal pixel_sad_48x48, 4,5,5
+    pxor  m0,  m0
+    mov   r4,  48
+
+.loop:
+    PROCESS_SAD_48x4
+    lea     r2,  [r2 + r3]
+    lea     r0,  [r0 + r1]
+
+    PROCESS_SAD_48x4
+    lea     r2,  [r2 + r3]
+    lea     r0,  [r0 + r1]
+
+    sub   r4,  8
+    cmp   r4,  8
+
+jnz .loop
+    PROCESS_SAD_48x4
+    lea   r2,  [r2 + r3]
+    lea   r0,  [r0 + r1]
+    PROCESS_SAD_48x4
+
+    movhlps m1,  m0
+    paddd   m0,  m1
+    movd    eax, m0
+    RET
+
+;-----------------------------------------------------------------------------
+; int pixel_sad_48x24( uint8_t *, intptr_t, uint8_t *, intptr_t )
+;-----------------------------------------------------------------------------
+; mvtools2 extra
+cglobal pixel_sad_48x24, 4,5,5
+    pxor  m0,  m0
+    mov   r4,  24
+
+.loop:
+    PROCESS_SAD_48x4
+    lea     r2,  [r2 + r3]
+    lea     r0,  [r0 + r1]
+
+    PROCESS_SAD_48x4
+    lea     r2,  [r2 + r3]
+    lea     r0,  [r0 + r1]
+
+    sub   r4,  8
+    cmp   r4,  8
+
+jnz .loop
+    PROCESS_SAD_48x4
+    lea   r2,  [r2 + r3]
+    lea   r0,  [r0 + r1]
+    PROCESS_SAD_48x4
+
+    movhlps m1,  m0
+    paddd   m0,  m1
+    movd    eax, m0
+    RET
+
+;-----------------------------------------------------------------------------
+; int pixel_sad_48x12( uint8_t *, intptr_t, uint8_t *, intptr_t )
+;-----------------------------------------------------------------------------
+; mvtools2 extra
+cglobal pixel_sad_48x12, 4,5,5
+    pxor  m0,  m0
+
+    PROCESS_SAD_48x4
+    lea     r2,  [r2 + r3]
+    lea     r0,  [r0 + r1]
+
+    PROCESS_SAD_48x4
+    lea     r2,  [r2 + r3]
+    lea     r0,  [r0 + r1]
+
+    PROCESS_SAD_48x4
+
+    movhlps m1,  m0
+    paddd   m0,  m1
+    movd    eax, m0
+    RET
+
+;-----------------------------------------------------------------------------
+; int pixel_sad_24x48( uint8_t *, intptr_t, uint8_t *, intptr_t )
+;-----------------------------------------------------------------------------
+; mvtools2 extra
+cglobal pixel_sad_24x48, 4,5,4
+    pxor  m0,  m0
+    mov   r4,  48
+
+.loop:
+    PROCESS_SAD_24x4
+    lea         r2,  [r2 + r3]
+    lea         r0,  [r0 + r1]
+    PROCESS_SAD_24x4
+    lea         r2,  [r2 + r3]
+    lea         r0,  [r0 + r1]
+    sub   r4,  8
+    cmp   r4,  8
+jnz .loop
+    PROCESS_SAD_24x4
+    lea         r2,  [r2 + r3]
+    lea         r0,  [r0 + r1]
+    PROCESS_SAD_24x4
+
+    movhlps m1,  m0
+    paddd   m0,  m1
+    movd    eax, m0
+    RET
+
+;-----------------------------------------------------------------------------
 ; int pixel_sad_24x32( uint8_t *, intptr_t, uint8_t *, intptr_t )
 ;-----------------------------------------------------------------------------
 cglobal pixel_sad_24x32, 4,5,4
@@ -783,6 +972,151 @@ jnz .loop
     RET
 
 ;-----------------------------------------------------------------------------
+; int pixel_sad_24x24( uint8_t *, intptr_t, uint8_t *, intptr_t )
+;-----------------------------------------------------------------------------
+; mvtools2 extra
+cglobal pixel_sad_24x24, 4,5,4
+    pxor  m0,  m0
+    mov   r4,  24
+
+.loop:
+    PROCESS_SAD_24x4
+    lea         r2,  [r2 + r3]
+    lea         r0,  [r0 + r1]
+    PROCESS_SAD_24x4
+    lea         r2,  [r2 + r3]
+    lea         r0,  [r0 + r1]
+    sub   r4,  8
+    cmp   r4,  8
+jnz .loop
+    PROCESS_SAD_24x4
+    lea         r2,  [r2 + r3]
+    lea         r0,  [r0 + r1]
+    PROCESS_SAD_24x4
+
+    movhlps m1,  m0
+    paddd   m0,  m1
+    movd    eax, m0
+    RET
+
+;-----------------------------------------------------------------------------
+; int pixel_sad_24x12( uint8_t *, intptr_t, uint8_t *, intptr_t )
+;-----------------------------------------------------------------------------
+; mvtools2 extra
+cglobal pixel_sad_24x12, 4,5,4
+    pxor  m0,  m0
+
+    PROCESS_SAD_24x4
+    lea         r2,  [r2 + r3]
+    lea         r0,  [r0 + r1]
+    PROCESS_SAD_24x4
+    lea         r2,  [r2 + r3]
+    lea         r0,  [r0 + r1]
+    PROCESS_SAD_24x4
+
+    movhlps m1,  m0
+    paddd   m0,  m1
+    movd    eax, m0
+    RET
+
+;-----------------------------------------------------------------------------
+; int pixel_sad_24x6( uint8_t *, intptr_t, uint8_t *, intptr_t )
+;-----------------------------------------------------------------------------
+; mvtools2 extra
+cglobal pixel_sad_24x6, 4,5,4
+    pxor  m0,  m0
+
+    PROCESS_SAD_24x4
+    lea         r2,  [r2 + r3]
+    lea         r0,  [r0 + r1]
+    PROCESS_SAD_24x2
+
+    movhlps m1,  m0
+    paddd   m0,  m1
+    movd    eax, m0
+    RET
+
+;-----------------------------------------------------------------------------
+; int pixel_sad_12x48( uint8_t *, intptr_t, uint8_t *, intptr_t )
+;-----------------------------------------------------------------------------
+; mvtools2 extra
+cglobal pixel_sad_12x48, 4,4,4
+    mova  m4,  [MSK]
+    pxor  m0,  m0
+
+    PROCESS_SAD_12x4
+    lea         r2,  [r2 + r3]
+    lea         r0,  [r0 + r1]
+    PROCESS_SAD_12x4
+    lea         r2,  [r2 + r3]
+    lea         r0,  [r0 + r1]
+    PROCESS_SAD_12x4
+    lea         r2,  [r2 + r3]
+    lea         r0,  [r0 + r1]
+    PROCESS_SAD_12x4
+    lea         r2,  [r2 + r3]
+    lea         r0,  [r0 + r1]
+    PROCESS_SAD_12x4
+    lea         r2,  [r2 + r3]
+    lea         r0,  [r0 + r1]
+    PROCESS_SAD_12x4
+    lea         r2,  [r2 + r3]
+    lea         r0,  [r0 + r1]
+
+    PROCESS_SAD_12x4
+    lea         r2,  [r2 + r3]
+    lea         r0,  [r0 + r1]
+    PROCESS_SAD_12x4
+    lea         r2,  [r2 + r3]
+    lea         r0,  [r0 + r1]
+    PROCESS_SAD_12x4
+    lea         r2,  [r2 + r3]
+    lea         r0,  [r0 + r1]
+    PROCESS_SAD_12x4
+    lea         r2,  [r2 + r3]
+    lea         r0,  [r0 + r1]
+    PROCESS_SAD_12x4
+    lea         r2,  [r2 + r3]
+    lea         r0,  [r0 + r1]
+    PROCESS_SAD_12x4
+
+    movhlps m1,  m0
+    paddd   m0,  m1
+    movd    eax, m0
+    RET
+
+
+;-----------------------------------------------------------------------------
+; int pixel_sad_12x24( uint8_t *, intptr_t, uint8_t *, intptr_t )
+;-----------------------------------------------------------------------------
+; mvtools2 extra
+cglobal pixel_sad_12x24, 4,4,4
+    mova  m4,  [MSK]
+    pxor  m0,  m0
+
+    PROCESS_SAD_12x4
+    lea         r2,  [r2 + r3]
+    lea         r0,  [r0 + r1]
+    PROCESS_SAD_12x4
+    lea         r2,  [r2 + r3]
+    lea         r0,  [r0 + r1]
+    PROCESS_SAD_12x4
+    lea         r2,  [r2 + r3]
+    lea         r0,  [r0 + r1]
+    PROCESS_SAD_12x4
+    lea         r2,  [r2 + r3]
+    lea         r0,  [r0 + r1]
+    PROCESS_SAD_12x4
+    lea         r2,  [r2 + r3]
+    lea         r0,  [r0 + r1]
+    PROCESS_SAD_12x4
+
+    movhlps m1,  m0
+    paddd   m0,  m1
+    movd    eax, m0
+    RET
+
+;-----------------------------------------------------------------------------
 ; int pixel_sad_12x16( uint8_t *, intptr_t, uint8_t *, intptr_t )
 ;-----------------------------------------------------------------------------
 cglobal pixel_sad_12x16, 4,4,4
@@ -799,6 +1133,82 @@ cglobal pixel_sad_12x16, 4,4,4
     lea         r2,  [r2 + r3]
     lea         r0,  [r0 + r1]
     PROCESS_SAD_12x4
+
+    movhlps m1,  m0
+    paddd   m0,  m1
+    movd    eax, m0
+    RET
+
+;-----------------------------------------------------------------------------
+; int pixel_sad_12x12( uint8_t *, intptr_t, uint8_t *, intptr_t )
+;-----------------------------------------------------------------------------
+; mvtools2 extra
+cglobal pixel_sad_12x12, 4,4,4
+    mova  m4,  [MSK]
+    pxor  m0,  m0
+
+    PROCESS_SAD_12x4
+    lea         r2,  [r2 + r3]
+    lea         r0,  [r0 + r1]
+    PROCESS_SAD_12x4
+    lea         r2,  [r2 + r3]
+    lea         r0,  [r0 + r1]
+    PROCESS_SAD_12x4
+
+    movhlps m1,  m0
+    paddd   m0,  m1
+    movd    eax, m0
+    RET
+
+;-----------------------------------------------------------------------------
+; int pixel_sad_12x6( uint8_t *, intptr_t, uint8_t *, intptr_t )
+;-----------------------------------------------------------------------------
+; mvtools2 extra
+cglobal pixel_sad_12x6, 4,4,4
+    mova  m4,  [MSK]
+    pxor  m0,  m0
+
+    PROCESS_SAD_12x4
+    lea         r2,  [r2 + r3]
+    lea         r0,  [r0 + r1]
+    PROCESS_SAD_12x2
+
+    movhlps m1,  m0
+    paddd   m0,  m1
+    movd    eax, m0
+    RET
+
+;-----------------------------------------------------------------------------
+; int pixel_sad_6x12( uint8_t *, intptr_t, uint8_t *, intptr_t )
+;-----------------------------------------------------------------------------
+; mvtools2 extra
+cglobal pixel_sad_6x12, 4,4,5
+    mova  m5,  [MSK6]
+    pxor  m0,  m0
+
+    PROCESS_SAD_6x2
+    PROCESS_SAD_6x2
+    PROCESS_SAD_6x2
+    PROCESS_SAD_6x2
+    PROCESS_SAD_6x2
+    PROCESS_SAD_6x2
+
+    movhlps m1,  m0
+    paddd   m0,  m1
+    movd    eax, m0
+    RET
+
+;-----------------------------------------------------------------------------
+; int pixel_sad_6x6( uint8_t *, intptr_t, uint8_t *, intptr_t )
+;-----------------------------------------------------------------------------
+; mvtools2 extra
+cglobal pixel_sad_6x6, 4,4,5
+    mova  m5,  [MSK6]
+    pxor  m0,  m0
+
+    PROCESS_SAD_6x2
+    PROCESS_SAD_6x2
+    PROCESS_SAD_6x2
 
     movhlps m1,  m0
     paddd   m0,  m1
@@ -5820,6 +6230,165 @@ INIT_YMM avx2
 cglobal pixel_sad_48x64, 4,7,7
     xorps           m0, m0
     mov             r4d, 64/4
+    lea             r5, [r1 * 3]
+    lea             r6, [r3 * 3]
+.loop
+    movu           m1, [r0]               ; row 0 of pix0
+    movu           m2, [r2]               ; row 0 of pix1
+    movu           m3, [r0 + r1]          ; row 1 of pix0
+    movu           m4, [r2 + r3]          ; row 1 of pix1
+    movu           xm5, [r0 +32]          ; last 16 of row 0 of pix0
+    vinserti128    m5, m5, [r0 + r1 + 32], 1
+    movu           xm6, [r2 +32]          ; last 16 of row 0 of pix1
+    vinserti128    m6, m6, [r2 + r3 + 32], 1
+
+    psadbw         m1, m2
+    psadbw         m3, m4
+    psadbw         m5, m6
+    paddd          m0, m1
+    paddd          m0, m3
+    paddd          m0, m5
+
+    movu           m1, [r0 + 2 * r1]      ; row 2 of pix0
+    movu           m2, [r2 + 2 * r3]      ; row 2 of pix1
+    movu           m3, [r0 + r5]          ; row 3 of pix0
+    movu           m4, [r2 + r6]          ; row 3 of pix1
+    movu           xm5, [r0 +32 + 2 * r1]
+    vinserti128    m5, m5, [r0 + r5 + 32], 1
+    movu           xm6, [r2 +32 + 2 * r3]
+    vinserti128    m6, m6, [r2 + r6 + 32], 1
+
+    psadbw         m1, m2
+    psadbw         m3, m4
+    psadbw         m5, m6
+    paddd          m0, m1
+    paddd          m0, m3
+    paddd          m0, m5
+
+    lea     r2,     [r2 + 4 * r3]
+    lea     r0,     [r0 + 4 * r1]
+
+    dec         r4d
+    jnz         .loop
+
+    vextracti128   xm1, m0, 1
+    paddd          xm0, xm1
+    pshufd         xm1, xm0, 2
+    paddd          xm0,xm1
+    movd            eax, xm0
+    RET
+
+INIT_YMM avx2
+cglobal pixel_sad_48x48, 4,7,7
+;mvtools2 extra
+    xorps           m0, m0
+    mov             r4d, 48/4
+    lea             r5, [r1 * 3]
+    lea             r6, [r3 * 3]
+.loop
+    movu           m1, [r0]               ; row 0 of pix0
+    movu           m2, [r2]               ; row 0 of pix1
+    movu           m3, [r0 + r1]          ; row 1 of pix0
+    movu           m4, [r2 + r3]          ; row 1 of pix1
+    movu           xm5, [r0 +32]          ; last 16 of row 0 of pix0
+    vinserti128    m5, m5, [r0 + r1 + 32], 1
+    movu           xm6, [r2 +32]          ; last 16 of row 0 of pix1
+    vinserti128    m6, m6, [r2 + r3 + 32], 1
+
+    psadbw         m1, m2
+    psadbw         m3, m4
+    psadbw         m5, m6
+    paddd          m0, m1
+    paddd          m0, m3
+    paddd          m0, m5
+
+    movu           m1, [r0 + 2 * r1]      ; row 2 of pix0
+    movu           m2, [r2 + 2 * r3]      ; row 2 of pix1
+    movu           m3, [r0 + r5]          ; row 3 of pix0
+    movu           m4, [r2 + r6]          ; row 3 of pix1
+    movu           xm5, [r0 +32 + 2 * r1]
+    vinserti128    m5, m5, [r0 + r5 + 32], 1
+    movu           xm6, [r2 +32 + 2 * r3]
+    vinserti128    m6, m6, [r2 + r6 + 32], 1
+
+    psadbw         m1, m2
+    psadbw         m3, m4
+    psadbw         m5, m6
+    paddd          m0, m1
+    paddd          m0, m3
+    paddd          m0, m5
+
+    lea     r2,     [r2 + 4 * r3]
+    lea     r0,     [r0 + 4 * r1]
+
+    dec         r4d
+    jnz         .loop
+
+    vextracti128   xm1, m0, 1
+    paddd          xm0, xm1
+    pshufd         xm1, xm0, 2
+    paddd          xm0,xm1
+    movd            eax, xm0
+    RET
+
+INIT_YMM avx2
+cglobal pixel_sad_48x24, 4,7,7
+;mvtools2 extra
+    xorps           m0, m0
+    mov             r4d, 24/4
+    lea             r5, [r1 * 3]
+    lea             r6, [r3 * 3]
+.loop
+    movu           m1, [r0]               ; row 0 of pix0
+    movu           m2, [r2]               ; row 0 of pix1
+    movu           m3, [r0 + r1]          ; row 1 of pix0
+    movu           m4, [r2 + r3]          ; row 1 of pix1
+    movu           xm5, [r0 +32]          ; last 16 of row 0 of pix0
+    vinserti128    m5, m5, [r0 + r1 + 32], 1
+    movu           xm6, [r2 +32]          ; last 16 of row 0 of pix1
+    vinserti128    m6, m6, [r2 + r3 + 32], 1
+
+    psadbw         m1, m2
+    psadbw         m3, m4
+    psadbw         m5, m6
+    paddd          m0, m1
+    paddd          m0, m3
+    paddd          m0, m5
+
+    movu           m1, [r0 + 2 * r1]      ; row 2 of pix0
+    movu           m2, [r2 + 2 * r3]      ; row 2 of pix1
+    movu           m3, [r0 + r5]          ; row 3 of pix0
+    movu           m4, [r2 + r6]          ; row 3 of pix1
+    movu           xm5, [r0 +32 + 2 * r1]
+    vinserti128    m5, m5, [r0 + r5 + 32], 1
+    movu           xm6, [r2 +32 + 2 * r3]
+    vinserti128    m6, m6, [r2 + r6 + 32], 1
+
+    psadbw         m1, m2
+    psadbw         m3, m4
+    psadbw         m5, m6
+    paddd          m0, m1
+    paddd          m0, m3
+    paddd          m0, m5
+
+    lea     r2,     [r2 + 4 * r3]
+    lea     r0,     [r0 + 4 * r1]
+
+    dec         r4d
+    jnz         .loop
+
+    vextracti128   xm1, m0, 1
+    paddd          xm0, xm1
+    pshufd         xm1, xm0, 2
+    paddd          xm0,xm1
+    movd            eax, xm0
+    RET
+
+INIT_YMM avx2
+cglobal pixel_sad_48x12, 4,7,7
+;mvtools2 extra
+    xorps           m0, m0
+    mov             r4d, 12/4
     lea             r5, [r1 * 3]
     lea             r6, [r3 * 3]
 .loop
