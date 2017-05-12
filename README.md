@@ -47,7 +47,7 @@ Change log
          3x6, 3x3
          2x4, 2x2
 
-       Note: some smaller block sizes can only be available in 4:4:4 formats, due to block size division (chroma subsampling)
+  Note: some smaller block sizes can only be available in 4:4:4 formats, due to block size division (chroma subsampling)
 
   New: All block sizes are supported in MDegrain1-6, MDegrainN, and MScaleVect
 
