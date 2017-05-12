@@ -430,6 +430,135 @@ cglobal Overlaps8x16_sse2, 6, 6, 8, dstp, dst_stride, srcp, src_stride, winp, wi
 %endmacro
 
 INIT_XMM
+cglobal Overlaps12x48_sse2, 6, 6, 8, dstp, dst_stride, srcp, src_stride, winp, win_stride
+
+%if ARCH_X86_64
+	movsxd dst_strideq, dst_strided
+	movsxd src_strideq, src_strided
+	movsxd win_strideq, win_strided
+%endif
+
+    ; prepare constants
+    movdqa m6, [dword256]
+    pxor m7, m7
+
+    ; They're in pixels, apparently.
+    add dst_strideq, dst_strideq
+    add win_strideq, win_strideq
+    ; 1-24
+    OVERS12
+    OVERS12
+    OVERS12
+    OVERS12
+
+    OVERS12
+    OVERS12
+    OVERS12
+    OVERS12
+
+    OVERS12
+    OVERS12
+    OVERS12
+    OVERS12
+
+    OVERS12
+    OVERS12
+    OVERS12
+    OVERS12
+
+    OVERS12
+    OVERS12
+    OVERS12
+    OVERS12
+
+    OVERS12
+    OVERS12
+    OVERS12
+    OVERS12
+
+    ; 25-48
+    OVERS12
+    OVERS12
+    OVERS12
+    OVERS12
+
+    OVERS12
+    OVERS12
+    OVERS12
+    OVERS12
+
+    OVERS12
+    OVERS12
+    OVERS12
+    OVERS12
+
+    OVERS12
+    OVERS12
+    OVERS12
+    OVERS12
+
+    OVERS12
+    OVERS12
+    OVERS12
+    OVERS12
+
+    OVERS12
+    OVERS12
+    OVERS12
+    OVERS12
+
+    RET
+
+INIT_XMM
+cglobal Overlaps12x24_sse2, 6, 6, 8, dstp, dst_stride, srcp, src_stride, winp, win_stride
+
+%if ARCH_X86_64
+	movsxd dst_strideq, dst_strided
+	movsxd src_strideq, src_strided
+	movsxd win_strideq, win_strided
+%endif
+
+    ; prepare constants
+    movdqa m6, [dword256]
+    pxor m7, m7
+
+    ; They're in pixels, apparently.
+    add dst_strideq, dst_strideq
+    add win_strideq, win_strideq
+    ; 1-24
+    OVERS12
+    OVERS12
+    OVERS12
+    OVERS12
+
+    OVERS12
+    OVERS12
+    OVERS12
+    OVERS12
+
+    OVERS12
+    OVERS12
+    OVERS12
+    OVERS12
+
+    OVERS12
+    OVERS12
+    OVERS12
+    OVERS12
+
+    OVERS12
+    OVERS12
+    OVERS12
+    OVERS12
+
+    OVERS12
+    OVERS12
+    OVERS12
+    OVERS12
+
+    RET
+
+INIT_XMM
 cglobal Overlaps12x16_sse2, 6, 6, 8, dstp, dst_stride, srcp, src_stride, winp, win_stride
 
 %if ARCH_X86_64
@@ -463,6 +592,67 @@ cglobal Overlaps12x16_sse2, 6, 6, 8, dstp, dst_stride, srcp, src_stride, winp, w
 
     OVERS12
     OVERS12
+    OVERS12
+    OVERS12
+
+    RET
+
+INIT_XMM
+cglobal Overlaps12x12_sse2, 6, 6, 8, dstp, dst_stride, srcp, src_stride, winp, win_stride
+
+%if ARCH_X86_64
+	movsxd dst_strideq, dst_strided
+	movsxd src_strideq, src_strided
+	movsxd win_strideq, win_strided
+%endif
+
+    ; prepare constants
+    movdqa m6, [dword256]
+    pxor m7, m7
+
+    ; They're in pixels, apparently.
+    add dst_strideq, dst_strideq
+    add win_strideq, win_strideq
+
+    OVERS12
+    OVERS12
+    OVERS12
+    OVERS12
+
+    OVERS12
+    OVERS12
+    OVERS12
+    OVERS12
+
+    OVERS12
+    OVERS12
+    OVERS12
+    OVERS12
+
+    RET
+
+INIT_XMM
+cglobal Overlaps12x6_sse2, 6, 6, 8, dstp, dst_stride, srcp, src_stride, winp, win_stride
+
+%if ARCH_X86_64
+	movsxd dst_strideq, dst_strided
+	movsxd src_strideq, src_strided
+	movsxd win_strideq, win_strided
+%endif
+
+    ; prepare constants
+    movdqa m6, [dword256]
+    pxor m7, m7
+
+    ; They're in pixels, apparently.
+    add dst_strideq, dst_strideq
+    add win_strideq, win_strideq
+
+    OVERS12
+    OVERS12
+    OVERS12
+    OVERS12
+
     OVERS12
     OVERS12
 
@@ -804,6 +994,87 @@ cglobal Overlaps16x64_sse2, 6, 6, 8, dstp, dst_stride, srcp, src_stride, winp, w
 %endmacro
 
 INIT_XMM
+cglobal Overlaps24x48_sse2, 6, 6, 8, dstp, dst_stride, srcp, src_stride, winp, win_stride
+
+%if ARCH_X86_64
+	movsxd dst_strideq, dst_strided
+	movsxd src_strideq, src_strided
+	movsxd win_strideq, win_strided
+%endif
+
+    ; prepare constants
+    movdqa m6, [dword256]
+    pxor m7, m7
+
+    ; They're in pixels, apparently.
+    add dst_strideq, dst_strideq
+    add win_strideq, win_strideq
+    ; 1-32
+    OVERS24
+    OVERS24
+    OVERS24
+    OVERS24
+
+    OVERS24
+    OVERS24
+    OVERS24
+    OVERS24
+
+    OVERS24
+    OVERS24
+    OVERS24
+    OVERS24
+
+    OVERS24
+    OVERS24
+    OVERS24
+    OVERS24
+
+    OVERS24
+    OVERS24
+    OVERS24
+    OVERS24
+
+    OVERS24
+    OVERS24
+    OVERS24
+    OVERS24
+
+    OVERS24
+    OVERS24
+    OVERS24
+    OVERS24
+
+    OVERS24
+    OVERS24
+    OVERS24
+    OVERS24
+
+    ; 33-48
+    OVERS24
+    OVERS24
+    OVERS24
+    OVERS24
+
+    OVERS24
+    OVERS24
+    OVERS24
+    OVERS24
+
+    OVERS24
+    OVERS24
+    OVERS24
+    OVERS24
+
+    OVERS24
+    OVERS24
+    OVERS24
+    OVERS24
+
+    RET
+
+
+INIT_XMM
 cglobal Overlaps24x32_sse2, 6, 6, 8, dstp, dst_stride, srcp, src_stride, winp, win_stride
 
 %if ARCH_X86_64
@@ -857,6 +1128,116 @@ cglobal Overlaps24x32_sse2, 6, 6, 8, dstp, dst_stride, srcp, src_stride, winp, w
 
     OVERS24
     OVERS24
+    OVERS24
+    OVERS24
+
+    RET
+
+INIT_XMM
+cglobal Overlaps24x24_sse2, 6, 6, 8, dstp, dst_stride, srcp, src_stride, winp, win_stride
+
+%if ARCH_X86_64
+	movsxd dst_strideq, dst_strided
+	movsxd src_strideq, src_strided
+	movsxd win_strideq, win_strided
+%endif
+
+    ; prepare constants
+    movdqa m6, [dword256]
+    pxor m7, m7
+
+    ; They're in pixels, apparently.
+    add dst_strideq, dst_strideq
+    add win_strideq, win_strideq
+    ; 1-24
+    OVERS24
+    OVERS24
+    OVERS24
+    OVERS24
+
+    OVERS24
+    OVERS24
+    OVERS24
+    OVERS24
+
+    OVERS24
+    OVERS24
+    OVERS24
+    OVERS24
+
+    OVERS24
+    OVERS24
+    OVERS24
+    OVERS24
+
+    OVERS24
+    OVERS24
+    OVERS24
+    OVERS24
+
+    OVERS24
+    OVERS24
+    OVERS24
+    OVERS24
+
+    RET
+
+INIT_XMM
+cglobal Overlaps24x12_sse2, 6, 6, 8, dstp, dst_stride, srcp, src_stride, winp, win_stride
+
+%if ARCH_X86_64
+	movsxd dst_strideq, dst_strided
+	movsxd src_strideq, src_strided
+	movsxd win_strideq, win_strided
+%endif
+
+    ; prepare constants
+    movdqa m6, [dword256]
+    pxor m7, m7
+
+    ; They're in pixels, apparently.
+    add dst_strideq, dst_strideq
+    add win_strideq, win_strideq
+
+    OVERS24
+    OVERS24
+    OVERS24
+    OVERS24
+
+    OVERS24
+    OVERS24
+    OVERS24
+    OVERS24
+
+    OVERS24
+    OVERS24
+    OVERS24
+    OVERS24
+
+    RET
+
+INIT_XMM
+cglobal Overlaps24x6_sse2, 6, 6, 8, dstp, dst_stride, srcp, src_stride, winp, win_stride
+
+%if ARCH_X86_64
+	movsxd dst_strideq, dst_strided
+	movsxd src_strideq, src_strided
+	movsxd win_strideq, win_strided
+%endif
+
+    ; prepare constants
+    movdqa m6, [dword256]
+    pxor m7, m7
+
+    ; They're in pixels, apparently.
+    add dst_strideq, dst_strideq
+    add win_strideq, win_strideq
+
+    OVERS24
+    OVERS24
+    OVERS24
+    OVERS24
+
     OVERS24
     OVERS24
 
@@ -1253,6 +1634,175 @@ cglobal Overlaps48x64_sse2, 6, 6, 8, dstp, dst_stride, srcp, src_stride, winp, w
     OVERS48
     OVERS48
 
+    OVERS48
+    OVERS48
+    OVERS48
+    OVERS48
+
+    OVERS48
+    OVERS48
+    OVERS48
+    OVERS48
+
+    OVERS48
+    OVERS48
+    OVERS48
+    OVERS48
+
+    RET
+
+;PF 170507
+INIT_XMM
+cglobal Overlaps48x48_sse2, 6, 6, 8, dstp, dst_stride, srcp, src_stride, winp, win_stride
+
+%if ARCH_X86_64
+	movsxd dst_strideq, dst_strided
+	movsxd src_strideq, src_strided
+	movsxd win_strideq, win_strided
+%endif
+
+    ; prepare constants
+    movdqa m6, [dword256]
+    pxor m7, m7
+
+    ; They're in pixels, apparently.
+    add dst_strideq, dst_strideq
+    add win_strideq, win_strideq
+
+    ;1-32
+    OVERS48
+    OVERS48
+    OVERS48
+    OVERS48
+
+    OVERS48
+    OVERS48
+    OVERS48
+    OVERS48
+
+    OVERS48
+    OVERS48
+    OVERS48
+    OVERS48
+
+    OVERS48
+    OVERS48
+    OVERS48
+    OVERS48
+
+    OVERS48
+    OVERS48
+    OVERS48
+    OVERS48
+
+    OVERS48
+    OVERS48
+    OVERS48
+    OVERS48
+
+    OVERS48
+    OVERS48
+    OVERS48
+    OVERS48
+
+    OVERS48
+    OVERS48
+    OVERS48
+    OVERS48
+
+	;33-48
+    OVERS48
+    OVERS48
+    OVERS48
+    OVERS48
+
+    OVERS48
+    OVERS48
+    OVERS48
+    OVERS48
+
+    OVERS48
+    OVERS48
+    OVERS48
+    OVERS48
+
+    OVERS48
+    OVERS48
+    OVERS48
+    OVERS48
+
+    RET
+
+;PF 170507
+INIT_XMM
+cglobal Overlaps48x24_sse2, 6, 6, 8, dstp, dst_stride, srcp, src_stride, winp, win_stride
+
+%if ARCH_X86_64
+	movsxd dst_strideq, dst_strided
+	movsxd src_strideq, src_strided
+	movsxd win_strideq, win_strided
+%endif
+
+    ; prepare constants
+    movdqa m6, [dword256]
+    pxor m7, m7
+
+    ; They're in pixels, apparently.
+    add dst_strideq, dst_strideq
+    add win_strideq, win_strideq
+
+    ;1-24
+    OVERS48
+    OVERS48
+    OVERS48
+    OVERS48
+
+    OVERS48
+    OVERS48
+    OVERS48
+    OVERS48
+
+    OVERS48
+    OVERS48
+    OVERS48
+    OVERS48
+
+    OVERS48
+    OVERS48
+    OVERS48
+    OVERS48
+
+    OVERS48
+    OVERS48
+    OVERS48
+    OVERS48
+
+    OVERS48
+    OVERS48
+    OVERS48
+    OVERS48
+
+    RET
+
+;PF 170507
+INIT_XMM
+cglobal Overlaps48x12_sse2, 6, 6, 8, dstp, dst_stride, srcp, src_stride, winp, win_stride
+
+%if ARCH_X86_64
+	movsxd dst_strideq, dst_strided
+	movsxd src_strideq, src_strided
+	movsxd win_strideq, win_strided
+%endif
+
+    ; prepare constants
+    movdqa m6, [dword256]
+    pxor m7, m7
+
+    ; They're in pixels, apparently.
+    add dst_strideq, dst_strideq
+    add win_strideq, win_strideq
+
+    ;1-12
     OVERS48
     OVERS48
     OVERS48
