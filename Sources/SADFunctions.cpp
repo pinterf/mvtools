@@ -1199,7 +1199,7 @@ SADFunction* get_satd_function(int BlockX, int BlockY, int pixelsize, arch_t arc
     func_satd[make_tuple(32, 16, 1, USE_AVX2)] = x264_pixel_satd_32x16_avx2;
     func_satd[make_tuple(32, 8, 1, USE_AVX2)] = x264_pixel_satd_32x8_avx2;
 
-    func_satd[make_tuple(16, 32, 1, USE_AVX2)] = x264_pixel_satd_16x64_avx2;
+    func_satd[make_tuple(16, 64, 1, USE_AVX2)] = x264_pixel_satd_16x64_avx2;
     func_satd[make_tuple(16, 32, 1, USE_AVX2)] = x264_pixel_satd_16x32_avx2;
 #endif
     func_satd[make_tuple(16, 16, 1, USE_AVX2)] = x264_pixel_satd_16x16_avx2;
