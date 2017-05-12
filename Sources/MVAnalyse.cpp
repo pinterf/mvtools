@@ -155,16 +155,33 @@ MVAnalyse::MVAnalyse(
   }
 #endif
   // same blocksize check in MAnalyze and MRecalculate
-  const std::vector< std::pair< int, int > > allowed_blksizes = 
-  { {64, 64}, {64,48}, {64,32}, {64,16},
-  {48,64},
-  {32,64}, {32,32}, {32,24}, {32,16}, {32,8},
-  {24,32},
-  {16,64}, {16,32}, {16,16}, {16,12}, {16,8}, {16,4}, {16,2},
-  { 12,16 },
-  { 8,32 },{ 8,16 },{ 8,8 },{ 8,4 },{ 8,2 },{8,1},
-  { 4,8 },{ 4,4 },{ 4,2 },
-  { 2,4 },{ 2,2 }
+  // some blocksizes may not work in 4:2:0 (chroma subsampling division), but o.k. in 4:4:4
+  /*
+  64x64, 64x48, 64x32, 64x16
+  48x64, 48x48, 48x24, 48x12
+  32x64, 32x32, 32x24, 32x16, 32x8
+  24x48, 24x24, 24x32, 24x12, 24x6
+  16x64, 16x32, 16x16, 16x12, 16x8, 16x4, (16x2)
+  12x48, 12x24, 12x16, 12x12, 12x6
+  8x32, 8x16, 8x8, 8x4, (8x2, 8x1)
+  6x24, 6x12, 6x6, 6x3(C)
+  4x8, 4x4, 4x2
+  3x6, 3x3 (C)
+  2x4, 2x2
+  */
+  const std::vector< std::pair< int, int > > allowed_blksizes =
+  {
+    { 64, 64 },{ 64,48 },{ 64,32 },{ 64,16 },
+    { 48,64 },{ 48,48 },{ 48,24 },{ 48,12 },
+    { 32,64 },{ 32,32 },{ 32,24 },{ 32,16 },{ 32,8 },
+    { 24,48 },{ 24,32 },{ 24,24 },{ 24,12 },{ 24,6 },
+    { 16,64 },{ 16,32 },{ 16,16 },{ 16,12 },{ 16,8 },{ 16,4 },{ 16,2 },
+    { 12,48 },{ 12,24 },{ 12,16 },{ 12,12 },{ 12,6 },
+    { 8,32 },{ 8,16 },{ 8,8 },{ 8,4 },{ 8,2 },{ 8,1 },
+    { 6,24 },{ 6,12 },{ 6,6 },{ 6,3 },
+    { 4,8 },{ 4,4 },{ 4,2 },
+    { 3,6 },{ 3,3 },
+    { 2,4 },{ 2,2 }
   };
   bool found = false;
   for (int i = 0; i < allowed_blksizes.size(); i++) {
@@ -177,17 +194,6 @@ MVAnalyse::MVAnalyse(
     env->ThrowError(
       "MAnalyse: Invalid block size: %d x %d", analysisData.nBlkSizeX, analysisData.nBlkSizeY);
   }
-  /*
-    64x64, 64x48, 64x32, 64x16
-    48x64
-    32x64, 32x32, 32x24, 32x16, 32x8
-    24x32
-    16x64, 16x32, 16x16, 16x12, 16x8, 16x4, (16x2)
-    12x16
-    8x32, 8x16, 8x8, 8x4, (8x2, 8x1)
-    4x8, 4x4, 4x2
-    2x4, 2x2
-  */
   analysisData.nPel = nSuperPel;
   if (analysisData.nPel != 1
     && analysisData.nPel != 2
