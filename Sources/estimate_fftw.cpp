@@ -157,25 +157,12 @@ DePanEstimate_fftw::DePanEstimate_fftw(PClip _child, int _range, float _trust, i
   if (hinstFFTW3 != NULL)
   {
     fftwf_free_addr = (fftwf_free_proc) GetProcAddress(hinstFFTW3, "fftwf_free"); 
-    if(!fftwf_free_addr) fftwf_free_addr = (fftwf_free_proc) GetProcAddress(hinstFFTW3, "fftw_free"); // ffw3 v3.5!!!
-
     fftwf_malloc_addr = (fftwf_malloc_proc)GetProcAddress(hinstFFTW3, "fftwf_malloc"); 
-    if(!fftwf_malloc_addr) fftwf_malloc_addr = (fftwf_malloc_proc)GetProcAddress(hinstFFTW3, "fftw_malloc"); 
-
     fftwf_destroy_plan_addr = (fftwf_destroy_plan_proc) GetProcAddress(hinstFFTW3, "fftwf_destroy_plan");
-    if(!fftwf_destroy_plan_addr) fftwf_destroy_plan_addr = (fftwf_destroy_plan_proc) GetProcAddress(hinstFFTW3, "fftw_destroy_plan");
-
     fftwf_plan_dft_r2c_2d_addr = (fftwf_plan_dft_r2c_2d_proc)GetProcAddress(hinstFFTW3, "fftwf_plan_dft_r2c_2d");
-    if(!fftwf_plan_dft_r2c_2d_addr) fftwf_plan_dft_r2c_2d_addr = (fftwf_plan_dft_r2c_2d_proc)GetProcAddress(hinstFFTW3, "fftw_plan_dft_r2c_2d");
-
     fftwf_plan_dft_c2r_2d_addr = (fftwf_plan_dft_c2r_2d_proc)GetProcAddress(hinstFFTW3, "fftwf_plan_dft_c2r_2d");
-    if(!fftwf_plan_dft_c2r_2d_addr) fftwf_plan_dft_c2r_2d_addr = (fftwf_plan_dft_c2r_2d_proc)GetProcAddress(hinstFFTW3, "fftw_plan_dft_c2r_2d");
-
     fftwf_execute_dft_r2c_addr = (fftwf_execute_dft_r2c_proc)GetProcAddress(hinstFFTW3, "fftwf_execute_dft_r2c");
-    if(!fftwf_execute_dft_r2c_addr) fftwf_execute_dft_r2c_addr = (fftwf_execute_dft_r2c_proc)GetProcAddress(hinstFFTW3, "fftw_execute_dft_r2c");
-
     fftwf_execute_dft_c2r_addr = (fftwf_execute_dft_c2r_proc)GetProcAddress(hinstFFTW3, "fftwf_execute_dft_c2r");
-    if(!fftwf_execute_dft_c2r_addr) fftwf_execute_dft_c2r_addr = (fftwf_execute_dft_c2r_proc)GetProcAddress(hinstFFTW3, "fftw_execute_dft_c2r");
   }
   if (hinstFFTW3 == NULL || fftwf_free_addr == NULL || fftwf_malloc_addr == NULL || fftwf_plan_dft_r2c_2d_addr == NULL ||
     fftwf_plan_dft_c2r_2d_addr == NULL || fftwf_destroy_plan_addr == NULL || fftwf_execute_dft_r2c_addr == NULL || fftwf_execute_dft_c2r_addr == NULL)
