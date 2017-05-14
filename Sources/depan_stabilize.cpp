@@ -73,6 +73,7 @@
 #include <chrono>
 #include <cassert>
 
+#define ADD_SAFETY
 //****************************************************************************
 class DePanStabilize : public GenericVideoFilter {
   // DePanStabilize defines the name of your filter class.
@@ -867,10 +868,12 @@ void DePanStabilize::InertialLimit(float *dxdif, float *dydif, float *zoomdif, f
     if (dxmax >= 0)
     {
       *dxdif = *dxdif >= 0 ? sqrt(*dxdif*dxmax) : -sqrt(-*dxdif*dxmax); // soft limit v.1.8.2
+#ifdef ADD_SAFETY
       if (fabsf(*dxdif) > fabsf(dxmax)) // if still bigger, second pass P.F.
         *dxdif = *dxdif >= 0 ? sqrt(*dxdif*dxmax) : -sqrt(-*dxdif*dxmax); // soft limit v.1.8.2
       if (fabsf(*dxdif) > fabsf(dxmax*1.5f))
         *dxdif = *dxdif >= 0 ? dxmax : dxmax; // absolut limit: dxmax*1.5 P.F.
+#endif
     }
     else
     {
@@ -895,10 +898,12 @@ void DePanStabilize::InertialLimit(float *dxdif, float *dydif, float *zoomdif, f
     if (dymax >= 0)
     {
       *dydif = *dydif >= 0 ? sqrt(*dydif*dymax) : -sqrt(-*dydif*dymax); // soft limit v.1.8.2
+#ifdef ADD_SAFETY
       if (fabsf(*dydif) > fabsf(dymax)) // if still bigger, second pass P.F.
         *dydif = *dydif >= 0 ? sqrt(*dydif*dymax) : -sqrt(-*dydif*dymax); // soft limit v.1.8.2
       if (fabsf(*dydif) > fabsf(dymax*1.5f))
         *dydif = *dydif >= 0 ? dymax : dymax; // absolut limit: dxmax*1.5 P.F.
+#endif
     }
     else
     {
@@ -1023,7 +1028,9 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
   if (method == 0) // inertial
   {
     float framesback = 10 * fps / cutoff;
+#ifdef ADD_SAFETY
     if (framesback > fps * 5) framesback = fps * 5; // PF limit to 5 seconds
+#endif
     nbasenew = int(ndest - framesback); // range of almost full stablization - increased in v 1.4.0
     // fps   cutoff   backframes  seconds
     // 16      0.5     320          20      seems too much, maybe we could limit it?
