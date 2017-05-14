@@ -103,7 +103,7 @@ AvisynthPluginInit3(IScriptEnvironment* env, const AVS_Linkage* const vectors) {
   // Save the server pointers.
   AVS_linkage = vectors;
 
-  env->AddFunction("DePanEstimate", "c[range]i[trust]f[winx]i[winy]i[dxmax]i[dymax]i[zoommax]f[improve]b[stab]f[pixaspect]f[info]b[log]s[debug]b[show]b[extlog]s[fftw]b", Create_DePanEstimate, 0);
+  env->AddFunction("DePanEstimate", "c[range]i[trust]f[winx]i[winy]i[wleft]i[wtop]i[dxmax]i[dymax]i[zoommax]f[stab]f[pixaspect]f[info]b[log]s[debug]b[show]b[extlog]s[fftw]b", Create_DePanEstimate, 0);
 
   return "`DePanEstimate' DePanEstimate plugin";
 }
