@@ -45,17 +45,17 @@ Denoise1to6Function* MVDegrainX<level>::get_denoise123_function(int BlockX, int 
 Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY, int _pixelsize, bool _lsb_flag, int _level, arch_t arch)
 #endif
 {
-  // 8 bit only (pixelsize==1)
   //---------- DENOISE/DEGRAIN
   // BlkSizeX, BlkSizeY, pixelsize, lsb_flag, level_of_MDegrain, arch_t
   std::map<std::tuple<int, int, int, bool, int, arch_t>, Denoise1to6Function*> func_degrain;
   using std::make_tuple;
 
-// level 1-6, 8bit C, 8bit lsb C, 16 bit C, 16 bit SSE41
+// level 1-6, 8bit C, 8bit lsb C, 16 bit C (same for all, no blocksize templates)
+// 16 bit SSE41
 #define MAKE_FN_LEVEL(x, y, level) \
-func_degrain[make_tuple(x, y, 1, false, level, NO_SIMD)] = Degrain1to6_C<uint8_t, x, y, false, level>; \
-func_degrain[make_tuple(x, y, 1, true, level, NO_SIMD)] = Degrain1to6_C<uint8_t, x, y, true, level>; \
-func_degrain[make_tuple(x, y, 2, false, level, NO_SIMD)] = Degrain1to6_C<uint16_t, x, y, false, level>; \
+func_degrain[make_tuple(x, y, 1, false, level, NO_SIMD)] = Degrain1to6_C<uint8_t, false, level>; \
+func_degrain[make_tuple(x, y, 1, true, level, NO_SIMD)] = Degrain1to6_C<uint8_t, true, level>; \
+func_degrain[make_tuple(x, y, 2, false, level, NO_SIMD)] = Degrain1to6_C<uint16_t, false, level>; \
 func_degrain[make_tuple(x, y, 2, false, level, USE_SSE41)] = Degrain1to6_16_sse41<x, y, level>;
 #define MAKE_FN(x, y) \
 MAKE_FN_LEVEL(x,y,1) \
@@ -95,12 +95,14 @@ MAKE_FN_LEVEL(x,y,6)
     MAKE_FN(12, 16)
     MAKE_FN(12, 12)
     MAKE_FN(12, 6)
+    MAKE_FN(12, 3)
     MAKE_FN(8, 32)
     MAKE_FN(8, 16)
     MAKE_FN(8, 8)
     MAKE_FN(8, 4)
     MAKE_FN(8, 2)
     MAKE_FN(8, 1)
+    MAKE_FN(6, 24)
     MAKE_FN(6, 12)
     MAKE_FN(6, 6)
     MAKE_FN(6, 3)
@@ -168,12 +170,14 @@ MAKE_FN_LEVEL_MMX(x,y,6)
     MAKE_FN(12, 16)
     MAKE_FN(12, 12)
     MAKE_FN(12, 6)
+    MAKE_FN(12, 3)
     MAKE_FN(8, 32)
     MAKE_FN(8, 16)
     MAKE_FN(8, 8)
     MAKE_FN(8, 4)
     MAKE_FN(8, 2)
     MAKE_FN(8, 1)
+    MAKE_FN(6, 24)
     MAKE_FN(6, 12)
     MAKE_FN(6, 6)
     MAKE_FN(6, 3)
@@ -722,6 +726,8 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
   else
   {
 
+    int WidthHeightForC = (nBlkSizeX << 16) + nBlkSizeY; // helps avoiding excessive C templates
+
     if (nOverlapX == 0 && nOverlapY == 0)
     {
       for (int by = 0; by < nBlkY; by++)
@@ -747,7 +753,7 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
 
           // luma
           DEGRAINLUMA(pDstCur[0] + (xx << pixelsize_super_shift), pDstCur[0] + lsb_offset_y + (xx << pixelsize_super_shift),
-            lsb_flag, nDstPitches[0], pSrcCur[0] + (xx << pixelsize_super_shift), nSrcPitches[0],
+            WidthHeightForC, nDstPitches[0], pSrcCur[0] + (xx << pixelsize_super_shift), nSrcPitches[0],
             pB, npB, pF, npF,
             WSrc, WRefB, WRefF
           );
@@ -819,7 +825,7 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
           norm_weights<level>(WSrc, WRefB, WRefF);
 #endif
           // luma
-          DEGRAINLUMA(tmpBlock, tmpBlockLsb, lsb_flag, tmpPitch << pixelsize_super_shift, pSrcCur[0] + (xx << pixelsize_super_shift), nSrcPitches[0],
+          DEGRAINLUMA(tmpBlock, tmpBlockLsb, WidthHeightForC, tmpPitch << pixelsize_super_shift, pSrcCur[0] + (xx << pixelsize_super_shift), nSrcPitches[0],
             pB, npB, pF, npF,
             WSrc,
             WRefB, WRefF
@@ -953,6 +959,8 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
 
   else
   {
+    int WidthHeightForC = (nBlkSizeX << 16) + nBlkSizeY; // helps avoiding excessive C templates
+
     if (nOverlapX == 0 && nOverlapY == 0)
     {
       int effective_nSrcPitch = (nBlkSizeY >> nLogyRatioUV) * nSrcPitch; // pitch is byte granularity
@@ -980,7 +988,7 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
 #endif
           // chroma
           DEGRAINCHROMA(pDstCur + (xx << pixelsize_super_shift), pDstCur + (xx << pixelsize_super_shift) + lsb_offset_uv,
-            lsb_flag, nDstPitch, pSrcCur + (xx << pixelsize_super_shift), nSrcPitch,
+            WidthHeightForC, nDstPitch, pSrcCur + (xx << pixelsize_super_shift), nSrcPitch,
             pBV, npBV, pFV, npFV,
             WSrc, WRefB, WRefF
           );
@@ -1054,7 +1062,7 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
           norm_weights<level>(WSrc, WRefB, WRefF);
 #endif
           // chroma
-          DEGRAINCHROMA(tmpBlock, tmpBlockLsb, lsb_flag, tmpPitch << pixelsize_super_shift, pSrcCur + (xx << pixelsize_super_shift), nSrcPitch,
+          DEGRAINCHROMA(tmpBlock, tmpBlockLsb, WidthHeightForC, tmpPitch << pixelsize_super_shift, pSrcCur + (xx << pixelsize_super_shift), nSrcPitch,
             pBV, npBV, pFV, npFV,
             WSrc, WRefB, WRefF
           );

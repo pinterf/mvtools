@@ -25,7 +25,7 @@ int WRefB[MAX_DEGRAIN], int WRefF[MAX_DEGRAIN]
 );
 */
 typedef void (Denoise1to6Function)(
-  BYTE *pDst, BYTE *pDstLsb, bool lsb_flag, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
+  BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
   const BYTE *pRefB[MAX_DEGRAIN], int BPitch[MAX_DEGRAIN], const BYTE *pRefF[MAX_DEGRAIN], int FPitch[MAX_DEGRAIN],
   int WSrc,
   int WRefB[MAX_DEGRAIN], int WRefF[MAX_DEGRAIN]
@@ -130,12 +130,18 @@ private:
   Denoise1to6Function *get_denoise123_function(int BlockX, int BlockY, int _pixelsize, bool _lsb_flag, int _level, arch_t _arch);
 };
 
-template<typename pixel_t, int blockWidth, int blockHeight, bool lsb_flag, int level >
-void Degrain1to6_C(uint8_t *pDst, BYTE *pDstLsb, bool _lsb_flag_not_used_template_rulez, int nDstPitch, const uint8_t *pSrc, int nSrcPitch,
+template<typename pixel_t, bool lsb_flag, int level >
+void Degrain1to6_C(uint8_t *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPitch, const uint8_t *pSrc, int nSrcPitch,
   const uint8_t *pRefB[MAX_DEGRAIN], int BPitch[MAX_DEGRAIN], const uint8_t *pRefF[MAX_DEGRAIN], int FPitch[MAX_DEGRAIN],
   int WSrc,
   int WRefB[MAX_DEGRAIN], int WRefF[MAX_DEGRAIN])
 {
+  // avoid unnecessary templates. C implementation is here for the sake of correctness and for very small block sizes
+  // For all other cases where speed counts, at least SSE2 is used
+  // Use only one parameter
+  const int blockWidth = (WidthHeightForC >> 16);
+  const int blockHeight = (WidthHeightForC & 0xFFFF);
+
   const bool no_need_round = lsb_flag || (sizeof(pixel_t) > 1);
   for (int h = 0; h < blockHeight; h++)
   {
@@ -228,10 +234,10 @@ void Degrain1to6_C(uint8_t *pDst, BYTE *pDstLsb, bool _lsb_flag_not_used_templat
   }
 }
 
-
+#if 0
 #ifndef _M_X64
 template<int blockWidth, int blockHeight, bool lsb_flag, int level >
-void Degrain1to6_mmx(BYTE *pDst, BYTE *pDstLsb, bool _lsb_flag_not_used_template_rulez, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
+void Degrain1to6_mmx(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
   const BYTE *pRefB[MAX_DEGRAIN], int BPitch[MAX_DEGRAIN], const BYTE *pRefF[MAX_DEGRAIN], int FPitch[MAX_DEGRAIN],
   int WSrc,
   int WRefB[MAX_DEGRAIN], int WRefF[MAX_DEGRAIN])
@@ -489,10 +495,10 @@ void Degrain1to6_mmx(BYTE *pDst, BYTE *pDstLsb, bool _lsb_flag_not_used_template
   _m_empty();
 }
 #endif
-
+#endif // #if 0
 
 template<int blockWidth, int blockHeight, bool lsb_flag, int level >
-void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, bool _lsb_flag_not_used_template_rulez, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
+void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
   const BYTE *pRefB[MAX_DEGRAIN], int BPitch[MAX_DEGRAIN], const BYTE *pRefF[MAX_DEGRAIN], int FPitch[MAX_DEGRAIN],
   int WSrc,
   int WRefB[MAX_DEGRAIN], int WRefF[MAX_DEGRAIN])
@@ -833,7 +839,7 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, bool _lsb_flag_not_used_templat
 
 // for blockwidth >=2 (4 bytes for blockwidth==2, 8 bytes for blockwidth==4)
 template<int blockWidth, int blockHeight, int level>
-void Degrain1to6_16_sse41(BYTE *pDst, BYTE *pDstLsb, bool _lsb_flag_not_used, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
+void Degrain1to6_16_sse41(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
   const BYTE *pRefB[MAX_DEGRAIN], int BPitch[MAX_DEGRAIN], const BYTE *pRefF[MAX_DEGRAIN], int FPitch[MAX_DEGRAIN],
   int WSrc,
   int WRefB[MAX_DEGRAIN], int WRefF[MAX_DEGRAIN])
