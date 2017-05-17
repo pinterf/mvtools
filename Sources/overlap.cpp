@@ -625,12 +625,14 @@ func_overlaps[make_tuple(x, y, 2, NO_SIMD)] = Overlaps_C<uint16_t, x, y>;
       MAKE_OVR_FN(12, 16)
       MAKE_OVR_FN(12, 12)
       MAKE_OVR_FN(12, 6)
+      MAKE_OVR_FN(12, 3)
       MAKE_OVR_FN(8, 32)
       MAKE_OVR_FN(8, 16)
       MAKE_OVR_FN(8, 8)
       MAKE_OVR_FN(8, 4)
       MAKE_OVR_FN(8, 2)
       MAKE_OVR_FN(8, 1)
+      MAKE_OVR_FN(6, 24)
       MAKE_OVR_FN(6, 12)
       MAKE_OVR_FN(6, 6)
       MAKE_OVR_FN(6, 3)
@@ -675,6 +677,7 @@ func_overlaps[make_tuple(x, y, 2, NO_SIMD)] = Overlaps_C<uint16_t, x, y>;
     func_overlaps[make_tuple(12, 16, 1, USE_SSE2)] = Overlaps12x16_sse2;
     func_overlaps[make_tuple(12, 12, 1, USE_SSE2)] = Overlaps12x12_sse2;
     func_overlaps[make_tuple(12,  6, 1, USE_SSE2)] = Overlaps12x6_sse2;
+    func_overlaps[make_tuple(12, 3, 1, USE_SSE2)] = Overlaps12x3_sse2;
     func_overlaps[make_tuple(8, 32, 1, USE_SSE2)] = Overlaps8x32_sse2;
     func_overlaps[make_tuple(8 , 16, 1, USE_SSE2)] = Overlaps8x16_sse2;
     func_overlaps[make_tuple(8 , 8 , 1, USE_SSE2)] = Overlaps8x8_sse2;
@@ -721,12 +724,14 @@ func_overlaps[make_tuple(x, y, 2, NO_SIMD)] = Overlaps_C<uint16_t, x, y>;
       MAKE_OVR_FN(12, 16)
       MAKE_OVR_FN(12, 12)
       MAKE_OVR_FN(12, 6)
+      MAKE_OVR_FN(12, 3)
       MAKE_OVR_FN(8, 32)
       MAKE_OVR_FN(8, 16)
       MAKE_OVR_FN(8, 8)
       MAKE_OVR_FN(8, 4)
       MAKE_OVR_FN(8, 2)
       MAKE_OVR_FN(8, 1)
+      //MAKE_OVR_FN(6, 24)
       //MAKE_OVR_FN(6, 12)
       //MAKE_OVR_FN(6, 6)
       //MAKE_OVR_FN(6, 3)  // todo
@@ -794,12 +799,14 @@ OverlapsLsbFunction *get_overlaps_lsb_function(int BlockX, int BlockY, int pixel
       MAKE_OVR_FN(12, 16)
       MAKE_OVR_FN(12, 12)
       MAKE_OVR_FN(12, 6)
+      MAKE_OVR_FN(12, 3)
       MAKE_OVR_FN(8, 32)
       MAKE_OVR_FN(8, 16)
       MAKE_OVR_FN(8, 8)
       MAKE_OVR_FN(8, 4)
       MAKE_OVR_FN(8, 2)
       MAKE_OVR_FN(8, 1)
+      MAKE_OVR_FN(6, 24)
       MAKE_OVR_FN(6, 12)
       MAKE_OVR_FN(6, 6)
       MAKE_OVR_FN(6, 3)

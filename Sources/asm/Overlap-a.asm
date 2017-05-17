@@ -658,6 +658,29 @@ cglobal Overlaps12x6_sse2, 6, 6, 8, dstp, dst_stride, srcp, src_stride, winp, wi
 
     RET
 
+INIT_XMM
+cglobal Overlaps12x3_sse2, 6, 6, 8, dstp, dst_stride, srcp, src_stride, winp, win_stride
+
+%if ARCH_X86_64
+	movsxd dst_strideq, dst_strided
+	movsxd src_strideq, src_strided
+	movsxd win_strideq, win_strided
+%endif
+
+    ; prepare constants
+    movdqa m6, [dword256]
+    pxor m7, m7
+
+    ; They're in pixels, apparently.
+    add dst_strideq, dst_strideq
+    add win_strideq, win_strideq
+
+    OVERS12
+    OVERS12
+    OVERS12
+
+    RET
+
 
 ; OVERS16 is two OVERS8 per line.
 %macro OVERS16 0

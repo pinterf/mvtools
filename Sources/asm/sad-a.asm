@@ -123,6 +123,17 @@ SAD  4,  4
 
 ;mvtools2 extra
 ;no final pointer increase
+%macro PROCESS_SAD_12x1 0
+    movu    m1,  [r2]
+    movu    m2,  [r0]
+    pand    m1,  m4
+    pand    m2,  m4
+    psadbw  m1,  m2
+    paddd   m0,  m1
+%endmacro
+
+;mvtools2 extra
+;no final pointer increase
 %macro PROCESS_SAD_12x2 0
     movu    m1,  [r2]
     movu    m2,  [r0]
@@ -1177,6 +1188,51 @@ cglobal pixel_sad_12x6, 4,4,4
     paddd   m0,  m1
     movd    eax, m0
     RET
+
+;-----------------------------------------------------------------------------
+; int pixel_sad_12x3( uint8_t *, intptr_t, uint8_t *, intptr_t )
+;-----------------------------------------------------------------------------
+; mvtools2 extra
+cglobal pixel_sad_12x3, 4,4,4
+    mova  m4,  [MSK]
+    pxor  m0,  m0
+
+    PROCESS_SAD_12x2
+    lea         r2,  [r2 + r3]
+    lea         r0,  [r0 + r1]
+    PROCESS_SAD_12x1
+
+    movhlps m1,  m0
+    paddd   m0,  m1
+    movd    eax, m0
+    RET
+
+;-----------------------------------------------------------------------------
+; int pixel_sad_6x24( uint8_t *, intptr_t, uint8_t *, intptr_t )
+;-----------------------------------------------------------------------------
+; mvtools2 extra
+cglobal pixel_sad_6x24, 4,4,5
+    mova  m5,  [MSK6]
+    pxor  m0,  m0
+
+    PROCESS_SAD_6x2
+    PROCESS_SAD_6x2
+    PROCESS_SAD_6x2
+    PROCESS_SAD_6x2
+    PROCESS_SAD_6x2
+    PROCESS_SAD_6x2
+    PROCESS_SAD_6x2
+    PROCESS_SAD_6x2
+    PROCESS_SAD_6x2
+    PROCESS_SAD_6x2
+    PROCESS_SAD_6x2
+    PROCESS_SAD_6x2
+
+    movhlps m1,  m0
+    paddd   m0,  m1
+    movd    eax, m0
+    RET
+
 
 ;-----------------------------------------------------------------------------
 ; int pixel_sad_6x12( uint8_t *, intptr_t, uint8_t *, intptr_t )
