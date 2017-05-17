@@ -483,6 +483,12 @@ void PlaneOfBlocks::InterpolatePrediction(const PlaneOfBlocks &pob)
   int aeveny = (nBlkSizeY * 3 - nOverlapY * 4);
   // note: overlapping is still (v2.5.7) not processed properly
   // PF todo make faster
+
+  // 2.7.19.22 max safe: BlkX*BlkY: sqrt(2147483647 / 3 / 255) = 1675 ,(2147483647 = 0x7FFFFFFF)
+  bool bNoOverlap = (nOverlapX == 0 && nOverlapY == 0);
+  bool isSafeBlkSizeFor8bits = (nBlkSizeX*nBlkSizeY) < 1675;
+  bool bSmallOverlap = nOverlapX <= (nBlkSizeX >> 1) && nOverlapY <= (nBlkSizeY >> 1);
+
   for (int l = 0, index = 0; l < nBlkY; l++)
   {
     for (int k = 0; k < nBlkX; k++, index++)
@@ -531,14 +537,14 @@ void PlaneOfBlocks::InterpolatePrediction(const PlaneOfBlocks &pob)
       safe_sad_t tmp_sad; // 16 bit worst case: 16 * sad_max: 16 * 3x32x32x65536 = 4+5+5+16 > 2^31 over limit
       // in case of BlockSize > 32, e.g. 128x128x65536 is even more: 7+7+16=30 bits
 
-      if (nOverlapX == 0 && nOverlapY == 0)
+      if (bNoOverlap)
       {
         vectors[index].x = 9 * v1.x + 3 * v2.x + 3 * v3.x + v4.x;
         vectors[index].y = 9 * v1.y + 3 * v2.y + 3 * v3.y + v4.y;
         tmp_sad = 9 * (safe_sad_t)v1.sad + 3 * (safe_sad_t)v2.sad + 3 * (safe_sad_t)v3.sad + (safe_sad_t)v4.sad + 8;
-        
+      
       }
-      else if (nOverlapX <= (nBlkSizeX >> 1) && nOverlapY <= (nBlkSizeY >> 1)) // corrected in v1.4.11
+      else if (bSmallOverlap) // corrected in v1.4.11
       {
         int	ax1 = (offx > 0) ? aoddx : aevenx;
         int ax2 = (nBlkSizeX - nOverlapX) * 4 - ax1;
@@ -547,7 +553,20 @@ void PlaneOfBlocks::InterpolatePrediction(const PlaneOfBlocks &pob)
         int a11 = ax1*ay1, a12 = ax1*ay2, a21 = ax2*ay1, a22 = ax2*ay2;
         vectors[index].x = (a11*v1.x + a21*v2.x + a12*v3.x + a22*v4.x) / normov;
         vectors[index].y = (a11*v1.y + a21*v2.y + a12*v3.y + a22*v4.y) / normov;
-        tmp_sad = ((safe_sad_t)a11*v1.sad + (safe_sad_t)a21*v2.sad + (safe_sad_t)a12*v3.sad + (safe_sad_t)a22*v4.sad) / normov;
+        if (isSafeBlkSizeFor8bits && sizeof(pixel_t)==1) {
+          // old max blkSize==32 worst case: 
+          //   normov = (32-2)*(32-2) 
+          //   sad = 32x32x255 *3 (3 planes) // 705,024,000 < 2^31 OK
+          // blkSize == 48 worst case:
+          //   normov = (48-2)*(48-2) = 2116
+          //   sad = 48x48x255 * 3 // 3,729,576,960 not OK, already fails in 8 bits
+          // max safe: BlkX*BlkY: sqrt(0x7FFFFFF / 3 / 255) = 1675
+          tmp_sad = ((safe_sad_t)a11*v1.sad + (safe_sad_t)a21*v2.sad + (safe_sad_t)a12*v3.sad + (safe_sad_t)a22*v4.sad) / normov;
+        }
+        else {
+          // safe multiplication
+          tmp_sad = ((bigsad_t)a11*v1.sad + (bigsad_t)a21*v2.sad + (bigsad_t)a12*v3.sad + (bigsad_t)a22*v4.sad) / normov;
+        }
       }
       else // large overlap. Weights are not quite correct but let it be
       {
