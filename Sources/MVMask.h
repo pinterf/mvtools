@@ -43,6 +43,7 @@ private:
 	int kind; // new param instead of showsad - Fizick
   int time256;
   unsigned char nSceneChangeValue;
+  uint16_t nSceneChangeValue16;
 
 //	unsigned char *LUTBilinear;
 	unsigned char *smallMask;

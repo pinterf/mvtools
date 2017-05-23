@@ -58,7 +58,8 @@ MVMask::MVMask(
     env->ThrowError("MMask: time must be 0.0 to 100.0");
   time256 = int(256 * _time100 / 100);
 
-  nSceneChangeValue = (Ysc < 0) ? 0 : ((Ysc > 255) ? 255 : Ysc);
+  nSceneChangeValue = (Ysc < 0) ? 0 : ((Ysc > 255) ? 255 : Ysc); // for 8 bit masks
+  nSceneChangeValue16 = nSceneChangeValue == 255 ? ((1 << bits_per_pixel) - 1) : nSceneChangeValue << (bits_per_pixel - 8); // keep 255 to max_pixel_value, otherwise shift
   planar = _planar;
 
   smallMask = new unsigned char[nBlkX * nBlkY];
@@ -71,6 +72,12 @@ MVMask::MVMask(
   nWidthUV = nWidth / xRatioUV;// for YV12
   nHeightBUV = nHeightB / yRatioUV;
   nWidthBUV = nWidthB / xRatioUV;
+
+  if (xRatioUV != (1 << vi.GetPlaneWidthSubsampling(PLANAR_U)) || yRatioUV != (1 << vi.GetPlaneWidthSubsampling(PLANAR_U)) || 
+      bits_per_pixel != vi.BitsPerComponent())
+  {
+    env->ThrowError("MMask: input clip format has different bit depth or subsampling");
+  }
 
   int CPUF_Resize = env->GetCPUFlags();
   if (!isse) CPUF_Resize = (CPUF_Resize & !CPUF_INTEGER_SSE) & !CPUF_SSE2;
@@ -248,23 +255,23 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
       // different upsizers to scale smallMask from 8 bit-only to bits_per_pixel
       if (pixelsize == 1) {
         upsizer->SimpleResizeDo_uint8(pDst[0], nWidthB, nHeightB, nDstPitches[0], smallMask, nBlkX, nBlkX, dummyplane);
-        if (nWidth > nWidthB)
+        if (nWidth > nWidthB) // fill right
           for (int h = 0; h < nHeight; h++)
             for (int w = nWidthB; w < nWidth; w++)
               *(pDst[0] + h*nDstPitches[0] + w) = *(pDst[0] + h*nDstPitches[0] + (nWidthB - 1));
-        if (nHeight > nHeightB)
-          env->BitBlt(pDst[0] + nHeightB*nDstPitches[0], nDstPitches[0], pDst[0] + (nHeightB - 1)*nDstPitches[0], nDstPitches[0], nWidth, nHeight - nHeightB);
       }
       else if (pixelsize == 2) {
         // 8 bit source, 10-16 bit target
         upsizer->SimpleResizeDo_uint8_to_uint16(pDst[0], nWidthB, nHeightB, nDstPitches[0], smallMask, nBlkX, nBlkX, dummyplane, bits_per_pixel);
-        if (nWidth > nWidthB)
+        if (nWidth > nWidthB) // fill right
           for (int h = 0; h < nHeight; h++)
             for (int w = nWidthB; w < nWidth; w++)
               *(uint16_t *)(pDst[0] + h*nDstPitches[0] + w*pixelsize) = *(uint16_t *)(pDst[0] + h*nDstPitches[0] + (nWidthB - 1) * pixelsize);
-        if (nHeight > nHeightB)
-          env->BitBlt(pDst[0] + nHeightB*nDstPitches[0], nDstPitches[0], pDst[0] + (nHeightB - 1)*nDstPitches[0], nDstPitches[0], nWidth*pixelsize, nHeight - nHeightB);
       }
+      for (int y = nHeightB; y < nHeight; y++)
+        env->BitBlt(pDst[0] + y*nDstPitches[0], nDstPitches[0], pDst[0] + (nHeightB - 1)*nDstPitches[0], nDstPitches[0], nWidth*pixelsize, 1);
+      // replicate last valid bottom line. pre 2.7.19.22: possible garbage
+      //env->BitBlt(pDst[0] + nHeightB*nDstPitches[0], nDstPitches[0], pDst[0] + (nHeightB - 1)*nDstPitches[0], nDstPitches[0], nWidth*pixelsize, nHeight - nHeightB);
     }
 
 
@@ -276,7 +283,7 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
         upsizerUV->SimpleResizeDo_uint8(pDst[2], nWidthBUV, nHeightBUV, nDstPitches[2], smallMaskV, nBlkX, nBlkX, dummyplane);
       else
         upsizerUV->SimpleResizeDo_uint8(pDst[2], nWidthBUV, nHeightBUV, nDstPitches[2], smallMask, nBlkX, nBlkX, dummyplane);
-      if (nWidthUV > nWidthBUV)
+      if (nWidthUV > nWidthBUV) // fill right
         for (int h = 0; h < nHeightUV; h++)
           for (int w = nWidthBUV; w < nWidthUV; w++)
           {
@@ -292,7 +299,7 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
         upsizerUV->SimpleResizeDo_uint8_to_uint16(pDst[2], nWidthBUV, nHeightBUV, nDstPitches[2], smallMaskV, nBlkX, nBlkX, dummyplane, bits_per_pixel);
       else
         upsizerUV->SimpleResizeDo_uint8_to_uint16(pDst[2], nWidthBUV, nHeightBUV, nDstPitches[2], smallMask, nBlkX, nBlkX, dummyplane, bits_per_pixel);
-      if (nWidthUV > nWidthBUV)
+      if (nWidthUV > nWidthBUV) // fill right
         for (int h = 0; h < nHeightUV; h++)
           for (int w = nWidthBUV; w < nWidthUV; w++)
           {
@@ -300,22 +307,35 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
             *(uint16_t *)(pDst[2] + h*nDstPitches[2] + w*pixelsize) = *(uint16_t *)(pDst[2] + h*nDstPitches[2] + (nWidthBUV - 1)*pixelsize);
           }
     }
-    if (nHeightUV > nHeightBUV)
+    for (int y = nHeightBUV; y < nHeightUV; y++)
     {
-      env->BitBlt(pDst[1] + nHeightBUV*nDstPitches[1], nDstPitches[1], pDst[1] + (nHeightBUV - 1)*nDstPitches[1], nDstPitches[1], nWidthUV*pixelsize, nHeightUV - nHeightBUV);
-      env->BitBlt(pDst[2] + nHeightBUV*nDstPitches[2], nDstPitches[2], pDst[2] + (nHeightBUV - 1)*nDstPitches[2], nDstPitches[2], nWidthUV*pixelsize, nHeightUV - nHeightBUV);
+      env->BitBlt(pDst[1] + y*nDstPitches[1], nDstPitches[1], pDst[1] + (nHeightBUV - 1)*nDstPitches[1], nDstPitches[1], nWidthUV*pixelsize, 1);
+      env->BitBlt(pDst[2] + y*nDstPitches[2], nDstPitches[2], pDst[2] + (nHeightBUV - 1)*nDstPitches[2], nDstPitches[2], nWidthUV*pixelsize, 1);
     }
-
-
+    // replicate last valid bottom line. pre 2.7.19.22: possible garbage
+    //if (nHeightUV > nHeightBUV)
+    // {
+    //  env->BitBlt(pDst[1] + nHeightBUV*nDstPitches[1], nDstPitches[1], pDst[1] + (nHeightBUV - 1)*nDstPitches[1], nDstPitches[1], nWidthUV*pixelsize, nHeightUV - nHeightBUV);
+    //  env->BitBlt(pDst[2] + nHeightBUV*nDstPitches[2], nDstPitches[2], pDst[2] + (nHeightBUV - 1)*nDstPitches[2], nDstPitches[2], nWidthUV*pixelsize, nHeightUV - nHeightBUV);
+    // }
   }
   else {
     if (kind == 5)
-      env->BitBlt(pDst[0], nDstPitches[0], pSrc[0], nSrcPitches[0], nWidth*pixelsize, nHeight);
-    else
-      MemZoneSet(pDst[0], nSceneChangeValue, nWidth*pixelsize, nHeight, 0, 0, nDstPitches[0]);
-
-    MemZoneSet(pDst[1], nSceneChangeValue, nWidthUV*pixelsize, nHeightUV, 0, 0, nDstPitches[1]);
-    MemZoneSet(pDst[2], nSceneChangeValue, nWidthUV*pixelsize, nHeightUV, 0, 0, nDstPitches[2]);
+      env->BitBlt(pDst[0], nDstPitches[0], pSrc[0], nSrcPitches[0], nWidth*pixelsize, nHeight); // copy luma
+    else {
+      if(pixelsize == 1)
+        MemZoneSet(pDst[0], nSceneChangeValue, nWidth, nHeight, 0, 0, nDstPitches[0]);
+      else if(pixelsize == 2)
+        MemZoneSet16((uint16_t *)pDst[0], nSceneChangeValue16, nWidth, nHeight, 0, 0, nDstPitches[0]);
+    }
+    if (pixelsize == 1) {
+      MemZoneSet(pDst[1], nSceneChangeValue, nWidthUV*pixelsize, nHeightUV, 0, 0, nDstPitches[1]);
+      MemZoneSet(pDst[2], nSceneChangeValue, nWidthUV*pixelsize, nHeightUV, 0, 0, nDstPitches[2]);
+    }
+    else {
+      MemZoneSet16((uint16_t *)pDst[1], nSceneChangeValue16, nWidthUV, nHeightUV, 0, 0, nDstPitches[1]);
+      MemZoneSet16((uint16_t *)pDst[2], nSceneChangeValue16, nWidthUV, nHeightUV, 0, 0, nDstPitches[2]);
+    }
   }
 
 
