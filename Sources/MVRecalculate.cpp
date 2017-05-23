@@ -253,7 +253,7 @@ MVRecalculate::MVRecalculate(
 
   if (_dctmode != 0)
   {
-    _dct_factory_ptr = std::auto_ptr <DCTFactory>(
+    _dct_factory_ptr = std::unique_ptr <DCTFactory>(
       new DCTFactory(_dctmode, _isse, _blksizex, _blksizey, pixelsize, bits_per_pixel, *env)
       );
     _dct_pool.set_factory(*_dct_factory_ptr);
@@ -324,7 +324,7 @@ MVRecalculate::MVRecalculate(
   }
 #endif
 
-  _vectorfields_aptr = std::auto_ptr <GroupOfPlanes>(new GroupOfPlanes(
+  _vectorfields_aptr = std::unique_ptr <GroupOfPlanes>(new GroupOfPlanes(
     analysisData.nBlkSizeX,
     analysisData.nBlkSizeY,
     analysisData.nLvCount,
@@ -425,7 +425,7 @@ MVRecalculate::MVRecalculate(
     thSAD = (sad_t)(thSAD * (1 << (bits_per_pixel - 8))); // todo float
 // luma only
   thSAD =
-    thSAD
+    (uint64_t)thSAD
     * (analysisData.nBlkSizeX * analysisData.nBlkSizeY)
     / (8 * 8);  // normalize to 8x8 block size
   if (chroma)
