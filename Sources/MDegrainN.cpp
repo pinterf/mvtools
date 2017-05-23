@@ -391,10 +391,10 @@ MDegrainN::DenoiseNFunction* MDegrainN::get_denoiseN_function(int BlockX, int Bl
 
 
 MDegrainN::MDegrainN(
-  ::PClip child, ::PClip super, ::PClip mvmulti, int trad,
+  PClip child, PClip super, PClip mvmulti, int trad,
   sad_t thsad, sad_t thsadc, int yuvplanes, sad_t nlimit, sad_t nlimitc,
   sad_t nscd1, int nscd2, bool isse_flag, bool planar_flag, bool lsb_flag,
-  sad_t thsad2, sad_t thsadc2, bool mt_flag, ::IScriptEnvironment* env_ptr
+  sad_t thsad2, sad_t thsadc2, bool mt_flag, IScriptEnvironment* env_ptr
 )
   : GenericVideoFilter(child)
   , MVFilter(mvmulti, "MDegrainN", env_ptr, 1, 0)
@@ -412,8 +412,8 @@ MDegrainN::MDegrainN(
   , _xratiouv_log((xRatioUV == 2) ? 1 : 0)
   , _yratiouv_log((yRatioUV == 2) ? 1 : 0)
   , _nsupermodeyuv(-1)
-  , _dst_planes(0)
-  , _src_planes(0)
+  , _dst_planes(nullptr)
+  , _src_planes(nullptr)
   , _overwins()
   , _overwins_uv()
   , _oversluma_ptr(0)
@@ -541,10 +541,10 @@ MDegrainN::MDegrainN(
 
   if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !_planar_flag)
   {
-    _dst_planes = std::auto_ptr <YUY2Planes>(
+    _dst_planes = std::unique_ptr <YUY2Planes>(
       new YUY2Planes(nWidth, nHeight * _height_lsb_mul)
       );
-    _src_planes = std::auto_ptr <YUY2Planes>(
+    _src_planes = std::unique_ptr <YUY2Planes>(
       new YUY2Planes(nWidth, nHeight)
       );
   }
@@ -552,10 +552,10 @@ MDegrainN::MDegrainN(
   _dst_int_pitch = _dst_short_pitch;
   if (nOverlapX > 0 || nOverlapY > 0)
   {
-    _overwins = std::auto_ptr <OverlapWindows>(
+    _overwins = std::unique_ptr <OverlapWindows>(
       new OverlapWindows(nBlkSizeX, nBlkSizeY, nOverlapX, nOverlapY)
       );
-    _overwins_uv = std::auto_ptr <OverlapWindows>(new OverlapWindows(
+    _overwins_uv = std::unique_ptr <OverlapWindows>(new OverlapWindows(
       nBlkSizeX >> _xratiouv_log, nBlkSizeY >> _yratiouv_log, // PF 2->xratiouv
       nOverlapX >> _xratiouv_log, nOverlapY >> _yratiouv_log
     ));
@@ -1622,7 +1622,7 @@ void	MDegrainN::use_block_y(
     p = plane_ptr->GetPointer(blx, bly);
     np = plane_ptr->GetPitch();
     const sad_t block_sad = block.GetSAD(); // SAD of MV Block. Scaled to MVClip's bits_per_pixel;
-    wref = DegrainWeight(c_info._thsad, block_sad, bits_per_pixel);
+    wref = DegrainWeight(c_info._thsad, block_sad);
   }
   else
   {
@@ -1647,7 +1647,7 @@ void	MDegrainN::use_block_uv(
     p = plane_ptr->GetPointer(blx >> _xratiouv_log, bly >> _yratiouv_log);
     np = plane_ptr->GetPitch();
     const sad_t block_sad = block.GetSAD(); // SAD of MV Block. Scaled to MVClip's bits_per_pixel;
-    wref = DegrainWeight(c_info._thsadc, block_sad, bits_per_pixel);
+    wref = DegrainWeight(c_info._thsadc, block_sad);
   }
   else
   {

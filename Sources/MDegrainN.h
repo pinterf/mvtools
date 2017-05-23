@@ -131,11 +131,11 @@ private:
   int _nsupermodeyuv;
 
 
-  std::auto_ptr <YUY2Planes> _dst_planes;
-  std::auto_ptr <YUY2Planes> _src_planes;
+  std::unique_ptr <YUY2Planes> _dst_planes;
+  std::unique_ptr <YUY2Planes> _src_planes;
 
-  std::auto_ptr <OverlapWindows> _overwins;
-  std::auto_ptr <OverlapWindows> _overwins_uv;
+  std::unique_ptr <OverlapWindows> _overwins;
+  std::unique_ptr <OverlapWindows> _overwins_uv;
 
   OverlapsFunction *_oversluma_ptr;
   OverlapsFunction *_overschroma_ptr;

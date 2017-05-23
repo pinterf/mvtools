@@ -58,7 +58,7 @@ protected:
 	SrcRefArray    _srd_arr;
 
 	/*! \brief Frames of blocks for which motion vectors will be computed */
-	std::auto_ptr <GroupOfPlanes>
+	std::unique_ptr <GroupOfPlanes>
 	               _vectorfields_aptr;	// Temporary data, structure initialised once.
 
    /*! \brief isse optimisations enabled */
@@ -94,7 +94,7 @@ protected:
 	YUY2Planes *   Src2xPlanes;
 	YUY2Planes *   Ref2xPlanes;
 
-	std::auto_ptr <DCTFactory>
+	std::unique_ptr <DCTFactory>
 	               _dct_factory_ptr;	// Not instantiated if not needed
 	conc::ObjPool <DCTClass>
 	               _dct_pool;

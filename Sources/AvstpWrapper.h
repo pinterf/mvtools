@@ -100,7 +100,7 @@ private:
 
 	void *			_dll_hnd;	// Avoids loading windows.h just for HMODULE
 
-	static std::auto_ptr <AvstpWrapper>
+	static std::unique_ptr <AvstpWrapper>
                   _singleton_aptr;
    static volatile bool
 						_singleton_init_flag;

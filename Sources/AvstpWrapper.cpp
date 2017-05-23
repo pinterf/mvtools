@@ -89,7 +89,7 @@ AvstpWrapper &	AvstpWrapper::use_instance ()
 		if (! _singleton_init_flag)
 		{
 			assert (! _singleton_init_flag && _singleton_aptr.get () == 0);
-			_singleton_aptr = std::auto_ptr <AvstpWrapper> (new AvstpWrapper);
+			_singleton_aptr = std::unique_ptr <AvstpWrapper> (new AvstpWrapper);
 			_singleton_init_flag = true;
 		}
 
@@ -289,7 +289,7 @@ int	AvstpWrapper::fallback_wait_completion_ptr (avstp_TaskDispatcher *td_ptr)
 
 
 
-std::auto_ptr <AvstpWrapper>	AvstpWrapper::_singleton_aptr;
+std::unique_ptr <AvstpWrapper>	AvstpWrapper::_singleton_aptr;
 volatile bool	AvstpWrapper::_singleton_init_flag = false;
 
 int	AvstpWrapper::_dummy_dispatcher;
