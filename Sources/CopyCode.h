@@ -19,6 +19,8 @@ void BitBlt(unsigned char* dstp, int dst_pitch, const unsigned char* srcp, int s
 //extern "C" void memcpy_amd(void *dest, const void *src, size_t n);
 extern "C" void MemZoneSet(unsigned char *ptr, unsigned char value, int width,
 				int height, int offsetX, int offsetY, int pitch);
+extern "C" void MemZoneSet16(uint16_t *ptr, uint16_t value, int width,
+  int height, int offsetX, int offsetY, int pitch);
 
 typedef void (COPYFunction)(uint8_t *pDst, int nDstPitch,
                             const uint8_t *pSrc, int nSrcPitch);

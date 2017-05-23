@@ -109,6 +109,19 @@ void MemZoneSet(unsigned char *ptr, unsigned char value, int width,
 	}
 }
 
+// pitch is in bytes
+void MemZoneSet16(uint16_t *ptr, uint16_t value, int width,
+  int height, int offsetX, int offsetY, int pitch)
+{
+  pitch /= sizeof(uint16_t);
+  ptr += offsetX + offsetY*pitch;
+  for (int y = offsetY; y<height + offsetY; y++)
+  {
+    std::fill_n(ptr, width, value);
+    ptr += pitch;
+  }
+}
+
 #if 0
 // Coded by Steady
 void asm_BitBlt_ISSE(unsigned char* dstp, int dst_pitch, const unsigned char* srcp, int src_pitch, int row_size, int height) {
