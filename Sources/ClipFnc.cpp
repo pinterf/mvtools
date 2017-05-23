@@ -117,11 +117,12 @@ void	ClipFnc::format_vector_clip (::VideoInfo &vi, bool single_line_flag, int nb
 		);
 	}
 
-	const int		bytes_per_pix = vi.BitsPerPixel () >> 3;
-	const int		unit_size = bytes_per_pix * nbr_pix_per_group;
+	const int		bytes_per_pix = vi.BitsPerPixel () >> 3; // rgb32: 32/8 = 4
+	const int		unit_size = bytes_per_pix * nbr_pix_per_group; // rgb32: 4*1=4
 
 	if (single_line_flag)
 	{
+    // rgb32: (size_bytes + 4 - 1) / 4,    number of 4byte chunks
 		const int		nbr_groups = (size_bytes + unit_size - 1) / unit_size;
 		vi.width  = nbr_groups * nbr_pix_per_group;
 		vi.height = 1;
