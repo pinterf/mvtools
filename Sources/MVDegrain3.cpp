@@ -51,12 +51,10 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   using std::make_tuple;
 
 // level 1-6, 8bit C, 8bit lsb C, 16 bit C (same for all, no blocksize templates)
-// 16 bit SSE41
 #define MAKE_FN_LEVEL(x, y, level) \
 func_degrain[make_tuple(x, y, 1, false, level, NO_SIMD)] = Degrain1to6_C<uint8_t, false, level>; \
 func_degrain[make_tuple(x, y, 1, true, level, NO_SIMD)] = Degrain1to6_C<uint8_t, true, level>; \
-func_degrain[make_tuple(x, y, 2, false, level, NO_SIMD)] = Degrain1to6_C<uint16_t, false, level>; \
-func_degrain[make_tuple(x, y, 2, false, level, USE_SSE41)] = Degrain1to6_16_sse41<x, y, level>;
+func_degrain[make_tuple(x, y, 2, false, level, NO_SIMD)] = Degrain1to6_C<uint16_t, false, level>;
 #define MAKE_FN(x, y) \
 MAKE_FN_LEVEL(x,y,1) \
 MAKE_FN_LEVEL(x,y,2) \
@@ -119,92 +117,78 @@ MAKE_FN_LEVEL(x,y,6)
 #undef MAKE_FN_LEVEL
 
 // 8 bit sse2 degrain function (mmx is replaced with sse2 for x86 width 4)
-#define MAKE_FN_LEVEL(x, y, level) \
+// and 16 bit SSE4 function
+// for no_template_by_y: special height==0 -> internally nHeight comes from variable (for C: both width and height is variable)
+#define MAKE_FN_LEVEL(x, y, level, template_by_y) \
+if(template_by_y) { \
 func_degrain[make_tuple(x, y, 1, false, level, USE_SSE2)] = Degrain1to6_sse2<x, y, false, level>; \
-func_degrain[make_tuple(x, y, 1, true, level, USE_SSE2)] = Degrain1to6_sse2<x, y, true, level>;
-#define MAKE_FN_LEVEL_MMX(x, y, level) \
-func_degrain[make_tuple(x, y, 1, false, level, USE_SSE2)] = Degrain1to6_mmx<x, y, false, level>; \
-func_degrain[make_tuple(x, y, 1, true, level, USE_SSE2)] = Degrain1to6_mmx<x, y, true, level>;
-#define MAKE_FN(x, y) \
-MAKE_FN_LEVEL(x,y,1) \
-MAKE_FN_LEVEL(x,y,2) \
-MAKE_FN_LEVEL(x,y,3) \
-MAKE_FN_LEVEL(x,y,4) \
-MAKE_FN_LEVEL(x,y,5) \
-MAKE_FN_LEVEL(x,y,6)
-#define MAKE_FN_MMX(x, y) \
-MAKE_FN_LEVEL_MMX(x,y,1) \
-MAKE_FN_LEVEL_MMX(x,y,2) \
-MAKE_FN_LEVEL_MMX(x,y,3) \
-MAKE_FN_LEVEL_MMX(x,y,4) \
-MAKE_FN_LEVEL_MMX(x,y,5) \
-MAKE_FN_LEVEL_MMX(x,y,6)
-    MAKE_FN(64, 64)
-    MAKE_FN(64, 48)
-    MAKE_FN(64, 32)
-    MAKE_FN(64, 16)
-    MAKE_FN(48, 64)
-    MAKE_FN(48, 48)
-    MAKE_FN(48, 24)
-    MAKE_FN(48, 12)
-    MAKE_FN(32, 64)
-    MAKE_FN(32, 32)
-    MAKE_FN(32, 24)
-    MAKE_FN(32, 16)
-    MAKE_FN(32, 8)
-    MAKE_FN(24, 48)
-    MAKE_FN(24, 32)
-    MAKE_FN(24, 24)
-    MAKE_FN(24, 12)
-    MAKE_FN(24, 6)
-    MAKE_FN(16, 64)
-    MAKE_FN(16, 32)
-    MAKE_FN(16, 16)
-    MAKE_FN(16, 12)
-    MAKE_FN(16, 8)
-    MAKE_FN(16, 4)
-    MAKE_FN(16, 2)
-    MAKE_FN(16, 1)
-    MAKE_FN(12, 48)
-    MAKE_FN(12, 24)
-    MAKE_FN(12, 16)
-    MAKE_FN(12, 12)
-    MAKE_FN(12, 6)
-    MAKE_FN(12, 3)
-    MAKE_FN(8, 32)
-    MAKE_FN(8, 16)
-    MAKE_FN(8, 8)
-    MAKE_FN(8, 4)
-    MAKE_FN(8, 2)
-    MAKE_FN(8, 1)
-    MAKE_FN(6, 24)
-    MAKE_FN(6, 12)
-    MAKE_FN(6, 6)
-    MAKE_FN(6, 3)
-    MAKE_FN(4, 8)
-    MAKE_FN(4, 4)
-    MAKE_FN(4, 2)
-#if 0
-#ifndef _M_X64
-    MAKE_FN_MMX(4, 8)
-    MAKE_FN_MMX(4, 4)
-    MAKE_FN_MMX(4, 2)
-#else
-    MAKE_FN(4, 8)
-    MAKE_FN(4, 4)
-    MAKE_FN(4, 2)
-#endif
-#endif
-    MAKE_FN(4, 1)
-    MAKE_FN(3, 6)
-    MAKE_FN(3, 3)
-    MAKE_FN(2, 4)
-    MAKE_FN(2, 2)
-    MAKE_FN(2, 1)
+func_degrain[make_tuple(x, y, 1, true, level, USE_SSE2)] = Degrain1to6_sse2<x, y, true, level>; \
+func_degrain[make_tuple(x, y, 2, false, level, USE_SSE41)] = Degrain1to6_16_sse41<x, y, level>; \
+} else { \
+func_degrain[make_tuple(x, y, 1, false, level, USE_SSE2)] = Degrain1to6_sse2<x, 0, false, level>; \
+func_degrain[make_tuple(x, y, 1, true, level, USE_SSE2)] = Degrain1to6_sse2<x, 0, true, level>; \
+func_degrain[make_tuple(x, y, 2, false, level, USE_SSE41)] = Degrain1to6_16_sse41<x, 0, level>; \
+}
+#define MAKE_FN(x, y, template_by_y) \
+MAKE_FN_LEVEL(x,y,1, template_by_y) \
+MAKE_FN_LEVEL(x,y,2, template_by_y) \
+MAKE_FN_LEVEL(x,y,3, template_by_y) \
+MAKE_FN_LEVEL(x,y,4, template_by_y) \
+MAKE_FN_LEVEL(x,y,5, template_by_y) \
+MAKE_FN_LEVEL(x,y,6, template_by_y)
+    MAKE_FN(64, 64, false)
+    MAKE_FN(64, 48, false)
+    MAKE_FN(64, 32, false)
+    MAKE_FN(64, 16, false)
+    MAKE_FN(48, 64, false)
+    MAKE_FN(48, 48, false)
+    MAKE_FN(48, 24, false)
+    MAKE_FN(48, 12, false)
+    MAKE_FN(32, 64, false)
+    MAKE_FN(32, 32, false)
+    MAKE_FN(32, 24, false)
+    MAKE_FN(32, 16, false)
+    MAKE_FN(32, 8, false)
+    MAKE_FN(24, 48, false)
+    MAKE_FN(24, 32, false)
+    MAKE_FN(24, 24, false)
+    MAKE_FN(24, 12, false)
+    MAKE_FN(24, 6, false)
+    MAKE_FN(16, 64, false)
+    MAKE_FN(16, 32, false)
+    MAKE_FN(16, 16, false)
+    MAKE_FN(16, 12, false)
+    MAKE_FN(16, 8, false)
+    MAKE_FN(16, 4, true)
+    MAKE_FN(16, 2, true)
+    MAKE_FN(16, 1, true)
+    MAKE_FN(12, 48, false)
+    MAKE_FN(12, 24, false)
+    MAKE_FN(12, 16, false)
+    MAKE_FN(12, 12, false)
+    MAKE_FN(12, 6, true)
+    MAKE_FN(12, 3, true)
+    MAKE_FN(8, 32, false)
+    MAKE_FN(8, 16, false)
+    MAKE_FN(8, 8, true)
+    MAKE_FN(8, 4, true)
+    MAKE_FN(8, 2, true)
+    MAKE_FN(8, 1, true)
+    MAKE_FN(6, 24, false)
+    MAKE_FN(6, 12, false)
+    MAKE_FN(6, 6, true)
+    MAKE_FN(6, 3, true)
+    MAKE_FN(4, 8, true)
+    MAKE_FN(4, 4, true)
+    MAKE_FN(4, 2, true)
+    MAKE_FN(4, 1, true)
+    MAKE_FN(3, 6, true)
+    MAKE_FN(3, 3, true)
+    MAKE_FN(2, 4, true)
+    MAKE_FN(2, 2, true)
+    MAKE_FN(2, 1, true)
 #undef MAKE_FN
-#undef MAKE_FN_MMX
 #undef MAKE_FN_LEVEL
-#undef MAKE_FN_LEVEL_MMX
 
   Denoise1to6Function* result = nullptr;
   arch_t archlist[] = { USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
@@ -212,7 +196,7 @@ MAKE_FN_LEVEL_MMX(x,y,6)
   while (result == nullptr) {
     arch_t current_arch_try = archlist[index++];
     if (current_arch_try > arch) continue;
-    result = func_degrain[make_tuple(BlockX, BlockY, pixelsize, _lsb_flag, _level, current_arch_try)];
+    result = func_degrain[make_tuple(BlockX, BlockY, _pixelsize, _lsb_flag, _level, current_arch_try)];
     if (result == nullptr && current_arch_try == NO_SIMD)
       break;
   }
@@ -1164,7 +1148,7 @@ MV_FORCEINLINE void	MVDegrainX::use_block_y(const BYTE * &p, int &np, int &WRef,
     p = pPlane->GetPointer(blx, bly);
     np = pPlane->GetPitch();
     sad_t blockSAD = block.GetSAD(); // SAD of MV Block. Scaled to MVClip's bits_per_pixel;
-    WRef = DegrainWeight(thSAD, blockSAD, bits_per_pixel);
+    WRef = DegrainWeight(thSAD, blockSAD);
   }
   else
   {
@@ -1190,7 +1174,7 @@ MV_FORCEINLINE void	MVDegrainX::use_block_uv(const BYTE * &p, int &np, int &WRef
     p = pPlane->GetPointer(blx >> nLogxRatioUV, bly >> nLogyRatioUV); // pixelsize - aware
     np = pPlane->GetPitch();
     sad_t blockSAD = block.GetSAD();  // SAD of MV Block. Scaled to MVClip's bits_per_pixel;
-    WRef = DegrainWeight(thSADC, blockSAD, bits_per_pixel);
+    WRef = DegrainWeight(thSADC, blockSAD);
   }
   else
   {

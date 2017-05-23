@@ -503,6 +503,10 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
   int WSrc,
   int WRefB[MAX_DEGRAIN], int WRefF[MAX_DEGRAIN])
 {
+  // avoid unnecessary templates for larger heights
+  const int blockHeightParam = (WidthHeightForC & 0xFFFF);
+  const int realBlockHeight = blockHeight == 0 ? blockHeightParam : blockHeight;
+
   __m128i z = _mm_setzero_si128();
   __m128i ws = _mm_set1_epi16(WSrc);
   __m128i wb1, wf1;
@@ -537,7 +541,7 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
   if (lsb_flag)
   {
     __m128i m = _mm_set1_epi16(255);
-    for (int h = 0; h < blockHeight; h++)
+    for (int h = 0; h < realBlockHeight; h++)
     {
       for (int x = 0; x < blockWidth; x += 8)
       {
@@ -690,7 +694,7 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
   else
   {
     __m128i o = _mm_set1_epi16(128);
-    for (int h = 0; h < blockHeight; h++)
+    for (int h = 0; h < realBlockHeight; h++)
     {
       for (int x = 0; x < blockWidth; x += 8)
       {
@@ -838,12 +842,17 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
 }
 
 // for blockwidth >=2 (4 bytes for blockwidth==2, 8 bytes for blockwidth==4)
+// for special height==0 -> internally nHeight comes from variable (for C: both width and height is variable)
 template<int blockWidth, int blockHeight, int level>
 void Degrain1to6_16_sse41(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
   const BYTE *pRefB[MAX_DEGRAIN], int BPitch[MAX_DEGRAIN], const BYTE *pRefF[MAX_DEGRAIN], int FPitch[MAX_DEGRAIN],
   int WSrc,
   int WRefB[MAX_DEGRAIN], int WRefF[MAX_DEGRAIN])
 {
+  // avoid unnecessary templates for larger heights
+  const int blockHeightParam = (WidthHeightForC & 0xFFFF);
+  const int realBlockHeight = blockHeight == 0 ? blockHeightParam : blockHeight;
+
   __m128i z = _mm_setzero_si128();
   __m128i ws = _mm_set1_epi32(WSrc);
   __m128i wb1, wf1;
@@ -876,7 +885,7 @@ void Degrain1to6_16_sse41(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nD
   }
 
   __m128i o = _mm_set1_epi32(128); // rounding: 128 (mul by 8 bit wref scale back)
-  for (int h = 0; h < blockHeight; h++)
+  for (int h = 0; h < realBlockHeight; h++)
   {
     for (int x = 0; x < blockWidth; x += 8 / sizeof(uint16_t))
     {
@@ -1012,7 +1021,7 @@ void Degrain1to6_16_sse41(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nD
 
 // Not really related to overlap, but common to MDegrainX functions
 // PF 160928: this is bottleneck. Could be optimized with precalc thSAD*thSAD
-MV_FORCEINLINE int DegrainWeight(int thSAD, int blockSAD, int bits_per_pixels)
+MV_FORCEINLINE int DegrainWeight(int thSAD, int blockSAD)
 {
   // Returning directly prevents a divide by 0 if thSAD == blockSAD == 0.
   if (thSAD <= blockSAD)
@@ -1020,7 +1029,7 @@ MV_FORCEINLINE int DegrainWeight(int thSAD, int blockSAD, int bits_per_pixels)
     return 0;
   }
   // here thSAD > blockSAD
-  if(/*bits_per_pixels <= 8 &&*/ thSAD <= 0x7FFF) { // 170507 avoid overflow even in 8 bits! in sqr
+  if(thSAD <= 0x7FFF) { // 170507 avoid overflow even in 8 bits! in sqr
     // can occur even for 32x32 block size
     // problem emerged in blksize=64 tests
     const int thSAD2    = thSAD    * thSAD;
