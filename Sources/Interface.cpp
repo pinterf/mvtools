@@ -980,7 +980,7 @@ static void	Interface_dll_load (::HINSTANCE hinst)
 	{
 		const int	mode =   (1 * _CRTDBG_MODE_DEBUG)
 						       | (1 * _CRTDBG_MODE_WNDW);
-		::_CrtSetReportMode (_CRT_WARN, mode);
+//		::_CrtSetReportMode (_CRT_WARN, mode);
 		::_CrtSetReportMode (_CRT_ERROR, mode);
 		::_CrtSetReportMode (_CRT_ASSERT, mode);
 
@@ -1001,7 +1001,7 @@ static void	Interface_dll_unload (::HINSTANCE hinst)
 	{
 		const int	mode =   (1 * _CRTDBG_MODE_DEBUG)
 						       | (0 * _CRTDBG_MODE_WNDW);
-		::_CrtSetReportMode (_CRT_WARN, mode);
+//		::_CrtSetReportMode (_CRT_WARN, mode);
 		::_CrtSetReportMode (_CRT_ERROR, mode);
 		::_CrtSetReportMode (_CRT_ASSERT, mode);
 
