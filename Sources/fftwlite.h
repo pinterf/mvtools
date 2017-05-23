@@ -13,5 +13,9 @@ typedef void (*fftwf_destroy_plan_proc) (fftwf_plan);
 typedef void (*fftwf_execute_dft_r2c_proc) (fftwf_plan, float *realdata, fftwf_complex *fftsrc);
 typedef void (*fftwf_execute_dft_c2r_proc) (fftwf_plan, fftwf_complex *fftsrc, float *realdata);
 #define FFTW_ESTIMATE (1U << 6)
+#define FFTW_REDFT01 4 /* idct */
+#define FFTW_REDFT10 5 /* dct */
+typedef fftwf_plan(*fftwf_plan_r2r_2d_proc) (int nx, int ny, float *in, float *out, int kindx, int kindy, unsigned flags);
+typedef void(*fftwf_execute_r2r_proc) (const fftwf_plan plan, float *in, float *out);
 
 #endif
