@@ -225,6 +225,7 @@ static void FlowInterExtra_NPel(
 	int VPitch, int width, int height, T256P &t256_provider,
 	uint8_t *VXFullBB, uint8_t *VXFullFF, uint8_t *VYFullBB, uint8_t *VYFullFF)
 */  
+// NPELL2 = Log2(NPEL) (shift needed)
 template <typename pixel_t, int NPELL2>
 static void FlowInterExtra_NPel(
   uint8_t * pdst8, int dst_pitch, const uint8_t *prefB8, const uint8_t *prefF8, int ref_pitch,
