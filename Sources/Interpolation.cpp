@@ -280,6 +280,9 @@ void RB2FilteredVertical(
     for (; y < y_end; ++y)
     {
       RB2FilteredVerticalLine_SSE((uint8_t *)pDst, (uint8_t *)pSrc, nSrcPitch, nWidthMMX);
+#ifndef _M_X64
+      _mm_empty();
+#endif
 
       for (int x = nWidthMMX; x < nWidth; x++)
       {
@@ -289,9 +292,6 @@ void RB2FilteredVertical(
       pDst += nDstPitch / sizeof(pixel_t);
       pSrc += nSrcPitch / sizeof(pixel_t) * 2;
     }
-#ifndef _M_X64
-    _mm_empty();
-#endif
   }
   else
   {
@@ -330,6 +330,9 @@ void RB2FilteredHorizontalInplace(
     if (sizeof(pixel_t) == 1 && isse2)
     {
       RB2FilteredHorizontalInplaceLine_SSE((uint8_t *)pSrc, nWidthMMX); // very first is skipped
+#ifndef _M_X64
+      _mm_empty();
+#endif
       for (int x = nWidthMMX; x < nWidth; x++)
       {
         pSrc[x] = (pSrc[x * 2 - 1] + pSrc[x * 2] * 2 + pSrc[x * 2 + 1] + 2) / 4;
@@ -391,6 +394,9 @@ void RB2BilinearFilteredVertical(
     for (; y < y_loop_e; ++y)
     {
       RB2BilinearFilteredVerticalLine_SSE((uint8_t *)pDst, (uint8_t *)pSrc, nSrcPitch, nWidthMMX);
+#ifndef _M_X64
+      _mm_empty();
+#endif
 
       for (int x = nWidthMMX; x < nWidth; x++)
       {
@@ -403,9 +409,6 @@ void RB2BilinearFilteredVertical(
       pDst += nDstPitch / sizeof(pixel_t);
       pSrc += nSrcPitch / sizeof(pixel_t) * 2;
     }
-#ifndef _M_X64
-    _mm_empty();
-#endif
   }
   else
   {
@@ -459,6 +462,9 @@ void RB2BilinearFilteredHorizontalInplace(
     if (sizeof(pixel_t) == 1 && isse2)
     {
       RB2BilinearFilteredHorizontalInplaceLine_SSE((uint8_t *)pSrc, nWidthMMX); // very first is skipped
+#ifndef _M_X64
+      _mm_empty();
+#endif
       for (int x = nWidthMMX; x < nWidth - 1; x++)
       {
         pSrc[x] = (pSrc[x * 2 - 1] + pSrc[x * 2] * 3 + pSrc[x * 2 + 1] * 3 + pSrc[x * 2 + 2] + 4) / 8;
@@ -525,6 +531,9 @@ void RB2QuadraticVertical(
     for (; y < y_loop_e; ++y)
     {
       RB2QuadraticVerticalLine_SSE((uint8_t *)pDst, (uint8_t *)pSrc, nSrcPitch, nWidthMMX);
+#ifndef _M_X64
+      _mm_empty();
+#endif
 
       for (int x = nWidthMMX; x < nWidth; x++)
       {
@@ -539,9 +548,6 @@ void RB2QuadraticVertical(
       pDst += nDstPitch / sizeof(pixel_t);
       pSrc += nSrcPitch / sizeof(pixel_t) * 2;
     }
-#ifndef _M_X64
-    _mm_empty();
-#endif
   }
   else
   {
@@ -597,6 +603,9 @@ void RB2QuadraticHorizontalInplace(
     if (sizeof(pixel_t) == 1 && isse2)
     {
       RB2QuadraticHorizontalInplaceLine_SSE((uint8_t *)pSrc, nWidthMMX);
+#ifndef _M_X64
+      _mm_empty();
+#endif
       for (int x = nWidthMMX; x < nWidth - 1; x++)
       {
         pSrc[x] = (pSrc[x * 2 - 2] + pSrc[x * 2 - 1] * 9 + pSrc[x * 2] * 22
@@ -665,6 +674,9 @@ void RB2CubicVertical(
     for (; y < y_loop_e; ++y)
     {
       RB2CubicVerticalLine_SSE((uint8_t *)pDst, (uint8_t *)pSrc, nSrcPitch, nWidthMMX);
+#ifndef _M_X64
+      _mm_empty();
+#endif
 
       for (int x = nWidthMMX; x < nWidth; x++)
       {
@@ -679,9 +691,6 @@ void RB2CubicVertical(
       pDst += nDstPitch / sizeof(pixel_t);
       pSrc += nSrcPitch / sizeof(pixel_t) * 2;
     }
-#ifndef _M_X64
-    _mm_empty();
-#endif
   }
   else
   {
@@ -736,6 +745,9 @@ void RB2CubicHorizontalInplace(
     if (sizeof(pixel_t) == 1 && isse2)
     {
       RB2CubicHorizontalInplaceLine_SSE((uint8_t *)pSrc, nWidthMMX);
+#ifndef _M_X64
+      _mm_empty();
+#endif
       for (int x = nWidthMMX; x < nWidth - 1; x++)
       {
         pSrc[x] = (pSrc[x * 2 - 2] + pSrc[x * 2 - 1] * 5 + pSrc[x * 2] * 10
