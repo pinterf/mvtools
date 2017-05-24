@@ -247,7 +247,7 @@ private:
     uint8_t* pSrc_temp[3];      //for easy WRITE access to temp block
 #endif	// ALIGN_SOURCEBLOCK
 
-    WorkingArea(int nBlkSizeX, int nBlkSizeY, int dctpitch, int nLogxRatioUV, int xRatioUV, int nLogyRatioUV, int yRatioUV, int pixelsize, int bits_per_pixel);
+    WorkingArea(int nBlkSizeX, int nBlkSizeY, int dctpitch, int nLogxRatioUV, int nLogyRatioUV, int pixelsize, int bits_per_pixel);
     virtual			~WorkingArea();
 
     MV_FORCEINLINE bool IsVectorOK(int vx, int vy) const;
