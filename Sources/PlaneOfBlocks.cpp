@@ -74,7 +74,7 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
   , chroma((_nFlags & MOTION_USE_CHROMA_MOTION) != 0)
   , dctpitch(AlignNumber(_nBlkSizeX, 16) * _pixelsize)
   , _dct_pool_ptr(dct_pool_ptr)
-  , verybigSAD(_nBlkSizeX * _nBlkSizeY * (pixelsize == 4 ? 1 : (1 << bits_per_pixel))) // * 256, pixelsize==2 -> 65536. Float:1
+  , verybigSAD(3 * _nBlkSizeX * _nBlkSizeY * (pixelsize == 4 ? 1 : (1 << bits_per_pixel))) // * 256, pixelsize==2 -> 65536. Float:1
   , freqArray()
   , dctmode(0)
   , _workarea_fact(nBlkSizeX, nBlkSizeY, dctpitch, nLogxRatioUV, xRatioUV, nLogyRatioUV, yRatioUV, pixelsize, bits_per_pixel)
@@ -95,8 +95,8 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
   bool sse41 = (bool)(nFlags & CPU_SSE4);
   bool avx = (bool)(nFlags & CPU_AVX);
   bool avx2 = (bool)(nFlags & CPU_AVX2);
-  bool ssd = (bool)(nFlags & MOTION_USE_SSD);
-  bool satd = (bool)(nFlags & MOTION_USE_SATD);
+//  bool ssd = (bool)(nFlags & MOTION_USE_SSD);
+//  bool satd = (bool)(nFlags & MOTION_USE_SATD);
 
   // New experiment from 2.7.18.22: keep LumaSAD:chromaSAD ratio to 4:2
 
@@ -294,8 +294,7 @@ void PlaneOfBlocks::SearchMVs(
   nSrcPitch[1] = pixelsize * nBlkSizeX / xRatioUV; // PF xRatio instead of /2: after 2.7.0.22c;
   nSrcPitch[2] = pixelsize * nBlkSizeX / xRatioUV;
   for (int i = 0; i < 3; i++) {
-    if (nSrcPitch[i] > 8)
-      nSrcPitch[i] = AlignNumber(nSrcPitch[i], 16); // e.g. align reference block pitch to mod16 e.g. at blksize 24
+    nSrcPitch[i] = AlignNumber(nSrcPitch[i], ALIGN_SOURCEBLOCK); // e.g. align reference block pitch to mod16 e.g. at blksize 24
   }
 #else	// ALIGN_SOURCEBLOCK
   nSrcPitch[0] = pSrcFrame->GetPlane(YPLANE)->GetPitch();
@@ -412,8 +411,7 @@ void PlaneOfBlocks::RecalculateMVs(
   nSrcPitch[1] = pixelsize * nBlkSizeX / xRatioUV; // PF after 2.7.0.22c
   nSrcPitch[2] = pixelsize * nBlkSizeX / xRatioUV; // PF after 2.7.0.22c
   for (int i = 0; i < 3; i++) {
-    if (nSrcPitch[i] > 8)
-      nSrcPitch[i] = AlignNumber(nSrcPitch[i], 16); // e.g. align reference block pitch to mod16 e.g. at blksize 24
+      nSrcPitch[i] = AlignNumber(nSrcPitch[i], ALIGN_SOURCEBLOCK); // e.g. align reference block pitch to mod16 e.g. at blksize 24
   }
 #else	// ALIGN_SOURCEBLOCK
   nSrcPitch[0] = pSrcFrame->GetPlane(YPLANE)->GetPitch();
@@ -2261,6 +2259,11 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
   int nBlkSizeX_Ovr[3] = { (nBlkSizeX - nOverlapX), (nBlkSizeX - nOverlapX) >> nLogxRatioUV, (nBlkSizeX - nOverlapX) >> nLogxRatioUV };
   int nBlkSizeY_Ovr[3] = { (nBlkSizeY - nOverlapY), (nBlkSizeY - nOverlapY) >> nLogyRatioUV, (nBlkSizeY - nOverlapY) >> nLogyRatioUV };
 
+  // 2.7.19.22
+  // 32 bit safe: max_sad * (nBlkSizeX*nBlkSizeY) < 0x7FFFFFFF -> (3_planes*nBlkSizeX*nBlkSizeY*max_pixel_value) * (nBlkSizeX*nBlkSizeY) < 0x7FFFFFFF
+  // 8 bit: nBlkSizeX*nBlkSizeY < sqrt(0x7FFFFFFF / 3 / 255), that is < sqrt(1675), above approx 40x40 is not OK even in 8 bits
+  bool safeBlockAreaFor32bitCalc = nBlkSizeX*nBlkSizeY < 1675;
+
   // Functions using float must not be used here
   for (workarea.blky = workarea.blky_beg; workarea.blky < workarea.blky_end; workarea.blky++)
   {
@@ -2401,7 +2404,10 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
       vectorOld.y = (vectorOld.y << nLogPel) >> nLogPelold;
 
       workarea.predictor = ClipMV(workarea, vectorOld); // predictor
-      workarea.predictor.sad = (sad_t)((safe_sad_t)vectorOld.sad * (nBlkSizeX*nBlkSizeY) / (nBlkSizeXold*nBlkSizeYold)); // normalized to new block size
+      if(safeBlockAreaFor32bitCalc && sizeof(pixel_t)==1)
+        workarea.predictor.sad = (sad_t)((safe_sad_t)vectorOld.sad * (nBlkSizeX*nBlkSizeY) / (nBlkSizeXold*nBlkSizeYold)); // normalized to new block size
+      else // 16 bit or unsafe blocksize
+        workarea.predictor.sad = (sad_t)((bigsad_t)vectorOld.sad * (nBlkSizeX*nBlkSizeY) / (nBlkSizeXold*nBlkSizeYold)); // normalized to new block size
 
 //			workarea.bestMV = workarea.predictor; // by pointer?
       workarea.bestMV.x = workarea.predictor.x;
@@ -2510,11 +2516,6 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
       vectors[workarea.blkIdx].y = workarea.bestMV.y;
       vectors[workarea.blkIdx].sad = workarea.bestMV.sad;
 
-      if (workarea.bestMV.sad > 1000000)
-      {
-        int x = 0;
-      }
-
       if (outfilebuf != NULL) // write vector to outfile
       {
         outfilebuf[workarea.blkx * 4 + 0] = workarea.bestMV.x;
@@ -2585,7 +2586,7 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
 
 
 
-PlaneOfBlocks::WorkingArea::WorkingArea(int nBlkSizeX, int nBlkSizeY, int dctpitch, int nLogxRatioUV, int xRatioUV, int nLogyRatioUV, int yRatioUV, int _pixelsize, int _bits_per_pixel)
+PlaneOfBlocks::WorkingArea::WorkingArea(int nBlkSizeX, int nBlkSizeY, int dctpitch, int nLogxRatioUV, int nLogyRatioUV, int _pixelsize, int _bits_per_pixel)
   : dctSrc(nBlkSizeY*dctpitch) // dctpitch is pixelsize aware
   , dctRef(nBlkSizeY*dctpitch)
   , DCT(0)
@@ -2593,26 +2594,17 @@ PlaneOfBlocks::WorkingArea::WorkingArea(int nBlkSizeX, int nBlkSizeY, int dctpit
   , bits_per_pixel(_bits_per_pixel)
 {
 #if (ALIGN_SOURCEBLOCK > 1)
-  int xPitch = nBlkSizeX*pixelsize;  // for memory allocation pixelsize needed
-  if (xPitch > 8) // 12
-    xPitch = AlignNumber(xPitch, 16); // e.g. allocate 32 for BlkSize 24
-  else if (xPitch > 4)
-    xPitch = AlignNumber(xPitch, 8);
-  int xPitchUV = (nBlkSizeX*pixelsize) >> nLogxRatioUV;
-  if (xPitchUV > 8) 
-    xPitchUV = AlignNumber(xPitchUV, 16); // e.g. allocate 32 for BlkSize 24
-  else if(xPitchUV > 4)
-    xPitchUV = AlignNumber(xPitchUV, 8);
+  int xPitch = AlignNumber(nBlkSizeX*pixelsize, ALIGN_SOURCEBLOCK);  // for memory allocation pixelsize needed
+  int xPitchUV = AlignNumber((nBlkSizeX*pixelsize) >> nLogxRatioUV, ALIGN_SOURCEBLOCK);
   int blocksize = xPitch*nBlkSizeY;
   int UVblocksize = xPitchUV * (nBlkSizeY >> nLogyRatioUV); // >> nx >> ny
-  int sizeAlignedBlock = blocksize + (ALIGN_SOURCEBLOCK - (blocksize%ALIGN_SOURCEBLOCK)) +
-    2 * UVblocksize + (ALIGN_SOURCEBLOCK - (UVblocksize%ALIGN_SOURCEBLOCK));
+  int sizeAlignedBlock = blocksize + 2 * UVblocksize;
   // int sizeAlignedBlock=blocksize+(ALIGN_SOURCEBLOCK-(blocksize%ALIGN_SOURCEBLOCK))+
   //                         2*((blocksize/2)>>nLogyRatioUV)+(ALIGN_SOURCEBLOCK-(((blocksize/2)/yRatioUV)%ALIGN_SOURCEBLOCK)); // why >>Logy then /y?
   pSrc_temp_base.resize(sizeAlignedBlock);
   pSrc_temp[0] = &pSrc_temp_base[0];
-  pSrc_temp[1] = (uint8_t *)((((uintptr_t)pSrc_temp[0]) + blocksize + ALIGN_SOURCEBLOCK - 1)&(~(ALIGN_SOURCEBLOCK - 1)));
-  pSrc_temp[2] = (uint8_t *)(((((uintptr_t)pSrc_temp[1]) + UVblocksize + ALIGN_SOURCEBLOCK - 1)&(~(ALIGN_SOURCEBLOCK - 1))));
+  pSrc_temp[1] = (uint8_t *)(pSrc_temp[0] + blocksize);
+  pSrc_temp[2] = (uint8_t *)(pSrc_temp[1] + UVblocksize);
 #endif	// ALIGN_SOURCEBLOCK
 }
 
@@ -2679,9 +2671,7 @@ PlaneOfBlocks::WorkingArea *PlaneOfBlocks::WorkingAreaFactory::do_create()
     _blk_size_y,
     _dctpitch,
     _x_ratio_uv_log,
-    _x_ratio_uv,
     _y_ratio_uv_log,
-    _y_ratio_uv,
     _pixelsize,
     _bits_per_pixel
   ));
