@@ -54,7 +54,11 @@ MVAnalyse::MVAnalyse(
   , _dct_factory_ptr()
   , _dct_pool()
   , _delta_max(0)
+  
 {
+  static int id = 0; _instance_id = id++;
+  _RPT1(0, "MvAnalyse.Create id=%d\n", _instance_id);
+
   if (multi_flag && df < 1)
   {
     env->ThrowError(
@@ -62,6 +66,8 @@ MVAnalyse::MVAnalyse(
       "(delta < 1) in multi mode."
     );
   }
+
+  _RPT1(0, "MAnalyze created, isb=%d\n", isb ? 1 : 0);
 
   pixelsize = vi.ComponentSize();
   bits_per_pixel = vi.BitsPerComponent();
@@ -311,7 +317,7 @@ MVAnalyse::MVAnalyse(
 
   if (_dctmode != 0)
   {
-    _dct_factory_ptr = std::auto_ptr <DCTFactory>(
+    _dct_factory_ptr = std::unique_ptr <DCTFactory>(
       new DCTFactory(_dctmode, _isse, _blksizex, _blksizey, pixelsize, bits_per_pixel, *env)
       );
     _dct_pool.set_factory(*_dct_factory_ptr);
@@ -404,7 +410,7 @@ MVAnalyse::MVAnalyse(
     );
   }
 
-  _vectorfields_aptr = std::auto_ptr <GroupOfPlanes>(new GroupOfPlanes(
+  _vectorfields_aptr = std::unique_ptr <GroupOfPlanes>(new GroupOfPlanes(
     analysisData.nBlkSizeX,
     analysisData.nBlkSizeY,
     analysisData.nLvCount,
@@ -455,6 +461,7 @@ MVAnalyse::MVAnalyse(
   }
 
   // Defines the format of the output vector clip
+  // count of 32 bit integers: 2_size_validity+(foreachblock(1_validity+blockCount*3))
   const int		width_bytes = headerSize + _vectorfields_aptr->GetArraySize() * 4;
   ClipFnc::format_vector_clip(
     vi, true, nBlkX, "rgb32", width_bytes, "MAnalyse", *env
@@ -556,12 +563,15 @@ MVAnalyse::~MVAnalyse()
   pSrcGOF = 0;
   delete pRefGOF;
   pRefGOF = 0;
+  _RPT1(0, "MAnalyze destroyed %d\n",_instance_id);
+
 }
 
 
 
 PVideoFrame __stdcall MVAnalyse::GetFrame(int n, IScriptEnvironment* env)
 {
+  _RPT2(0, "MAnalyze GetFrame, frame=%d id=%d\n", n, _instance_id);
   const int		ndiv = (_multi_flag) ? _delta_max * 2 : 1;
   const int		nsrc = n / ndiv;
   const int		srd_index = n % ndiv;
@@ -592,6 +602,11 @@ PVideoFrame __stdcall MVAnalyse::GetFrame(int n, IScriptEnvironment* env)
   PVideoFrame			dst = env->NewVideoFrame(vi);
   unsigned char *	pDst = dst->GetWritePtr();
 
+  // 0 headersize (max(4+sizeof(analysisData),256)
+  // 4: analysysData
+  // 256: data 
+  // 256: 2_size_validity+(foreachblock(1_validity+blockCount*3))
+
   // write analysis parameters as a header to frame
   memcpy(pDst, &headerSize, sizeof(int));
   if (divideExtra)
@@ -614,12 +629,14 @@ PVideoFrame __stdcall MVAnalyse::GetFrame(int n, IScriptEnvironment* env)
 
   if (nsrc < minframe || nsrc >= maxframe)
   {
+    // fill all vectors with invalid data
     _vectorfields_aptr->WriteDefaultToArray(reinterpret_cast <int *> (pDst));
   }
 
   else
   {
 //		DebugPrintf ("MVAnalyse: Get src frame %d",nsrc);
+    _RPT3(0, "MAnalyze GetFrame, frame_nsrc=%d nref=%d id=%d\n", nsrc, nref, _instance_id);
     ::PVideoFrame	src = child->GetFrame(nsrc, env); // v2.0
     load_src_frame(*pSrcGOF, src, srd._analysis_data);
 
@@ -689,7 +706,7 @@ PVideoFrame __stdcall MVAnalyse::GetFrame(int n, IScriptEnvironment* env)
     );
     srd._vec_prev_frame = nsrc;
   }
-
+  _RPT3(0, "MAnalyze GetFrame END, frame_nsrc=%d nref=%d id=%d\n", nsrc, nref, _instance_id);
   return dst;
 }
 

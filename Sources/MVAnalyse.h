@@ -43,6 +43,8 @@ class MVAnalyse
 {
 protected:
 
+  int _instance_id; // debug unique id
+
 	// One instance per Src/Ref combination
 	// Multi mode order (bwd/fwd delta): B1, F1, B2, F2, B3, F3...
 	// In single mode, only the first element is used.
@@ -62,7 +64,7 @@ protected:
 	SrcRefArray		_srd_arr;
 
 	/*! \brief Frames of blocks for which motion vectors will be computed */
-	std::auto_ptr <GroupOfPlanes>
+	std::unique_ptr <GroupOfPlanes>
 						_vectorfields_aptr;	// Temporary data, structure initialised once.
 
    /*! \brief isse optimisations enabled */
@@ -105,7 +107,7 @@ protected:
 //	YUY2Planes * SrcPlanes;
 //	YUY2Planes * RefPlanes;
 
-	std::auto_ptr <DCTFactory>
+	std::unique_ptr <DCTFactory>
 	               _dct_factory_ptr;	// Not instantiated if not needed
 	conc::ObjPool <DCTClass>
 	               _dct_pool;
