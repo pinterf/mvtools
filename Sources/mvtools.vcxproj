@@ -298,7 +298,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>SCALECHROMASAD;AVS16;WIN32;_DEBUG;_WINDOWS;_USRDLL;MVTOOLS_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;MVTOOLS_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader />
@@ -1090,6 +1090,32 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">true</ExcludedFromBuild>
+    </YASM>
+  </ItemGroup>
+  <ItemGroup>
+    <YASM Include="asm\sad16-a.asm">
+      <FileType>Document</FileType>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">private_prefix=x264_16;ARCH_X86_64=0;BIT_DEPTH=16;HIGH_BIT_DEPTH=1</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">private_prefix=x264_16;ARCH_X86_64=0;BIT_DEPTH=16;HIGH_BIT_DEPTH=1</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">private_prefix=x264_16;ARCH_X86_64=0;BIT_DEPTH=16;HIGH_BIT_DEPTH=1</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">private_prefix=x264_16;ARCH_X86_64=0;BIT_DEPTH=16;HIGH_BIT_DEPTH=1</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">private_prefix=x264_16;ARCH_X86_64=1;BIT_DEPTH=16;HIGH_BIT_DEPTH=1</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">private_prefix=x264_16;ARCH_X86_64=1;BIT_DEPTH=16;HIGH_BIT_DEPTH=1</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Release|x64'">private_prefix=x264_16;ARCH_X86_64=1;BIT_DEPTH=16;HIGH_BIT_DEPTH=1</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">private_prefix=x264_16;ARCH_X86_64=1;BIT_DEPTH=16;HIGH_BIT_DEPTH=1</Defines>
+    </YASM>
+  </ItemGroup>
+  <ItemGroup>
+    <YASM Include="asm\const16-a.asm">
+      <FileType>Document</FileType>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">private_prefix=x264_16;BIT_DEPTH=16;ARCH_X86_64=0</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">private_prefix=x264_16;BIT_DEPTH=16;ARCH_X86_64=0</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">private_prefix=x264_16;BIT_DEPTH=16;ARCH_X86_64=0</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">private_prefix=x264_16;BIT_DEPTH=16;ARCH_X86_64=0</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">private_prefix=x264_16;BIT_DEPTH=16;ARCH_X86_64=1;</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">private_prefix=x264_16;BIT_DEPTH=16;ARCH_X86_64=1;</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Release|x64'">private_prefix=x264_16;BIT_DEPTH=16;ARCH_X86_64=1;</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">private_prefix=x264_16;BIT_DEPTH=16;ARCH_X86_64=1;</Defines>
     </YASM>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

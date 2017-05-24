@@ -95,6 +95,12 @@
     <YASM Include="asm\SAD_iSSE_x64.asm">
       <Filter>Assembler</Filter>
     </YASM>
+    <YASM Include="asm\sad16-a.asm">
+      <Filter>Assembler</Filter>
+    </YASM>
+    <YASM Include="asm\const16-a.asm">
+      <Filter>Assembler</Filter>
+    </YASM>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MDegrainN.cpp">
