@@ -557,7 +557,6 @@ PVideoFrame __stdcall MVCompensate::GetFrame(int n, IScriptEnvironment* env_ptr)
 		nOffset[0] = nHPadding*pixelsize + nVPadding * nSrcPitches[0];
 		nOffset[1] = nOffset[2] = (nHPadding >> nLogxRatioUV)*pixelsize + (nVPadding >> nLogyRatioUV) * nSrcPitches[1];
 
-        // todo row_size for pixelsize
 		env_ptr->BitBlt(pDst[0], nDstPitches[0], pSrc[0] + nOffset[0], nSrcPitches[0], nWidth*pixelsize, nHeight);
 		env_ptr->BitBlt(pDst[1], nDstPitches[1], pSrc[1] + nOffset[1], nSrcPitches[1], (nWidth >> nLogxRatioUV)*pixelsize, nHeight >> nLogyRatioUV);
 		env_ptr->BitBlt(pDst[2], nDstPitches[2], pSrc[2] + nOffset[2], nSrcPitches[2], (nWidth >> nLogxRatioUV)*pixelsize, nHeight >> nLogyRatioUV);
@@ -570,7 +569,6 @@ PVideoFrame __stdcall MVCompensate::GetFrame(int n, IScriptEnvironment* env_ptr)
 
 		if ( recursion>0 )
 		{ 
-            // todo row_size for pixelsize
             env_ptr->BitBlt(pLoop[0], nLoopPitches[0], pSrc[0], nSrcPitches[0], nWidth*pixelsize, nHeight);
 			env_ptr->BitBlt(pLoop[1], nLoopPitches[1], pSrc[1], nSrcPitches[1], (nWidth >> nLogxRatioUV)*pixelsize, nHeight >> nLogyRatioUV);
 			env_ptr->BitBlt(pLoop[2], nLoopPitches[2], pSrc[2], nSrcPitches[2], (nWidth >> nLogxRatioUV)*pixelsize, nHeight >> nLogyRatioUV);
