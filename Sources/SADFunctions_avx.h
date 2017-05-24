@@ -44,8 +44,28 @@ unsigned int Sad_AVX_C(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef,
 template<int nBlkWidth, int nBlkHeight, typename pixel_t>
 unsigned int Sad16_sse2_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
 
+template<int nBlkHeight>
+unsigned int Sad16_sse2_4xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+template<int nBlkHeight>
+unsigned int Sad16_sse2_6xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+template<int nBlkHeight>
+unsigned int Sad16_sse2_8xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+template<int nBlkHeight>
+unsigned int Sad16_sse2_12xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+template<int nBlkHeight>
+unsigned int Sad16_sse2_16xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+template<int nBlkHeight>
+unsigned int Sad16_sse2_24xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+template<int nBlkHeight>
+unsigned int Sad16_sse2_32xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+template<int nBlkHeight>
+unsigned int Sad16_sse2_48xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+template<int nBlkHeight>
+unsigned int Sad16_sse2_64xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+
 // match with SADFunctions.cpp
-#define MAKE_SAD_FN(x, y) template unsigned int Sad16_sse2_avx<x, y, uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+#define MAKE_SAD_FN(x, y) template unsigned int Sad16_sse2_##x##xN_avx<y>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+//#define MAKE_SAD_FN(x, y) template unsigned int Sad16_sse2_avx<x, y, uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
   MAKE_SAD_FN(64, 64)
   MAKE_SAD_FN(64, 48)
   MAKE_SAD_FN(64, 32)
@@ -77,20 +97,21 @@ unsigned int Sad16_sse2_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *p
   MAKE_SAD_FN(12, 16)
   MAKE_SAD_FN(12, 12)
   MAKE_SAD_FN(12, 6)
+  MAKE_SAD_FN(12, 3)
   MAKE_SAD_FN(8, 32)
   MAKE_SAD_FN(8, 16)
   MAKE_SAD_FN(8, 8)
   MAKE_SAD_FN(8, 4)
   MAKE_SAD_FN(8, 2)
   MAKE_SAD_FN(8, 1)
+  MAKE_SAD_FN(6, 24)
   MAKE_SAD_FN(6, 12)
   MAKE_SAD_FN(6, 6)
-  //MAKE_SAD_FN(6, 3)
-  MAKE_SAD_FN(8, 1)
+  MAKE_SAD_FN(6, 3)
   MAKE_SAD_FN(4, 8)
   MAKE_SAD_FN(4, 4)
   MAKE_SAD_FN(4, 2)
-  //MAKE_SAD_FN(4, 1)  // 8 bytes with height=1 not supported for SSE2
+  MAKE_SAD_FN(4, 1)
   //MAKE_SAD_FN(2, 4)  // 2 pixels 4 bytes not supported with SSE2
   //MAKE_SAD_FN(2, 2)
   //MAKE_SAD_FN(2, 1)

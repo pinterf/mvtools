@@ -768,12 +768,14 @@ func_sad[make_tuple(x, y, 2, NO_SIMD)] = Sad_C<x, y, uint16_t>;
       MAKE_SAD_FN(12, 16)
       MAKE_SAD_FN(12, 12)
       MAKE_SAD_FN(12, 6)
+      MAKE_SAD_FN(12, 3)
       MAKE_SAD_FN(8, 32)
       MAKE_SAD_FN(8, 16)
       MAKE_SAD_FN(8, 8)
       MAKE_SAD_FN(8, 4)
       MAKE_SAD_FN(8, 2)
       MAKE_SAD_FN(8, 1)
+      MAKE_SAD_FN(6, 24)
       MAKE_SAD_FN(6, 12)
       MAKE_SAD_FN(6, 6)
       MAKE_SAD_FN(6, 3)
@@ -792,8 +794,9 @@ func_sad[make_tuple(x, y, 2, NO_SIMD)] = Sad_C<x, y, uint16_t>;
 // only for >=8 bytes widths
 // AVX compiled SSE2 code and regular SSE2
 // avx is instantiated in SADFunctions_avx.h
-#define MAKE_SAD_FN(x, y) func_sad[make_tuple(x, y, 2, USE_AVX)] = Sad16_sse2_avx<x, y, uint16_t>; \
-func_sad[make_tuple(x, y, 2, USE_SSE2)] = Sad16_sse2<x, y, uint16_t>;
+#define MAKE_SAD_FN(x, y) \
+func_sad[make_tuple(x, y, 2, USE_AVX)] = Sad16_sse2_##x##xN_avx<y>; \
+func_sad[make_tuple(x, y, 2, USE_SSE2)] = Sad16_sse2_##x##xN_sse2<y>;
       MAKE_SAD_FN(64, 64)
       MAKE_SAD_FN(64, 48)
       MAKE_SAD_FN(64, 32)
@@ -825,20 +828,21 @@ func_sad[make_tuple(x, y, 2, USE_SSE2)] = Sad16_sse2<x, y, uint16_t>;
       MAKE_SAD_FN(12, 16)
       MAKE_SAD_FN(12, 12)
       MAKE_SAD_FN(12, 6)
+      MAKE_SAD_FN(12, 3)
       MAKE_SAD_FN(8, 32)
       MAKE_SAD_FN(8, 16)
       MAKE_SAD_FN(8, 8)
       MAKE_SAD_FN(8, 4)
       MAKE_SAD_FN(8, 2)
       MAKE_SAD_FN(8, 1)
+      MAKE_SAD_FN(6, 24)
       MAKE_SAD_FN(6, 12)
       MAKE_SAD_FN(6, 6)
-      //MAKE_SAD_FN(6, 3)
-      MAKE_SAD_FN(8, 1)
+      MAKE_SAD_FN(6, 3)
       MAKE_SAD_FN(4, 8)
       MAKE_SAD_FN(4, 4)
       MAKE_SAD_FN(4, 2)
-      //MAKE_SAD_FN(4, 1)  // 8 bytes with height=1 not supported for SSE2
+      MAKE_SAD_FN(4, 1)
       //MAKE_SAD_FN(2, 4)  // 2 pixels 4 bytes not supported with SSE2
       //MAKE_SAD_FN(2, 2)
       //MAKE_SAD_FN(2, 1)
@@ -919,12 +923,13 @@ func_sad[make_tuple(x, y, 2, USE_SSE2)] = Sad16_sse2<x, y, uint16_t>;
     func_sad[make_tuple(16, 2, 1, USE_SSE2)] = Sad16x2_iSSE;
 
     // Block Size: 12*x
-    // Supported: 12x48, 12x24, 12x16, 12x6 (12x3 is C only)
+    // Supported: 12x48, 12x24, 12x16, 12x6, 12x3
     func_sad[make_tuple(12, 48, 1, USE_SSE2)] = x264_pixel_sad_12x48_sse2;
     func_sad[make_tuple(12, 24, 1, USE_SSE2)] = x264_pixel_sad_12x24_sse2;
     func_sad[make_tuple(12, 16, 1, USE_SSE2)] = x264_pixel_sad_12x16_sse2;
     func_sad[make_tuple(12, 12, 1, USE_SSE2)] = x264_pixel_sad_12x12_sse2;
     func_sad[make_tuple(12,  6, 1, USE_SSE2)] = x264_pixel_sad_12x6_sse2;
+    func_sad[make_tuple(12,  3, 1, USE_SSE2)] = x264_pixel_sad_12x3_sse2;
 
     // Block Size: 8*x
     // Supported: 8x32, 8x16, 8x8, 8x4, (8x2, 8x1)
@@ -936,6 +941,7 @@ func_sad[make_tuple(x, y, 2, USE_SSE2)] = Sad16_sse2<x, y, uint16_t>;
     func_sad[make_tuple(8 , 2 , 1, USE_SSE2)] = Sad8x2_iSSE;
     func_sad[make_tuple(8 , 1 , 1, USE_SSE2)] = Sad8x1_iSSE;
 
+    func_sad[make_tuple(6, 24, 1, USE_SSE2)] = x264_pixel_sad_6x24_sse2;
     func_sad[make_tuple(6, 12, 1, USE_SSE2)] = x264_pixel_sad_6x12_sse2;
     func_sad[make_tuple(6, 6, 1, USE_SSE2)] = x264_pixel_sad_6x6_sse2;
 
