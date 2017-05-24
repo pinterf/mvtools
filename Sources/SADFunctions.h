@@ -881,6 +881,22 @@ SAD_ISSE(2,2);
 
 
 #undef SAD_ISSE
+
+#if 0
+// test-test-test-failed
+#ifdef SAD16_FROM_X265
+#define SAD16_x264(blsizex, blsizey, type) extern "C" unsigned int __cdecl x264_16_pixel_sad_##blsizex##x##blsizey##_##type##(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+// experimental from sad16-a.asm
+// arrgh problems: 
+// - pitches are not byte level, but have 16bit granularity instead in the original asm.
+// - subw, absw is used, which is 16 bit incompatible, internal sum limits, all stuff can be used safely for 10-12 bits max
+// will not differentiate by bit-depth, too much work a.t.m.
+SAD16_x264(16, 16, sse2);
+SAD16_x264(8, 8, sse2);
+#undef SAD16_x264
+#endif
+#endif
+
 /* included from x264/x265 */
 // now the prefix is still x264 (see project properties preprocessor directives for sad-a.asm)
 // to be changed
