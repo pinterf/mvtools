@@ -51,7 +51,9 @@
 
 void MakeVectorOcclusionMaskTime(MVClip &mvClip, int nBlkX, int nBlkY, double dMaskNormFactor, double fGamma, int nPel, uint8_t * occMask, int occMaskPitch, int time256, int blkSizeX, int blkSizeY)
 {	// analyse vectors field to detect occlusion
-	MemZoneSet(occMask, 0, nBlkX, nBlkY, 0, 0, nBlkX);
+  // fix: 2.7.19.22: use occMaskPitch instead of nBlkX (result of 30 hours debug)
+  // or else we have random garbage on bottom right part
+	MemZoneSet(occMask, 0, nBlkX, nBlkY, 0, 0, occMaskPitch); 
 	int time4096X = time256*16/blkSizeX;
 	int time4096Y = time256*16/blkSizeY;
 #ifndef _M_X64 
