@@ -60,7 +60,7 @@ class MVClip
 	bool				_frame_update_flag;
 
 public :
-	MVClip(const ::PClip &vectors, sad_t nSCD1, int nSCD2, ::IScriptEnvironment *env, int group_len, int group_ofs);
+	MVClip(const PClip &vectors, sad_t nSCD1, int nSCD2, IScriptEnvironment *env, int group_len, int group_ofs);
    ~MVClip();
 
 	int				get_child_frame_index (int n) const;
@@ -72,9 +72,9 @@ public :
 //   void SetVectorsNeed(bool srcluma, bool refluma, bool var,
 //                       bool compy, bool compu, bool compv) const;
 
-	void				Update (::PVideoFrame &fn, ::IScriptEnvironment *env); // v1.4.13
-	void				use_ref_frame (int &ref_index, bool &usable_flag, ::PClip &super, int n, ::IScriptEnvironment *env_ptr);
-	void				use_ref_frame (::PVideoFrame &ref, bool &usable_flag, ::PClip &super, int n, ::IScriptEnvironment *env_ptr);
+	void				Update (PVideoFrame &fn, IScriptEnvironment *env); // v1.4.13
+  void				use_ref_frame (int &ref_index, bool &usable_flag, PClip &super, int n, IScriptEnvironment *env_ptr);
+	void				use_ref_frame (PVideoFrame &ref, bool &usable_flag, PClip &super, int n, IScriptEnvironment *env_ptr);
 
    // encapsulation
    MV_FORCEINLINE int GetBlkCount() const { return nBlkCount; }

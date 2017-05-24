@@ -183,16 +183,15 @@ bool __stdcall MVClip::GetParity (int n)
 
 
 
-void MVClip::Update (::PVideoFrame &fn, ::IScriptEnvironment *env)
+void MVClip::Update (PVideoFrame &fn, IScriptEnvironment *env)
 {
 	assert (&fn != 0);
 	assert (env != 0);
 
+  // vector clip is rgb32
 	const int		bytes_per_pix = vi.BitsPerPixel () >> 3; 
-  // P.F.: for calculation of buffer size 
-  // P.F. todo above 16.10.02 check BitsPerPixel? nowhere used
-  // 
-  
+  // for calculation of buffer size 
+
   const int		line_size = vi.width * bytes_per_pix;	// in bytes
 	int				data_size = vi.height * line_size / sizeof(int);	// in 32-bit words
 
@@ -213,10 +212,11 @@ void MVClip::Update (::PVideoFrame &fn, ::IScriptEnvironment *env)
 		env->ThrowError("MVTools: incompatible version of vector stream");
 	}
 
+  // 17.05.22 filling from motion vector clip
 	const int		hs_i32 = header_size / sizeof(int);
 	pMv       += hs_i32;									// go to data - v1.8.1
 	data_size -= hs_i32;
-	const bool		ok_flag = FakeGroupOfPlanes::Update(pMv, data_size);	// fixed a bug with lost frames
+  const bool		ok_flag = FakeGroupOfPlanes::Update(pMv, data_size);	// fixed a bug with lost frames
 	if (! ok_flag)
 	{
 		env->ThrowError("MVTools: vector clip is too small (corrupted?)");
@@ -227,7 +227,7 @@ void MVClip::Update (::PVideoFrame &fn, ::IScriptEnvironment *env)
 
 // usable_flag is an input and output variable, it must be initialised
 // before calling the function.
-void	MVClip::use_ref_frame (int &ref_index, bool &usable_flag, ::PClip &super, int n, ::IScriptEnvironment *env_ptr)
+void	MVClip::use_ref_frame (int &ref_index, bool &usable_flag, PClip &super, int n, IScriptEnvironment *env_ptr)
 {
 	if (usable_flag)
 	{
@@ -250,7 +250,7 @@ void	MVClip::use_ref_frame (int &ref_index, bool &usable_flag, ::PClip &super, i
 	}
 }
 
-void	MVClip::use_ref_frame (::PVideoFrame &ref, bool &usable_flag, ::PClip &super, int n, ::IScriptEnvironment *env_ptr)
+void	MVClip::use_ref_frame (PVideoFrame &ref, bool &usable_flag, PClip &super, int n, IScriptEnvironment *env_ptr)
 {
 	int				ref_index;
 	use_ref_frame (ref_index, usable_flag, super, n, env_ptr);
