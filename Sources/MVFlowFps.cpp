@@ -25,15 +25,21 @@
 #include "profile.h"
 #include "SuperParams64Bits.h"
 #include "Time256ProviderCst.h"
+#include "info.h"
 
 
 MVFlowFps::MVFlowFps(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, unsigned int _num, unsigned int _den, int _maskmode, double _ml,
-  bool _blend, sad_t nSCD1, int nSCD2, bool _isse, bool _planar, IScriptEnvironment* env) :
+  bool _blend, sad_t nSCD1, int nSCD2, bool _isse, bool _planar, int _optDebug, IScriptEnvironment* env) :
   GenericVideoFilter(_child),
   MVFilter(_mvfw, "MFlowFps", env, 1, 0),
   mvClipB(_mvbw, nSCD1, nSCD2, env, 1, 0),
-  mvClipF(_mvfw, nSCD1, nSCD2, env, 1, 0)
+  mvClipF(_mvfw, nSCD1, nSCD2, env, 1, 0),
+  optDebug(_optDebug)
 {
+  static int id = 0; _instance_id = id++;
+  reentrancy_check = false;
+  _RPT1(0, "MVFlowFps.Create id=%d\n", _instance_id);
+
   if (!vi.IsYUV() && !vi.IsYUVA())
     env->ThrowError("MFlowFps: Clip must be YUV or YUY2");
   if (vi.BitsPerComponent() > 16)
@@ -255,9 +261,16 @@ MVFlowFps::~MVFlowFps()
 //-------------------------------------------------------------------------
 PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
 {
+  if (reentrancy_check) {
+    env->ThrowError("MFlowFps: cannot work in reentrant multithread mode!");
+  }
+  reentrancy_check = true;
+
 #ifndef _M_X64
   _mm_empty();
 #endif
+  _RPT2(0, "MFlowFPS GetFrame, frame=%d id=%d\n", n, _instance_id);
+
   int nleft = (int)(__int64(n)* fa / fb);
   // intermediate product may be very large! Now I know how to multiply int64
   int time256 = int((double(n)*double(fa) / double(fb) - nleft) * 256 + 0.5);
@@ -284,16 +297,32 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
 // v2.0
   if (time256 == 0) {
     dst = child->GetFrame(nleft, env); // simply left
+    if (optDebug != 0) {
+      env->MakeWritable(&dst);
+      char buf[2048];
+      sprintf_s(buf, "FRAME %d time256=%d off=%d, nleft=%d, nright=%d, fa=%d, fb=%d, using left!", n, time256, off, nleft, nright, (int)fa, (int)fb);
+      DrawString(dst, vi, 0, 0, buf);
+    }
+    reentrancy_check = false;
     return dst;
   }
   else if (time256 == 256) {
     dst = child->GetFrame(nright, env); // simply right
+    if (optDebug != 0) {
+      env->MakeWritable(&dst);
+      char buf[2048];
+      sprintf_s(buf, "FRAME %d time256=%d off=%d, nleft=%d, nright=%d, fa=%d, fb=%d, using left!", n, time256, off, nleft, nright, (int)fa, (int)fb);
+      DrawString(dst, vi, 0, 0, buf);
+    }
+    reentrancy_check = false;
     return dst;
   }
 
+  _RPT3(0, "Before mvClipF GetFrame frame %d, nright=%d id=%d\n", n, nright, _instance_id);
   PVideoFrame mvF = mvClipF.GetFrame(nright, env);
   mvClipF.Update(mvF, env);// forward from current to next
   mvF = 0;
+  _RPT3(0, "Before mvClipB GetFrame frame %d, nleft=%d id=%d\n", n, nleft, _instance_id);
   PVideoFrame mvB = mvClipB.GetFrame(nleft, env);
   mvClipB.Update(mvB, env);// backward from next to current
   mvB = 0;
@@ -314,7 +343,10 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
 
   dst = env->NewVideoFrame(vi);
 
-  if (mvClipB.IsUsable() && mvClipF.IsUsable())
+  bool isUsableB = mvClipB.IsUsable();
+  bool isUsableF = mvClipF.IsUsable();
+
+  if (isUsableB && isUsableF)
   {
 
     PROFILE_START(MOTION_PROFILE_YUY2CONVERT);
@@ -351,7 +383,7 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
       {
         pDst[0] = dst->GetWritePtr();
         pDst[1] = pDst[0] + dst->GetRowSize() / 2;
-        pDst[2] = pDst[1] + dst->GetRowSize() / 4;;
+        pDst[2] = pDst[1] + dst->GetRowSize() / 4;
         nDstPitches[0] = dst->GetPitch();
         nDstPitches[1] = nDstPitches[0];
         nDstPitches[2] = nDstPitches[0];
@@ -426,6 +458,7 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
 
     }
    // analyse vectors field to detect occlusion
+   // Backward part
     PROFILE_START(MOTION_PROFILE_MASK);
 //		double occNormB = (256-time256)/(256*ml);
 //		MakeVectorOcclusionMask(mvClipB, nBlkX, nBlkY, occNormB, 1.0, nPel, MaskSmallB, nBlkXP);
@@ -453,7 +486,7 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
 
     nrightLast = nright;
 
-
+    // Forward part
     if (nleft != nleftLast)
     {
      // make  vector vx and vy small masks
@@ -492,6 +525,7 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
 
     }
    // analyse vectors field to detect occlusion
+   // Forward part
     PROFILE_START(MOTION_PROFILE_MASK);
     MakeVectorOcclusionMaskTime(mvClipF, nBlkX, nBlkY, ml, 1.0, nPel, MaskSmallF, nBlkXP, time256, nBlkSizeX - nOverlapX, nBlkSizeY - nOverlapY);
     if (nBlkXP > nBlkX) // fill right
@@ -517,7 +551,9 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
 
     nleftLast = nleft;
 
-   // Get motion info from more frames for occlusion areas
+    // Backward and forward is ready
+
+  // Get motion info from more frames for occlusion areas
     PVideoFrame mvFF = mvClipF.GetFrame(nleft, env);
     mvClipF.Update(mvFF, env);// forward from prev to cur
     mvFF = 0;
@@ -526,7 +562,11 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
     mvClipB.Update(mvBB, env);// backward from next next to next
     mvBB = 0;
 
-    if (mvClipB.IsUsable() && mvClipF.IsUsable() && maskmode == 2) // slow method with extra frames
+    bool isUsableB = mvClipB.IsUsable();
+    bool isUsableF = mvClipF.IsUsable();
+    _RPT5(0, "part#2 IsUsableB=%d IsUsableF=%d frame=%d,nleft=%d,nright=%d\n", isUsableB ? 1 : 0, isUsableF ? 1 : 0, n, nleft, nright);
+
+    if (maskmode == 2 && isUsableB && isUsableF) // slow method with extra frames
     {
      // get vector mask from extra frames
       PROFILE_START(MOTION_PROFILE_MASK);
@@ -601,6 +641,11 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
         }
       }
       PROFILE_STOP(MOTION_PROFILE_FLOWINTER);
+      if (optDebug > 0) {
+        char buf[2048];
+        sprintf_s(buf, "FlowInter mode=2");
+        DrawString(dst, vi, 0, 6, buf);
+      }
     }
     else if (maskmode == 1) // old method without extra frames
     {
@@ -628,6 +673,11 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
             VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
             nWidthUV, nHeightUV, time256, nPel);
         }
+      }
+      if (optDebug > 0) {
+        char buf[2048];
+        sprintf_s(buf, "FlowInter mode=1");
+        DrawString(dst, vi, 0, 6, buf);
       }
       PROFILE_STOP(MOTION_PROFILE_FLOWINTER);
     }
@@ -658,9 +708,69 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
             VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
             nWidthUV, nHeightUV, time256, nPel); // 2.5.11.22 Line 598
         }
+        if (optDebug > 0) {
+          int sum_VXFullYB = 0;
+          int sum_VXFullYF = 0;
+          int sum_VYFullYB = 0;
+          int sum_VYFullYF = 0;
+          int sum_MaskFullYB = 0;
+          int sum_MaskFullYF = 0;
+          for (int y = 0; y < nHeight; y++)
+            for (int x = 0; x < nWidth; x++) {
+              sum_VXFullYB += VXFullYB[y * VPitchY + x];
+              sum_VXFullYF += VXFullYF[y * VPitchY + x];
+              sum_VYFullYB += VYFullYB[y * VPitchY + x];
+              sum_VYFullYF += VYFullYF[y * VPitchY + x];
+              sum_MaskFullYB += MaskFullYB[y * VPitchY + x];
+              sum_MaskFullYF += MaskFullYF[y * VPitchY + x];
+            }
+
+          int sum_MaskSmallB = 0;
+          int sum_MaskSmallF = 0;
+          for (int y = 0; y < nBlkY; y++)
+            for (int x = 0; x < nBlkX; x++) {
+              sum_MaskSmallB += MaskSmallB[nBlkXP*y + x];
+              sum_MaskSmallF += MaskSmallF[nBlkXP*y + x];
+            }
+
+          int sum_MaskSmallBP = 0;
+          int sum_MaskSmallFP = 0;
+          for (int y = 0; y < nBlkYP; y++)
+            for (int x = 0; x < nBlkXP; x++) {
+              sum_MaskSmallBP += MaskSmallB[nBlkXP*y + x];
+              sum_MaskSmallFP += MaskSmallB[nBlkXP*y + x];
+            }
+          char buf[2048];
+          sprintf_s(buf, "FlowInterSimple mode=0 or mode=2 not usable");
+          DrawString(dst, vi, 0, 6, buf);
+          sprintf_s(buf, "sum_VXFullYB=%d sum_VXFullYF=%d", sum_VXFullYB, sum_VXFullYF);
+          DrawString(dst, vi, 0, 7, buf);
+          sprintf_s(buf, "sum_VYFullYB=%d sum_VYFullYF=%d", sum_VYFullYB, sum_VYFullYF);
+          DrawString(dst, vi, 0, 8, buf);
+          sprintf_s(buf, "sum_MaskFullYB=%d sum_MaskFullYF=%d", sum_MaskFullYB, sum_MaskFullYF);
+          DrawString(dst, vi, 0, 9, buf);
+          sprintf_s(buf, "sum_MaskSmallBP=%d sum_MaskSmallFP=%d", sum_MaskSmallBP, sum_MaskSmallFP);
+          DrawString(dst, vi, 0, 10, buf);
+          sprintf_s(buf, "sum_MaskSmallB=%d sum_MaskSmallF=%d", sum_MaskSmallB, sum_MaskSmallF);
+          DrawString(dst, vi, 0, 11, buf);
+        }
+        PROFILE_STOP(MOTION_PROFILE_FLOWINTER);
       }
-      PROFILE_STOP(MOTION_PROFILE_FLOWINTER);
+      if (optDebug > 0) {
+        char buf[2048];
+        sprintf_s(buf, "FRAME %d time256=%d IsUsableB=%d IsUsableF=%d", n, time256, isUsableB ? 1 : 0, isUsableF ? 1 : 0);
+        DrawString(dst, vi, 0, 0, buf);
+        sprintf_s(buf, "B: BlkCount=%d OVx=%d OVy=%d thSCD1=%d thSCD2=%d", mvClipB.GetBlkCount(), mvClipB.GetOverlapX(), mvClipB.GetOverlapY(), mvClipB.GetThSCD1(), mvClipB.GetThSCD2());
+        DrawString(dst, vi, 0, 1, buf);
+        sprintf_s(buf, "F: BlkCount=%d OVx=%d OVy=%d thSCD1=%d thSCD2=%d", mvClipF.GetBlkCount(), mvClipF.GetOverlapX(), mvClipF.GetOverlapY(), mvClipF.GetThSCD1(), mvClipF.GetThSCD2());
+        DrawString(dst, vi, 0, 2, buf);
+        sprintf_s(buf, "nBlkX=%d nBlkY=%d nBlkXP=%d nBlkY=%d", nBlkX, nBlkY, nBlkXP, nBlkYP);
+        DrawString(dst, vi, 0, 3, buf);
+        sprintf_s(buf, "nright=%d nleft=%d", nright, nleft);
+        DrawString(dst, vi, 0, 4, buf);
+      }
     }
+
     PROFILE_START(MOTION_PROFILE_YUY2CONVERT);
     if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
     {
@@ -668,6 +778,8 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
         pDst[0], nDstPitches[0], pDst[1], pDst[2], nDstPitches[1], isse);
     }
     PROFILE_STOP(MOTION_PROFILE_YUY2CONVERT);
+    _RPT2(0, "MVFlowFPS GetFrame END, frame=%d id=%d\n", n, _instance_id);
+    reentrancy_check = false;
     return dst;
   }
   else
@@ -732,11 +844,32 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
         }
       }
       PROFILE_STOP(MOTION_PROFILE_FLOWINTER);
+      if (optDebug > 0) {
+        char buf[2048];
+        sprintf_s(buf, "BLEND %d time256=%d off=%d, nleft=%d, nright=%d, fa=%d, fb=%d, using left!", n, time256, off, nleft, nright, (int)fa, (int)fb);
+        DrawString(dst, vi, 0, 0, buf);
+        _RPT2(0, "MVFlowFPS GetFrame END BLEND, frame=%d id=%d\n", n, _instance_id);
+      }
 
+      reentrancy_check = false;
       return dst;
     }
     else
     {
+      if (optDebug > 0) {
+        env->MakeWritable(&src);
+        char buf[2048];
+        sprintf_s(buf, "POORNOBLEND %d time256=%d IsUsableB=%d IsUsableF=%d", n, time256, isUsableB ? 1 : 0, isUsableF ? 1 : 0);
+        DrawString(src, vi, 0, 0, buf);
+        sprintf_s(buf, "B: BlkCount=%d OVx=%d OVy=%d thSCD1=%d thSCD2=%d", mvClipB.GetBlkCount(), mvClipB.GetOverlapX(), mvClipB.GetOverlapY(), mvClipB.GetThSCD1(), mvClipB.GetThSCD2());
+        DrawString(src, vi, 0, 1, buf);
+        sprintf_s(buf, "F: BlkCount=%d OVx=%d OVy=%d thSCD1=%d thSCD2=%d", mvClipF.GetBlkCount(), mvClipF.GetOverlapX(), mvClipF.GetOverlapY(), mvClipF.GetThSCD1(), mvClipF.GetThSCD2());
+        DrawString(src, vi, 0, 2, buf);
+        sprintf_s(buf, "nright=%d nleft=%d", nright, nleft);
+        DrawString(src, vi, 0, 4, buf);
+        _RPT2(0, "MVFlowFPS GetFrame END POORNOBLEND, frame=%d id=%d\n", n, _instance_id);
+      }
+      reentrancy_check = false;
       return src; // like ChangeFPS
     }
 

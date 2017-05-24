@@ -5,6 +5,7 @@
 #include "MVFilter.h"
 #include "SimpleResize.h"
 #include "yuy2planes.h"
+#include <atomic>
 
 class MVFlowFps
 :	public GenericVideoFilter
@@ -25,6 +26,10 @@ private:
    bool blend;
 
    PClip finest; // v2.0
+
+   int _instance_id; // debug unique id
+   std::atomic<bool> reentrancy_check;
+   int optDebug;
 
    int nleftLast;
    int nrightLast;
@@ -98,7 +103,7 @@ private:
 
 public:
 	MVFlowFps(PClip _child, PClip _super, PClip _mvbw, PClip _mvfw, unsigned int _num, unsigned int _den, int _maskmode, double _ml,
-                bool _blend, sad_t nSCD1, int nSCD2, bool isse, bool _planar, IScriptEnvironment* env);
+                bool _blend, sad_t nSCD1, int nSCD2, bool isse, bool _planar, int _optDebug, IScriptEnvironment* env);
 	~MVFlowFps();
 	PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
 
