@@ -28,6 +28,7 @@
 #include	"profile.h"
 #include "SuperParams64Bits.h"
 #include <stdint.h>
+#include "CopyCode.h"
 
 #include <cmath>
 
@@ -263,6 +264,17 @@ PVideoFrame __stdcall MVSuper::GetFrame(int n, IScriptEnvironment* env)
 		nDstPitchY  = dst->GetPitch(PLANAR_Y);
 		nDstPitchUV  = dst->GetPitch(PLANAR_U);
 	}
+  // P.F. 170519 debug: clear super area
+  // todo: check how it affects for non-modulo blocksize vs. supersize_padded
+  // maybe some garbage is read outside the area by MAnalyse later?
+  /*
+  MemZoneSet(pDstY, 0, dst->GetRowSize(PLANAR_Y_ALIGNED), vi.height, 0, 0, nDstPitchY);
+  if (!vi.IsY()) {
+    MemZoneSet(pDstU, 0, dst->GetRowSize(PLANAR_U_ALIGNED), vi.height >> vi.GetPlaneHeightSubsampling(PLANAR_U), 0, 0, nDstPitchUV);
+    MemZoneSet(pDstV, 0, dst->GetRowSize(PLANAR_V_ALIGNED), vi.height >> vi.GetPlaneHeightSubsampling(PLANAR_V), 0, 0, nDstPitchUV);
+  }
+  */
+
 	PROFILE_STOP(MOTION_PROFILE_YUY2CONVERT);
 
 	PROFILE_START(MOTION_PROFILE_INTERPOLATION);
