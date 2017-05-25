@@ -943,7 +943,7 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
 
   else
   {
-    int WidthHeightForC = (nBlkSizeX << 16) + nBlkSizeY; // helps avoiding excessive C templates
+    int WidthHeightForC_UV = ((nBlkSizeX >> nLogxRatioUV) << 16) + (nBlkSizeY >> nLogyRatioUV); // helps avoiding excessive C templates
 
     if (nOverlapX == 0 && nOverlapY == 0)
     {
@@ -972,7 +972,7 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
 #endif
           // chroma
           DEGRAINCHROMA(pDstCur + (xx << pixelsize_super_shift), pDstCur + (xx << pixelsize_super_shift) + lsb_offset_uv,
-            WidthHeightForC, nDstPitch, pSrcCur + (xx << pixelsize_super_shift), nSrcPitch,
+            WidthHeightForC_UV, nDstPitch, pSrcCur + (xx << pixelsize_super_shift), nSrcPitch,
             pBV, npBV, pFV, npFV,
             WSrc, WRefB, WRefF
           );
@@ -1046,7 +1046,7 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
           norm_weights<level>(WSrc, WRefB, WRefF);
 #endif
           // chroma
-          DEGRAINCHROMA(tmpBlock, tmpBlockLsb, WidthHeightForC, tmpPitch << pixelsize_super_shift, pSrcCur + (xx << pixelsize_super_shift), nSrcPitch,
+          DEGRAINCHROMA(tmpBlock, tmpBlockLsb, WidthHeightForC_UV, tmpPitch << pixelsize_super_shift, pSrcCur + (xx << pixelsize_super_shift), nSrcPitch,
             pBV, npBV, pFV, npFV,
             WSrc, WRefB, WRefF
           );
