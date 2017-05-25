@@ -2060,9 +2060,9 @@ void	PlaneOfBlocks::search_mv_slice(Slicer::TaskData &td)
 
 #if (ALIGN_SOURCEBLOCK > 1)
       //store the pitch
-      workarea.pSrc[0] = pSrcFrame->GetPlane(YPLANE)->GetAbsolutePelPointer(workarea.x[0], workarea.y[0]);
+      const BYTE *pY = pSrcFrame->GetPlane(YPLANE)->GetAbsolutePelPointer(workarea.x[0], workarea.y[0]);
       //create aligned copy
-      BLITLUMA(workarea.pSrc_temp[0], nSrcPitch[0], workarea.pSrc[0], nSrcPitch_plane[0]);
+      BLITLUMA(workarea.pSrc_temp[0], nSrcPitch[0], pY, nSrcPitch_plane[0]);
       //set the to the aligned copy
       workarea.pSrc[0] = workarea.pSrc_temp[0];
       if (chroma)
@@ -2256,13 +2256,16 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
   int nPelold = plane.GetPel();
   int nLogPelold = ilog2(nPelold);
 
+  int nBlkSizeXoldMulYold = nBlkSizeXold * nBlkSizeYold;
+  int nBlkSizeXMulY = nBlkSizeX *nBlkSizeY;
+
   int nBlkSizeX_Ovr[3] = { (nBlkSizeX - nOverlapX), (nBlkSizeX - nOverlapX) >> nLogxRatioUV, (nBlkSizeX - nOverlapX) >> nLogxRatioUV };
   int nBlkSizeY_Ovr[3] = { (nBlkSizeY - nOverlapY), (nBlkSizeY - nOverlapY) >> nLogyRatioUV, (nBlkSizeY - nOverlapY) >> nLogyRatioUV };
 
   // 2.7.19.22
   // 32 bit safe: max_sad * (nBlkSizeX*nBlkSizeY) < 0x7FFFFFFF -> (3_planes*nBlkSizeX*nBlkSizeY*max_pixel_value) * (nBlkSizeX*nBlkSizeY) < 0x7FFFFFFF
   // 8 bit: nBlkSizeX*nBlkSizeY < sqrt(0x7FFFFFFF / 3 / 255), that is < sqrt(1675), above approx 40x40 is not OK even in 8 bits
-  bool safeBlockAreaFor32bitCalc = nBlkSizeX*nBlkSizeY < 1675;
+  bool safeBlockAreaFor32bitCalc = nBlkSizeXMulY < 1675;
 
   // Functions using float must not be used here
   for (workarea.blky = workarea.blky_beg; workarea.blky < workarea.blky_end; workarea.blky++)
@@ -2405,9 +2408,9 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
 
       workarea.predictor = ClipMV(workarea, vectorOld); // predictor
       if(safeBlockAreaFor32bitCalc && sizeof(pixel_t)==1)
-        workarea.predictor.sad = (sad_t)((safe_sad_t)vectorOld.sad * (nBlkSizeX*nBlkSizeY) / (nBlkSizeXold*nBlkSizeYold)); // normalized to new block size
+        workarea.predictor.sad = (sad_t)((safe_sad_t)vectorOld.sad * nBlkSizeXMulY / nBlkSizeXoldMulYold); // normalized to new block size
       else // 16 bit or unsafe blocksize
-        workarea.predictor.sad = (sad_t)((bigsad_t)vectorOld.sad * (nBlkSizeX*nBlkSizeY) / (nBlkSizeXold*nBlkSizeYold)); // normalized to new block size
+        workarea.predictor.sad = (sad_t)((bigsad_t)vectorOld.sad * nBlkSizeXMulY / nBlkSizeXoldMulYold); // normalized to new block size
 
 //			workarea.bestMV = workarea.predictor; // by pointer?
       workarea.bestMV.x = workarea.predictor.x;
