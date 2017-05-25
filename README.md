@@ -14,6 +14,33 @@ Modification base:
 http://avisynth.nl/index.php/AviSynth%2B#AviSynth.2B_x64_plugins
 
 Change log
+- 2.7.19.22 (20170525)
+  New: [MMask] Support any planar input video formats e.g. greyscale, Planar RGB. 
+               Input clip can even be of different bit depth or format from vector's original format
+               For kind==5 where U and V is filled, the greyscale option is not allowed
+  Mod: [MMask] Faster: request source frame only for kind=5.
+  Fix: [MxxxxFPS,MMask]: MakeVectorOcclusionMaskTime garbage in bottom blocks (30 hrs of debugging)
+  Fix: [MMask] bottom padding garbage for padded frame dimension
+  Fix: [MMask] proper 10+ bits scene change values (for default: 1023, 4095, 16383, 65535. Was: 65535)
+       Parameter is still in 8-bit range  
+  Fix: [MRecalculate] prevent overflow during thSAD scaling in 16 bits or large block sizes (32, 48...)
+  Fix: [DepanEstimate] Sometimes giving wrong motion instead of scene change detection
+  Fix: [MAnalyze] Possible overflow in MAnalyze 8 bit, block size 48x48 and above.
+       Overflow-safe predictor recalc for big block sizes
+  New: [General] Add block size 12x3 for SAD, allow 6x24
+       List of available block sizes
+         64x64, 64x48, 64x32, 64x16
+         48x64, 48x48, 48x24, 48x12
+         32x64, 32x32, 32x24, 32x16, 32x8
+         24x48, 24x24, 24x32, 24x12, 24x6
+         16x64, 16x32, 16x16, 16x12, 16x8, 16x4, 16x2
+         12x48, 12x24, 12x16, 12x12, 12x6, 12x3
+         8x32, 8x16, 8x8, 8x4, 8x2, 8x1
+         6x24, 6x12, 6x6, 6x3
+         4x8, 4x4, 4x2
+         3x6, 3x3
+         2x4, 2x2
+  Mod: [Internal] Reorganized 10-16 bit SAD simd intrinsics, faster 8-12% for BlkSize 12-32
 
 - 2.7.18.22 (20170512)
   Fix: 10-16 bit: DCT buffer possible overflow
