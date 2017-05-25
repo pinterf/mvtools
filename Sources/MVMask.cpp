@@ -58,38 +58,75 @@ MVMask::MVMask(
     env->ThrowError("MMask: time must be 0.0 to 100.0");
   time256 = int(256 * _time100 / 100);
 
+  chroma = !vi.IsY(); // 2.7.19.22-
+  // target format is independent from the vector clip's original format
+  maskclip_bits_per_pixel = vi.BitsPerComponent();
+  maskclip_pixelsize = vi.ComponentSize();
+
+  if (kind == 5 && !chroma)
+    env->ThrowError("MMask: input clip cannot be greyscale for kind=5");
+
+  if (!vi.IsPlanar() && !vi.IsYUY2())
+    env->ThrowError("MMask: input clip must be planar or YUY2");
+
   nSceneChangeValue = (Ysc < 0) ? 0 : ((Ysc > 255) ? 255 : Ysc); // for 8 bit masks
-  nSceneChangeValue16 = nSceneChangeValue == 255 ? ((1 << bits_per_pixel) - 1) : nSceneChangeValue << (bits_per_pixel - 8); // keep 255 to max_pixel_value, otherwise shift
+  nSceneChangeValue16 = nSceneChangeValue == 255 ? ((1 << maskclip_bits_per_pixel) - 1) : nSceneChangeValue << (maskclip_bits_per_pixel - 8); // keep 255 to max_pixel_value, otherwise shift
   planar = _planar;
 
   smallMask = new unsigned char[nBlkX * nBlkY];
   smallMaskV = new unsigned char[nBlkX * nBlkY];
 
+  maskclip_nWidth = vi.width;
+  maskclip_nHeight = vi.height;
+
   nWidthB = nBlkX*(nBlkSizeX - nOverlapX) + nOverlapX;
   nHeightB = nBlkY*(nBlkSizeY - nOverlapY) + nOverlapY;
 
-  nHeightUV = nHeight / yRatioUV;
-  nWidthUV = nWidth / xRatioUV;// for YV12
-  nHeightBUV = nHeightB / yRatioUV;
-  nWidthBUV = nWidthB / xRatioUV;
+  if(maskclip_nWidth < nWidthB)
+    env->ThrowError("MMask: input clip width is too small");
+  if (maskclip_nHeight < nHeightB)
+    env->ThrowError("MMask: input clip height is too small");
 
+  if (chroma) {
+    if (vi.IsPlanar() && vi.IsRGB()) {
+      nHeightUV = maskclip_nHeight;
+      nWidthUV = maskclip_nWidth;
+      nHeightBUV = nHeightB;
+      nWidthBUV = nWidthB;
+    } else {
+      int maskclip_xLogRatioUV = vi.GetPlaneWidthSubsampling(PLANAR_U);
+      int maskclip_yLogRatioUV = vi.GetPlaneHeightSubsampling(PLANAR_U);
+      if ((nWidthB % (1 << maskclip_xLogRatioUV) != 0) || (nHeightB % (1 << maskclip_yLogRatioUV) != 0))
+        env->ThrowError("MMask: input clip width or height is not appropriate for subsampling");
+
+      nHeightUV = nHeight >> maskclip_yLogRatioUV;
+      nWidthUV = maskclip_nWidth >> maskclip_xLogRatioUV;
+      nHeightBUV = nHeightB >> maskclip_yLogRatioUV;
+      nWidthBUV = nWidthB >> maskclip_xLogRatioUV;
+    }
+  }
+
+  /*
   if (xRatioUV != (1 << vi.GetPlaneWidthSubsampling(PLANAR_U)) || yRatioUV != (1 << vi.GetPlaneWidthSubsampling(PLANAR_U)) || 
       bits_per_pixel != vi.BitsPerComponent())
   {
     env->ThrowError("MMask: input clip format has different bit depth or subsampling");
   }
+  */
+
 
   int CPUF_Resize = env->GetCPUFlags();
   if (!isse) CPUF_Resize = (CPUF_Resize & !CPUF_INTEGER_SSE) & !CPUF_SSE2;
  // old upsizer replaced by Fizick
   upsizer = new SimpleResize(nWidthB, nHeightB, nBlkX, nBlkY, CPUF_Resize);
-  upsizerUV = new SimpleResize(nWidthBUV, nHeightBUV, nBlkX, nBlkY, CPUF_Resize);
+  if(chroma)
+    upsizerUV = new SimpleResize(nWidthBUV, nHeightBUV, nBlkX, nBlkY, CPUF_Resize);
 
 
   if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
   {
-    DstPlanes = new YUY2Planes(nWidth, nHeight);
-    SrcPlanes = new YUY2Planes(nWidth, nHeight);
+    DstPlanes = new YUY2Planes(maskclip_nWidth, maskclip_nHeight);
+    SrcPlanes = new YUY2Planes(maskclip_nWidth, maskclip_nHeight);
   }
 
 }
@@ -128,7 +165,10 @@ unsigned char MVMask::SAD(unsigned int s)
 */
 PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
 {
-  PVideoFrame	src = child->GetFrame(n, env);
+  const bool needSrcFrame = (kind == 5); // at other types input only provides format
+  PVideoFrame	src;
+  if (needSrcFrame)
+    src = child->GetFrame(n, env);
   PVideoFrame	dst = env->NewVideoFrame(vi);
   int dummyplane = PLANAR_Y; // use luma plane resizer code for all planes if we resize from luma small mask
   const BYTE *pSrc[3];
@@ -140,20 +180,24 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
   int nDstPitchYUY2;
   int nSrcPitchYUY2;
 
+  const bool isRGB = vi.IsRGB(); // only planar rgb
+
   if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2)
   {
     if (!planar)
     {
-      pSrcYUY2 = src->GetReadPtr();
-      nSrcPitchYUY2 = src->GetPitch();
-      pSrc[0] = SrcPlanes->GetPtr();
-      pSrc[1] = SrcPlanes->GetPtrU();
-      pSrc[2] = SrcPlanes->GetPtrV();
-      nSrcPitches[0] = SrcPlanes->GetPitch();
-      nSrcPitches[1] = SrcPlanes->GetPitchUV();
-      nSrcPitches[2] = SrcPlanes->GetPitchUV();
-      YUY2ToPlanes(pSrcYUY2, nSrcPitchYUY2, nWidth, nHeight,
-        pSrc[0], nSrcPitches[0], pSrc[1], pSrc[2], nSrcPitches[1], isse);
+      if (needSrcFrame) {
+        pSrcYUY2 = src->GetReadPtr();
+        nSrcPitchYUY2 = src->GetPitch();
+        pSrc[0] = SrcPlanes->GetPtr();
+        pSrc[1] = SrcPlanes->GetPtrU();
+        pSrc[2] = SrcPlanes->GetPtrV();
+        nSrcPitches[0] = SrcPlanes->GetPitch();
+        nSrcPitches[1] = SrcPlanes->GetPitchUV();
+        nSrcPitches[2] = SrcPlanes->GetPitchUV();
+        YUY2ToPlanes(pSrcYUY2, nSrcPitchYUY2, maskclip_nWidth, maskclip_nHeight,
+          pSrc[0], nSrcPitches[0], pSrc[1], pSrc[2], nSrcPitches[1], isse);
+      }
       pDst[0] = DstPlanes->GetPtr();
       pDst[1] = DstPlanes->GetPtrU();
       pDst[2] = DstPlanes->GetPtrV();
@@ -166,15 +210,17 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
     else
     {
       // planar data packed to interleaved format (same as interleved2planar by kassandro) - v2.0.0.5
-      pSrc[0] = src->GetReadPtr();
-      pSrc[1] = pSrc[0] + nWidth;
-      pSrc[2] = pSrc[1] + nWidth / 2;
-      nSrcPitches[0] = src->GetPitch();
-      nSrcPitches[1] = nSrcPitches[0];
-      nSrcPitches[2] = nSrcPitches[0];
+      if (needSrcFrame) {
+        pSrc[0] = src->GetReadPtr();
+        pSrc[1] = pSrc[0] + maskclip_nWidth;
+        pSrc[2] = pSrc[1] + maskclip_nWidth / 2;
+        nSrcPitches[0] = src->GetPitch();
+        nSrcPitches[1] = nSrcPitches[0];
+        nSrcPitches[2] = nSrcPitches[0];
+      }
       pDst[0] = dst->GetWritePtr();
-      pDst[1] = pDst[0] + nWidth;
-      pDst[2] = pDst[1] + nWidth / 2; // YUY2
+      pDst[1] = pDst[0] + maskclip_nWidth;
+      pDst[2] = pDst[1] + maskclip_nWidth / 2; // YUY2
       nDstPitches[0] = dst->GetPitch();
       nDstPitches[1] = nDstPitches[0];
       nDstPitches[2] = nDstPitches[0];
@@ -182,18 +228,44 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
   }
   else
   {
-    pSrc[0] = YRPLAN(src);
-    pSrc[1] = URPLAN(src);
-    pSrc[2] = VRPLAN(src);
-    nSrcPitches[0] = YPITCH(src);
-    nSrcPitches[1] = UPITCH(src);
-    nSrcPitches[2] = VPITCH(src);
-    pDst[0] = YWPLAN(dst);
-    pDst[1] = UWPLAN(dst);
-    pDst[2] = VWPLAN(dst);
-    nDstPitches[0] = YPITCH(dst);
-    nDstPitches[1] = UPITCH(dst);
-    nDstPitches[2] = VPITCH(dst);
+    if (needSrcFrame) {
+      if (isRGB) {
+        pSrc[0] = GRPLAN(src);
+        pSrc[1] = BRPLAN(src);
+        pSrc[2] = RRPLAN(src);
+        nSrcPitches[0] = GPITCH(src);
+        nSrcPitches[1] = BPITCH(src);
+        nSrcPitches[2] = RPITCH(src);
+      }
+      else {
+        pSrc[0] = YRPLAN(src);
+        nSrcPitches[0] = YPITCH(src);
+        if (chroma) {
+          pSrc[1] = URPLAN(src);
+          pSrc[2] = VRPLAN(src);
+          nSrcPitches[1] = UPITCH(src);
+          nSrcPitches[2] = VPITCH(src);
+        }
+      }
+    }
+    if (isRGB) {
+      pDst[0] = GWPLAN(dst);
+      pDst[1] = BWPLAN(dst);
+      pDst[2] = RWPLAN(dst);
+      nDstPitches[0] = GPITCH(dst);
+      nDstPitches[1] = BPITCH(dst);
+      nDstPitches[2] = RPITCH(dst);
+    }
+    else {
+      pDst[0] = YWPLAN(dst);
+      nDstPitches[0] = YPITCH(dst);
+      if (chroma) {
+        pDst[1] = UWPLAN(dst);
+        pDst[2] = VWPLAN(dst);
+        nDstPitches[1] = UPITCH(dst);
+        nDstPitches[2] = VPITCH(dst);
+      }
+    }
   }
 
   PVideoFrame mvn = mvClip.GetFrame(n, env);
@@ -215,6 +287,7 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
       //for ( int j = 0; j < nBlkCount; j++)
       //	smallMask[j] = SAD(mvClip.GetBlock(0, j).GetSAD()); 
       double factor_corrected = 4.0*fMaskNormFactor / fSADMaskNormFactor; // normalize for other format's (4:2:2/4:4:4) bigger luma part and/or chroma=false. Base: YV12's luma+chroma SAD
+      // and yes, here is the original maskclip base bits_per_pixel
       double factor_old = 4.0*fMaskNormFactor / (nBlkSizeX*nBlkSizeY) / (1 << (bits_per_pixel - 8)); // kept for reference. factor_corrected is the same for old YV12 (compatibility)
 
       MakeSADMaskTime(mvClip, nBlkX, nBlkY, factor_corrected, fGamma, nPel, smallMask, nBlkX, time256, nBlkSizeX - nOverlapX, nBlkSizeY - nOverlapY);
@@ -249,68 +322,69 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
     }
 
     if (kind == 5) { // do not change luma for kind=5
-      env->BitBlt(pDst[0], nDstPitches[0], pSrc[0], nSrcPitches[0], nWidth*pixelsize, nHeight);
+      env->BitBlt(pDst[0], nDstPitches[0], pSrc[0], nSrcPitches[0], maskclip_nWidth*maskclip_pixelsize, maskclip_nHeight);
     }
     else {
       // different upsizers to scale smallMask from 8 bit-only to bits_per_pixel
-      if (pixelsize == 1) {
+      if (maskclip_pixelsize == 1) {
         upsizer->SimpleResizeDo_uint8(pDst[0], nWidthB, nHeightB, nDstPitches[0], smallMask, nBlkX, nBlkX, dummyplane);
-        if (nWidth > nWidthB) // fill right
-          for (int h = 0; h < nHeight; h++)
-            for (int w = nWidthB; w < nWidth; w++)
+        if (maskclip_nWidth > nWidthB) // fill right
+          for (int h = 0; h < maskclip_nHeight; h++)
+            for (int w = nWidthB; w < maskclip_nWidth; w++)
               *(pDst[0] + h*nDstPitches[0] + w) = *(pDst[0] + h*nDstPitches[0] + (nWidthB - 1));
       }
-      else if (pixelsize == 2) {
+      else if (maskclip_pixelsize == 2) {
         // 8 bit source, 10-16 bit target
-        upsizer->SimpleResizeDo_uint8_to_uint16(pDst[0], nWidthB, nHeightB, nDstPitches[0], smallMask, nBlkX, nBlkX, dummyplane, bits_per_pixel);
-        if (nWidth > nWidthB) // fill right
-          for (int h = 0; h < nHeight; h++)
-            for (int w = nWidthB; w < nWidth; w++)
-              *(uint16_t *)(pDst[0] + h*nDstPitches[0] + w*pixelsize) = *(uint16_t *)(pDst[0] + h*nDstPitches[0] + (nWidthB - 1) * pixelsize);
+        upsizer->SimpleResizeDo_uint8_to_uint16(pDst[0], nWidthB, nHeightB, nDstPitches[0], smallMask, nBlkX, nBlkX, dummyplane, maskclip_bits_per_pixel);
+        if (maskclip_nWidth > nWidthB) // fill right
+          for (int h = 0; h < maskclip_nHeight; h++)
+            for (int w = nWidthB; w < maskclip_nWidth; w++)
+              *(uint16_t *)(pDst[0] + h*nDstPitches[0] + w*maskclip_pixelsize) = *(uint16_t *)(pDst[0] + h*nDstPitches[0] + (nWidthB - 1) * maskclip_pixelsize);
       }
-      for (int y = nHeightB; y < nHeight; y++)
-        env->BitBlt(pDst[0] + y*nDstPitches[0], nDstPitches[0], pDst[0] + (nHeightB - 1)*nDstPitches[0], nDstPitches[0], nWidth*pixelsize, 1);
+      for (int y = nHeightB; y < maskclip_nHeight; y++)
+        env->BitBlt(pDst[0] + y*nDstPitches[0], nDstPitches[0], pDst[0] + (nHeightB - 1)*nDstPitches[0], nDstPitches[0], maskclip_nWidth*maskclip_pixelsize, 1);
       // replicate last valid bottom line. pre 2.7.19.22: possible garbage
       //env->BitBlt(pDst[0] + nHeightB*nDstPitches[0], nDstPitches[0], pDst[0] + (nHeightB - 1)*nDstPitches[0], nDstPitches[0], nWidth*pixelsize, nHeight - nHeightB);
     }
 
+    if (chroma) {
+      if (maskclip_pixelsize == 1) {
+        // chroma
+        upsizerUV->SimpleResizeDo_uint8(pDst[1], nWidthBUV, nHeightBUV, nDstPitches[1], smallMask, nBlkX, nBlkX, dummyplane);
 
-    if (pixelsize == 1) {
-      // chroma
-      upsizerUV->SimpleResizeDo_uint8(pDst[1], nWidthBUV, nHeightBUV, nDstPitches[1], smallMask, nBlkX, nBlkX, dummyplane);
+        if (kind == 5)
+          upsizerUV->SimpleResizeDo_uint8(pDst[2], nWidthBUV, nHeightBUV, nDstPitches[2], smallMaskV, nBlkX, nBlkX, dummyplane);
+        else
+          upsizerUV->SimpleResizeDo_uint8(pDst[2], nWidthBUV, nHeightBUV, nDstPitches[2], smallMask, nBlkX, nBlkX, dummyplane);
+        if (nWidthUV > nWidthBUV) // fill right
+          for (int h = 0; h < nHeightUV; h++)
+            for (int w = nWidthBUV; w < nWidthUV; w++)
+            {
+              *(pDst[1] + h*nDstPitches[1] + w) = *(pDst[1] + h*nDstPitches[1] + nWidthBUV - 1);
+              *(pDst[2] + h*nDstPitches[2] + w) = *(pDst[2] + h*nDstPitches[2] + nWidthBUV - 1);
+            }
+      }
+      else {
+        // chroma
+        upsizerUV->SimpleResizeDo_uint8_to_uint16(pDst[1], nWidthBUV, nHeightBUV, nDstPitches[1], smallMask, nBlkX, nBlkX, dummyplane, maskclip_bits_per_pixel);
 
-      if (kind == 5)
-        upsizerUV->SimpleResizeDo_uint8(pDst[2], nWidthBUV, nHeightBUV, nDstPitches[2], smallMaskV, nBlkX, nBlkX, dummyplane);
-      else
-        upsizerUV->SimpleResizeDo_uint8(pDst[2], nWidthBUV, nHeightBUV, nDstPitches[2], smallMask, nBlkX, nBlkX, dummyplane);
-      if (nWidthUV > nWidthBUV) // fill right
-        for (int h = 0; h < nHeightUV; h++)
-          for (int w = nWidthBUV; w < nWidthUV; w++)
-          {
-            *(pDst[1] + h*nDstPitches[1] + w) = *(pDst[1] + h*nDstPitches[1] + nWidthBUV - 1);
-            *(pDst[2] + h*nDstPitches[2] + w) = *(pDst[2] + h*nDstPitches[2] + nWidthBUV - 1);
-          }
-    }
-    else {
-      // chroma
-      upsizerUV->SimpleResizeDo_uint8_to_uint16(pDst[1], nWidthBUV, nHeightBUV, nDstPitches[1], smallMask, nBlkX, nBlkX, dummyplane, bits_per_pixel);
-
-      if (kind == 5)
-        upsizerUV->SimpleResizeDo_uint8_to_uint16(pDst[2], nWidthBUV, nHeightBUV, nDstPitches[2], smallMaskV, nBlkX, nBlkX, dummyplane, bits_per_pixel);
-      else
-        upsizerUV->SimpleResizeDo_uint8_to_uint16(pDst[2], nWidthBUV, nHeightBUV, nDstPitches[2], smallMask, nBlkX, nBlkX, dummyplane, bits_per_pixel);
-      if (nWidthUV > nWidthBUV) // fill right
-        for (int h = 0; h < nHeightUV; h++)
-          for (int w = nWidthBUV; w < nWidthUV; w++)
-          {
-            *(uint16_t *)(pDst[1] + h*nDstPitches[1] + w*pixelsize) = *(uint16_t *)(pDst[1] + h*nDstPitches[1] + (nWidthBUV - 1)*pixelsize);
-            *(uint16_t *)(pDst[2] + h*nDstPitches[2] + w*pixelsize) = *(uint16_t *)(pDst[2] + h*nDstPitches[2] + (nWidthBUV - 1)*pixelsize);
-          }
-    }
-    for (int y = nHeightBUV; y < nHeightUV; y++)
-    {
-      env->BitBlt(pDst[1] + y*nDstPitches[1], nDstPitches[1], pDst[1] + (nHeightBUV - 1)*nDstPitches[1], nDstPitches[1], nWidthUV*pixelsize, 1);
-      env->BitBlt(pDst[2] + y*nDstPitches[2], nDstPitches[2], pDst[2] + (nHeightBUV - 1)*nDstPitches[2], nDstPitches[2], nWidthUV*pixelsize, 1);
+        if (kind == 5)
+          upsizerUV->SimpleResizeDo_uint8_to_uint16(pDst[2], nWidthBUV, nHeightBUV, nDstPitches[2], smallMaskV, nBlkX, nBlkX, dummyplane, maskclip_bits_per_pixel);
+        else
+          upsizerUV->SimpleResizeDo_uint8_to_uint16(pDst[2], nWidthBUV, nHeightBUV, nDstPitches[2], smallMask, nBlkX, nBlkX, dummyplane, maskclip_bits_per_pixel);
+        if (nWidthUV > nWidthBUV) // fill right
+          for (int h = 0; h < nHeightUV; h++)
+            for (int w = nWidthBUV; w < nWidthUV; w++)
+            {
+              *(uint16_t *)(pDst[1] + h*nDstPitches[1] + w*maskclip_pixelsize) = *(uint16_t *)(pDst[1] + h*nDstPitches[1] + (nWidthBUV - 1)*maskclip_pixelsize);
+              *(uint16_t *)(pDst[2] + h*nDstPitches[2] + w*maskclip_pixelsize) = *(uint16_t *)(pDst[2] + h*nDstPitches[2] + (nWidthBUV - 1)*maskclip_pixelsize);
+            }
+      }
+      for (int y = nHeightBUV; y < nHeightUV; y++)
+      {
+        env->BitBlt(pDst[1] + y*nDstPitches[1], nDstPitches[1], pDst[1] + (nHeightBUV - 1)*nDstPitches[1], nDstPitches[1], nWidthUV*maskclip_pixelsize, 1);
+        env->BitBlt(pDst[2] + y*nDstPitches[2], nDstPitches[2], pDst[2] + (nHeightBUV - 1)*nDstPitches[2], nDstPitches[2], nWidthUV*maskclip_pixelsize, 1);
+      }
     }
     // replicate last valid bottom line. pre 2.7.19.22: possible garbage
     //if (nHeightUV > nHeightBUV)
@@ -321,20 +395,22 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
   }
   else {
     if (kind == 5)
-      env->BitBlt(pDst[0], nDstPitches[0], pSrc[0], nSrcPitches[0], nWidth*pixelsize, nHeight); // copy luma
+      env->BitBlt(pDst[0], nDstPitches[0], pSrc[0], nSrcPitches[0], maskclip_nWidth*maskclip_pixelsize, maskclip_nHeight); // copy luma
     else {
-      if(pixelsize == 1)
-        MemZoneSet(pDst[0], nSceneChangeValue, nWidth, nHeight, 0, 0, nDstPitches[0]);
-      else if(pixelsize == 2)
-        MemZoneSet16((uint16_t *)pDst[0], nSceneChangeValue16, nWidth, nHeight, 0, 0, nDstPitches[0]);
+      if(maskclip_pixelsize == 1)
+        MemZoneSet(pDst[0], nSceneChangeValue, maskclip_nWidth, maskclip_nHeight, 0, 0, nDstPitches[0]);
+      else if(maskclip_pixelsize == 2)
+        MemZoneSet16((uint16_t *)pDst[0], nSceneChangeValue16, maskclip_nWidth, maskclip_nHeight, 0, 0, nDstPitches[0]);
     }
-    if (pixelsize == 1) {
-      MemZoneSet(pDst[1], nSceneChangeValue, nWidthUV*pixelsize, nHeightUV, 0, 0, nDstPitches[1]);
-      MemZoneSet(pDst[2], nSceneChangeValue, nWidthUV*pixelsize, nHeightUV, 0, 0, nDstPitches[2]);
-    }
-    else {
-      MemZoneSet16((uint16_t *)pDst[1], nSceneChangeValue16, nWidthUV, nHeightUV, 0, 0, nDstPitches[1]);
-      MemZoneSet16((uint16_t *)pDst[2], nSceneChangeValue16, nWidthUV, nHeightUV, 0, 0, nDstPitches[2]);
+    if (chroma) {
+      if (maskclip_pixelsize == 1) {
+        MemZoneSet(pDst[1], nSceneChangeValue, nWidthUV, nHeightUV, 0, 0, nDstPitches[1]);
+        MemZoneSet(pDst[2], nSceneChangeValue, nWidthUV, nHeightUV, 0, 0, nDstPitches[2]);
+      }
+      else {
+        MemZoneSet16((uint16_t *)pDst[1], nSceneChangeValue16, nWidthUV, nHeightUV, 0, 0, nDstPitches[1]);
+        MemZoneSet16((uint16_t *)pDst[2], nSceneChangeValue16, nWidthUV, nHeightUV, 0, 0, nDstPitches[2]);
+      }
     }
   }
 
@@ -343,7 +419,7 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
   {
     pDstYUY2 = dst->GetWritePtr();
     nDstPitchYUY2 = dst->GetPitch();
-    YUY2FromPlanes(pDstYUY2, nDstPitchYUY2, nWidth, nHeight,
+    YUY2FromPlanes(pDstYUY2, nDstPitchYUY2, maskclip_nWidth, maskclip_nHeight,
       pDst[0], nDstPitches[0], pDst[1], pDst[2], nDstPitches[1], isse);
   }
   return dst;

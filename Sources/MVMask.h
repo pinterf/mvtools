@@ -75,6 +75,12 @@ private:
 	bool isse;
 	bool planar;
 
+  bool chroma;
+  int maskclip_bits_per_pixel;
+  int maskclip_pixelsize;
+  int maskclip_nWidth;
+  int maskclip_nHeight;
+
 public:
 	MVMask(::PClip _child, ::PClip mvs, double _maxlength, double _gamma, int _kind, double _time100,
 		int _scvalue, sad_t nSCD1, int nSCD2, bool isse, bool _planar, ::IScriptEnvironment* env);
