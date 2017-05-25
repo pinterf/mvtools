@@ -15,7 +15,7 @@
 
 <table class="n">
 <tr><td class="n"><b>Authors:      </b></td><td class="n">&nbsp;</td><td class="n">Manao, Tsp, TSchniede, SEt, Fizick (Alexander Balakhnin), Vit, Firesledge, pinterf</td></tr>
-<tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.17.22</td></tr>
+<tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.19.22</td></tr>
 <tr><td class="n"><b>Base versions:</b></td><td class="n">&nbsp;</td><td class="n">2.6.0.5 + 2.5.11.22</td></tr>
 <tr><td class="n"><b>Base download:</b></td><td class="n">&nbsp;</td><td class="n">Contained in the Dither package, <a href="http://ldesoras.free.fr/prod.html#src_ditheravsi">http://ldesoras.free.fr/prod.html</a></td></tr>
 <tr><td class="n"><b>Category:     </b></td><td class="n">&nbsp;</td><td class="n">Misc Plugins</td></tr>
@@ -374,7 +374,8 @@ additionally <code>src_top&nbsp;= 0.5</code> for YV12.</p>
 	bool   temporal (false),
 	bool   trymany (false),
 	bool   multi (false),
-	bool   mt (true)
+	bool   mt (true),
+	int    scaleCSAD (0)
 )</pre>
 
 <p>Get prepared multilevel super clip, estimate motion by block-matching
@@ -568,6 +569,7 @@ internal dividing.</p>
 
 <p class="var">sadx264</p>
 <p>Use SAD functions from x264 codec if available for the blocksize</p>
+<p>the parameter is ineffective in 2.7.x branch</p>
 <table>
 <tr><td><b>0</b></td><td>Autodetect CPU and select best function</td></tr>
 <tr><td><b>1</b></td><td>use MMX 16x16, 16x8, 8x8, 8x4, 4x4 (8x16, 4x8 used on chroma only)</td></tr>
@@ -626,6 +628,16 @@ Single motion vector clips can be extracted with a
 
 <p class="var">mt</p>
 <p>Enables multi-threading.</p>
+
+<p class="var">scaleCSAD</p>
+<p>Fine tune chroma part weight in SAD calculation (since 2.7.18.22)<br />
+<p>Possible values for luma:chroma SAD ratio<br />
+-2: 4:0.5<br />
+-1: 4:1<br />
+0: 4:2 (default, same as the native ratio for YV12)<br />
+1: 4:4<br />
+2: 4:8<br />
+</p>
 
 <h4>Truemotion parameters</h4>
 
@@ -1535,6 +1547,7 @@ bluring.</p>
 	int  sadx264,
 	bool isse,
 	int  tr
+	int  scaleCSAD (0)
 )</pre>
 
 <p>Refines and recalculates motion data of previously estimated (by
@@ -2003,11 +2016,79 @@ Some parts of the code are under the WTFPL, too.</p>
 <li>DCT general transform (see <code>fftwlite.h</code>) is from FFTW library (as DLL call).<br /><a href="http://www.fftw.org">http://www.fftw.org</a></li>
 </ul><ul>
 <li>SATD (<code>pixel-32.asm, pixel.asm</code>) and alternative SADx264 (<code>sad-a.asm, x86inc.asm, x86inc-32.asm, cpu-32.asm</code>) are from x264 project (Loren Merritt, Laurent Aimar, Alex Izvorski et al).<br /><a href="http://www.videolan.org/developers/x264.html">http://www.videolan.org/developers/x264.html</a></li>
+<li>Since 2.7.18.22 SAD functions from the x265 project are used (Loren Merritt, Fiona Glaser, Laurent Aimar, Alex Izvorski, Min Chen et al).<br /><a href="https://github.com/videolan/x265/tree/master/source/common/x86">https://github.com/videolan/x265/tree/master/source/common/x86</a></li>
 </ul>
 
 
 
 <h2><a name="revisions"></a>VI) Revisions</h2>
+
+<p>2.7.19.22 (20170525)</p>
+<ul>
+<li>New: [MMask] Support any planar input video formats e.g. greyscale, Planar RGB.<br /> 
+Input clip can even be of different bit depth or format from vector's original format<br />
+For kind==5 where U and V is filled, the greyscale option is not allowed</li>
+<li>Mod: [MMask] Faster: request source frame only for kind=5.</li>
+<li>Fix: [MxxxxFPS,MMask]: MakeVectorOcclusionMaskTime garbage in bottom blocks (30 hrs of debugging)</li>
+<li>Fix: [MMask] bottom padding garbage for padded frame dimension</li>
+<li>Fix: [MMask] proper 10+ bits scene change values (for default: 1023, 4095, 16383, 65535. Was: 65535)<br />
+Parameter is still in 8-bit range</li>  
+<li>Fix: [MRecalculate] prevent overflow during thSAD scaling in 16 bits or large block sizes (32, 48...)</li>
+<li>Fix: [DepanEstimate] Sometimes giving wrong motion instead of scene change detection</li>
+<li>Fix: [MAnalyze] Possible overflow in MAnalyze 8 bit, block size 48x48 and above.<br />
+Overflow-safe predictor recalc for big block sizes</li>
+<li>New: [General] Add block size 12x3 for SAD, allow 6x24<br />
+       List of available block sizes<br />
+         64x64, 64x48, 64x32, 64x16<br />
+         48x64, 48x48, 48x24, 48x12<br />
+         32x64, 32x32, 32x24, 32x16, 32x8<br />
+         24x48, 24x24, 24x32, 24x12, 24x6<br />
+         16x64, 16x32, 16x16, 16x12, 16x8, 16x4, 16x2<br />
+         12x48, 12x24, 12x16, 12x12, 12x6, 12x3<br />
+         8x32, 8x16, 8x8, 8x4, 8x2, 8x1<br />
+         6x24, 6x12, 6x6, 6x3<br />
+         4x8, 4x4, 4x2<br />
+         3x6, 3x3<br />
+         2x4, 2x2</li>
+<li>Mod: [Internal] Reorganized 10-16 bit SAD simd intrinsics, faster 8-12% for BlkSize 12-32</li>
+</ul>
+
+<p>2.7.18.22 (20170512)</p>
+<ul>
+<li>Fix: 10-16 bit: DCT buffer possible overflow</li>
+<li>Fix: DCT is fast again for non 8x8 blocksizes. Regression since 2.7.5.22.</li>
+<li>New: Chroma SAD is now always half of luma SAD, regardless of video format. <br />
+Without this: YV24's luma:chroma SAD ratio is 4:8 instead of 4:2 (of YV12)</li>
+<li>New: MAnalyze, MRecalculate new parameter: "scaleCSAD" integer, default 0. Fine tune chroma SAD weight relative to luma SAD. <br />
+ScaleCSAD values for luma:chroma SAD ratio<br />
+       -2: 4:0.5<br />
+       -1: 4:1<br />
+        0: 4:2 (default, same as the native ratio for YV12)<br />
+        1: 4:4<br />
+        2: 4:8</li>
+<li>New: Block sizes 64, 48, 24, 12, 6<br />
+    MAnalyze/MRecalculate new block sizes (SATD support mod4 sizes)<br />
+    List of available block sizes<br />
+         64x64, 64x48, 64x32, 64x16<br />
+         48x64, 48x48, 48x24, 48x12<br />
+         32x64, 32x32, 32x24, 32x16, 32x8<br />
+         24x48, 24x24, 24x32, 24x12, 24x6<br />
+         16x64, 16x32, 16x16, 16x12, 16x8, 16x4, 16x2<br />
+         12x48, 12x24, 12x16, 12x12, 12x6<br />
+         8x32, 8x16, 8x8, 8x4, 8x2, 8x1<br />
+         6x24, 6x12, 6x6, 6x3<br />
+         4x8, 4x4, 4x2<br />
+         3x6, 3x3<br />
+         2x4, 2x2<br />
+
+    Note: some smaller block sizes can only be available in 4:4:4 formats, due to block size division (chroma subsampling)</li>
+<li>New: All block sizes are supported in MDegrain1-6, MDegrainN, and MScaleVect</li>  
+<li>New: Changed to 2017 version of asm files for 8 bit SAD/SATD functions from x265 project.<br />
+    Added not implemented asm code for 12, 24, 48 sizes<br />
+    For some block sizes AVX2 and SSE4 is supported (AVX2 if reported under AviSynth+) e.g. BlkSize 32 is faster now.</li> 
+<li>New: MMask SAD Mask to give identical weights for other-than-YV12 formats, e.g. for YV24</li>    
+</ul>
+
 
 <p>2.7.17.22 (20170426)</p>
 <ul>
