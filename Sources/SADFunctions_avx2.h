@@ -33,8 +33,6 @@
 #include <immintrin.h>
 #include <cassert>
 
-SADFunction* get_sad_avx2_C_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
-
 template<int nBlkWidth, int nBlkHeight, typename pixel_t>
 unsigned int Sad16_avx2(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
 

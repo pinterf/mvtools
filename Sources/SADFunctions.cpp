@@ -1007,12 +1007,7 @@ func_sad[make_tuple(x, y, 2, USE_SSE2)] = Sad16_sse2_##x##xN_sse2<y>;
       arch_t current_arch_try = archlist[index++];
       if (current_arch_try > arch) continue;
       if (result == nullptr && current_arch_try == NO_SIMD) {
-        if(arch==USE_AVX2)
-          result = get_sad_avx2_C_function(BlockX, BlockY, pixelsize, NO_SIMD);
-        else if(arch==USE_AVX)
-          result = get_sad_avx_C_function(BlockX, BlockY, pixelsize, NO_SIMD);
-        else
-          result = func_sad[make_tuple(BlockX, BlockY, pixelsize, NO_SIMD)];
+        result = func_sad[make_tuple(BlockX, BlockY, pixelsize, NO_SIMD)];
       }
       else {
         result = func_sad[make_tuple(BlockX, BlockY, pixelsize, current_arch_try)];
