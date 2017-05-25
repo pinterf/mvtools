@@ -17,6 +17,8 @@ Modification base:
 http://avisynth.org.ru/depan/depan.html
 
 Change log
+- Fix: DepanEstimate 2.10.0.2 (20170525): did not recognize Scene changes, giving valid motion vectors instead
+  Depan: rebuild with current headers 2.13.1.3 (20170525)
 - Fix: DepanStabilize: removed too sctrict checking for large motion vectors received from depan
        that resulted in like scene change
 - Fix: for YV12 the debug info text chroma part was positioned at wrong place
