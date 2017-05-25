@@ -2,6 +2,7 @@
   DePanEstimate plugin for Avisynth 2.6 interface - global motion estimation
   Version 1.10, February 22, 2016
   Version 2.10, November 19, 2016 by pinterf
+          2.10.0.2 May 25, 2017 pinterf
   (plugin interface)
   Copyright(c)2004-2016, A.G. Balakhnin aka Fizick
   bag@hotmail.ru
