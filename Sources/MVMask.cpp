@@ -142,7 +142,8 @@ MVMask::~MVMask()
   delete[] smallMask;
   delete[] smallMaskV;
   delete upsizer;
-  delete upsizerUV;
+  if (chroma)
+    delete upsizerUV;
 }
 
 unsigned char MVMask::Length(VECTOR v, unsigned char pel)
