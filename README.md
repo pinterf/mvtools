@@ -14,6 +14,9 @@ Modification base:
 http://avisynth.nl/index.php/AviSynth%2B#AviSynth.2B_x64_plugins
 
 Change log
+- 2.7.20.22 (20170526) - hotfix
+  Fix: [MMask] greyscale input resulted in AV when filter exiting
+
 - 2.7.19.22 (20170525)
   New: [MMask] Support any planar input video formats e.g. greyscale, Planar RGB. 
                Input clip can even be of different bit depth or format from vector's original format
