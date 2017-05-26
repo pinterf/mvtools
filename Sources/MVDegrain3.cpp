@@ -119,74 +119,69 @@ MAKE_FN_LEVEL(x,y,6)
 // 8 bit sse2 degrain function (mmx is replaced with sse2 for x86 width 4)
 // and 16 bit SSE4 function
 // for no_template_by_y: special height==0 -> internally nHeight comes from variable (for C: both width and height is variable)
-#define MAKE_FN_LEVEL(x, y, level, template_by_y) \
-if(template_by_y) { \
-func_degrain[make_tuple(x, y, 1, false, level, USE_SSE2)] = Degrain1to6_sse2<x, y, false, level>; \
-func_degrain[make_tuple(x, y, 1, true, level, USE_SSE2)] = Degrain1to6_sse2<x, y, true, level>; \
-func_degrain[make_tuple(x, y, 2, false, level, USE_SSE41)] = Degrain1to6_16_sse41<x, y, level>; \
-} else { \
-func_degrain[make_tuple(x, y, 1, false, level, USE_SSE2)] = Degrain1to6_sse2<x, 0, false, level>; \
-func_degrain[make_tuple(x, y, 1, true, level, USE_SSE2)] = Degrain1to6_sse2<x, 0, true, level>; \
-func_degrain[make_tuple(x, y, 2, false, level, USE_SSE41)] = Degrain1to6_16_sse41<x, 0, level>; \
-}
-#define MAKE_FN(x, y, template_by_y) \
-MAKE_FN_LEVEL(x,y,1, template_by_y) \
-MAKE_FN_LEVEL(x,y,2, template_by_y) \
-MAKE_FN_LEVEL(x,y,3, template_by_y) \
-MAKE_FN_LEVEL(x,y,4, template_by_y) \
-MAKE_FN_LEVEL(x,y,5, template_by_y) \
-MAKE_FN_LEVEL(x,y,6, template_by_y)
-    MAKE_FN(64, 64, false)
-    MAKE_FN(64, 48, false)
-    MAKE_FN(64, 32, false)
-    MAKE_FN(64, 16, false)
-    MAKE_FN(48, 64, false)
-    MAKE_FN(48, 48, false)
-    MAKE_FN(48, 24, false)
-    MAKE_FN(48, 12, false)
-    MAKE_FN(32, 64, false)
-    MAKE_FN(32, 32, false)
-    MAKE_FN(32, 24, false)
-    MAKE_FN(32, 16, false)
-    MAKE_FN(32, 8, false)
-    MAKE_FN(24, 48, false)
-    MAKE_FN(24, 32, false)
-    MAKE_FN(24, 24, false)
-    MAKE_FN(24, 12, false)
-    MAKE_FN(24, 6, false)
-    MAKE_FN(16, 64, false)
-    MAKE_FN(16, 32, false)
-    MAKE_FN(16, 16, false)
-    MAKE_FN(16, 12, false)
-    MAKE_FN(16, 8, false)
-    MAKE_FN(16, 4, true)
-    MAKE_FN(16, 2, true)
-    MAKE_FN(16, 1, true)
-    MAKE_FN(12, 48, false)
-    MAKE_FN(12, 24, false)
-    MAKE_FN(12, 16, false)
-    MAKE_FN(12, 12, false)
-    MAKE_FN(12, 6, true)
-    MAKE_FN(12, 3, true)
-    MAKE_FN(8, 32, false)
-    MAKE_FN(8, 16, false)
-    MAKE_FN(8, 8, true)
-    MAKE_FN(8, 4, true)
-    MAKE_FN(8, 2, true)
-    MAKE_FN(8, 1, true)
-    MAKE_FN(6, 24, false)
-    MAKE_FN(6, 12, false)
-    MAKE_FN(6, 6, true)
-    MAKE_FN(6, 3, true)
-    MAKE_FN(4, 8, true)
-    MAKE_FN(4, 4, true)
-    MAKE_FN(4, 2, true)
-    MAKE_FN(4, 1, true)
-    MAKE_FN(3, 6, true)
-    MAKE_FN(3, 3, true)
-    MAKE_FN(2, 4, true)
-    MAKE_FN(2, 2, true)
-    MAKE_FN(2, 1, true)
+#define MAKE_FN_LEVEL(x, y, level, yy) \
+func_degrain[make_tuple(x, y, 1, false, level, USE_SSE2)] = Degrain1to6_sse2<x, yy, false, level>; \
+func_degrain[make_tuple(x, y, 1, true, level, USE_SSE2)] = Degrain1to6_sse2<x, yy, true, level>; \
+func_degrain[make_tuple(x, y, 2, false, level, USE_SSE41)] = Degrain1to6_16_sse41<x, yy, level>;
+
+#define MAKE_FN(x, y, yy) \
+MAKE_FN_LEVEL(x,y,1, yy) \
+MAKE_FN_LEVEL(x,y,2, yy) \
+MAKE_FN_LEVEL(x,y,3, yy) \
+MAKE_FN_LEVEL(x,y,4, yy) \
+MAKE_FN_LEVEL(x,y,5, yy) \
+MAKE_FN_LEVEL(x,y,6, yy)
+    MAKE_FN(64, 64, 0)
+    MAKE_FN(64, 48, 0)
+    MAKE_FN(64, 32, 0)
+    MAKE_FN(64, 16, 0)
+    MAKE_FN(48, 64, 0)
+    MAKE_FN(48, 48, 0)
+    MAKE_FN(48, 24, 0)
+    MAKE_FN(48, 12, 0)
+    MAKE_FN(32, 64, 0)
+    MAKE_FN(32, 32, 0)
+    MAKE_FN(32, 24, 0)
+    MAKE_FN(32, 16, 0)
+    MAKE_FN(32, 8, 0)
+    MAKE_FN(24, 48, 0)
+    MAKE_FN(24, 32, 0)
+    MAKE_FN(24, 24, 0)
+    MAKE_FN(24, 12, 0)
+    MAKE_FN(24, 6, 0)
+    MAKE_FN(16, 64, 0)
+    MAKE_FN(16, 32, 0)
+    MAKE_FN(16, 16, 0)
+    MAKE_FN(16, 12, 0)
+    MAKE_FN(16, 8, 0)
+    MAKE_FN(16, 4, 4)
+    MAKE_FN(16, 2, 2)
+    MAKE_FN(16, 1, 1)
+    MAKE_FN(12, 48, 0)
+    MAKE_FN(12, 24, 0)
+    MAKE_FN(12, 16, 0)
+    MAKE_FN(12, 12, 0)
+    MAKE_FN(12, 6, 6)
+    MAKE_FN(12, 3, 3)
+    MAKE_FN(8, 32, 0)
+    MAKE_FN(8, 16, 0)
+    MAKE_FN(8, 8, 8)
+    MAKE_FN(8, 4, 4)
+    MAKE_FN(8, 2, 2)
+    MAKE_FN(8, 1, 1)
+    MAKE_FN(6, 24, 0)
+    MAKE_FN(6, 12, 0)
+    MAKE_FN(6, 6, 6)
+    MAKE_FN(6, 3, 3)
+    MAKE_FN(4, 8, 8)
+    MAKE_FN(4, 4, 4)
+    MAKE_FN(4, 2, 2)
+    MAKE_FN(4, 1, 1)
+    MAKE_FN(3, 6, 6)
+    MAKE_FN(3, 3, 3)
+    MAKE_FN(2, 4, 4)
+    MAKE_FN(2, 2, 2)
+    MAKE_FN(2, 1, 1)
 #undef MAKE_FN
 #undef MAKE_FN_LEVEL
 
