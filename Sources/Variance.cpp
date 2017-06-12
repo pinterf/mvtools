@@ -22,6 +22,7 @@
 #include <map>
 #include "def.h"
 #include <cassert>
+#include <emmintrin.h>
 
 MV_FORCEINLINE unsigned int ABS(const int x)
 {

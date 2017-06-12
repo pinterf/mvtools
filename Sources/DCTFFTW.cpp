@@ -31,6 +31,8 @@
 #include "types.h"
 #include <avisynth.h>
 #include "def.h"
+#include <emmintrin.h>
+#include <smmintrin.h>
 
 
 conc::Mutex	DCTFFTW::_fftw_mutex;

@@ -24,6 +24,8 @@
 #include <map>
 #include "avs\minmax.h"
 #include <cassert>
+#include <emmintrin.h>
+#include <smmintrin.h>
 
 #ifndef min
 #define min(a,b)            (((a) < (b)) ? (a) : (b))

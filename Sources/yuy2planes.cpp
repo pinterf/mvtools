@@ -20,6 +20,7 @@
 #include <algorithm> // min
 #include "commonfunctions.h"
 #include "types.h"
+#include <emmintrin.h>
 
 YUY2Planes::YUY2Planes(int _nWidth, int _nHeight)
 {
