@@ -367,40 +367,10 @@ MVAnalyse::MVAnalyse(
   analysisData.nFlags |= (_isse) ? MOTION_USE_ISSE : 0;
   analysisData.nFlags |= (analysisData.isBackward) ? MOTION_IS_BACKWARD : 0;
   analysisData.nFlags |= (chroma) ? MOTION_USE_CHROMA_MOTION : 0;
-  analysisData.nFlags |= cpu_detect(); // 161002 get rid of sadx264, no effect
-  // This cpu_detect has different layout that Avisynth's layout.
-  // Never mix CPU_xxxx and CPUF_xxxx constants!
-#if 0
-  if (_sadx264 == 0)
-  {
-    analysisData.nFlags |= cpu_detect();
-  }
-  else
-  {
-    if (_sadx264 > 0 && _sadx264 <= 12)
-    {
-      //force specific function
-      analysisData.nFlags |= CPU_MMXEXT;
-      analysisData.nFlags |= (_sadx264 == 2) ? CPU_CACHELINE_32 : 0;
-      analysisData.nFlags |= (_sadx264 == 3 || _sadx264 == 5 || _sadx264 == 7) ? CPU_CACHELINE_64 : 0;
-      analysisData.nFlags |= (_sadx264 == 4 || _sadx264 == 5 || _sadx264 == 10) ? CPU_SSE2_IS_FAST : 0;
-      analysisData.nFlags |= (_sadx264 == 6) ? CPU_SSE3 : 0;
-      analysisData.nFlags |= (_sadx264 == 7 || _sadx264 >= 11) ? CPU_SSSE3 : 0;
-      //beta (debug)
-      analysisData.nFlags |= (_sadx264 == 8) ? MOTION_USE_SSD : 0;
-      analysisData.nFlags |= (_sadx264 >= 9 && _sadx264 <= 12) ? MOTION_USE_SATD : 0;
-//			analysisData.nFlags |= (_sadx264 == 12) ? CPU_PHADD_IS_FAST : 0;
-    }
-  }
-#endif
 
-  if (_dctmode >= 5 && (analysisData.nFlags & CPU_MMXEXT) == 0)
-  {
-    env->ThrowError(
-      "MAnalyse: dct modes using SADT "
-      "require at least MMX2 CPU capabilities."
-    );
-  }
+  analysisData.nFlags |= conv_cpuf_flags_to_cpu(env->GetCPUFlags());
+  // cpu flags has different layout that Avisynth's CPUF_xxx layout.
+  // Never mix CPU_xxxx and CPUF_xxxx constants!
 
   nModeYUV = (chroma) ? YUVPLANES : YPLANE;
   if ((nModeYUV & nSuperModeYUV) != nModeYUV)

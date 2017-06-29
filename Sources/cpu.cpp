@@ -27,6 +27,7 @@
 #include "debugprintf.h"
 #include "string.h"
 #include <intrin.h>
+#include <avisynth.h>
 
 #define uint32_t unsigned int
 
@@ -34,7 +35,20 @@
 extern "C" unsigned int __cdecl x264_cpu_cpuid_test( void );
 extern "C" unsigned int __cdecl x264_cpu_cpuid( uint32_t op, uint32_t *eax, uint32_t *ebx, uint32_t *ecx, uint32_t *edx );
 
+int conv_cpuf_flags_to_cpu(int avscpu)
+{
+  int acpu = 0;
+  if (avscpu & CPUF_SSE2) acpu |= CPU_SSE2;
+  if (avscpu & CPUF_SSE3) acpu |= CPU_SSE3;
+  if (avscpu & CPUF_SSSE3) acpu |= CPU_SSSE3;
+  if (avscpu & CPUF_SSE4_1) acpu |= CPU_SSE4;
+  if (avscpu & CPUF_SSE4_2) acpu |= CPU_SSE42;
+  if (avscpu & CPUF_AVX) acpu |= CPU_AVX;
+  if (avscpu & CPUF_AVX2) acpu |= CPU_AVX2;
+  return acpu;
+}
 
+#if 0
 uint32_t cpu_detect( void )
 {
 	uint32_t cpu = 0;
@@ -176,5 +190,6 @@ uint32_t cpu_detect( void )
 
     return cpu;
 }
+#endif
 
 #undef uint32_t
