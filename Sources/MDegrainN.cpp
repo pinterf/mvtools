@@ -1438,7 +1438,7 @@ void	MDegrainN::process_chroma_normal_slice(Slicer::TaskData &td)
         ref_data_ptr_arr, pitch_arr, weight_arr, _trad
       );
 
-      if (nLogxRatioUV != _xratiouv_log)
+      //if (nLogxRatioUV != _xratiouv_log) // orphaned if. chroma processing failed between 2.7.1-2.7.20
       //xx += nBlkSizeX; // blksize of Y plane, that's why there is xx >> xRatioUVlog above
       xx += (nBlkSizeX >> nLogxRatioUV); // xx: indexing offset
 
