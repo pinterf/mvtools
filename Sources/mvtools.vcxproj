@@ -88,7 +88,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v140_xp</PlatformToolset>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
     <BasePlatformToolset>v140_xp</BasePlatformToolset>
@@ -197,6 +197,7 @@
       <AdditionalOptions>-DPREFIX</AdditionalOptions>
       <IncludePaths>asm/include</IncludePaths>
       <AdditionalDependencies>asm/include/x86inc.asm;asm/include/x86util.asm;asm/nasm.inc</AdditionalDependencies>
+      <ObjectFile>$(IntDir)$(ProjectName)\</ObjectFile>
     </YASM>
     <Midl>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -223,8 +224,12 @@
       <BrowseInformation>true</BrowseInformation>
       <WarningLevel>Level3</WarningLevel>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <AdditionalOptions>/Zc:threadSafeInit- </AdditionalOptions>
+      <AdditionalOptions>/Zc:threadSafeInit-</AdditionalOptions>
       <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)\include\</AdditionalIncludeDirectories>
+      <ProgramDataBaseFileName>$(IntDir)$(ProjectName)\vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
+      <ObjectFileName>$(IntDir)$(ProjectName)\</ObjectFileName>
+      <XMLDocumentationFileName>$(IntDir)$(ProjectName)\</XMLDocumentationFileName>
+      <BrowseInformationFile>$(IntDir)$(ProjectName)\</BrowseInformationFile>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -243,6 +248,7 @@
       <Debug>true</Debug>
       <IncludePaths>asm/include</IncludePaths>
       <AdditionalDependencies>asm/include/x86inc.asm;asm/include/x86util.asm;asm/nasm.inc</AdditionalDependencies>
+      <ObjectFile>$(IntDir)$(ProjectName)\</ObjectFile>
     </YASM>
     <Midl>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -270,7 +276,11 @@
       <WarningLevel>Level3</WarningLevel>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)\include\</AdditionalIncludeDirectories>
-      <AdditionalOptions>/Zc:threadSafeInit- </AdditionalOptions>
+      <AdditionalOptions>/Zc:threadSafeInit-</AdditionalOptions>
+      <ProgramDataBaseFileName>$(IntDir)$(ProjectName)\vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
+      <ObjectFileName>$(IntDir)$(ProjectName)\</ObjectFileName>
+      <XMLDocumentationFileName>$(IntDir)$(ProjectName)\</XMLDocumentationFileName>
+      <BrowseInformationFile>$(IntDir)$(ProjectName)\</BrowseInformationFile>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -287,6 +297,7 @@
       <AdditionalOptions>-DPREFIX</AdditionalOptions>
       <IncludePaths>asm/include</IncludePaths>
       <AdditionalDependencies>asm/include/x86inc.asm;asm/include/x86util.asm;asm/nasm.inc</AdditionalDependencies>
+      <ObjectFile>$(IntDir)$(ProjectName)\</ObjectFile>
     </YASM>
     <Midl>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -298,7 +309,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;MVTOOLS_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRTDBG_MAP_ALLOC;WIN32;_DEBUG;_WINDOWS;_USRDLL;MVTOOLS_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader />
@@ -306,9 +317,12 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
-      <AdditionalOptions>
-      </AdditionalOptions>
+      <AdditionalOptions>/Zc:threadSafeInit-</AdditionalOptions>
       <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)\include\</AdditionalIncludeDirectories>
+      <ProgramDataBaseFileName>$(IntDir)$(ProjectName)\vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
+      <ObjectFileName>$(IntDir)$(ProjectName)\</ObjectFileName>
+      <XMLDocumentationFileName>$(IntDir)$(ProjectName)\</XMLDocumentationFileName>
+      <BrowseInformationFile>$(IntDir)$(ProjectName)\</BrowseInformationFile>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -328,6 +342,7 @@
       <Debug>true</Debug>
       <IncludePaths>asm/include</IncludePaths>
       <AdditionalDependencies>asm/include/x86inc.asm;asm/include/x86util.asm;asm/nasm.inc</AdditionalDependencies>
+      <ObjectFile>$(IntDir)$(ProjectName)\</ObjectFile>
     </YASM>
     <Midl>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -339,19 +354,23 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>SCALECHROMASAD;WIN32;_DEBUG;_WINDOWS;_USRDLL;MVTOOLS_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRTDBG_MAP_ALLOC;WIN32;_DEBUG;_WINDOWS;_USRDLL;MVTOOLS_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)\include\</AdditionalIncludeDirectories>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <MultiProcessorCompilation>false</MultiProcessorCompilation>
       <EnableExpandedLineNumberInfo>true</EnableExpandedLineNumberInfo>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
-      <AdditionalOptions>/Zc:threadSafeInit- </AdditionalOptions>
+      <AdditionalOptions>/Zc:threadSafeInit-</AdditionalOptions>
+      <ProgramDataBaseFileName>$(IntDir)$(ProjectName)\vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
+      <ObjectFileName>$(IntDir)$(ProjectName)\</ObjectFileName>
+      <XMLDocumentationFileName>$(IntDir)$(ProjectName)\</XMLDocumentationFileName>
+      <BrowseInformationFile>$(IntDir)$(ProjectName)\</BrowseInformationFile>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -374,6 +393,7 @@
       <AdditionalOptions>-DPREFIX</AdditionalOptions>
       <IncludePaths>asm/include</IncludePaths>
       <AdditionalDependencies>asm/include/x86inc.asm;asm/include/x86util.asm;asm/nasm.inc</AdditionalDependencies>
+      <ObjectFile>$(IntDir)$(ProjectName)\</ObjectFile>
     </YASM>
     <Midl>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -390,7 +410,7 @@
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>true</WholeProgramOptimization>
-      <PreprocessorDefinitions>SCALECHROMASAD;AVS16;FORCE_INLINE;WIN32;NDEBUG;_WINDOWS;_USRDLL;MVTOOLS_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>FORCE_INLINE;WIN32;NDEBUG;_WINDOWS;_USRDLL;MVTOOLS_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -401,7 +421,7 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <GenerateAlternateCodePaths>SSE42</GenerateAlternateCodePaths>
-      <AdditionalOptions>/Zc:threadSafeInit- </AdditionalOptions>
+      <AdditionalOptions>/Zc:threadSafeInit-</AdditionalOptions>
       <Parallelization>false</Parallelization>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <UseIntelOptimizedHeaders>false</UseIntelOptimizedHeaders>
@@ -414,7 +434,11 @@
       <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)\include\</AdditionalIncludeDirectories>
       <Cpp0xSupport>true</Cpp0xSupport>
       <AssemblerOutput>AssemblyAndSourceCode</AssemblerOutput>
-      <AssemblerListingLocation>$(SolutionDir)$(Platform)\$(Configuration)\</AssemblerListingLocation>
+      <AssemblerListingLocation>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <ProgramDataBaseFileName>$(IntDir)$(ProjectName)\vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
+      <ObjectFileName>$(IntDir)$(ProjectName)\</ObjectFileName>
+      <XMLDocumentationFileName>$(IntDir)$(ProjectName)\</XMLDocumentationFileName>
+      <BrowseInformationFile>$(IntDir)$(ProjectName)\</BrowseInformationFile>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -438,6 +462,7 @@
       <AdditionalOptions>-DPREFIX</AdditionalOptions>
       <IncludePaths>asm/include</IncludePaths>
       <AdditionalDependencies>asm/include/x86inc.asm;asm/include/x86util.asm;asm/nasm.inc</AdditionalDependencies>
+      <ObjectFile>$(IntDir)$(ProjectName)\</ObjectFile>
     </YASM>
     <Midl>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -467,7 +492,7 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <GenerateAlternateCodePaths>SSE42</GenerateAlternateCodePaths>
-      <AdditionalOptions>/Zc:threadSafeInit- </AdditionalOptions>
+      <AdditionalOptions>/Zc:threadSafeInit-</AdditionalOptions>
       <Parallelization>false</Parallelization>
       <BufferSecurityCheck>true</BufferSecurityCheck>
       <UseIntelOptimizedHeaders>false</UseIntelOptimizedHeaders>
@@ -481,6 +506,10 @@
       <Cpp0xSupport>true</Cpp0xSupport>
       <AssemblerOutput>AssemblyAndSourceCode</AssemblerOutput>
       <AssemblerListingLocation>$(SolutionDir)$(Platform)\$(Configuration)\</AssemblerListingLocation>
+      <ProgramDataBaseFileName>$(IntDir)$(ProjectName)\vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
+      <ObjectFileName>$(IntDir)$(ProjectName)\</ObjectFileName>
+      <XMLDocumentationFileName>$(IntDir)$(ProjectName)\</XMLDocumentationFileName>
+      <BrowseInformationFile>$(IntDir)$(ProjectName)\</BrowseInformationFile>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -507,6 +536,7 @@
       <Debug>true</Debug>
       <IncludePaths>asm/include</IncludePaths>
       <AdditionalDependencies>asm/include/x86inc.asm;asm/include/x86util.asm;asm/nasm.inc</AdditionalDependencies>
+      <ObjectFile>$(IntDir)$(ProjectName)\</ObjectFile>
     </YASM>
     <Midl>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -520,7 +550,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <OmitFramePointers>true</OmitFramePointers>
       <WholeProgramOptimization>true</WholeProgramOptimization>
-      <PreprocessorDefinitions>SCALECHROMASAD;FORCE_INLINE;WIN32;NDEBUG;_WINDOWS;_USRDLL;MVTOOLS_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>FORCE_INLINE;WIN32;NDEBUG;_WINDOWS;_USRDLL;MVTOOLS_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -535,7 +565,7 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
-      <AdditionalOptions>/Zc:threadSafeInit- </AdditionalOptions>
+      <AdditionalOptions>/Zc:threadSafeInit-</AdditionalOptions>
       <Optimization>Full</Optimization>
       <Parallelization>false</Parallelization>
       <BufferSecurityCheck>false</BufferSecurityCheck>
@@ -547,6 +577,11 @@
       </LoopUnrolling>
       <Cpp0xSupport>true</Cpp0xSupport>
       <AssemblerOutput>AssemblyAndSourceCode</AssemblerOutput>
+      <ProgramDataBaseFileName>$(IntDir)$(ProjectName)\vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
+      <ObjectFileName>$(IntDir)$(ProjectName)\</ObjectFileName>
+      <XMLDocumentationFileName>$(IntDir)$(ProjectName)\</XMLDocumentationFileName>
+      <BrowseInformationFile>$(IntDir)$(ProjectName)\</BrowseInformationFile>
+      <AssemblerListingLocation>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -571,6 +606,7 @@
       <Debug>true</Debug>
       <IncludePaths>asm/include</IncludePaths>
       <AdditionalDependencies>asm/include/x86inc.asm;asm/include/x86util.asm;asm/nasm.inc</AdditionalDependencies>
+      <ObjectFile>$(IntDir)$(ProjectName)\</ObjectFile>
     </YASM>
     <Midl>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -599,7 +635,7 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
-      <AdditionalOptions>/Zc:threadSafeInit- </AdditionalOptions>
+      <AdditionalOptions>/Zc:threadSafeInit-</AdditionalOptions>
       <Optimization>MaxSpeed</Optimization>
       <Parallelization>false</Parallelization>
       <BufferSecurityCheck>true</BufferSecurityCheck>
@@ -612,6 +648,10 @@
       <Cpp0xSupport>true</Cpp0xSupport>
       <AssemblerOutput>AssemblyAndSourceCode</AssemblerOutput>
       <AssemblerListingLocation>$(SolutionDir)$(Platform)\$(Configuration)\</AssemblerListingLocation>
+      <ProgramDataBaseFileName>$(IntDir)$(ProjectName)\vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
+      <ObjectFileName>$(IntDir)$(ProjectName)\</ObjectFileName>
+      <XMLDocumentationFileName>$(IntDir)$(ProjectName)\</XMLDocumentationFileName>
+      <BrowseInformationFile>$(IntDir)$(ProjectName)\</BrowseInformationFile>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -645,6 +685,14 @@
       <Debug Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">true</Debug>
       <Debug Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</Debug>
       <Debug Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">true</Debug>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
     </YASM>
     <YASM Include="asm\Bilinear_x64.asm">
       <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NO_PREFIX</Defines>
@@ -659,6 +707,14 @@
       <Debug Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">true</Debug>
       <Debug Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</Debug>
       <Debug Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">true</Debug>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
     </YASM>
     <YASM Include="asm\CopyCode-a.asm">
       <Debug Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</Debug>
@@ -673,6 +729,14 @@
       <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">ARCH_X86_64=0;NO_FUNCTION_PREFIX</Defines>
       <Defines Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ARCH_X86_64=0;NO_FUNCTION_PREFIX</Defines>
       <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">ARCH_X86_64=0;NO_FUNCTION_PREFIX</Defines>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
     </YASM>
     <YASM Include="asm\fdct_mmx.asm">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -683,6 +747,14 @@
       <Debug Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">true</Debug>
       <Debug Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</Debug>
       <Debug Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">true</Debug>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
     </YASM>
     <YASM Include="asm\fdct_mmx_x64.asm">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -697,6 +769,14 @@
       <Debug Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">true</Debug>
       <Debug Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</Debug>
       <Debug Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">true</Debug>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
     </YASM>
     <YASM Include="asm\include\x86inc.asm">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -707,6 +787,14 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">true</ExcludedFromBuild>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
     </YASM>
     <YASM Include="asm\include\x86util.asm">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -717,6 +805,14 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">true</ExcludedFromBuild>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
     </YASM>
     <YASM Include="asm\Interpolation-a.asm">
       <Debug Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</Debug>
@@ -739,6 +835,14 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">true</ExcludedFromBuild>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
     </YASM>
     <YASM Include="asm\MVDegrains-a.asm">
       <Debug Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</Debug>
@@ -753,6 +857,14 @@
       <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">ARCH_X86_64=0;NO_FUNCTION_PREFIX</Defines>
       <Defines Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ARCH_X86_64=0;NO_FUNCTION_PREFIX</Defines>
       <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">ARCH_X86_64=0;NO_FUNCTION_PREFIX</Defines>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
     </YASM>
     <YASM Include="asm\Overlap-a.asm">
       <Debug Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</Debug>
@@ -767,6 +879,14 @@
       <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">ARCH_X86_64=0;NO_FUNCTION_PREFIX</Defines>
       <Defines Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ARCH_X86_64=0;NO_FUNCTION_PREFIX</Defines>
       <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">ARCH_X86_64=0;NO_FUNCTION_PREFIX</Defines>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
     </YASM>
     <YASM Include="asm\pixel-a.asm">
       <Debug Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</Debug>
@@ -781,6 +901,14 @@
       <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">private_prefix=x264;ARCH_X86_64=0;HIGH_BIT_DEPTH=0;BIT_DEPTH=8</Defines>
       <Defines Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">private_prefix=x264;ARCH_X86_64=0;HIGH_BIT_DEPTH=0;BIT_DEPTH=8</Defines>
       <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">private_prefix=x264;ARCH_X86_64=0;HIGH_BIT_DEPTH=0;BIT_DEPTH=8</Defines>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
     </YASM>
     <YASM Include="asm\sad-a.asm">
       <Debug Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</Debug>
@@ -795,6 +923,14 @@
       <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">private_prefix=x264;ARCH_X86_64=0;BIT_DEPTH=8;HIGH_BIT_DEPTH=0</Defines>
       <Defines Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">private_prefix=x264;ARCH_X86_64=0;BIT_DEPTH=8;HIGH_BIT_DEPTH=0</Defines>
       <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">private_prefix=x264;ARCH_X86_64=0;BIT_DEPTH=8;HIGH_BIT_DEPTH=0</Defines>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
     </YASM>
   </ItemGroup>
   <ItemGroup>
@@ -1024,6 +1160,14 @@
       <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">private_prefix=x264;ARCH_X86_64=1;BIT_DEPTH=8</Defines>
       <Defines Condition="'$(Configuration)|$(Platform)'=='Release|x64'">private_prefix=x264;ARCH_X86_64=1;BIT_DEPTH=8</Defines>
       <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">private_prefix=x264;ARCH_X86_64=1;BIT_DEPTH=8</Defines>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
     </YASM>
   </ItemGroup>
   <ItemGroup>
@@ -1037,6 +1181,14 @@
       <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">private_prefix=x264;ARCH_X86_64=1</Defines>
       <Defines Condition="'$(Configuration)|$(Platform)'=='Release|x64'">private_prefix=x264;ARCH_X86_64=1</Defines>
       <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">private_prefix=x264;ARCH_X86_64=1</Defines>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
     </YASM>
   </ItemGroup>
   <ItemGroup>
@@ -1050,6 +1202,14 @@
       <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">ARCH_X86_64=1;BIT_DEPTH=8;HIGH_BIT_DEPTH=0;NO_FUNCTION_PREFIX</Defines>
       <Defines Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ARCH_X86_64=1;BIT_DEPTH=8;HIGH_BIT_DEPTH=0;NO_FUNCTION_PREFIX</Defines>
       <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">ARCH_X86_64=1;BIT_DEPTH=8;HIGH_BIT_DEPTH=0;NO_FUNCTION_PREFIX</Defines>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
     </YASM>
   </ItemGroup>
   <ItemGroup>
@@ -1075,6 +1235,14 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">true</ExcludedFromBuild>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
     </YASM>
     <YASM Include="asm\SAD_iSSE_x64.asm">
       <FileType>Document</FileType>
@@ -1090,6 +1258,14 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">true</ExcludedFromBuild>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
     </YASM>
   </ItemGroup>
   <ItemGroup>
@@ -1103,6 +1279,14 @@
       <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">private_prefix=x264_16;ARCH_X86_64=1;BIT_DEPTH=16;HIGH_BIT_DEPTH=1</Defines>
       <Defines Condition="'$(Configuration)|$(Platform)'=='Release|x64'">private_prefix=x264_16;ARCH_X86_64=1;BIT_DEPTH=16;HIGH_BIT_DEPTH=1</Defines>
       <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">private_prefix=x264_16;ARCH_X86_64=1;BIT_DEPTH=16;HIGH_BIT_DEPTH=1</Defines>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
     </YASM>
   </ItemGroup>
   <ItemGroup>
@@ -1116,6 +1300,14 @@
       <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">private_prefix=x264_16;BIT_DEPTH=16;ARCH_X86_64=1;</Defines>
       <Defines Condition="'$(Configuration)|$(Platform)'=='Release|x64'">private_prefix=x264_16;BIT_DEPTH=16;ARCH_X86_64=1;</Defines>
       <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">private_prefix=x264_16;BIT_DEPTH=16;ARCH_X86_64=1;</Defines>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
+      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
     </YASM>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

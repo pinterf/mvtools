@@ -103,8 +103,8 @@
       <AssemblerListingLocation>.\Release\</AssemblerListingLocation>
       <BrowseInformation>true</BrowseInformation>
       <PrecompiledHeaderOutputFile>.\Release\DePanEstimate.pch</PrecompiledHeaderOutputFile>
-      <ObjectFileName>.\Release\</ObjectFileName>
-      <ProgramDataBaseFileName>.\Release\</ProgramDataBaseFileName>
+      <ObjectFileName>$(IntDir)$(ProjectName)\</ObjectFileName>
+      <ProgramDataBaseFileName>$(IntDir)$(ProjectName)\vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
       <CompileAs>CompileAsCpp</CompileAs>
       <AdditionalOptions>/Zc:threadSafeInit-</AdditionalOptions>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
@@ -113,6 +113,8 @@
       <GenerateAlternateCodePaths>SSE41</GenerateAlternateCodePaths>
       <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)\include\</AdditionalIncludeDirectories>
       <WholeProgramOptimization>true</WholeProgramOptimization>
+      <XMLDocumentationFileName>$(IntDir)$(ProjectName)\</XMLDocumentationFileName>
+      <BrowseInformationFile>$(IntDir)$(ProjectName)\</BrowseInformationFile>
     </ClCompile>
     <Midl>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -152,14 +154,16 @@
       <AssemblerListingLocation>.\Release\</AssemblerListingLocation>
       <BrowseInformation>true</BrowseInformation>
       <PrecompiledHeaderOutputFile>.\Release\DePanEstimate.pch</PrecompiledHeaderOutputFile>
-      <ObjectFileName>.\Release\</ObjectFileName>
-      <ProgramDataBaseFileName>.\Release\</ProgramDataBaseFileName>
+      <ObjectFileName>$(IntDir)$(ProjectName)\</ObjectFileName>
+      <ProgramDataBaseFileName>$(IntDir)$(ProjectName)\vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
       <CompileAs>CompileAsCpp</CompileAs>
       <AdditionalOptions>/Zc:threadSafeInit-</AdditionalOptions>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)\include\</AdditionalIncludeDirectories>
+      <XMLDocumentationFileName>$(IntDir)$(ProjectName)\</XMLDocumentationFileName>
+      <BrowseInformationFile>$(IntDir)$(ProjectName)\</BrowseInformationFile>
     </ClCompile>
     <Midl>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -197,13 +201,15 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;DePanEstimate_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>.\Debug\</AssemblerListingLocation>
       <PrecompiledHeaderOutputFile>.\Debug\DePanEstimate.pch</PrecompiledHeaderOutputFile>
-      <ObjectFileName>.\Debug\</ObjectFileName>
-      <ProgramDataBaseFileName>.\Debug\</ProgramDataBaseFileName>
+      <ObjectFileName>$(IntDir)$(ProjectName)\</ObjectFileName>
+      <ProgramDataBaseFileName>$(IntDir)$(ProjectName)\vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
       <CompileAs>CompileAsCpp</CompileAs>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)\include\</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:threadSafeInit-</AdditionalOptions>
+      <XMLDocumentationFileName>$(IntDir)$(ProjectName)\</XMLDocumentationFileName>
+      <BrowseInformationFile>$(IntDir)$(ProjectName)\</BrowseInformationFile>
     </ClCompile>
     <Midl>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -243,13 +249,15 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;DePanEstimate_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>.\Debug\</AssemblerListingLocation>
       <PrecompiledHeaderOutputFile>.\Debug\DePanEstimate.pch</PrecompiledHeaderOutputFile>
-      <ObjectFileName>.\Debug\</ObjectFileName>
-      <ProgramDataBaseFileName>.\Debug\</ProgramDataBaseFileName>
+      <ObjectFileName>$(IntDir)$(ProjectName)\</ObjectFileName>
+      <ProgramDataBaseFileName>$(IntDir)$(ProjectName)\vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
       <CompileAs>CompileAsCpp</CompileAs>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)\include\</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:threadSafeInit-</AdditionalOptions>
+      <XMLDocumentationFileName>$(IntDir)$(ProjectName)\</XMLDocumentationFileName>
+      <BrowseInformationFile>$(IntDir)$(ProjectName)\</BrowseInformationFile>
     </ClCompile>
     <Midl>
       <SuppressStartupBanner>true</SuppressStartupBanner>
