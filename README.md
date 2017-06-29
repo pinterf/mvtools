@@ -14,6 +14,9 @@ Modification base:
 http://avisynth.nl/index.php/AviSynth%2B#AviSynth.2B_x64_plugins
 
 Change log
+- 2.7.21.22 (20170629)
+  Fix: [MDegrainN] fix chroma plane processing
+
 - 2.7.20.22 (20170526) - hotfix
   Fix: [MMask] greyscale input resulted in AV when filter exiting
 
