@@ -19,12 +19,12 @@
 
 
 
-#include	"conc/CritSec.h"
+#include "conc/CritSec.h"
 #include "DCTFFTW.h"
 
 //#define __INTEL_COMPILER_USE_INTRINSIC_PROTOTYPES 1
 #include <emmintrin.h>
-#include	<algorithm>
+#include <algorithm>
 #include <cstdio>
 #include <tuple>
 #include <map>
@@ -35,7 +35,7 @@
 #include <smmintrin.h>
 
 
-conc::Mutex	DCTFFTW::_fftw_mutex;
+conc::Mutex DCTFFTW::_fftw_mutex;
 
 
 
@@ -272,9 +272,10 @@ void DCTFFTW::Float2Bytes_SSE2(unsigned char * dstp0, int dst_pitch, float * rea
 
   int maxPixelValue = (1 << bits_per_pixel) - 1; // 255/65535
   int middlePixelValue = 1 << (bits_per_pixel - 1);   // 128/32768 
+  constexpr auto coeff = 0.70710678118654752440084436210485f; 
   __m128i max_pixel_value = _mm_set1_epi16((short)(maxPixelValue));
   __m128i half = _mm_set1_epi32(middlePixelValue);
-  __m128 root2div2 = _mm_set_ps(0.707f, 0.707f, 0.707f, 0.707f);
+  __m128 root2div2 = _mm_set_ps(coeff, coeff, coeff, coeff);
 
   float f = realdata[0] * 0.5f; // to be compatible with integer DCTINT8
   int first_integ = std::min(maxPixelValue, std::max(0, (int(f) >> dctshift0) + middlePixelValue)); // DC;
@@ -296,7 +297,7 @@ void DCTFFTW::Float2Bytes_SSE2(unsigned char * dstp0, int dst_pitch, float * rea
       {
         // 0-3
         src = _mm_loadu_ps(reinterpret_cast<float *>(realdata + x));
-        mulres = _mm_mul_ps(src, root2div2); // f = realdata[i]*0.707f; // to be compatible with integer DCTINT8
+        mulres = _mm_mul_ps(src, root2div2); // f = realdata[i]*coeff; // to be compatible with integer DCTINT8
         intres = _mm_cvtps_epi32(mulres); // 4 float -> 4xint  // integ = (int)f;
         intres = _mm_srai_epi32(intres, dctshift); // (integ>>dctshift)
         intres_lo = _mm_add_epi32(intres, half); // (integ>>dctshift) + middlePixelValue)
@@ -304,7 +305,7 @@ void DCTFFTW::Float2Bytes_SSE2(unsigned char * dstp0, int dst_pitch, float * rea
 
         // 4-7
         src = _mm_loadu_ps(reinterpret_cast<float *>(realdata + x + 4));
-        mulres = _mm_mul_ps(src, root2div2); // f = realdata[i]*0.707f; // to be compatible with integer DCTINT8
+        mulres = _mm_mul_ps(src, root2div2); // f = realdata[i]*coeff; // to be compatible with integer DCTINT8
         intres = _mm_cvtps_epi32(mulres); // 4 float -> 4xint  // integ = (int)f;
         intres = _mm_srai_epi32(intres, dctshift); // (integ>>dctshift)
         intres_hi = _mm_add_epi32(intres, half); // (integ>>dctshift) + middlePixelValue)
@@ -327,7 +328,7 @@ void DCTFFTW::Float2Bytes_SSE2(unsigned char * dstp0, int dst_pitch, float * rea
       {
         // 0-3
         src = _mm_loadu_ps(reinterpret_cast<float *>(realdata + x));
-        mulres = _mm_mul_ps(src, root2div2); // f = realdata[i]*0.707f; // to be compatible with integer DCTINT8
+        mulres = _mm_mul_ps(src, root2div2); // f = realdata[i]*coeff; // to be compatible with integer DCTINT8
         intres = _mm_cvtps_epi32(mulres); // 4 float -> 4xint  // integ = (int)f;
         intres = _mm_srai_epi32(intres, dctshift); // (integ>>dctshift)
         intres_lo = _mm_add_epi32(intres, half); // (integ>>dctshift) + middlePixelValue)
@@ -370,6 +371,7 @@ void DCTFFTW::Float2Bytes_C(unsigned char * dstp0, int dst_pitch, float * realda
 
   int maxPixelValue = (1 << bits_per_pixel) - 1; // 255/65535
   int middlePixelValue = 1 << (bits_per_pixel - 1);   // 128/32768 
+  constexpr auto coeff = 0.70710678118654752440084436210485f; 
 
   float f = realdata[0] * 0.5f; // to be compatible with integer DCTINT8
   integ = int(f);
@@ -377,7 +379,7 @@ void DCTFFTW::Float2Bytes_C(unsigned char * dstp0, int dst_pitch, float * realda
 
   for (i = 1; i < sizex; i += 1)
   {
-    f = realdata[i] * 0.707f; // to be compatible with integer DCTINT8
+    f = realdata[i] * coeff; // to be compatible with integer DCTINT8
     integ = int(f);
     dstp[i] = std::min(maxPixelValue, std::max(0, (integ >> dctshift) + middlePixelValue));
   }
@@ -389,7 +391,7 @@ void DCTFFTW::Float2Bytes_C(unsigned char * dstp0, int dst_pitch, float * realda
   {
     for (i = 0; i < sizex; i += 1)
     {
-      f = realdata[i] * 0.707f; // to be compatible with integer DCTINT8
+      f = realdata[i] * coeff; // to be compatible with integer DCTINT8
       integ = (int)f;
       dstp[i] = std::min(maxPixelValue, std::max(0, (integ >> dctshift) + middlePixelValue));
     }
