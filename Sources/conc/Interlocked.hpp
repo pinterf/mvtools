@@ -163,22 +163,36 @@ void	Interlocked::cas (Data128 &old, volatile Data128 &dest, const Data128 &excg
 
 bool	Interlocked::Data128::operator == (const Data128 & other) const
 {
-	__m128i var1 = _mm_load_si128((__m128i*)_data);
-	__m128i var2 = _mm_load_si128((__m128i*)other._data);
-	__m128i result = _mm_cmpeq_epi64(var1, var2);
-	result = _mm_and_si128(result, _mm_srli_si128(result, 8));
-	return !!_mm_cvtsi128_si32(result);
+  __m128i var1 = _mm_load_si128((__m128i*)_data);
+  __m128i var2 = _mm_load_si128((__m128i*)other._data);
+#if 0
+  __m128i result = _mm_cmpeq_epi64(var1, var2); // SSE4.1!
+  result = _mm_and_si128(result, _mm_srli_si128(result, 8));
+  return !!_mm_cvtsi128_si32(result);
+#else
+  // sse2 from 2.7.22.20
+  __m128i vcmp = _mm_cmpeq_epi32(var1, var2);
+  int packedmask = _mm_movemask_epi8(vcmp); // Create mask from the most significant bit of each 8-bit element in a, and store the result in dst.
+  return (packedmask == 0x0000ffff);
+#endif
 }
 
 
 
 bool	Interlocked::Data128::operator != (const Data128 & other) const
 {
-	__m128i var1 = _mm_load_si128((__m128i*)_data);
-	__m128i var2 = _mm_load_si128((__m128i*)other._data);
-	__m128i result = _mm_cmpeq_epi64(var1, var2);
-	result = _mm_and_si128(result, _mm_srli_si128(result, 8));
-	return !_mm_cvtsi128_si32(result);
+  __m128i var1 = _mm_load_si128((__m128i*)_data);
+  __m128i var2 = _mm_load_si128((__m128i*)other._data);
+#if 0
+  __m128i result = _mm_cmpeq_epi64(var1, var2); // SSE4.1!
+  result = _mm_and_si128(result, _mm_srli_si128(result, 8));
+  return !_mm_cvtsi128_si32(result);
+#else
+  // sse2 from 2.7.22.20
+  __m128i vcmp = _mm_cmpeq_epi32(var1, var2);
+  int packedmask = _mm_movemask_epi8(vcmp); // Create mask from the most significant bit of each 8-bit element in a, and store the result in dst.
+  return (packedmask != 0x0000ffff);
+#endif
 }
 
 
