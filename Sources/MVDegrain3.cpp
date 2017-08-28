@@ -465,6 +465,8 @@ MVDegrainX::~MVDegrainX()
   for (int i = 0; i < level; i++) {
     delete pRefBGOF[i];
     delete pRefFGOF[i];
+    delete mvClipF[i];
+    delete mvClipB[i];
   }
 }
 
