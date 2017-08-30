@@ -813,6 +813,7 @@ void PlaneOfBlocks::PseudoEPZSearch(WorkingArea &workarea)
     if (dctmode <= 4) //don't do the slow dct conversion if SATD used
     {
       workarea.DCT->DCTBytes2D(workarea.pSrc[0], nSrcPitch[0], &workarea.dctSrc[0], dctpitch);
+      // later, workarea.dctSrc is used as a reference block
     }
   }
   if (dctmode >= 3) // most use it and it should be fast anyway //if (dctmode == 3 || dctmode == 4) // check it
@@ -1386,6 +1387,17 @@ void PlaneOfBlocks::UMHSearch(WorkingArea &workarea, int i_me_range, int omx, in
   int i = 1;
   do
   {
+  /*   -4 -2  0  2  4
+ -4           x
+ -3        x     x
+ -2     x           x
+ -1     x           x
+  0     x           x
+  1     x           x
+  2     x           x
+  3        x     x
+  4           x
+  */
     static const int hex4[16][2] =
     {
       {-4, 2}, {-4, 1}, {-4, 0}, {-4,-1}, {-4,-2},
