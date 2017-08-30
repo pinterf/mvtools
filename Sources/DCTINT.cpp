@@ -78,7 +78,8 @@ DCTINT::DCTINT(int _sizex, int _sizey, int _dctmode)
 //		}
 		
 
-		pWorkArea = (short * const) _aligned_malloc(8*8*2, 128);
+// 64 words working buffer followed by a 64 word internal temp buffer (multithreading)
+		pWorkArea = (short * const) _aligned_malloc(2 * (8*8*sizeof(short)), 128);
 
 
 }

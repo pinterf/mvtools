@@ -1482,13 +1482,22 @@ endproc_frame
 cglobal fdct_sse2
 ;;void f dct_sse2(short *block);
 proc_frame fdct_sse2
+		;PF 170830: xmm6 and xmm7 should be saved on x64!!!
+		sub rsp,32
+		[allocstack 32]
+		movdqu dqword [rsp],xmm6
+		[savexmm128 xmm6,0]
+		movdqu dqword [rsp+16],xmm7
+		[savexmm128 xmm7,16]
 		push rbx
 		[pushreg rbx]
 [endprolog]
- 
-        mov     rax, rcx
-		lea r9, [buffer]
-		mov	rbx, r9
+
+        mov     rax, rcx ; short *block
+		; PF 170825 Oops global buffer is used. Not exactly multithread friendly
+		;lea r9, [buffer] ; old
+		;mov	rbx, r9   ; old
+		lea rbx,[rax + 8*8*2] ; PF 170830: internal working buffer right after the i/o block
 
         prefetchnta     [FIX_1]
         prefetchnta     [FIX_3]
@@ -1510,5 +1519,10 @@ proc_frame fdct_sse2
 
 
 	pop rbx
+; Pop xmm6/7
+	movdqu  xmm7, dqword [rsp+16]
+	movdqu  xmm6, dqword [rsp]
+	add     rsp, 32
+
 	ret
 endproc_frame

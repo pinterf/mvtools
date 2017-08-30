@@ -30,7 +30,7 @@ class DCTINT
 :	public DCTClass
 {
 
-	short * pWorkArea;
+  short * pWorkArea; // 64 + 64 words for I/O block and internal buffer
 
 //	int sizex;
 //	int sizey;

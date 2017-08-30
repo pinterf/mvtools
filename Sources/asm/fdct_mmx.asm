@@ -1473,14 +1473,16 @@ fdct_mmx:
 %endmacro
 
 cglobal fdct_sse2
-;;void f dct_sse2(short *block);
+;;void fdct_sse2(short *block);
 fdct_sse2:
 
         push    eax
         push    ebx
-
-        mov     eax,[esp+4+2*4]
-	mov	ebx,buffer
+		; no need saving xmm6/xmm7 in x86
+        mov     eax,[esp + 2*4 + 4] ; short *block
+		; PF 170825 Oops global buffer is used. Not exactly multithread friendly
+		;	mov	ebx,buffer ; old
+		lea	ebx,[eax + 8*8*2] ; PF 170830: internal working buffer right after the i/o block
 
         prefetchnta     [FIX_1]
         prefetchnta     [FIX_3]
