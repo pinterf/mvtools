@@ -33,21 +33,21 @@
 
 
 class DCTFFTW
-:	public DCTClass
+  : public DCTClass
 {
   typedef void (DCTFFTW::*Float2BytesFunction)(unsigned char * srcp0, int _pitch, float * realdata);
   typedef void (DCTFFTW::*Bytes2FloatFunction)(const unsigned char * srcp8, int src_pitch, float * realdata);
 
-	HINSTANCE hinstFFTW3;
-	fftwf_malloc_proc fftwf_malloc_addr;
-	fftwf_free_proc fftwf_free_addr;
-	fftwf_plan_r2r_2d_proc fftwf_plan_r2r_2d_addr;
-	fftwf_destroy_plan_proc fftwf_destroy_plan_addr;
-	fftwf_execute_r2r_proc fftwf_execute_r2r_addr;
+  HINSTANCE hinstFFTW3;
+  fftwf_malloc_proc fftwf_malloc_addr;
+  fftwf_free_proc fftwf_free_addr;
+  fftwf_plan_r2r_2d_proc fftwf_plan_r2r_2d_addr;
+  fftwf_destroy_plan_proc fftwf_destroy_plan_addr;
+  fftwf_execute_r2r_proc fftwf_execute_r2r_addr;
 
-	float * fSrc;
-	fftwf_plan dctplan;
-	float * fSrcDCT;
+  float * fSrc;
+  fftwf_plan dctplan;
+  float * fSrcDCT;
 
 //  members from DCTClass (DCTClass is parent of DCTINT or DCTFFTW)
 //	int sizex;
@@ -55,35 +55,35 @@ class DCTFFTW
 //	int dctmode;
 //  int pixelsize
 //  int bits_per_pixel;
-	int dctshift;
-	int dctshift0;
+  int dctshift;
+  int dctshift0;
 
-    template<typename pixel_t>
-    void Bytes2Float_C(const unsigned char * srcp0, int _pitch, float * realdata);
-    
-    template<typename pixel_t>
-    void Float2Bytes_C(unsigned char * srcp0, int _pitch, float * realdata);
+  template<typename pixel_t>
+  void Bytes2Float_C(const unsigned char * srcp0, int _pitch, float * realdata);
 
-    template<typename pixel_t, int nBlkSizeX>
-    void Bytes2Float_SSE2(const unsigned char * srcp8, int _pitch, float * realdata);
+  template<typename pixel_t>
+  void Float2Bytes_C(unsigned char * srcp0, int _pitch, float * realdata);
 
-    template <typename pixel_t, int nBlkSizeX, bool hasSSE4>
-    void Float2Bytes_SSE2(unsigned char * dstp0, int dst_pitch, float * realdata);
+  template<typename pixel_t, int nBlkSizeX>
+  void Bytes2Float_SSE2(const unsigned char * srcp8, int _pitch, float * realdata);
 
-    DCTFFTW::Float2BytesFunction get_floatToBytesPROC_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
-    DCTFFTW::Float2BytesFunction floatToBytesPROC;
+  template <typename pixel_t, int nBlkSizeX, bool hasSSE4>
+  void Float2Bytes_SSE2(unsigned char * dstp0, int dst_pitch, float * realdata);
 
-    DCTFFTW::Bytes2FloatFunction get_bytesToFloatPROC_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
-    DCTFFTW::Bytes2FloatFunction bytesToFloatPROC;
+  DCTFFTW::Float2BytesFunction get_floatToBytesPROC_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
+  DCTFFTW::Float2BytesFunction floatToBytesPROC;
 
-	static conc::Mutex _fftw_mutex;
+  DCTFFTW::Bytes2FloatFunction get_bytesToFloatPROC_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
+  DCTFFTW::Bytes2FloatFunction bytesToFloatPROC;
+
+  static conc::Mutex _fftw_mutex;
 
 public:
 
-	DCTFFTW(int _sizex, int _sizey, ::HINSTANCE _hFFTW3, int _dctmode, int _pixelsize, int _bits_per_pixel, int cpu);
-	~DCTFFTW();
+  DCTFFTW(int _sizex, int _sizey, ::HINSTANCE _hFFTW3, int _dctmode, int _pixelsize, int _bits_per_pixel, int cpu);
+  ~DCTFFTW();
     // works internally by pixelsize:
-	void DCTBytes2D(const unsigned char *srcp0, int _src_pitch, unsigned char *dctp, int _dct_pitch);
+  void DCTBytes2D(const unsigned char *srcp0, int _src_pitch, unsigned char *dctp, int _dct_pitch);
 
 };
 

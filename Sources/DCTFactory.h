@@ -19,8 +19,8 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 #define	DCTFactory_HEADER_INCLUDED
 
 #if defined (_MSC_VER)
-	#pragma once
-	#pragma warning (4 : 4250)
+#pragma once
+#pragma warning (4 : 4250)
 #endif
 
 
@@ -41,18 +41,18 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 class IScriptEnvironment;
 
 class DCTFactory
-:	public conc::ObjFactoryInterface <DCTClass>
+  : public conc::ObjFactoryInterface <DCTClass>
 {
 
 /*\\\ PUBLIC \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
 public:
 
-	explicit			DCTFactory (int dctmode, bool isse, int blksizex, int blksizey, int pixelsize, int bits_per_pixel, ::IScriptEnvironment &env);
-	virtual			~DCTFactory ();
+  explicit DCTFactory(int dctmode, bool isse, int blksizex, int blksizey, int pixelsize, int bits_per_pixel, ::IScriptEnvironment &env);
+  virtual ~DCTFactory();
 
-	int				get_dctmode () const;
-	bool				use_fftw () const;
+  int get_dctmode() const;
+  bool use_fftw() const;
   int cpuflags;
 
 
@@ -61,9 +61,8 @@ public:
 
 protected:
 
-	// ObjFactoryInterface
-	virtual DCTClass *
-						do_create ();
+  // ObjFactoryInterface
+  virtual DCTClass * do_create();
 
 
 
@@ -71,14 +70,14 @@ protected:
 
 private:
 
-	::HINSTANCE		_fftw_hnd;
-	const int		_dctmode;
-	const int		_blksizex;
-	const int		_blksizey;
-	const bool		_isse;
-	const bool		_fftw_flag;
-    const int		_pixelsize; // PF
-    const int _bits_per_pixel;
+  ::HINSTANCE _fftw_hnd;
+  const int _dctmode;
+  const int _blksizex;
+  const int _blksizey;
+  const bool _isse;
+  const bool _fftw_flag;
+  const int _pixelsize; // PF
+  const int _bits_per_pixel;
 
 
 
@@ -86,11 +85,11 @@ private:
 
 private:
 
-						DCTFactory ();
-						DCTFactory (const DCTFactory &other);
-	DCTFactory &	operator = (const DCTFactory &other);
-	bool				operator == (const DCTFactory &other) const;
-	bool				operator != (const DCTFactory &other) const;
+  DCTFactory();
+  DCTFactory(const DCTFactory &other);
+  DCTFactory & operator = (const DCTFactory &other);
+  bool operator == (const DCTFactory &other) const;
+  bool operator != (const DCTFactory &other) const;
 
 };	// class DCTFactory
 

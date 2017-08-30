@@ -27,7 +27,7 @@
 
 
 class DCTINT
-:	public DCTClass
+  : public DCTClass
 {
 
   short * pWorkArea; // 64 + 64 words for I/O block and internal buffer
@@ -35,8 +35,8 @@ class DCTINT
 //	int sizex;
 //	int sizey;
 //	int dctmode;
-	int dctshift;
-	int dctshift0;
+  int dctshift;
+  int dctshift0;
 
 
 public:
@@ -45,9 +45,9 @@ public:
 //	float * fRef;
 //	float * fRefDCT;
 
-	DCTINT(int _sizex, int _sizey, int _dctmode);
-	~DCTINT();
-	void DCTBytes2D(const unsigned char *srcp0, int _src_pitch, unsigned char *dctp, int _dct_pitch);
+  DCTINT(int _sizex, int _sizey, int _dctmode);
+  ~DCTINT();
+  void DCTBytes2D(const unsigned char *srcp0, int _src_pitch, unsigned char *dctp, int _dct_pitch);
 
 };
 
@@ -58,13 +58,13 @@ extern "C" void fdct_sse2(short * const block);
 extern "C" {
 
 typedef void (fdctFunc)(short * const block);
-typedef fdctFunc* fdctFuncPtr;	
+typedef fdctFunc* fdctFuncPtr;
 
 extern "C" fdctFuncPtr fdct;
 
 fdctFunc fdct_mmx;
 fdctFunc fdct_altivec;
 fdctFunc fdct_sse2;
-	}
+  }
 */
 #endif
