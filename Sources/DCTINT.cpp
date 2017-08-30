@@ -141,36 +141,36 @@ a
     src0 = _mm_castpd_si128(_mm_loadl_pd(_mm_castsi128_pd(src0), reinterpret_cast<const double *>(tmp_pSrcW)));  // load the lower 64 bits from (unaligned) ptr
     src1 = _mm_castpd_si128(_mm_loadl_pd(_mm_castsi128_pd(src1), reinterpret_cast<const double *>(tmp_pSrcW+src_pit)));
     src0_8words = _mm_unpacklo_epi8(src0, zero);  // 8 bytes -> 8 words
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(pWorkAreaW+0*8), src0_8words);
+    _mm_store_si128(reinterpret_cast<__m128i *>(pWorkAreaW+0*8), src0_8words);
     src1_8words = _mm_unpacklo_epi8(src1, zero);  // 8 bytes -> 8 words
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(pWorkAreaW+1*8), src1_8words);
+    _mm_store_si128(reinterpret_cast<__m128i *>(pWorkAreaW+1*8), src1_8words);
     tmp_pSrcW += 2 * src_pit;
 
     // 8-8 bytes #2-#3 (8: DCTINT 8 implementation)
     src0 = _mm_castpd_si128(_mm_loadl_pd(_mm_castsi128_pd(src0), reinterpret_cast<const double *>(tmp_pSrcW)));  // load the lower 64 bits from (unaligned) ptr
     src1 = _mm_castpd_si128(_mm_loadl_pd(_mm_castsi128_pd(src1), reinterpret_cast<const double *>(tmp_pSrcW+src_pit)));
     src0_8words = _mm_unpacklo_epi8(src0, zero);  // 8 bytes -> 8 words
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(pWorkAreaW+2*8), src0_8words);
+    _mm_store_si128(reinterpret_cast<__m128i *>(pWorkAreaW+2*8), src0_8words);
     src1_8words = _mm_unpacklo_epi8(src1, zero);  // 8 bytes -> 8 words
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(pWorkAreaW+3*8), src1_8words);
+    _mm_store_si128(reinterpret_cast<__m128i *>(pWorkAreaW+3*8), src1_8words);
     tmp_pSrcW += 2 * src_pit;
 
     // 8-8 bytes #4-#5 (8: DCTINT 8 implementation)
     src0 = _mm_castpd_si128(_mm_loadl_pd(_mm_castsi128_pd(src0), reinterpret_cast<const double *>(tmp_pSrcW)));  // load the lower 64 bits from (unaligned) ptr
     src1 = _mm_castpd_si128(_mm_loadl_pd(_mm_castsi128_pd(src1), reinterpret_cast<const double *>(tmp_pSrcW+src_pit)));
     src0_8words = _mm_unpacklo_epi8(src0, zero);  // 8 bytes -> 8 words
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(pWorkAreaW+4*8), src0_8words);
+    _mm_store_si128(reinterpret_cast<__m128i *>(pWorkAreaW+4*8), src0_8words);
     src1_8words = _mm_unpacklo_epi8(src1, zero);  // 8 bytes -> 8 words
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(pWorkAreaW+5*8), src1_8words);
+    _mm_store_si128(reinterpret_cast<__m128i *>(pWorkAreaW+5*8), src1_8words);
     tmp_pSrcW += 2 * src_pit;
 
     // 8-8 bytes #6-#7 (8: DCTINT 8 implementation)
     src0 = _mm_castpd_si128(_mm_loadl_pd(_mm_castsi128_pd(src0), reinterpret_cast<const double *>(tmp_pSrcW)));  // load the lower 64 bits from (unaligned) ptr
     src1 = _mm_castpd_si128(_mm_loadl_pd(_mm_castsi128_pd(src1), reinterpret_cast<const double *>(tmp_pSrcW+src_pit)));
     src0_8words = _mm_unpacklo_epi8(src0, zero);  // 8 bytes -> 8 words
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(pWorkAreaW+6*8), src0_8words);
+    _mm_store_si128(reinterpret_cast<__m128i *>(pWorkAreaW+6*8), src0_8words);
     src1_8words = _mm_unpacklo_epi8(src1, zero);  // 8 bytes -> 8 words
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(pWorkAreaW+7*8), src1_8words);
+    _mm_store_si128(reinterpret_cast<__m128i *>(pWorkAreaW+7*8), src1_8words);
 
     pSrcW += 8;
 
@@ -188,8 +188,8 @@ a
     __m128i mm20, mm31, result;
 
     // #0-#1 of 8
-    mm20 = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pWorkAreaW+0*8));
-    mm31 = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pWorkAreaW+1*8));
+    mm20 = _mm_load_si128(reinterpret_cast<const __m128i *>(pWorkAreaW+0*8));
+    mm31 = _mm_load_si128(reinterpret_cast<const __m128i *>(pWorkAreaW+1*8));
     mm20 = _mm_srai_epi16(mm20, DCTSHIFT); // decrease by bits shift from (-2047, +2047) to 
     mm31 = _mm_srai_epi16(mm31, DCTSHIFT);
     result = _mm_packs_epi16(mm20, mm31); // to bytes with signed saturation
@@ -197,8 +197,8 @@ a
     _mm_storel_pd(reinterpret_cast<double *>(tmp_pDestW_rdi + 0 * dst_pit), _mm_castsi128_pd(result)); // store lower 8 byte
     _mm_storeh_pd(reinterpret_cast<double *>(tmp_pDestW_rdi + 1 * dst_pit), _mm_castsi128_pd(result)); // store upper 8 byte
     // #2-#3 of 8
-    mm20 = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pWorkAreaW+2*8));
-    mm31 = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pWorkAreaW+3*8));
+    mm20 = _mm_load_si128(reinterpret_cast<const __m128i *>(pWorkAreaW+2*8));
+    mm31 = _mm_load_si128(reinterpret_cast<const __m128i *>(pWorkAreaW+3*8));
     mm20 = _mm_srai_epi16(mm20, DCTSHIFT); // decrease by bits shift from (-2047, +2047) to 
     mm31 = _mm_srai_epi16(mm31, DCTSHIFT);
     result = _mm_packs_epi16(mm20, mm31); // to bytes with signed saturation
@@ -206,8 +206,8 @@ a
     _mm_storel_pd(reinterpret_cast<double *>(tmp_pDestW_rdi + 2 * dst_pit), _mm_castsi128_pd(result)); // store lower 8 byte
     _mm_storeh_pd(reinterpret_cast<double *>(tmp_pDestW_rdi + 3 * dst_pit), _mm_castsi128_pd(result)); // store upper 8 byte
     // #4-#5 of 8
-    mm20 = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pWorkAreaW+4*8));
-    mm31 = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pWorkAreaW+5*8));
+    mm20 = _mm_load_si128(reinterpret_cast<const __m128i *>(pWorkAreaW+4*8));
+    mm31 = _mm_load_si128(reinterpret_cast<const __m128i *>(pWorkAreaW+5*8));
     mm20 = _mm_srai_epi16(mm20, DCTSHIFT); // decrease by bits shift from (-2047, +2047) to 
     mm31 = _mm_srai_epi16(mm31, DCTSHIFT);
     result = _mm_packs_epi16(mm20, mm31); // to bytes with signed saturation
@@ -215,8 +215,8 @@ a
     _mm_storel_pd(reinterpret_cast<double *>(tmp_pDestW_rdi + 4 * dst_pit), _mm_castsi128_pd(result)); // store lower 8 byte
     _mm_storeh_pd(reinterpret_cast<double *>(tmp_pDestW_rdi + 5 * dst_pit), _mm_castsi128_pd(result)); // store upper 8 byte
     // #6-#7 of 8
-    mm20 = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pWorkAreaW+6*8));
-    mm31 = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pWorkAreaW+7*8));
+    mm20 = _mm_load_si128(reinterpret_cast<const __m128i *>(pWorkAreaW+6*8));
+    mm31 = _mm_load_si128(reinterpret_cast<const __m128i *>(pWorkAreaW+7*8));
     mm20 = _mm_srai_epi16(mm20, DCTSHIFT); // decrease by bits shift from (-2047, +2047) to 
     mm31 = _mm_srai_epi16(mm31, DCTSHIFT);
     result = _mm_packs_epi16(mm20, mm31); // to bytes with signed saturation
