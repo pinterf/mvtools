@@ -15,7 +15,7 @@
 
 <table class="n">
 <tr><td class="n"><b>Authors:      </b></td><td class="n">&nbsp;</td><td class="n">Manao, Tsp, TSchniede, SEt, Fizick (Alexander Balakhnin), Vit, Firesledge, pinterf</td></tr>
-<tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.21.22</td></tr>
+<tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.22</td></tr>
 <tr><td class="n"><b>Base versions:</b></td><td class="n">&nbsp;</td><td class="n">2.6.0.5 + 2.5.11.22</td></tr>
 <tr><td class="n"><b>Base download:</b></td><td class="n">&nbsp;</td><td class="n">Contained in the Dither package, <a href="http://ldesoras.free.fr/prod.html#src_ditheravsi">http://ldesoras.free.fr/prod.html</a></td></tr>
 <tr><td class="n"><b>Category:     </b></td><td class="n">&nbsp;</td><td class="n">Misc Plugins</td></tr>
@@ -2022,6 +2022,16 @@ Some parts of the code are under the WTFPL, too.</p>
 
 
 <h2><a name="revisions"></a>VI) Revisions</h2>
+
+<p>2.7.22 (20170830)</p>
+<ul>
+<li>Misc: Stop using version suffix .22</li>
+<li>Fix: [DCT 8x8@8bit] garbage on x64: internal assembly code did not save xmm6/xmm7</li>
+<li>Fix: [DCT 8x8@8bit] safe multithreading for integer DCT (8x8 block size, 8 bit video): assembly had a single working buffer.</li>
+<li>Fix: [MDegrain] did not release input motion vector clips in destructor, possible hang at script closing. Bug since 2.7.1.22 (when introducing MDegrain4/5)</li>
+<li>Mod: fftw conversion constant of sqrt(2)/2 is more accurate (was:0.707), 16 bit formats may benefit (by feisty2)</li>
+<li>Fix: SSE4 assembly instructions in x64, broke on non-SSE4 processors</li>
+</ul>
 
 <p>2.7.21.22 (20170629)</p>
 <ul>

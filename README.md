@@ -14,6 +14,14 @@ Modification base:
 http://avisynth.nl/index.php/AviSynth%2B#AviSynth.2B_x64_plugins
 
 Change log
+- 2.7.22 (20170830)
+  Misc: Stop using version suffix .22
+  Fix: [DCT 8x8@8bit] garbage on x64: internal assembly code did not save xmm6/xmm7
+  Fix: [DCT 8x8@8bit] safe multithreading for integer DCT (8x8 block size, 8 bit video): assembly had a single working buffer.
+  Fix: [MDegrain] did not release input motion vector clips in destructor, possible hang at script closing. Bug since 2.7.1.22 (introducing MDegrain4/5)       
+  Mod: fftw conversion constant of sqrt(2)/2 is more accurate (was:0.707), 16 bit formats may benefit (by feisty2)
+  Fix: SSE4 assembly instructions in x64, broke on non-SSE4 processors
+
 - 2.7.21.22 (20170629)
   Fix: [MDegrainN] fix chroma plane processing
 
