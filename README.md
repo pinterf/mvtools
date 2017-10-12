@@ -16,9 +16,8 @@ http://avisynth.nl/index.php/AviSynth%2B#AviSynth.2B_x64_plugins
 Change log
 
 - 2.7.23 (20171012)
-  Fix: MScaleVect wrong rounding of scaled vectors with negative components.
-  e.g. Scale by 2: -1 -> -1, -2 -> -3, -3 -> -5...
-  https://forum.doom9.org/showthread.php?p=1819691#post1819691
+  Fix: MScaleVect wrong rounding of scaled motion vectors with negative components.
+  e.g. proper scaling (-1;-2) to (-2;-4) instead of (-1,-3)
 
 - 2.7.22 (20170830)
   Misc: Stop using version suffix .22
