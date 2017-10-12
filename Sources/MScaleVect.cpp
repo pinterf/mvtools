@@ -6,6 +6,7 @@
 
 #include "MScaleVect.h"
 #include "VECTOR.h"
+#include <cmath>
 
 // Constructor - Copy motion vector information. Scale if required for use on different sized frame
 MScaleVect::MScaleVect( PClip Child, double ScaleX, double ScaleY, ScaleMode Mode, bool Flip, bool AdjustSubpel, IScriptEnvironment* Env )
@@ -30,6 +31,8 @@ MScaleVect::MScaleVect( PClip Child, double ScaleX, double ScaleY, ScaleMode Mod
 	vi.sample_type = (int)(p & 0xffffffffUL);
 #endif
 
+  big_pixel_sad = 1 << mVectorsInfo.bits_per_pixel;
+
 	// Scale appropriate fields for different sized frame
 	if (mMode == IncreaseBlockSize || mMode == DecreaseBlockSize)
 	{
@@ -42,7 +45,7 @@ MScaleVect::MScaleVect( PClip Child, double ScaleX, double ScaleY, ScaleMode Mod
 		// Switch to integer scaling here for simpler code
 		int iScaleX = static_cast<int>(mScaleX);
 		int iScaleY = static_cast<int>(mScaleY);
-		if (mMode == IncreaseBlockSize)
+    if (mMode == IncreaseBlockSize)
 		{
 			// Scale to larger frame, check that result will be valid
 			if (mVectorsInfo.nBlkSizeX * iScaleX > MAX_BLOCK_SIZE || mVectorsInfo.nBlkSizeY * iScaleY > MAX_BLOCK_SIZE)
@@ -159,8 +162,8 @@ PVideoFrame __stdcall MScaleVect::GetFrame( int FrameNum, IScriptEnvironment* En
 			{
 				if (!mAdjustSubpel)
 				{
-					pBlocks->x = (int)(pBlocks->x * mScaleX + 0.5);
-					pBlocks->y = (int)(pBlocks->y * mScaleY + 0.5);
+          pBlocks->x = (int)std::lround(pBlocks->x * mScaleX); // 2.7.23: proper rounding for negative vectors!
+          pBlocks->y = (int)std::lround(pBlocks->y * mScaleY);
 				}
 				pBlocks->sad = (sad_t)(pBlocks->sad * mScaleX * mScaleY + 0.5);
 				pBlocks++;
@@ -222,13 +225,13 @@ PVideoFrame __stdcall MScaleVect::GetFrame( int FrameNum, IScriptEnvironment* En
 					int xMax =  mVectorsInfo.nPel * (extendedWidth - x - mVectorsInfo.nBlkSizeX - mVectorsInfo.nHPadding + paddingXScaled);
 				
 					// Scale each block's vector & SAD
-					pBlocks->x = (int)(pBlocks->x * mScaleX + 0.5);
-					pBlocks->y = (int)(pBlocks->y * mScaleY + 0.5);
-					if (pBlocks->x < xMin || pBlocks->x > xMax || pBlocks->y < yMin || pBlocks->y > yMax)
+          pBlocks->x = (int)std::lround(pBlocks->x * mScaleX); // 2.7.23: proper rounding for negative vectors!
+          pBlocks->y = (int)std::lround(pBlocks->y * mScaleY);
+          if (pBlocks->x < xMin || pBlocks->x > xMax || pBlocks->y < yMin || pBlocks->y > yMax)
 					{
 						// Scaling vector makes motion go out of frame, set 0 vector instead and large SAD
 						pBlocks->x = pBlocks->y = 0;
-						pBlocks->sad = mVectorsInfo.nBlkSizeX * mVectorsInfo.nBlkSizeY * 256;
+						pBlocks->sad = mVectorsInfo.nBlkSizeX * mVectorsInfo.nBlkSizeY * big_pixel_sad;
 					}
 					else
 						pBlocks->sad = (int)(pBlocks->sad * mScaleX * mScaleY + 0.5); // Vector is OK, scale SAD for larger blocksize

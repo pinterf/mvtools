@@ -31,6 +31,7 @@ private:
 	double         mScaleY;       // Scaling to use in Y. Limited to powers of 2 when ScaleMode = Increase/DecreaseBlockSize
 	bool           mAdjustSubpel; // Scaling of vectors can be done simply by adjusting sub-pixel level, no per-frame work required
 	bool				mRevert;			// If we have to flip the time reference (backward/forward)
+  int            big_pixel_sad; // for bad sad
 
 
 public:
