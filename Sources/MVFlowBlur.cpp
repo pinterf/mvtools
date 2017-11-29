@@ -224,11 +224,35 @@ void MVFlowBlur::FlowBlur(BYTE * pdst8, int dst_pitch, const BYTE *pref8, int re
   {
     for (int h = 0; h < height; h++)
     {
+      int heightLimitRel = ((height - h) << 1) - 1;
+
       for (int w = 0; w < width; w++)
       {
+        int rel_x, rel_y;
+
         int bluredsum = pref[w << 1];
-        int vxF0 = (VXFullF[w] * blur256);
-        int vyF0 = (VYFullF[w] * blur256);
+
+        // 2.7.24: limit x and y to prevent overflow in pel ref frame indexing
+        // valid pref[x;y] is [0..(height<<nLogPel)-1 ; 0..(width<<nLogPel)-1]
+
+        // forward
+        rel_x = VXFullF[w];
+        
+        if (rel_x >= (width - w) << 1)
+          rel_x = ((width - w) << 1) - 1;
+        else if (rel_x + (w << 1) < 0)
+          rel_x = -(w << 1);
+
+        rel_y = VYFullF[w];
+        
+        if (rel_y > heightLimitRel)
+          rel_y = heightLimitRel;
+        else if (rel_y + (h << 1) < 0)
+          rel_y = -(h << 1);
+          
+        int vxF0 = (rel_x * blur256);
+        int vyF0 = (rel_y * blur256);
+
         int mF = (std::max(abs(vxF0), abs(vyF0)) / prec) >> 8;
         if (mF > 0)
         {
@@ -244,8 +268,25 @@ void MVFlowBlur::FlowBlur(BYTE * pdst8, int dst_pitch, const BYTE *pref8, int re
             vyF += vyF0;
           }
         }
-        int vxB0 = (VXFullB[w] * blur256);
-        int vyB0 = (VYFullB[w] * blur256);
+
+        // backward
+        rel_x = VXFullB[w];
+        
+        if (rel_x >= (width - w) << 1)
+          rel_x = ((width - w) << 1) - 1;
+        else if (rel_x + (w << 1) < 0)
+          rel_x = -(w << 1);
+          
+        rel_y = VYFullB[w];
+        
+        if (rel_y > heightLimitRel)
+          rel_y = heightLimitRel;
+        else if (rel_y + (h << 1) < 0)
+          rel_y = -(h << 1);
+          
+
+        int vxB0 = (rel_x * blur256);
+        int vyB0 = (rel_y * blur256);
         int mB = (std::max(abs(vxB0), abs(vyB0)) / prec) >> 8;
         if (mB > 0)
         {
@@ -264,7 +305,7 @@ void MVFlowBlur::FlowBlur(BYTE * pdst8, int dst_pitch, const BYTE *pref8, int re
         pdst[w] = bluredsum / (mF + mB + 1);
       }
       pdst += dst_pitch;
-      pref += (ref_pitch << 1);
+      pref += (ref_pitch << 1); // ref_pitch is already doubled for nPel=2, but vertically we have to step by 2 to reach the same height
       VXFullB += VPitch;
       VYFullB += VPitch;
       VXFullF += VPitch;
@@ -402,8 +443,10 @@ PVideoFrame __stdcall MVFlowBlur::GetFrame(int n, IScriptEnvironment* env)
       nRefPitches[2] = VPITCH(ref);
     }
 
-    int nOffsetY = nRefPitches[0] * nVPadding*nPel + nHPadding*nPel*pixelsize;
-    int nOffsetUV = nRefPitches[1] * nVPaddingUV*nPel + nHPaddingUV*nPel*pixelsize;
+    // refPitches[] is already knowing about nPel
+    // but nHPadding and nVPadding need to be corrected accordingly
+    int nOffsetY = nRefPitches[0] * (nVPadding*nPel) + (nHPadding*nPel)*pixelsize;
+    int nOffsetUV = nRefPitches[1] * (nVPaddingUV*nPel) + (nHPaddingUV*nPel)*pixelsize;
 
 
     // make  vector vx and vy small masks
