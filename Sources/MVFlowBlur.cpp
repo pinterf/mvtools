@@ -158,7 +158,7 @@ MVFlowBlur::~MVFlowBlur()
 
 }
 
-template<typename pixel_t>
+template<typename pixel_t, int nLOGPEL>
 void MVFlowBlur::FlowBlur(BYTE * pdst8, int dst_pitch, const BYTE *pref8, int ref_pitch,
   short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF,
   int VPitch, int width, int height, int blur256, int prec)
@@ -169,199 +169,93 @@ void MVFlowBlur::FlowBlur(BYTE * pdst8, int dst_pitch, const BYTE *pref8, int re
   const pixel_t *pref = reinterpret_cast<const pixel_t *>(pref8);
 
   // very slow, but precise motion blur
-  if (nPel == 1)
+  for (int h = 0; h < height; h++)
   {
-    for (int h = 0; h < height; h++)
+    int heightLimitRel = ((height - h) << nLOGPEL) - 1;
+
+    for (int w = 0; w < width; w++)
     {
-      for (int w = 0; w < width; w++)
+      int rel_x, rel_y;
+
+      int bluredsum = pref[w << nLOGPEL];
+
+      // 2.7.24: limit x and y to prevent overflow in pel ref frame indexing
+      // valid pref[x;y] is [0..(height<<nLogPel)-1 ; 0..(width<<nLogPel)-1]
+
+      // forward
+      rel_x = VXFullF[w];
+
+      if (rel_x >= (width - w) << nLOGPEL)
+        rel_x = ((width - w) << nLOGPEL) - 1;
+      else if (rel_x + (w << nLOGPEL) < 0)
+        rel_x = -(w << nLOGPEL);
+
+      rel_y = VYFullF[w];
+
+      if (rel_y > heightLimitRel)
+        rel_y = heightLimitRel;
+      else if (rel_y + (h << 1) < 0)
+        rel_y = -(h << 1);
+
+      int vxF0 = (rel_x * blur256);
+      int vyF0 = (rel_y * blur256);
+
+      int mF = (std::max(abs(vxF0), abs(vyF0)) / prec) >> 8;
+      if (mF > 0)
       {
-        int bluredsum = pref[w];
-        int vxF0 = (VXFullF[w] * blur256);
-        int vyF0 = (VYFullF[w] * blur256);
-        int mF = (std::max(abs(vxF0), abs(vyF0)) / prec) >> 8;
-        if (mF > 0)
+        vxF0 /= mF;
+        vyF0 /= mF;
+        int vxF = vxF0;
+        int vyF = vyF0;
+        for (int i = 0; i < mF; i++)
         {
-          vxF0 /= mF;
-          vyF0 /= mF;
-          int vxF = vxF0;
-          int vyF = vyF0;
-          for (int i = 0; i < mF; i++)
-          {
-            int dstF = pref[(vyF >> 8)*ref_pitch + (vxF >> 8) + w];
-            bluredsum += dstF;
-            vxF += vxF0;
-            vyF += vyF0;
-          }
+          int dstF = pref[(vyF >> 8)*ref_pitch + (vxF >> 8) + (w << nLOGPEL)];
+          bluredsum += dstF;
+          vxF += vxF0;
+          vyF += vyF0;
         }
-        int vxB0 = (VXFullB[w] * blur256);
-        int vyB0 = (VYFullB[w] * blur256);
-        int mB = (std::max(abs(vxB0), abs(vyB0)) / prec) >> 8;
-        if (mB > 0)
-        {
-          vxB0 /= mB;
-          vyB0 /= mB;
-          int vxB = vxB0;
-          int vyB = vyB0;
-          for (int i = 0; i < mB; i++)
-          {
-            int dstB = pref[(vyB >> 8)*ref_pitch + (vxB >> 8) + w];
-            bluredsum += dstB;
-            vxB += vxB0;
-            vyB += vyB0;
-          }
-        }
-        pdst[w] = bluredsum / (mF + mB + 1);
       }
-      pdst += dst_pitch;
-      pref += ref_pitch;
-      VXFullB += VPitch;
-      VYFullB += VPitch;
-      VXFullF += VPitch;
-      VYFullF += VPitch;
-    }
-  }
-  else if (nPel == 2)
-  {
-    for (int h = 0; h < height; h++)
-    {
-      int heightLimitRel = ((height - h) << 1) - 1;
 
-      for (int w = 0; w < width; w++)
+      // backward
+      rel_x = VXFullB[w];
+
+      if (rel_x >= (width - w) << nLOGPEL)
+        rel_x = ((width - w) << nLOGPEL) - 1;
+      else if (rel_x + (w << nLOGPEL) < 0)
+        rel_x = -(w << nLOGPEL);
+
+      rel_y = VYFullB[w];
+
+      if (rel_y > heightLimitRel)
+        rel_y = heightLimitRel;
+      else if (rel_y + (h << nLOGPEL) < 0)
+        rel_y = -(h << nLOGPEL);
+
+      int vxB0 = (rel_x * blur256);
+      int vyB0 = (rel_y * blur256);
+      int mB = (std::max(abs(vxB0), abs(vyB0)) / prec) >> 8;
+      if (mB > 0)
       {
-        int rel_x, rel_y;
-
-        int bluredsum = pref[w << 1];
-
-        // 2.7.24: limit x and y to prevent overflow in pel ref frame indexing
-        // valid pref[x;y] is [0..(height<<nLogPel)-1 ; 0..(width<<nLogPel)-1]
-
-        // forward
-        rel_x = VXFullF[w];
-        
-        if (rel_x >= (width - w) << 1)
-          rel_x = ((width - w) << 1) - 1;
-        else if (rel_x + (w << 1) < 0)
-          rel_x = -(w << 1);
-
-        rel_y = VYFullF[w];
-        
-        if (rel_y > heightLimitRel)
-          rel_y = heightLimitRel;
-        else if (rel_y + (h << 1) < 0)
-          rel_y = -(h << 1);
-          
-        int vxF0 = (rel_x * blur256);
-        int vyF0 = (rel_y * blur256);
-
-        int mF = (std::max(abs(vxF0), abs(vyF0)) / prec) >> 8;
-        if (mF > 0)
+        vxB0 /= mB;
+        vyB0 /= mB;
+        int vxB = vxB0;
+        int vyB = vyB0;
+        for (int i = 0; i < mB; i++)
         {
-          vxF0 /= mF;
-          vyF0 /= mF;
-          int vxF = vxF0;
-          int vyF = vyF0;
-          for (int i = 0; i < mF; i++)
-          {
-            int dstF = pref[(vyF >> 8)*ref_pitch + (vxF >> 8) + (w << 1)];
-            bluredsum += dstF;
-            vxF += vxF0;
-            vyF += vyF0;
-          }
+          int dstB = pref[(vyB >> 8)*ref_pitch + (vxB >> 8) + (w << nLOGPEL)];
+          bluredsum += dstB;
+          vxB += vxB0;
+          vyB += vyB0;
         }
-
-        // backward
-        rel_x = VXFullB[w];
-        
-        if (rel_x >= (width - w) << 1)
-          rel_x = ((width - w) << 1) - 1;
-        else if (rel_x + (w << 1) < 0)
-          rel_x = -(w << 1);
-          
-        rel_y = VYFullB[w];
-        
-        if (rel_y > heightLimitRel)
-          rel_y = heightLimitRel;
-        else if (rel_y + (h << 1) < 0)
-          rel_y = -(h << 1);
-          
-
-        int vxB0 = (rel_x * blur256);
-        int vyB0 = (rel_y * blur256);
-        int mB = (std::max(abs(vxB0), abs(vyB0)) / prec) >> 8;
-        if (mB > 0)
-        {
-          vxB0 /= mB;
-          vyB0 /= mB;
-          int vxB = vxB0;
-          int vyB = vyB0;
-          for (int i = 0; i < mB; i++)
-          {
-            int dstB = pref[(vyB >> 8)*ref_pitch + (vxB >> 8) + (w << 1)];
-            bluredsum += dstB;
-            vxB += vxB0;
-            vyB += vyB0;
-          }
-        }
-        pdst[w] = bluredsum / (mF + mB + 1);
       }
-      pdst += dst_pitch;
-      pref += (ref_pitch << 1); // ref_pitch is already doubled for nPel=2, but vertically we have to step by 2 to reach the same height
-      VXFullB += VPitch;
-      VYFullB += VPitch;
-      VXFullF += VPitch;
-      VYFullF += VPitch;
+      pdst[w] = bluredsum / (mF + mB + 1);
     }
-  }
-  else if (nPel == 4)
-  {
-    for (int h = 0; h < height; h++)
-    {
-      for (int w = 0; w < width; w++)
-      {
-        int bluredsum = pref[w << 2];
-        int vxF0 = (VXFullF[w] * blur256);
-        int vyF0 = (VYFullF[w] * blur256);
-        int mF = (std::max(abs(vxF0), abs(vyF0)) / prec) >> 8;
-        if (mF > 0)
-        {
-          vxF0 /= mF;
-          vyF0 /= mF;
-          int vxF = vxF0;
-          int vyF = vyF0;
-          for (int i = 0; i < mF; i++)
-          {
-            int dstF = pref[(vyF >> 8)*ref_pitch + (vxF >> 8) + (w << 2)];
-            bluredsum += dstF;
-            vxF += vxF0;
-            vyF += vyF0;
-          }
-        }
-        int vxB0 = (VXFullB[w] * blur256);
-        int vyB0 = (VYFullB[w] * blur256);
-        int mB = (std::max(abs(vxB0), abs(vyB0)) / prec) >> 8;
-        if (mB > 0)
-        {
-          vxB0 /= mB;
-          vyB0 /= mB;
-          int vxB = vxB0;
-          int vyB = vyB0;
-          for (int i = 0; i < mB; i++)
-          {
-            int dstB = pref[(vyB >> 8)*ref_pitch + (vxB >> 8) + (w << 2)];
-            bluredsum += dstB;
-            vxB += vxB0;
-            vyB += vyB0;
-          }
-        }
-        pdst[w] = bluredsum / (mF + mB + 1);
-      }
-      pdst += dst_pitch;
-      pref += (ref_pitch << 2);
-      VXFullB += VPitch;
-      VYFullB += VPitch;
-      VXFullF += VPitch;
-      VYFullF += VPitch;
-    }
+    pdst += dst_pitch;
+    pref += (ref_pitch << nLOGPEL); // ref_pitch is already doubled e.g. for nLogPel=2 (nPel=2), but vertically we have to step by 2 to reach the same height
+    VXFullB += VPitch;
+    VYFullB += VPitch;
+    VXFullF += VPitch;
+    VYFullF += VPitch;
   }
 }
 //-------------------------------------------------------------------------
@@ -476,26 +370,74 @@ PVideoFrame __stdcall MVFlowBlur::GetFrame(int n, IScriptEnvironment* env)
 
 
     if (pixelsize == 1) {
-      FlowBlur<uint8_t>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, nRefPitches[0],
-        VXFullYB, VXFullYF, VYFullYB, VYFullYF, VPitchY,
-        nWidth, nHeight, blur256, prec);
-      FlowBlur<uint8_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, nRefPitches[1],
-        VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, VPitchUV,
-        nWidthUV, nHeightUV, blur256, prec);
-      FlowBlur<uint8_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, nRefPitches[2],
-        VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, VPitchUV,
-        nWidthUV, nHeightUV, blur256, prec);
+      if (nPel == 1) {
+        FlowBlur<uint8_t, 0>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, nRefPitches[0],
+          VXFullYB, VXFullYF, VYFullYB, VYFullYF, VPitchY,
+          nWidth, nHeight, blur256, prec);
+        FlowBlur<uint8_t, 0>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, nRefPitches[1],
+          VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, VPitchUV,
+          nWidthUV, nHeightUV, blur256, prec);
+        FlowBlur<uint8_t, 0>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, nRefPitches[2],
+          VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, VPitchUV,
+          nWidthUV, nHeightUV, blur256, prec);
+      }
+      else if(nPel == 2) {
+        FlowBlur<uint8_t, 1>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, nRefPitches[0],
+          VXFullYB, VXFullYF, VYFullYB, VYFullYF, VPitchY,
+          nWidth, nHeight, blur256, prec);
+        FlowBlur<uint8_t, 1>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, nRefPitches[1],
+          VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, VPitchUV,
+          nWidthUV, nHeightUV, blur256, prec);
+        FlowBlur<uint8_t, 1>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, nRefPitches[2],
+          VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, VPitchUV,
+          nWidthUV, nHeightUV, blur256, prec);
+      }
+      else if (nPel == 4) {
+        FlowBlur<uint8_t, 2>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, nRefPitches[0],
+          VXFullYB, VXFullYF, VYFullYB, VYFullYF, VPitchY,
+          nWidth, nHeight, blur256, prec);
+        FlowBlur<uint8_t, 2>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, nRefPitches[1],
+          VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, VPitchUV,
+          nWidthUV, nHeightUV, blur256, prec);
+        FlowBlur<uint8_t, 2>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, nRefPitches[2],
+          VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, VPitchUV,
+          nWidthUV, nHeightUV, blur256, prec);
+      }
     }
     else { // pixelsize == 2
-      FlowBlur<uint16_t>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, nRefPitches[0],
-        VXFullYB, VXFullYF, VYFullYB, VYFullYF, VPitchY,
-        nWidth, nHeight, blur256, prec);
-      FlowBlur<uint16_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, nRefPitches[1],
-        VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, VPitchUV,
-        nWidthUV, nHeightUV, blur256, prec);
-      FlowBlur<uint16_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, nRefPitches[2],
-        VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, VPitchUV,
-        nWidthUV, nHeightUV, blur256, prec);
+      if (nPel == 1) {
+        FlowBlur<uint16_t, 0>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, nRefPitches[0],
+          VXFullYB, VXFullYF, VYFullYB, VYFullYF, VPitchY,
+          nWidth, nHeight, blur256, prec);
+        FlowBlur<uint16_t, 0>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, nRefPitches[1],
+          VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, VPitchUV,
+          nWidthUV, nHeightUV, blur256, prec);
+        FlowBlur<uint16_t, 0>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, nRefPitches[2],
+          VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, VPitchUV,
+          nWidthUV, nHeightUV, blur256, prec);
+      }
+      else if (nPel == 2) {
+        FlowBlur<uint16_t, 1>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, nRefPitches[0],
+          VXFullYB, VXFullYF, VYFullYB, VYFullYF, VPitchY,
+          nWidth, nHeight, blur256, prec);
+        FlowBlur<uint16_t, 1>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, nRefPitches[1],
+          VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, VPitchUV,
+          nWidthUV, nHeightUV, blur256, prec);
+        FlowBlur<uint16_t, 1>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, nRefPitches[2],
+          VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, VPitchUV,
+          nWidthUV, nHeightUV, blur256, prec);
+      }
+      else if (nPel == 4) {
+        FlowBlur<uint16_t, 2>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, nRefPitches[0],
+          VXFullYB, VXFullYF, VYFullYB, VYFullYF, VPitchY,
+          nWidth, nHeight, blur256, prec);
+        FlowBlur<uint16_t, 2>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, nRefPitches[1],
+          VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, VPitchUV,
+          nWidthUV, nHeightUV, blur256, prec);
+        FlowBlur<uint16_t, 2>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, nRefPitches[2],
+          VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, VPitchUV,
+          nWidthUV, nHeightUV, blur256, prec);
+      }
     }
 
     if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
