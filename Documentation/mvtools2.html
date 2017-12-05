@@ -15,7 +15,7 @@
 
 <table class="n">
 <tr><td class="n"><b>Authors:      </b></td><td class="n">&nbsp;</td><td class="n">Manao, Tsp, TSchniede, SEt, Fizick (Alexander Balakhnin), Vit, Firesledge, pinterf</td></tr>
-<tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.23</td></tr>
+<tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.24</td></tr>
 <tr><td class="n"><b>Base versions:</b></td><td class="n">&nbsp;</td><td class="n">2.6.0.5 + 2.5.11.22</td></tr>
 <tr><td class="n"><b>Base download:</b></td><td class="n">&nbsp;</td><td class="n">Contained in the Dither package, <a href="http://ldesoras.free.fr/prod.html#src_ditheravsi">http://ldesoras.free.fr/prod.html</a></td></tr>
 <tr><td class="n"><b>Category:     </b></td><td class="n">&nbsp;</td><td class="n">Misc Plugins</td></tr>
@@ -1590,15 +1590,16 @@ Default 0 (normal vector clip).</p>
 
 <pre class="proto">MScaleVect (
 	clip  vectors,
-	float scale (2),
+	float scale (bits == 0 ? 2 : 1),
 	float scaleV (scale),
 	int   mode (0),
 	bool  flip (scale &lt; 0 &amp;&amp; scale == scaleV)
-	bool  adjustSubPel (false)
+	bool  adjustSubPel (false),
+	int   bits (0)
 )</pre>
 
 <p>Rescales motion vectors / blocksize.
-Main purpose is to allows vectors to be used on a differently sized clip than
+Main purpose is to allows vectors to be used on a differently sized clip or on a clip having different bit depth (2.7.24-) than
 they were analyzed from.</p>
 
 <p>Example steps:</p>
@@ -1618,7 +1619,7 @@ the vector scaling (can be easier to set <var>hpad&nbsp;= 0</var> and
 <var>vpad&nbsp;= 0</var> everywhere).
 See the example below.
 Similar functionality was available in MVTools through the function
-<code>MVIncrease<code>, but it was removed.</p>
+<code>MVIncrease</code>, but it was removed.</p>
 
 <p>The function returns a new motion vector clip.</p>
 
@@ -1630,7 +1631,9 @@ Mandatory.</p>
 <p class="var">scale, scaleV</p>
 <p>The amount to scale the vectors, <var>scale</var> is the horizontal
 scaling, <var>scaleV</var> is the vertical scaling.
-Exact meaning depends on mode.</p>
+Exact meaning depends on mode.
+Default value is 2.0, except when <var>bits</var> is given (in this case 1.0)
+</p>
 
 <p class="var">mode</p>
 <table>
@@ -1650,6 +1653,16 @@ I.e. if you reverse the vectors it will default to flip their direction.</p>
 subpel rather than scaling vectors.
 <var>scale</var> must be equal to <var>scaleV</var>.
 Experimental.</p>
+
+<p class="var">bits</p>
+<p>Change the bit depth that the motion vector clip is reporting.
+Possible values: 0 (default), 8, 10, 12, 14, 16. Value of 0 does not change bit depth.
+During the conversion SAD values for each block are scaled according to the bit-depth difference. The scaling factor is 2^(bits - source_bit_depth) with rounding when scaling down.
+E.g. analyze your clip in 8 bits (faster), then use vectors for a 16 bit super clip by setting <var>bits</var>=16</p>
+
+<p>This parameter can be combined with x and y scaling.
+Warning: when this parameter exists and is nonzero then the default value of <var>scale</var> is 1.0 instead of 2.0.</p>
+
 
 <h4>Example</h4>
 
@@ -2022,6 +2035,13 @@ Some parts of the code are under the WTFPL, too.</p>
 
 
 <h2><a name="revisions"></a>VI) Revisions</h2>
+
+<p>2.7.24 (20171205)</p>
+<ul>
+<li>Fix: MFlowBlur: possible access violation crash when nPel>1</li>
+<li>New: MScaleVect parameter 'bits'. e.g. Analyze 8 bit clips, use their vectors for 16 bits</li>
+<li>Move project to VS2017</li>
+</ul>
 
 <p>2.7.23 (20171012)</p>
 <ul>

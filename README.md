@@ -15,6 +15,11 @@ http://avisynth.nl/index.php/AviSynth%2B#AviSynth.2B_x64_plugins
 
 Change log
 
+- 2.7.24 (20171205)
+  Fix: MFlowBlur: possible access violation crash when nPel>1</li>
+  New: MScaleVect parameter 'bits'. e.g. Analyze 8 bit clips, use their vectors for 16 bits
+  Move project to VS2017
+
 - 2.7.23 (20171012)
   Fix: MScaleVect wrong rounding of scaled motion vectors with negative components.
   e.g. proper scaling (-1;-2) to (-2;-4) instead of (-1,-3)
