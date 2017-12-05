@@ -919,14 +919,17 @@ AVSValue __cdecl Create_MRestoreVect (AVSValue args, void* , IScriptEnvironment*
 
 AVSValue __cdecl Create_MScaleVect (AVSValue args, void* , IScriptEnvironment* env)
 {
-	enum { CLIP, SCALE, SCALEV, MODE, FLIP, ADJUSTSUBPEL };
-	float scaleX = float(args[SCALE].AsFloat(2.0));
+	enum { CLIP, SCALE, SCALEV, MODE, FLIP, ADJUSTSUBPEL, BITS };
+  int bits = args[BITS].AsInt(0);
+	float scaleX = float(args[SCALE].AsFloat(bits == 0 ? 2.0 : 1.0));
 	float scaleY = float(args[SCALEV].AsFloat(scaleX));
 	return new MScaleVect( args[CLIP].AsClip(), 
 	                       scaleX, scaleY, 
 	                       static_cast<MScaleVect::ScaleMode>(args[MODE].AsInt(0)), 
 	                       args[FLIP].AsBool(scaleX < 0 && scaleX == scaleY), // Default flip if new direction is exactly reversed
-	                       args[ADJUSTSUBPEL].AsBool(false), env ); 
+	                       args[ADJUSTSUBPEL].AsBool(false), 
+    bits,
+    env ); 
 }
 
 
@@ -968,7 +971,7 @@ AvisynthPluginInit3(IScriptEnvironment* env, const AVS_Linkage* const vectors) {
   env->AddFunction("MSuper",       "c[hpad]i[vpad]i[pel]i[levels]i[chroma]b[sharp]i[rfilter]i[pelclip]c[isse]b[planar]b[mt]b", Create_MVSuper, 0);
 	env->AddFunction("MStoreVect",   "c+[vccs]s", Create_MStoreVect, 0);
 	env->AddFunction("MRestoreVect", "c[index]i", Create_MRestoreVect, 0);
-	env->AddFunction("MScaleVect",   "c[scale]f[scaleV]f[mode]i[flip]b[adjustSubPel]b", Create_MScaleVect, 0);
+	env->AddFunction("MScaleVect",   "c[scale]f[scaleV]f[mode]i[flip]b[adjustSubPel]b[bits]i", Create_MScaleVect, 0);
 //	env->AddFunction("MVFinest",     "c[isse]b", Create_MVFinest, 0);
 	return("MVTools : set of tools based on a motion estimation engine");
 }

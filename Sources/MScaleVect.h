@@ -32,11 +32,15 @@ private:
 	bool           mAdjustSubpel; // Scaling of vectors can be done simply by adjusting sub-pixel level, no per-frame work required
 	bool				mRevert;			// If we have to flip the time reference (backward/forward)
   int            big_pixel_sad; // for bad sad
+  bool           changeBitDepth; // If a different target bit depth was specified, 2.7.24
+  int            currentBits;
+  int            bitDiff;
+  int            mNewBits;
 
 
 public:
 	// Constructor
-	MScaleVect( PClip Child, double ScaleX, double ScaleY, ScaleMode Mode, bool Flip, bool AdjustSubpel, IScriptEnvironment* Env );
+	MScaleVect( PClip Child, double ScaleX, double ScaleY, ScaleMode Mode, bool Flip, bool AdjustSubpel, int Bits, IScriptEnvironment* Env );
 
 	// Filter operation
 	PVideoFrame __stdcall GetFrame( int FrameNum, IScriptEnvironment* Env );

@@ -9,8 +9,8 @@
 #include <cmath>
 
 // Constructor - Copy motion vector information. Scale if required for use on different sized frame
-MScaleVect::MScaleVect( PClip Child, double ScaleX, double ScaleY, ScaleMode Mode, bool Flip, bool AdjustSubpel, IScriptEnvironment* Env )
-	 : mScaleX(ScaleX), mScaleY(ScaleY), mMode(Mode), mAdjustSubpel(AdjustSubpel), GenericVideoFilter( Child ), mRevert (false)
+MScaleVect::MScaleVect( PClip Child, double ScaleX, double ScaleY, ScaleMode Mode, bool Flip, bool AdjustSubpel, int Bits, IScriptEnvironment* Env )
+	 : mScaleX(ScaleX), mScaleY(ScaleY), mMode(Mode), mAdjustSubpel(AdjustSubpel), GenericVideoFilter( Child ), mRevert (false), mNewBits(Bits)
 {
 	// Get vector data
 	if (vi.nchannels >= 0 &&  vi.nchannels < 9) 
@@ -31,7 +31,43 @@ MScaleVect::MScaleVect( PClip Child, double ScaleX, double ScaleY, ScaleMode Mod
 	vi.sample_type = (int)(p & 0xffffffffUL);
 #endif
 
-  big_pixel_sad = 1 << mVectorsInfo.bits_per_pixel;
+  // bit depth adjustments
+  if (mNewBits != 0 && mNewBits != 8 && mNewBits != 10 && mNewBits != 12 && mNewBits != 14 && mNewBits != 16)
+    Env->ThrowError("MScaleVect: Bits must be 0 (no change), 8, 10, 12, 14 or 16");
+
+  currentBits = mVectorsInfo.bits_per_pixel;
+  changeBitDepth = mNewBits != 0 && currentBits != mNewBits;
+  if (changeBitDepth) {
+    VideoInfo vi;
+    vi.pixel_type = mVectorsInfo.pixelType;
+    if(vi.IsYUY2())
+      Env->ThrowError("MScaleVect: Bits must be 8 for YUY2 based vectors");
+    if (vi.IsYV411()) // not supported but for the sake of completeness
+      Env->ThrowError("MScaleVect: Bits must be 8 for 4:1:1 clip based vectors");
+
+    // change only bit depth within video format. Not nice but no helper interface for it.
+    int newtype = vi.pixel_type;
+    newtype = (newtype & ~VideoInfo::CS_Sample_Bits_Mask);
+    switch (mNewBits) {
+    case 8: newtype |= VideoInfo::CS_Sample_Bits_8; break;
+    case 10: newtype |= VideoInfo::CS_Sample_Bits_10; break;
+    case 12: newtype |= VideoInfo::CS_Sample_Bits_12; break;
+    case 14: newtype |= VideoInfo::CS_Sample_Bits_14; break;
+    case 16: newtype |= VideoInfo::CS_Sample_Bits_16; break;
+    case 32: newtype |= VideoInfo::CS_Sample_Bits_32; break; // perhaps in the future
+    }
+
+    bitDiff = std::abs(currentBits - mNewBits);
+    big_pixel_sad = 1 << mNewBits; // for internal use
+
+    mVectorsInfo.bits_per_pixel = mNewBits;
+    mVectorsInfo.pixelsize = mNewBits == 8 ? sizeof(uint8_t) : sizeof(uint16_t);
+    mVectorsInfo.pixelType = newtype;
+  }
+  else {
+    big_pixel_sad = 1 << currentBits;
+  }
+
 
 	// Scale appropriate fields for different sized frame
 	if (mMode == IncreaseBlockSize || mMode == DecreaseBlockSize)
@@ -152,23 +188,51 @@ PVideoFrame __stdcall MScaleVect::GetFrame( int FrameNum, IScriptEnvironment* En
 	// Changing blocksize is straightforward since scaled vectors are guaranteed to be valid with scaled blocksizes
 	if (mMode == IncreaseBlockSize || mMode == DecreaseBlockSize)
 	{
-		while (pPlanes != pEnd)
-		{
-			// Scale each block's vector & SAD
-			int blocksSize = *pPlanes;
-			VECTOR* pBlocks = reinterpret_cast<VECTOR*>(pPlanes + 1);
-			pPlanes += blocksSize;
-			while (reinterpret_cast<int*>(pBlocks) != pPlanes)
-			{
-				if (!mAdjustSubpel)
-				{
-          pBlocks->x = (int)std::lround(pBlocks->x * mScaleX); // 2.7.23: proper rounding for negative vectors!
-          pBlocks->y = (int)std::lround(pBlocks->y * mScaleY);
-				}
-				pBlocks->sad = (sad_t)(pBlocks->sad * mScaleX * mScaleY + 0.5);
-				pBlocks++;
-			}
-		}
+    if (mScaleX == 1.0 && mScaleY == 1.0) {
+      // special case: no scale, maybe bit depth change?
+      if (changeBitDepth) {
+        while (pPlanes != pEnd)
+        {
+          // Scale each block's vector & SAD
+          int blocksSize = *pPlanes;
+          VECTOR* pBlocks = reinterpret_cast<VECTOR*>(pPlanes + 1);
+          pPlanes += blocksSize;
+          while (reinterpret_cast<int*>(pBlocks) != pPlanes)
+          {
+            if (currentBits < mNewBits)
+              pBlocks->sad <<= bitDiff;
+            else
+              pBlocks->sad = (pBlocks->sad + (1 << (bitDiff - 1))) >> bitDiff; // round and shift
+            pBlocks++;
+          }
+        }
+      }
+    }
+    else {
+      while (pPlanes != pEnd)
+      {
+        // Scale each block's vector & SAD
+        int blocksSize = *pPlanes;
+        VECTOR* pBlocks = reinterpret_cast<VECTOR*>(pPlanes + 1);
+        pPlanes += blocksSize;
+        while (reinterpret_cast<int*>(pBlocks) != pPlanes)
+        {
+          if (!mAdjustSubpel)
+          {
+            pBlocks->x = (int)std::lround(pBlocks->x * mScaleX); // 2.7.23: proper rounding for negative vectors!
+            pBlocks->y = (int)std::lround(pBlocks->y * mScaleY);
+          }
+          pBlocks->sad = (sad_t)(pBlocks->sad * mScaleX * mScaleY + 0.5);
+          if (changeBitDepth) {
+            if (currentBits < mNewBits)
+              pBlocks->sad <<= bitDiff;
+            else
+              pBlocks->sad = (pBlocks->sad + (1 << (bitDiff - 1))) >> bitDiff; // round and shift
+          }
+          pBlocks++;
+        }
+      }
+    }
 	}
 
 	// If scaling vectors only (blocksize remains same) then must check if new vectors go out of frame
@@ -231,10 +295,17 @@ PVideoFrame __stdcall MScaleVect::GetFrame( int FrameNum, IScriptEnvironment* En
 					{
 						// Scaling vector makes motion go out of frame, set 0 vector instead and large SAD
 						pBlocks->x = pBlocks->y = 0;
-						pBlocks->sad = mVectorsInfo.nBlkSizeX * mVectorsInfo.nBlkSizeY * big_pixel_sad;
-					}
-					else
-						pBlocks->sad = (int)(pBlocks->sad * mScaleX * mScaleY + 0.5); // Vector is OK, scale SAD for larger blocksize
+					  pBlocks->sad = mVectorsInfo.nBlkSizeX * mVectorsInfo.nBlkSizeY * big_pixel_sad;
+          }
+          else {
+            pBlocks->sad = (int)(pBlocks->sad * mScaleX * mScaleY + 0.5); // Vector is OK, scale SAD for larger blocksize
+            if (changeBitDepth) {
+              if (currentBits < mNewBits)
+                pBlocks->sad <<= bitDiff;
+              else
+                pBlocks->sad = (pBlocks->sad + (1 << (bitDiff - 1))) >> bitDiff; // round and shift
+            }
+          }
 					pBlocks++;
 
 					// Next block position
