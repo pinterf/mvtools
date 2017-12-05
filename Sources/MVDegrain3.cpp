@@ -1188,51 +1188,51 @@ MV_FORCEINLINE void	norm_weights(int &WSrc, int(&WRefB)[MAX_DEGRAIN], int(&WRefF
 {
   WSrc = 256;
   int WSum;
-  if (level == 6)
+  if (constexpr(level == 6))
     WSum = WRefB[0] + WRefF[0] + WSrc + WRefB[1] + WRefF[1] + WRefB[2] + WRefF[2] + WRefB[3] + WRefF[3] + WRefB[4] + WRefF[4] + WRefB[5] + WRefF[5] + 1;
-  else if (level == 5)
+  else if (constexpr(level == 5))
     WSum = WRefB[0] + WRefF[0] + WSrc + WRefB[1] + WRefF[1] + WRefB[2] + WRefF[2] + WRefB[3] + WRefF[3] + WRefB[4] + WRefF[4] + 1;
-  else if (level == 4)
+  else if (constexpr(level == 4))
     WSum = WRefB[0] + WRefF[0] + WSrc + WRefB[1] + WRefF[1] + WRefB[2] + WRefF[2] + WRefB[3] + WRefF[3] + 1;
-  else if (level == 3)
+  else if (constexpr(level == 3))
     WSum = WRefB[0] + WRefF[0] + WSrc + WRefB[1] + WRefF[1] + WRefB[2] + WRefF[2] + 1;
-  else if (level == 2)
+  else if (constexpr(level == 2))
     WSum = WRefB[0] + WRefF[0] + WSrc + WRefB[1] + WRefF[1] + 1;
-  else if (level == 1)
+  else if (constexpr(level == 1))
     WSum = WRefB[0] + WRefF[0] + WSrc + 1;
   WRefB[0] = WRefB[0] * 256 / WSum; // normalize weights to 256
   WRefF[0] = WRefF[0] * 256 / WSum;
-  if (level >= 2) {
+  if (constexpr(level >= 2)) {
     WRefB[1] = WRefB[1] * 256 / WSum; // normalize weights to 256
     WRefF[1] = WRefF[1] * 256 / WSum;
   }
-  if (level >= 3) {
+  if (constexpr(level >= 3)) {
     WRefB[2] = WRefB[2] * 256 / WSum; // normalize weights to 256
     WRefF[2] = WRefF[2] * 256 / WSum;
   }
-  if (level >= 4) {
+  if (constexpr(level >= 4)) {
     WRefB[3] = WRefB[3] * 256 / WSum; // normalize weights to 256
     WRefF[3] = WRefF[3] * 256 / WSum;
   }
-  if (level >= 5) {
+  if (constexpr(level >= 5)) {
     WRefB[4] = WRefB[4] * 256 / WSum; // normalize weights to 256
     WRefF[4] = WRefF[4] * 256 / WSum;
   }
-  if (level >= 6) {
+  if (constexpr(level >= 6)) {
     WRefB[5] = WRefB[5] * 256 / WSum; // normalize weights to 256
     WRefF[5] = WRefF[5] * 256 / WSum;
   }
-  if (level == 6)
+  if (constexpr(level == 6))
     WSrc = 256 - WRefB[0] - WRefF[0] - WRefB[1] - WRefF[1] - WRefB[2] - WRefF[2] - WRefB[3] - WRefF[3] - WRefB[4] - WRefF[4] - WRefB[5] - WRefF[5];
-  else if (level == 5)
+  else if (constexpr(level == 5))
     WSrc = 256 - WRefB[0] - WRefF[0] - WRefB[1] - WRefF[1] - WRefB[2] - WRefF[2] - WRefB[3] - WRefF[3] - WRefB[4] - WRefF[4];
-  else if (level == 4)
+  else if (constexpr(level == 4))
     WSrc = 256 - WRefB[0] - WRefF[0] - WRefB[1] - WRefF[1] - WRefB[2] - WRefF[2] - WRefB[3] - WRefF[3];
-  else if (level == 3)
+  else if (constexpr(level == 3))
     WSrc = 256 - WRefB[0] - WRefF[0] - WRefB[1] - WRefF[1] - WRefB[2] - WRefF[2];
-  else if (level == 2)
+  else if (constexpr(level == 2))
     WSrc = 256 - WRefB[0] - WRefF[0] - WRefB[1] - WRefF[1];
-  else if (level == 1)
+  else if (constexpr(level == 1))
     WSrc = 256 - WRefB[0] - WRefF[0];
 }
 
