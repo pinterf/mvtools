@@ -2,7 +2,13 @@
 // Avisynth v2.6.  Copyright 2006 Klaus Post.
 // Avisynth v2.6.  Copyright 2009 Ian Brabham.
 // Avisynth+ project
-// Last modification date: 20161005
+// 20160613: new 16 bit planar pixel_type constants go live!
+// 20160725: pixel_type constants 10-12-14 bit + planar RGB + BRG48/64
+// 20161005: Fallback of VideoInfo functions to defaults if no function exists
+// 20170117: global variables for VfW output OPT_xxxx
+// 20170310: new MT mode: MT_SPECIAL_MT
+// 20171103: (test with SIZETMOD define: Videoframe offsets to size_t, may affect x64)
+// 20171207: C++ Standard Conformance (AVS_LinkCall_Void instead of AVS_LinkCall)
 
 // http://www.avisynth.org
 
@@ -215,7 +221,11 @@ struct AVS_Linkage {
 // class VideoFrameBuffer
   const BYTE* (VideoFrameBuffer::*VFBGetReadPtr)() const;
   BYTE*       (VideoFrameBuffer::*VFBGetWritePtr)();
+#ifdef SIZETMOD
+  size_t      (VideoFrameBuffer::*GetDataSize)() const;
+#else
   int         (VideoFrameBuffer::*GetDataSize)() const;
+#endif
   int         (VideoFrameBuffer::*GetSequenceNumber)() const;
   int         (VideoFrameBuffer::*GetRefcount)() const;
 // end class VideoFrameBuffer
@@ -227,7 +237,11 @@ struct AVS_Linkage {
   int               (VideoFrame::*GetRowSize)(int plane) const;
   int               (VideoFrame::*GetHeight)(int plane) const;
   VideoFrameBuffer* (VideoFrame::*GetFrameBuffer)() const;
+#ifdef SIZETMOD
+  size_t            (VideoFrame::*GetOffset)(int plane) const;
+#else
   int               (VideoFrame::*GetOffset)(int plane) const;
+#endif
   const BYTE*       (VideoFrame::*VFGetReadPtr)(int plane) const;
   bool              (VideoFrame::*IsWritable)() const;
   BYTE*             (VideoFrame::*VFGetWritePtr)(int plane) const;
@@ -341,6 +355,7 @@ extern const AVS_Linkage* AVS_linkage;
 
 # define AVS_BakedCode(arg) { arg ; }
 # define AVS_LinkCall(arg)  !AVS_linkage || offsetof(AVS_Linkage, arg) >= AVS_linkage->Size ?     0 : (this->*(AVS_linkage->arg))
+# define AVS_LinkCall_Void(arg)  !AVS_linkage || offsetof(AVS_Linkage, arg) >= AVS_linkage->Size ?     (void)0 : (this->*(AVS_linkage->arg))
 # define AVS_LinkCallV(arg) !AVS_linkage || offsetof(AVS_Linkage, arg) >= AVS_linkage->Size ? *this : (this->*(AVS_linkage->arg))
 // Helper macros for fallback option when a function does not exists
 #define CALL_MEMBER_FN(object,ptrToMember)  ((object)->*(ptrToMember))
@@ -654,9 +669,9 @@ enum {
   bool IsSampleType(int testtype) const AVS_BakedCode(return AVS_LinkCall(IsSampleType)(testtype))
   int SamplesPerSecond() const AVS_BakedCode(return AVS_LinkCall(SamplesPerSecond)())
   int BytesPerAudioSample() const AVS_BakedCode(return AVS_LinkCall(BytesPerAudioSample)())
-  void SetFieldBased(bool isfieldbased) AVS_BakedCode(AVS_LinkCall(SetFieldBased)(isfieldbased))
-  void Set(int property) AVS_BakedCode(AVS_LinkCall(Set)(property))
-  void Clear(int property) AVS_BakedCode(AVS_LinkCall(Clear)(property))
+  void SetFieldBased(bool isfieldbased) AVS_BakedCode(AVS_LinkCall_Void(SetFieldBased)(isfieldbased))
+  void Set(int property) AVS_BakedCode(AVS_LinkCall_Void(Set)(property))
+  void Clear(int property) AVS_BakedCode(AVS_LinkCall_Void(Clear)(property))
   // Subsampling in bitshifts!
   int GetPlaneWidthSubsampling(int plane) const AVS_BakedCode(return AVS_LinkCall(GetPlaneWidthSubsampling)(plane))
   int GetPlaneHeightSubsampling(int plane) const AVS_BakedCode(return AVS_LinkCall(GetPlaneHeightSubsampling)(plane))
@@ -665,23 +680,23 @@ enum {
   int BytesPerChannelSample() const AVS_BakedCode(return AVS_LinkCall(BytesPerChannelSample)())
 
   // useful mutator
-  void SetFPS(unsigned numerator, unsigned denominator) AVS_BakedCode(AVS_LinkCall(SetFPS)(numerator, denominator))
+  void SetFPS(unsigned numerator, unsigned denominator) AVS_BakedCode(AVS_LinkCall_Void(SetFPS)(numerator, denominator))
 
   // Range protected multiply-divide of FPS
-  void MulDivFPS(unsigned multiplier, unsigned divisor) AVS_BakedCode(AVS_LinkCall(MulDivFPS)(multiplier, divisor))
+  void MulDivFPS(unsigned multiplier, unsigned divisor) AVS_BakedCode(AVS_LinkCall_Void(MulDivFPS)(multiplier, divisor))
 
   // Test for same colorspace
   bool IsSameColorspace(const VideoInfo& vi) const AVS_BakedCode(return AVS_LinkCall(IsSameColorspace)(vi))
 
   // AVS+ extensions
-  // 20161005: 
+  // 20161005:
   //   Mapping of AVS+ extensions to classic 2.6 functions.
   //   In order to use these extended AVS+ functions for plugins that should work
-  //   either with AVS+ or with Classic (8 bit) Avs 2.6 ans earlier AVS+ versions, there is an 
+  //   either with AVS+ or with Classic (8 bit) Avs 2.6 ans earlier AVS+ versions, there is an
   //   automatic fallback mechanism.
   //   From AVS+'s point of view these are not "baked" codes, the primary functions should exist.
   //   Examples:
-  //   Is444() is mapped to IsYV24() for classic AVS2.6 
+  //   Is444() is mapped to IsYV24() for classic AVS2.6
   //   ComponentSize() returns constant 1 (1 bytes per pixel component)
   //   BitsPerComponent() returns constant 8 (Classic AVS2.6 is 8 bit only)
 
@@ -734,7 +749,11 @@ enum {
 
 class VideoFrameBuffer {
   BYTE* data;
+#ifdef SIZETMOD
+  size_t data_size;
+#else
   int data_size;
+#endif
   // sequence_number is incremented every time the buffer is changed, so
   // that stale views can tell they're no longer valid.
   volatile long sequence_number;
@@ -745,14 +764,22 @@ class VideoFrameBuffer {
   volatile long refcount;
 
 protected:
+#ifdef SIZETMOD
+  VideoFrameBuffer(size_t size);
+#else
   VideoFrameBuffer(int size);
+#endif
   VideoFrameBuffer();
   ~VideoFrameBuffer();
 
 public:
   const BYTE* GetReadPtr() const AVS_BakedCode( return AVS_LinkCall(VFBGetReadPtr)() )
   BYTE* GetWritePtr() AVS_BakedCode( return AVS_LinkCall(VFBGetWritePtr)() )
+#ifdef SIZETMOD
+  size_t GetDataSize() const AVS_BakedCode(return AVS_LinkCall(GetDataSize)())
+#else
   int GetDataSize() const AVS_BakedCode( return AVS_LinkCall(GetDataSize)() )
+#endif
   int GetSequenceNumber() const AVS_BakedCode( return AVS_LinkCall(GetSequenceNumber)() )
   int GetRefcount() const AVS_BakedCode( return AVS_LinkCall(GetRefcount)() )
 
@@ -772,12 +799,27 @@ class VideoFrame {
 
   // Due to technical reasons these members are not const, but should be treated as such.
   // That means do not modify them once the class has been constructed.
-  int offset, pitch, row_size, height, offsetU, offsetV, pitchUV;  // U&V offsets are from top of picture.
-  int row_sizeUV, heightUV; // for Planar RGB offsetU, offsetV is for the 2nd and 3rd Plane.
+#ifdef SIZETMOD
+  size_t offset;
+#else
+  int offset;
+#endif
+  int pitch, row_size, height;
+#ifdef SIZETMOD
+  size_t offsetU, offsetV;  // U&V offsets are from top of picture.
+#else
+  int offsetU, offsetV;  // U&V offsets are from top of picture.
+#endif
+  int pitchUV, row_sizeUV, heightUV; // for Planar RGB offsetU, offsetV is for the 2nd and 3rd Plane.
                             // for Planar RGB pitchUV and row_sizeUV = 0, because when no VideoInfo (MakeWriteable)
                             // the decision on existance of UV is checked by zero pitch
   // AVS+ extension, does not break plugins if appended here
-  int offsetA, pitchA, row_sizeA; // 4th alpha plane support, pitch and row_size is 0 is none
+#ifdef SIZETMOD
+  size_t offsetA;
+#else
+  int offsetA;
+#endif
+  int pitchA, row_sizeA; // 4th alpha plane support, pitch and row_size is 0 is none
 
   friend class PVideoFrame;
   void AddRef();
@@ -786,10 +828,17 @@ class VideoFrame {
   friend class ScriptEnvironment;
   friend class Cache;
 
+#ifdef SIZETMOD
+  VideoFrame(VideoFrameBuffer* _vfb, size_t _offset, int _pitch, int _row_size, int _height);
+  VideoFrame(VideoFrameBuffer* _vfb, size_t _offset, int _pitch, int _row_size, int _height, size_t _offsetU, size_t _offsetV, int _pitchUV, int _row_sizeUV, int _heightUV);
+  // for Alpha
+  VideoFrame(VideoFrameBuffer* _vfb, size_t _offset, int _pitch, int _row_size, int _height, size_t _offsetU, size_t _offsetV, int _pitchUV, int _row_sizeUV, int _heightUV, size_t _offsetA);
+#else
   VideoFrame(VideoFrameBuffer* _vfb, int _offset, int _pitch, int _row_size, int _height);
   VideoFrame(VideoFrameBuffer* _vfb, int _offset, int _pitch, int _row_size, int _height, int _offsetU, int _offsetV, int _pitchUV, int _row_sizeUV, int _heightUV);
   // for Alpha
   VideoFrame(VideoFrameBuffer* _vfb, int _offset, int _pitch, int _row_size, int _height, int _offsetU, int _offsetV, int _pitchUV, int _row_sizeUV, int _heightUV, int _offsetA);
+#endif
 
   void* operator new(size_t size);
 // TESTME: OFFSET U/V may be switched to what could be expected from AVI standard!
@@ -800,7 +849,11 @@ public:
 
   // generally you shouldn't use these three
   VideoFrameBuffer* GetFrameBuffer() const AVS_BakedCode( return AVS_LinkCall(GetFrameBuffer)() )
+#ifdef SIZETMOD
+  size_t GetOffset(int plane = 0) const AVS_BakedCode(return AVS_LinkCall(GetOffset)(plane))
+#else
   int GetOffset(int plane=0) const AVS_BakedCode( return AVS_LinkCall(GetOffset)(plane) )
+#endif
 
   // in plugins use env->SubFrame() -- because implementation code is only available inside avisynth.dll. Doh!
   VideoFrame* Subframe(int rel_offset, int new_pitch, int new_row_size, int new_height) const;
@@ -812,7 +865,7 @@ public:
   bool IsWritable() const AVS_BakedCode( return AVS_LinkCall(IsWritable)() )
   BYTE* GetWritePtr(int plane=0) const AVS_BakedCode( return AVS_LinkCall(VFGetWritePtr)(plane) )
 
-  ~VideoFrame() AVS_BakedCode( AVS_LinkCall(VideoFrame_DESTRUCTOR)() )
+  ~VideoFrame() AVS_BakedCode( AVS_LinkCall_Void(VideoFrame_DESTRUCTOR)() )
 #ifdef BUILDING_AVSCORE
 public:
   void DESTRUCTOR();  /* Damn compiler won't allow taking the address of reserved constructs, make a dummy interlude */
@@ -933,11 +986,11 @@ class PClip {
   void Set(IClip* x);
 
 public:
-  PClip() AVS_BakedCode( AVS_LinkCall(PClip_CONSTRUCTOR0)() )
-  PClip(const PClip& x) AVS_BakedCode( AVS_LinkCall(PClip_CONSTRUCTOR1)(x) )
-  PClip(IClip* x) AVS_BakedCode( AVS_LinkCall(PClip_CONSTRUCTOR2)(x) )
-  void operator=(IClip* x) AVS_BakedCode( AVS_LinkCall(PClip_OPERATOR_ASSIGN0)(x) )
-  void operator=(const PClip& x) AVS_BakedCode( AVS_LinkCall(PClip_OPERATOR_ASSIGN1)(x) )
+  PClip() AVS_BakedCode( AVS_LinkCall_Void(PClip_CONSTRUCTOR0)() )
+  PClip(const PClip& x) AVS_BakedCode( AVS_LinkCall_Void(PClip_CONSTRUCTOR1)(x) )
+  PClip(IClip* x) AVS_BakedCode( AVS_LinkCall_Void(PClip_CONSTRUCTOR2)(x) )
+  void operator=(IClip* x) AVS_BakedCode( AVS_LinkCall_Void(PClip_OPERATOR_ASSIGN0)(x) )
+  void operator=(const PClip& x) AVS_BakedCode( AVS_LinkCall_Void(PClip_OPERATOR_ASSIGN1)(x) )
 
   IClip* operator->() const { return p; }
 
@@ -945,7 +998,7 @@ public:
   operator void*() const { return p; }
   bool operator!() const { return !p; }
 
-  ~PClip() AVS_BakedCode( AVS_LinkCall(PClip_DESTRUCTOR)() )
+  ~PClip() AVS_BakedCode( AVS_LinkCall_Void(PClip_DESTRUCTOR)() )
 #ifdef BUILDING_AVSCORE
 public:
   void CONSTRUCTOR0();  /* Damn compiler won't allow taking the address of reserved constructs, make a dummy interlude */
@@ -967,11 +1020,11 @@ class PVideoFrame {
   void Set(VideoFrame* x);
 
 public:
-  PVideoFrame() AVS_BakedCode( AVS_LinkCall(PVideoFrame_CONSTRUCTOR0)() )
-  PVideoFrame(const PVideoFrame& x) AVS_BakedCode( AVS_LinkCall(PVideoFrame_CONSTRUCTOR1)(x) )
-  PVideoFrame(VideoFrame* x) AVS_BakedCode( AVS_LinkCall(PVideoFrame_CONSTRUCTOR2)(x) )
-  void operator=(VideoFrame* x) AVS_BakedCode( AVS_LinkCall(PVideoFrame_OPERATOR_ASSIGN0)(x) )
-  void operator=(const PVideoFrame& x) AVS_BakedCode( AVS_LinkCall(PVideoFrame_OPERATOR_ASSIGN1)(x) )
+  PVideoFrame() AVS_BakedCode( AVS_LinkCall_Void(PVideoFrame_CONSTRUCTOR0)() )
+  PVideoFrame(const PVideoFrame& x) AVS_BakedCode( AVS_LinkCall_Void(PVideoFrame_CONSTRUCTOR1)(x) )
+  PVideoFrame(VideoFrame* x) AVS_BakedCode( AVS_LinkCall_Void(PVideoFrame_CONSTRUCTOR2)(x) )
+  void operator=(VideoFrame* x) AVS_BakedCode( AVS_LinkCall_Void(PVideoFrame_OPERATOR_ASSIGN0)(x) )
+  void operator=(const PVideoFrame& x) AVS_BakedCode( AVS_LinkCall_Void(PVideoFrame_OPERATOR_ASSIGN1)(x) )
 
   VideoFrame* operator->() const { return p; }
 
@@ -979,7 +1032,7 @@ public:
   operator void*() const { return p; }
   bool operator!() const { return !p; }
 
-  ~PVideoFrame() AVS_BakedCode( AVS_LinkCall(PVideoFrame_DESTRUCTOR)() )
+  ~PVideoFrame() AVS_BakedCode( AVS_LinkCall_Void(PVideoFrame_DESTRUCTOR)() )
 #ifdef BUILDING_AVSCORE
 public:
   void CONSTRUCTOR0();  /* Damn compiler won't allow taking the address of reserved constructs, make a dummy interlude */
@@ -995,20 +1048,20 @@ public:
 class AVSValue {
 public:
 
-  AVSValue() AVS_BakedCode( AVS_LinkCall(AVSValue_CONSTRUCTOR0)() )
-  AVSValue(IClip* c) AVS_BakedCode( AVS_LinkCall(AVSValue_CONSTRUCTOR1)(c) )
-  AVSValue(const PClip& c) AVS_BakedCode( AVS_LinkCall(AVSValue_CONSTRUCTOR2)(c) )
-  AVSValue(bool b) AVS_BakedCode( AVS_LinkCall(AVSValue_CONSTRUCTOR3)(b) )
-  AVSValue(int i) AVS_BakedCode( AVS_LinkCall(AVSValue_CONSTRUCTOR4)(i) )
+  AVSValue() AVS_BakedCode( AVS_LinkCall_Void(AVSValue_CONSTRUCTOR0)() )
+  AVSValue(IClip* c) AVS_BakedCode( AVS_LinkCall_Void(AVSValue_CONSTRUCTOR1)(c) )
+  AVSValue(const PClip& c) AVS_BakedCode( AVS_LinkCall_Void(AVSValue_CONSTRUCTOR2)(c) )
+  AVSValue(bool b) AVS_BakedCode( AVS_LinkCall_Void(AVSValue_CONSTRUCTOR3)(b) )
+  AVSValue(int i) AVS_BakedCode( AVS_LinkCall_Void(AVSValue_CONSTRUCTOR4)(i) )
 //  AVSValue(__int64 l);
-  AVSValue(float f) AVS_BakedCode( AVS_LinkCall(AVSValue_CONSTRUCTOR5)(f) )
-  AVSValue(double f) AVS_BakedCode( AVS_LinkCall(AVSValue_CONSTRUCTOR6)(f) )
-  AVSValue(const char* s) AVS_BakedCode( AVS_LinkCall(AVSValue_CONSTRUCTOR7)(s) )
-  AVSValue(const AVSValue* a, int size) AVS_BakedCode( AVS_LinkCall(AVSValue_CONSTRUCTOR8)(a, size) )
-  AVSValue(const AVSValue& a, int size) AVS_BakedCode( AVS_LinkCall(AVSValue_CONSTRUCTOR8)(&a, size) )
-  AVSValue(const AVSValue& v) AVS_BakedCode( AVS_LinkCall(AVSValue_CONSTRUCTOR9)(v) )
+  AVSValue(float f) AVS_BakedCode( AVS_LinkCall_Void(AVSValue_CONSTRUCTOR5)(f) )
+  AVSValue(double f) AVS_BakedCode( AVS_LinkCall_Void(AVSValue_CONSTRUCTOR6)(f) )
+  AVSValue(const char* s) AVS_BakedCode( AVS_LinkCall_Void(AVSValue_CONSTRUCTOR7)(s) )
+  AVSValue(const AVSValue* a, int size) AVS_BakedCode( AVS_LinkCall_Void(AVSValue_CONSTRUCTOR8)(a, size) )
+  AVSValue(const AVSValue& a, int size) AVS_BakedCode( AVS_LinkCall_Void(AVSValue_CONSTRUCTOR8)(&a, size) )
+  AVSValue(const AVSValue& v) AVS_BakedCode( AVS_LinkCall_Void(AVSValue_CONSTRUCTOR9)(v) )
 
-  ~AVSValue() AVS_BakedCode( AVS_LinkCall(AVSValue_DESTRUCTOR)() )
+  ~AVSValue() AVS_BakedCode( AVS_LinkCall_Void(AVSValue_DESTRUCTOR)() )
   AVSValue& operator=(const AVSValue& v) AVS_BakedCode( return AVS_LinkCallV(AVSValue_OPERATOR_ASSIGN)(v) )
 
   // Note that we transparently allow 'int' to be treated as 'float'.
@@ -1056,7 +1109,7 @@ private:
     #ifdef X86_64
     // if ever, only x64 will support. It breaks struct size on 32 bit
     __int64 longlong; // 8 bytes
-    double double_pt; // 8 bytes 
+    double double_pt; // 8 bytes
     #endif
   };
 
@@ -1086,6 +1139,14 @@ public:
   int             AsInt2(int def) const;
   double          AsFloat2(float def) const;
   const char*     AsString2(const char* def) const;
+
+#ifdef NEW_AVSVALUE
+  void            MarkArrayAsC();
+  void            CONSTRUCTOR10(const AVSValue& v, bool c_arrays);
+  AVSValue(const AVSValue& v, bool c_arrays);
+  void            Assign2(const AVSValue* src, bool init, bool c_arrays);
+#endif
+
 #endif
 }; // end class AVSValue
 
@@ -1194,7 +1255,8 @@ enum MtMode
   MT_NICE_FILTER = 1,
   MT_MULTI_INSTANCE = 2,
   MT_SERIALIZED = 3,
-  MT_MODE_COUNT = 4
+  MT_SPECIAL_MT = 4,
+  MT_MODE_COUNT = 5
 };
 
 class IJobCompletion
@@ -1282,6 +1344,9 @@ public:
   using IScriptEnvironment::AddFunction;
   using IScriptEnvironment::GetVar;
 
+  virtual PVideoFrame __stdcall SubframePlanarA(PVideoFrame src, int rel_offset, int new_pitch, int new_row_size,
+    int new_height, int rel_offsetU, int rel_offsetV, int new_pitchUV, int rel_offsetA) = 0;
+
 }; // end class IScriptEnvironment2
 
 
@@ -1296,7 +1361,11 @@ AVSC_API(IScriptEnvironment*, CreateScriptEnvironment)(int version = AVISYNTH_IN
 #define VARNAME_AVIPadScanlines   "OPT_AVIPadScanlines"   // Have scanlines mod4 padded in all pixel formats
 #define VARNAME_UseWaveExtensible "OPT_UseWaveExtensible" // Use WAVEFORMATEXTENSIBLE when describing audio to Windows
 #define VARNAME_dwChannelMask     "OPT_dwChannelMask"     // Integer audio channel mask. See description of WAVEFORMATEXTENSIBLE for more info.
-
+#define VARNAME_Enable_V210       "OPT_Enable_V210"       // AVS+ use V210 instead of P210 (VfW)
+#define VARNAME_Enable_Y3_10_10   "OPT_Enable_Y3_10_10"   // AVS+ use Y3[10][10] instead of P210 (VfW)
+#define VARNAME_Enable_Y3_10_16   "OPT_Enable_Y3_10_16"   // AVS+ use Y3[10][16] instead of P216 (VfW)
+#define VARNAME_Enable_b64a       "OPT_Enable_b64a"       // AVS+ use b64a instead of BRA[64] (VfW)
+#define VARNAME_Enable_PlanarToPackedRGB "OPT_Enable_PlanarToPackedRGB" // AVS+ convert Planar RGB to packed RGB (VfW)
 
 // C exports
 #include <avs/capi.h>

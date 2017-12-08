@@ -33,6 +33,8 @@
 #define AVSCORE_CPUID_H
 
 // For GetCPUFlags.  These are backwards-compatible with those in VirtualDub.
+// ending with SSE4_2
+// For emulation see https://software.intel.com/en-us/articles/intel-software-development-emulator
 enum {
                     /* oldest CPU to support extension */
   CPUF_FORCE        =  0x01,   //  N/A
@@ -58,13 +60,17 @@ enum {
   CPUF_MOVBE        = 0x10000,  // Big Endian move
   CPUF_POPCNT       = 0x20000,
   CPUF_AES          = 0x40000,
-  // CPUF_AVX512F      = 0x80000,   // AVX-512 Foundation.
-  // CPUF_AVX512DQ     = 0x100000,  // AVX-512 DQ (Double/Quad granular) Instructions
-  // CPUF_AVX512PF     = 0x200000,  // AVX-512 Prefetch
-  // CPUF_AVX512ER     = 0x400000,  // AVX-512 Exponential and Reciprocal
-  // CPUF_AVX512CD     = 0x800000,  // AVX-512 Conflict Detection
-  // CPUF_AVX512BW     = 0x1000000, // AVX-512 BW (Byte/Word granular) Instructions
-  // CPUF_AVX512VL     = 0x2000000, // AVX-512 VL (128/256 Vector Length) Extensions
+  CPUF_FMA4         = 0x80000,
+
+  CPUF_AVX512F      = 0x100000,  // AVX-512 Foundation.
+  CPUF_AVX512DQ     = 0x200000,  // AVX-512 DQ (Double/Quad granular) Instructions
+  CPUF_AVX512PF     = 0x400000,  // AVX-512 Prefetch
+  CPUF_AVX512ER     = 0x800000,  // AVX-512 Exponential and Reciprocal
+  CPUF_AVX512CD     = 0x1000000, // AVX-512 Conflict Detection
+  CPUF_AVX512BW     = 0x2000000, // AVX-512 BW (Byte/Word granular) Instructions
+  CPUF_AVX512VL     = 0x4000000, // AVX-512 VL (128/256 Vector Length) Extensions
+  CPUF_AVX512IFMA   = 0x8000000, // AVX-512 IFMA integer 52 bit
+  CPUF_AVX512VBMI   = 0x10000000,// AVX-512 VBMI
 };
 
 #ifdef BUILDING_AVSCORE
