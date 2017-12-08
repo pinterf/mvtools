@@ -47,7 +47,7 @@ static inline void DebugPrintf(char *fmt, ...)
 
 
 
-static inline void DebugPrintf(char *fmt, ...)
+static inline void DebugPrintf(const char *fmt, ...)
 {
   __noop(fmt); 	// Nothing
 }

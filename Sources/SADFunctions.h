@@ -31,6 +31,7 @@
 #include "types.h"
 #include <stdint.h>
 #include <cassert>
+#include "emmintrin.h"
 
 SADFunction* get_sad_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
 

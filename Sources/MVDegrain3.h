@@ -8,6 +8,7 @@
 #include "yuy2planes.h"
 #include <stdint.h>
 #include "def.h"
+#include "emmintrin.h"
 
 class MVGroupOfFrames;
 class MVPlane;
@@ -147,41 +148,41 @@ void Degrain1to6_C(uint8_t *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
   {
     for (int x = 0; x < blockWidth; x++)
     {
-      if (constexpr(level == 1)) {
+      if constexpr(level == 1) {
         const int		val = reinterpret_cast<const pixel_t *>(pSrc)[x] * WSrc +
           reinterpret_cast<const pixel_t *>(pRefF[0])[x] * WRefF[0] + reinterpret_cast<const pixel_t *>(pRefB[0])[x] * WRefB[0];
         reinterpret_cast<pixel_t *>(pDst)[x] = (val + (no_need_round ? 0 : 128)) >> 8;
-        if (constexpr(lsb_flag))
+        if constexpr(lsb_flag)
           pDstLsb[x] = val & 255;
       }
-      else if (constexpr(level == 2)) {
+      else if constexpr(level == 2) {
         const int		val = reinterpret_cast<const pixel_t *>(pSrc)[x] * WSrc +
           reinterpret_cast<const pixel_t *>(pRefF[0])[x] * WRefF[0] + reinterpret_cast<const pixel_t *>(pRefB[0])[x] * WRefB[0] +
           reinterpret_cast<const pixel_t *>(pRefF[1])[x] * WRefF[1] + reinterpret_cast<const pixel_t *>(pRefB[1])[x] * WRefB[1];
         reinterpret_cast<pixel_t *>(pDst)[x] = (val + (no_need_round ? 0 : 128)) >> 8;
-        if (constexpr(lsb_flag))
+        if constexpr(lsb_flag)
           pDstLsb[x] = val & 255;
       }
-      else if (constexpr(level == 3)) {
+      else if constexpr(level == 3) {
         const int		val = reinterpret_cast<const pixel_t *>(pSrc)[x] * WSrc +
           reinterpret_cast<const pixel_t *>(pRefF[0])[x] * WRefF[0] + reinterpret_cast<const pixel_t *>(pRefB[0])[x] * WRefB[0] +
           reinterpret_cast<const pixel_t *>(pRefF[1])[x] * WRefF[1] + reinterpret_cast<const pixel_t *>(pRefB[1])[x] * WRefB[1] +
           reinterpret_cast<const pixel_t *>(pRefF[2])[x] * WRefF[2] + reinterpret_cast<const pixel_t *>(pRefB[2])[x] * WRefB[2];
         reinterpret_cast<pixel_t *>(pDst)[x] = (val + (no_need_round ? 0 : 128)) >> 8;
-        if (constexpr(lsb_flag))
+        if constexpr(lsb_flag)
           pDstLsb[x] = val & 255;
       }
-      else if (constexpr(level == 4)) {
+      else if constexpr(level == 4) {
         const int		val = reinterpret_cast<const pixel_t *>(pSrc)[x] * WSrc +
           reinterpret_cast<const pixel_t *>(pRefF[0])[x] * WRefF[0] + reinterpret_cast<const pixel_t *>(pRefB[0])[x] * WRefB[0] +
           reinterpret_cast<const pixel_t *>(pRefF[1])[x] * WRefF[1] + reinterpret_cast<const pixel_t *>(pRefB[1])[x] * WRefB[1] +
           reinterpret_cast<const pixel_t *>(pRefF[2])[x] * WRefF[2] + reinterpret_cast<const pixel_t *>(pRefB[2])[x] * WRefB[2] +
           reinterpret_cast<const pixel_t *>(pRefF[3])[x] * WRefF[3] + reinterpret_cast<const pixel_t *>(pRefB[3])[x] * WRefB[3];
         reinterpret_cast<pixel_t *>(pDst)[x] = (val + (no_need_round ? 0 : 128)) >> 8;
-        if (constexpr(lsb_flag))
+        if constexpr(lsb_flag)
           pDstLsb[x] = val & 255;
       }
-      else if (constexpr(level == 5)) {
+      else if constexpr(level == 5) {
         const int		val = reinterpret_cast<const pixel_t *>(pSrc)[x] * WSrc +
           reinterpret_cast<const pixel_t *>(pRefF[0])[x] * WRefF[0] + reinterpret_cast<const pixel_t *>(pRefB[0])[x] * WRefB[0] +
           reinterpret_cast<const pixel_t *>(pRefF[1])[x] * WRefF[1] + reinterpret_cast<const pixel_t *>(pRefB[1])[x] * WRefB[1] +
@@ -189,10 +190,10 @@ void Degrain1to6_C(uint8_t *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
           reinterpret_cast<const pixel_t *>(pRefF[3])[x] * WRefF[3] + reinterpret_cast<const pixel_t *>(pRefB[3])[x] * WRefB[3] +
           reinterpret_cast<const pixel_t *>(pRefF[4])[x] * WRefF[4] + reinterpret_cast<const pixel_t *>(pRefB[4])[x] * WRefB[4];
         reinterpret_cast<pixel_t *>(pDst)[x] = (val + (no_need_round ? 0 : 128)) >> 8;
-        if (constexpr(lsb_flag))
+        if constexpr(lsb_flag)
           pDstLsb[x] = val & 255;
       }
-      else if (constexpr(level == 6)) {
+      else if constexpr(level == 6) {
         const int		val = reinterpret_cast<const pixel_t *>(pSrc)[x] * WSrc +
           reinterpret_cast<const pixel_t *>(pRefF[0])[x] * WRefF[0] + reinterpret_cast<const pixel_t *>(pRefB[0])[x] * WRefB[0] +
           reinterpret_cast<const pixel_t *>(pRefF[1])[x] * WRefF[1] + reinterpret_cast<const pixel_t *>(pRefB[1])[x] * WRefB[1] +
@@ -201,29 +202,29 @@ void Degrain1to6_C(uint8_t *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
           reinterpret_cast<const pixel_t *>(pRefF[4])[x] * WRefF[4] + reinterpret_cast<const pixel_t *>(pRefB[4])[x] * WRefB[4] +
           reinterpret_cast<const pixel_t *>(pRefF[5])[x] * WRefF[5] + reinterpret_cast<const pixel_t *>(pRefB[5])[x] * WRefB[5];
         reinterpret_cast<pixel_t *>(pDst)[x] = (val + (no_need_round ? 0 : 128)) >> 8;
-        if (constexpr(lsb_flag))
+        if constexpr(lsb_flag)
           pDstLsb[x] = val & 255;
       }
     }
     pDst += nDstPitch;
-    if (constexpr(lsb_flag))
+    if constexpr(lsb_flag)
       pDstLsb += nDstPitch;
     pSrc += nSrcPitch;
     pRefB[0] += BPitch[0];
     pRefF[0] += FPitch[0];
-    if (constexpr(level >= 2)) {
+    if constexpr(level >= 2) {
       pRefB[1] += BPitch[1];
       pRefF[1] += FPitch[1];
-      if (constexpr(level >= 3)) {
+      if constexpr(level >= 3) {
         pRefB[2] += BPitch[2];
         pRefF[2] += FPitch[2];
-        if (constexpr(level >= 4)) {
+        if constexpr(level >= 4) {
           pRefB[3] += BPitch[3];
           pRefF[3] += FPitch[3];
-          if (constexpr(level >= 5)) {
+          if constexpr(level >= 5) {
             pRefB[4] += BPitch[4];
             pRefF[4] += FPitch[4];
-            if (constexpr(level >= 6)) {
+            if constexpr(level >= 6) {
               pRefB[5] += BPitch[5];
               pRefF[5] += FPitch[5];
             }
@@ -517,19 +518,19 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
   __m128i wb6, wf6;
   wb1 = _mm_set1_epi16(WRefB[0]);
   wf1 = _mm_set1_epi16(WRefF[0]);
-  if (constexpr(level >= 2)) {
+  if constexpr(level >= 2) {
     wb2 = _mm_set1_epi16(WRefB[1]);
     wf2 = _mm_set1_epi16(WRefF[1]);
-    if (constexpr(level >= 3)) {
+    if constexpr(level >= 3) {
       wb3 = _mm_set1_epi16(WRefB[2]);
       wf3 = _mm_set1_epi16(WRefF[2]);
-      if (constexpr(level >= 4)) {
+      if constexpr(level >= 4) {
         wb4 = _mm_set1_epi16(WRefB[3]);
         wf4 = _mm_set1_epi16(WRefF[3]);
-        if (constexpr(level >= 5)) {
+        if constexpr(level >= 5) {
           wb5 = _mm_set1_epi16(WRefB[4]);
           wf5 = _mm_set1_epi16(WRefF[4]);
-          if (constexpr(level >= 6)) {
+          if constexpr(level >= 6) {
             wb6 = _mm_set1_epi16(WRefB[5]);
             wf6 = _mm_set1_epi16(WRefF[5]);
           }
@@ -538,7 +539,7 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
     }
   }
 
-  if (constexpr(lsb_flag))
+  if constexpr(lsb_flag)
   {
     __m128i m = _mm_set1_epi16(255);
     for (int h = 0; h < realBlockHeight; h++)
@@ -546,7 +547,7 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
       for (int x = 0; x < blockWidth; x += 8)
       {
         __m128i	val;
-        if (constexpr(level == 6)) {
+        if constexpr(level == 6) {
           val =
             _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pSrc + x)), z), ws),
               _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[0] + x)), z), wb1),
@@ -562,7 +563,7 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
                                   _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[5] + x)), z), wb6),
                                      _mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[5] + x)), z), wf6)))))))))))));
         }
-        if (constexpr(level == 5)) {
+        if constexpr(level == 5) {
           val =
             _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pSrc + x)), z), ws),
               _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[0] + x)), z), wb1),
@@ -576,7 +577,7 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
                               _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[4] + x)), z), wb5),
                                 _mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[4] + x)), z), wf5)))))))))));
         }
-        if (constexpr(level == 4)) {
+        if constexpr(level == 4) {
           val =
             _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pSrc + x)), z), ws),
               _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[0] + x)), z), wb1),
@@ -588,7 +589,7 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
                           _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[3] + x)), z), wb4),
                             _mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[3] + x)), z), wf4)))))))));
         }
-        if (constexpr(level == 3)) {
+        if constexpr(level == 3) {
           val =
             _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pSrc + x)), z), ws),
               _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[0] + x)), z), wb1),
@@ -598,7 +599,7 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
                       _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[2] + x)), z), wb3),
                         _mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[2] + x)), z), wf3)))))));
         }
-        else if (constexpr(level == 2)) {
+        else if constexpr(level == 2) {
           val =
             _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pSrc + x)), z), ws),
               _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[0] + x)), z), wb1),
@@ -606,14 +607,14 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
                   _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[1] + x)), z), wb2),
                     _mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[1] + x)), z), wf2)))));
         }
-        else if (constexpr(level == 1)) {
+        else if constexpr(level == 1) {
           val =
             _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pSrc + x)), z), ws),
               _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[0] + x)), z), wb1),
                 _mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[0] + x)), z), wf1)));
         }
 
-        if (constexpr(blockWidth == 12)) {
+        if constexpr(blockWidth == 12) {
           // 8 from the first, 4 from the second cycle
           if (x == 0) { // 1st 8 bytes
             _mm_storel_epi64((__m128i*)(pDst + x), _mm_packus_epi16(_mm_srli_epi16(val, 8), z));
@@ -623,11 +624,11 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
             *(uint32_t *)(pDst + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_srli_epi16(val, 8), z));
             *(uint32_t *)(pDstLsb + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_and_si128(val, m), z));
           }
-        } else if (constexpr(blockWidth >= 8)) {
+        } else if constexpr(blockWidth >= 8) {
           // 8, 16, 24, ....
           _mm_storel_epi64((__m128i*)(pDst + x), _mm_packus_epi16(_mm_srli_epi16(val, 8), z));
           _mm_storel_epi64((__m128i*)(pDstLsb + x), _mm_packus_epi16(_mm_and_si128(val, m), z));
-        } else if (constexpr(blockWidth == 6)) {
+        } else if constexpr(blockWidth == 6) {
           // x is always 0
           // 4+2 bytes
           __m128i upper = _mm_packus_epi16(_mm_srli_epi16(val, 8), z);
@@ -637,12 +638,12 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
             *(uint16_t *)(pDst + x + 4) = (uint16_t)_mm_cvtsi128_si32(_mm_srli_si128(upper,4));
             *(uint16_t *)(pDstLsb + x + 4 ) = (uint16_t)_mm_cvtsi128_si32(_mm_srli_si128(lower,4));
         }
-        else if (constexpr(blockWidth == 4)) {
+        else if constexpr(blockWidth == 4) {
           // x is always 0
           *(uint32_t *)(pDst + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_srli_epi16(val, 8), z));
           *(uint32_t *)(pDstLsb + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_and_si128(val, m), z));
         }
-        else if (constexpr(blockWidth == 3)) {
+        else if constexpr(blockWidth == 3) {
           // x is always 0
           // 2 + 1 bytes
           uint32_t reslo = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_srli_epi16(val, 8), z));
@@ -652,7 +653,7 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
           *(uint8_t *)(pDst + x + 2) = (uint8_t)(reslo >> 16);
           *(uint8_t *)(pDstLsb + x + 2) = (uint8_t)(reshi >> 16);
         }
-        else if (constexpr(blockWidth == 2)) {
+        else if constexpr(blockWidth == 2) {
           // x is always 0
           // 2 bytes
           uint32_t reslo = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_srli_epi16(val, 8), z));
@@ -667,22 +668,22 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
 
       pRefB[0] += BPitch[0];
       pRefF[0] += FPitch[0];
-      if (constexpr(level >= 2)) {
+      if constexpr(level >= 2) {
         pRefB[1] += BPitch[1];
         pRefF[1] += FPitch[1];
-        if (constexpr(level >= 3)) {
+        if constexpr(level >= 3) {
           pRefB[2] += BPitch[2];
           pRefF[2] += FPitch[2];
         }
-        if (constexpr(level >= 4)) {
+        if constexpr(level >= 4) {
           pRefB[3] += BPitch[3];
           pRefF[3] += FPitch[3];
         }
-        if (constexpr(level >= 5)) {
+        if constexpr(level >= 5) {
           pRefB[4] += BPitch[4];
           pRefF[4] += FPitch[4];
         }
-        if (constexpr(level >= 6)) {
+        if constexpr(level >= 6) {
           pRefB[5] += BPitch[5];
           pRefF[5] += FPitch[5];
         }
@@ -699,7 +700,7 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
       for (int x = 0; x < blockWidth; x += 8)
       {
         __m128i res;
-        if (constexpr(level == 6)) {
+        if constexpr(level == 6) {
           res = _mm_packus_epi16(_mm_srli_epi16(
             _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pSrc + x)), z), ws),
               _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[0] + x)), z), wb1),
@@ -716,7 +717,7 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
                                     _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[5] + x)), z), wf6),
                                       o))))))))))))), 8), z);
         }
-        if (constexpr(level == 5)) {
+        if constexpr(level == 5) {
           res = _mm_packus_epi16(_mm_srli_epi16(
             _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pSrc + x)), z), ws),
               _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[0] + x)), z), wb1),
@@ -731,7 +732,7 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
                                 _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[4] + x)), z), wf5),
                                   o))))))))))), 8), z);
         }
-        else if (constexpr(level == 4)) {
+        else if constexpr(level == 4) {
           res = _mm_packus_epi16(_mm_srli_epi16(
             _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pSrc + x)), z), ws),
               _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[0] + x)), z), wb1),
@@ -744,7 +745,7 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
                             _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[3] + x)), z), wf4),
                               o))))))))), 8), z);
         }
-        else if (constexpr(level == 3)) {
+        else if constexpr(level == 3) {
           res = _mm_packus_epi16(_mm_srli_epi16(
             _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pSrc + x)), z), ws),
               _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[0] + x)), z), wb1),
@@ -756,7 +757,7 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
                           o))))))), 8), z);
           //			 pDst[x] = (pRefF[x]*WRefF + pSrc[x]*WSrc + pRefB[x]*WRefB + pRefF2[x]*WRefF2 + pRefB2[x]*WRefB2 + pRefF3[x]*WRefF3 + pRefB3[x]*WRefB3 + 128)>>8;
         }
-        else if (constexpr(level == 2)) {
+        else if constexpr(level == 2) {
           res = _mm_packus_epi16(_mm_srli_epi16(
             _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pSrc + x)), z), ws),
               _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[0] + x)), z), wb1),
@@ -766,7 +767,7 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
                       o))))), 8), z);
           //			 pDst[x] = (pRefF[x]*WRefF + pSrc[x]*WSrc + pRefB[x]*WRefB + pRefF2[x]*WRefF2 + pRefB2[x]*WRefB2 + 128)>>8;
         }
-        else if (constexpr(level == 1)) {
+        else if constexpr(level == 1) {
           res = _mm_packus_epi16(_mm_srli_epi16(
             _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pSrc + x)), z), ws),
               _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[0] + x)), z), wb1),
@@ -775,7 +776,7 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
           //				 pDst[x] = (pRefF[x]*WRefF + pSrc[x]*WSrc + pRefB[x]*WRefB + 128)>>8;// weighted (by SAD) average
         }
 
-        if (constexpr(blockWidth == 12)) {
+        if constexpr(blockWidth == 12) {
           // 8 from the first, 4 from the second cycle
           if (x == 0) { // 1st 8 bytes
             _mm_storel_epi64((__m128i*)(pDst + x), res);
@@ -784,28 +785,28 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
             *(uint32_t *)(pDst + x) = _mm_cvtsi128_si32(res);
           }
         }
-        else if (constexpr(blockWidth >= 8)) {
+        else if constexpr(blockWidth >= 8) {
           // 8, 16, 24, ....
           _mm_storel_epi64((__m128i*)(pDst + x), res);
         }
-        else if (constexpr(blockWidth == 6)) {
+        else if constexpr(blockWidth == 6) {
           // x is always 0
           // 4+2 bytes
           *(uint32_t *)(pDst + x) = _mm_cvtsi128_si32(res);
           *(uint16_t *)(pDst + x + 4) = (uint16_t)_mm_cvtsi128_si32(_mm_srli_si128(res, 4));
         }
-        else if (constexpr(blockWidth == 4)) {
+        else if constexpr(blockWidth == 4) {
           // x is always 0
           *(uint32_t *)(pDst + x) = _mm_cvtsi128_si32(res);
         }
-        else if (constexpr(blockWidth == 3)) {
+        else if constexpr(blockWidth == 3) {
           // x is always 0
           // 2+1 bytes
           uint32_t res32 = _mm_cvtsi128_si32(res);
           *(uint16_t *)(pDst + x) = (uint16_t)res32;
           *(uint8_t *)(pDst + x + 2) = (uint8_t)(res32 >> 16);
         }
-        else if (constexpr(blockWidth == 2)) {
+        else if constexpr(blockWidth == 2) {
           // x is always 0
           // 2 bytes
           uint32_t res32 = _mm_cvtsi128_si32(res);
@@ -817,19 +818,19 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
 
       pRefB[0] += BPitch[0];
       pRefF[0] += FPitch[0];
-      if (constexpr(level >= 2)) {
+      if constexpr(level >= 2) {
         pRefB[1] += BPitch[1];
         pRefF[1] += FPitch[1];
-        if (constexpr(level >= 3)) {
+        if constexpr(level >= 3) {
           pRefB[2] += BPitch[2];
           pRefF[2] += FPitch[2];
-          if (constexpr(level >= 4)) {
+          if constexpr(level >= 4) {
             pRefB[3] += BPitch[3];
             pRefF[3] += FPitch[3];
-            if (constexpr(level >= 5)) {
+            if constexpr(level >= 5) {
               pRefB[4] += BPitch[4];
               pRefF[4] += FPitch[4];
-              if (constexpr(level >= 6)) {
+              if constexpr(level >= 6) {
                 pRefB[5] += BPitch[5];
                 pRefF[5] += FPitch[5];
               }
@@ -863,19 +864,19 @@ void Degrain1to6_16_sse41(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nD
   __m128i wb6, wf6;
   wb1 = _mm_set1_epi32(WRefB[0]);
   wf1 = _mm_set1_epi32(WRefF[0]);
-  if (constexpr(level >= 2)) {
+  if constexpr(level >= 2) {
     wb2 = _mm_set1_epi32(WRefB[1]);
     wf2 = _mm_set1_epi32(WRefF[1]);
-    if (constexpr(level >= 3)) {
+    if constexpr(level >= 3) {
       wb3 = _mm_set1_epi32(WRefB[2]);
       wf3 = _mm_set1_epi32(WRefF[2]);
-      if (constexpr(level >= 4)) {
+      if constexpr(level >= 4) {
         wb4 = _mm_set1_epi32(WRefB[3]);
         wf4 = _mm_set1_epi32(WRefF[3]);
-        if (constexpr(level >= 5)) {
+        if constexpr(level >= 5) {
           wb5 = _mm_set1_epi32(WRefB[4]);
           wf5 = _mm_set1_epi32(WRefF[4]);
-          if (constexpr(level >= 6)) {
+          if constexpr(level >= 6) {
             wb6 = _mm_set1_epi32(WRefB[5]);
             wf6 = _mm_set1_epi32(WRefF[5]);
           }
@@ -890,7 +891,7 @@ void Degrain1to6_16_sse41(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nD
     for (int x = 0; x < blockWidth; x += 8 / sizeof(uint16_t))
     {
       __m128i res;
-      if (constexpr(level == 6)) {
+      if constexpr(level == 6) {
         res = _mm_packus_epi32(_mm_srli_epi32(
           _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pSrc + x * sizeof(uint16_t))), z), ws),
             _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[0] + x * sizeof(uint16_t))), z), wb1),
@@ -907,7 +908,7 @@ void Degrain1to6_16_sse41(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nD
                                   _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[5] + x * sizeof(uint16_t))), z), wf6),
                                     o))))))))))))), 8), z);
       }
-      if (constexpr(level == 5)) {
+      if constexpr(level == 5) {
         res = _mm_packus_epi32(_mm_srli_epi32(
           _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pSrc + x * sizeof(uint16_t))), z), ws),
             _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[0] + x * sizeof(uint16_t))), z), wb1),
@@ -922,7 +923,7 @@ void Degrain1to6_16_sse41(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nD
                               _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[4] + x * sizeof(uint16_t))), z), wf5),
                                 o))))))))))), 8), z);
       }
-      else if (constexpr(level == 4)) {
+      else if constexpr(level == 4) {
         res = _mm_packus_epi32(_mm_srli_epi32(
           _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pSrc + x * sizeof(uint16_t))), z), ws),
             _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[0] + x * sizeof(uint16_t))), z), wb1),
@@ -935,7 +936,7 @@ void Degrain1to6_16_sse41(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nD
                           _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefF[3] + x * sizeof(uint16_t))), z), wf4),
                             o))))))))), 8), z);
       }
-      else if (constexpr(level == 3)) {
+      else if constexpr(level == 3) {
         res = _mm_packus_epi32(_mm_srli_epi32(
           _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pSrc + x * sizeof(uint16_t))), z), ws),
             _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[0] + x * sizeof(uint16_t))), z), wb1),
@@ -947,7 +948,7 @@ void Degrain1to6_16_sse41(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nD
                         o))))))), 8), z);
         //			 pDst[x] = (pRefF[x]*WRefF + pSrc[x]*WSrc + pRefB[x]*WRefB + pRefF2[x]*WRefF2 + pRefB2[x]*WRefB2 + pRefF3[x]*WRefF3 + pRefB3[x]*WRefB3 + 128)>>8;
       }
-      else if (constexpr(level == 2)) {
+      else if constexpr(level == 2) {
         res = _mm_packus_epi32(_mm_srli_epi32(
           _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pSrc + x * sizeof(uint16_t))), z), ws),
             _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[0] + x * sizeof(uint16_t))), z), wb1),
@@ -957,7 +958,7 @@ void Degrain1to6_16_sse41(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nD
                     o))))), 8), z);
         //			 pDst[x] = (pRefF[x]*WRefF + pSrc[x]*WSrc + pRefB[x]*WRefB + pRefF2[x]*WRefF2 + pRefB2[x]*WRefB2 + 128)>>8;
       }
-      else if (constexpr(level == 1)) {
+      else if constexpr(level == 1) {
         res = _mm_packus_epi32(_mm_srli_epi32(
           _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pSrc + x * sizeof(uint16_t))), z), ws),
             _mm_add_epi32(_mm_mullo_epi32(_mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[0] + x * sizeof(uint16_t))), z), wb1),
@@ -965,18 +966,18 @@ void Degrain1to6_16_sse41(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nD
                 o))), 8), z);
         //				 pDst[x] = (pRefF[x]*WRefF + pSrc[x]*WSrc + pRefB[x]*WRefB + 128)>>8;// weighted (by SAD) average
       }
-      if (constexpr(blockWidth == 6)) {
+      if constexpr(blockWidth == 6) {
         // special, 4+2
         if (x == 0)
           _mm_storel_epi64((__m128i*)(pDst + x * sizeof(uint16_t)), res);
         else
           *(uint32_t *)(pDst + x * sizeof(uint16_t)) = _mm_cvtsi128_si32(res);
       }
-      else if (constexpr(blockWidth >= 8 / sizeof(uint16_t))) { // block 4 is already 8 bytes
+      else if constexpr(blockWidth >= 8 / sizeof(uint16_t)) { // block 4 is already 8 bytes
         // 4, 8, 12, ...
         _mm_storel_epi64((__m128i*)(pDst + x * sizeof(uint16_t)), res);
       }
-      else if (constexpr(blockWidth == 3)) { // blockwidth 3 is 6 bytes
+      else if constexpr(blockWidth == 3) { // blockwidth 3 is 6 bytes
         // x == 0 always
         *(uint32_t *)(pDst) = _mm_cvtsi128_si32(res); // 1-4 bytes
         uint32_t res32 = _mm_cvtsi128_si32(_mm_srli_si128(res,4)); // 5-8 byte
@@ -996,19 +997,19 @@ void Degrain1to6_16_sse41(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nD
     */
     pRefB[0] += BPitch[0];
     pRefF[0] += FPitch[0];
-    if (constexpr(level >= 2)) {
+    if constexpr(level >= 2) {
       pRefB[1] += BPitch[1];
       pRefF[1] += FPitch[1];
-      if (constexpr(level >= 3)) {
+      if constexpr(level >= 3) {
         pRefB[2] += BPitch[2];
         pRefF[2] += FPitch[2];
-        if (constexpr(level >= 4)) {
+        if constexpr(level >= 4) {
           pRefB[3] += BPitch[3];
           pRefF[3] += FPitch[3];
-          if (constexpr(level >= 5)) {
+          if constexpr(level >= 5) {
             pRefB[4] += BPitch[4];
             pRefF[4] += FPitch[4];
-            if (constexpr(level >= 6)) {
+            if constexpr(level >= 6) {
               pRefB[5] += BPitch[5];
               pRefF[5] += FPitch[5];
             }
