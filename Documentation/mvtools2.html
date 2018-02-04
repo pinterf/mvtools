@@ -954,7 +954,7 @@ The lesser value results to lesser output.</p>
 <pre class="proto">MSCDetection (
 	clip source,
 	clip vectors,
-	int  Ysc (255),
+	int  Ysc (255 or max. value of the current bit depth),
 	int  thSCD1,
 	int  thSCD2,
 	bool isse
@@ -965,7 +965,8 @@ The mask is created both on the luma and on chroma planes.
 Output without scene change is 0.</p>
 
 <p class="var">Ysc</p>
-<p>This is the value taken by the mask on scene change.</p>
+<p>This is the value taken by the mask on scene change. *The default value is the maximum value of the given bit depth, e.g. 1023 for 10 bits, 65535 for 16 bits
+When specified it will be clamped to a valid 0 and 2^bitdepth-1 range. This parameter was mistakenly named as Yth in all plugins <=2.7.24</p>
 
 
 
@@ -3155,7 +3156,7 @@ and compensate also the chroma ( though it rounds the vector to odd coordinates 
 <li>MVMask has two new parameters : showsad (bool) which allows to build the mask of the SAD values instead of the mask of the vectors' length.
 Ysc allows you to set the value taken by the mask on scene changes</li>
 <li>MVCompensate : behavior modification on scene changes. Now, the current frame is left untouched if a scene change was detected.</li>
-<li>New filter : MVSCDetection, with one parameter, Ysc, which works as previously.</li>
+<li>New filter : MVSCDetection, with one parameter, Ysc, which works as previouslymscdetection.</li>
 <li>MVInterpolate, MVConvertFPS and MVBlur are enabled, but may be buggy ( though I wasn't able to make MVConvertFPS crash )</li>
 </ul>
 
