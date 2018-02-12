@@ -118,7 +118,7 @@ MStoreVect::MStoreVect (std::vector <::PClip> clip_arr, const char *vccs_0, ::IS
 	static const int32_t	ver = MVAnalysisData::STORE_VERSION;
 	write_to_clip (dst_pos, data_ptr, &key, sizeof (key), pitch);
 	write_to_clip (dst_pos, data_ptr, &ver, sizeof (ver), pitch);
-	const int32_t	nbr_clips = _vect_arr.size ();
+	const int32_t	nbr_clips = (int32_t)_vect_arr.size ();
 	write_to_clip (dst_pos, data_ptr, &nbr_clips, sizeof (nbr_clips), pitch);
 
 	// Clip offsets
