@@ -40,7 +40,7 @@ boundaries.
 #include <commonfunctions.h>
 
 
-MVPlane::MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, int _pixelsize, int _bits_per_pixel, bool _isse, bool mt_flag)
+MVPlane::MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, int _pixelsize, int _bits_per_pixel, int _cpuFlags, bool mt_flag)
 :	pPlane (new uint8_t* [_nPel * _nPel * _pixelsize])
 ,	nWidth (_nWidth)
 ,	nHeight (_nHeight)
@@ -57,7 +57,7 @@ MVPlane::MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, i
 ,	pixelsize(_pixelsize)
 , pixelsize_shift((_pixelsize == 1) ? 0 : (_pixelsize == 2 ? 1 : 2)) // pixelsize 1/2/4: shift 0/1/2
 ,	bits_per_pixel(_bits_per_pixel)
-,	isse (_isse)
+, cpuFlags(_cpuFlags)
 ,	_mt_flag (mt_flag)
 ,	isPadded (false)
 ,	isRefined (false)
@@ -67,10 +67,13 @@ MVPlane::MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, i
 ,	_slicer_reduce (mt_flag)
 ,	_redp_ptr (0)
 {
+    bool _isse = !!(cpuFlags & CPUF_SSE2);
+    bool hasSSE41 = !!(cpuFlags & CPUF_SSE4_1);
+
     if(pixelsize==1) {
         _bilin_hor_ptr = _isse ? HorizontalBilin_sse2<uint8_t> : HorizontalBilin<uint8_t>;
         _bilin_ver_ptr = _isse ? VerticalBilin_sse2<uint8_t> : VerticalBilin<uint8_t>;
-        _bilin_dia_ptr = _isse ? DiagonalBilin_iSSE : DiagonalBilin<uint8_t>;
+        _bilin_dia_ptr = _isse ? DiagonalBilin_sse2<uint8_t, 0> : DiagonalBilin<uint8_t>;
         _bicubic_hor_ptr = _isse ? HorizontalBicubic_iSSE : HorizontalBicubic<uint8_t>;
         _bicubic_ver_ptr = _isse ? VerticalBicubic_iSSE : VerticalBicubic<uint8_t>;
         _wiener_hor_ptr = _isse ? HorizontalWiener_iSSE : HorizontalWiener<uint8_t>;
@@ -81,7 +84,7 @@ MVPlane::MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, i
     else if (pixelsize==2) {
         _bilin_hor_ptr = _isse ? HorizontalBilin_sse2<uint16_t> : HorizontalBilin<uint16_t>;
         _bilin_ver_ptr = _isse ? VerticalBilin_sse2<uint16_t> : VerticalBilin<uint16_t>;
-        _bilin_dia_ptr = DiagonalBilin<uint16_t>;
+        _bilin_dia_ptr = _isse ? (hasSSE41 ? DiagonalBilin_sse2<uint16_t, 1> : DiagonalBilin_sse2<uint16_t, 0>): DiagonalBilin<uint16_t>;
         _bicubic_hor_ptr = HorizontalBicubic<uint16_t>;
         _bicubic_ver_ptr = VerticalBicubic<uint16_t>;
         _wiener_hor_ptr = HorizontalWiener<uint16_t>;
@@ -206,7 +209,7 @@ void MVPlane::ChangePlane(const uint8_t *pNewPlane, int nNewPitch)
    if (! isFilled)
 	{
        // noffsetPadding is pixelsize aware
-		BitBlt(pPlane[0] + nOffsetPadding, nPitch, pNewPlane, nNewPitch, (nWidth << pixelsize_shift), nHeight, isse);
+		BitBlt(pPlane[0] + nOffsetPadding, nPitch, pNewPlane, nNewPitch, (nWidth << pixelsize_shift), nHeight);
 		isFilled = true;
 	}
 }
@@ -516,6 +519,6 @@ void	MVPlane::reduce_slice (SlicerReduce::TaskData &td)
 		red.pPlane[0] + red.nOffsetPadding, pPlane[0] + nOffsetPadding,
 		red.nPitch, nPitch,
 		red.nWidth, red.nHeight, td._y_beg, td._y_end,
-		isse
+		cpuFlags
 	);
 }

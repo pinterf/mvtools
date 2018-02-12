@@ -31,8 +31,7 @@
 MVFinest::MVFinest(PClip _super, bool _isse, IScriptEnvironment* env) :
 GenericVideoFilter(_super)
 {
-
-   isse = _isse;
+  cpuFlags = _isse ? env->GetCPUFlags() : 0;
 
 	// get parameters of prepared super clip - v2.0
 	SuperParams64Bits params;
@@ -62,7 +61,7 @@ GenericVideoFilter(_super)
     pixelsize = _super->GetVideoInfo().ComponentSize();
     bits_per_pixel = _super->GetVideoInfo().BitsPerComponent();
 
-	pRefGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse, xRatioUV, yRatioUV, pixelsize, bits_per_pixel, true);
+	pRefGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, cpuFlags, xRatioUV, yRatioUV, pixelsize, bits_per_pixel, true);
 
 //	if (nHeight != nHeightS || nHeight != vi.height || nWidth != nSuperWidth-nSuperHPad*2 || nWidth != vi.width)
 //		env->ThrowError("MVFinest : different frame sizes of input clips");
@@ -163,7 +162,7 @@ PVideoFrame __stdcall MVFinest::GetFrame(int n, IScriptEnvironment* env)
           Merge4PlanesToBig(pDst[p], nDstPitches[p], 
             plane->GetAbsolutePointer(0,0), plane->GetAbsolutePointer(1,0), 
             plane->GetAbsolutePointer(0,1), plane->GetAbsolutePointer(1,1), 
-            plane->GetExtendedWidth(), plane->GetExtendedHeight(), plane->GetPitch(), pixelsize, isse
+            plane->GetExtendedWidth(), plane->GetExtendedHeight(), plane->GetPitch(), pixelsize, cpuFlags
           );
         }
       }
@@ -183,7 +182,7 @@ PVideoFrame __stdcall MVFinest::GetFrame(int n, IScriptEnvironment* env)
             plane->GetAbsolutePointer(2,2), plane->GetAbsolutePointer(3,2),
             plane->GetAbsolutePointer(0,3), plane->GetAbsolutePointer(1,3),
             plane->GetAbsolutePointer(2,3), plane->GetAbsolutePointer(3,3),
-            plane->GetExtendedWidth(), plane->GetExtendedHeight(), plane->GetPitch(), pixelsize, isse
+            plane->GetExtendedWidth(), plane->GetExtendedHeight(), plane->GetPitch(), pixelsize, cpuFlags
           );
         }
       }

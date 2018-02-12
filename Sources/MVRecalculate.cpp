@@ -54,6 +54,8 @@ MVRecalculate::MVRecalculate(
 {
   _srd_arr.resize(_nbr_srd);
 
+  cpuFlags = _isse ? env->GetCPUFlags() : 0;
+
   pixelsize = vi.ComponentSize();
   bits_per_pixel = vi.BitsPerComponent();
 
@@ -133,12 +135,12 @@ MVRecalculate::MVRecalculate(
   pSrcGOF = new MVGroupOfFrames(
     nSuperLevels, analysisData.nWidth, analysisData.nHeight,
     nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV,
-    _isse, analysisData.xRatioUV, analysisData.yRatioUV, analysisData.pixelsize, analysisData.bits_per_pixel, mt_flag
+    cpuFlags, analysisData.xRatioUV, analysisData.yRatioUV, analysisData.pixelsize, analysisData.bits_per_pixel, mt_flag
   );
   pRefGOF = new MVGroupOfFrames(
     nSuperLevels, analysisData.nWidth, analysisData.nHeight,
     nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV,
-    _isse, analysisData.xRatioUV, analysisData.yRatioUV, analysisData.pixelsize, analysisData.bits_per_pixel, mt_flag
+    cpuFlags, analysisData.xRatioUV, analysisData.yRatioUV, analysisData.pixelsize, analysisData.bits_per_pixel, mt_flag
   );
   const int		nSuperWidth = child->GetVideoInfo().width;
   const int		nSuperHeight = child->GetVideoInfo().height;

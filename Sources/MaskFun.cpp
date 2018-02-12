@@ -443,12 +443,13 @@ static void Merge4PlanesToBig_sse2(
 
 void Merge4PlanesToBig(
 	uint8_t *pel2Plane, int pel2Pitch, const uint8_t *pPlane0, const uint8_t *pPlane1,
-	const uint8_t *pPlane2, const uint8_t * pPlane3, int width, int height, int pitch, int pixelsize, bool isse)
+	const uint8_t *pPlane2, const uint8_t * pPlane3, int width, int height, int pitch, int pixelsize, int cpuFlags)
 {
 	// copy refined planes to big one plane
   // P =  p0 p1 p0 p1 p0 p1 p0 p1...
   //      p2 p3 p2 p3 p2 p3 p2 p3
   // 
+  bool isse = !!(cpuFlags & CPUF_SSE2);
 	if (!isse || pixelsize == 4)
 	{
     if(pixelsize==1)
@@ -636,7 +637,7 @@ void Merge16PlanesToBig(
   const uint8_t *pPlane4,  const uint8_t *pPlane5,  const uint8_t *pPlane6,  const uint8_t *pPlane7,
   const uint8_t *pPlane8,  const uint8_t *pPlane9,  const uint8_t *pPlane10, const uint8_t *pPlane11,
   const uint8_t *pPlane12, const uint8_t *pPlane13, const uint8_t *pPlane14, const uint8_t *pPlane15,
-  int width, int height, int pitch, int pixelsize, bool isse)
+  int width, int height, int pitch, int pixelsize, int cpuFlags)
 {
   // no SSE2 here
   if (pixelsize == 1)
@@ -686,7 +687,7 @@ void Create_LUTV(int time256, short *LUTVB, short *LUTVF)
 // todo: SSE2
 // pitches: byte offsets
 template<typename pixel_t>
-void Blend(uint8_t * pdst8, const uint8_t * psrc8, const uint8_t * pref8, int height, int width, int dst_pitch, int src_pitch, int ref_pitch, int time256, bool isse)
+void Blend(uint8_t * pdst8, const uint8_t * psrc8, const uint8_t * pref8, int height, int width, int dst_pitch, int src_pitch, int ref_pitch, int time256, int cpuFlags)
 {
   pixel_t *pdst = reinterpret_cast<pixel_t *>(pdst8);
   const pixel_t *psrc = reinterpret_cast<const pixel_t *>(psrc8);
@@ -709,8 +710,8 @@ void Blend(uint8_t * pdst8, const uint8_t * psrc8, const uint8_t * pref8, int he
 }
 
 // instantiate Blend
-template void Blend<uint8_t>(uint8_t * pdst8, const uint8_t * psrc8, const uint8_t * pref8, int height, int width, int dst_pitch, int src_pitch, int ref_pitch, int time256, bool isse);
-template void Blend<uint16_t>(uint8_t * pdst8, const uint8_t * psrc8, const uint8_t * pref8, int height, int width, int dst_pitch, int src_pitch, int ref_pitch, int time256, bool isse);
+template void Blend<uint8_t>(uint8_t * pdst8, const uint8_t * psrc8, const uint8_t * pref8, int height, int width, int dst_pitch, int src_pitch, int ref_pitch, int time256, int cpuFlags);
+template void Blend<uint16_t>(uint8_t * pdst8, const uint8_t * psrc8, const uint8_t * pref8, int height, int width, int dst_pitch, int src_pitch, int ref_pitch, int time256, int cpuFlags);
 
 template<typename pixel_t>
 void FlowInter(

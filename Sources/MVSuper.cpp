@@ -71,7 +71,8 @@ MVSuper::MVSuper (
 	nVPad = _vPad;
 	rfilter = _rfilter;
 	sharp = _sharp; // pel2 interpolation type
-	isse = _isse;
+	//isse = _isse;
+  cpuFlags = _isse ? env->GetCPUFlags() : 0;
 
 	chroma = _chroma;
 	nModeYUV = chroma ? YUVPLANES : YPLANE;
@@ -149,7 +150,7 @@ MVSuper::MVSuper (
 
 	// LDS: why not nModeYUV?
 //	pSrcGOF = new MVGroupOfFrames(nLevels, nWidth, nHeight, nPel, nHPad, nVPad, nModeYUV, isse, yRatioUV, mt_flag);
-	pSrcGOF = new MVGroupOfFrames(nLevels, nWidth, nHeight, nPel, nHPad, nVPad, YUVPLANES, isse, xRatioUV, yRatioUV, pixelsize, bits_per_pixel, mt_flag);
+	pSrcGOF = new MVGroupOfFrames(nLevels, nWidth, nHeight, nPel, nHPad, nVPad, YUVPLANES, cpuFlags, xRatioUV, yRatioUV, pixelsize, bits_per_pixel, mt_flag);
 
 	pSrcGOF->set_interp (nModeYUV, rfilter, sharp);
 
@@ -203,7 +204,7 @@ PVideoFrame __stdcall MVSuper::GetFrame(int n, IScriptEnvironment* env)
 			nSrcPitchY  = SrcPlanes->GetPitch();
 			nSrcPitchUV  = SrcPlanes->GetPitchUV();
 			YUY2ToPlanes(src->GetReadPtr(), src->GetPitch(), nWidth, nHeight,
-			pSrcY, nSrcPitchY, pSrcU, pSrcV, nSrcPitchUV, isse);
+			pSrcY, nSrcPitchY, pSrcU, pSrcV, nSrcPitchUV, cpuFlags);
 			if (usePelClip)
 			{
 				pSrcPelY = SrcPelPlanes->GetPtr();
@@ -212,7 +213,7 @@ PVideoFrame __stdcall MVSuper::GetFrame(int n, IScriptEnvironment* env)
 				nSrcPelPitchY  = SrcPelPlanes->GetPitch();
 				nSrcPelPitchUV  = SrcPelPlanes->GetPitchUV();
 				YUY2ToPlanes(srcPel->GetReadPtr(), srcPel->GetPitch(), srcPel->GetRowSize()/2, srcPel->GetHeight(),
-				pSrcPelY, nSrcPelPitchY, pSrcPelU, pSrcPelV, nSrcPelPitchUV, isse);
+				pSrcPelY, nSrcPelPitchY, pSrcPelU, pSrcPelV, nSrcPelPitchUV, cpuFlags);
 			}
 		}
 		else

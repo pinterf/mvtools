@@ -53,11 +53,11 @@ static	void conv422toYUV422(const unsigned char *py, const unsigned char *pu, co
 
 void YUY2ToPlanes(const unsigned char *pSrcYUY2, int nSrcPitchYUY2, int nWidth, int nHeight,
 							  const unsigned char * pSrc1, int _srcPitch,
-							  const unsigned char * pSrcU1, const unsigned char * pSrcV1, int _srcPitchUV, bool mmx);
+							  const unsigned char * pSrcU1, const unsigned char * pSrcV1, int _srcPitchUV, int cpuFlags);
 
 void YUY2FromPlanes(unsigned char *pSrcYUY2, int nSrcPitchYUY2, int nWidth, int nHeight,
 							  unsigned char * pSrc1, int _srcPitch,
-							  unsigned char * pSrcU1, unsigned char * pSrcV1, int _srcPitchUV, bool mmx);
+							  unsigned char * pSrcU1, unsigned char * pSrcV1, int _srcPitchUV, int cpuFlags);
 
 
 #endif

@@ -31,7 +31,7 @@
 
 
 
-MVGroupOfFrames::MVGroupOfFrames(int _nLevelCount, int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, int nMode, bool isse, 
+MVGroupOfFrames::MVGroupOfFrames(int _nLevelCount, int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, int nMode, int cpuFlags, 
   int _xRatioUV, int _yRatioUV, int _pixelsize, int _bits_per_pixel, bool mt_flag)
 :	nLevelCount (_nLevelCount)
 ,	pFrames (new MVFrame* [_nLevelCount])
@@ -46,12 +46,12 @@ MVGroupOfFrames::MVGroupOfFrames(int _nLevelCount, int _nWidth, int _nHeight, in
 , bits_per_pixel(_bits_per_pixel)
 {
 
-   pFrames[0] = new MVFrame(nWidth, nHeight, nPel, nHPad, nVPad, nMode, isse, xRatioUV, yRatioUV, pixelsize, bits_per_pixel, mt_flag);
+   pFrames[0] = new MVFrame(nWidth, nHeight, nPel, nHPad, nVPad, nMode, cpuFlags, xRatioUV, yRatioUV, pixelsize, bits_per_pixel, mt_flag);
    for ( int i = 1; i < nLevelCount; i++ )
    {
       int nWidthi = PlaneWidthLuma(nWidth, i, xRatioUV /*PF instead of 2*/, nHPad);//(nWidthi / 2) - ((nWidthi / 2) % 2); //  even for YV12, YUY2
       int nHeighti = PlaneHeightLuma(nHeight, i, yRatioUV, nVPad);//(nHeighti / 2) - ((nHeighti / 2) % yRatioUV); // even for YV12
-      pFrames[i] = new MVFrame(nWidthi, nHeighti, 1, nHPad, nVPad, nMode, isse, xRatioUV, yRatioUV, pixelsize, bits_per_pixel, mt_flag);
+      pFrames[i] = new MVFrame(nWidthi, nHeighti, 1, nHPad, nVPad, nMode, cpuFlags, xRatioUV, yRatioUV, pixelsize, bits_per_pixel, mt_flag);
    }
 }
 

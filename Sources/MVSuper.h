@@ -101,7 +101,8 @@ protected:
 	int            sharp;
 	int            rfilter; // frame reduce filter mode
 	PClip          pelclip; // upsized source clip with doubled frame width and heigth (used for pel=2)
-	bool           isse;   //PF maybe obsolate or debug 160729
+	//bool           isse;   //PF maybe obsolate or debug 160729
+  int            cpuFlags;
 	bool           planar; //v2.0.0.7 PF maybe obsolate 160729
 
 	int            nWidth;

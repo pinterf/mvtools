@@ -21,6 +21,7 @@
 #include "commonfunctions.h"
 #include "types.h"
 #include <emmintrin.h>
+#include "avs/cpuid.h"
 
 YUY2Planes::YUY2Planes(int _nWidth, int _nHeight)
 {
@@ -134,10 +135,10 @@ void convert_yv16_to_yuy2_c(const BYTE *srcp_y, const BYTE *srcp_u, const BYTE *
 // YUY2 -> YV16
 void YUY2ToPlanes(const unsigned char *pSrcYUY2, int nSrcPitchYUY2, int nWidth, int nHeight,
   const unsigned char * dstY, int dstPitchY,
-  const unsigned char * dstU, const unsigned char * dstV, int dstPitchUV, bool sse2)
+  const unsigned char * dstU, const unsigned char * dstV, int dstPitchUV, int cpuFlags)
 {
 
-  if (sse2 && IsPtrAligned(pSrcYUY2, 16)) {
+  if (!!(cpuFlags & CPUF_SSE2) && IsPtrAligned(pSrcYUY2, 16)) {
     convert_yuy2_to_yv16_sse2(pSrcYUY2, (unsigned char *)dstY, (unsigned char *)dstU, (unsigned char *)dstV, nSrcPitchYUY2, dstPitchY, dstPitchUV, nWidth, nHeight);
   }
   else
@@ -149,9 +150,9 @@ void YUY2ToPlanes(const unsigned char *pSrcYUY2, int nSrcPitchYUY2, int nWidth, 
 // YV16 -> YUY2
 void YUY2FromPlanes(unsigned char *pDstYUY2, int nDstPitchYUY2, int nWidth, int nHeight,
   unsigned char * srcY, int srcPitch,
-  unsigned char * srcU, unsigned char * srcV, int srcPitchUV, bool sse2)
+  unsigned char * srcU, unsigned char * srcV, int srcPitchUV, int cpuFlags)
 {
-  if (sse2 && IsPtrAligned(srcY, 16)) {
+  if (!!(cpuFlags & CPUF_SSE2) && IsPtrAligned(srcY, 16)) {
     //U and V don't have to be aligned since we user movq to read from those
     convert_yv16_to_yuy2_sse2(srcY, srcU, srcV, pDstYUY2, srcPitch, srcPitchUV, nDstPitchYUY2, nWidth, nHeight);
   }

@@ -42,7 +42,7 @@ class MVPlane
 {
 public:
 
-   MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, int _pixelsize, int _bits_per_pixel, bool _isse, bool mt_flag);
+   MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, int _pixelsize, int _bits_per_pixel, int cpuFlags, bool mt_flag);
    ~MVPlane();
 
    void set_interp (int rfilter, int sharp);
@@ -131,7 +131,7 @@ private:
 
 	typedef void (*ReducePtr) (
 		unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch,
-		int nWidth, int nHeight, int y_beg, int y_end, bool isse
+		int nWidth, int nHeight, int y_beg, int y_end, int cpuFlags
 	);
 
 	void	refine_pel2 (SchedulerRefine::TaskData &td);
@@ -158,7 +158,7 @@ private:
 	int nSharp;		// Set only from MSuper, used in Refine()
 	int nRfilter;	// Same as above, for ReduceTo()
 
-   bool isse;
+   int cpuFlags;
 	bool _mt_flag;
 
    bool isPadded;

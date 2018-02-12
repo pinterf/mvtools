@@ -117,7 +117,7 @@ private:
   int _nlimit;
   int _nlimitc;
   PClip _super;
-  const bool _isse_flag;
+  int _cpuFlags;
   const bool _planar_flag;
   const bool _lsb_flag;
   const bool _mt_flag;

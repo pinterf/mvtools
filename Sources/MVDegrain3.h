@@ -56,7 +56,8 @@ private:
   sad_t nLimit;
   sad_t nLimitC;
   PClip super;
-  bool isse_flag;
+  //bool isse_flag;
+  int cpuFlags;
   bool planar;
   bool lsb_flag;
   int height_lsb_mul;

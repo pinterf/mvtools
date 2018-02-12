@@ -62,7 +62,8 @@ protected:
 	               _vectorfields_aptr;	// Temporary data, structure initialised once.
 
    /*! \brief isse optimisations enabled */
-	bool           isse;
+	//bool           isse;
+  int cpuFlags;
 
    /*! \brief motion vecteur cost factor */
    int            nLambda;

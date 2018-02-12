@@ -404,7 +404,6 @@ MDegrainN::MDegrainN(
   , _nlimit(nlimit)
   , _nlimitc(nlimitc)
   , _super(super)
-  , _isse_flag(isse_flag)
   , _planar_flag(planar_flag)
   , _lsb_flag(lsb_flag)
   , _mt_flag(mt_flag)
@@ -474,6 +473,7 @@ MDegrainN::MDegrainN(
 
   pixelsize_super = vi_super.ComponentSize(); // of MVFilter
   bits_per_pixel_super = vi_super.BitsPerComponent();
+  _cpuFlags = isse_flag ? env_ptr->GetCPUFlags() : 0;
 
 // get parameters of prepared super clip - v2.0
   SuperParams64Bits params;
@@ -505,7 +505,7 @@ MDegrainN::MDegrainN(
       nSuperHPad,
       nSuperVPad,
       _nsupermodeyuv,
-      _isse_flag,
+      _cpuFlags,
       xRatioUV,
       yRatioUV,
       pixelsize_super, // todo check! or pixelsize
@@ -578,14 +578,13 @@ MDegrainN::MDegrainN(
     // OverlapsFunction
     // in M(V)DegrainX: DenoiseXFunction
   arch_t arch;
-  int avs_cpu_flag = env_ptr->GetCPUFlags();
-  if ((((avs_cpu_flag & CPUF_AVX2) != 0) & isse_flag))
+  if ((_cpuFlags & CPUF_AVX2) != 0)
     arch = USE_AVX2;
-  else if ((((avs_cpu_flag & CPUF_AVX) != 0) & isse_flag))
+  else if ((_cpuFlags & CPUF_AVX) != 0)
     arch = USE_AVX;
-  else if ((((avs_cpu_flag & CPUF_SSE4_1) != 0) & isse_flag))
+  else if ((_cpuFlags & CPUF_SSE4_1) != 0)
     arch = USE_SSE41;
-  else if ((((avs_cpu_flag & CPUF_SSE2) != 0) & isse_flag))
+  else if ((_cpuFlags & CPUF_SSE2) != 0)
     arch = USE_SSE2;
   else
     arch = NO_SIMD;
@@ -616,12 +615,12 @@ MDegrainN::MDegrainN(
   if (!_degrainchroma_ptr)
     env_ptr->ThrowError("MDegrainN : no valid _degrainchroma_ptr function for %dx%d, pixelsize=%d, lsb_flag=%d", nBlkSizeX, nBlkSizeY, pixelsize_super, (int)lsb_flag);
 
-  if (isse_flag && (env_ptr->GetCPUFlags() & CPUF_SSE2))
+  if ((_cpuFlags & CPUF_SSE2) != 0)
   {
     if (pixelsize_super == 1)
       LimitFunction = LimitChanges_sse2_new<uint8_t, 0>;
     else { // pixelsize_super == 2
-      if ((env_ptr->GetCPUFlags() & CPUF_SSE4_1))
+      if ((_cpuFlags & CPUF_SSE4_1) != 0)
         LimitFunction = LimitChanges_sse2_new<uint16_t, 1>;
       else
         LimitFunction = LimitChanges_sse2_new<uint16_t, 0>;
@@ -706,7 +705,7 @@ MDegrainN::~MDegrainN()
         pSrcYUY2, nSrcPitchYUY2, nWidth, nHeight,
         _src_ptr_arr[0], _src_pitch_arr[0],
         _src_ptr_arr[1], _src_ptr_arr[2], _src_pitch_arr[1],
-        _isse_flag
+        _cpuFlags
       );
     }
     else
@@ -834,7 +833,7 @@ MDegrainN::~MDegrainN()
     BitBlt(
       _dst_ptr_arr[0], _dst_pitch_arr[0],
       _src_ptr_arr[0], _src_pitch_arr[0],
-      nWidth*pixelsize_super, nHeight, _isse_flag
+      nWidth*pixelsize_super, nHeight
     );
   }
   else
@@ -929,7 +928,7 @@ MDegrainN::~MDegrainN()
         BitBlt(
           _dst_ptr_arr[0] + _covered_width*pixelsize_super, _dst_pitch_arr[0],
           _src_ptr_arr[0] + _covered_width*pixelsize_super, _src_pitch_arr[0],
-          (nWidth - _covered_width)*pixelsize_super, _covered_height, _isse_flag
+          (nWidth - _covered_width)*pixelsize_super, _covered_height
         );
       }
       if (_covered_height < nHeight) // bottom noncovered region
@@ -937,7 +936,7 @@ MDegrainN::~MDegrainN()
         BitBlt(
           _dst_ptr_arr[0] + _covered_height * _dst_pitch_arr[0], _dst_pitch_arr[0],
           _src_ptr_arr[0] + _covered_height * _src_pitch_arr[0], _src_pitch_arr[0],
-          nWidth*pixelsize_super, nHeight - _covered_height, _isse_flag
+          nWidth*pixelsize_super, nHeight - _covered_height
         );
       }
     }	// overlap - end
@@ -971,7 +970,7 @@ MDegrainN::~MDegrainN()
     YUY2FromPlanes(
       pDstYUY2, nDstPitchYUY2, nWidth, nHeight * _height_lsb_mul,
       _dst_ptr_arr[0], _dst_pitch_arr[0],
-      _dst_ptr_arr[1], _dst_ptr_arr[2], _dst_pitch_arr[1], _isse_flag);
+      _dst_ptr_arr[1], _dst_ptr_arr[2], _dst_pitch_arr[1], _cpuFlags);
   }
 
   return (dst);
@@ -1002,7 +1001,7 @@ void	MDegrainN::process_chroma(int plane_mask)
     BitBlt(
       _dst_ptr_arr[P], _dst_pitch_arr[P],
       _src_ptr_arr[P], _src_pitch_arr[P],
-      pixelsize_super * (nWidth >> _xratiouv_log), nHeight >> _yratiouv_log, _isse_flag
+      pixelsize_super * (nWidth >> _xratiouv_log), nHeight >> _yratiouv_log
     );
   }
 
@@ -1101,8 +1100,7 @@ void	MDegrainN::process_chroma(int plane_mask)
         BitBlt(
           _dst_ptr_arr[P] + (_covered_width >> _xratiouv_log) * pixelsize_super, _dst_pitch_arr[P],
           _src_ptr_arr[P] + (_covered_width >> _xratiouv_log) * pixelsize_super, _src_pitch_arr[P],
-          ((nWidth - _covered_width) >> _xratiouv_log) * pixelsize_super, _covered_height >> _yratiouv_log,
-          _isse_flag
+          ((nWidth - _covered_width) >> _xratiouv_log) * pixelsize_super, _covered_height >> _yratiouv_log
         );
       }
       if (_covered_height < nHeight) // bottom noncovered region
@@ -1110,8 +1108,7 @@ void	MDegrainN::process_chroma(int plane_mask)
         BitBlt(
           _dst_ptr_arr[P] + ((_dst_pitch_arr[P] * _covered_height) >> _yratiouv_log), _dst_pitch_arr[P],
           _src_ptr_arr[P] + ((_src_pitch_arr[P] * _covered_height) >> _yratiouv_log), _src_pitch_arr[P],
-          (nWidth >> _xratiouv_log) * pixelsize_super, ((nHeight - _covered_height) >> _yratiouv_log),
-          _isse_flag
+          (nWidth >> _xratiouv_log) * pixelsize_super, ((nHeight - _covered_height) >> _yratiouv_log)
         );
       }
     } // overlap - end
@@ -1180,7 +1177,7 @@ void	MDegrainN::process_luma_normal_slice(Slicer::TaskData &td)
         BitBlt(
           pDstCur + _covered_width * pixelsize_super, _dst_pitch_arr[0],
           pSrcCur + _covered_width * pixelsize_super, _src_pitch_arr[0],
-          (nWidth - _covered_width) * pixelsize_super, nBlkSizeY, _isse_flag);
+          (nWidth - _covered_width) * pixelsize_super, nBlkSizeY);
       }
     }	// for bx
 
@@ -1193,7 +1190,7 @@ void	MDegrainN::process_luma_normal_slice(Slicer::TaskData &td)
       BitBlt(
         pDstCur, _dst_pitch_arr[0],
         pSrcCur, _src_pitch_arr[0],
-        nWidth*pixelsize_super, nHeight - _covered_height, _isse_flag
+        nWidth*pixelsize_super, nHeight - _covered_height
       );
     }
   }	// for by
@@ -1386,8 +1383,7 @@ void	MDegrainN::process_chroma_normal_slice(Slicer::TaskData &td)
         BitBlt(
           pDstCur + (_covered_width >> _xratiouv_log) * pixelsize_super, _dst_pitch_arr[P],
           pSrcCur + (_covered_width >> _xratiouv_log) * pixelsize_super, _src_pitch_arr[P],
-          ((nWidth - _covered_width) >> _xratiouv_log) * pixelsize_super /* real row_size */, rowsize /* bad name. it's height = nBlkSizeY >> _yratiouv_log*/,
-          _isse_flag
+          ((nWidth - _covered_width) >> _xratiouv_log) * pixelsize_super /* real row_size */, rowsize /* bad name. it's height = nBlkSizeY >> _yratiouv_log*/
         );
       }
     } // for bx
@@ -1401,8 +1397,7 @@ void	MDegrainN::process_chroma_normal_slice(Slicer::TaskData &td)
       BitBlt(
         pDstCur, _dst_pitch_arr[P],
         pSrcCur, _src_pitch_arr[P],
-        (nWidth >> _xratiouv_log)*pixelsize_super, (nHeight - _covered_height) >> _yratiouv_log /* height */,
-        _isse_flag
+        (nWidth >> _xratiouv_log)*pixelsize_super, (nHeight - _covered_height) >> _yratiouv_log /* height */
       );
     }
   } // for by
