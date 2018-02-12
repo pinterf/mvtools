@@ -72,21 +72,8 @@ template void fill_plane<float>(BYTE* dstp, int height, int pitch, float val);
 // in a class which doesn't have to know what "env" is. Anyway, such static functions
 // should not have been put into that class in the first place ( imho )
 
-void BitBlt(unsigned char* dstp, int dst_pitch, const unsigned char* srcp, int src_pitch, int row_size, int height, bool isse) {
+void BitBlt(unsigned char* dstp, int dst_pitch, const unsigned char* srcp, int src_pitch, int row_size, int height) {
   if ( (!height)|| (!row_size)) return;
-#if 0
-#ifdef X86_32
-  if (isse) {
-    if (height == 1 || (src_pitch == dst_pitch && dst_pitch == row_size)) {
-//      memcpy_amd(dstp, srcp, row_size*height);
-		memcpy(dstp, srcp, row_size*height); // P.F. no memcpy_amd here
-	} else {
-      asm_BitBlt_ISSE(dstp,dst_pitch,srcp,src_pitch,row_size,height);
-    }
-    return;
-  }
-#endif
-#endif
   if (height == 1 || (dst_pitch == src_pitch && src_pitch == row_size)) {
     memcpy(dstp, srcp, row_size*height); // Fizick: fixed bug
   } else {
