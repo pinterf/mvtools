@@ -16,7 +16,6 @@ unsigned int Sad16_avx2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
   unsigned int result2 = Sad_AVX2_C<nBlkWidth, nBlkHeight, pixel_t>(pSrc, nSrcPitch, pRef, nRefPitch);
 #endif
 
-  _mm256_zeroupper(); 
   if ((sizeof(pixel_t) == 2 && nBlkWidth < 8) || (sizeof(pixel_t) == 1 && nBlkWidth <= 16)) {
     assert("AVX2 not supported for uint16_t with BlockSize<8 or uint8_t with blocksize<16");
     return 0;

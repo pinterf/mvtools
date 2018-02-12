@@ -65,9 +65,6 @@
     <YASM Include="asm\Overlap-a.asm">
       <Filter>Assembler</Filter>
     </YASM>
-    <YASM Include="asm\MVDegrains-a.asm">
-      <Filter>Assembler</Filter>
-    </YASM>
     <YASM Include="asm\Bilinear.asm">
       <Filter>Assembler</Filter>
     </YASM>

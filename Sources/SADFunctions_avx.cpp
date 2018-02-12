@@ -237,10 +237,6 @@ unsigned int Sad16_sse2_12xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8
 template<int nBlkHeight>
 unsigned int Sad16_sse2_16xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
-#ifdef __AVX__
-  _mm256_zeroupper(); // diff from main sse2
-#endif
-
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128();
 
@@ -295,10 +291,6 @@ unsigned int Sad16_sse2_16xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8
 template<int nBlkHeight>
 unsigned int Sad16_sse2_24xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
-#ifdef __AVX__
-  _mm256_zeroupper(); // diff from main sse2
-#endif
-
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128();
 
@@ -358,10 +350,6 @@ unsigned int Sad16_sse2_24xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8
 template<int nBlkHeight>
 unsigned int Sad16_sse2_32xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
-#ifdef __AVX__
-  _mm256_zeroupper(); // diff from main sse2
-#endif
-
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128();
 
@@ -428,10 +416,6 @@ unsigned int Sad16_sse2_32xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8
 template<int nBlkHeight>
 unsigned int Sad16_sse2_48xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
-#ifdef __AVX__
-  _mm256_zeroupper(); // diff from main sse2
-#endif
-
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128();
 
@@ -487,10 +471,6 @@ unsigned int Sad16_sse2_48xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8
 template<int nBlkHeight>
 unsigned int Sad16_sse2_64xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
-#ifdef __AVX__
-  _mm256_zeroupper(); // diff from main sse2
-#endif
-
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128();
 
