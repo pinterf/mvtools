@@ -21,7 +21,8 @@ private:
 	unsigned int denominatorOld;
 	int maskmode;
    double ml;
-   bool isse;
+   //bool isse;
+   int cpuFlags;
    bool planar;
    bool blend;
 

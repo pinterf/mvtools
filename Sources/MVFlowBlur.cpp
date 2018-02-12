@@ -33,7 +33,7 @@ MVFlowBlur::MVFlowBlur(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, int 
 {
   blur256 = _blur256;
   prec = _prec;
-  isse = _isse;
+  cpuFlags = _isse ? env->GetCPUFlags() : 0;
   planar = _planar;
 
   CheckSimilarity(mvClipB, "mvbw", env);
@@ -64,7 +64,7 @@ MVFlowBlur::MVFlowBlur(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, int 
     finest = super; // v2.0.9.1
   else
   {
-    finest = new MVFinest(super, isse, env);
+    finest = new MVFinest(super, _isse, env);
     AVSValue cache_args[1] = { finest };
     finest = env->Invoke("InternalCache", AVSValue(cache_args, 1)).AsClip(); // add cache for speed
   }
@@ -110,11 +110,8 @@ MVFlowBlur::MVFlowBlur(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, int 
   MaskFullYF = (unsigned char*)_aligned_malloc(nHeight*VPitchY + 128, 128);
   MaskFullUVF = (unsigned char*)_aligned_malloc(nHeightUV*VPitchUV + 128, 128);
 
-  int CPUF_Resize = env->GetCPUFlags();
-  if (!isse) CPUF_Resize = (CPUF_Resize & !CPUF_INTEGER_SSE) & !CPUF_SSE2;
-
-  upsizer = new SimpleResize(nWidth, nHeight, nBlkX, nBlkY, CPUF_Resize);
-  upsizerUV = new SimpleResize(nWidthUV, nHeightUV, nBlkX, nBlkY, CPUF_Resize);
+  upsizer = new SimpleResize(nWidth, nHeight, nBlkX, nBlkY, cpuFlags);
+  upsizerUV = new SimpleResize(nWidthUV, nHeightUV, nBlkX, nBlkY, cpuFlags);
 
   if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
   {
@@ -443,7 +440,7 @@ PVideoFrame __stdcall MVFlowBlur::GetFrame(int n, IScriptEnvironment* env)
     if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
     {
       YUY2FromPlanes(pDstYUY2, nDstPitchYUY2, nWidth, nHeight,
-        pDst[0], nDstPitches[0], pDst[1], pDst[2], nDstPitches[1], isse);
+        pDst[0], nDstPitches[0], pDst[1], pDst[2], nDstPitches[1], cpuFlags);
     }
     return dst;
   }

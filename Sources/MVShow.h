@@ -60,7 +60,8 @@ private:
 //		{ return ( x < 0 ) ? -x : x; }
 
 	YUY2Planes * DstPlanes;
-	bool isse;
+	//bool isse;
+  int cpuFlags;
 	bool planar;
 
 public:

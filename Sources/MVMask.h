@@ -72,7 +72,8 @@ private:
 
 	YUY2Planes * DstPlanes;
 	YUY2Planes * SrcPlanes;
-	bool isse;
+	//bool isse;
+  int cpuFlags;
 	bool planar;
 
   bool chroma;

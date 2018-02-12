@@ -24,7 +24,8 @@ private:
   int mode;
   bool fields;
 //	PClip pelclip;
-  bool isse;
+  //bool isse;
+  int cpuFlags;
   bool planar;
 
   PClip finest; // v2.0

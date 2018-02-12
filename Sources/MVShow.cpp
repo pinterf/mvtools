@@ -36,7 +36,7 @@ GenericVideoFilter(_super),
 mvClip(vectors, nSCD1, nSCD2, env, 1, 0),
 MVFilter(vectors, "MShow", env, 1, 0)
 {
-	isse = _isse;
+  cpuFlags = _isse ? env->GetCPUFlags() : 0;
 	nScale = _scale;
 	if ( nScale < 1 )
       nScale = 1;
@@ -163,7 +163,7 @@ PVideoFrame __stdcall MVShow::GetFrame(int n, IScriptEnvironment* env)
 			pDstYUY2 = dst->GetWritePtr();
 			nDstPitchYUY2 = dst->GetPitch();
 			YUY2FromPlanes(pDstYUY2, nDstPitchYUY2, vi.width, vi.height,
-								  pDst[0], nDstPitches[0], pDst[1], pDst[2], nDstPitches[1], isse);
+								  pDst[0], nDstPitches[0], pDst[1], pDst[2], nDstPitches[1], cpuFlags);
 		}
 
 	if ( showSad ) {

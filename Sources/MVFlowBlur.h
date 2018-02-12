@@ -17,7 +17,8 @@ private:
    int blur256; // blur time interval
    int prec; // blur precision (pixels)
    PClip finest;
-   bool isse;
+   //bool isse;
+   int cpuFlags;
    bool planar;
 
 //    bool usePelClipHere;

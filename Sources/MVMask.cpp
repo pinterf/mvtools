@@ -38,7 +38,8 @@ MVMask::MVMask(
   , mvClip(vectors, nSCD1, nSCD2, env, 1, 0)
   , MVFilter(vectors, "MMask", env, 1, 0)
 {
-  isse = _isse;
+  cpuFlags = _isse ? env->GetCPUFlags() : 0;
+
   fMaskNormFactor = 1.0f / ml; // Fizick
   fMaskNormFactor2 = fMaskNormFactor*fMaskNormFactor;
   
@@ -115,12 +116,10 @@ MVMask::MVMask(
   */
 
 
-  int CPUF_Resize = env->GetCPUFlags();
-  if (!isse) CPUF_Resize = (CPUF_Resize & !CPUF_INTEGER_SSE) & !CPUF_SSE2;
  // old upsizer replaced by Fizick
-  upsizer = new SimpleResize(nWidthB, nHeightB, nBlkX, nBlkY, CPUF_Resize);
+  upsizer = new SimpleResize(nWidthB, nHeightB, nBlkX, nBlkY, cpuFlags);
   if(chroma)
-    upsizerUV = new SimpleResize(nWidthBUV, nHeightBUV, nBlkX, nBlkY, CPUF_Resize);
+    upsizerUV = new SimpleResize(nWidthBUV, nHeightBUV, nBlkX, nBlkY, cpuFlags);
 
 
   if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
@@ -197,7 +196,7 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
         nSrcPitches[1] = SrcPlanes->GetPitchUV();
         nSrcPitches[2] = SrcPlanes->GetPitchUV();
         YUY2ToPlanes(pSrcYUY2, nSrcPitchYUY2, maskclip_nWidth, maskclip_nHeight,
-          pSrc[0], nSrcPitches[0], pSrc[1], pSrc[2], nSrcPitches[1], isse);
+          pSrc[0], nSrcPitches[0], pSrc[1], pSrc[2], nSrcPitches[1], cpuFlags);
       }
       pDst[0] = DstPlanes->GetPtr();
       pDst[1] = DstPlanes->GetPtrU();
@@ -421,7 +420,7 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
     pDstYUY2 = dst->GetWritePtr();
     nDstPitchYUY2 = dst->GetPitch();
     YUY2FromPlanes(pDstYUY2, nDstPitchYUY2, maskclip_nWidth, maskclip_nHeight,
-      pDst[0], nDstPitches[0], pDst[1], pDst[2], nDstPitches[1], isse);
+      pDst[0], nDstPitches[0], pDst[1], pDst[2], nDstPitches[1], cpuFlags);
   }
   return dst;
 }

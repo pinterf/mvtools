@@ -38,6 +38,7 @@ private:
 	int horizontalPadding;
 	int verticalPadding;
 	bool planar;
+  int cpuFlags;
 
 	int width;
 	int height;

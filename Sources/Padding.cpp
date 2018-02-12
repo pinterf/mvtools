@@ -52,6 +52,7 @@ GenericVideoFilter(_child)
 
 	horizontalPadding = hPad;
 	verticalPadding = vPad;
+  cpuFlags = env->GetCPUFlags();
 	width = vi.width;
 	height = vi.height;
 	planar = _planar;
@@ -89,8 +90,6 @@ PVideoFrame __stdcall Padding::GetFrame(int n, IScriptEnvironment *env)
 	unsigned char *pDstYUY2;
 	int nDstPitchYUY2;
 
-	bool isse = env->GetCPUFlags() >= CPUF_INTEGER_SSE;
-
     int xRatioUV;
     int yRatioUV;
 
@@ -116,7 +115,7 @@ PVideoFrame __stdcall Padding::GetFrame(int n, IScriptEnvironment *env)
 			nSrcPitches[1]  = SrcPlanes->GetPitchUV();
 			nSrcPitches[2]  = SrcPlanes->GetPitchUV();
 			YUY2ToPlanes(pSrcYUY2, nSrcPitchYUY2, width, height,
-				pSrc[0], nSrcPitches[0], pSrc[1], pSrc[2], nSrcPitches[1], isse);
+				pSrc[0], nSrcPitches[0], pSrc[1], pSrc[2], nSrcPitches[1], cpuFlags);
 			pDst[0] = DstPlanes->GetPtr();
 			pDst[1] = DstPlanes->GetPtrU();
 			pDst[2] = DstPlanes->GetPtrV();
@@ -185,7 +184,7 @@ PVideoFrame __stdcall Padding::GetFrame(int n, IScriptEnvironment *env)
 			pDstYUY2 = dst->GetWritePtr();
 			nDstPitchYUY2 = dst->GetPitch();
 		YUY2FromPlanes(pDstYUY2, nDstPitchYUY2, vi.width, vi.height,
-					  pDst[0], nDstPitches[0], pDst[1], pDst[2], nDstPitches[1], isse);
+					  pDst[0], nDstPitches[0], pDst[1], pDst[2], nDstPitches[1], cpuFlags);
 	}
 	return dst;
 }

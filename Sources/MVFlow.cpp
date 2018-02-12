@@ -48,7 +48,7 @@ MVFlow::MVFlow(PClip _child, PClip super, PClip _mvec, int _time256, int _mode, 
   time256 = _time256;
   mode = _mode;
 
-  isse = _isse;
+  cpuFlags = _isse ? env->GetCPUFlags() : 0;
   fields = _fields;
   planar = _planar;
 
@@ -73,7 +73,7 @@ MVFlow::MVFlow(PClip _child, PClip super, PClip _mvec, int _time256, int _mode, 
   if (nPel == 1)
     finest = super; // v2.0.9.1
   else
-    finest = new MVFinest(super, isse, env);
+    finest = new MVFinest(super, _isse, env);
 //	AVSValue cache_args[1] = { finest };
 //	finest = env->Invoke("InternalCache", AVSValue(cache_args,1)).AsClip(); // add cache for speed
 
@@ -115,11 +115,8 @@ MVFlow::MVFlow(PClip _child, PClip super, PClip _mvec, int _time256, int _mode, 
   VXSmallUV = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
   VYSmallUV = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
 
-  int CPUF_Resize = env->GetCPUFlags();
-  if (!isse) CPUF_Resize = (CPUF_Resize & !CPUF_INTEGER_SSE) & !CPUF_SSE2;
-
-  upsizer = new SimpleResize(nWidthP, nHeightP, nBlkXP, nBlkYP, CPUF_Resize);
-  upsizerUV = new SimpleResize(nWidthPUV, nHeightPUV, nBlkXP, nBlkYP, CPUF_Resize);
+  upsizer = new SimpleResize(nWidthP, nHeightP, nBlkXP, nBlkYP, cpuFlags);
+  upsizerUV = new SimpleResize(nWidthPUV, nHeightPUV, nBlkXP, nBlkYP, cpuFlags);
 
   /* 2.5.11.22 no LUT
   if (timeclip == 0)
@@ -561,7 +558,7 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
     if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
     {
       YUY2FromPlanes(pDstYUY2, nDstPitchYUY2, nWidth, nHeight,
-        pDst[0], nDstPitches[0], pDst[1], pDst[2], nDstPitches[1], isse);
+        pDst[0], nDstPitches[0], pDst[1], pDst[2], nDstPitches[1], cpuFlags);
     }
     return dst;
   }

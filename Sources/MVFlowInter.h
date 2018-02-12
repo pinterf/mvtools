@@ -20,7 +20,8 @@ private:
   double ml;
   PClip finest;
   //PClip	timeclip;
-  bool isse;
+  //bool isse;
+  int cpuFlags;
   bool planar;
   bool blend;
 
