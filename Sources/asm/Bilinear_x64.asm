@@ -122,6 +122,7 @@ w14:
                 add eax, 4
                 jmp .loopw
             .finish:
+			    emms ;PF20180210
                 ret
 endproc_frame
 %endmacro
@@ -212,6 +213,7 @@ endproc_frame
 
                 jmp .loopw
             .finish:
+			    emms ;PF20180210
 				pop rdi
 				pop rsi
 				pop rbx
@@ -1339,6 +1341,7 @@ proc_frame	RB2FilteredVerticalLine_SSE
 
                 jmp .loopw
             .finish:
+			    emms ;PF20180210
 				pop rdi
 				pop rsi
 				pop rbx
@@ -1399,6 +1402,7 @@ proc_frame	RB2FilteredHorizontalInplaceLine_SSE
                 add eax, 4
                 jmp .loopw
             .finish:
+			    emms ;PF20180210 
 				pop rdi
 				pop rsi
 				pop rbx
@@ -1472,6 +1476,7 @@ proc_frame	RB2BilinearFilteredVerticalLine_SSE
 
                 jmp .loopw
             .finish:
+			    emms ;PF20180210
 				pop rdi
 				pop rsi
 				pop rbx
@@ -1530,6 +1535,7 @@ RB2BilinearFilteredHorizontalInplaceLine_SSE:
                 add eax, 4
                 jmp .loopw
             .finish:
+			    emms ;PF20180210
                 ret
 
 
