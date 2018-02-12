@@ -435,6 +435,26 @@ MVDegrainX::MVDegrainX(
   tmpBlock = (uint8_t *)_aligned_malloc(tmp_size * height_lsb_mul, 64); // new BYTE[tmp_size * height_lsb_mul]; PF. 16.10.26
   tmpBlockLsb = (lsb_flag) ? (tmpBlock + tmp_size) : 0;
 
+  if (isse_flag && (env_ptr->GetCPUFlags() & CPUF_SSE2))
+  {
+    if (pixelsize_super == 1)
+      LimitFunction = LimitChanges_sse2_new<uint8_t, 0>;
+    else { // pixelsize_super == 2
+      if ((env_ptr->GetCPUFlags() & CPUF_SSE4_1))
+        LimitFunction = LimitChanges_sse2_new<uint16_t, 1>;
+      else
+        LimitFunction = LimitChanges_sse2_new<uint16_t, 0>;
+    }
+  }
+  else
+  {
+    if (pixelsize_super == 1)
+      LimitFunction = LimitChanges_c<uint8_t>;
+    else
+      LimitFunction = LimitChanges_c<uint16_t>;
+  }
+
+
   if (lsb_flag)
   {
     vi.height <<= 1;
@@ -866,17 +886,7 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
 
     if (nLimit < (1 << bits_per_pixel_super) - 1)
     {
-      if ((pixelsize_super == 1) && isse_flag)
-      {
-        LimitChanges_sse2(pDst[0], nDstPitches[0], pSrc[0], nSrcPitches[0], nWidth, nHeight, nLimit);
-      }
-      else
-      {
-        if (pixelsize_super == 1)
-          LimitChanges_c<uint8_t>(pDst[0], nDstPitches[0], pSrc[0], nSrcPitches[0], nWidth, nHeight, nLimit);
-        else
-          LimitChanges_c<uint16_t>(pDst[0], nDstPitches[0], pSrc[0], nSrcPitches[0], nWidth, nHeight, nLimit);
-      }
+      LimitFunction(pDst[0], nDstPitches[0], pSrc[0], nSrcPitches[0], nWidth, nHeight, nLimit);
     }
   }
 
@@ -1103,27 +1113,9 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
       }
     }	// overlap - end
 
-    if(pixelsize <= 2) {
-      if (nLimitC < (1 << bits_per_pixel_super) - 1)
-      {
-        if (isse_flag)
-        {
-          if (pixelsize_super == 1)
-            LimitChanges_sse2_new<uint8_t>(pDst, nDstPitch, pSrc, nSrcPitch, nWidth >> nLogxRatioUV, nHeight >> nLogyRatioUV, nLimitC);
-          else
-            LimitChanges_sse2_new<uint16_t>(pDst, nDstPitch, pSrc, nSrcPitch, nWidth >> nLogxRatioUV, nHeight >> nLogyRatioUV, nLimitC);
-        }
-        else
-        {
-          if (pixelsize_super == 1)
-            LimitChanges_c<uint8_t>(pDst, nDstPitch, pSrc, nSrcPitch, nWidth >> nLogxRatioUV, nHeight >> nLogyRatioUV, nLimitC);
-          else if(pixelsize_super == 2)
-            LimitChanges_c<uint16_t>(pDst, nDstPitch, pSrc, nSrcPitch, nWidth >> nLogxRatioUV, nHeight >> nLogyRatioUV, nLimitC);
-        }
-      }
-    }
-    else {
-      //LimitChanges_float_c(pDst, nDstPitch, pSrc, nSrcPitch, nWidth >> nLogxRatioUV, nHeight >> nLogyRatioUV, nLimitC_f);
+    if (nLimitC < (1 << bits_per_pixel_super) - 1)
+    {
+        LimitFunction(pDst, nDstPitch, pSrc, nSrcPitch, nWidth >> nLogxRatioUV, nHeight >> nLogyRatioUV, nLimitC);
     }
   }
 }

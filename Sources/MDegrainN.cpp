@@ -616,6 +616,25 @@ MDegrainN::MDegrainN(
   if (!_degrainchroma_ptr)
     env_ptr->ThrowError("MDegrainN : no valid _degrainchroma_ptr function for %dx%d, pixelsize=%d, lsb_flag=%d", nBlkSizeX, nBlkSizeY, pixelsize_super, (int)lsb_flag);
 
+  if (isse_flag && (env_ptr->GetCPUFlags() & CPUF_SSE2))
+  {
+    if (pixelsize_super == 1)
+      LimitFunction = LimitChanges_sse2_new<uint8_t, 0>;
+    else { // pixelsize_super == 2
+      if ((env_ptr->GetCPUFlags() & CPUF_SSE4_1))
+        LimitFunction = LimitChanges_sse2_new<uint16_t, 1>;
+      else
+        LimitFunction = LimitChanges_sse2_new<uint16_t, 0>;
+    }
+  }
+  else
+  {
+    if (pixelsize_super == 1)
+      LimitFunction = LimitChanges_c<uint8_t>;
+    else
+      LimitFunction = LimitChanges_c<uint16_t>;
+  }
+
   //---------- end of functions
 
   // 16 bit output hack
@@ -923,53 +942,13 @@ MDegrainN::~MDegrainN()
       }
     }	// overlap - end
 
-    if (pixelsize_super <= 2)
+    if (_nlimit < (1 << bits_per_pixel_super) - 1)
     {
-      if (_nlimit < (1 << bits_per_pixel_super) - 1)
-      {
-        if (_isse_flag)
-        {
-          if (pixelsize_super == 1)
-            LimitChanges_sse2_new<uint8_t>(
-              _dst_ptr_arr[0], _dst_pitch_arr[0],
-              _src_ptr_arr[0], _src_pitch_arr[0],
-              nWidth, nHeight,
-              _nlimit
-              );
-          else // pixelsize_super == 2
-            LimitChanges_sse2_new<uint16_t>(
-              _dst_ptr_arr[0], _dst_pitch_arr[0],
-              _src_ptr_arr[0], _src_pitch_arr[0],
-              nWidth, nHeight,
-              _nlimit
-              );
-        }
-        else
-        {
-          if (pixelsize_super == 1)
-            LimitChanges_c<uint8_t>(
-              _dst_ptr_arr[0], _dst_pitch_arr[0],
-              _src_ptr_arr[0], _src_pitch_arr[0],
-              nWidth, nHeight, _nlimit
-              );
-          else
-            LimitChanges_c<uint16_t>(
-              _dst_ptr_arr[0], _dst_pitch_arr[0],
-              _src_ptr_arr[0], _src_pitch_arr[0],
-              nWidth, nHeight, _nlimit
-              );
-        }
-      }
-    }
-    else {
-      /*
-      LimitChanges_float_c(
-        _dst_ptr_arr[0], _dst_pitch_arr[0],
+      LimitFunction(_dst_ptr_arr[0], _dst_pitch_arr[0],
         _src_ptr_arr[0], _src_pitch_arr[0],
         nWidth, nHeight,
-        _nlimit_f
+        _nlimit
       );
-      */
     }
   }
 
@@ -1137,54 +1116,13 @@ void	MDegrainN::process_chroma(int plane_mask)
       }
     } // overlap - end
 
-    if (pixelsize_super <= 2) {
-      if (_nlimitc < (1 << bits_per_pixel_super) - 1)
-      {
-        if (_isse_flag)
-        {
-          if (pixelsize_super == 1)
-            LimitChanges_sse2_new<uint8_t>(
-              _dst_ptr_arr[P], _dst_pitch_arr[P],
-              _src_ptr_arr[P], _src_pitch_arr[P],
-              nWidth >> _xratiouv_log, nHeight >> _yratiouv_log,
-              _nlimitc
-            );
-          else // pixelsize_super == 2
-            LimitChanges_sse2_new<uint16_t>(
-              _dst_ptr_arr[P], _dst_pitch_arr[P],
-              _src_ptr_arr[P], _src_pitch_arr[P],
-              nWidth >> _xratiouv_log, nHeight >> _yratiouv_log,
-              _nlimitc
-              );
-        }
-        else
-        {
-          if (pixelsize_super == 1)
-            LimitChanges_c<uint8_t>(
-              _dst_ptr_arr[P], _dst_pitch_arr[P],
-              _src_ptr_arr[P], _src_pitch_arr[P],
-              nWidth >> _xratiouv_log, nHeight >> _yratiouv_log,
-              _nlimitc
-              );
-          else
-            LimitChanges_c<uint16_t>(
-              _dst_ptr_arr[P], _dst_pitch_arr[P],
-              _src_ptr_arr[P], _src_pitch_arr[P],
-              nWidth >> _xratiouv_log, nHeight >> _yratiouv_log,
-              _nlimitc
-              );
-        }
-      }
-    }
-    else {
-      /*
-      LimitChanges_float_c(
-        _dst_ptr_arr[P], _dst_pitch_arr[P],
+    if (_nlimitc < (1 << bits_per_pixel_super) - 1)
+    {
+      LimitFunction(_dst_ptr_arr[P], _dst_pitch_arr[P],
         _src_ptr_arr[P], _src_pitch_arr[P],
         nWidth >> _xratiouv_log, nHeight >> _yratiouv_log,
-        _nlimitc_f
-        );
-        */
+        _nlimitc
+      );
     }
   }
 }

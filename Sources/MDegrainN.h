@@ -146,6 +146,8 @@ private:
   DenoiseNFunction *_degrainluma_ptr;
   DenoiseNFunction *_degrainchroma_ptr;
 
+  LimitFunction_t *LimitFunction;
+
 // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
 // Processing variables
 

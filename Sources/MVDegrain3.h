@@ -87,6 +87,8 @@ private:
   norm_weights_Function_t *NORMWEIGHTS;
 #endif
 
+  LimitFunction_t *LimitFunction;
+
   MVGroupOfFrames *pRefBGOF[MAX_DEGRAIN], *pRefFGOF[MAX_DEGRAIN];
   //MVGroupOfFrames *pRefB2GOF, *pRefF2GOF;
   //MVGroupOfFrames *pRefB3GOF, *pRefF3GOF;
@@ -131,6 +133,8 @@ private:
   Denoise1to6Function *get_denoise123_function(int BlockX, int BlockY, int _pixelsize, bool _lsb_flag, int _level, arch_t _arch);
 };
 
+#pragma warning( push )
+#pragma warning( disable : 4101)
 template<typename pixel_t, bool lsb_flag, int level >
 void Degrain1to6_C(uint8_t *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPitch, const uint8_t *pSrc, int nSrcPitch,
   const uint8_t *pRefB[MAX_DEGRAIN], int BPitch[MAX_DEGRAIN], const uint8_t *pRefF[MAX_DEGRAIN], int FPitch[MAX_DEGRAIN],
@@ -234,6 +238,7 @@ void Degrain1to6_C(uint8_t *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
     }
   }
 }
+#pragma warning( pop ) 
 
 #if 0
 #ifndef _M_X64
@@ -498,6 +503,8 @@ void Degrain1to6_mmx(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPit
 #endif
 #endif // #if 0
 
+#pragma warning( push )
+#pragma warning( disable : 4101)
 template<int blockWidth, int blockHeight, bool lsb_flag, int level >
 void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
   const BYTE *pRefB[MAX_DEGRAIN], int BPitch[MAX_DEGRAIN], const BYTE *pRefF[MAX_DEGRAIN], int FPitch[MAX_DEGRAIN],
@@ -841,7 +848,10 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
     }
   }
 }
+#pragma warning( pop ) 
 
+#pragma warning( push )
+#pragma warning( disable : 4101)
 // for blockwidth >=2 (4 bytes for blockwidth==2, 8 bytes for blockwidth==4)
 // for special height==0 -> internally nHeight comes from variable (for C: both width and height is variable)
 template<int blockWidth, int blockHeight, int level>
@@ -1019,6 +1029,7 @@ void Degrain1to6_16_sse41(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nD
     }
   }
 }
+#pragma warning( pop ) 
 
 // Not really related to overlap, but common to MDegrainX functions
 // PF 160928: this is bottleneck. Could be optimized with precalc thSAD*thSAD
