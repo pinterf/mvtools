@@ -28,7 +28,20 @@
 #include <stdint.h>
 #include "def.h"
 
+typedef enum SharpParam {
+  SharpBilinear = 0,
+  SharpBicubic = 1,
+  SharpWiener = 2
+} SharpParam;
 
+
+typedef enum RfilterParam {
+  RfilterSimple = 0,
+  RfilterTriangle = 1,
+  RfilterBilinear = 2,
+  RfilterQuadratic = 3,
+  RfilterCubic = 4
+} RfilterParam;
 
 class MVPlane;
 

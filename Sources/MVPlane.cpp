@@ -75,7 +75,7 @@ MVPlane::MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, i
         _bicubic_ver_ptr = _isse ? VerticalBicubic_iSSE : VerticalBicubic<uint8_t>;
         _wiener_hor_ptr = _isse ? HorizontalWiener_iSSE : HorizontalWiener<uint8_t>;
         _wiener_ver_ptr = _isse ? VerticalWiener_iSSE : VerticalWiener<uint8_t>;
-        _average_ptr = _isse ? Average2_iSSE : Average2<uint8_t>;
+        _average_ptr = _isse ? Average2_sse2<uint8_t> : Average2<uint8_t>;
         _reduce_ptr = &RB2BilinearFiltered<uint8_t>;
     }
     else if (pixelsize==2) {
@@ -86,7 +86,7 @@ MVPlane::MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, i
         _bicubic_ver_ptr = VerticalBicubic<uint16_t>;
         _wiener_hor_ptr = HorizontalWiener<uint16_t>;
         _wiener_ver_ptr = VerticalWiener<uint16_t>;
-        _average_ptr = Average2<uint16_t>;
+        _average_ptr = _isse ? Average2_sse2<uint16_t> : Average2<uint16_t>;
         _reduce_ptr = &RB2BilinearFiltered<uint16_t>;
     }
     else {

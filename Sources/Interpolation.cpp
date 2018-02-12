@@ -25,7 +25,7 @@
 
 #include "Interpolation.h"
 
-#include <mmintrin.h>
+#include <emmintrin.h>
 #include	<algorithm>
 #include	<cassert>
 #include <stdint.h>
@@ -1124,6 +1124,28 @@ void DiagonalBicubic(unsigned char *pDst8, const unsigned char *pSrc8, int nDstP
   pDst[nWidth - 1] = pSrc[nWidth - 1];
 }
 
+
+template<typename pixel_t>
+void Average2_sse2(unsigned char *pDst8, const unsigned char *pSrc1_8, const unsigned char *pSrc2_8,
+  int nPitch, int nWidth, int nHeight) {
+  for (int y = 0; y < nHeight; y++) {
+    for (int x = 0; x < nWidth; x += 16) {
+      __m128i m0 = _mm_loadu_si128((const __m128i *)&pSrc1_8[x]);
+      __m128i m1 = _mm_loadu_si128((const __m128i *)&pSrc2_8[x]);
+
+      if(sizeof(pixel_t) == 1)
+        m0 = _mm_avg_epu8(m0, m1);
+      else // uint16_t
+        m0 = _mm_avg_epu16(m0, m1);
+      _mm_storeu_si128((__m128i *)&pDst8[x], m0);
+    }
+
+    pSrc1_8 += nPitch;
+    pSrc2_8 += nPitch;
+    pDst8 += nPitch;
+  }
+}
+
 template<typename pixel_t>
 void Average2(unsigned char *pDst8, const unsigned char *pSrc1_8, const unsigned char *pSrc2_8,
   int nPitch, int nWidth, int nHeight)
@@ -1193,4 +1215,6 @@ template void DiagonalBicubic<uint16_t>(unsigned char *pDst, const unsigned char
 template void Average2<uint8_t>(unsigned char *pDst, const unsigned char *pSrc1, const unsigned char *pSrc2, int nPitch, int nWidth, int nHeight);
 template void Average2<uint16_t>(unsigned char *pDst, const unsigned char *pSrc1, const unsigned char *pSrc2, int nPitch, int nWidth, int nHeight);
 
+template void Average2_sse2<uint8_t>(unsigned char *pDst, const unsigned char *pSrc1, const unsigned char *pSrc2, int nPitch, int nWidth, int nHeight);
+template void Average2_sse2<uint16_t>(unsigned char *pDst, const unsigned char *pSrc1, const unsigned char *pSrc2, int nPitch, int nWidth, int nHeight);
 
