@@ -47,6 +47,9 @@ MScaleVect::MScaleVect( PClip Child, double ScaleX, double ScaleY, ScaleMode Mod
 
     // change only bit depth within video format. Not nice but no helper interface for it.
     int newtype = vi.pixel_type;
+    if (vi.IsYV12())
+      newtype = VideoInfo::CS_YV12;
+
     newtype = (newtype & ~VideoInfo::CS_Sample_Bits_Mask);
     switch (mNewBits) {
     case 8: newtype |= VideoInfo::CS_Sample_Bits_8; break;
