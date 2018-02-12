@@ -68,8 +68,8 @@ MVPlane::MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, i
 ,	_redp_ptr (0)
 {
     if(pixelsize==1) {
-        _bilin_hor_ptr = _isse ? HorizontalBilin_iSSE : HorizontalBilin<uint8_t>;
-        _bilin_ver_ptr = _isse ? VerticalBilin_iSSE : VerticalBilin<uint8_t>;
+        _bilin_hor_ptr = _isse ? HorizontalBilin_sse2<uint8_t> : HorizontalBilin<uint8_t>;
+        _bilin_ver_ptr = _isse ? VerticalBilin_sse2<uint8_t> : VerticalBilin<uint8_t>;
         _bilin_dia_ptr = _isse ? DiagonalBilin_iSSE : DiagonalBilin<uint8_t>;
         _bicubic_hor_ptr = _isse ? HorizontalBicubic_iSSE : HorizontalBicubic<uint8_t>;
         _bicubic_ver_ptr = _isse ? VerticalBicubic_iSSE : VerticalBicubic<uint8_t>;
@@ -79,8 +79,8 @@ MVPlane::MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, i
         _reduce_ptr = &RB2BilinearFiltered<uint8_t>;
     }
     else if (pixelsize==2) {
-        _bilin_hor_ptr = HorizontalBilin<uint16_t>;
-        _bilin_ver_ptr = VerticalBilin<uint16_t>;
+        _bilin_hor_ptr = _isse ? HorizontalBilin_sse2<uint16_t> : HorizontalBilin<uint16_t>;
+        _bilin_ver_ptr = _isse ? VerticalBilin_sse2<uint16_t> : VerticalBilin<uint16_t>;
         _bilin_dia_ptr = DiagonalBilin<uint16_t>;
         _bicubic_hor_ptr = HorizontalBicubic<uint16_t>;
         _bicubic_ver_ptr = VerticalBicubic<uint16_t>;

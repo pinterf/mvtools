@@ -38,7 +38,11 @@ void RB2_jump(int y_new, int &y, pixel_t * &pDst, const pixel_t * &pSrc, int nDs
 template<typename pixel_t>
 void VerticalBilin(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 template<typename pixel_t>
+void VerticalBilin_sse2(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+template<typename pixel_t>
 void HorizontalBilin(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+template<typename pixel_t>
+void HorizontalBilin_sse2(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 template<typename pixel_t>
 void DiagonalBilin(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
@@ -53,8 +57,8 @@ void RB2Quadratic(       unsigned char *pDst, const unsigned char *pSrc, int nDs
 template<typename pixel_t>
 void RB2Cubic(           unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int y_beg, int y_end, bool isse);
 
-extern "C" void __cdecl VerticalBilin_iSSE(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
-extern "C" void __cdecl HorizontalBilin_iSSE(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+//extern "C" void __cdecl VerticalBilin_iSSE(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+//extern "C" void __cdecl HorizontalBilin_iSSE(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 extern "C" void __cdecl DiagonalBilin_iSSE(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
 extern "C" void __cdecl RB2F_iSSE(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight);

@@ -820,6 +820,33 @@ void VerticalBilin(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPit
 }
 
 template<typename pixel_t>
+void VerticalBilin_sse2(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch,
+  int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel) {
+  (void)bits_per_pixel; // not used
+
+  for (int y = 0; y < nHeight - 1; y++) {
+    for (int x = 0; x < nWidth; x += 16) {
+      __m128i m0 = _mm_loadu_si128((const __m128i *)&pSrc8[x]);
+      __m128i m1 = _mm_loadu_si128((const __m128i *)&pSrc8[x + nSrcPitch]);
+
+      if(sizeof(pixel_t) == 1)
+        m0 = _mm_avg_epu8(m0, m1);
+      else
+        m0 = _mm_avg_epu16(m0, m1);
+      _mm_storeu_si128((__m128i *)&pDst8[x], m0);
+    }
+
+    pSrc8 += nSrcPitch;
+    pDst8 += nDstPitch;
+  }
+  // last row
+  for (int x = 0; x < nWidth; x++)
+    reinterpret_cast<pixel_t *>(pDst8)[x] = reinterpret_cast<const pixel_t *>(pSrc8)[x];
+}
+
+
+
+template<typename pixel_t>
 void HorizontalBilin(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch,
   int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel)
 {
@@ -839,6 +866,31 @@ void HorizontalBilin(unsigned char *pDst8, const unsigned char *pSrc8, int nDstP
     pSrc += nSrcPitch;
   }
 }
+
+template<typename pixel_t>
+void HorizontalBilin_sse2(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch,
+  int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel) {
+  (void)bits_per_pixel; // not used
+
+  for (int y = 0; y < nHeight; y++) {
+    for (int x = 0; x < nWidth; x += 16) {
+      __m128i m0 = _mm_loadu_si128((const __m128i *)&pSrc8[x]);
+      __m128i m1 = _mm_loadu_si128((const __m128i *)&pSrc8[x + 1]);
+
+      if(sizeof(pixel_t) == 1)
+        m0 = _mm_avg_epu8(m0, m1);
+      else
+        m0 = _mm_avg_epu16(m0, m1);
+      _mm_storeu_si128((__m128i *)&pDst8[x], m0);
+    }
+
+    reinterpret_cast<pixel_t *>(pDst8)[nWidth - 1] = reinterpret_cast<const pixel_t *>(pSrc8)[nWidth - 1];
+
+    pSrc8 += nSrcPitch;
+    pDst8 += nDstPitch;
+  }
+}
+
 
 template<typename pixel_t>
 void DiagonalBilin(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch,
@@ -1173,8 +1225,14 @@ void Average2(unsigned char *pDst8, const unsigned char *pSrc1_8, const unsigned
 template void VerticalBilin<uint8_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeigh, int bits_per_pixelt);
 template void VerticalBilin<uint16_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
+template void VerticalBilin_sse2<uint8_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeigh, int bits_per_pixelt);
+template void VerticalBilin_sse2<uint16_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+
 template void HorizontalBilin<uint8_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 template void HorizontalBilin<uint16_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+
+template void HorizontalBilin_sse2<uint8_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+template void HorizontalBilin_sse2<uint16_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
 template void DiagonalBilin<uint8_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 template void DiagonalBilin<uint16_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
