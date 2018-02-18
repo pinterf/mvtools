@@ -31,27 +31,27 @@
 
 
 class Padding
-:	public GenericVideoFilter
+  : public GenericVideoFilter
 {
 
 private:
-	int horizontalPadding;
-	int verticalPadding;
-	bool planar;
+  int horizontalPadding;
+  int verticalPadding;
+  bool planar;
   int cpuFlags;
 
-	int width;
-	int height;
-	YUY2Planes *DstPlanes;
-	YUY2Planes *SrcPlanes;
+  int width;
+  int height;
+  YUY2Planes *DstPlanes;
+  YUY2Planes *SrcPlanes;
 
 public:
-	Padding(PClip _child, int hPad, int vPad, bool _planar, IScriptEnvironment* env);
-	~Padding();
-	PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
-    
-    template<typename pixel_t>
-	static void PadReferenceFrame(unsigned char *frame, int pitch, int hPad, int vPad, int width, int height);
+  Padding(PClip _child, int hPad, int vPad, bool _planar, IScriptEnvironment* env);
+  ~Padding();
+  PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
+
+  template<typename pixel_t>
+  static void PadReferenceFrame(unsigned char *frame, int pitch, int hPad, int vPad, int width, int height);
 
 };
 
