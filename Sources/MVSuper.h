@@ -38,114 +38,114 @@
 // PF: OK
 MV_FORCEINLINE int PlaneHeightLuma(int src_height, int level, int yRatioUV, int vpad)
 {
-	int height = src_height;
+  int height = src_height;
 
-	for (int i=1; i<=level; i++)
-	{
-//		height = (height/2) - ((height/2) % yRatioUV) ;
-		height = vpad >= yRatioUV ? ((height/yRatioUV + 1) / 2) * yRatioUV : ((height/yRatioUV) / 2) * yRatioUV;
-	}
-	return height;
+  for (int i = 1; i <= level; i++)
+  {
+    //		height = (height/2) - ((height/2) % yRatioUV) ;
+    height = vpad >= yRatioUV ? ((height / yRatioUV + 1) / 2) * yRatioUV : ((height / yRatioUV) / 2) * yRatioUV;
+  }
+  return height;
 }
 
 // PF: OK
 MV_FORCEINLINE int PlaneWidthLuma(int src_width, int level, int xRatioUV, int hpad)
 {
-	int width = src_width;
+  int width = src_width;
 
-	for (int i=1; i<=level; i++)
-	{
-//		width = (width/2) - ((width/2) % xRatioUV) ;
-		width = hpad >= xRatioUV ? ((width/xRatioUV + 1) / 2) * xRatioUV : ((width/xRatioUV) / 2) * xRatioUV;
-	}
-	return width;
+  for (int i = 1; i <= level; i++)
+  {
+    //		width = (width/2) - ((width/2) % xRatioUV) ;
+    width = hpad >= xRatioUV ? ((width / xRatioUV + 1) / 2) * xRatioUV : ((width / xRatioUV) / 2) * xRatioUV;
+  }
+  return width;
 }
 
 // PF: OK no need for xRatioUV here
 // returned offset is pixelsize-aware because plane_pitch is in bytes
 MV_FORCEINLINE unsigned int PlaneSuperOffset(bool chroma, int src_height, int level, int pel, int vpad, int plane_pitch, int yRatioUV)
 {
-	// storing subplanes in superframes may be implemented by various ways
-	int height = src_height; // luma or chroma
+  // storing subplanes in superframes may be implemented by various ways
+  int height = src_height; // luma or chroma
 
-	unsigned int offset;
+  unsigned int offset;
 
-	if (level==0)
-	{
-		offset = 0;
-	}
-	else
-	{
-		offset = pel*pel*plane_pitch*(src_height + vpad*2);
+  if (level == 0)
+  {
+    offset = 0;
+  }
+  else
+  {
+    offset = pel * pel*plane_pitch*(src_height + vpad * 2);
 
-		for (int i=1; i<level; i++)
-		{
-			height = chroma ? PlaneHeightLuma(src_height*yRatioUV, i, yRatioUV, vpad*yRatioUV)/yRatioUV : PlaneHeightLuma(src_height, i, yRatioUV, vpad);
+    for (int i = 1; i < level; i++)
+    {
+      height = chroma ? PlaneHeightLuma(src_height*yRatioUV, i, yRatioUV, vpad*yRatioUV) / yRatioUV : PlaneHeightLuma(src_height, i, yRatioUV, vpad);
 
-			offset += plane_pitch*(height + vpad*2);
-		}
-	}
-	return offset;
+      offset += plane_pitch * (height + vpad * 2);
+    }
+  }
+  return offset;
 }
 
 
 class MVSuper
-:	public GenericVideoFilter
+  : public GenericVideoFilter
 {
 protected:
 
-	int            nHPad;
-	int            nVPad;
-	int            nPel;
-	int            nLevels;
-	int            sharp;
-	int            rfilter; // frame reduce filter mode
-	PClip          pelclip; // upsized source clip with doubled frame width and heigth (used for pel=2)
-	//bool           isse;   //PF maybe obsolate or debug 160729
+  int            nHPad;
+  int            nVPad;
+  int            nPel;
+  int            nLevels;
+  int            sharp;
+  int            rfilter; // frame reduce filter mode
+  PClip          pelclip; // upsized source clip with doubled frame width and heigth (used for pel=2)
+  //bool           isse;   //PF maybe obsolate or debug 160729
   int            cpuFlags;
-	bool           planar; //v2.0.0.7 PF maybe obsolate 160729
+  bool           planar; //v2.0.0.7 PF maybe obsolate 160729
 
-	int            nWidth;
-	int            nHeight;
+  int            nWidth;
+  int            nHeight;
 
-	int            yRatioUV;
-	int            xRatioUV;
+  int            yRatioUV;
+  int            xRatioUV;
 
-    int pixelsize; // PF
-    int bits_per_pixel;
+  int pixelsize; // PF
+  int bits_per_pixel;
 
-	bool           chroma;
-	int            pixelType; //PF maybe obsolate 160729 used in YUY decision along with planar flag
-	bool           usePelClip;
-	int            nSuperWidth;
-	int            nSuperHeight;
+  bool           chroma;
+  int            pixelType; //PF maybe obsolate 160729 used in YUY decision along with planar flag
+  bool           usePelClip;
+  int            nSuperWidth;
+  int            nSuperHeight;
 
-	MVPlaneSet     nModeYUV;
+  MVPlaneSet     nModeYUV;
 
-	YUY2Planes *   SrcPlanes;  //PF maybe obsolate 160729 YUY
+  YUY2Planes *   SrcPlanes;  //PF maybe obsolate 160729 YUY
 //	YUY2Planes *   DstPlanes;
-	YUY2Planes *   SrcPelPlanes; //PF maybe obsolate 160729 YUY
+  YUY2Planes *   SrcPelPlanes; //PF maybe obsolate 160729 YUY
 
-	MVGroupOfFrames *
-	               pSrcGOF;
-	bool           isPelClipPadded;
+  MVGroupOfFrames *
+    pSrcGOF;
+  bool           isPelClipPadded;
 
-	bool           _mt_flag; // PF maybe 2.6.0.5
+  bool           _mt_flag; // PF maybe 2.6.0.5
 
 public:
 
-	MVSuper (
-		PClip _child, int _hpad, int _vpad, int pel, int _levels, bool _chroma,
-		int _sharp, int _rfilter, PClip _pelclip, bool _isse, bool _planar,
-		bool mt_flag, IScriptEnvironment* env
-	);
-	~MVSuper();
+  MVSuper(
+    PClip _child, int _hpad, int _vpad, int pel, int _levels, bool _chroma,
+    int _sharp, int _rfilter, PClip _pelclip, bool _isse, bool _planar,
+    bool mt_flag, IScriptEnvironment* env
+  );
+  ~MVSuper();
 
-   PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
+  PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
 
-   int __stdcall SetCacheHints(int cachehints, int frame_range) override {
-     return cachehints == CACHE_GET_MTMODE ? MT_MULTI_INSTANCE : 0;
-   }
+  int __stdcall SetCacheHints(int cachehints, int frame_range) override {
+    return cachehints == CACHE_GET_MTMODE ? MT_MULTI_INSTANCE : 0;
+  }
 
 };
 
