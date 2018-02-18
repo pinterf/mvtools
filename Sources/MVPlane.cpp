@@ -93,7 +93,15 @@ MVPlane::MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, i
     _reduce_ptr = &RB2BilinearFiltered<uint16_t>;
   }
   else {
-    // float? not supported
+    _bilin_hor_ptr = HorizontalBilin<float>;
+    _bilin_ver_ptr = VerticalBilin<float>;
+    _bilin_dia_ptr = DiagonalBilin<float>;
+    _bicubic_hor_ptr = HorizontalBicubic<float>;
+    _bicubic_ver_ptr = VerticalBicubic<float>;
+    _wiener_hor_ptr = HorizontalWiener<float>;
+    _wiener_ver_ptr = VerticalWiener<float>;
+    _average_ptr = Average2<float>;
+    _reduce_ptr = &RB2BilinearFiltered<float>;
   }
   // Nothing
 }
@@ -111,15 +119,15 @@ MVPlane::~MVPlane()
 void MVPlane::set_interp(int rfilter, int sharp)
 {
   nSharp = sharp;
-  nRfilter = nRfilter;
+  nRfilter = nRfilter; // not used
 
   switch (rfilter)
   {
-  case 0: _reduce_ptr = (pixelsize == 1) ? &RB2F<uint8_t> : &RB2F<uint16_t>; break;
-  case 1: _reduce_ptr = (pixelsize == 1) ? &RB2Filtered<uint8_t> : &RB2Filtered<uint16_t>; break;
-  case 2: _reduce_ptr = (pixelsize == 1) ? &RB2BilinearFiltered<uint8_t> : &RB2BilinearFiltered<uint16_t>; break;
-  case 3: _reduce_ptr = (pixelsize == 1) ? &RB2Quadratic<uint8_t> : &RB2Quadratic<uint16_t>; break;
-  case 4: _reduce_ptr = (pixelsize == 1) ? &RB2Cubic<uint8_t> : &RB2Cubic<uint16_t>; break;
+  case 0: _reduce_ptr = (pixelsize == 1) ? &RB2F<uint8_t> : (pixelsize == 2 ? &RB2F<uint16_t> : &RB2F<float>); break;
+  case 1: _reduce_ptr = (pixelsize == 1) ? &RB2Filtered<uint8_t> : (pixelsize == 2 ? &RB2Filtered<uint16_t> : &RB2Filtered<float>); break;
+  case 2: _reduce_ptr = (pixelsize == 1) ? &RB2BilinearFiltered<uint8_t> : (pixelsize == 2 ? &RB2BilinearFiltered<uint16_t> : &RB2BilinearFiltered<float>); break;
+  case 3: _reduce_ptr = (pixelsize == 1) ? &RB2Quadratic<uint8_t> : (pixelsize == 2 ? &RB2Quadratic<uint16_t> : &RB2Quadratic<float>); break;
+  case 4: _reduce_ptr = (pixelsize == 1) ? &RB2Cubic<uint8_t> : (pixelsize == 2 ? &RB2Cubic<uint16_t> : &RB2Cubic<float>); break;
   default:
     assert(false);
     break;
@@ -223,8 +231,10 @@ void MVPlane::Pad()
   {
     if (pixelsize == 1)
       Padding::PadReferenceFrame<uint8_t>(pPlane[0], nPitch, nHPadding, nVPadding, nWidth, nHeight);
-    else
+    else if (pixelsize == 2)
       Padding::PadReferenceFrame<uint16_t>(pPlane[0], nPitch, nHPadding, nVPadding, nWidth, nHeight);
+    else
+      Padding::PadReferenceFrame<float>(pPlane[0], nPitch, nHPadding, nVPadding, nWidth, nHeight);
     isPadded = true;
   }
 }
@@ -265,6 +275,7 @@ void MVPlane::refine_wait()
 // if a non-static template function is in cpp, we have to instantiate it
 template void MVPlane::RefineExt<uint8_t>(const uint8_t *pSrc2x_8, int nSrc2xPitch, bool isExtPadded);
 template void MVPlane::RefineExt<uint16_t>(const uint8_t *pSrc2x_8, int nSrc2xPitch, bool isExtPadded);
+template void MVPlane::RefineExt<float>(const uint8_t *pSrc2x_8, int nSrc2xPitch, bool isExtPadded);
 
 template<typename pixel_t>
 void MVPlane::RefineExt(const uint8_t *pSrc2x_8, int nSrc2xPitch, bool isExtPadded) // copy from external upsized clip

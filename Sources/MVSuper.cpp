@@ -184,7 +184,7 @@ PVideoFrame __stdcall MVSuper::GetFrame(int n, IScriptEnvironment* env)
 	int nSrcPelPitchY, nSrcPelPitchUV;
 //	int nDstPitchYUY2;
 
-	DebugPrintf("MSuper: Get src frame %d clip %d",n,child);
+	//DebugPrintf("MSuper: Get src frame %d clip %d",n,child);
 
 	PVideoFrame src = child->GetFrame(n, env);
 	PVideoFrame srcPel;
@@ -297,23 +297,29 @@ PVideoFrame __stdcall MVSuper::GetFrame(int n, IScriptEnvironment* env)
 		if (nModeYUV & YPLANE) 
             if(pixelsize==1)
                 srcPlaneY->RefineExt<uint8_t>(pSrcPelY, nSrcPelPitchY, isPelClipPadded);
-            else
+            else if(pixelsize==2)
                 srcPlaneY->RefineExt<uint16_t>(pSrcPelY, nSrcPelPitchY, isPelClipPadded);
+            else
+              srcPlaneY->RefineExt<float>(pSrcPelY, nSrcPelPitchY, isPelClipPadded);
 
         MVPlane *srcPlaneU = srcFrames->GetPlane(UPLANE);
 		if (nModeYUV & UPLANE) 
             if(pixelsize==1)
                 srcPlaneU->RefineExt<uint8_t>(pSrcPelU, nSrcPelPitchUV, isPelClipPadded);
+            else if (pixelsize == 2)
+              srcPlaneU->RefineExt<uint16_t>(pSrcPelU, nSrcPelPitchUV, isPelClipPadded);
             else
-                srcPlaneU->RefineExt<uint16_t>(pSrcPelU, nSrcPelPitchUV, isPelClipPadded);
+              srcPlaneU->RefineExt<float>(pSrcPelU, nSrcPelPitchUV, isPelClipPadded);
 
         MVPlane *srcPlaneV = srcFrames->GetPlane(VPLANE);
 		if (nModeYUV & VPLANE) 
             if(pixelsize==1)
                 srcPlaneV->RefineExt<uint8_t>(pSrcPelV, nSrcPelPitchUV, isPelClipPadded);
+            else if (pixelsize == 2)
+              srcPlaneV->RefineExt<uint16_t>(pSrcPelV, nSrcPelPitchUV, isPelClipPadded);
             else
-                srcPlaneV->RefineExt<uint16_t>(pSrcPelV, nSrcPelPitchUV, isPelClipPadded);
-    }
+              srcPlaneV->RefineExt<float>(pSrcPelV, nSrcPelPitchUV, isPelClipPadded);
+  }
 	else
 	{
 		pSrcGOF->Refine(nModeYUV);

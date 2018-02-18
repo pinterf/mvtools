@@ -27,7 +27,7 @@ void PadCorner(pixel_t *p, pixel_t v, int hPad, int vPad, int refPitch)
     // refPitch here is pixel_t aware
 	for ( int i = 0; i < vPad; i++ )
 	{
-        if(sizeof(pixel_t) == 1)
+        if constexpr(sizeof(pixel_t) == 1)
             memset(p, v, hPad); // faster than loop
         else {
             /*
@@ -160,24 +160,30 @@ PVideoFrame __stdcall Padding::GetFrame(int n, IScriptEnvironment *env)
 		pSrc[0], nSrcPitches[0], width*pixelsize, height);
     if(pixelsize==1)
         PadReferenceFrame<uint8_t>(pDst[0], nDstPitches[0], horizontalPadding, verticalPadding, width, height);
-    else
+    else if (pixelsize == 2)
         PadReferenceFrame<uint16_t>(pDst[0], nDstPitches[0], horizontalPadding, verticalPadding, width, height);
+    else
+      PadReferenceFrame<float>(pDst[0], nDstPitches[0], horizontalPadding, verticalPadding, width, height);
 
 
 	env->BitBlt(pDst[1] + horizontalPadding/xRatioUV*pixelsize + verticalPadding/yRatioUV * nDstPitches[1],
 		nDstPitches[1],	pSrc[1], nSrcPitches[1], width/xRatioUV*pixelsize, height/yRatioUV);
     if(pixelsize==1)
         PadReferenceFrame<uint8_t>(pDst[1], nDstPitches[1], horizontalPadding/xRatioUV, verticalPadding/yRatioUV, width/xRatioUV, height/yRatioUV);
+    else if (pixelsize == 2)
+      PadReferenceFrame<uint16_t>(pDst[1], nDstPitches[1], horizontalPadding/xRatioUV, verticalPadding/yRatioUV, width/xRatioUV, height/yRatioUV);
     else
-        PadReferenceFrame<uint16_t>(pDst[1], nDstPitches[1], horizontalPadding/xRatioUV, verticalPadding/yRatioUV, width/xRatioUV, height/yRatioUV);
+      PadReferenceFrame<float>(pDst[1], nDstPitches[1], horizontalPadding / xRatioUV, verticalPadding / yRatioUV, width / xRatioUV, height / yRatioUV);
 
 
 	env->BitBlt(pDst[2] + horizontalPadding/xRatioUV*pixelsize + verticalPadding/yRatioUV * nDstPitches[2],
 		nDstPitches[2],	pSrc[2], nSrcPitches[2], width/xRatioUV*pixelsize, height/yRatioUV);
     if(pixelsize==1)
         PadReferenceFrame<uint8_t>(pDst[2], nDstPitches[2], horizontalPadding/xRatioUV, verticalPadding/yRatioUV, width/xRatioUV, height/yRatioUV);
+    else if (pixelsize == 2)
+      PadReferenceFrame<uint16_t>(pDst[2], nDstPitches[2], horizontalPadding/xRatioUV, verticalPadding/yRatioUV, width/xRatioUV, height/yRatioUV);
     else
-        PadReferenceFrame<uint16_t>(pDst[2], nDstPitches[2], horizontalPadding/xRatioUV, verticalPadding/yRatioUV, width/xRatioUV, height/yRatioUV);
+      PadReferenceFrame<float>(pDst[2], nDstPitches[2], horizontalPadding / xRatioUV, verticalPadding / yRatioUV, width / xRatioUV, height / yRatioUV);
 
 	if ( (vi.pixel_type & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
 	{

@@ -57,6 +57,7 @@ void RB2_jumpX(int y_new, int &y, pixel_t * &pDst, pixel_t * &pSrc, int nDstPitc
   y = y_new; \
 }
 
+// 8-32bits
 template<typename pixel_t>
 void RB2F_C(
   pixel_t *pDst, const pixel_t *pSrc, int nDstPitch, int nSrcPitch,
@@ -71,14 +72,19 @@ void RB2F_C(
   {
     for (int x = 0; x < nWidth; x++)
     {
-      pDst[x] = (pSrc[x * 2] + pSrc[x * 2 + 1]
-        + pSrc[x * 2 + nSrcPitch / sizeof(pixel_t)] + pSrc[x * 2 + nSrcPitch / sizeof(pixel_t) + 1] + 2) / 4;
+      if constexpr(sizeof(pixel_t) <= 2)
+        pDst[x] = (pSrc[x * 2] + pSrc[x * 2 + 1]
+          + pSrc[x * 2 + nSrcPitch / sizeof(pixel_t)] + pSrc[x * 2 + nSrcPitch / sizeof(pixel_t) + 1] + 2) / 4; // int
+      else
+        pDst[x] = (pSrc[x * 2] + pSrc[x * 2 + 1]
+          + pSrc[x * 2 + nSrcPitch / sizeof(pixel_t)] + pSrc[x * 2 + nSrcPitch / sizeof(pixel_t) + 1]) * (1.0f / 4.0f); // float
     }
     pDst += nDstPitch / sizeof(pixel_t);
     pSrc += nSrcPitch / sizeof(pixel_t) * 2;
   }
 }
 
+// 8-32bits
 template<typename pixel_t>
 void RB2F(
   unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch, int nSrcPitch,
@@ -255,6 +261,7 @@ void RB2Cubic_C(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch,
 }
 */
 
+//8-32 bits
 // Filtered with 1/4, 1/2, 1/4 filter for smoothing and anti-aliasing - Fizick
 // nHeight is dst height which is reduced by 2 source height
 template<typename pixel_t>
@@ -276,7 +283,10 @@ void RB2FilteredVertical(
   {
     for (int x = 0; x < nWidth; x++)
     {
-      pDst[x] = (pSrc[x] + pSrc[x + nSrcPitch / sizeof(pixel_t)] + 1) / 2;
+      if constexpr(sizeof(pixel_t) <= 2)
+        pDst[x] = (pSrc[x] + pSrc[x + nSrcPitch / sizeof(pixel_t)] + 1) / 2;
+      else
+        pDst[x] = (pSrc[x] + pSrc[x + nSrcPitch / sizeof(pixel_t)]) * 0.5f;
     }
   }
 
@@ -306,7 +316,10 @@ void RB2FilteredVertical(
     {
       for (int x = 0; x < nWidth; x++)
       {
-        pDst[x] = (pSrc[x - nSrcPitch / sizeof(pixel_t)] + pSrc[x] * 2 + pSrc[x + nSrcPitch / sizeof(pixel_t)] + 2) / 4;
+        if constexpr(sizeof(pixel_t) <= 2)
+          pDst[x] = (pSrc[x - nSrcPitch / sizeof(pixel_t)] + pSrc[x] * 2 + pSrc[x + nSrcPitch / sizeof(pixel_t)] + 2) / 4;
+        else
+          pDst[x] = (pSrc[x - nSrcPitch / sizeof(pixel_t)] + pSrc[x] * 2 + pSrc[x + nSrcPitch / sizeof(pixel_t)]) * (1.0f / 4.0f);
       }
 
       pDst += nDstPitch / sizeof(pixel_t);
@@ -315,6 +328,7 @@ void RB2FilteredVertical(
   }
 }
 
+//8-32bits
 // Filtered with 1/4, 1/2, 1/4 filter for smoothing and anti-aliasing - Fizick
 // nWidth is dst height which is reduced by 2 source width
 template<typename pixel_t>
@@ -335,7 +349,11 @@ void RB2FilteredHorizontalInplace(
   for (; y < y_end; ++y)
   {
     const int x = 0;
-    int pSrc0 = (pSrc[x * 2] + pSrc[x * 2 + 1] + 1) / 2;
+    pixel_t pSrc0;
+    if constexpr(sizeof(pixel_t) <= 2)
+      pSrc0 = (pSrc[x * 2] + pSrc[x * 2 + 1] + 1) / 2;
+    else
+      pSrc0 = (pSrc[x * 2] + pSrc[x * 2 + 1]) * 0.5f;
 
     if (sizeof(pixel_t) == 1 && isse2)
     {
@@ -352,7 +370,10 @@ void RB2FilteredHorizontalInplace(
     {
       for (int x = 1; x < nWidth; x++)
       {
-        pSrc[x] = (pSrc[x * 2 - 1] + pSrc[x * 2] * 2 + pSrc[x * 2 + 1] + 2) / 4;
+        if constexpr(sizeof(pixel_t) <= 2)
+          pSrc[x] = (pSrc[x * 2 - 1] + pSrc[x * 2] * 2 + pSrc[x * 2 + 1] + 2) / 4;
+        else
+          pSrc[x] = (pSrc[x * 2 - 1] + pSrc[x * 2] * 2 + pSrc[x * 2 + 1]) * (1.0f / 4.0f);
       }
     }
     pSrc[0] = pSrc0;
@@ -361,6 +382,7 @@ void RB2FilteredHorizontalInplace(
   }
 }
 
+//8-32bits
 // separable Filtered with 1/4, 1/2, 1/4 filter for smoothing and anti-aliasing - Fizick v.2.5.2
 // assume he have enough horizontal dimension for intermediate results (double as final)
 template<typename pixel_t>
@@ -374,6 +396,7 @@ void RB2Filtered(
 
 
 
+// 8-32bits
 // BilinearFiltered with 1/8, 3/8, 3/8, 1/8 filter for smoothing and anti-aliasing - Fizick
 // nHeight is dst height which is reduced by 2 source height
 template<typename pixel_t>
@@ -396,7 +419,10 @@ void RB2BilinearFilteredVertical(
   {
     for (int x = 0; x < nWidth; x++)
     {
-      pDst[x] = (pSrc[x] + pSrc[x + nSrcPitch / sizeof(pixel_t)] + 1) / 2;
+      if constexpr(sizeof(pixel_t) <= 2)
+        pDst[x] = (pSrc[x] + pSrc[x + nSrcPitch / sizeof(pixel_t)] + 1) / 2;
+      else
+        pDst[x] = (pSrc[x] + pSrc[x + nSrcPitch / sizeof(pixel_t)]) * 0.5f;
     }
   }
 
@@ -429,10 +455,16 @@ void RB2BilinearFilteredVertical(
     {
       for (int x = 0; x < nWidth; x++)
       {
-        pDst[x] = (pSrc[x - nSrcPitch / sizeof(pixel_t)]
-          + pSrc[x] * 3
-          + pSrc[x + nSrcPitch / sizeof(pixel_t)] * 3
-          + pSrc[x + nSrcPitch / sizeof(pixel_t) * 2] + 4) / 8;
+        if constexpr(sizeof(pixel_t) <= 2)
+          pDst[x] = (pSrc[x - nSrcPitch / sizeof(pixel_t)]
+            + pSrc[x] * 3
+            + pSrc[x + nSrcPitch / sizeof(pixel_t)] * 3
+            + pSrc[x + nSrcPitch / sizeof(pixel_t) * 2] + 4) / 8;
+        else
+          pDst[x] = (pSrc[x - nSrcPitch / sizeof(pixel_t)]
+            + pSrc[x] * 3.0f
+            + pSrc[x + nSrcPitch / sizeof(pixel_t)] * 3.0f
+            + pSrc[x + nSrcPitch / sizeof(pixel_t) * 2]) * (1.0f / 8.0f);
       }
 
       pDst += nDstPitch / sizeof(pixel_t);
@@ -446,13 +478,17 @@ void RB2BilinearFilteredVertical(
   {
     for (int x = 0; x < nWidth; x++)
     {
-      pDst[x] = (pSrc[x] + pSrc[x + nSrcPitch / sizeof(pixel_t)] + 1) / 2;
+      if constexpr(sizeof(pixel_t) <= 2)
+        pDst[x] = (pSrc[x] + pSrc[x + nSrcPitch / sizeof(pixel_t)] + 1) / 2;
+      else
+        pDst[x] = (pSrc[x] + pSrc[x + nSrcPitch / sizeof(pixel_t)]) * 0.5f;
     }
     pDst += nDstPitch / sizeof(pixel_t);
     pSrc += nSrcPitch / sizeof(pixel_t) * 2;
   }
 }
 
+// 8-32bits
 // BilinearFiltered with 1/8, 3/8, 3/8, 1/8 filter for smoothing and anti-aliasing - Fizick
 // nWidth is dst height which is reduced by 2 source width
 template<typename pixel_t>
@@ -472,7 +508,11 @@ void RB2BilinearFilteredHorizontalInplace(
   for (; y < y_end; ++y)
   {
     int x = 0;
-    int pSrc0 = (pSrc[x * 2] + pSrc[x * 2 + 1] + 1) / 2;
+    pixel_t pSrc0;
+    if constexpr(sizeof(pixel_t) <= 2)
+      pSrc0 = (pSrc[x * 2] + pSrc[x * 2 + 1] + 1) / 2;
+    else
+      pSrc0 = (pSrc[x * 2] + pSrc[x * 2 + 1]) * 0.5f;
 
     if (sizeof(pixel_t) == 1 && isse2)
     {
@@ -489,20 +529,27 @@ void RB2BilinearFilteredHorizontalInplace(
     {
       for (int x = 1; x < nWidth - 1; x++)
       {
-        pSrc[x] = (pSrc[x * 2 - 1] + pSrc[x * 2] * 3 + pSrc[x * 2 + 1] * 3 + pSrc[x * 2 + 2] + 4) / 8;
+        if constexpr(sizeof(pixel_t) <= 2)
+          pSrc[x] = (pSrc[x * 2 - 1] + pSrc[x * 2] * 3 + pSrc[x * 2 + 1] * 3 + pSrc[x * 2 + 2] + 4) / 8;
+        else
+          pSrc[x] = (pSrc[x * 2 - 1] + pSrc[x * 2] * 3.0f + pSrc[x * 2 + 1] * 3.0f + pSrc[x * 2 + 2]) * (1.0f / 8.0f);
       }
     }
     pSrc[0] = pSrc0;
 
     for (int x = std::max(nWidth - 1, 1); x < nWidth; x++)
     {
-      pSrc[x] = (pSrc[x * 2] + pSrc[x * 2 + 1] + 1) / 2;
+      if constexpr(sizeof(pixel_t) <= 2)
+        pSrc[x] = (pSrc[x * 2] + pSrc[x * 2 + 1] + 1) / 2;
+      else
+        pSrc[x] = (pSrc[x * 2] + pSrc[x * 2 + 1]) * 0.5f;
     }
 
     pSrc += nSrcPitch / sizeof(pixel_t);
   }
 }
 
+// 8-32bits
 // separable BilinearFiltered with 1/8, 3/8, 3/8, 1/8 filter for smoothing and anti-aliasing - Fizick v.2.5.2
 // assume he have enough horizontal dimension for intermediate results (double as final)
 template<typename pixel_t>
@@ -515,7 +562,7 @@ void RB2BilinearFiltered(
 }
 
 
-
+//8-32bits
 // filtered Quadratic with 1/64, 9/64, 22/64, 22/64, 9/64, 1/64 filter for smoothing and anti-aliasing - Fizick
 // nHeight is dst height which is reduced by 2 source height
 template<typename pixel_t>
@@ -537,7 +584,10 @@ void RB2QuadraticVertical(
   {
     for (int x = 0; x < nWidth; x++)
     {
-      pDst[x] = (pSrc[x] + pSrc[x + nSrcPitch / sizeof(pixel_t)] + 1) / 2;
+      if constexpr(sizeof(pixel_t) <= 2)
+        pDst[x] = (pSrc[x] + pSrc[x + nSrcPitch / sizeof(pixel_t)] + 1) / 2;
+      else
+        pDst[x] = (pSrc[x] + pSrc[x + nSrcPitch / sizeof(pixel_t)]) * 0.5f;
     }
   }
 
@@ -572,12 +622,20 @@ void RB2QuadraticVertical(
     {
       for (int x = 0; x < nWidth; x++)
       {
-        pDst[x] = (pSrc[x - nSrcPitch / sizeof(pixel_t) * 2]
+        if constexpr(sizeof(pixel_t) <= 2)
+          pDst[x] = (pSrc[x - nSrcPitch / sizeof(pixel_t) * 2]
           + pSrc[x - nSrcPitch / sizeof(pixel_t)] * 9
           + pSrc[x] * 22
           + pSrc[x + nSrcPitch / sizeof(pixel_t)] * 22
           + pSrc[x + nSrcPitch / sizeof(pixel_t) * 2] * 9
           + pSrc[x + nSrcPitch / sizeof(pixel_t) * 3] + 32) / 64;
+        else
+          pDst[x] = (pSrc[x - nSrcPitch / sizeof(pixel_t) * 2]
+            + pSrc[x - nSrcPitch / sizeof(pixel_t)] * 9
+            + pSrc[x] * 22
+            + pSrc[x + nSrcPitch / sizeof(pixel_t)] * 22
+            + pSrc[x + nSrcPitch / sizeof(pixel_t) * 2] * 9
+            + pSrc[x + nSrcPitch / sizeof(pixel_t) * 3]) * (1.0f / 64.0f);
       }
 
       pDst += nDstPitch / sizeof(pixel_t);
@@ -591,13 +649,17 @@ void RB2QuadraticVertical(
   {
     for (int x = 0; x < nWidth; x++)
     {
-      pDst[x] = (pSrc[x] + pSrc[x + nSrcPitch / sizeof(pixel_t)] + 1) / 2;
+      if constexpr(sizeof(pixel_t) <= 2)
+        pDst[x] = (pSrc[x] + pSrc[x + nSrcPitch / sizeof(pixel_t)] + 1) / 2;
+      else
+        pDst[x] = (pSrc[x] + pSrc[x + nSrcPitch / sizeof(pixel_t)]) * 0.5f;
     }
     pDst += nDstPitch / sizeof(pixel_t);
     pSrc += nSrcPitch / sizeof(pixel_t) * 2;
   }
 }
 
+// 8-32bits
 // filtered Quadratic with 1/64, 9/64, 22/64, 22/64, 9/64, 1/64 filter for smoothing and anti-aliasing - Fizick
 // nWidth is dst height which is reduced by 2 source width
 template<typename pixel_t>
@@ -617,7 +679,11 @@ void RB2QuadraticHorizontalInplace(
   for (; y < y_end; ++y)
   {
     int x = 0;
-    int pSrc0 = (pSrc[x * 2] + pSrc[x * 2 + 1] + 1) / 2; // store temporary
+    pixel_t pSrc0;
+    if constexpr(sizeof(pixel_t) <= 2)
+      pSrc0 = (pSrc[x * 2] + pSrc[x * 2 + 1] + 1) / 2; // store temporary
+    else
+      pSrc0 = (pSrc[x * 2] + pSrc[x * 2 + 1]) * 0.5f; // store temporary
 
     if (sizeof(pixel_t) == 1 && isse2)
     {
@@ -635,21 +701,29 @@ void RB2QuadraticHorizontalInplace(
     {
       for (int x = 1; x < nWidth - 1; x++)
       {
-        pSrc[x] = (pSrc[x * 2 - 2] + pSrc[x * 2 - 1] * 9 + pSrc[x * 2] * 22
+        if constexpr(sizeof(pixel_t) <= 2)
+          pSrc[x] = (pSrc[x * 2 - 2] + pSrc[x * 2 - 1] * 9 + pSrc[x * 2] * 22
           + pSrc[x * 2 + 1] * 22 + pSrc[x * 2 + 2] * 9 + pSrc[x * 2 + 3] + 32) / 64;
+        else
+          pSrc[x] = (pSrc[x * 2 - 2] + pSrc[x * 2 - 1] * 9 + pSrc[x * 2] * 22
+            + pSrc[x * 2 + 1] * 22 + pSrc[x * 2 + 2] * 9 + pSrc[x * 2 + 3]) * (1.0f / 64.0f);
       }
     }
     pSrc[0] = pSrc0;
 
     for (int x = std::max(nWidth - 1, 1); x < nWidth; x++)
     {
-      pSrc[x] = (pSrc[x * 2] + pSrc[x * 2 + 1] + 1) / 2;
+      if constexpr(sizeof(pixel_t) <= 2)
+        pSrc[x] = (pSrc[x * 2] + pSrc[x * 2 + 1] + 1) / 2;
+      else
+        pSrc[x] = (pSrc[x * 2] + pSrc[x * 2 + 1]) * 0.5f;
     }
 
     pSrc += nSrcPitch / sizeof(pixel_t);
   }
 }
 
+// 8-32bits
 // separable filtered Quadratic with 1/64, 9/64, 22/64, 22/64, 9/64, 1/64 filter for smoothing and anti-aliasing - Fizick v.2.5.2
 // assume he have enough horizontal dimension for intermediate results (double as final)
 template<typename pixel_t>
@@ -663,6 +737,7 @@ void RB2Quadratic(
 
 
 
+// 8-32bits
 // filtered qubic with 1/32, 5/32, 10/32, 10/32, 5/32, 1/32 filter for smoothing and anti-aliasing - Fizick
 // nHeight is dst height which is reduced by 2 source height
 template<typename pixel_t>
@@ -684,7 +759,10 @@ void RB2CubicVertical(
   {
     for (int x = 0; x < nWidth; x++)
     {
-      pDst[x] = (pSrc[x] + pSrc[x + nSrcPitch / sizeof(pixel_t)] + 1) / 2;
+      if constexpr(sizeof(pixel_t) <= 2)
+        pDst[x] = (pSrc[x] + pSrc[x + nSrcPitch / sizeof(pixel_t)] + 1) / 2;
+      else
+        pDst[x] = (pSrc[x] + pSrc[x + nSrcPitch / sizeof(pixel_t)]) * 0.5f;
     }
   }
 
@@ -719,12 +797,20 @@ void RB2CubicVertical(
     {
       for (int x = 0; x < nWidth; x++)
       {
-        pDst[x] = (pSrc[x - nSrcPitch / sizeof(pixel_t) * 2]
+        if constexpr(sizeof(pixel_t) <= 2)
+          pDst[x] = (pSrc[x - nSrcPitch / sizeof(pixel_t) * 2]
           + pSrc[x - nSrcPitch / sizeof(pixel_t)] * 5
           + pSrc[x] * 10
           + pSrc[x + nSrcPitch / sizeof(pixel_t)] * 10
           + pSrc[x + nSrcPitch / sizeof(pixel_t) * 2] * 5
           + pSrc[x + nSrcPitch / sizeof(pixel_t) * 3] + 16) / 32;
+        else
+          pDst[x] = (pSrc[x - nSrcPitch / sizeof(pixel_t) * 2]
+            + pSrc[x - nSrcPitch / sizeof(pixel_t)] * 5
+            + pSrc[x] * 10
+            + pSrc[x + nSrcPitch / sizeof(pixel_t)] * 10
+            + pSrc[x + nSrcPitch / sizeof(pixel_t) * 2] * 5
+            + pSrc[x + nSrcPitch / sizeof(pixel_t) * 3]) * (1.0f / 32.0f);
       }
 
       pDst += nDstPitch / sizeof(pixel_t);
@@ -738,13 +824,17 @@ void RB2CubicVertical(
   {
     for (int x = 0; x < nWidth; x++)
     {
-      pDst[x] = (pSrc[x] + pSrc[x + nSrcPitch / sizeof(pixel_t)] + 1) / 2;
+      if constexpr(sizeof(pixel_t) <= 2)
+        pDst[x] = (pSrc[x] + pSrc[x + nSrcPitch / sizeof(pixel_t)] + 1) / 2;
+      else
+        pDst[x] = (pSrc[x] + pSrc[x + nSrcPitch / sizeof(pixel_t)]) * 0.5f;
     }
     pDst += nDstPitch / sizeof(pixel_t);
     pSrc += nSrcPitch / sizeof(pixel_t) * 2;
   }
 }
 
+// 8-32 bits
 // filtered qubic with 1/32, 5/32, 10/32, 10/32, 5/32, 1/32 filter for smoothing and anti-aliasing - Fizick
 // nWidth is dst height which is reduced by 2 source width
 template<typename pixel_t>
@@ -764,7 +854,11 @@ void RB2CubicHorizontalInplace(
   for (; y < y_end; ++y)
   {
     int x = 0;
-    int pSrcw0 = (pSrc[x * 2] + pSrc[x * 2 + 1] + 1) / 2; // store temporary
+    pixel_t pSrcw0;
+    if constexpr(sizeof(pixel_t) <= 2)
+      pSrcw0 = (pSrc[x * 2] + pSrc[x * 2 + 1] + 1) / 2; // store temporary
+    else
+      pSrcw0 = (pSrc[x * 2] + pSrc[x * 2 + 1]) * 0.5f; // store temporary
     if (sizeof(pixel_t) == 1 && isse2)
     {
       RB2CubicHorizontalInplaceLine_SSE((uint8_t *)pSrc, nWidthMMX);
@@ -781,15 +875,22 @@ void RB2CubicHorizontalInplace(
     {
       for (int x = 1; x < nWidth - 1; x++)
       {
-        pSrc[x] = (pSrc[x * 2 - 2] + pSrc[x * 2 - 1] * 5 + pSrc[x * 2] * 10
+        if constexpr(sizeof(pixel_t) <= 2)
+          pSrc[x] = (pSrc[x * 2 - 2] + pSrc[x * 2 - 1] * 5 + pSrc[x * 2] * 10
           + pSrc[x * 2 + 1] * 10 + pSrc[x * 2 + 2] * 5 + pSrc[x * 2 + 3] + 16) / 32;
+        else
+          pSrc[x] = (pSrc[x * 2 - 2] + pSrc[x * 2 - 1] * 5 + pSrc[x * 2] * 10
+            + pSrc[x * 2 + 1] * 10 + pSrc[x * 2 + 2] * 5 + pSrc[x * 2 + 3]) * (1.0f / 32.0f);
       }
     }
     pSrc[0] = pSrcw0;
 
     for (int x = std::max(nWidth - 1, 1); x < nWidth; x++)
     {
-      pSrc[x] = (pSrc[x * 2] + pSrc[x * 2 + 1] + 1) / 2;
+      if constexpr(sizeof(pixel_t) <= 2)
+        pSrc[x] = (pSrc[x * 2] + pSrc[x * 2 + 1] + 1) / 2;
+      else
+        pSrc[x] = (pSrc[x * 2] + pSrc[x * 2 + 1]) * 0.5f;
     }
 
     pSrc += nSrcPitch / sizeof(pixel_t);
@@ -803,6 +904,7 @@ void RB2CubicHorizontalInplace(
   }
 }
 
+// 8-32bits
 // separable filtered cubic with 1/32, 5/32, 10/32, 10/32, 5/32, 1/32 filter for smoothing and anti-aliasing - Fizick v.2.5.2
 // assume he have enough horizontal dimension for intermediate results (double as final)
 template<typename pixel_t>
@@ -820,6 +922,7 @@ void RB2Cubic(
 
 
 
+// 8-32 bits
 template<typename pixel_t>
 void VerticalBilin(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch,
   int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel)
@@ -833,7 +936,10 @@ void VerticalBilin(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPit
   for (int j = 0; j < nHeight - 1; j++)
   {
     for (int i = 0; i < nWidth; i++)
-      pDst[i] = (pSrc[i] + pSrc[i + nSrcPitch] + 1) >> 1;
+      if constexpr(sizeof(pixel_t) <= 2)
+        pDst[i] = (pSrc[i] + pSrc[i + nSrcPitch] + 1) >> 1; // int
+      else
+        pDst[i] = (pSrc[i] + pSrc[i + nSrcPitch]) * 0.5f; // float
     pDst += nDstPitch;
     pSrc += nSrcPitch;
   }
@@ -868,7 +974,7 @@ void VerticalBilin_sse2(unsigned char *pDst8, const unsigned char *pSrc8, int nD
 }
 
 
-
+// 8-32 bits
 template<typename pixel_t>
 void HorizontalBilin(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch,
   int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel)
@@ -882,13 +988,17 @@ void HorizontalBilin(unsigned char *pDst8, const unsigned char *pSrc8, int nDstP
   for (int j = 0; j < nHeight; j++)
   {
     for (int i = 0; i < nWidth - 1; i++)
-      pDst[i] = (pSrc[i] + pSrc[i + 1] + 1) >> 1;
+      if constexpr(sizeof(pixel_t) <= 2)
+        pDst[i] = (pSrc[i] + pSrc[i + 1] + 1) >> 1; // int
+      else
+        pDst[i] = (pSrc[i] + pSrc[i + 1]) * 0.5f; // float
 
     pDst[nWidth - 1] = pSrc[nWidth - 1];
     pDst += nDstPitch;
     pSrc += nSrcPitch;
   }
 }
+
 
 template<typename pixel_t>
 void HorizontalBilin_sse2(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch,
@@ -915,6 +1025,7 @@ void HorizontalBilin_sse2(unsigned char *pDst8, const unsigned char *pSrc8, int 
 }
 
 
+// 8-32 bits
 template<typename pixel_t>
 void DiagonalBilin(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch,
   int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel)
@@ -928,14 +1039,23 @@ void DiagonalBilin(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPit
   for (int j = 0; j < nHeight - 1; j++)
   {
     for (int i = 0; i < nWidth - 1; i++)
-      pDst[i] = (pSrc[i] + pSrc[i + 1] + pSrc[i + nSrcPitch] + pSrc[i + nSrcPitch + 1] + 2) >> 2;
+      if constexpr(sizeof(pixel_t) <= 2) {
+        pDst[i] = (pSrc[i] + pSrc[i + 1] + pSrc[i + nSrcPitch] + pSrc[i + nSrcPitch + 1] + 2) >> 2; // int
+        pDst[nWidth - 1] = (pSrc[nWidth - 1] + pSrc[nWidth + nSrcPitch - 1] + 1) >> 1;
+      }
+      else {
+        pDst[i] = (pSrc[i] + pSrc[i + 1] + pSrc[i + nSrcPitch] + pSrc[i + nSrcPitch + 1]) * 0.25f; // float
+        pDst[nWidth - 1] = (pSrc[nWidth - 1] + pSrc[nWidth + nSrcPitch - 1]) * 0.5f;
+      }
 
-    pDst[nWidth - 1] = (pSrc[nWidth - 1] + pSrc[nWidth + nSrcPitch - 1] + 1) >> 1;
     pDst += nDstPitch;
     pSrc += nSrcPitch;
   }
   for (int i = 0; i < nWidth - 1; i++)
-    pDst[i] = (pSrc[i] + pSrc[i + 1] + 1) >> 1;
+    if constexpr(sizeof(pixel_t) <= 2)
+      pDst[i] = (pSrc[i] + pSrc[i + 1] + 1) >> 1; // int
+    else
+      pDst[i] = (pSrc[i] + pSrc[i + 1]) * 0.5f; // float
   pDst[nWidth - 1] = pSrc[nWidth - 1];
 }
 
@@ -1031,6 +1151,7 @@ void DiagonalBilin_sse2(unsigned char *pDst8, const unsigned char *pSrc8, int nD
 
 // so called Wiener interpolation. (sharp, similar to Lanczos ?)
 // invarint simplified, 6 taps. Weights: (1, -5, 20, 20, -5, 1)/32 - added by Fizick
+// 8-32 bits
 template<typename pixel_t>
 void VerticalWiener(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch,
   int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel)
@@ -1046,7 +1167,10 @@ void VerticalWiener(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPi
   for (int j = 0; j < 2; j++)
   {
     for (int i = 0; i < nWidth; i++)
-      pDst[i] = (pSrc[i] + pSrc[i + nSrcPitch] + 1) >> 1;
+      if constexpr(sizeof(pixel_t) <= 2)
+        pDst[i] = (pSrc[i] + pSrc[i + nSrcPitch] + 1) >> 1; // int
+      else
+        pDst[i] = (pSrc[i] + pSrc[i + nSrcPitch]) * 0.5f; // float
     pDst += nDstPitch;
     pSrc += nSrcPitch;
   }
@@ -1054,10 +1178,18 @@ void VerticalWiener(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPi
   {
     for (int i = 0; i < nWidth; i++)
     {
-      pDst[i] = std::min(max_pixel_value, std::max(0,
+      if constexpr(sizeof(pixel_t) <= 2)
+        pDst[i] = std::min(max_pixel_value, std::max(0,
         ((pSrc[i - nSrcPitch * 2])
           + (-(pSrc[i - nSrcPitch]) + (pSrc[i] << 2) + (pSrc[i + nSrcPitch] << 2) - (pSrc[i + nSrcPitch * 2])) * 5
           + (pSrc[i + nSrcPitch * 3]) + 16) >> 5));
+      else
+        pDst[i] =
+        (
+        (pSrc[i - nSrcPitch * 2])
+          + (-(pSrc[i - nSrcPitch]) + (pSrc[i] * 4.0f) + (pSrc[i + nSrcPitch] * 4.0f) - (pSrc[i + nSrcPitch * 2])) * 5.0f // weight 30
+          + (pSrc[i + nSrcPitch * 3])
+          ) * (1.0f / 32.0f); // no clamp for float!
     }
     pDst += nDstPitch;
     pSrc += nSrcPitch;
@@ -1066,7 +1198,10 @@ void VerticalWiener(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPi
   {
     for (int i = 0; i < nWidth; i++)
     {
-      pDst[i] = (pSrc[i] + pSrc[i + nSrcPitch] + 1) >> 1;
+      if constexpr(sizeof(pixel_t) <= 2)
+        pDst[i] = (pSrc[i] + pSrc[i + nSrcPitch] + 1) >> 1;
+      else
+        pDst[i] = (pSrc[i] + pSrc[i + nSrcPitch]) * 0.5f;
     }
 
     pDst += nDstPitch;
@@ -1077,6 +1212,7 @@ void VerticalWiener(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPi
     pDst[i] = pSrc[i];
 }
 
+// 8-32 bits
 template<typename pixel_t>
 void HorizontalWiener(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch,
   int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel)
@@ -1091,15 +1227,29 @@ void HorizontalWiener(unsigned char *pDst8, const unsigned char *pSrc8, int nDst
 
   for (int j = 0; j < nHeight; j++)
   {
-    pDst[0] = (pSrc[0] + pSrc[1] + 1) >> 1;
-    pDst[1] = (pSrc[1] + pSrc[2] + 1) >> 1;
+    if constexpr(sizeof(pixel_t) <= 2) {
+      pDst[0] = (pSrc[0] + pSrc[1] + 1) >> 1;
+      pDst[1] = (pSrc[1] + pSrc[2] + 1) >> 1;
+    }
+    else {
+      // float
+      pDst[0] = (pSrc[0] + pSrc[1]) * 0.5f;
+      pDst[1] = (pSrc[1] + pSrc[2]) * 0.5f;
+    }
     for (int i = 2; i < nWidth - 4; i++)
     {
-      pDst[i] = std::min(max_pixel_value, std::max(0, ((pSrc[i - 2]) + (-(pSrc[i - 1]) + (pSrc[i] << 2)
-        + (pSrc[i + 1] << 2) - (pSrc[i + 2])) * 5 + (pSrc[i + 3]) + 16) >> 5));
+      if constexpr(sizeof(pixel_t) <= 2)
+        pDst[i] = std::min(max_pixel_value, std::max(0, ((pSrc[i - 2]) + (-(pSrc[i - 1]) + (pSrc[i] << 2)
+          + (pSrc[i + 1] << 2) - (pSrc[i + 2])) * 5 + (pSrc[i + 3]) + 16) >> 5));
+      else
+        pDst[i] = ((pSrc[i - 2]) + (-(pSrc[i - 1]) + (pSrc[i] * 4.0f)
+          + (pSrc[i + 1] * 4.0f) - (pSrc[i + 2])) * 5.0f + (pSrc[i + 3])) * (1.0f / 32.0f);
     }
     for (int i = nWidth - 4; i < nWidth - 1; i++)
-      pDst[i] = (pSrc[i] + pSrc[i + 1] + 1) >> 1;
+      if constexpr(sizeof(pixel_t) <= 2)
+        pDst[i] = (pSrc[i] + pSrc[i + 1] + 1) >> 1;
+      else
+        pDst[i] = (pSrc[i] + pSrc[i + 1]) * 0.5f;
 
     pDst[nWidth - 1] = pSrc[nWidth - 1];
     pDst += nDstPitch;
@@ -1107,6 +1257,7 @@ void HorizontalWiener(unsigned char *pDst8, const unsigned char *pSrc8, int nDst
   }
 }
 
+#if 0 // not used
 template<typename pixel_t>
 void DiagonalWiener(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch,
   int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel)
@@ -1161,7 +1312,9 @@ void DiagonalWiener(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPi
     pDst[i] = (pSrc[i] + pSrc[i + 1] + 1) >> 1;
   pDst[nWidth - 1] = pSrc[nWidth - 1];
 }
+#endif
 
+// 8-32 bits
 // bicubic (Catmull-Rom 4 taps interpolation)
 template<typename pixel_t>
 void VerticalBicubic(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch,
@@ -1178,7 +1331,10 @@ void VerticalBicubic(unsigned char *pDst8, const unsigned char *pSrc8, int nDstP
   for (int j = 0; j < 1; j++)
   {
     for (int i = 0; i < nWidth; i++)
-      pDst[i] = (pSrc[i] + pSrc[i + nSrcPitch] + 1) >> 1;
+      if constexpr(sizeof(pixel_t) <= 2)
+        pDst[i] = (pSrc[i] + pSrc[i + nSrcPitch] + 1) >> 1; // int
+      else
+        pDst[i] = (pSrc[i] + pSrc[i + nSrcPitch]) * 0.5f; // float
     pDst += nDstPitch;
     pSrc += nSrcPitch;
   }
@@ -1186,8 +1342,12 @@ void VerticalBicubic(unsigned char *pDst8, const unsigned char *pSrc8, int nDstP
   {
     for (int i = 0; i < nWidth; i++)
     {
-      pDst[i] = std::min(max_pixel_value, std::max(0,
+      if constexpr(sizeof(pixel_t) <= 2)
+        pDst[i] = std::min(max_pixel_value, std::max(0,
         (-pSrc[i - nSrcPitch] - pSrc[i + nSrcPitch * 2] + (pSrc[i] + pSrc[i + nSrcPitch]) * 9 + 8) >> 4));
+      else
+        pDst[i] = 
+        (-pSrc[i - nSrcPitch] - pSrc[i + nSrcPitch * 2] + (pSrc[i] + pSrc[i + nSrcPitch]) * 9.0f) * (1.0f / 16.0f);
     }
     pDst += nDstPitch;
     pSrc += nSrcPitch;
@@ -1196,7 +1356,10 @@ void VerticalBicubic(unsigned char *pDst8, const unsigned char *pSrc8, int nDstP
   {
     for (int i = 0; i < nWidth; i++)
     {
-      pDst[i] = (pSrc[i] + pSrc[i + nSrcPitch] + 1) >> 1;
+      if constexpr(sizeof(pixel_t) <= 2)
+        pDst[i] = (pSrc[i] + pSrc[i + nSrcPitch] + 1) >> 1; // int
+      else
+        pDst[i] = (pSrc[i] + pSrc[i + nSrcPitch]) * 0.5f; // float
     }
 
     pDst += nDstPitch;
@@ -1207,6 +1370,7 @@ void VerticalBicubic(unsigned char *pDst8, const unsigned char *pSrc8, int nDstP
     pDst[i] = pSrc[i];
 }
 
+// 8-32bits
 template<typename pixel_t>
 void HorizontalBicubic(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch,
   int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel)
@@ -1221,14 +1385,24 @@ void HorizontalBicubic(unsigned char *pDst8, const unsigned char *pSrc8, int nDs
 
   for (int j = 0; j < nHeight; j++)
   {
-    pDst[0] = (pSrc[0] + pSrc[1] + 1) >> 1;
+    if constexpr(sizeof(pixel_t) <= 2)
+      pDst[0] = (pSrc[0] + pSrc[1] + 1) >> 1; // int
+    else
+      pDst[0] = (pSrc[0] + pSrc[1] + 1) * 0.5f; // float
     for (int i = 1; i < nWidth - 3; i++)
     {
-      pDst[i] = std::min(max_pixel_value, std::max(0,
+      if constexpr(sizeof(pixel_t) <= 2)
+        pDst[i] = std::min(max_pixel_value, std::max(0,
         (-(pSrc[i - 1] + pSrc[i + 2]) + (pSrc[i] + pSrc[i + 1]) * 9 + 8) >> 4));
+      else
+        pDst[i] = 
+        (-(pSrc[i - 1] + pSrc[i + 2]) + (pSrc[i] + pSrc[i + 1]) * 9.0f) * (1.0f / 16.0f); // no clamp for float
     }
     for (int i = nWidth - 3; i < nWidth - 1; i++)
-      pDst[i] = (pSrc[i] + pSrc[i + 1] + 1) >> 1;
+      if constexpr(sizeof(pixel_t) <= 2)
+        pDst[i] = (pSrc[i] + pSrc[i + 1] + 1) >> 1; // int
+      else
+        pDst[i] = (pSrc[i] + pSrc[i + 1]) * 0.5f; // float
 
     pDst[nWidth - 1] = pSrc[nWidth - 1];
     pDst += nDstPitch;
@@ -1236,6 +1410,8 @@ void HorizontalBicubic(unsigned char *pDst8, const unsigned char *pSrc8, int nDs
   }
 }
 
+#if 0
+// not used
 template<typename pixel_t>
 void DiagonalBicubic(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch,
   int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel)
@@ -1288,6 +1464,7 @@ void DiagonalBicubic(unsigned char *pDst8, const unsigned char *pSrc8, int nDstP
     pDst[i] = (pSrc[i] + pSrc[i + 1] + 1) >> 1;
   pDst[nWidth - 1] = pSrc[nWidth - 1];
 }
+#endif
 
 
 template<typename pixel_t>
@@ -1311,6 +1488,7 @@ void Average2_sse2(unsigned char *pDst8, const unsigned char *pSrc1_8, const uns
   }
 }
 
+// 8-32 bits
 template<typename pixel_t>
 void Average2(unsigned char *pDst8, const unsigned char *pSrc1_8, const unsigned char *pSrc2_8,
   int nPitch, int nWidth, int nHeight)
@@ -1325,7 +1503,10 @@ void Average2(unsigned char *pDst8, const unsigned char *pSrc1_8, const unsigned
   for (int j = 0; j < nHeight; j++)
   {
     for (int i = 0; i < nWidth; i++)
-      pDst[i] = (pSrc1[i] + pSrc2[i] + 1) >> 1;
+      if constexpr(sizeof(pixel_t) <= 2)
+        pDst[i] = (pSrc1[i] + pSrc2[i] + 1) >> 1;
+      else
+        pDst[i] = (pSrc1[i] + pSrc2[i]) * 0.5f;
 
     pDst += nPitch;
     pSrc1 += nPitch;
@@ -1337,18 +1518,21 @@ void Average2(unsigned char *pDst8, const unsigned char *pSrc1_8, const unsigned
 // instantiate templates defined in cpp
 template void VerticalBilin<uint8_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeigh, int bits_per_pixelt);
 template void VerticalBilin<uint16_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+template void VerticalBilin<float>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
 template void VerticalBilin_sse2<uint8_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeigh, int bits_per_pixelt);
 template void VerticalBilin_sse2<uint16_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
 template void HorizontalBilin<uint8_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 template void HorizontalBilin<uint16_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+template void HorizontalBilin<float>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
 template void HorizontalBilin_sse2<uint8_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 template void HorizontalBilin_sse2<uint16_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
 template void DiagonalBilin<uint8_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 template void DiagonalBilin<uint16_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+template void DiagonalBilin<float>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
 template void DiagonalBilin_sse2<uint8_t, 0>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 template void DiagonalBilin_sse2<uint16_t, 0>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
@@ -1356,39 +1540,54 @@ template void DiagonalBilin_sse2<uint16_t, 1>(unsigned char *pDst, const unsigne
 
 template void RB2F<uint8_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int y_beg, int y_end, int cpuFlags);
 template void RB2F<uint16_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int y_beg, int y_end, int cpuFlags);
+template void RB2F<float>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int y_beg, int y_end, int cpuFlags);
 
 template void RB2Filtered<uint8_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int y_beg, int y_end, int cpuFlags);
 template void RB2Filtered<uint16_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int y_beg, int y_end, int cpuFlags);
+template void RB2Filtered<float>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int y_beg, int y_end, int cpuFlags);
 
 template void RB2BilinearFiltered<uint8_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int y_beg, int y_end, int cpuFlags);
 template void RB2BilinearFiltered<uint16_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int y_beg, int y_end, int cpuFlags);
+template void RB2BilinearFiltered<float>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int y_beg, int y_end, int cpuFlags);
 
 template void RB2Quadratic<uint8_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int y_beg, int y_end, int cpuFlags);
 template void RB2Quadratic<uint16_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int y_beg, int y_end, int cpuFlags);
+template void RB2Quadratic<float>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int y_beg, int y_end, int cpuFlags);
 
 template void RB2Cubic<uint8_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int y_beg, int y_end, int cpuFlags);
 template void RB2Cubic<uint16_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int y_beg, int y_end, int cpuFlags);
+template void RB2Cubic<float>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int y_beg, int y_end, int cpuFlags);
 
 template void VerticalWiener<uint8_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 template void VerticalWiener<uint16_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+template void VerticalWiener<float>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
 template void HorizontalWiener<uint8_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 template void HorizontalWiener<uint16_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+template void HorizontalWiener<float>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
+#if 0 // not used
 template void DiagonalWiener<uint8_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 template void DiagonalWiener<uint16_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+#endif
 
 template void VerticalBicubic<uint8_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 template void VerticalBicubic<uint16_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+template void VerticalBicubic<float>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
 template void HorizontalBicubic<uint8_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 template void HorizontalBicubic<uint16_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+template void HorizontalBicubic<float>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
+#if 0 // not used
 template void DiagonalBicubic<uint8_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 template void DiagonalBicubic<uint16_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+template void DiagonalBicubic<float>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+#endif
 
 template void Average2<uint8_t>(unsigned char *pDst, const unsigned char *pSrc1, const unsigned char *pSrc2, int nPitch, int nWidth, int nHeight);
 template void Average2<uint16_t>(unsigned char *pDst, const unsigned char *pSrc1, const unsigned char *pSrc2, int nPitch, int nWidth, int nHeight);
+template void Average2<float>(unsigned char *pDst, const unsigned char *pSrc1, const unsigned char *pSrc2, int nPitch, int nWidth, int nHeight);
 
 template void Average2_sse2<uint8_t>(unsigned char *pDst, const unsigned char *pSrc1, const unsigned char *pSrc2, int nPitch, int nWidth, int nHeight);
 template void Average2_sse2<uint16_t>(unsigned char *pDst, const unsigned char *pSrc1, const unsigned char *pSrc2, int nPitch, int nWidth, int nHeight);
