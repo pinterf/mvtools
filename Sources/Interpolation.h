@@ -20,13 +20,17 @@
 /*! \file Interpolation.h
  *  \brief Interpolating functions.
  *
- *	This set of functions is used to create a picture 4 times bigger, by
- *	interpolating the value of the half pixels. There are three different
- *  interpolations : horizontal computes the pixels ( x + 0.5, y ), vertical
- *	computes the pixels ( x, y + 0.5 ), and finally, diagonal computes the
- *  pixels ( x + 0.5, y + 0.5 ).
- *	For each type of interpolations, there are two functions, one in classical C,
- *  and one optimized for iSSE processors.
+ * This set of functions is used to create a picture 4 times bigger, by
+ * interpolating the value of the half pixels. There are three different
+ * interpolations : horizontal computes the pixels ( x + 0.5, y ), vertical
+ * computes the pixels ( x, y + 0.5 ), and finally, diagonal computes the
+ * pixels ( x + 0.5, y + 0.5 ).
+ * For each type of interpolations, there are two functions, one in classical C,
+ * and one optimized for iSSE processors.
+ * 
+ * sse2 simd intrinsics, 8 bit versions: dubhater - mvtools-vs
+ * 32bit float C: pinterf
+ * sse2/sse41 16 bit versions: pinterf
  */
 
 #ifndef __INTERPOL__
@@ -59,37 +63,62 @@ void RB2Quadratic(       unsigned char *pDst, const unsigned char *pSrc, int nDs
 template<typename pixel_t>
 void RB2Cubic(           unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int y_beg, int y_end, int cpuFlags);
 
+//commented out: sse2 8 bit conversion backported from mvtools-vs
 //extern "C" void __cdecl VerticalBilin_iSSE(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 //extern "C" void __cdecl HorizontalBilin_iSSE(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 //extern "C" void __cdecl DiagonalBilin_iSSE(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
+/* dubhater's comment from mvtools-vs: TODO: port these
+extern "C" void  VerticalBicubic_iSSE(uint8_t *pDst, const uint8_t *pSrc, intptr_t nDstPitch, intptr_t nWidth, intptr_t nHeight);
+extern "C" void  HorizontalBicubic_iSSE(uint8_t *pDst, const uint8_t *pSrc, intptr_t nDstPitch, intptr_t nWidth, intptr_t nHeight);
+extern "C" void  RB2F_iSSE(uint8_t *pDst, const uint8_t *pSrc, intptr_t nDstPitch, intptr_t nSrcPitch, intptr_t nWidth, intptr_t nHeight);
+extern "C" void  RB2FilteredVerticalLine_SSE(uint8_t *pDst, const uint8_t *pSrc, intptr_t nSrcPitch, intptr_t nWidthMMX);
+extern "C" void  RB2FilteredHorizontalInplaceLine_SSE(uint8_t *pSrc, intptr_t nWidthMMX);
+*/
+
 extern "C" void __cdecl RB2F_iSSE(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight);
 
-extern "C" void __cdecl RB2CubicHorizontalInplaceLine_SSE(unsigned char *pSrc, int nWidthMMX);
-extern "C" void __cdecl RB2CubicVerticalLine_SSE(unsigned char *pDst, const unsigned char *pSrc, int nSrcPitch, int nWidthMMX);
-extern "C" void __cdecl RB2QuadraticHorizontalInplaceLine_SSE(unsigned char *pSrc, int nWidthMMX);
-extern "C" void __cdecl RB2QuadraticVerticalLine_SSE(unsigned char *pDst, const unsigned char *pSrc, int nSrcPitch, int nWidthMMX);
+//commented out: sse2 8 bit conversion backported from mvtools-vs
+//extern "C" void __cdecl RB2CubicHorizontalInplaceLine_SSE(unsigned char *pSrc, int nWidthMMX);
+//extern "C" void __cdecl RB2CubicVerticalLine_SSE(unsigned char *pDst, const unsigned char *pSrc, int nSrcPitch, int nWidthMMX);
+//extern "C" void __cdecl RB2QuadraticHorizontalInplaceLine_SSE(unsigned char *pSrc, int nWidthMMX);
+//extern "C" void __cdecl RB2QuadraticVerticalLine_SSE(unsigned char *pDst, const unsigned char *pSrc, int nSrcPitch, int nWidthMMX);
 extern "C" void __cdecl RB2FilteredVerticalLine_SSE(unsigned char *pDst, const unsigned char *pSrc, int nSrcPitch, int nWidthMMX);
 extern "C" void __cdecl RB2FilteredHorizontalInplaceLine_SSE(unsigned char *pSrc, int nWidthMMX);
-extern "C" void __cdecl RB2BilinearFilteredVerticalLine_SSE(unsigned char *pDst, const unsigned char *pSrc, int nSrcPitch, int nWidthMMX);
-extern "C" void __cdecl RB2BilinearFilteredHorizontalInplaceLine_SSE(unsigned char *pSrc, int nWidthMMX);
+//extern "C" void __cdecl RB2BilinearFilteredVerticalLine_SSE(unsigned char *pDst, const unsigned char *pSrc, int nSrcPitch, int nWidthMMX);
+//extern "C" void __cdecl RB2BilinearFilteredHorizontalInplaceLine_SSE(unsigned char *pSrc, int nWidthMMX);
 
 template<typename pixel_t>
 void VerticalWiener(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+template<typename pixel_t, bool hasSSE41>
+void VerticalWiener_sse2(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 template<typename pixel_t>
 void HorizontalWiener(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+template<typename pixel_t, bool hasSSE41>
+void HorizontalWiener_sse2(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 #if 0 // not used
 template<typename pixel_t>
 void DiagonalWiener(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 #endif
 
-extern "C" void __cdecl VerticalWiener_iSSE(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeigh, int bits_per_pixelt);
-extern "C" void __cdecl HorizontalWiener_iSSE(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+//commented out: sse2 8 bit conversion backported from mvtools-vs
+//extern "C" void __cdecl VerticalWiener_iSSE(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeigh, int bits_per_pixelt);
+//extern "C" void __cdecl HorizontalWiener_iSSE(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
 template<typename pixel_t>
 void VerticalBicubic(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+/* todo, not ported yet
+template<typename pixel_t>
+void VerticalBicubic_sse2(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+*/
+
 template<typename pixel_t>
 void HorizontalBicubic(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+/* todo, not ported yet
+template<typename pixel_t>
+void HorizontalBicubic_sse2(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+*/
+
 #if 0 // not used
 template<typename pixel_t>
 void DiagonalBicubic(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
@@ -102,6 +131,7 @@ template<typename pixel_t>
 void Average2(     unsigned char *pDst, const unsigned char *pSrc1, const unsigned char *pSrc2, int nPitch, int nWidth, int nHeight);
 template<typename pixel_t>
 void Average2_sse2(unsigned char *pDst, const unsigned char *pSrc1, const unsigned char *pSrc2, int nPitch, int nWidth, int nHeight);
+//commented out: sse2 8 bit conversion backported from mvtools-vs
 //extern "C" void Average2_iSSE(unsigned char *pDst, const unsigned char *pSrc1, const unsigned char *pSrc2, int nPitch, int nWidth, int nHeight);
 
 #endif
