@@ -76,8 +76,8 @@ MVPlane::MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, i
     _bilin_dia_ptr = _isse ? DiagonalBilin_sse2<uint8_t, 0> : DiagonalBilin<uint8_t>;
     _bicubic_hor_ptr = _isse ? HorizontalBicubic_iSSE : HorizontalBicubic<uint8_t>;
     _bicubic_ver_ptr = _isse ? VerticalBicubic_iSSE : VerticalBicubic<uint8_t>;
-    _wiener_hor_ptr = _isse ? HorizontalWiener_iSSE : HorizontalWiener<uint8_t>;
-    _wiener_ver_ptr = _isse ? VerticalWiener_iSSE : VerticalWiener<uint8_t>;
+    _wiener_hor_ptr = _isse ? HorizontalWiener_sse2<uint8_t, 0> : HorizontalWiener<uint8_t>;
+    _wiener_ver_ptr = _isse ? VerticalWiener_sse2<uint8_t, 0> : VerticalWiener<uint8_t>;
     _average_ptr = _isse ? Average2_sse2<uint8_t> : Average2<uint8_t>;
     _reduce_ptr = &RB2BilinearFiltered<uint8_t>;
   }
@@ -87,8 +87,8 @@ MVPlane::MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, i
     _bilin_dia_ptr = _isse ? (hasSSE41 ? DiagonalBilin_sse2<uint16_t, 1> : DiagonalBilin_sse2<uint16_t, 0>) : DiagonalBilin<uint16_t>;
     _bicubic_hor_ptr = HorizontalBicubic<uint16_t>;
     _bicubic_ver_ptr = VerticalBicubic<uint16_t>;
-    _wiener_hor_ptr = HorizontalWiener<uint16_t>;
-    _wiener_ver_ptr = VerticalWiener<uint16_t>;
+    _wiener_hor_ptr = _isse ? (hasSSE41 ? HorizontalWiener_sse2<uint16_t, 1> : HorizontalWiener_sse2<uint16_t, 0>) : HorizontalWiener<uint16_t>;
+    _wiener_ver_ptr = _isse ? (hasSSE41 ? VerticalWiener_sse2<uint16_t, 1> : VerticalWiener_sse2<uint16_t, 0>) : VerticalWiener<uint16_t>;
     _average_ptr = _isse ? Average2_sse2<uint16_t> : Average2<uint16_t>;
     _reduce_ptr = &RB2BilinearFiltered<uint16_t>;
   }
@@ -118,13 +118,15 @@ MVPlane::~MVPlane()
 
 void MVPlane::set_interp(int rfilter, int sharp)
 {
-  nSharp = sharp;
+  nSharp = sharp; // for pel>1
   nRfilter = nRfilter; // not used
 
   switch (rfilter)
   {
+    // todo: the next two have only assembler mmx for 8 bit
   case 0: _reduce_ptr = (pixelsize == 1) ? &RB2F<uint8_t> : (pixelsize == 2 ? &RB2F<uint16_t> : &RB2F<float>); break;
   case 1: _reduce_ptr = (pixelsize == 1) ? &RB2Filtered<uint8_t> : (pixelsize == 2 ? &RB2Filtered<uint16_t> : &RB2Filtered<float>); break;
+    // the next three have ported 8 bit simd, and added 16bit simd
   case 2: _reduce_ptr = (pixelsize == 1) ? &RB2BilinearFiltered<uint8_t> : (pixelsize == 2 ? &RB2BilinearFiltered<uint16_t> : &RB2BilinearFiltered<float>); break;
   case 3: _reduce_ptr = (pixelsize == 1) ? &RB2Quadratic<uint8_t> : (pixelsize == 2 ? &RB2Quadratic<uint16_t> : &RB2Quadratic<float>); break;
   case 4: _reduce_ptr = (pixelsize == 1) ? &RB2Cubic<uint8_t> : (pixelsize == 2 ? &RB2Cubic<uint16_t> : &RB2Cubic<float>); break;
