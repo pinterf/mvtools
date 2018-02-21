@@ -3,7 +3,13 @@
 
 SECTION_RODATA
 
-dword256 times 4 dd 0x00000100
+;dword256 times 4 dd 0x00000100
+; PF 20180221 replace rounding of 256 with 32
+; Instead of 
+; (Sum(pixel + 256) >> 6) >> 5 ; So far >>5 happened at the internal_buffer->final_frame, w/o any rounding
+; Let's use:
+; ((Sum(pixel + 32) >> 6) + 16) >> 5 ; Now we round at a second time, before applying >>5 at the internal_buffer->final_frame
+dword256 times 4 dd 0x00000020
 
 
 SECTION_TEXT
