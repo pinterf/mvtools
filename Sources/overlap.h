@@ -74,22 +74,61 @@ OverlapsLsbFunction* get_overlaps_lsb_function(int BlockX, int BlockY, int pixel
 // short
 
 template <typename pixel_t, int blockWidth, int blockHeight>
-// pDst is short* for 8 bit, int * for 16 bit
+// pDst is short* for 8 bit, int * for 16 bit sources
 void Overlaps_C(unsigned short *pDst0, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch)
 {
-	// pWin from 0 to 2048
+	// pWin from 0 to 2048 total shift 11
   // when pixel_t == uint16_t, dst should be int*
   typedef typename std::conditional < sizeof(pixel_t) == 1, short, int>::type target_t;
   target_t *pDst = reinterpret_cast<target_t *>(pDst0);
+  int s[blockWidth][blockHeight];
+  int w[blockWidth][blockHeight];
+  for (int j = 0; j < blockHeight; j++) {
+    for (int i = 0; i < blockWidth; i++)
+    {
+      s[j][i] = reinterpret_cast<const pixel_t *>(pSrc + j * nSrcPitch)[i];
+      w[j][i] = (pWin + j * nWinPitch)[i];
+    }
+  }
+
+  // pWin: Cos^2 based weigthing factors with 11 bits precision. (0-2048)
+  // SourceBlocks overlap sample for Blocksize=4 Overlaps=2:
+  // a1     a1   | a1+b1         a1+b1       | b1      b1    | b1+c1         b1+c1       | c1       c1   
+  // a1     a1   | a1+b1         a1+b1       | b1      b1    | b1+c1         b1+c1       | c1      c1   
+  // ------------+---------------------------+---------------+---------------------------+--------------
+  // a1+a2  a1+a2| a1+a2+b1+b2   a1+a2+b1+b2 | b1+b2   b1+b2 | b1+b2+c1+c2   b1+b2+c1+c2 | c1+c2   c1+c2
+  // a1+a2  a1+a2| a1+a2+b1+b2   a1+a2+b1+b2 | b1+b2   b1+b2 | b1+b2+c1+c2   b1+b2+c1+c2 | c1+c2   c1+c2
+  // ------------+---------------------------+---------------+---------------------------+--------------
+  // a2+a3  a2+a3| a2+a3+b2+b3   a2+a3+b2+b3 | b2+b3   b2+b3 | b2+b3+c2+c3   b2+b3+c2+c3 | c2+c3   c2+c3
+  // a2+a3  a2+a3| a2+a3+b2+b3   a2+a3+b2+b3 | b2+b3   b2+b3 | b2+b3+c2+c3   b2+b3+c2+c3 | c2+c3   c2+c3
+  // ...
   for (int j=0; j<blockHeight; j++)
 	{
 	    for (int i=0; i<blockWidth; i++)
 	    {
-        if(sizeof(pixel_t) == 1)
-          pDst[i] = ( pDst[i] + ((reinterpret_cast<const pixel_t *>(pSrc)[i]*pWin[i] + 256)>> 6)); // shift 5 in Short2Bytes<uint8_t> in overlap.cpp
-        else
-          pDst[i] = ( pDst[i] + ((reinterpret_cast<const pixel_t *>(pSrc)[i]*pWin[i]))); // shift (5+6); in Short2Bytes16
-        // no shift 6
+        int val = reinterpret_cast<const pixel_t *>(pSrc)[i];
+        short win = pWin[i];
+        if (sizeof(pixel_t) == 1) {
+          // Original, this calculation appears also in Overlap-a.asm:
+          // pDst[i] = ( pDst[i] + ((reinterpret_cast<const pixel_t *>(pSrc)[i]*pWin[i] + 256)>> 6)); // see rest shift 5 in Short2Bytes<uint8_t> in overlap.cpp
+          // PF 180216 Why is rounding 256 (1<<8) and not 32 (1<<5) ?
+          // This const 256 appears in the asm code, is it copy/paste?
+          // +256: +0.125 plus on average
+          // Original: [[Sum(x + (1<<8)) >> 6]         ] >> 5
+          // Modified: [[Sum(x + (1<<5)) >> 6] + (1<<4)] >> 5
+          // 16 bit  :  [Sum(x         )     ] + (1<<10)] >> 11
+          pDst[i] = pDst[i] + ((val * win + (1 << 5)/*256*/) >> 6);
+          // Reason of the partial shift: here we have to escape from the >=16bit range.
+          // 8+11 = 19 bits intermediate, too much -> 19>>6 = 13bit is O.K.
+          // Finally a shift of 5 bits makes 13 bits to 8 bits in ShortToBytes.
+        }
+        else {
+          // 16 bits data + 11 bits window = 27 bits max (safe)
+          // shift 11 in Short2Bytes16
+          int a = pDst[i];
+          pDst[i] = a + val * win;
+          
+        }
 	    }
       pDst += nDstPitch;
 		pSrc += nSrcPitch;
@@ -97,17 +136,42 @@ void Overlaps_C(unsigned short *pDst0, int nDstPitch, const unsigned char *pSrc,
 	}
 }
 
+template <int blockWidth, int blockHeight>
+// pDst is short* for 8 bit, int * for 16 bit sources, float * from 32 bit sources
+void Overlaps_float_C(unsigned short *pDst0, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch)
+{
+  // pWin from 0 to 2048 total shift 11
+  // when pixel_t == uint16_t, dst should be int*
+  float *pDst = reinterpret_cast<float *>(pDst0);
+
+  for (int j = 0; j<blockHeight; j++)
+  {
+    for (int i = 0; i<blockWidth; i++)
+    {
+      float val = reinterpret_cast<const float *>(pSrc)[i];
+      float win = pWin[i] * (1.0f / 2048.0f);
+      pDst[i] = pDst[i] + val * win;
+    }
+    pDst += nDstPitch;
+    pSrc += nSrcPitch;
+    pWin += nWinPitch;
+  }
+}
+
 
 template <int blockWidth, int blockHeight>
 void OverlapsLsb_C(int *pDst, int nDstPitch, const unsigned char *pSrc, const unsigned char *pSrcLsb, int nSrcPitch, short *pWin, int nWinPitch)
 {
-	// pWin from 0 to 2048
+	// pWin from 0 to 2048: total shift 11
 	for (int j=0; j<blockHeight; j++)
 	{
 		for (int i=0; i<blockWidth; i++)
 		{
 			const int		val = (pSrc [i] << 8) + pSrcLsb [i];
-			pDst [i] += val * pWin [i]; // shift (5+6); in Short2BytesLsb
+      short win = pWin[i];
+      // 16 bits data + 11 bits window = 27 bits max (safe)
+      // shift 11 in Short2Bytes_lsb
+      pDst [i] += val * win;
 		}
 		pDst += nDstPitch;
 		pSrc += nSrcPitch;
