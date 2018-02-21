@@ -56,7 +56,6 @@ w14:
 ;=============================================================================
 
 %macro RB2CubicHorizontalInplaceLine_SSE_macro 3 ; weight1, weight2, shift
-[endprolog]
                 xchg rdx, rcx		; pSrc, nWidthMMX
 ;                mov rdx, pSrc
 ;                mov rcx, nWidthMMX
@@ -124,18 +123,13 @@ w14:
             .finish:
 			    emms ;PF20180210
                 ret
-endproc_frame
 %endmacro
 
 
 %macro RB2CubicVerticalLine_SSE_macro 3           ;   RB2CubicVerticalLine_SSE(pDst, pSrc, nSrcPitch, nWidthMMX);
 				push rbx
-				[pushreg rbx]
 				push rsi
-				[pushreg rsi]
 				push rdi
-				[pushreg rdi]
-[endprolog]
 
 				movsxd r8, r8d			; nSrcPitch
 				mov r9d, r9d			; nWidthMMX (zero extend)
@@ -218,7 +212,6 @@ endproc_frame
 				pop rsi
 				pop rbx
                 ret
-endproc_frame
 %endmacro
 
 ;=============================================================================
@@ -251,14 +244,10 @@ cglobal RB2FilteredHorizontalInplaceLine_SSE
 ;
 
 ALIGN 16
-proc_frame	VerticalBilin_iSSE
+VerticalBilin_iSSE:
 		push rbx
-		[pushreg rbx]
 		push rsi
-		[pushreg rsi]
 		push rdi
-		[pushreg rdi]
-[endprolog]
 
 		movsxd r8, r8d			; nDstPitch
 		movsxd r9, r9d			; nSrcPitch
@@ -307,7 +296,6 @@ v_loopfinal:
 		pop rbx
 		
 		ret
-endproc_frame
 
 ;
 ;void HorizontalBilin_iSSE(unsigned char *pDst, const unsigned char *pSrc
@@ -316,14 +304,10 @@ endproc_frame
 ;
 
 ALIGN 16
-proc_frame	HorizontalBilin_iSSE
+HorizontalBilin_iSSE:
 		push rbx
-		[pushreg rbx]
 		push rsi
-		[pushreg rsi]
 		push rdi
-		[pushreg rdi]
-[endprolog]
 
 		movsxd r8, r8d			; nDstPitch
 		movsxd r9, r9d			; nSrcPitch
@@ -368,7 +352,7 @@ h_loopx:
 		pop rbx
 		
 		ret
-endproc_frame
+
 
 
 ;
@@ -378,14 +362,10 @@ endproc_frame
 ;
 
 ALIGN 16
-proc_frame	DiagonalBilin_iSSE
+DiagonalBilin_iSSE:
 		push rbx
-		[pushreg rbx]
 		push rsi
-		[pushreg rsi]
 		push rdi
-		[pushreg rdi]
-[endprolog]
 
 		movsxd r8, r8d			; nDstPitch
 		movsxd r9, r9d			; nSrcPitch
@@ -517,7 +497,6 @@ d_loop_final :
 		pop rbx
 		
 		ret
-endproc_frame
 
 ;
 ;void RB2F_iSSE(unsigned char *pDst, const unsigned char *pSrc
@@ -526,16 +505,11 @@ endproc_frame
 ;
 
 ALIGN 16
-proc_frame	RB2F_iSSE
+RB2F_iSSE:
 		push rbp
-		[pushreg rbp]
 		push rbx
-		[pushreg rbx]
 		push rsi
-		[pushreg rsi]
 		push rdi
-		[pushreg rdi]
-[endprolog]
 
 		movsxd r8, r8d			; nDstPitch
 		movsxd r9, r9d			; nSrcPitch
@@ -648,7 +622,6 @@ r_loopx:
 		pop rbp
 		
 		ret
-endproc_frame
 
 ;void VerticalWiener_iSSE(unsigned char *pDst, const unsigned char *pSrc
 ;                        int nDstPitch, int nSrcPitch,
@@ -656,14 +629,10 @@ endproc_frame
 ;
 
 ALIGN 16
-proc_frame	VerticalWiener_iSSE
+VerticalWiener_iSSE:
 		push rbx
-		[pushreg rbx]
 		push rsi
-		[pushreg rsi]
 		push rdi
-		[pushreg rdi]
-[endprolog]
 
 
 		movsxd r8, r8d			; nDstPitch
@@ -848,7 +817,6 @@ vw_loopfinal:
 		pop rbx
 		
 		ret
-endproc_frame
 
 ;
 ;void HorizontalWiener_iSSE(unsigned char *pDst, const unsigned char *pSrc
@@ -857,14 +825,10 @@ endproc_frame
 ;
 
 ALIGN 16
-proc_frame	HorizontalWiener_iSSE
+HorizontalWiener_iSSE:
 		push rbx
-		[pushreg rbx]
 		push rsi
-		[pushreg rsi]
 		push rdi
-		[pushreg rdi]
-[endprolog]
 
 		movsxd r8, r8d			; nDstPitch
 		movsxd r9, r9d			; nSrcPitch
@@ -974,7 +938,7 @@ hw_loopx:
 		pop rbx
 		
 		ret
-endproc_frame
+
 
 ;void VerticalBicubic_iSSE(unsigned char *pDst, const unsigned char *pSrc
 ;                        int nDstPitch, int nSrcPitch,
@@ -982,14 +946,10 @@ endproc_frame
 ;
 
 ALIGN 16
-proc_frame	VerticalBicubic_iSSE
+VerticalBicubic_iSSE:
 		push rbx
-		[pushreg rbx]
 		push rsi
-		[pushreg rsi]
 		push rdi
-		[pushreg rdi]
-[endprolog]
 
 
 		movsxd r8, r8d			; nDstPitch
@@ -1124,7 +1084,6 @@ vb_loopfinal:
 		pop rbx
 		
 		ret
-endproc_frame
 
 ;
 ;void HorizontalBicubic_iSSE(unsigned char *pDst, const unsigned char *pSrc
@@ -1133,14 +1092,10 @@ endproc_frame
 ;
 
 ALIGN 16
-proc_frame	HorizontalBicubic_iSSE
+HorizontalBicubic_iSSE:
 		push rbx
-		[pushreg rbx]
 		push rsi
-		[pushreg rsi]
 		push rdi
-		[pushreg rdi]
-[endprolog]
 
 
 		movsxd r8, r8d			; nDstPitch
@@ -1224,20 +1179,16 @@ hb_loopx:
 		pop rbx
 		
 		ret
-endproc_frame
+
 
 ;
 ;void Average2_iSSE(unsigned char *pDst, const unsigned char *pSrc1, const unsigned char *pSrc2, int nPitch, int nWidth, int nHeight);
 ;
 
-proc_frame	Average2_iSSE
+Average2_iSSE:
 		push rbx
-		[pushreg rbx]
 		push rsi
-		[pushreg rsi]
 		push rdi
-		[pushreg rdi]
-[endprolog]
 
 		movsxd r9, r9d			; nPitch
 		mov eax, dword [rsp + 8*5 + 32]	; nHeight (zero extend)
@@ -1278,19 +1229,15 @@ ha_loop:
 		pop rbx
 		
 		ret
-endproc_frame
+
 
 
 ALIGN 16
 ;   RB2CubicVerticalLine_SSE(pDst, pSrc, nSrcPitch, nWidthMMX);
-proc_frame	RB2FilteredVerticalLine_SSE
+RB2FilteredVerticalLine_SSE:
 				push rbx
-				[pushreg rbx]
 				push rsi
-				[pushreg rsi]
 				push rdi
-				[pushreg rdi]
-[endprolog]
 
                 mov r9d, r9d				; nWidthMMX (zero extend)
                 mov rdi, rcx			; pDst
@@ -1346,17 +1293,13 @@ proc_frame	RB2FilteredVerticalLine_SSE
 				pop rsi
 				pop rbx
 				ret
-endproc_frame
+
 
 ALIGN 16
-proc_frame	RB2FilteredHorizontalInplaceLine_SSE
+RB2FilteredHorizontalInplaceLine_SSE:
 				push rbx
-				[pushreg rbx]
 				push rsi
-				[pushreg rsi]
 				push rdi
-				[pushreg rdi]
-[endprolog]
 
                 xchg rdx, rcx				; pSrc, nWidthMMX
 
@@ -1407,18 +1350,14 @@ proc_frame	RB2FilteredHorizontalInplaceLine_SSE
 				pop rsi
 				pop rbx
 				ret
-endproc_frame
+
 
 ALIGN 16
 ;   RB2CubicVerticalLine_SSE(pDst, pSrc, nSrcPitch, nWidthMMX);
-proc_frame	RB2BilinearFilteredVerticalLine_SSE
+RB2BilinearFilteredVerticalLine_SSE:
 				push rbx
-				[pushreg rbx]
 				push rsi
-				[pushreg rsi]
 				push rdi
-				[pushreg rdi]
-[endprolog]
 
                 mov rdi, rcx		; pDst
                 mov rsi, rdx		; pSrc
@@ -1481,7 +1420,6 @@ proc_frame	RB2BilinearFilteredVerticalLine_SSE
 				pop rsi
 				pop rbx
 				ret
-endproc_frame
 
 ALIGN 16
 RB2BilinearFilteredHorizontalInplaceLine_SSE:
@@ -1541,23 +1479,23 @@ RB2BilinearFilteredHorizontalInplaceLine_SSE:
 
 ;RB2CubicHorizontalInplaceLineSSE(pSrc, nWidthMMX);
 ALIGN 16
-proc_frame RB2CubicHorizontalInplaceLine_SSE
+RB2CubicHorizontalInplaceLine_SSE:
     RB2CubicHorizontalInplaceLine_SSE_macro 5, 10, 5
 
 ;RB2QuadraticHorizontalInplaceLineSSE(pSrc, nWidthMMX);
 ALIGN 16
-proc_frame RB2QuadraticHorizontalInplaceLine_SSE
+RB2QuadraticHorizontalInplaceLine_SSE:
     RB2CubicHorizontalInplaceLine_SSE_macro 9, 22, 6
 
 
 
 ALIGN 16
-proc_frame RB2CubicVerticalLine_SSE
+RB2CubicVerticalLine_SSE:
     RB2CubicVerticalLine_SSE_macro 5, 10, 5
 ;  for ( int x = 0; x < nWidthMMX; x++ )
 ;  pDst[x] = (pSrc[x-nSrcPitch*2] + pSrc[x-nSrcPitch]*5 + pSrc[x]*10 + pSrc[x+nSrcPitch]*10 + pSrc[x+nSrcPitch*2]*5 + pSrc[x+nSrcPitch*3] + 16) /32;
 
 ALIGN 16
-proc_frame RB2QuadraticVerticalLine_SSE
+RB2QuadraticVerticalLine_SSE:
     RB2CubicVerticalLine_SSE_macro 9, 22, 6
 

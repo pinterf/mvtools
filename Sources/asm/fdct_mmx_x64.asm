@@ -163,7 +163,7 @@ tg_all_16_2		 dw 13036, 13036, 13036, 13036,		; tg * (2<<16) + 0.5
                                  dw 23170, 23170, 23170, 23170
 ;---
 
-tab_frw_01234567 
+tab_frw_01234567:
 				 ; row0
 				 dw 16384, 16384, 21407, -8867,     ; w09 w01 w08 w00
 				 dw 16384, 16384, 8867, -21407,     ; w13 w05 w12 w04
@@ -295,10 +295,8 @@ ALIGN 16
 
 cglobal fdct_mmx
 ;;void fdct_mmx(short *block);
-proc_frame fdct_mmx
+fdct_mmx:
 	push rbx
-	[pushreg    rbx]
-[endprolog]
 	mov r10, rcx
 
     mov INP, rcx				; block
@@ -1266,7 +1264,7 @@ proc_frame fdct_mmx
 	
 	pop rbx
 	ret
-endproc_frame
+
 
 
 ;*******************************************************************
@@ -1481,17 +1479,12 @@ endproc_frame
 
 cglobal fdct_sse2
 ;;void f dct_sse2(short *block);
-proc_frame fdct_sse2
+fdct_sse2:
 		;PF 170830: xmm6 and xmm7 should be saved on x64!!!
 		sub rsp,32
-		[allocstack 32]
-		movdqu dqword [rsp],xmm6
-		[savexmm128 xmm6,0]
-		movdqu dqword [rsp+16],xmm7
-		[savexmm128 xmm7,16]
+		movdqu [rsp],xmm6
+		movdqu [rsp+16],xmm7
 		push rbx
-		[pushreg rbx]
-[endprolog]
 
         mov     rax, rcx ; short *block
 		; PF 170825 Oops global buffer is used. Not exactly multithread friendly
@@ -1520,9 +1513,8 @@ proc_frame fdct_sse2
 
 	pop rbx
 ; Pop xmm6/7
-	movdqu  xmm7, dqword [rsp+16]
-	movdqu  xmm6, dqword [rsp]
+	movdqu  xmm7, [rsp+16]
+	movdqu  xmm6, [rsp]
 	add     rsp, 32
 
 	ret
-endproc_frame

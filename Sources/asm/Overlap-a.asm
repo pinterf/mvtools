@@ -1,7 +1,7 @@
 %include "include/x86inc.asm"
 
 
-SECTION_RODATA
+SECTION .rodata
 
 ;dword256 times 4 dd 0x00000100
 ; PF 20180221 replace rounding of 256 with 32
@@ -12,7 +12,7 @@ SECTION_RODATA
 dword256 times 4 dd 0x00000020
 
 
-SECTION_TEXT
+SECTION .text
 
 
 %macro OVERS2 0

@@ -44,69 +44,7 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <YASM Include="asm\pixel-a.asm">
-      <Filter>Assembler</Filter>
-    </YASM>
-    <YASM Include="asm\sad-a.asm">
-      <Filter>Assembler</Filter>
-    </YASM>
-    <YASM Include="asm\include\x86inc.asm">
-      <Filter>Assembler</Filter>
-    </YASM>
-    <YASM Include="asm\include\x86util.asm">
-      <Filter>Assembler</Filter>
-    </YASM>
-    <YASM Include="asm\Interpolation-a.asm">
-      <Filter>Assembler</Filter>
-    </YASM>
-    <YASM Include="asm\CopyCode-a.asm">
-      <Filter>Assembler</Filter>
-    </YASM>
-    <YASM Include="asm\Overlap-a.asm">
-      <Filter>Assembler</Filter>
-    </YASM>
-    <YASM Include="asm\Bilinear.asm">
-      <Filter>Assembler</Filter>
-    </YASM>
-    <YASM Include="asm\Bilinear_x64.asm">
-      <Filter>Assembler</Filter>
-    </YASM>
-    <YASM Include="asm\fdct_mmx.asm">
-      <Filter>Assembler</Filter>
-    </YASM>
-    <YASM Include="asm\fdct_mmx_x64.asm">
-      <Filter>Assembler</Filter>
-    </YASM>
-    <YASM Include="asm\const-a.asm">
-      <Filter>Assembler</Filter>
-    </YASM>
-    <YASM Include="asm\cpu-a.asm">
-      <Filter>Assembler</Filter>
-    </YASM>
-    <YASM Include="asm\Variance-a.asm">
-      <Filter>Assembler</Filter>
-    </YASM>
-    <YASM Include="asm\SAD_iSSE.asm">
-      <Filter>Assembler</Filter>
-    </YASM>
-    <YASM Include="asm\SAD_iSSE_x64.asm">
-      <Filter>Assembler</Filter>
-    </YASM>
-    <YASM Include="asm\sad16-a.asm">
-      <Filter>Assembler</Filter>
-    </YASM>
-    <YASM Include="asm\const16-a.asm">
-      <Filter>Assembler</Filter>
-    </YASM>
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="MDegrainN.cpp">
-      <Filter>Filters</Filter>
-    </ClCompile>
-    <ClCompile Include="MVDegrain1.cpp">
-      <Filter>Filters</Filter>
-    </ClCompile>
-    <ClCompile Include="MVDegrain2.cpp">
       <Filter>Filters</Filter>
     </ClCompile>
     <ClCompile Include="MVDegrain3.cpp">
@@ -221,12 +159,6 @@
       <Filter>Filters</Filter>
     </ClInclude>
     <ClInclude Include="MVCompensate.h">
-      <Filter>Filters</Filter>
-    </ClInclude>
-    <ClInclude Include="MVDegrain1.h">
-      <Filter>Filters</Filter>
-    </ClInclude>
-    <ClInclude Include="MVDegrain2.h">
       <Filter>Filters</Filter>
     </ClInclude>
     <ClInclude Include="MVDegrain3.h">
@@ -486,5 +418,61 @@
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="cpu.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <NASM Include="asm\Bilinear.asm">
+      <Filter>Assembler</Filter>
+    </NASM>
+    <NASM Include="asm\pixel-a.asm">
+      <Filter>Assembler</Filter>
+    </NASM>
+    <NASM Include="asm\Bilinear_x64.asm">
+      <Filter>Assembler</Filter>
+    </NASM>
+    <NASM Include="asm\CopyCode-a.asm">
+      <Filter>Assembler</Filter>
+    </NASM>
+    <NASM Include="asm\fdct_mmx.asm">
+      <Filter>Assembler</Filter>
+    </NASM>
+    <NASM Include="asm\fdct_mmx_x64.asm">
+      <Filter>Assembler</Filter>
+    </NASM>
+    <NASM Include="asm\include\x86inc.asm">
+      <Filter>Assembler</Filter>
+    </NASM>
+    <NASM Include="asm\include\x86util.asm">
+      <Filter>Assembler</Filter>
+    </NASM>
+    <NASM Include="asm\Interpolation-a.asm">
+      <Filter>Assembler</Filter>
+    </NASM>
+    <NASM Include="asm\Overlap-a.asm">
+      <Filter>Assembler</Filter>
+    </NASM>
+    <NASM Include="asm\sad-a.asm">
+      <Filter>Assembler</Filter>
+    </NASM>
+    <NASM Include="asm\const-a.asm">
+      <Filter>Assembler</Filter>
+    </NASM>
+    <NASM Include="asm\cpu-a.asm">
+      <Filter>Assembler</Filter>
+    </NASM>
+    <NASM Include="asm\Variance-a.asm">
+      <Filter>Assembler</Filter>
+    </NASM>
+    <NASM Include="asm\SAD_iSSE.asm">
+      <Filter>Assembler</Filter>
+    </NASM>
+    <NASM Include="asm\SAD_iSSE_x64.asm">
+      <Filter>Assembler</Filter>
+    </NASM>
+    <NASM Include="asm\sad16-a.asm">
+      <Filter>Assembler</Filter>
+    </NASM>
+    <NASM Include="asm\const16-a.asm">
+      <Filter>Assembler</Filter>
+    </NASM>
   </ItemGroup>
 </Project>

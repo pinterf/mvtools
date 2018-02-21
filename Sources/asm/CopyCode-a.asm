@@ -1,7 +1,7 @@
 %include "include/x86inc.asm"
 
 
-SECTION_TEXT
+SECTION .text
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

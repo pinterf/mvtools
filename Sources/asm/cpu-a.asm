@@ -146,7 +146,7 @@ cglobal cpu_emms
 cglobal cpu_sfence
     sfence
     ret
-
+;mvtools: no need for it. undef
 %if 0
 cextern intel_cpu_indicator_init
 

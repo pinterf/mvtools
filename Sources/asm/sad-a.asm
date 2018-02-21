@@ -6097,7 +6097,7 @@ cglobal pixel_sad_32x16, 4,5,6
     xorps           m5, m5
     mov             r4d, 4
 
-.loop
+.loop:
     movu           m1, [r0]               ; row 0 of pix0
     movu           m2, [r2]               ; row 0 of pix1
     movu           m3, [r0 + r1]          ; row 1 of pix0
@@ -6142,7 +6142,7 @@ cglobal pixel_sad_32x24, 4,7,6
     mov             r4d, 6
     lea             r5, [r1 * 3]
     lea             r6, [r3 * 3]
-.loop
+.loop:
     movu           m1, [r0]               ; row 0 of pix0
     movu           m2, [r2]               ; row 0 of pix1
     movu           m3, [r0 + r1]          ; row 1 of pix0
@@ -6184,7 +6184,7 @@ cglobal pixel_sad_32x32, 4,7,5
     lea             r5, [r1 * 3]
     lea             r6, [r3 * 3]
 
-.loop
+.loop:
     movu           m1, [r0]               ; row 0 of pix0
     movu           m2, [r2]               ; row 0 of pix1
     movu           m3, [r0 + r1]          ; row 1 of pix0
@@ -6225,7 +6225,7 @@ cglobal pixel_sad_32x64, 4,7,5
     lea             r5, [r1 * 3]
     lea             r6, [r3 * 3]
 
-.loop
+.loop:
     movu           m1, [r0]               ; row 0 of pix0
     movu           m2, [r2]               ; row 0 of pix1
     movu           m3, [r0 + r1]          ; row 1 of pix0
@@ -6288,7 +6288,7 @@ cglobal pixel_sad_48x64, 4,7,7
     mov             r4d, 64/4
     lea             r5, [r1 * 3]
     lea             r6, [r3 * 3]
-.loop
+.loop:
     movu           m1, [r0]               ; row 0 of pix0
     movu           m2, [r2]               ; row 0 of pix1
     movu           m3, [r0 + r1]          ; row 1 of pix0
@@ -6341,7 +6341,7 @@ cglobal pixel_sad_48x48, 4,7,7
     mov             r4d, 48/4
     lea             r5, [r1 * 3]
     lea             r6, [r3 * 3]
-.loop
+.loop:
     movu           m1, [r0]               ; row 0 of pix0
     movu           m2, [r2]               ; row 0 of pix1
     movu           m3, [r0 + r1]          ; row 1 of pix0
@@ -6394,7 +6394,7 @@ cglobal pixel_sad_48x24, 4,7,7
     mov             r4d, 24/4
     lea             r5, [r1 * 3]
     lea             r6, [r3 * 3]
-.loop
+.loop:
     movu           m1, [r0]               ; row 0 of pix0
     movu           m2, [r2]               ; row 0 of pix1
     movu           m3, [r0 + r1]          ; row 1 of pix0
@@ -6447,7 +6447,7 @@ cglobal pixel_sad_48x12, 4,7,7
     mov             r4d, 12/4
     lea             r5, [r1 * 3]
     lea             r6, [r3 * 3]
-.loop
+.loop:
     movu           m1, [r0]               ; row 0 of pix0
     movu           m2, [r2]               ; row 0 of pix1
     movu           m3, [r0 + r1]          ; row 1 of pix0
@@ -6498,7 +6498,7 @@ cglobal pixel_sad_64x16, 4,5,6
     xorps           m0, m0
     xorps           m5, m5
     mov             r4d, 4
-.loop
+.loop:
     movu           m1, [r0]               ; first 32 of row 0 of pix0
     movu           m2, [r2]               ; first 32 of row 0 of pix1
     movu           m3, [r0 + 32]          ; second 32 of row 0 of pix0
@@ -6561,7 +6561,7 @@ cglobal pixel_sad_64x32, 4,5,6
     xorps           m0, m0
     xorps           m5, m5
     mov             r4d, 16
-.loop
+.loop:
     movu           m1, [r0]               ; first 32 of row 0 of pix0
     movu           m2, [r2]               ; first 32 of row 0 of pix1
     movu           m3, [r0 + 32]          ; second 32 of row 0 of pix0
@@ -6603,7 +6603,7 @@ cglobal pixel_sad_64x48, 4,7,6
     mov             r4d, 12
     lea             r5, [r1 * 3]
     lea             r6, [r3 * 3]
-.loop
+.loop:
     movu           m1, [r0]               ; first 32 of row 0 of pix0
     movu           m2, [r2]               ; first 32 of row 0 of pix1
     movu           m3, [r0 + 32]          ; second 32 of row 0 of pix0
@@ -6665,7 +6665,7 @@ cglobal pixel_sad_64x64, 4,7,6
     mov             r4d, 8
     lea             r5, [r1 * 3]
     lea             r6, [r3 * 3]
-.loop
+.loop:
     movu           m1, [r0]               ; first 32 of row 0 of pix0
     movu           m2, [r2]               ; first 32 of row 0 of pix1
     movu           m3, [r0 + 32]          ; second 32 of row 0 of pix0
