@@ -15,6 +15,7 @@ class MVPlane;
 class MVFilter;
 
 #define MAX_DEGRAIN 6
+constexpr int DEGRAIN_WEIGHT_BITS = 8;
 
 //#define LEVEL_IS_TEMPLATE
 /*
@@ -49,9 +50,9 @@ private:
   MVClip *mvClipB[MAX_DEGRAIN];
   MVClip *mvClipF[MAX_DEGRAIN];
   sad_t thSAD;
-  sad_t thSADpow2;
+  double thSAD_sq;
   sad_t thSADC;
-  sad_t thSADCpow2;
+  double thSADC_sq;
   int YUVplanes;
   sad_t nLimit;
   sad_t nLimitC;
@@ -79,6 +80,8 @@ private:
   OverlapsFunction *OVERSCHROMA;
   OverlapsFunction *OVERSLUMA16;
   OverlapsFunction *OVERSCHROMA16;
+  OverlapsFunction *OVERSLUMA32;
+  OverlapsFunction *OVERSCHROMA32;
   OverlapsLsbFunction *OVERSLUMALSB;
   OverlapsLsbFunction *OVERSCHROMALSB;
   Denoise1to6Function *DEGRAINLUMA;
@@ -131,7 +134,7 @@ private:
   MV_FORCEINLINE void	use_block_y(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch);
   MV_FORCEINLINE void	use_block_uv(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch);
   // static MV_FORCEINLINE void	norm_weights(int &WSrc, int &WRefB, int &WRefF, int &WRefB2, int &WRefF2, int &WRefB3, int &WRefF3);
-  Denoise1to6Function *get_denoise123_function(int BlockX, int BlockY, int _pixelsize, bool _lsb_flag, int _level, arch_t _arch);
+  Denoise1to6Function *get_denoise123_function(int BlockX, int BlockY, int _bits_per_pixel, bool _lsb_flag, int _level, arch_t _arch);
 };
 
 #pragma warning( push )
@@ -148,72 +151,205 @@ void Degrain1to6_C(uint8_t *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
   const int blockWidth = (WidthHeightForC >> 16);
   const int blockHeight = (WidthHeightForC & 0xFFFF);
 
-  const bool no_need_round = lsb_flag || (sizeof(pixel_t) > 1);
+  const bool no_need_round = lsb_flag;
+  constexpr int rounder = no_need_round ? 0 : (1 << (DEGRAIN_WEIGHT_BITS - 1));
+
   for (int h = 0; h < blockHeight; h++)
   {
     for (int x = 0; x < blockWidth; x++)
     {
       if constexpr(level == 1) {
-        const int		val = reinterpret_cast<const pixel_t *>(pSrc)[x] * WSrc +
+        int val = reinterpret_cast<const pixel_t *>(pSrc)[x] * WSrc +
           reinterpret_cast<const pixel_t *>(pRefF[0])[x] * WRefF[0] + reinterpret_cast<const pixel_t *>(pRefB[0])[x] * WRefB[0];
-        reinterpret_cast<pixel_t *>(pDst)[x] = (val + (no_need_round ? 0 : 128)) >> 8;
-        if constexpr(lsb_flag)
+        val = val + rounder;
+        if constexpr(lsb_flag) {
+          val = val >> (DEGRAIN_WEIGHT_BITS - 8); // zero shift at the momemt
+          reinterpret_cast<uint8_t *>(pDst)[x] = val >> 8;
           pDstLsb[x] = val & 255;
+        }
+        else {
+          reinterpret_cast<pixel_t *>(pDst)[x] = val >> DEGRAIN_WEIGHT_BITS;
+        }
       }
       else if constexpr(level == 2) {
-        const int		val = reinterpret_cast<const pixel_t *>(pSrc)[x] * WSrc +
+        int val = (reinterpret_cast<const pixel_t *>(pSrc)[x]) * WSrc +
           reinterpret_cast<const pixel_t *>(pRefF[0])[x] * WRefF[0] + reinterpret_cast<const pixel_t *>(pRefB[0])[x] * WRefB[0] +
           reinterpret_cast<const pixel_t *>(pRefF[1])[x] * WRefF[1] + reinterpret_cast<const pixel_t *>(pRefB[1])[x] * WRefB[1];
-        reinterpret_cast<pixel_t *>(pDst)[x] = (val + (no_need_round ? 0 : 128)) >> 8;
-        if constexpr(lsb_flag)
+        val = val + rounder;
+        if constexpr(lsb_flag) {
+          val = val >> (DEGRAIN_WEIGHT_BITS - 8); // zero shift at the momemt
+          reinterpret_cast<uint8_t *>(pDst)[x] = val >> 8;
           pDstLsb[x] = val & 255;
+        }
+        else {
+          reinterpret_cast<pixel_t *>(pDst)[x] = val >> DEGRAIN_WEIGHT_BITS;
+        }
       }
       else if constexpr(level == 3) {
-        const int		val = reinterpret_cast<const pixel_t *>(pSrc)[x] * WSrc +
+        int val = reinterpret_cast<const pixel_t *>(pSrc)[x] * WSrc +
           reinterpret_cast<const pixel_t *>(pRefF[0])[x] * WRefF[0] + reinterpret_cast<const pixel_t *>(pRefB[0])[x] * WRefB[0] +
           reinterpret_cast<const pixel_t *>(pRefF[1])[x] * WRefF[1] + reinterpret_cast<const pixel_t *>(pRefB[1])[x] * WRefB[1] +
           reinterpret_cast<const pixel_t *>(pRefF[2])[x] * WRefF[2] + reinterpret_cast<const pixel_t *>(pRefB[2])[x] * WRefB[2];
-        reinterpret_cast<pixel_t *>(pDst)[x] = (val + (no_need_round ? 0 : 128)) >> 8;
-        if constexpr(lsb_flag)
+        val = val + rounder;
+        if constexpr(lsb_flag) {
+          val = val >> (DEGRAIN_WEIGHT_BITS - 8); // zero shift at the momemt
+          reinterpret_cast<uint8_t *>(pDst)[x] = val >> 8;
           pDstLsb[x] = val & 255;
+        }
+        else {
+          reinterpret_cast<pixel_t *>(pDst)[x] = val >> DEGRAIN_WEIGHT_BITS;
+        }
       }
       else if constexpr(level == 4) {
-        const int		val = reinterpret_cast<const pixel_t *>(pSrc)[x] * WSrc +
+        int val = reinterpret_cast<const pixel_t *>(pSrc)[x] * WSrc +
           reinterpret_cast<const pixel_t *>(pRefF[0])[x] * WRefF[0] + reinterpret_cast<const pixel_t *>(pRefB[0])[x] * WRefB[0] +
           reinterpret_cast<const pixel_t *>(pRefF[1])[x] * WRefF[1] + reinterpret_cast<const pixel_t *>(pRefB[1])[x] * WRefB[1] +
           reinterpret_cast<const pixel_t *>(pRefF[2])[x] * WRefF[2] + reinterpret_cast<const pixel_t *>(pRefB[2])[x] * WRefB[2] +
           reinterpret_cast<const pixel_t *>(pRefF[3])[x] * WRefF[3] + reinterpret_cast<const pixel_t *>(pRefB[3])[x] * WRefB[3];
-        reinterpret_cast<pixel_t *>(pDst)[x] = (val + (no_need_round ? 0 : 128)) >> 8;
-        if constexpr(lsb_flag)
+        val = val + rounder;
+        if constexpr(lsb_flag) {
+          val = val >> (DEGRAIN_WEIGHT_BITS - 8); // zero shift at the momemt
+          reinterpret_cast<uint8_t *>(pDst)[x] = val >> 8;
           pDstLsb[x] = val & 255;
+        }
+        else {
+          reinterpret_cast<pixel_t *>(pDst)[x] = val >> DEGRAIN_WEIGHT_BITS;
+        }
       }
       else if constexpr(level == 5) {
-        const int		val = reinterpret_cast<const pixel_t *>(pSrc)[x] * WSrc +
+        int val = reinterpret_cast<const pixel_t *>(pSrc)[x] * WSrc +
           reinterpret_cast<const pixel_t *>(pRefF[0])[x] * WRefF[0] + reinterpret_cast<const pixel_t *>(pRefB[0])[x] * WRefB[0] +
           reinterpret_cast<const pixel_t *>(pRefF[1])[x] * WRefF[1] + reinterpret_cast<const pixel_t *>(pRefB[1])[x] * WRefB[1] +
           reinterpret_cast<const pixel_t *>(pRefF[2])[x] * WRefF[2] + reinterpret_cast<const pixel_t *>(pRefB[2])[x] * WRefB[2] +
           reinterpret_cast<const pixel_t *>(pRefF[3])[x] * WRefF[3] + reinterpret_cast<const pixel_t *>(pRefB[3])[x] * WRefB[3] +
           reinterpret_cast<const pixel_t *>(pRefF[4])[x] * WRefF[4] + reinterpret_cast<const pixel_t *>(pRefB[4])[x] * WRefB[4];
-        reinterpret_cast<pixel_t *>(pDst)[x] = (val + (no_need_round ? 0 : 128)) >> 8;
-        if constexpr(lsb_flag)
+        val = val + rounder;
+        if constexpr(lsb_flag) {
+          val = val >> (DEGRAIN_WEIGHT_BITS - 8); // zero shift at the momemt
+          reinterpret_cast<uint8_t *>(pDst)[x] = val >> 8;
           pDstLsb[x] = val & 255;
+        }
+        else {
+          reinterpret_cast<pixel_t *>(pDst)[x] = val >> DEGRAIN_WEIGHT_BITS;
+        }
       }
       else if constexpr(level == 6) {
-        const int		val = reinterpret_cast<const pixel_t *>(pSrc)[x] * WSrc +
+        int val = reinterpret_cast<const pixel_t *>(pSrc)[x] * WSrc +
           reinterpret_cast<const pixel_t *>(pRefF[0])[x] * WRefF[0] + reinterpret_cast<const pixel_t *>(pRefB[0])[x] * WRefB[0] +
           reinterpret_cast<const pixel_t *>(pRefF[1])[x] * WRefF[1] + reinterpret_cast<const pixel_t *>(pRefB[1])[x] * WRefB[1] +
           reinterpret_cast<const pixel_t *>(pRefF[2])[x] * WRefF[2] + reinterpret_cast<const pixel_t *>(pRefB[2])[x] * WRefB[2] +
           reinterpret_cast<const pixel_t *>(pRefF[3])[x] * WRefF[3] + reinterpret_cast<const pixel_t *>(pRefB[3])[x] * WRefB[3] +
           reinterpret_cast<const pixel_t *>(pRefF[4])[x] * WRefF[4] + reinterpret_cast<const pixel_t *>(pRefB[4])[x] * WRefB[4] +
           reinterpret_cast<const pixel_t *>(pRefF[5])[x] * WRefF[5] + reinterpret_cast<const pixel_t *>(pRefB[5])[x] * WRefB[5];
-        reinterpret_cast<pixel_t *>(pDst)[x] = (val + (no_need_round ? 0 : 128)) >> 8;
-        if constexpr(lsb_flag)
+        val = val + rounder;
+        if constexpr(lsb_flag) {
+          val = val >> (DEGRAIN_WEIGHT_BITS - 8); // zero shift at the momemt
+          reinterpret_cast<uint8_t *>(pDst)[x] = val >> 8;
           pDstLsb[x] = val & 255;
+        }
+        else {
+          reinterpret_cast<pixel_t *>(pDst)[x] = val >> DEGRAIN_WEIGHT_BITS;
+        }
       }
     }
     pDst += nDstPitch;
     if constexpr(lsb_flag)
       pDstLsb += nDstPitch;
+    pSrc += nSrcPitch;
+    pRefB[0] += BPitch[0];
+    pRefF[0] += FPitch[0];
+    if constexpr(level >= 2) {
+      pRefB[1] += BPitch[1];
+      pRefF[1] += FPitch[1];
+      if constexpr(level >= 3) {
+        pRefB[2] += BPitch[2];
+        pRefF[2] += FPitch[2];
+        if constexpr(level >= 4) {
+          pRefB[3] += BPitch[3];
+          pRefF[3] += FPitch[3];
+          if constexpr(level >= 5) {
+            pRefB[4] += BPitch[4];
+            pRefF[4] += FPitch[4];
+            if constexpr(level >= 6) {
+              pRefB[5] += BPitch[5];
+              pRefF[5] += FPitch[5];
+            }
+          }
+        }
+      }
+    }
+  }
+}
+#pragma warning( pop ) 
+
+#pragma warning( push )
+#pragma warning( disable : 4101)
+template<int level >
+void Degrain1to6_float_C(uint8_t *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPitch, const uint8_t *pSrc, int nSrcPitch,
+  const uint8_t *pRefB[MAX_DEGRAIN], int BPitch[MAX_DEGRAIN], const uint8_t *pRefF[MAX_DEGRAIN], int FPitch[MAX_DEGRAIN],
+  int WSrc,
+  int WRefB[MAX_DEGRAIN], int WRefF[MAX_DEGRAIN])
+{
+  // avoid unnecessary templates. C implementation is here for the sake of correctness and for very small block sizes
+  // For all other cases where speed counts, at least SSE2 is used
+  // Use only one parameter
+  const int blockWidth = (WidthHeightForC >> 16);
+  const int blockHeight = (WidthHeightForC & 0xFFFF);
+
+  const float scaleback = 1.0f / (1 << DEGRAIN_WEIGHT_BITS);
+
+  for (int h = 0; h < blockHeight; h++)
+  {
+    for (int x = 0; x < blockWidth; x++)
+    {
+      // note: Weights are still integer numbers of DEGRAIN_WEIGHT_BITS resolution
+      if constexpr(level == 1) {
+        const float val = reinterpret_cast<const float *>(pSrc)[x] * WSrc +
+          reinterpret_cast<const float *>(pRefF[0])[x] * WRefF[0] + reinterpret_cast<const float *>(pRefB[0])[x] * WRefB[0];
+        reinterpret_cast<float *>(pDst)[x] = val * scaleback;
+      }
+      else if constexpr(level == 2) {
+        const float val = reinterpret_cast<const float *>(pSrc)[x] * WSrc +
+          reinterpret_cast<const float *>(pRefF[0])[x] * WRefF[0] + reinterpret_cast<const float *>(pRefB[0])[x] * WRefB[0] +
+          reinterpret_cast<const float *>(pRefF[1])[x] * WRefF[1] + reinterpret_cast<const float *>(pRefB[1])[x] * WRefB[1];
+        reinterpret_cast<float *>(pDst)[x] = val * scaleback;
+      }
+      else if constexpr(level == 3) {
+        const float val = reinterpret_cast<const float *>(pSrc)[x] * WSrc +
+          reinterpret_cast<const float *>(pRefF[0])[x] * WRefF[0] + reinterpret_cast<const float *>(pRefB[0])[x] * WRefB[0] +
+          reinterpret_cast<const float *>(pRefF[1])[x] * WRefF[1] + reinterpret_cast<const float *>(pRefB[1])[x] * WRefB[1] +
+          reinterpret_cast<const float *>(pRefF[2])[x] * WRefF[2] + reinterpret_cast<const float *>(pRefB[2])[x] * WRefB[2];
+        reinterpret_cast<float *>(pDst)[x] = val * scaleback;
+      }
+      else if constexpr(level == 4) {
+        const float val = reinterpret_cast<const float *>(pSrc)[x] * WSrc +
+          reinterpret_cast<const float *>(pRefF[0])[x] * WRefF[0] + reinterpret_cast<const float *>(pRefB[0])[x] * WRefB[0] +
+          reinterpret_cast<const float *>(pRefF[1])[x] * WRefF[1] + reinterpret_cast<const float *>(pRefB[1])[x] * WRefB[1] +
+          reinterpret_cast<const float *>(pRefF[2])[x] * WRefF[2] + reinterpret_cast<const float *>(pRefB[2])[x] * WRefB[2] +
+          reinterpret_cast<const float *>(pRefF[3])[x] * WRefF[3] + reinterpret_cast<const float *>(pRefB[3])[x] * WRefB[3];
+        reinterpret_cast<float *>(pDst)[x] = val * scaleback;
+      }
+      else if constexpr(level == 5) {
+        const float val = reinterpret_cast<const float *>(pSrc)[x] * WSrc +
+          reinterpret_cast<const float *>(pRefF[0])[x] * WRefF[0] + reinterpret_cast<const float *>(pRefB[0])[x] * WRefB[0] +
+          reinterpret_cast<const float *>(pRefF[1])[x] * WRefF[1] + reinterpret_cast<const float *>(pRefB[1])[x] * WRefB[1] +
+          reinterpret_cast<const float *>(pRefF[2])[x] * WRefF[2] + reinterpret_cast<const float *>(pRefB[2])[x] * WRefB[2] +
+          reinterpret_cast<const float *>(pRefF[3])[x] * WRefF[3] + reinterpret_cast<const float *>(pRefB[3])[x] * WRefB[3] +
+          reinterpret_cast<const float *>(pRefF[4])[x] * WRefF[4] + reinterpret_cast<const float *>(pRefB[4])[x] * WRefB[4];
+        reinterpret_cast<float *>(pDst)[x] = val * scaleback;
+      }
+      else if constexpr(level == 6) {
+        const float val = reinterpret_cast<const float *>(pSrc)[x] * WSrc +
+          reinterpret_cast<const float *>(pRefF[0])[x] * WRefF[0] + reinterpret_cast<const float *>(pRefB[0])[x] * WRefB[0] +
+          reinterpret_cast<const float *>(pRefF[1])[x] * WRefF[1] + reinterpret_cast<const float *>(pRefB[1])[x] * WRefB[1] +
+          reinterpret_cast<const float *>(pRefF[2])[x] * WRefF[2] + reinterpret_cast<const float *>(pRefB[2])[x] * WRefB[2] +
+          reinterpret_cast<const float *>(pRefF[3])[x] * WRefF[3] + reinterpret_cast<const float *>(pRefB[3])[x] * WRefB[3] +
+          reinterpret_cast<const float *>(pRefF[4])[x] * WRefF[4] + reinterpret_cast<const float *>(pRefB[4])[x] * WRefB[4] +
+          reinterpret_cast<const float *>(pRefF[5])[x] * WRefF[5] + reinterpret_cast<const float *>(pRefB[5])[x] * WRefB[5];
+        reinterpret_cast<float *>(pDst)[x] = val * scaleback;
+      }
+    }
+    pDst += nDstPitch;
     pSrc += nSrcPitch;
     pRefB[0] += BPitch[0];
     pRefF[0] += FPitch[0];
@@ -855,8 +991,157 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
 #pragma warning( disable : 4101)
 // for blockwidth >=2 (4 bytes for blockwidth==2, 8 bytes for blockwidth==4)
 // for special height==0 -> internally nHeight comes from variable (for C: both width and height is variable)
-template<int blockWidth, int blockHeight, int level>
+template<int blockWidth, int blockHeight, int level, bool lessThan16bits>
 void Degrain1to6_16_sse41(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
+  const BYTE *pRefB[MAX_DEGRAIN], int BPitch[MAX_DEGRAIN], const BYTE *pRefF[MAX_DEGRAIN], int FPitch[MAX_DEGRAIN],
+  int WSrc,
+  int WRefB[MAX_DEGRAIN], int WRefF[MAX_DEGRAIN])
+{
+  // avoid unnecessary templates for larger heights
+  const int blockHeightParam = (WidthHeightForC & 0xFFFF);
+  const int realBlockHeight = blockHeight == 0 ? blockHeightParam : blockHeight;
+
+  __m128i z = _mm_setzero_si128();
+  __m128i wbf1, wbf2, wbf3, wbf4, wbf5, wbf6;
+
+  // able to do madd for real 16 bit uint16_t data
+  const auto signed16_shifter = _mm_set1_epi16(-32768);
+
+  // Interleave Forward and Backward 16 bit weights for madd
+  __m128i ws = _mm_set1_epi32((0 << 16) + WSrc);
+  wbf1 = _mm_set1_epi32((WRefF[0] << 16) + WRefB[0]);
+  if constexpr(level >= 2) {
+    wbf2 = _mm_set1_epi32((WRefF[1] << 16) + WRefB[1]);
+    if constexpr(level >= 3) {
+      wbf3 = _mm_set1_epi32((WRefF[2] << 16) + WRefB[2]);
+      if constexpr(level >= 4) {
+        wbf4 = _mm_set1_epi32((WRefF[3] << 16) + WRefB[3]);
+        if constexpr(level >= 5) {
+          wbf5 = _mm_set1_epi32((WRefF[4] << 16) + WRefB[4]);
+          if constexpr(level >= 6) {
+            wbf6 = _mm_set1_epi32((WRefF[5] << 16) + WRefB[5]);
+          }
+        }
+      }
+    }
+  }
+
+  __m128i o = _mm_set1_epi32(1 << (DEGRAIN_WEIGHT_BITS - 1)); // rounding: 128 (mul by 8 bit wref scale back)
+  for (int h = 0; h < realBlockHeight; h++)
+  {
+    for (int x = 0; x < blockWidth; x += 8 / sizeof(uint16_t))
+    {
+      __m128i res;
+      auto src = _mm_loadl_epi64((__m128i*)(pSrc + x * sizeof(uint16_t)));
+      // make signed when unsigned 16 bit mode
+      if constexpr(!lessThan16bits)
+        src = _mm_add_epi16(src, signed16_shifter);
+      src = _mm_unpacklo_epi16(src, z);
+      res = _mm_madd_epi16(src, ws); // pSrc[x] * WSrc + 0 * 0
+      // pRefF[n][x] * WRefF[n] + pRefB[n][x] * WRefB[n]
+      src = _mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[0] + x * sizeof(uint16_t))), _mm_loadl_epi64((__m128i*)(pRefF[0] + x * sizeof(uint16_t))));
+      if constexpr(!lessThan16bits)
+        src = _mm_add_epi16(src, signed16_shifter);
+      res = _mm_add_epi32(res, _mm_madd_epi16(src, wbf1));
+      if constexpr(level >= 2) {
+        src = _mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[1] + x * sizeof(uint16_t))), _mm_loadl_epi64((__m128i*)(pRefF[1] + x * sizeof(uint16_t))));
+        if constexpr(!lessThan16bits)
+          src = _mm_add_epi16(src, signed16_shifter);
+        res = _mm_add_epi32(res, _mm_madd_epi16(src, wbf2));
+      }
+      if constexpr(level >= 3) {
+        src = _mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[2] + x * sizeof(uint16_t))), _mm_loadl_epi64((__m128i*)(pRefF[2] + x * sizeof(uint16_t))));
+        if constexpr(!lessThan16bits)
+          src = _mm_add_epi16(src, signed16_shifter);
+        res = _mm_add_epi32(res, _mm_madd_epi16(src, wbf3));
+      }
+      if constexpr(level >= 4) {
+        src = _mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[3] + x * sizeof(uint16_t))), _mm_loadl_epi64((__m128i*)(pRefF[3] + x * sizeof(uint16_t))));
+        if constexpr(!lessThan16bits)
+          src = _mm_add_epi16(src, signed16_shifter);
+        res = _mm_add_epi32(res, _mm_madd_epi16(src, wbf4));
+      }
+      if constexpr(level >= 5) {
+        src = _mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[4] + x * sizeof(uint16_t))), _mm_loadl_epi64((__m128i*)(pRefF[4] + x * sizeof(uint16_t))));
+        if constexpr(!lessThan16bits)
+          src = _mm_add_epi16(src, signed16_shifter);
+        res = _mm_add_epi32(res, _mm_madd_epi16(src, wbf5));
+      }
+      if constexpr(level >= 6) {
+        src = _mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[5] + x * sizeof(uint16_t))), _mm_loadl_epi64((__m128i*)(pRefF[5] + x * sizeof(uint16_t))));
+        if constexpr(!lessThan16bits)
+          src = _mm_add_epi16(src, signed16_shifter);
+        res = _mm_add_epi32(res, _mm_madd_epi16(src, wbf6));
+      }
+      res = _mm_add_epi32(res, o); // round
+      res = _mm_packs_epi32(_mm_srai_epi32(res, DEGRAIN_WEIGHT_BITS), z);
+      // make unsigned when unsigned 16 bit mode
+      if constexpr(!lessThan16bits) 
+        res = _mm_add_epi16(res, signed16_shifter);
+
+      // store back
+      if constexpr(blockWidth == 6) {
+        // special, 4+2
+        if (x == 0)
+          _mm_storel_epi64((__m128i*)(pDst + x * sizeof(uint16_t)), res);
+        else
+          *(uint32_t *)(pDst + x * sizeof(uint16_t)) = _mm_cvtsi128_si32(res);
+      }
+      else if constexpr(blockWidth >= 8 / sizeof(uint16_t)) { // block 4 is already 8 bytes
+        // 4, 8, 12, ...
+        _mm_storel_epi64((__m128i*)(pDst + x * sizeof(uint16_t)), res);
+      }
+      else if constexpr(blockWidth == 3) { // blockwidth 3 is 6 bytes
+        // x == 0 always
+        *(uint32_t *)(pDst) = _mm_cvtsi128_si32(res); // 1-4 bytes
+        uint32_t res32 = _mm_cvtsi128_si32(_mm_srli_si128(res, 4)); // 5-8 byte
+        *(uint16_t *)(pDst + sizeof(uint32_t)) = (uint16_t)res32; // 2 bytes needed
+      }
+      else { // blockwidth 2 is 4 bytes
+        *(uint32_t *)(pDst + x * sizeof(uint16_t)) = _mm_cvtsi128_si32(res);
+      }
+    }
+    pDst += nDstPitch;
+    pSrc += nSrcPitch;
+    /*
+    for (int i = 0; i < level; i++) {
+    pRefB[i] += BPitch[i];
+    pRefF[i] += FPitch[i];
+    }
+    */
+    // todo: pointer additions by xmm simd code: 2 pointers at a time when x64, 4+2 pointers when x32
+    pRefB[0] += BPitch[0];
+    pRefF[0] += FPitch[0];
+    if constexpr(level >= 2) {
+      pRefB[1] += BPitch[1];
+      pRefF[1] += FPitch[1];
+      if constexpr(level >= 3) {
+        pRefB[2] += BPitch[2];
+        pRefF[2] += FPitch[2];
+        if constexpr(level >= 4) {
+          pRefB[3] += BPitch[3];
+          pRefF[3] += FPitch[3];
+          if constexpr(level >= 5) {
+            pRefB[4] += BPitch[4];
+            pRefF[4] += FPitch[4];
+            if constexpr(level >= 6) {
+              pRefB[5] += BPitch[5];
+              pRefF[5] += FPitch[5];
+            }
+          }
+        }
+      }
+    }
+  }
+}
+#pragma warning( pop ) 
+
+#pragma warning( push )
+#pragma warning( disable : 4101)
+// for blockwidth >=2 (4 bytes for blockwidth==2, 8 bytes for blockwidth==4)
+// for special height==0 -> internally nHeight comes from variable (for C: both width and height is variable)
+template<int blockWidth, int blockHeight, int level>
+void Degrain1to6_16_sse41_old(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
   const BYTE *pRefB[MAX_DEGRAIN], int BPitch[MAX_DEGRAIN], const BYTE *pRefF[MAX_DEGRAIN], int FPitch[MAX_DEGRAIN],
   int WSrc,
   int WRefB[MAX_DEGRAIN], int WRefF[MAX_DEGRAIN])
@@ -985,11 +1270,11 @@ void Degrain1to6_16_sse41(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nD
           *(uint32_t *)(pDst + x * sizeof(uint16_t)) = _mm_cvtsi128_si32(res);
       }
       else if constexpr(blockWidth >= 8 / sizeof(uint16_t)) { // block 4 is already 8 bytes
-        // 4, 8, 12, ...
+                                                              // 4, 8, 12, ...
         _mm_storel_epi64((__m128i*)(pDst + x * sizeof(uint16_t)), res);
       }
       else if constexpr(blockWidth == 3) { // blockwidth 3 is 6 bytes
-        // x == 0 always
+                                           // x == 0 always
         *(uint32_t *)(pDst) = _mm_cvtsi128_si32(res); // 1-4 bytes
         uint32_t res32 = _mm_cvtsi128_si32(_mm_srli_si128(res,4)); // 5-8 byte
         *(uint16_t *)(pDst + sizeof(uint32_t)) = (uint16_t)res32; // 2 bytes needed
@@ -1034,13 +1319,17 @@ void Degrain1to6_16_sse41(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nD
 
 // Not really related to overlap, but common to MDegrainX functions
 // PF 160928: this is bottleneck. Could be optimized with precalc thSAD*thSAD
-MV_FORCEINLINE int DegrainWeight(int thSAD, int blockSAD)
+// PF 180221: experimental conditionless 'double' precision path with precalculated square of thSad
+//#define OLD_DEGRAINWEIGHT
+MV_FORCEINLINE int DegrainWeight(int thSAD, double thSAD_sq, int blockSAD)
 {
   // Returning directly prevents a divide by 0 if thSAD == blockSAD == 0.
+  // keep integer comparison for speed
   if (thSAD <= blockSAD)
   {
     return 0;
   }
+#ifdef OLD_DEGRAINWEIGHT
   // here thSAD > blockSAD
   if(thSAD <= 0x7FFF) { // 170507 avoid overflow even in 8 bits! in sqr
     // can occur even for 32x32 block size
@@ -1056,16 +1345,16 @@ MV_FORCEINLINE int DegrainWeight(int thSAD, int blockSAD)
     return (res);
   } else {
     // int overflows with 8+ bits_per_pixel scaled power of 2
-    /* float is faster
-    const int64_t sq_thSAD = int64_t(thSAD) * thSAD;
-    const int64_t sq_blockSAD = int64_t(blockSAD) * blockSAD;
-    return (int)((256*(sq_thSAD - sq_blockSAD)) / (sq_thSAD + sq_blockSAD));
-    */
-    const float sq_thSAD = float(thSAD) * float(thSAD); // std::powf(float(thSAD), 2.0f); 
-                                                        // smart compiler makes x*x, VS2015 calls __libm_sse2_pow_precise, way too slow
-    const float sq_blockSAD = float(blockSAD) * float(blockSAD); // std::powf(float(blockSAD), 2.0f);
+    // float
+    const float sq_thSAD = float(thSAD) * (thSAD);
+    const float sq_blockSAD = float(blockSAD) * (blockSAD); // std::powf(float(blockSAD), 2.0f);
     return (int)(256.0f*(sq_thSAD - sq_blockSAD) / (sq_thSAD + sq_blockSAD));
-  }
+}
+#else
+    // float is approximately only 24 bit precise, use double
+    const double blockSAD_sq = double(blockSAD) * (blockSAD);
+    return (int)((double)(1 << DEGRAIN_WEIGHT_BITS)*(thSAD_sq - blockSAD_sq) / (thSAD_sq + blockSAD_sq));
+#endif
 }
 
 template<int level>

@@ -42,19 +42,45 @@
 template<int level>
 Denoise1to6Function* MVDegrainX<level>::get_denoise123_function(int BlockX, int BlockY, int _pixelsize, bool _lsb_flag, int _level, arch_t arch)
 #else
-Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY, int _pixelsize, bool _lsb_flag, int _level, arch_t arch)
+Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY, int _bits_per_pixel, bool _lsb_flag, int _level, arch_t arch)
 #endif
 {
+  const int _pixelsize = _bits_per_pixel == 8 ? 1 : (bits_per_pixel <= 16 ? 2 : 4);
   //---------- DENOISE/DEGRAIN
-  // BlkSizeX, BlkSizeY, pixelsize, lsb_flag, level_of_MDegrain, arch_t
-  std::map<std::tuple<int, int, int, bool, int, arch_t>, Denoise1to6Function*> func_degrain;
+  const int DEGRAIN_TYPE_8BIT = 1;
+  const int DEGRAIN_TYPE_8BIT_STACKED = 2;
+  const int DEGRAIN_TYPE_10to14BIT = 4;
+  const int DEGRAIN_TYPE_16BIT = 8;
+  const int DEGRAIN_TYPE_10to16BIT = DEGRAIN_TYPE_10to14BIT + DEGRAIN_TYPE_16BIT;
+  const int DEGRAIN_TYPE_32BIT = 16;
+  // BlkSizeX, BlkSizeY, degrain_type, level_of_MDegrain, arch_t
+  std::map<std::tuple<int, int, int, int, arch_t>, Denoise1to6Function*> func_degrain;
   using std::make_tuple;
 
-// level 1-6, 8bit C, 8bit lsb C, 16 bit C (same for all, no blocksize templates)
+  int type_to_search;
+  if (_bits_per_pixel == 8) {
+    if (lsb_flag)
+      type_to_search = DEGRAIN_TYPE_8BIT_STACKED;
+    else
+      type_to_search = DEGRAIN_TYPE_8BIT;
+  }
+  else if (_bits_per_pixel <= 14)
+    type_to_search = DEGRAIN_TYPE_10to14BIT;
+  else if (_bits_per_pixel == 16)
+    type_to_search = DEGRAIN_TYPE_16BIT;
+  else if (_bits_per_pixel == 32)
+    type_to_search = DEGRAIN_TYPE_32BIT;
+  else
+    return nullptr;
+
+
+  // level 1-6, 8bit C, 8bit lsb C, 16 bit C (same for all, no blocksize templates)
 #define MAKE_FN_LEVEL(x, y, level) \
-func_degrain[make_tuple(x, y, 1, false, level, NO_SIMD)] = Degrain1to6_C<uint8_t, false, level>; \
-func_degrain[make_tuple(x, y, 1, true, level, NO_SIMD)] = Degrain1to6_C<uint8_t, true, level>; \
-func_degrain[make_tuple(x, y, 2, false, level, NO_SIMD)] = Degrain1to6_C<uint16_t, false, level>;
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT, level, NO_SIMD)] = Degrain1to6_C<uint8_t, false, level>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_STACKED, level, NO_SIMD)] = Degrain1to6_C<uint8_t, true, level>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_10to14BIT, level, NO_SIMD)] = Degrain1to6_C<uint16_t, false, level>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_16BIT, level, NO_SIMD)] = Degrain1to6_C<uint16_t, false, level>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_32BIT, level, NO_SIMD)] = Degrain1to6_float_C<level>;
 #define MAKE_FN(x, y) \
 MAKE_FN_LEVEL(x,y,1) \
 MAKE_FN_LEVEL(x,y,2) \
@@ -99,30 +125,40 @@ MAKE_FN_LEVEL(x,y,6)
     MAKE_FN(8, 8)
     MAKE_FN(8, 4)
     MAKE_FN(8, 2)
-    MAKE_FN(8, 1)
-    MAKE_FN(6, 24)
-    MAKE_FN(6, 12)
-    MAKE_FN(6, 6)
-    MAKE_FN(6, 3)
-    MAKE_FN(4, 8)
-    MAKE_FN(4, 4)
-    MAKE_FN(4, 2)
-    MAKE_FN(4, 1)
-    MAKE_FN(3, 6)
-    MAKE_FN(3, 3)
-    MAKE_FN(2, 4)
-    MAKE_FN(2, 2)
-    MAKE_FN(2, 1)
+MAKE_FN(8, 1)
+MAKE_FN(6, 24)
+MAKE_FN(6, 12)
+MAKE_FN(6, 6)
+MAKE_FN(6, 3)
+MAKE_FN(4, 8)
+MAKE_FN(4, 4)
+MAKE_FN(4, 2)
+MAKE_FN(4, 1)
+MAKE_FN(3, 6)
+MAKE_FN(3, 3)
+MAKE_FN(2, 4)
+MAKE_FN(2, 2)
+MAKE_FN(2, 1)
 #undef MAKE_FN
 #undef MAKE_FN_LEVEL
 
 // 8 bit sse2 degrain function (mmx is replaced with sse2 for x86 width 4)
 // and 16 bit SSE4 function
 // for no_template_by_y: special height==0 -> internally nHeight comes from variable (for C: both width and height is variable)
+//#define OLD_DEGRAIN16BIT
+#ifdef OLD_DEGRAIN16BIT
 #define MAKE_FN_LEVEL(x, y, level, yy) \
-func_degrain[make_tuple(x, y, 1, false, level, USE_SSE2)] = Degrain1to6_sse2<x, yy, false, level>; \
-func_degrain[make_tuple(x, y, 1, true, level, USE_SSE2)] = Degrain1to6_sse2<x, yy, true, level>; \
-func_degrain[make_tuple(x, y, 2, false, level, USE_SSE41)] = Degrain1to6_16_sse41<x, yy, level>;
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT, level, USE_SSE2)] = Degrain1to6_sse2<x, yy, false, level>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_STACKED, level, USE_SSE2)] = Degrain1to6_sse2<x, yy, true, level>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_10to14BIT, level, USE_SSE41)] = Degrain1to6_16_sse41_old<x, yy, level>;\
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_16BIT, level, USE_SSE41)] = Degrain1to6_16_sse41_old<x, yy, level>;
+#else
+#define MAKE_FN_LEVEL(x, y, level, yy) \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT, level, USE_SSE2)] = Degrain1to6_sse2<x, yy, false, level>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_STACKED, level, USE_SSE2)] = Degrain1to6_sse2<x, yy, true, level>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_10to14BIT, level, USE_SSE41)] = Degrain1to6_16_sse41<x, yy, level, true>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_16BIT, level, USE_SSE41)] = Degrain1to6_16_sse41<x, yy, level, false>;
+#endif
 
 #define MAKE_FN(x, y, yy) \
 MAKE_FN_LEVEL(x,y,1, yy) \
@@ -131,57 +167,57 @@ MAKE_FN_LEVEL(x,y,3, yy) \
 MAKE_FN_LEVEL(x,y,4, yy) \
 MAKE_FN_LEVEL(x,y,5, yy) \
 MAKE_FN_LEVEL(x,y,6, yy)
-    MAKE_FN(64, 64, 0)
-    MAKE_FN(64, 48, 0)
-    MAKE_FN(64, 32, 0)
-    MAKE_FN(64, 16, 0)
-    MAKE_FN(48, 64, 0)
-    MAKE_FN(48, 48, 0)
-    MAKE_FN(48, 24, 0)
-    MAKE_FN(48, 12, 0)
-    MAKE_FN(32, 64, 0)
-    MAKE_FN(32, 32, 0)
-    MAKE_FN(32, 24, 0)
-    MAKE_FN(32, 16, 0)
-    MAKE_FN(32, 8, 0)
-    MAKE_FN(24, 48, 0)
-    MAKE_FN(24, 32, 0)
-    MAKE_FN(24, 24, 0)
-    MAKE_FN(24, 12, 0)
-    MAKE_FN(24, 6, 0)
-    MAKE_FN(16, 64, 0)
-    MAKE_FN(16, 32, 0)
-    MAKE_FN(16, 16, 0)
-    MAKE_FN(16, 12, 0)
-    MAKE_FN(16, 8, 0)
-    MAKE_FN(16, 4, 4)
-    MAKE_FN(16, 2, 2)
-    MAKE_FN(16, 1, 1)
-    MAKE_FN(12, 48, 0)
-    MAKE_FN(12, 24, 0)
-    MAKE_FN(12, 16, 0)
-    MAKE_FN(12, 12, 0)
-    MAKE_FN(12, 6, 6)
-    MAKE_FN(12, 3, 3)
-    MAKE_FN(8, 32, 0)
-    MAKE_FN(8, 16, 0)
-    MAKE_FN(8, 8, 8)
-    MAKE_FN(8, 4, 4)
-    MAKE_FN(8, 2, 2)
-    MAKE_FN(8, 1, 1)
-    MAKE_FN(6, 24, 0)
-    MAKE_FN(6, 12, 0)
-    MAKE_FN(6, 6, 6)
-    MAKE_FN(6, 3, 3)
-    MAKE_FN(4, 8, 8)
-    MAKE_FN(4, 4, 4)
-    MAKE_FN(4, 2, 2)
-    MAKE_FN(4, 1, 1)
-    MAKE_FN(3, 6, 6)
-    MAKE_FN(3, 3, 3)
-    MAKE_FN(2, 4, 4)
-    MAKE_FN(2, 2, 2)
-    MAKE_FN(2, 1, 1)
+MAKE_FN(64, 64, 0)
+MAKE_FN(64, 48, 0)
+MAKE_FN(64, 32, 0)
+MAKE_FN(64, 16, 0)
+MAKE_FN(48, 64, 0)
+MAKE_FN(48, 48, 0)
+MAKE_FN(48, 24, 0)
+MAKE_FN(48, 12, 0)
+MAKE_FN(32, 64, 0)
+MAKE_FN(32, 32, 0)
+MAKE_FN(32, 24, 0)
+MAKE_FN(32, 16, 0)
+MAKE_FN(32, 8, 0)
+MAKE_FN(24, 48, 0)
+MAKE_FN(24, 32, 0)
+MAKE_FN(24, 24, 0)
+MAKE_FN(24, 12, 0)
+MAKE_FN(24, 6, 0)
+MAKE_FN(16, 64, 0)
+MAKE_FN(16, 32, 0)
+MAKE_FN(16, 16, 0)
+MAKE_FN(16, 12, 0)
+MAKE_FN(16, 8, 0)
+MAKE_FN(16, 4, 4)
+MAKE_FN(16, 2, 2)
+MAKE_FN(16, 1, 1)
+MAKE_FN(12, 48, 0)
+MAKE_FN(12, 24, 0)
+MAKE_FN(12, 16, 0)
+MAKE_FN(12, 12, 0)
+MAKE_FN(12, 6, 6)
+MAKE_FN(12, 3, 3)
+MAKE_FN(8, 32, 0)
+MAKE_FN(8, 16, 0)
+MAKE_FN(8, 8, 8)
+MAKE_FN(8, 4, 4)
+MAKE_FN(8, 2, 2)
+MAKE_FN(8, 1, 1)
+MAKE_FN(6, 24, 0)
+MAKE_FN(6, 12, 0)
+MAKE_FN(6, 6, 6)
+MAKE_FN(6, 3, 3)
+MAKE_FN(4, 8, 8)
+MAKE_FN(4, 4, 4)
+MAKE_FN(4, 2, 2)
+MAKE_FN(4, 1, 1)
+MAKE_FN(3, 6, 6)
+MAKE_FN(3, 3, 3)
+MAKE_FN(2, 4, 4)
+MAKE_FN(2, 2, 2)
+MAKE_FN(2, 1, 1)
 #undef MAKE_FN
 #undef MAKE_FN_LEVEL
 
@@ -191,7 +227,7 @@ MAKE_FN_LEVEL(x,y,6, yy)
   while (result == nullptr) {
     arch_t current_arch_try = archlist[index++];
     if (current_arch_try > arch) continue;
-    result = func_degrain[make_tuple(BlockX, BlockY, _pixelsize, _lsb_flag, _level, current_arch_try)];
+    result = func_degrain[make_tuple(BlockX, BlockY, type_to_search, _level, current_arch_try)];
     if (result == nullptr && current_arch_try == NO_SIMD)
       break;
   }
@@ -325,8 +361,8 @@ MVDegrainX::MVDegrainX(
   thSADC = sad_t(thSADC / 255.0 * ((1 << bits_per_pixel) - 1));
   */
   // todo: use it, for spare one multiplication in weighting func
-  thSADpow2 = thSAD * thSAD;
-  thSADCpow2 = thSADC * thSADC;
+  thSAD_sq= (double)thSAD * thSAD;
+  thSADC_sq = (double)thSADC * thSADC;
 
   // get parameters of prepared super clip - v2.0
   SuperParams64Bits params;
@@ -355,10 +391,11 @@ MVDegrainX::MVDegrainX(
 
   if (lsb_flag && (pixelsize != 1 || pixelsize_super != 1))
     env_ptr->ThrowError("MDegrainX : lsb_flag only for 8 bit sources");
-
+  /* allow super clip format different of that from vector clip
   if (bits_per_pixel_super != bits_per_pixel) {
     env_ptr->ThrowError("MDegrainX : clip and super clip have different bit depths");
   }
+  */
 
   if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
   {
@@ -373,7 +410,7 @@ MVDegrainX::MVDegrainX(
     OverWinsUV = new OverlapWindows(nBlkSizeX >> nLogxRatioUV, nBlkSizeY >> nLogyRatioUV, nOverlapX >> nLogxRatioUV, nOverlapY >> nLogyRatioUV);
     if (lsb_flag || pixelsize_super > 1)
     {
-      DstInt = (int *)_aligned_malloc(dstIntPitch * nHeight * sizeof(int), 32); 
+      DstInt = (int *)_aligned_malloc(dstIntPitch * nHeight * sizeof(int), 32); // also for float sizeof(int)==sizeof(float)
     }
     else
     {
@@ -408,16 +445,19 @@ MVDegrainX::MVDegrainX(
   OVERSLUMA16 = get_overlaps_function(nBlkSizeX, nBlkSizeY, sizeof(uint16_t), arch);
   OVERSCHROMA16 = get_overlaps_function(nBlkSizeX >> nLogxRatioUV, nBlkSizeY >> nLogyRatioUV, sizeof(uint16_t), arch);
 
-  DEGRAINLUMA = get_denoise123_function(nBlkSizeX, nBlkSizeY, pixelsize_super, lsb_flag, level, arch);
-  DEGRAINCHROMA = get_denoise123_function(nBlkSizeX >> nLogxRatioUV, nBlkSizeY >> nLogyRatioUV, pixelsize_super, lsb_flag, level, arch);
+  OVERSLUMA32 = get_overlaps_function(nBlkSizeX, nBlkSizeY, sizeof(float), arch);
+  OVERSCHROMA32 = get_overlaps_function(nBlkSizeX >> nLogxRatioUV, nBlkSizeY >> nLogyRatioUV, sizeof(float), arch);
+
+  DEGRAINLUMA = get_denoise123_function(nBlkSizeX, nBlkSizeY, bits_per_pixel_super, lsb_flag, level, arch);
+  DEGRAINCHROMA = get_denoise123_function(nBlkSizeX >> nLogxRatioUV, nBlkSizeY >> nLogyRatioUV, bits_per_pixel_super, lsb_flag, level, arch);
   if (!OVERSLUMA)
-    env_ptr->ThrowError("MDegrain%d : no valid OVERSLUMA function for %dx%d, pixelsize=%d, lsb_flag=%d, level=%d", level, nBlkSizeX, nBlkSizeY, pixelsize_super, (int)lsb_flag, level);
+    env_ptr->ThrowError("MDegrain%d : no valid OVERSLUMA function for %dx%d, bitsperpixel=%d, lsb_flag=%d, level=%d", level, nBlkSizeX, nBlkSizeY, bits_per_pixel_super, (int)lsb_flag, level);
   if (!OVERSCHROMA)
-    env_ptr->ThrowError("MDegrain%d : no valid OVERSCHROMA function for %dx%d, pixelsize=%d, lsb_flag=%d, level=%d", level, nBlkSizeX, nBlkSizeY, pixelsize_super, (int)lsb_flag, level);
+    env_ptr->ThrowError("MDegrain%d : no valid OVERSCHROMA function for %dx%d, bitsperpixel=%d, lsb_flag=%d, level=%d", level, nBlkSizeX, nBlkSizeY, bits_per_pixel_super, (int)lsb_flag, level);
   if (!DEGRAINLUMA)
-    env_ptr->ThrowError("MDegrain%d : no valid DEGRAINLUMA function for %dx%d, pixelsize=%d, lsb_flag=%d, level=%d", level, nBlkSizeX, nBlkSizeY, pixelsize_super, (int)lsb_flag, level);
+    env_ptr->ThrowError("MDegrain%d : no valid DEGRAINLUMA function for %dx%d, bitsperpixel=%d, lsb_flag=%d, level=%d", level, nBlkSizeX, nBlkSizeY, bits_per_pixel_super, (int)lsb_flag, level);
   if (!DEGRAINCHROMA)
-    env_ptr->ThrowError("MDegrain%d : no valid DEGRAINCHROMA function for %dx%d, pixelsize=%d, lsb_flag=%d, level=%d", level, nBlkSizeX, nBlkSizeY, pixelsize_super, (int)lsb_flag, level);
+    env_ptr->ThrowError("MDegrain%d : no valid DEGRAINCHROMA function for %dx%d, bitsperpixel=%d, lsb_flag=%d, level=%d", level, nBlkSizeX, nBlkSizeY, bits_per_pixel_super, (int)lsb_flag, level);
 
 #ifndef LEVEL_IS_TEMPLATE
   switch (level) {
@@ -450,8 +490,10 @@ MVDegrainX::MVDegrainX(
   {
     if (pixelsize_super == 1)
       LimitFunction = LimitChanges_c<uint8_t>;
-    else
+    else if(pixelsize_super == 2)
       LimitFunction = LimitChanges_c<uint16_t>;
+    /*else
+      LimitFunction = LimitChanges_float_c;*/
   }
 
 
@@ -788,7 +830,7 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
       int *pDstInt = DstInt;
       const int tmpPitch = nBlkSizeX;
 
-      if (lsb_flag || pixelsize_super == 2)
+      if (lsb_flag || pixelsize_super >= 2) // also for 32 bit float
       {
         MemZoneSet(reinterpret_cast<unsigned char*>(pDstInt), 0,
           nWidth_B * sizeof(int), nHeight_B, 0, 0, dstIntPitch * sizeof(int));
@@ -840,7 +882,12 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
             OVERSLUMA(pDstShort + xx, dstShortPitch, tmpBlock, tmpPitch, winOver, nBlkSizeX);
           }
           else if (pixelsize_super == 2) {
+            // cast to match the prototype
             OVERSLUMA16((uint16_t *)(pDstInt + xx), dstIntPitch, tmpBlock, tmpPitch << pixelsize_super_shift, winOver, nBlkSizeX);
+          }
+          else if (pixelsize_super == 4) {
+            // cast to match the prototype
+            OVERSLUMA32((uint16_t *)((float *)pDstInt + xx), dstIntPitch, tmpBlock, tmpPitch << pixelsize_super_shift, winOver, nBlkSizeX);
           }
 
           xx += (nBlkSizeX - nOverlapX);
@@ -863,8 +910,11 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
       }
       else if (pixelsize_super == 2)
       {
-        Short2Bytes_Int32toWord16((uint16_t *)(pDst[0]), nDstPitches[0], DstInt, dstIntPitch, nWidth_B, nHeight_B, bits_per_pixel_super);
-        //Short2Bytes_Int32toWord16_sse4((uint16_t *)(pDst[0]), nDstPitches[0], DstInt, dstIntPitch, nWidth_B, nHeight_B, bits_per_pixel_super);
+        /* why not using? same speed as optimized C?
+        if ((cpuFlags & CPUF_SSE4_1) != 0)
+          Short2Bytes_Int32toWord16_sse4((uint16_t *)(pDst[0]), nDstPitches[0], DstInt, dstIntPitch, nWidth_B, nHeight_B, bits_per_pixel_super);
+        else*/
+          Short2Bytes_Int32toWord16((uint16_t *)(pDst[0]), nDstPitches[0], DstInt, dstIntPitch, nWidth_B, nHeight_B, bits_per_pixel_super);
       }
       else if (pixelsize_super == 4)
       {
@@ -1067,7 +1117,13 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
           }
           else if (pixelsize_super == 2)
           {
+            // cast to match the prototype
             OVERSCHROMA16((uint16_t*)(pDstInt + xx), dstIntPitch, tmpBlock, tmpPitch << pixelsize_super_shift, winOverUV, nBlkSizeX >> nLogxRatioUV);
+          }
+          else //if (pixelsize_super == 4)
+          {
+            // cast to match the prototype
+            OVERSCHROMA32((uint16_t*)((float *)pDstInt + xx), dstIntPitch, tmpBlock, tmpPitch << pixelsize_super_shift, winOverUV, nBlkSizeX >> nLogxRatioUV);
           }
 
           xx += ((nBlkSizeX - nOverlapX) >> nLogxRatioUV); // no pixelsize here
@@ -1092,8 +1148,11 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
       }
       else if (pixelsize_super == 2)
       { 
+        /* why not using? same speed as optimized C?
+        if ((cpuFlags & CPUF_SSE4_1) != 0)
+          Short2Bytes_Int32toWord16_sse4((uint16_t *)(pDst), nDstPitch, DstInt, dstIntPitch, nWidth_B >> nLogxRatioUV, nHeight_B >> nLogyRatioUV, bits_per_pixel_super);
+        else */
         Short2Bytes_Int32toWord16((uint16_t *)(pDst), nDstPitch, DstInt, dstIntPitch, nWidth_B >> nLogxRatioUV, nHeight_B >> nLogyRatioUV, bits_per_pixel_super);
-        //Short2Bytes_Int32toWord16_sse4((uint16_t *)(pDst), nDstPitch, DstInt, dstIntPitch, nWidth_B >> nLogxRatioUV, nHeight_B >> nLogyRatioUV, bits_per_pixel_super);
       }
       else if (pixelsize_super == 4)
       {
@@ -1137,10 +1196,11 @@ MV_FORCEINLINE void	MVDegrainX::use_block_y(const BYTE * &p, int &np, int &WRef,
     p = pPlane->GetPointer(blx, bly);
     np = pPlane->GetPitch();
     sad_t blockSAD = block.GetSAD(); // SAD of MV Block. Scaled to MVClip's bits_per_pixel;
-    WRef = DegrainWeight(thSAD, blockSAD);
+    WRef = DegrainWeight(thSAD, thSAD_sq, blockSAD);
   }
   else
   {
+    // just to point on a valid area. It'll be read in code but its weight will be zero, anyway.
     p = pSrcCur + xx; // xx here:byte offset
     np = nSrcPitch;
     WRef = 0;
@@ -1163,7 +1223,7 @@ MV_FORCEINLINE void	MVDegrainX::use_block_uv(const BYTE * &p, int &np, int &WRef
     p = pPlane->GetPointer(blx >> nLogxRatioUV, bly >> nLogyRatioUV); // pixelsize - aware
     np = pPlane->GetPitch();
     sad_t blockSAD = block.GetSAD();  // SAD of MV Block. Scaled to MVClip's bits_per_pixel;
-    WRef = DegrainWeight(thSADC, blockSAD);
+    WRef = DegrainWeight(thSADC, thSADC_sq, blockSAD);
   }
   else
   {
@@ -1178,7 +1238,8 @@ MV_FORCEINLINE void	MVDegrainX::use_block_uv(const BYTE * &p, int &np, int &WRef
 template<int level>
 MV_FORCEINLINE void	norm_weights(int &WSrc, int(&WRefB)[MAX_DEGRAIN], int(&WRefF)[MAX_DEGRAIN])
 {
-  WSrc = 256;
+  constexpr int DEGRAIN_WMAX = 1 << DEGRAIN_WEIGHT_BITS;
+  WSrc = DEGRAIN_WMAX;
   int WSum;
   if constexpr(level == 6)
     WSum = WRefB[0] + WRefF[0] + WSrc + WRefB[1] + WRefF[1] + WRefB[2] + WRefF[2] + WRefB[3] + WRefF[3] + WRefB[4] + WRefF[4] + WRefB[5] + WRefF[5] + 1;
@@ -1192,40 +1253,41 @@ MV_FORCEINLINE void	norm_weights(int &WSrc, int(&WRefB)[MAX_DEGRAIN], int(&WRefF
     WSum = WRefB[0] + WRefF[0] + WSrc + WRefB[1] + WRefF[1] + 1;
   else if constexpr(level == 1)
     WSum = WRefB[0] + WRefF[0] + WSrc + 1;
-  WRefB[0] = WRefB[0] * 256 / WSum; // normalize weights to 256
-  WRefF[0] = WRefF[0] * 256 / WSum;
+  WRefB[0] = WRefB[0] * DEGRAIN_WMAX / WSum; // normalize weights to 256
+  WRefF[0] = WRefF[0] * DEGRAIN_WMAX / WSum;
   if constexpr(level >= 2) {
-    WRefB[1] = WRefB[1] * 256 / WSum; // normalize weights to 256
-    WRefF[1] = WRefF[1] * 256 / WSum;
+    WRefB[1] = WRefB[1] * DEGRAIN_WMAX / WSum; // normalize weights to 256
+    WRefF[1] = WRefF[1] * DEGRAIN_WMAX / WSum;
   }
   if constexpr(level >= 3) {
-    WRefB[2] = WRefB[2] * 256 / WSum; // normalize weights to 256
-    WRefF[2] = WRefF[2] * 256 / WSum;
+    WRefB[2] = WRefB[2] * DEGRAIN_WMAX / WSum; // normalize weights to 256
+    WRefF[2] = WRefF[2] * DEGRAIN_WMAX / WSum;
   }
   if constexpr(level >= 4) {
-    WRefB[3] = WRefB[3] * 256 / WSum; // normalize weights to 256
-    WRefF[3] = WRefF[3] * 256 / WSum;
+    WRefB[3] = WRefB[3] * DEGRAIN_WMAX / WSum; // normalize weights to 256
+    WRefF[3] = WRefF[3] * DEGRAIN_WMAX / WSum;
   }
   if constexpr(level >= 5) {
-    WRefB[4] = WRefB[4] * 256 / WSum; // normalize weights to 256
-    WRefF[4] = WRefF[4] * 256 / WSum;
+    WRefB[4] = WRefB[4] * DEGRAIN_WMAX / WSum; // normalize weights to 256
+    WRefF[4] = WRefF[4] * DEGRAIN_WMAX / WSum;
   }
   if constexpr(level >= 6) {
     WRefB[5] = WRefB[5] * 256 / WSum; // normalize weights to 256
     WRefF[5] = WRefF[5] * 256 / WSum;
   }
+  // make sure sum is DEGRAIN_WMAX
   if constexpr(level == 6)
-    WSrc = 256 - WRefB[0] - WRefF[0] - WRefB[1] - WRefF[1] - WRefB[2] - WRefF[2] - WRefB[3] - WRefF[3] - WRefB[4] - WRefF[4] - WRefB[5] - WRefF[5];
+    WSrc = DEGRAIN_WMAX - WRefB[0] - WRefF[0] - WRefB[1] - WRefF[1] - WRefB[2] - WRefF[2] - WRefB[3] - WRefF[3] - WRefB[4] - WRefF[4] - WRefB[5] - WRefF[5];
   else if constexpr(level == 5)
-    WSrc = 256 - WRefB[0] - WRefF[0] - WRefB[1] - WRefF[1] - WRefB[2] - WRefF[2] - WRefB[3] - WRefF[3] - WRefB[4] - WRefF[4];
+    WSrc = DEGRAIN_WMAX - WRefB[0] - WRefF[0] - WRefB[1] - WRefF[1] - WRefB[2] - WRefF[2] - WRefB[3] - WRefF[3] - WRefB[4] - WRefF[4];
   else if constexpr(level == 4)
-    WSrc = 256 - WRefB[0] - WRefF[0] - WRefB[1] - WRefF[1] - WRefB[2] - WRefF[2] - WRefB[3] - WRefF[3];
+    WSrc = DEGRAIN_WMAX - WRefB[0] - WRefF[0] - WRefB[1] - WRefF[1] - WRefB[2] - WRefF[2] - WRefB[3] - WRefF[3];
   else if constexpr(level == 3)
-    WSrc = 256 - WRefB[0] - WRefF[0] - WRefB[1] - WRefF[1] - WRefB[2] - WRefF[2];
+    WSrc = DEGRAIN_WMAX - WRefB[0] - WRefF[0] - WRefB[1] - WRefF[1] - WRefB[2] - WRefF[2];
   else if constexpr(level == 2)
-    WSrc = 256 - WRefB[0] - WRefF[0] - WRefB[1] - WRefF[1];
+    WSrc = DEGRAIN_WMAX - WRefB[0] - WRefF[0] - WRefB[1] - WRefF[1];
   else if constexpr(level == 1)
-    WSrc = 256 - WRefB[0] - WRefF[0];
+    WSrc = DEGRAIN_WMAX - WRefB[0] - WRefF[0];
 }
 
 #ifdef LEVEL_IS_TEMPLATE

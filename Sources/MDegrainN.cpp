@@ -518,6 +518,8 @@ MDegrainN::MDegrainN(
     const int		d = k / 2 + 1;
     c_info._thsad = ClipFnc::interpolate_thsad(thsad, thsad2, d, _trad);
     c_info._thsadc = ClipFnc::interpolate_thsad(thsadc, thsadc2, d, _trad);
+    c_info._thsad_sq = double(c_info._thsad) * double(c_info._thsad);
+    c_info._thsadc_sq = double(c_info._thsadc) * double(c_info._thsadc);
   }
 
   const int nSuperWidth = vi_super.width;
@@ -630,8 +632,10 @@ MDegrainN::MDegrainN(
   {
     if (pixelsize_super == 1)
       LimitFunction = LimitChanges_c<uint8_t>;
-    else
+    if (pixelsize_super == 2)
       LimitFunction = LimitChanges_c<uint16_t>;
+    /*else
+      LimitFunction = LimitChanges_float_c;*/
   }
 
   //---------- end of functions
@@ -1555,7 +1559,7 @@ void	MDegrainN::use_block_y(
     p = plane_ptr->GetPointer(blx, bly);
     np = plane_ptr->GetPitch();
     const sad_t block_sad = block.GetSAD(); // SAD of MV Block. Scaled to MVClip's bits_per_pixel;
-    wref = DegrainWeight(c_info._thsad, block_sad);
+    wref = DegrainWeight(c_info._thsad, c_info._thsad_sq, block_sad);
   }
   else
   {
@@ -1580,10 +1584,11 @@ void	MDegrainN::use_block_uv(
     p = plane_ptr->GetPointer(blx >> _xratiouv_log, bly >> _yratiouv_log);
     np = plane_ptr->GetPitch();
     const sad_t block_sad = block.GetSAD(); // SAD of MV Block. Scaled to MVClip's bits_per_pixel;
-    wref = DegrainWeight(c_info._thsadc, block_sad);
+    wref = DegrainWeight(c_info._thsadc, c_info._thsadc_sq, block_sad);
   }
   else
   {
+    // just to have a valid data pointer, will not count, weight is zero
     p = src_ptr + xx; // done: kill  >> _xratiouv_log from here and put it in the caller like in MDegrainX
     np = src_pitch;
     wref = 0;

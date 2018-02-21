@@ -66,6 +66,8 @@ private:
     SharedPtr <MVGroupOfFrames> _gof_sptr;
     sad_t _thsad;
     sad_t _thsadc;
+    double _thsad_sq;
+    double _thsadc_sq;
   };
   typedef std::vector <MvClipInfo> MvClipArray;
 
