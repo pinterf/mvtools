@@ -65,7 +65,7 @@ OverlapWindows::OverlapWindows(int _nx, int _ny, int _ox, int _oy)
 	   }
 	   for (int i=nx-ox; i<nx; i++)
 	   {
-			fWin1UVx[i] = float (cos(PI*(i-nx+ox+0.5f)/(ox*2)));
+      fWin1UVx[i] = float (cos(PI*(i-nx+ox+0.5f)/(ox*2)));
 			fWin1UVx[i] = fWin1UVx[i]*fWin1UVx[i];// right window (falled cosine)
 			fWin1UVxfirst[i] = fWin1UVx[i]; // very first window
 			fWin1UVxlast[i] = 1; // very last
@@ -76,7 +76,7 @@ OverlapWindows::OverlapWindows(int _nx, int _ny, int _ox, int _oy)
 	   fWin1UVylast = new float[ny];
 	   for (int i=0; i<oy; i++)
 	   {
-			fWin1UVy[i] = float (cos(PI*(i-oy+0.5f)/(oy*2)));
+			fWin1UVy[i] = float (cos(PI*(i-oy+0.5f)/(oy*2))); // -3.5 -2.5 -1.5 -0.5 / 2*4
 			fWin1UVy[i] = fWin1UVy[i]*fWin1UVy[i];// left window (rised cosine)
 			fWin1UVyfirst[i] = 1; // very first window
 			fWin1UVylast[i] = fWin1UVy[i]; // very last
@@ -89,7 +89,7 @@ OverlapWindows::OverlapWindows(int _nx, int _ny, int _ox, int _oy)
 	   }
 	   for (int i=ny-oy; i<ny; i++)
 	   {
-			fWin1UVy[i] = float (cos(PI*(i-ny+oy+0.5f)/(oy*2)));
+			fWin1UVy[i] = float (cos(PI*(i-ny+oy+0.5f)/(oy*2))); // 0.5 1.5 2.5 3.5 / 2*4
 			fWin1UVy[i] = fWin1UVy[i]*fWin1UVy[i];// right window (falled cosine)
 			fWin1UVyfirst[i] = fWin1UVy[i]; // very first window
 			fWin1UVylast[i] = 1; // very last
@@ -112,15 +112,15 @@ OverlapWindows::OverlapWindows(int _nx, int _ny, int _ox, int _oy)
 	   {
 		   for (int i=0; i<nx; i++)
 		   {
-			   winOverUVTL[i] = (int)(fWin1UVyfirst[j]*fWin1UVxfirst[i]*2048 + 0.5f);
-			   winOverUVTM[i] = (int)(fWin1UVyfirst[j]*fWin1UVx[i]*2048 + 0.5f);
-			   winOverUVTR[i] = (int)(fWin1UVyfirst[j]*fWin1UVxlast[i]*2048 + 0.5f);
-			   winOverUVML[i] = (int)(fWin1UVy[j]*fWin1UVxfirst[i]*2048 + 0.5f);
-			   winOverUVMM[i] = (int)(fWin1UVy[j]*fWin1UVx[i]*2048 + 0.5f);
-			   winOverUVMR[i] = (int)(fWin1UVy[j]*fWin1UVxlast[i]*2048 + 0.5f);
-			   winOverUVBL[i] = (int)(fWin1UVylast[j]*fWin1UVxfirst[i]*2048 + 0.5f);
-			   winOverUVBM[i] = (int)(fWin1UVylast[j]*fWin1UVx[i]*2048 + 0.5f);
-			   winOverUVBR[i] = (int)(fWin1UVylast[j]*fWin1UVxlast[i]*2048 + 0.5f);
+         winOverUVTL[i] = (int)(fWin1UVyfirst[j]*fWin1UVxfirst[i]*2048 + 0.5f); // Top Left
+			   winOverUVTM[i] = (int)(fWin1UVyfirst[j]*fWin1UVx[i]*2048 + 0.5f);      // Top Middle
+			   winOverUVTR[i] = (int)(fWin1UVyfirst[j]*fWin1UVxlast[i]*2048 + 0.5f);  // Top Right
+			   winOverUVML[i] = (int)(fWin1UVy[j]*fWin1UVxfirst[i]*2048 + 0.5f);      // Middle Left
+			   winOverUVMM[i] = (int)(fWin1UVy[j]*fWin1UVx[i]*2048 + 0.5f);           // Middle Middle
+			   winOverUVMR[i] = (int)(fWin1UVy[j]*fWin1UVxlast[i]*2048 + 0.5f);       // Middle Right
+			   winOverUVBL[i] = (int)(fWin1UVylast[j]*fWin1UVxfirst[i]*2048 + 0.5f);  // Bottom Left
+			   winOverUVBM[i] = (int)(fWin1UVylast[j]*fWin1UVx[i]*2048 + 0.5f);       // Bottom Middle
+			   winOverUVBR[i] = (int)(fWin1UVylast[j]*fWin1UVxlast[i]*2048 + 0.5f);   // Bottom Right
 		   }
 		   winOverUVTL += nx;
 		   winOverUVTM += nx;
@@ -145,21 +145,17 @@ OverlapWindows::~OverlapWindows()
 	delete [] fWin1UVylast;
 }
 
+// v2.7.25 Let's round 1<<4
+// Earlier there is >>6 with an originally +256 rounding during the calculation of an overlapped block
+// The +256 rounding is not fine, though the asm code also contained a +256 rounding, so there must be a reason somewhere.
+// Here originally there was no rounding at all
+// So instead of: Sum((overlapped + 256)>>6) >> 5
+// So we do: (Sum((overlapped + 32) >> 6) + 16) >> 5
 void Short2Bytes_sse2(unsigned char *pDst, int nDstPitch, unsigned short *pDstShort, int dstShortPitch, int nWidth, int nHeight)
 {
-  /*
-  for (int h=0; h<nHeight; h++)
-  {
-    for (int i=0; i<nWidth; i++)
-    {
-      int a = (pDstShort[i])>>5;
-      pDst[i] = min(255, a); // PF everyone can understand it
-    }
-    pDst += nDstPitch;
-    pDstShort += dstShortPitch;
-  }
-  */
-
+  // v.2.7.25-: round 16 here, round 32 earlier. See comments in C
+  const int rounder_i = 1 << 4;
+  auto rounder = _mm_set1_epi16(rounder_i);
   const int nSrcPitch = dstShortPitch * sizeof(short); // back to byte size
   BYTE *pSrc8 = reinterpret_cast<BYTE *>(pDstShort);
   BYTE *pDst8 = reinterpret_cast<BYTE *>(pDst);
@@ -171,8 +167,10 @@ void Short2Bytes_sse2(unsigned char *pDst, int nDstPitch, unsigned short *pDstSh
                                             // 2*4 int -> 8 uint16_t
       __m128i src07 = _mm_loadu_si128((__m128i *)(pSrc8 + x*2)); // 8 short pixels
       __m128i src8f = _mm_loadu_si128((__m128i *)(pSrc8 + x*2 + 16)); // 8 short pixels
-      __m128i res07 = _mm_srai_epi16(src07, 5); // shift and limit
-      __m128i res8f = _mm_srai_epi16(src8f, 5); // shift and limit
+      // total shift is 11: 6+5. Shift 6 is already done, we shift the rest 5. See 6+5
+      // round, shift and limit
+      __m128i res07 = _mm_srai_epi16(_mm_add_epi16(src07, rounder), 5);
+      __m128i res8f = _mm_srai_epi16(_mm_add_epi16(src8f, rounder), 5);
       __m128i res = _mm_packus_epi16(res07, res8f);
       _mm_store_si128((__m128i *)(pDst8 + x), res);
     }
@@ -183,7 +181,7 @@ void Short2Bytes_sse2(unsigned char *pDst, int nDstPitch, unsigned short *pDstSh
       _mm_storel_epi64((__m128i *)(pDst8 + wMod16), res);
     }
     for (int x = wMod8; x < nWidth; x++) {
-      int a = (reinterpret_cast<unsigned short *>(pSrc8)[x]) >> 5;
+      int a = (reinterpret_cast<unsigned short *>(pSrc8)[x] + rounder_i) >> 5;
       pDst8[x] = min(255, a);
     }
     pDst8 += nDstPitch;
@@ -197,8 +195,8 @@ void Short2Bytes(unsigned char *pDst, int nDstPitch, unsigned short *pDstShort, 
 	{
 		for (int i=0; i<nWidth; i++)
 		{
-			int a = (pDstShort[i])>>5;
-      pDst[i] = min(255, a); // PF everyone can understand it
+			int a = (pDstShort[i] + (1<<4)) >> 5; // pWin was of scale 11 bits, >> 6 was already done in overlaps
+      pDst[i] = min(255, a);
 		}
 		pDst += nDstPitch;
 		pDstShort += dstShortPitch;
@@ -207,18 +205,19 @@ void Short2Bytes(unsigned char *pDst, int nDstPitch, unsigned short *pDstShort, 
 
 void Short2BytesLsb(unsigned char *pDst, unsigned char *pDstLsb, int nDstPitch, int *pDstInt, int dstIntPitch, int nWidth, int nHeight)
 {
-	for (int h=0; h<nHeight; h++)
-	{
-		for (int i=0; i<nWidth; i++)
-		{
-			const int		a = pDstInt [i] >> (5+6);
-			pDst [i] = a >> 8;
-			pDstLsb [i] = (unsigned char) (a);
-		}
-		pDst += nDstPitch;
-		pDstLsb += nDstPitch;
-		pDstInt += dstIntPitch;
-	}
+  for (int h = 0; h < nHeight; h++)
+  {
+    for (int i = 0; i < nWidth; i++)
+    {
+      // origin: overlap windows have 11 bits precision
+      const int		a = (pDstInt[i] + (1 << 10)) >> 11; // v2.7.25 round
+      pDst[i] = a >> 8;
+      pDstLsb[i] = (unsigned char)(a);
+    }
+    pDst += nDstPitch;
+    pDstLsb += nDstPitch;
+    pDstInt += dstIntPitch;
+  }
 }
 
 // better name: Int to uint16
@@ -229,9 +228,9 @@ void Short2Bytes_Int32toWord16(uint16_t *pDst, int nDstPitch, int *pDstInt, int 
   {
     for (int i=0; i<nWidth; i++)
     {
-      //const int		a = (pDstInt [i] + (1 << 10)) >> (5+6); //scale back do we need 1<<10 round?)
-      const int		a = pDstInt [i] >> (5+6); //scale back
-      pDst [i] = min(a, max_pixel_value); // no need 8*shift
+      // origin: overlap windows have 11 bits precision
+      const int		a = (pDstInt [i] + (1 << 10)) >> 11; // v2.7.25 round
+      pDst [i] = min(a, max_pixel_value);
     }
     pDst += nDstPitch/sizeof(uint16_t);
     pDstInt += dstIntPitch; // this pitch is int granularity
@@ -242,21 +241,11 @@ void Short2Bytes_Int32toWord16_sse4(uint16_t *pDst, int nDstPitch, int *pDstInt,
 {
   typedef uint16_t pixel_t;
   const int max_pixel_value = (1 << bits_per_pixel) - 1;
-  /*
-  for (int h=0; h<nHeight; h++)
-  {
-    for (int i=0; i<nWidth; i++)
-    {
-      const int		a = pDstInt [i] >> (5+6); //scale back
-      pDst [i] = min(a, max_pixel_value); // no need 8*shift
-    }
-    pDst += nDstPitch/sizeof(uint16_t);
-    pDstInt += dstIntPitch; // this pitch is int granularity
-  }
-  */
+
   __m128i limits, limits16;
-  limits = _mm_set1_epi32(max_pixel_value);
   limits16 = _mm_set1_epi16(max_pixel_value);
+  // origin: overlap windows have 11 bits precision
+  auto rounder = _mm_set1_epi32(1 << 10);
 
   // pDstInt is 16 byte granularity -> pitch is 64 bytes aligned
   const int nSrcPitch = dstIntPitch * sizeof(int); // back to byte size
@@ -271,10 +260,10 @@ void Short2Bytes_Int32toWord16_sse4(uint16_t *pDst, int nDstPitch, int *pDstInt,
       // 2*4 int -> 8 uint16_t
       __m128i src03 = _mm_loadu_si128((__m128i *)(pSrc8 + x*2)); // 4 int pixels
       __m128i src47 = _mm_loadu_si128((__m128i *)(pSrc8 + x*2 + 16)); // 4 int pixels
-      __m128i res03 = _mm_srai_epi32(src03, (5+6)); // shift and limit
-      __m128i res47 = _mm_srai_epi32(src47, (5+6)); // shift and limit
-      //__m128i res03 = _mm_min_epi32(_mm_srai_epi32(src03, (5+6)), limits); // shift and limit
-      //__m128i res47 = _mm_min_epi32(_mm_srai_epi32(src47, (5+6)), limits); // shift and limit
+      src03 = _mm_add_epi32(src03, rounder);
+      src47 = _mm_add_epi32(src47, rounder);
+      __m128i res03 = _mm_srai_epi32(src03, 11); // shift and limit
+      __m128i res47 = _mm_srai_epi32(src47, 11); // shift and limit
       __m128i res = _mm_packus_epi32(res03, res47); // sse4 int->uint16_t, already limiting to 65535
       res = _mm_min_epu16(res, limits16); // 10,12,14 bits can be lesser
       _mm_store_si128((__m128i *)(pDst8 + x), res);
@@ -291,11 +280,10 @@ void Short2Bytes_FloatInInt32ArrayToFloat(float *pDst, int nDstPitch, int *pDstI
   {
     for (int i=0; i<nWidth; i++)
     {
-      // const int		a = pDstInt [i] >> (5+6); float: no scale
-      pDst [i] = min(pDstIntF[i], 1.0f);
+      pDst[i] = pDstIntF[i]; // no clamp! min(pDstIntF[i], 1.0f);
     }
     pDst += nDstPitch/sizeof(float);
-    pDstInt += dstIntPitch; // this pitch is int/float (4 byte) granularity
+    pDstIntF += dstIntPitch; // this pitch is int/float (4 byte) granularity
   }
 }
 
@@ -540,7 +528,8 @@ OverlapsFunction *get_overlaps_function(int BlockX, int BlockY, int pixelsize, a
     using std::make_tuple;
     // define C for 8/16 bits
 #define MAKE_OVR_FN(x, y) func_overlaps[make_tuple(x, y, 1, NO_SIMD)] = Overlaps_C<uint8_t, x, y>; \
-func_overlaps[make_tuple(x, y, 2, NO_SIMD)] = Overlaps_C<uint16_t, x, y>;
+func_overlaps[make_tuple(x, y, 2, NO_SIMD)] = Overlaps_C<uint16_t, x, y>; \
+func_overlaps[make_tuple(x, y, 4, NO_SIMD)] = Overlaps_float_C<x, y>;
     // sad, copy, overlap, luma, should be the same list
     MAKE_OVR_FN(64, 64)
       MAKE_OVR_FN(64, 48)
@@ -638,7 +627,7 @@ func_overlaps[make_tuple(x, y, 2, NO_SIMD)] = Overlaps_C<uint16_t, x, y>;
     func_overlaps[make_tuple(4 , 2 , 1, USE_SSE2)] = Overlaps4x2_sse2;
     func_overlaps[make_tuple(2 , 4 , 1, USE_SSE2)] = Overlaps2x4_sse2;
     func_overlaps[make_tuple(2 , 2 , 1, USE_SSE2)] = Overlaps2x2_sse2;
-    
+
     // define sse4 for 16 bits
 #define MAKE_OVR_FN(x, y) func_overlaps[make_tuple(x, y, 2, USE_SSE41)] = Overlaps_sse4<uint16_t, x, y>;
     MAKE_OVR_FN(64, 64)
