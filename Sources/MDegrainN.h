@@ -143,6 +143,8 @@ private:
   OverlapsFunction *_overschroma_ptr;
   OverlapsFunction *_oversluma16_ptr;
   OverlapsFunction *_overschroma16_ptr;
+  OverlapsFunction *_oversluma32_ptr;
+  OverlapsFunction *_overschroma32_ptr;
   OverlapsLsbFunction *_oversluma_lsb_ptr;
   OverlapsLsbFunction *_overschroma_lsb_ptr;
   DenoiseNFunction *_degrainluma_ptr;

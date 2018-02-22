@@ -60,18 +60,25 @@ void DegrainN_C(
 
   else
   {
+    typedef typename std::conditional < sizeof(pixel_t) <= 2, int, float>::type target_t;
+    constexpr target_t rounder = (sizeof(pixel_t) <= 2) ? 128 : 0;
+    constexpr float scaleback = 1.0f / (1 << DEGRAIN_WEIGHT_BITS);
+
     // Wall: 8 bit. rounding: 128
     for (int h = 0; h < blockHeight; ++h)
     {
       for (int x = 0; x < blockWidth; ++x)
       {
-        int val = reinterpret_cast<const pixel_t *>(pSrc)[x] * Wall[0] + 128;
+        target_t val = reinterpret_cast<const pixel_t *>(pSrc)[x] * (target_t)Wall[0] + rounder;
         for (int k = 0; k < trad; ++k)
         {
-          val += reinterpret_cast<const pixel_t *>(pRef[k * 2])[x] * Wall[k * 2 + 1]
-            + reinterpret_cast<const pixel_t *>(pRef[k * 2 + 1])[x] * Wall[k * 2 + 2];
+          val += reinterpret_cast<const pixel_t *>(pRef[k * 2])[x] * (target_t)Wall[k * 2 + 1]
+            + reinterpret_cast<const pixel_t *>(pRef[k * 2 + 1])[x] * (target_t)Wall[k * 2 + 2];
         }
-        reinterpret_cast<pixel_t *>(pDst)[x] = val >> 8;
+        if constexpr(sizeof(pixel_t) <= 2)
+          reinterpret_cast<pixel_t *>(pDst)[x] = val >> 8; // 8-16bit
+        else
+          reinterpret_cast<pixel_t *>(pDst)[x] = val * scaleback; // 32bit float
       }
 
       pDst += nDstPitch;
@@ -195,6 +202,7 @@ void DegrainN_sse2(
 
   if (lsb_flag)
   {
+    // no rounding
     const __m128i	m = _mm_set1_epi16(255);
 
     for (int h = 0; h < blockHeight; ++h)
@@ -246,7 +254,7 @@ void DegrainN_sse2(
 
   else
   {
-    const __m128i	o = _mm_set1_epi16(128);
+    const __m128i	o = _mm_set1_epi16(128); // rounding
 
     for (int h = 0; h < blockHeight; ++h)
     {
@@ -419,6 +427,8 @@ MDegrainN::MDegrainN(
   , _overschroma_ptr(0)
   , _oversluma16_ptr(0)
   , _overschroma16_ptr(0)
+  , _oversluma32_ptr(0)
+  , _overschroma32_ptr(0)
   , _oversluma_lsb_ptr(0)
   , _overschroma_lsb_ptr(0)
   , _degrainluma_ptr(0)
@@ -536,10 +546,11 @@ MDegrainN::MDegrainN(
 
   if(lsb_flag && (pixelsize != 1 || pixelsize_super != 1))
     env_ptr->ThrowError("MDegrainN : lsb_flag only for 8 bit sources");
-
+  /* 2.7.25- allow e.g. float clip with 8 or 16 bit vectors
   if (bits_per_pixel_super != bits_per_pixel) {
     env_ptr->ThrowError("MDegrainN : clip and super clip have different bit depths");
   }
+  */
 
   if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !_planar_flag)
   {
@@ -558,10 +569,10 @@ MDegrainN::MDegrainN(
       new OverlapWindows(nBlkSizeX, nBlkSizeY, nOverlapX, nOverlapY)
       );
     _overwins_uv = std::unique_ptr <OverlapWindows>(new OverlapWindows(
-      nBlkSizeX >> _xratiouv_log, nBlkSizeY >> _yratiouv_log, // PF 2->xratiouv
+      nBlkSizeX >> _xratiouv_log, nBlkSizeY >> _yratiouv_log,
       nOverlapX >> _xratiouv_log, nOverlapY >> _yratiouv_log
     ));
-    if (_lsb_flag || pixelsize_super > 1) // PF or pixelsize?
+    if (_lsb_flag || pixelsize_super > 1)
     {
       _dst_int.resize(_dst_int_pitch * nHeight);
     }
@@ -601,6 +612,9 @@ MDegrainN::MDegrainN(
   _oversluma16_ptr = get_overlaps_function(nBlkSizeX, nBlkSizeY, sizeof(uint16_t), arch);
   _overschroma16_ptr = get_overlaps_function(nBlkSizeX >> nLogxRatioUV, nBlkSizeY >> nLogyRatioUV, sizeof(uint16_t), arch);
 
+  _oversluma32_ptr = get_overlaps_function(nBlkSizeX, nBlkSizeY, sizeof(float), arch);
+  _overschroma32_ptr = get_overlaps_function(nBlkSizeX >> nLogxRatioUV, nBlkSizeY >> nLogyRatioUV, sizeof(float), arch);
+
   _degrainluma_ptr = get_denoiseN_function(nBlkSizeX, nBlkSizeY, pixelsize_super, arch);
   _degrainchroma_ptr = get_denoiseN_function(nBlkSizeX / xRatioUV, nBlkSizeY / yRatioUV, pixelsize_super, arch);
 
@@ -621,11 +635,14 @@ MDegrainN::MDegrainN(
   {
     if (pixelsize_super == 1)
       LimitFunction = LimitChanges_sse2_new<uint8_t, 0>;
-    else { // pixelsize_super == 2
+    else if (pixelsize_super == 2) { // pixelsize_super == 2
       if ((_cpuFlags & CPUF_SSE4_1) != 0)
         LimitFunction = LimitChanges_sse2_new<uint16_t, 1>;
       else
         LimitFunction = LimitChanges_sse2_new<uint16_t, 0>;
+    }
+    else {
+      LimitFunction = LimitChanges_float_c; // no SSE2
     }
   }
   else
@@ -634,8 +651,8 @@ MDegrainN::MDegrainN(
       LimitFunction = LimitChanges_c<uint8_t>;
     if (pixelsize_super == 2)
       LimitFunction = LimitChanges_c<uint16_t>;
-    /*else
-      LimitFunction = LimitChanges_float_c;*/
+    else
+      LimitFunction = LimitChanges_float_c;
   }
 
   //---------- end of functions
@@ -1316,6 +1333,9 @@ void	MDegrainN::process_luma_overlap_slice(int y_beg, int y_end)
       else if (pixelsize_super == 2) {
         _oversluma16_ptr((uint16_t *)(pDstInt + xx), _dst_int_pitch, &tmp_block._d[0], tmpPitch*pixelsize_super, winOver, nBlkSizeX);
       }
+      else { // pixelsize_super == 4
+        _oversluma32_ptr((uint16_t *)(pDstInt + xx), _dst_int_pitch, &tmp_block._d[0], tmpPitch*pixelsize_super, winOver, nBlkSizeX);
+      }
 
       xx += nBlkSizeX - nOverlapX;
     } // for bx
@@ -1533,6 +1553,13 @@ void	MDegrainN::process_chroma_overlap_slice(int y_beg, int y_end)
           &tmp_block._d[0], tmpPitch*pixelsize_super, 
           winOverUV, nBlkSizeX >> _xratiouv_log);
       }
+      else // if (pixelsize_super == 4)
+      {
+        _overschroma32_ptr(
+          (uint16_t*)(pDstInt + xx), _dst_int_pitch,
+          &tmp_block._d[0], tmpPitch*pixelsize_super,
+          winOverUV, nBlkSizeX >> _xratiouv_log);
+      }
 
       xx += ((nBlkSizeX - nOverlapX) >> nLogxRatioUV); // no pixelsize here
 
@@ -1601,7 +1628,9 @@ void	MDegrainN::norm_weights(int wref_arr[], int trad)
 {
   const int nbr_frames = trad * 2 + 1;
 
-  wref_arr[0] = 256;
+  const int one = 1 << DEGRAIN_WEIGHT_BITS; // 8 bit, 256
+
+  wref_arr[0] = one;
   int wsum = 1;
   for (int k = 0; k < nbr_frames; ++k)
   {
@@ -1609,10 +1638,10 @@ void	MDegrainN::norm_weights(int wref_arr[], int trad)
   }
 
   // normalize weights to 256
-  int wsrc = 256;
+  int wsrc = one;
   for (int k = 1; k < nbr_frames; ++k)
   {
-    const int norm = wref_arr[k] * 256 / wsum;
+    const int norm = wref_arr[k] * one / wsum;
     wref_arr[k] = norm;
     wsrc -= norm;
   }
