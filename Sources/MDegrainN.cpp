@@ -962,12 +962,18 @@ MDegrainN::~MDegrainN()
       }
     }	// overlap - end
 
-    if (_nlimit < (1 << bits_per_pixel_super) - 1)
+    if (_nlimit < 255)
     {
+      // limit is 0-255 relative, for any bit depth
+      float realLimit;
+      if (pixelsize_super <= 2)
+        realLimit = float(_nlimit << (bits_per_pixel_super - 8));
+      else
+        realLimit = (float)_nlimit / 255.0f;
       LimitFunction(_dst_ptr_arr[0], _dst_pitch_arr[0],
         _src_ptr_arr[0], _src_pitch_arr[0],
         nWidth, nHeight,
-        _nlimit
+        realLimit
       );
     }
   }
@@ -1134,12 +1140,18 @@ void	MDegrainN::process_chroma(int plane_mask)
       }
     } // overlap - end
 
-    if (_nlimitc < (1 << bits_per_pixel_super) - 1)
+    if (_nlimitc < 255)
     {
+      // limit is 0-255 relative, for any bit depth
+      float realLimitc;
+      if (pixelsize_super <= 2)
+        realLimitc = float(_nlimitc << (bits_per_pixel_super - 8));
+      else
+        realLimitc = (float)_nlimitc / 255.0f;
       LimitFunction(_dst_ptr_arr[P], _dst_pitch_arr[P],
         _src_ptr_arr[P], _src_pitch_arr[P],
         nWidth >> _xratiouv_log, nHeight >> _yratiouv_log,
-        _nlimitc
+        realLimitc
       );
     }
   }

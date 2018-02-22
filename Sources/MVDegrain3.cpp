@@ -479,12 +479,14 @@ MVDegrainX::MVDegrainX(
   {
     if (pixelsize_super == 1)
       LimitFunction = LimitChanges_sse2_new<uint8_t, 0>;
-    else { // pixelsize_super == 2
+    else if (pixelsize_super == 2) {
       if ((cpuFlags & CPUF_SSE4_1) != 0)
         LimitFunction = LimitChanges_sse2_new<uint16_t, 1>;
       else
         LimitFunction = LimitChanges_sse2_new<uint16_t, 0>;
     }
+    else
+      LimitFunction = LimitChanges_float_c; // no SSE2
   }
   else
   {
@@ -492,8 +494,8 @@ MVDegrainX::MVDegrainX(
       LimitFunction = LimitChanges_c<uint8_t>;
     else if(pixelsize_super == 2)
       LimitFunction = LimitChanges_c<uint16_t>;
-    /*else
-      LimitFunction = LimitChanges_float_c;*/
+    else
+      LimitFunction = LimitChanges_float_c;
   }
 
 
@@ -934,9 +936,16 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
       }
     }	// overlap - end
 
-    if (nLimit < (1 << bits_per_pixel_super) - 1)
+    if (nLimit < 255)
     {
-      LimitFunction(pDst[0], nDstPitches[0], pSrc[0], nSrcPitches[0], nWidth, nHeight, nLimit);
+      // limit is 0-255 relative, for any bit depth
+      float realLimit;
+      if (pixelsize_super <= 2)
+        realLimit = float(nLimit << (bits_per_pixel_super - 8));
+      else
+        realLimit = (float)nLimit / 255.0f;
+
+      LimitFunction(pDst[0], nDstPitches[0], pSrc[0], nSrcPitches[0], nWidth, nHeight, realLimit);
     }
   }
 
@@ -1172,9 +1181,15 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
       }
     }	// overlap - end
 
-    if (nLimitC < (1 << bits_per_pixel_super) - 1)
+    if (nLimitC < 255)
     {
-        LimitFunction(pDst, nDstPitch, pSrc, nSrcPitch, nWidth >> nLogxRatioUV, nHeight >> nLogyRatioUV, nLimitC);
+      // limit is 0-255 relative, for any bit depth
+      float realLimitc;
+      if (pixelsize_super <= 2)
+        realLimitc = float(nLimitC << (bits_per_pixel_super - 8));
+      else
+        realLimitc = (float)nLimitC / 255.0f;
+      LimitFunction(pDst, nDstPitch, pSrc, nSrcPitch, nWidth >> nLogxRatioUV, nHeight >> nLogyRatioUV, realLimitc);
     }
   }
 }

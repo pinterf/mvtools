@@ -491,8 +491,7 @@ AVSValue __cdecl Create_MVDegrainX(AVSValue args, void* user_data, IScriptEnviro
 
   int bits_per_pixel = args[0].AsClip()->GetVideoInfo().BitsPerComponent();
 
-  // bit-depth adaptive limit
-	int limit = args[limit_param_index+param_index_shift].AsInt((1 << bits_per_pixel) - 1); // limit. was: 255 for 8 bit
+	int limit = args[limit_param_index+param_index_shift].AsInt(255); // change limit. 2.7.25-: use 255 as default for all bit depth
 #ifdef LEVEL_IS_TEMPLATE
   switch (level) {
   case 1:
@@ -619,7 +618,7 @@ AVSValue __cdecl Create_MDegrainN (AVSValue args, void* , IScriptEnvironment* en
 	const int      thSADC  = args [5].AsInt (thSAD);   // thSADC
   int bits_per_pixel = args[0].AsClip()->GetVideoInfo().BitsPerComponent();
   // bit-depth adaptive limit
-  const int limit = args[7].AsInt((1 << bits_per_pixel) - 1); // limit. was: 255 for 8 bit
+  const int limit = args[7].AsInt(255); // change limit. 2.7.25-: use 255 as default for all bit depth
 	const int		thSAD2  = args [14].AsInt (thSAD);  // thSAD2
 	const int		thSADC2 = args [15].AsInt (thSADC); // thSADC2
 

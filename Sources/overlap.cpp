@@ -315,8 +315,9 @@ __forceinline __m128i _MM_MAX_EPU16(__m128i x, __m128i y)
 
 // MVDegrains-a.asm ported to intrinsics + 16 bit PF 161002
 template<typename pixel_t, bool hasSSE41>
-void LimitChanges_sse2_new(unsigned char *pDst8, int nDstPitch, const unsigned char *pSrc8, int nSrcPitch, const int nWidth, int nHeight, int nLimit)
+void LimitChanges_sse2_new(unsigned char *pDst8, int nDstPitch, const unsigned char *pSrc8, int nSrcPitch, const int nWidth, int nHeight, float nLimit_f)
 {
+  const int nLimit = (int)nLimit_f;
   __m128i limits;
   if (sizeof(pixel_t) == 1)
     limits = _mm_set1_epi8(nLimit);
@@ -357,8 +358,9 @@ void LimitChanges_sse2_new(unsigned char *pDst8, int nDstPitch, const unsigned c
 
 
 template<typename pixel_t>
-void LimitChanges_c(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, int nLimit)
+void LimitChanges_c(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, float nLimit_f)
 {
+  const int nLimit = (int)nLimit_f;
 	for (int h=0; h<nHeight; h++)
 	{
 		for (int i=0; i<nWidth; i++)
@@ -369,25 +371,24 @@ void LimitChanges_c(unsigned char *pDst, int nDstPitch, const unsigned char *pSr
 	}
 }
 
-void LimitChanges_float_c(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, float nLimit)
+void LimitChanges_float_c(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, float nLimit_f)
 {
-  typedef float pixel_t;
   for (int h=0; h<nHeight; h++)
   {
     for (int i=0; i<nWidth; i++)
-      reinterpret_cast<pixel_t *>(pDst)[i] = 
-      (pixel_t)clamp(reinterpret_cast<pixel_t *>(pDst)[i], (reinterpret_cast<const pixel_t *>(pSrc)[i]-nLimit), (reinterpret_cast<const pixel_t *>(pSrc)[i]+nLimit));
+      reinterpret_cast<float *>(pDst)[i] = 
+        clamp(reinterpret_cast<float *>(pDst)[i], (reinterpret_cast<const float *>(pSrc)[i]-nLimit_f), (reinterpret_cast<const float *>(pSrc)[i]+nLimit_f));
     pDst += nDstPitch;
     pSrc += nSrcPitch;
   }
 }
 
 // if a non-static template function is in cpp, we have to instantiate it
-template void LimitChanges_c<uint8_t>(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, int nLimit);
-template void LimitChanges_c<uint16_t>(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, int nLimit);
-template void LimitChanges_sse2_new<uint8_t,0>(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, int nLimit);
-template void LimitChanges_sse2_new<uint16_t,0>(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, int nLimit);
-template void LimitChanges_sse2_new<uint16_t,1>(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, int nLimit);
+template void LimitChanges_c<uint8_t>(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, float nLimit);
+template void LimitChanges_c<uint16_t>(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, float nLimit);
+template void LimitChanges_sse2_new<uint8_t,0>(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, float nLimit);
+template void LimitChanges_sse2_new<uint16_t,0>(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, float nLimit);
+template void LimitChanges_sse2_new<uint16_t,1>(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, float nLimit);
 
 template <typename pixel_t, int blockWidth, int blockHeight>
 // pDst is short* for 8 bit, int * for 16 bit
@@ -410,12 +411,12 @@ void Overlaps_sse4(unsigned short *pDst0, int nDstPitch, const unsigned char *pS
     __m128i dst;
     __m128i win, src;
 
-    if (sizeof(pixel_t) == 1) {
+    if constexpr(sizeof(pixel_t) == 1) {
       assert(0); // not implemented
     }
-    else if (sizeof(pixel_t) == 2)
+    else if constexpr(sizeof(pixel_t) == 2)
     {
-      if (blockWidth == 4) // half of 1x16 byte
+      if constexpr(blockWidth == 4) // half of 1x16 byte
       {
         win = _mm_loadl_epi64(reinterpret_cast<__m128i *>(pWin)); // 4x16 short: Window
         src = _mm_loadl_epi64(reinterpret_cast<const __m128i *>(pSrc)); // 4x16 uint16_t: source pixels
@@ -426,7 +427,7 @@ void Overlaps_sse4(unsigned short *pDst0, int nDstPitch, const unsigned char *pS
         _mm_storeu_si128(reinterpret_cast<__m128i *>(pDst), dst);
 
       }
-      else if (blockWidth == 8) // exact 1x16 byte
+      else if constexpr(blockWidth == 8) // exact 1x16 byte
       {
         win = _mm_loadu_si128(reinterpret_cast<__m128i *>(pWin)); // 8x16 short: Window
         src = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pSrc)); // 8x16 uint16_t: source pixels
@@ -441,7 +442,7 @@ void Overlaps_sse4(unsigned short *pDst0, int nDstPitch, const unsigned char *pS
         dst = _mm_add_epi32(dst, reshi);
         _mm_storeu_si128(reinterpret_cast<__m128i *>(pDst + 4), dst);
       }
-      else if (blockWidth == 16) // 2x16 byte: 2x8 pixels
+      else if constexpr(blockWidth == 16) // 2x16 byte: 2x8 pixels
       {
         win = _mm_loadu_si128(reinterpret_cast<__m128i *>(pWin)); // 8x16 short: Window
         src = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pSrc)); // 8x16 uint16_t: source pixels
@@ -470,7 +471,7 @@ void Overlaps_sse4(unsigned short *pDst0, int nDstPitch, const unsigned char *pS
         dst = _mm_add_epi32(dst, reshi);
         _mm_storeu_si128(reinterpret_cast<__m128i *>(pDst + 8 + 4), dst);
       }
-      else if ((blockWidth % (16 / sizeof(pixel_t))) == 0) {
+      else if constexpr((blockWidth % (16 / sizeof(pixel_t))) == 0) {
         for (int x = 0; x < blockWidth; x += 16 / sizeof(pixel_t)) {
           win = _mm_loadu_si128(reinterpret_cast<__m128i *>(pWin + x)); // 8x16 short: Window
           src = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pSrc + x * 2)); // 8x16 uint16_t: source pixels
@@ -486,7 +487,7 @@ void Overlaps_sse4(unsigned short *pDst0, int nDstPitch, const unsigned char *pS
           _mm_storeu_si128(reinterpret_cast<__m128i *>(pDst + x + 4), dst);
         }
       }
-      else if ((blockWidth % (8 / sizeof(pixel_t))) == 0) {
+      else if constexpr((blockWidth % (8 / sizeof(pixel_t))) == 0) {
         for (int x = 0; x < blockWidth; x += 8 / sizeof(pixel_t)) {
           win = _mm_loadl_epi64(reinterpret_cast<__m128i *>(pWin + x)); // 4x16 short: Window
           src = _mm_loadl_epi64(reinterpret_cast<const __m128i *>(pSrc + x * 2)); // 4x16 uint16_t: source pixels
@@ -502,16 +503,8 @@ void Overlaps_sse4(unsigned short *pDst0, int nDstPitch, const unsigned char *pS
       }
     } // pixel_t == 2
 
-    /*
-      for (int i=0; i<blockWidth; i++)
-      {
-        if(sizeof(pixel_t) == 1)
-          pDst[i] = ( pDst[i] + ((reinterpret_cast<const pixel_t *>(pSrc)[i]*pWin[i] + 256)>> 6)); // shift 5 in Short2Bytes<uint8_t> in overlap.cpp
-        else
-          pDst[i] = ( pDst[i] + ((reinterpret_cast<const pixel_t *>(pSrc)[i]*pWin[i]))); // shift (5+6); in Short2Bytes16
-                                                                                         // no shift 6
-      }
-      */
+    // pDst[i] = ( pDst[i] + ((reinterpret_cast<const pixel_t *>(pSrc)[i]*pWin[i])));
+
     pDst += nDstPitch;
     pSrc += nSrcPitch;
     pWin += nWinPitch;
