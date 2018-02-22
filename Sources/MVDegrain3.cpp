@@ -912,10 +912,9 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
       }
       else if (pixelsize_super == 2)
       {
-        /* why not using? same speed as optimized C?
         if ((cpuFlags & CPUF_SSE4_1) != 0)
           Short2Bytes_Int32toWord16_sse4((uint16_t *)(pDst[0]), nDstPitches[0], DstInt, dstIntPitch, nWidth_B, nHeight_B, bits_per_pixel_super);
-        else*/
+        else
           Short2Bytes_Int32toWord16((uint16_t *)(pDst[0]), nDstPitches[0], DstInt, dstIntPitch, nWidth_B, nHeight_B, bits_per_pixel_super);
       }
       else if (pixelsize_super == 4)
@@ -1157,11 +1156,10 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
       }
       else if (pixelsize_super == 2)
       { 
-        /* why not using? same speed as optimized C?
         if ((cpuFlags & CPUF_SSE4_1) != 0)
           Short2Bytes_Int32toWord16_sse4((uint16_t *)(pDst), nDstPitch, DstInt, dstIntPitch, nWidth_B >> nLogxRatioUV, nHeight_B >> nLogyRatioUV, bits_per_pixel_super);
-        else */
-        Short2Bytes_Int32toWord16((uint16_t *)(pDst), nDstPitch, DstInt, dstIntPitch, nWidth_B >> nLogxRatioUV, nHeight_B >> nLogyRatioUV, bits_per_pixel_super);
+        else
+          Short2Bytes_Int32toWord16((uint16_t *)(pDst), nDstPitch, DstInt, dstIntPitch, nWidth_B >> nLogxRatioUV, nHeight_B >> nLogyRatioUV, bits_per_pixel_super);
       }
       else if (pixelsize_super == 4)
       {
