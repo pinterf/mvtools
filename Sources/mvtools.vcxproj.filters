@@ -34,9 +34,6 @@
       <Filter>Doc</Filter>
     </None>
     <None Include="resource" />
-    <None Include="asm\nasm.inc">
-      <Filter>Assembler</Filter>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="mvtools.rc">
@@ -442,9 +439,6 @@
       <Filter>Assembler</Filter>
     </NASM>
     <NASM Include="asm\include\x86util.asm">
-      <Filter>Assembler</Filter>
-    </NASM>
-    <NASM Include="asm\Interpolation-a.asm">
       <Filter>Assembler</Filter>
     </NASM>
     <NASM Include="asm\Overlap-a.asm">
