@@ -43,15 +43,15 @@ class Interlocked
 /*\\\ PUBLIC \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
 public:
-
-	static conc_FORCEINLINE int32_t
+  // ? https ://stackoverflow.com/questions/10876930/should-one-never-use-static-inline-function
+	static /*conc_FORCEINLINE*/ int32_t
 						swap (int32_t volatile &dest, int32_t excg);
-	static conc_FORCEINLINE int32_t
+	static /*conc_FORCEINLINE*/ int32_t
 						cas (int32_t volatile &dest, int32_t excg, int32_t comp);
 
-	static conc_FORCEINLINE int64_t
+	static /*conc_FORCEINLINE*/ int64_t
 						swap (int64_t volatile &dest, int64_t excg);
-	static conc_FORCEINLINE int64_t
+	static /*conc_FORCEINLINE*/ int64_t
 						cas (int64_t volatile &dest, int64_t excg, int64_t comp);
 
 #if defined (conc_HAS_CAS_128)
@@ -59,9 +59,9 @@ public:
 	class Data128
 	{
 	public:
-		conc_FORCEINLINE bool
+		/*conc_FORCEINLINE*/ bool
 							operator == (const Data128 & other) const;
-		conc_FORCEINLINE bool
+		/*conc_FORCEINLINE*/ bool
 							operator != (const Data128 & other) const;
 							
 		uint8_t		_data [16];
@@ -72,9 +72,9 @@ public:
 
 #endif
 
-	static conc_FORCEINLINE void *
+	static /*conc_FORCEINLINE*/ void *
 						swap (void * volatile &dest_ptr, void *excg_ptr);
-	static conc_FORCEINLINE void *
+	static /*conc_FORCEINLINE*/ void *
 						cas (void * volatile &dest_ptr, void *excg_ptr, void *comp_ptr);
 
 
