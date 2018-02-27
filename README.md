@@ -15,6 +15,23 @@ http://avisynth.nl/index.php/AviSynth%2B#AviSynth.2B_x64_plugins
 
 Change log
 
+- 2.7.25 (20180227)
+  Fix: x64: not-cleared mmx state in MSuper assembly code would cause crash later, e.g. in x264 encoding, depending on following filters.
+  Fix: MSCDetection SC value parameter name to Ysc from Yth (must be an ancient typo), docs are OK, but the fix is mentioned in docs
+  MSuper: import 8 bit sse2 interpolators from mvtools-vs. Extend them for 10-16bits (faster super clip)
+          Some filters are still todo.
+  MSuper: support 32bit float clips, which can be used later by MDegrains (but not for MAnalyse)
+  MDegrains: allow degraining clip with different bit depth from vectors. Clip and Super must be the same bit depth
+  MDegrains: consistently use limit and limitC, 255 do nothing, otherwise scale 0-254 value to the current bit-depth range
+  Overlaps: more correct internal rounding for 8 bits:
+            old: pixel = Sum( (tmp + 256) >> 6) >> 5
+            new: pixel = (Sum( (tmp + 32) >> 6) + 16) >> 5
+  Overlaps: round for 16bits
+            old: pixel = Sum(tmp) >> 11
+            new: pixel = (Sum(tmp) + 1024) >> 11
+  Overlaps: 32bit float (but still use the original 11 bit window constants)
+  Project: change from yasm to nasm.
+
 - 2.7.24 (20171205)
   Fix: MFlowBlur: possible access violation crash when nPel>1</li>
   New: MScaleVect parameter 'bits'. e.g. Analyze 8 bit clips, use their vectors for 16 bits
