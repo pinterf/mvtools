@@ -348,6 +348,25 @@ MVDegrainX::MVDegrainX(
 
   const ::VideoInfo &	vi_super = _super->GetVideoInfo();
 
+  if (!vi.IsSameColorspace(_super->GetVideoInfo()))
+    env_ptr->ThrowError("MDegrain%d: source and super clip video format is different!",level);
+  if (!vi.IsY()) {
+    // This is not strictly necessary, because motion vectors original pixel format now can be 
+    // somewhat independent that of source/Super clip. Width, height, padding should match however.
+    // Todo: This could be done by replacing 
+    // nLogxRatioUV and nLogyRatioUV and xRatioUV and yRatioUV usage
+    // with the source/super clip's similar attributes and use them
+    //
+    if (_super->GetVideoInfo().GetPlaneHeightSubsampling(PLANAR_U) != nLogyRatioUV ||
+      _super->GetVideoInfo().GetPlaneWidthSubsampling(PLANAR_U) != nLogxRatioUV)
+      env_ptr->ThrowError("MDegrain%d: source clip and vectors: plane width or height subsampling is different!", level);
+  }
+  /* allow super clip format different of that from vector clip
+  if (bits_per_pixel_super != bits_per_pixel) {
+  env_ptr->ThrowError("MDegrainX : clip and super clip have different bit depths");
+  }
+  */
+
   //pixelsize and bits_per_pixel: in MVFilter, property of motion vectors
 
   pixelsize_super = vi_super.ComponentSize();
@@ -360,7 +379,8 @@ MVDegrainX::MVDegrainX(
   thSAD = sad_t(thSAD / 255.0 * ((1 << bits_per_pixel) - 1));
   thSADC = sad_t(thSADC / 255.0 * ((1 << bits_per_pixel) - 1));
   */
-  // todo: use it, for spare one multiplication in weighting func
+  // todo: use it, to spare one multiplication in weighting func.
+  // Done, see defined OLD_DEGRAINWEIGHT
   thSAD_sq= (double)thSAD * thSAD;
   thSADC_sq = (double)thSADC * thSADC;
 
@@ -384,18 +404,13 @@ MVDegrainX::MVDegrainX(
     || nHeight != vi.height
     || nWidth != nSuperWidth - nSuperHPad * 2
     || nWidth != vi.width
-    || nPel != nSuperPel)
+    || nPel != nSuperPel) // PF180227 why to check this one?
   {
     env_ptr->ThrowError("MDegrainX : wrong source or super frame size");
   }
 
   if (lsb_flag && (pixelsize != 1 || pixelsize_super != 1))
     env_ptr->ThrowError("MDegrainX : lsb_flag only for 8 bit sources");
-  /* allow super clip format different of that from vector clip
-  if (bits_per_pixel_super != bits_per_pixel) {
-    env_ptr->ThrowError("MDegrainX : clip and super clip have different bit depths");
-  }
-  */
 
   if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
   {
