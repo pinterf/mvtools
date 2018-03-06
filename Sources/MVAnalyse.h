@@ -20,120 +20,115 @@
 #ifndef __MV_ANALYSE__
 #define __MV_ANALYSE__
 
-#define	NOGDI
-#define	NOMINMAX
-#define	WIN32_LEAN_AND_MEAN
+#define NOGDI
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
 
-#include	"conc/ObjPool.h"
+#include "conc/ObjPool.h"
 #include "DCTFactory.h"
 #include "GroupOfPlanes.h"
 #include "MVAnalysisData.h"
 #include "yuy2planes.h"
 
 #include "Windows.h"
-#include	"avisynth.h"
+#include "avisynth.h"
 
-#include	<memory>
-#include	<vector>
+#include <memory>
+#include <vector>
 
 
 
 class MVAnalyse
-:	public GenericVideoFilter
+  : public GenericVideoFilter
 {
 protected:
 
   int _instance_id; // debug unique id
 
-	// One instance per Src/Ref combination
-	// Multi mode order (bwd/fwd delta): B1, F1, B2, F2, B3, F3...
-	// In single mode, only the first element is used.
-	class SrcRefData
-	{
-	public:
-	   MVAnalysisData _analysis_data;
-	   MVAnalysisData _analysis_data_divided;
+  // One instance per Src/Ref combination
+  // Multi mode order (bwd/fwd delta): B1, F1, B2, F2, B3, F3...
+  // In single mode, only the first element is used.
+  class SrcRefData
+  {
+  public:
+    MVAnalysisData _analysis_data;
+    MVAnalysisData _analysis_data_divided;
 
-		std::vector <int>
-							_vec_prev;
-		int				_vec_prev_frame;
-	};
+    std::vector<int> _vec_prev;
+    int _vec_prev_frame;
+  };
 
-	typedef	std::vector <SrcRefData>	SrcRefArray;
+  typedef std::vector<SrcRefData> SrcRefArray;
 
-	SrcRefArray		_srd_arr;
+  SrcRefArray _srd_arr;
 
-	/*! \brief Frames of blocks for which motion vectors will be computed */
-	std::unique_ptr <GroupOfPlanes>
-						_vectorfields_aptr;	// Temporary data, structure initialised once.
+  /*! \brief Frames of blocks for which motion vectors will be computed */
+  std::unique_ptr<GroupOfPlanes> _vectorfields_aptr; // Temporary data, structure initialised once.
 
-   /*! \brief isse optimisations enabled */
-	//bool isse;
+  /*! \brief isse optimisations enabled */
   int cpuFlags;
 
-   /*! \brief motion vecteur cost factor */
-   int nLambda;
+  /*! \brief motion vecteur cost factor */
+  int nLambda;
 
-   /*! \brief search type chosen for refinement in the EPZ */
-   SearchType searchType;
+  /*! \brief search type chosen for refinement in the EPZ */
+  SearchType searchType;
 
-   /*! \brief additionnal parameter for this search */
-	int nSearchParam; // usually search radius
+  /*! \brief additionnal parameter for this search */
+  int nSearchParam; // usually search radius
 
-	int nPelSearch; // search radius at finest level
+  int nPelSearch; // search radius at finest level
 
-	sad_t lsad; // SAD limit for lambda using - added by Fizick
-	int pnew; // penalty to cost for new canditate - added by Fizick
-	int plen; // penalty factor (similar to lambda) for vector length - added by Fizick
-	int plevel; // penalty factors (lambda, plen) level scaling - added by Fizick
-	bool global; // use global motion predictor
-	int pglobal; // penalty factor for global motion predictor
-	int pzero; // penalty factor for zero vector
-	const char* outfilename;// vectors output file
-	int divideExtra; // divide blocks on sublocks with median motion
-	sad_t badSAD; //  SAD threshold to make more wide search for bad vectors
-	int badrange;// range (radius) of wide search
-	bool meander; //meander (alternate) scan blocks (even row left to right, odd row right to left
-	bool tryMany; // try refine around many predictors
-	const bool     _multi_flag;
-	const bool     _temporal_flag;
-	const bool     _mt_flag;
+  sad_t lsad; // SAD limit for lambda using - added by Fizick
+  int pnew; // penalty to cost for new canditate - added by Fizick
+  int plen; // penalty factor (similar to lambda) for vector length - added by Fizick
+  int plevel; // penalty factors (lambda, plen) level scaling - added by Fizick
+  bool global; // use global motion predictor
+  int pglobal; // penalty factor for global motion predictor
+  int pzero; // penalty factor for zero vector
+  const char* outfilename;// vectors output file
+  int divideExtra; // divide blocks on sublocks with median motion
+  sad_t badSAD; //  SAD threshold to make more wide search for bad vectors
+  int badrange;// range (radius) of wide search
+  bool meander; //meander (alternate) scan blocks (even row left to right, odd row right to left
+  bool tryMany; // try refine around many predictors
+  const bool _multi_flag;
+  const bool _temporal_flag;
+  const bool _mt_flag;
 
-    int pixelsize; // PF
-    int bits_per_pixel; 
+  int pixelsize; // PF
+  int bits_per_pixel;
 
-	FILE *outfile;
-	short * outfilebuf;
+  FILE *outfile;
+  short * outfilebuf;
 
-//	YUY2Planes * SrcPlanes;
-//	YUY2Planes * RefPlanes;
+  //	YUY2Planes * SrcPlanes;
+  //	YUY2Planes * RefPlanes;
 
-	std::unique_ptr <DCTFactory>
-	               _dct_factory_ptr;	// Not instantiated if not needed
-	conc::ObjPool <DCTClass>
-	               _dct_pool;
+  std::unique_ptr<DCTFactory> _dct_factory_ptr; // Not instantiated if not needed
+  conc::ObjPool<DCTClass> _dct_pool;
 
-	int headerSize;
+  int headerSize;
 
-	MVGroupOfFrames *pSrcGOF, *pRefGOF; //v2.0. Temporary data, structure initialised once.
+  MVGroupOfFrames *pSrcGOF, *pRefGOF; //v2.0. Temporary data, structure initialised once.
 
-	int nModeYUV;
+  int nModeYUV;
 
-	int            _delta_max;
+  int _delta_max;
 
-public :
+public:
 
-	MVAnalyse (
-		PClip _child, int _blksizex, int _blksizey, int lv, int st, int stp,
-		int _pelSearch, bool isb, int lambda, bool chroma, int df, sad_t _lsad,
-		int _plevel, bool _global, int _pnew, int _pzero, int _pglobal,
-		int _overlapx, int _overlapy, const char* _outfilename, int _dctmode,
-		int _divide, int _sadx264, sad_t _badSAD, int _badrange, bool _isse,
-		bool _meander, bool temporal_flag, bool _tryMany, bool multi_flag,
-		bool mt_flag, int _chromaSADScale, IScriptEnvironment* env);
-	~MVAnalyse();
+  MVAnalyse(
+    PClip _child, int _blksizex, int _blksizey, int lv, int st, int stp,
+    int _pelSearch, bool isb, int lambda, bool chroma, int df, sad_t _lsad,
+    int _plevel, bool _global, int _pnew, int _pzero, int _pglobal,
+    int _overlapx, int _overlapy, const char* _outfilename, int _dctmode,
+    int _divide, int _sadx264, sad_t _badSAD, int _badrange, bool _isse,
+    bool _meander, bool temporal_flag, bool _tryMany, bool multi_flag,
+    bool mt_flag, int _chromaSADScale, IScriptEnvironment* env);
+  ~MVAnalyse();
 
-	::PVideoFrame __stdcall	GetFrame (int n, ::IScriptEnvironment* env);
+  ::PVideoFrame __stdcall	GetFrame(int n, ::IScriptEnvironment* env);
 
   int __stdcall SetCacheHints(int cachehints, int frame_range) override {
     return cachehints == CACHE_GET_MTMODE ? MT_MULTI_INSTANCE : 0;
@@ -141,7 +136,7 @@ public :
 
 private:
 
-	void				load_src_frame (MVGroupOfFrames &gof, ::PVideoFrame &src, const MVAnalysisData &ana_data);
+  void load_src_frame(MVGroupOfFrames &gof, ::PVideoFrame &src, const MVAnalysisData &ana_data);
 };
 
 #endif
