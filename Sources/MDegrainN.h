@@ -33,7 +33,7 @@ public:
     ::PClip child, ::PClip super, ::PClip mvmulti, int trad,
     sad_t thsad, sad_t thsadc, int yuvplanes, sad_t nlimit, sad_t nlimitc,
     sad_t nscd1, int nscd2, bool isse_flag, bool planar_flag, bool lsb_flag,
-    sad_t thsad2, sad_t thsadc2, bool mt_flag, ::IScriptEnvironment* env_ptr
+    sad_t thsad2, sad_t thsadc2, bool mt_flag, bool out16_flag, ::IScriptEnvironment* env_ptr
   );
   ~MDegrainN();
 
@@ -122,6 +122,7 @@ private:
   int _cpuFlags;
   const bool _planar_flag;
   const bool _lsb_flag;
+  const bool _out16_flag;
   const bool _mt_flag;
   int _height_lsb_mul;
   //int pixelsize, bits_per_pixel; // in MVFilter

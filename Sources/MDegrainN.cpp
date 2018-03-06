@@ -402,7 +402,7 @@ MDegrainN::MDegrainN(
   PClip child, PClip super, PClip mvmulti, int trad,
   sad_t thsad, sad_t thsadc, int yuvplanes, sad_t nlimit, sad_t nlimitc,
   sad_t nscd1, int nscd2, bool isse_flag, bool planar_flag, bool lsb_flag,
-  sad_t thsad2, sad_t thsadc2, bool mt_flag, IScriptEnvironment* env_ptr
+  sad_t thsad2, sad_t thsadc2, bool mt_flag, bool out16_flag, IScriptEnvironment* env_ptr
 )
   : GenericVideoFilter(child)
   , MVFilter(mvmulti, "MDegrainN", env_ptr, 1, 0)
@@ -415,6 +415,7 @@ MDegrainN::MDegrainN(
   , _planar_flag(planar_flag)
   , _lsb_flag(lsb_flag)
   , _mt_flag(mt_flag)
+  , _out16_flag(out16_flag)
   , _height_lsb_mul((lsb_flag) ? 2 : 1)
   , _xratiouv_log((xRatioUV == 2) ? 1 : 0)
   , _yratiouv_log((yRatioUV == 2) ? 1 : 0)
