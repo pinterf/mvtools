@@ -582,6 +582,7 @@ AVSValue __cdecl Create_MVDegrainX(AVSValue args, void* user_data, IScriptEnviro
         args[12+param_index_shift].AsBool(false), // planar
         args[13+param_index_shift].AsBool(false), // lsb
 		  args[14+param_index_shift].AsBool(true),  // mt
+      args[15 + param_index_shift].AsBool(false),  // out16
       level,
 		  env
 	  );

@@ -62,12 +62,18 @@ private:
   bool planar;
   bool lsb_flag;
   bool out16_flag; // native 16 bit out instead of fake lsb
-  int height_lsb_mul;
+  int height_lsb_or_out16_mul;
   //int pixelsize; // in MVFilter
   //int bits_per_pixel; // in MVFilter
+  
   int pixelsize_super; // PF not param, from create
   int bits_per_pixel_super; // PF not param, from create
   int pixelsize_super_shift;
+  
+  // 2.7.26
+  int pixelsize_output;
+  int bits_per_pixel_output;
+  int pixelsize_output_shift;
 
   int nSuperModeYUV;
 
@@ -135,12 +141,16 @@ private:
   MV_FORCEINLINE void	use_block_y(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch);
   MV_FORCEINLINE void	use_block_uv(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch);
   // static MV_FORCEINLINE void	norm_weights(int &WSrc, int &WRefB, int &WRefF, int &WRefB2, int &WRefF2, int &WRefB3, int &WRefF3);
-  Denoise1to6Function *get_denoise123_function(int BlockX, int BlockY, int _bits_per_pixel, bool _lsb_flag, int _level, arch_t _arch);
+  Denoise1to6Function *get_denoise123_function(int BlockX, int BlockY, int _bits_per_pixel, bool _lsb_flag, bool _out16_flag, int _level, arch_t _arch);
 };
 
 #pragma warning( push )
 #pragma warning( disable : 4101)
-template<typename pixel_t, bool lsb_flag, int level >
+  // out16_type: 
+  //   0: native 8 or 16
+  //   1: 8bit in, lsb
+  //   2: 8bit in, native16 out
+template<typename pixel_t, int out16_type, int level >
 void Degrain1to6_C(uint8_t *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPitch, const uint8_t *pSrc, int nSrcPitch,
   const uint8_t *pRefB[MAX_DEGRAIN], int BPitch[MAX_DEGRAIN], const uint8_t *pRefF[MAX_DEGRAIN], int FPitch[MAX_DEGRAIN],
   int WSrc,
@@ -151,6 +161,9 @@ void Degrain1to6_C(uint8_t *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
   // Use only one parameter
   const int blockWidth = (WidthHeightForC >> 16);
   const int blockHeight = (WidthHeightForC & 0xFFFF);
+
+  constexpr bool lsb_flag = (out16_type == 1);
+  constexpr bool out16 = (out16_type == 2);
 
   const bool no_need_round = lsb_flag;
   constexpr int rounder = no_need_round ? 0 : (1 << (DEGRAIN_WEIGHT_BITS - 1));
@@ -168,6 +181,10 @@ void Degrain1to6_C(uint8_t *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
           reinterpret_cast<uint8_t *>(pDst)[x] = val >> 8;
           pDstLsb[x] = val & 255;
         }
+        else if constexpr(out16) {
+          val = val >> (DEGRAIN_WEIGHT_BITS - 8); // zero shift at the momemt
+          reinterpret_cast<uint16_t *>(pDst)[x] = val;
+        }
         else {
           reinterpret_cast<pixel_t *>(pDst)[x] = val >> DEGRAIN_WEIGHT_BITS;
         }
@@ -181,6 +198,10 @@ void Degrain1to6_C(uint8_t *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
           val = val >> (DEGRAIN_WEIGHT_BITS - 8); // zero shift at the momemt
           reinterpret_cast<uint8_t *>(pDst)[x] = val >> 8;
           pDstLsb[x] = val & 255;
+        }
+        else if constexpr(out16) {
+          val = val >> (DEGRAIN_WEIGHT_BITS - 8); // zero shift at the momemt
+          reinterpret_cast<uint16_t *>(pDst)[x] = val;
         }
         else {
           reinterpret_cast<pixel_t *>(pDst)[x] = val >> DEGRAIN_WEIGHT_BITS;
@@ -197,6 +218,10 @@ void Degrain1to6_C(uint8_t *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
           reinterpret_cast<uint8_t *>(pDst)[x] = val >> 8;
           pDstLsb[x] = val & 255;
         }
+        else if constexpr(out16) {
+          val = val >> (DEGRAIN_WEIGHT_BITS - 8); // zero shift at the momemt
+          reinterpret_cast<uint16_t *>(pDst)[x] = val;
+        }
         else {
           reinterpret_cast<pixel_t *>(pDst)[x] = val >> DEGRAIN_WEIGHT_BITS;
         }
@@ -212,6 +237,10 @@ void Degrain1to6_C(uint8_t *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
           val = val >> (DEGRAIN_WEIGHT_BITS - 8); // zero shift at the momemt
           reinterpret_cast<uint8_t *>(pDst)[x] = val >> 8;
           pDstLsb[x] = val & 255;
+        }
+        else if constexpr(out16) {
+          val = val >> (DEGRAIN_WEIGHT_BITS - 8); // zero shift at the momemt
+          reinterpret_cast<uint16_t *>(pDst)[x] = val;
         }
         else {
           reinterpret_cast<pixel_t *>(pDst)[x] = val >> DEGRAIN_WEIGHT_BITS;
@@ -230,6 +259,10 @@ void Degrain1to6_C(uint8_t *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
           reinterpret_cast<uint8_t *>(pDst)[x] = val >> 8;
           pDstLsb[x] = val & 255;
         }
+        else if constexpr(out16) {
+          val = val >> (DEGRAIN_WEIGHT_BITS - 8); // zero shift at the momemt
+          reinterpret_cast<uint16_t *>(pDst)[x] = val;
+        }
         else {
           reinterpret_cast<pixel_t *>(pDst)[x] = val >> DEGRAIN_WEIGHT_BITS;
         }
@@ -247,6 +280,10 @@ void Degrain1to6_C(uint8_t *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
           val = val >> (DEGRAIN_WEIGHT_BITS - 8); // zero shift at the momemt
           reinterpret_cast<uint8_t *>(pDst)[x] = val >> 8;
           pDstLsb[x] = val & 255;
+        }
+        else if constexpr(out16) {
+          val = val >> (DEGRAIN_WEIGHT_BITS - 8); // zero shift at the momemt
+          reinterpret_cast<uint16_t *>(pDst)[x] = val;
         }
         else {
           reinterpret_cast<pixel_t *>(pDst)[x] = val >> DEGRAIN_WEIGHT_BITS;
@@ -643,7 +680,11 @@ void Degrain1to6_mmx(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPit
 
 #pragma warning( push )
 #pragma warning( disable : 4101)
-template<int blockWidth, int blockHeight, bool lsb_flag, int level >
+// out16_type: 
+//   0: native 8 or 16
+//   1: 8bit in, lsb
+//   2: 8bit in, native16 out
+template<int blockWidth, int blockHeight, int out16_type, int level>
 void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
   const BYTE *pRefB[MAX_DEGRAIN], int BPitch[MAX_DEGRAIN], const BYTE *pRefF[MAX_DEGRAIN], int FPitch[MAX_DEGRAIN],
   int WSrc,
@@ -652,6 +693,9 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
   // avoid unnecessary templates for larger heights
   const int blockHeightParam = (WidthHeightForC & 0xFFFF);
   const int realBlockHeight = blockHeight == 0 ? blockHeightParam : blockHeight;
+
+  constexpr bool lsb_flag = (out16_type == 1);
+  constexpr bool out16 = (out16_type == 2);
 
   __m128i z = _mm_setzero_si128();
   __m128i ws = _mm_set1_epi16(WSrc);
@@ -684,7 +728,7 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
     }
   }
 
-  if constexpr(lsb_flag)
+  if constexpr(lsb_flag || out16)
   {
     __m128i m = _mm_set1_epi16(255);
     for (int h = 0; h < realBlockHeight; h++)
@@ -759,56 +803,104 @@ void Degrain1to6_sse2(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
                 _mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[0] + x)), z), wf1)));
         }
 
-        if constexpr(blockWidth == 12) {
-          // 8 from the first, 4 from the second cycle
-          if (x == 0) { // 1st 8 bytes
+        if constexpr(lsb_flag) {
+          if constexpr(blockWidth == 12) {
+            // 8 from the first, 4 from the second cycle
+            if (x == 0) { // 1st 8 bytes
+              _mm_storel_epi64((__m128i*)(pDst + x), _mm_packus_epi16(_mm_srli_epi16(val, 8), z));
+              _mm_storel_epi64((__m128i*)(pDstLsb + x), _mm_packus_epi16(_mm_and_si128(val, m), z));
+            }
+            else { // 2nd 4 bytes
+              *(uint32_t *)(pDst + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_srli_epi16(val, 8), z));
+              *(uint32_t *)(pDstLsb + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_and_si128(val, m), z));
+            }
+          }
+          else if constexpr(blockWidth >= 8) {
+            // 8, 16, 24, ....
             _mm_storel_epi64((__m128i*)(pDst + x), _mm_packus_epi16(_mm_srli_epi16(val, 8), z));
             _mm_storel_epi64((__m128i*)(pDstLsb + x), _mm_packus_epi16(_mm_and_si128(val, m), z));
           }
-          else { // 2nd 4 bytes
+          else if constexpr(blockWidth == 6) {
+            // x is always 0
+            // 4+2 bytes
+            __m128i upper = _mm_packus_epi16(_mm_srli_epi16(val, 8), z);
+            __m128i lower = _mm_packus_epi16(_mm_and_si128(val, m), z);
+            *(uint32_t *)(pDst + x) = _mm_cvtsi128_si32(upper);
+            *(uint32_t *)(pDstLsb + x) = _mm_cvtsi128_si32(lower);
+            *(uint16_t *)(pDst + x + 4) = (uint16_t)_mm_cvtsi128_si32(_mm_srli_si128(upper, 4));
+            *(uint16_t *)(pDstLsb + x + 4) = (uint16_t)_mm_cvtsi128_si32(_mm_srli_si128(lower, 4));
+          }
+          else if constexpr(blockWidth == 4) {
+            // x is always 0
             *(uint32_t *)(pDst + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_srli_epi16(val, 8), z));
             *(uint32_t *)(pDstLsb + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_and_si128(val, m), z));
           }
-        } else if constexpr(blockWidth >= 8) {
-          // 8, 16, 24, ....
-          _mm_storel_epi64((__m128i*)(pDst + x), _mm_packus_epi16(_mm_srli_epi16(val, 8), z));
-          _mm_storel_epi64((__m128i*)(pDstLsb + x), _mm_packus_epi16(_mm_and_si128(val, m), z));
-        } else if constexpr(blockWidth == 6) {
-          // x is always 0
-          // 4+2 bytes
-          __m128i upper = _mm_packus_epi16(_mm_srli_epi16(val, 8), z);
-          __m128i lower = _mm_packus_epi16(_mm_and_si128(val, m), z);
-            *(uint32_t *)(pDst + x) = _mm_cvtsi128_si32(upper);
-            *(uint32_t *)(pDstLsb + x) = _mm_cvtsi128_si32(lower);
-            *(uint16_t *)(pDst + x + 4) = (uint16_t)_mm_cvtsi128_si32(_mm_srli_si128(upper,4));
-            *(uint16_t *)(pDstLsb + x + 4 ) = (uint16_t)_mm_cvtsi128_si32(_mm_srli_si128(lower,4));
+          else if constexpr(blockWidth == 3) {
+            // x is always 0
+            // 2 + 1 bytes
+            uint32_t reslo = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_srli_epi16(val, 8), z));
+            uint32_t reshi = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_and_si128(val, m), z));
+            *(uint16_t *)(pDst + x) = (uint16_t)reslo;
+            *(uint16_t *)(pDstLsb + x) = (uint16_t)reshi;
+            *(uint8_t *)(pDst + x + 2) = (uint8_t)(reslo >> 16);
+            *(uint8_t *)(pDstLsb + x + 2) = (uint8_t)(reshi >> 16);
+          }
+          else if constexpr(blockWidth == 2) {
+            // x is always 0
+            // 2 bytes
+            uint32_t reslo = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_srli_epi16(val, 8), z));
+            uint32_t reshi = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_and_si128(val, m), z));
+            *(uint16_t *)(pDst + x) = (uint16_t)reslo;
+            *(uint16_t *)(pDstLsb + x) = (uint16_t)reshi;
+          }
         }
-        else if constexpr(blockWidth == 4) {
-          // x is always 0
-          *(uint32_t *)(pDst + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_srli_epi16(val, 8), z));
-          *(uint32_t *)(pDstLsb + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_and_si128(val, m), z));
-        }
-        else if constexpr(blockWidth == 3) {
-          // x is always 0
-          // 2 + 1 bytes
-          uint32_t reslo = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_srli_epi16(val, 8), z));
-          uint32_t reshi = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_and_si128(val, m), z));
-          *(uint16_t *)(pDst + x) = (uint16_t)reslo;
-          *(uint16_t *)(pDstLsb + x) = (uint16_t)reshi;
-          *(uint8_t *)(pDst + x + 2) = (uint8_t)(reslo >> 16);
-          *(uint8_t *)(pDstLsb + x + 2) = (uint8_t)(reshi >> 16);
-        }
-        else if constexpr(blockWidth == 2) {
-          // x is always 0
-          // 2 bytes
-          uint32_t reslo = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_srli_epi16(val, 8), z));
-          uint32_t reshi = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_and_si128(val, m), z));
-          *(uint16_t *)(pDst + x) = (uint16_t)reslo;
-          *(uint16_t *)(pDstLsb + x) = (uint16_t)reshi;
+        else if constexpr(out16) {
+          // keep 16 bit result: no split into msb/lsb
+
+          if constexpr(blockWidth == 12) {
+            // 8 from the first, 4 from the second cycle
+            if (x == 0) { // 1st 8 pixels 16 bytes
+              _mm_store_si128((__m128i*)(pDst + x * 2), val);
+            }
+            else { // 2nd: 4 pixels 8 bytes bytes
+              _mm_storel_epi64((__m128i*)(pDst + x * 2), val);
+              //*(uint32_t *)(pDst + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_srli_epi16(val, 8), z));
+              //*(uint32_t *)(pDstLsb + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_and_si128(val, m), z));
+            }
+          }
+          else if constexpr(blockWidth >= 8) {
+            // 8, 16, 24, ....
+            _mm_store_si128((__m128i*)(pDst + x * 2), val);
+          }
+          else if constexpr(blockWidth == 6) {
+            // x is always 0
+            // 4+2 pixels: 8 + 4 bytes
+            _mm_storel_epi64((__m128i*)(pDst + x * 2), val);
+            *(uint32_t *)(pDst + x*2 + 8) = (uint32_t)_mm_cvtsi128_si32(_mm_srli_si128(val, 8));
+          }
+          else if constexpr(blockWidth == 4) {
+            // x is always 0, 4 pixels, 8 bytes
+            _mm_storel_epi64((__m128i*)(pDst + x * 2), val);
+          }
+          else if constexpr(blockWidth == 3) {
+            // x is always 0
+            // 2+1 pixels: 4 + 2 bytes
+            uint32_t reslo = _mm_cvtsi128_si32(val);
+            uint16_t reshi = (uint16_t)_mm_cvtsi128_si32(_mm_srli_si128(val, 4));
+            *(uint32_t *)(pDst + x * 2) = reslo;
+            *(uint16_t *)(pDst + x * 2 + 4) = reshi;
+          }
+          else if constexpr(blockWidth == 2) {
+            // x is always 0
+            // 2 pixels: 4 bytes
+            uint32_t reslo = _mm_cvtsi128_si32(val);
+            *(uint32_t *)(pDst + x * 2) = reslo;
+          }
         }
       }
       pDst += nDstPitch;
-      pDstLsb += nDstPitch;
+      if constexpr(lsb_flag)
+        pDstLsb += nDstPitch;
       pSrc += nSrcPitch;
 
       pRefB[0] += BPitch[0];

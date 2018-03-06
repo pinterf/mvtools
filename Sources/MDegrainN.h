@@ -49,7 +49,7 @@ protected:
 private:
 
   typedef void (DenoiseNFunction)(
-    BYTE *pDst, BYTE *pDstLsb, bool lsb_flag, int nDstPitch,
+    BYTE *pDst, BYTE *pDstLsb, int nDstPitch,
     const BYTE *pSrc, int nSrcPitch,
     // 2*k = ref backwards, 2*k+1 = ref forwards
     const BYTE *pRef[], int Pitch[],
@@ -57,7 +57,7 @@ private:
     int Wall[], int trad
     );
 
-  DenoiseNFunction* get_denoiseN_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
+  DenoiseNFunction* get_denoiseN_function(int BlockX, int BlockY, int _bits_per_pixel, bool _lsb_flag, bool _out16_flag, arch_t arch);
 
   class MvClipInfo
   {
@@ -124,10 +124,16 @@ private:
   const bool _lsb_flag;
   const bool _out16_flag;
   const bool _mt_flag;
-  int _height_lsb_mul;
+  int _height_lsb_or_out16_mul;
   //int pixelsize, bits_per_pixel; // in MVFilter
   int pixelsize_super;
   int bits_per_pixel_super;
+  int pixelsize_super_shift;
+
+  // 2.7.26
+  int pixelsize_output;
+  int bits_per_pixel_output;
+  int pixelsize_output_shift;
 
   const int _xratiouv_log;
   const int _yratiouv_log;

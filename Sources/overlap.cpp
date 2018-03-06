@@ -356,6 +356,20 @@ void LimitChanges_sse2_new(unsigned char *pDst8, int nDstPitch, const unsigned c
   }
 }
 
+// out16=true case
+void LimitChanges_src8_target16_c(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, float nLimit_f)
+{
+  const int nLimit = (int)nLimit_f;
+  for (int h = 0; h<nHeight; h++)
+  {
+    // compare 16bit target with 8 bit source
+    for (int i = 0; i < nWidth; i++)
+      reinterpret_cast<uint16_t *>(pDst)[i] =
+      (uint16_t)clamp((int)reinterpret_cast<uint16_t *>(pDst)[i], (pSrc[i] << 8) - nLimit, (pSrc[i] << 8) + nLimit);
+    pDst += nDstPitch;
+    pSrc += nSrcPitch;
+  }
+}
 
 template<typename pixel_t>
 void LimitChanges_c(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, float nLimit_f)
