@@ -1477,18 +1477,14 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">true</ExcludedFromBuild>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">PREFIX;private_prefix=x264;ARCH_X86_64=0;BIT_DEPTH=10;HIGH_BIT_DEPTH=1</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">PREFIX;private_prefix=x264;ARCH_X86_64=0;BIT_DEPTH=10;HIGH_BIT_DEPTH=1</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">PREFIX;private_prefix=x264;ARCH_X86_64=0;BIT_DEPTH=10;HIGH_BIT_DEPTH=1</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">PREFIX;private_prefix=x264;ARCH_X86_64=0;BIT_DEPTH=10;HIGH_BIT_DEPTH=1</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">private_prefix=x264;ARCH_X86_64=1;BIT_DEPTH=10;HIGH_BIT_DEPTH=1</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">private_prefix=x264;ARCH_X86_64=1;BIT_DEPTH=10;HIGH_BIT_DEPTH=1</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">private_prefix=x264;ARCH_X86_64=1;BIT_DEPTH=10;HIGH_BIT_DEPTH=1</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">private_prefix=x264;ARCH_X86_64=1;BIT_DEPTH=10;HIGH_BIT_DEPTH=1</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">PREFIX;private_prefix=x264_10;ARCH_X86_64=0;BIT_DEPTH=10;HIGH_BIT_DEPTH=1</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">PREFIX;private_prefix=x264_10;ARCH_X86_64=0;BIT_DEPTH=10;HIGH_BIT_DEPTH=1</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">PREFIX;private_prefix=x264_10;ARCH_X86_64=0;BIT_DEPTH=10;HIGH_BIT_DEPTH=1</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">PREFIX;private_prefix=x264_10;ARCH_X86_64=0;BIT_DEPTH=10;HIGH_BIT_DEPTH=1</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">PREFIX;private_prefix=x264_10;ARCH_X86_64=1;BIT_DEPTH=10;HIGH_BIT_DEPTH=1</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">PREFIX;private_prefix=x264_10;ARCH_X86_64=1;BIT_DEPTH=10;HIGH_BIT_DEPTH=1</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">PREFIX;private_prefix=x264_10;ARCH_X86_64=1;BIT_DEPTH=10;HIGH_BIT_DEPTH=1</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">PREFIX;private_prefix=x264_10;ARCH_X86_64=1;BIT_DEPTH=10;HIGH_BIT_DEPTH=1</PreprocessorDefinitions>
     </NASM>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
