@@ -455,7 +455,7 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <GenerateAlternateCodePaths>SSE42</GenerateAlternateCodePaths>
-      <AdditionalOptions>/Zc:threadSafeInit- /permissive- /MP</AdditionalOptions>
+      <AdditionalOptions>/Zc:threadSafeInit- /permissive-</AdditionalOptions>
       <Parallelization>false</Parallelization>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <UseIntelOptimizedHeaders>false</UseIntelOptimizedHeaders>
@@ -1234,6 +1234,7 @@
     <ClInclude Include="profile.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="SADFunctions.h" />
+    <ClInclude Include="SADFunctions16.h" />
     <ClInclude Include="SADFunctions_avx.h" />
     <ClInclude Include="SADFunctions_avx2.h" />
     <ClInclude Include="SearchType.h" />

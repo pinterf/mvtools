@@ -412,6 +412,7 @@
     </ClInclude>
     <ClInclude Include="SADFunctions_avx.h" />
     <ClInclude Include="SADFunctions_avx2.h" />
+    <ClInclude Include="SADFunctions16.h" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="cpu.h" />

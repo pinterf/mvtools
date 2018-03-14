@@ -63,7 +63,7 @@ unsigned int Sad16_sse2_48xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8
 template<int nBlkHeight>
 unsigned int Sad16_sse2_64xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
 
-// match with SADFunctions.cpp
+// match with SADFunctions.cpp which includes sadfunction16.h
 #define MAKE_SAD_FN(x, y) template unsigned int Sad16_sse2_##x##xN_avx<y>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
 //#define MAKE_SAD_FN(x, y) template unsigned int Sad16_sse2_avx<x, y, uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
   MAKE_SAD_FN(64, 64)
