@@ -12,7 +12,7 @@
     <h2>Abstract</h2>
     <table class="n">
         <tr><td class="n"><b>Authors:      </b></td><td class="n">&nbsp;</td><td class="n">Manao, Tsp, TSchniede, SEt, Fizick (Alexander Balakhnin), Vit, Firesledge, pinterf</td></tr>
-        <tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.25</td></tr>
+        <tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.26</td></tr>
         <tr><td class="n"><b>Base versions:</b></td><td class="n">&nbsp;</td><td class="n">2.6.0.5 + 2.5.11.22</td></tr>
         <tr><td class="n"><b>Base download:</b></td><td class="n">&nbsp;</td><td class="n">Contained in the Dither package, <a href="http://ldesoras.free.fr/prod.html#src_ditheravsi">http://ldesoras.free.fr/prod.html</a></td></tr>
         <tr><td class="n"><b>Category:     </b></td><td class="n">&nbsp;</td><td class="n">Misc Plugins</td></tr>
@@ -332,8 +332,12 @@
         <tr><td><b>0</b></td><td>Simple 4 pixels averaging like unfiltered SimpleResize (old method),</td></tr>
         <tr><td><b>1</b></td><td>Triangle (shifted) filter like <code>ReduceBy2</code> for more smoothing (decrease aliasing),</td></tr>
         <tr><td><b>2</b></td><td>Triangle filter like <code>BilinearResize</code> for even more smoothing,</td></tr>
-        <tr><td><b>3</b></td><td>Quadratic filter for even more smoothing,</li>
-        </td></tr>
+        <tr>
+            <td><b>3</b></td>
+            <td>
+                Quadratic filter for even more smoothing,</li>
+            </td>
+        </tr>
         <tr><td><b>4</b></td><td>Cubic filter like <code>BicubicResize(b=1, c=0)</code> for even more smoothing.</td></tr>
     </table>
     <p>
@@ -678,7 +682,8 @@
     <p class="var">mt</p>
     <p>Enables multi-threading.</p>
     <p class="var">scaleCSAD</p>
-    <p>Fine tune chroma part weight in SAD calculation (since 2.7.18.22)<br />
+    <p>
+        Fine tune chroma part weight in SAD calculation (since 2.7.18.22)<br />
     </p>
     <p>
         Possible values for luma:chroma SAD ratio<br />
@@ -1430,7 +1435,8 @@
 	int  thSCD2,
 	bool isse,
 	bool planar,
-	bool lsb (false)
+	bool lsb (false),
+	bool out16 (false)
 )</pre>
             </td>
             <td class="n">
@@ -1450,7 +1456,8 @@
 	int  thSCD2,
 	bool isse,
 	bool planar,
-	bool lsb (false)
+	bool lsb (false),
+	bool out16 (false)
 )</pre>
             </td>
         </tr>
@@ -1480,7 +1487,8 @@
 	int  thSCD2,
 	bool isse,
 	bool planar,
-	bool lsb (false)
+	bool lsb (false),
+	bool out16 (false)
 
 
 
@@ -1492,10 +1500,6 @@
 	clip super,
 	clip mvmulti,
 	int  tr,
-
-
-
-
 	int  thSAD (400),
 	int  thSADC (thSAD),
 	int  plane (4),
@@ -1508,7 +1512,8 @@
 	bool lsb (false),
 	int  thSAD2 (thSAD),
 	int  thSADC2 (thSADC),
-	bool mt (true)
+	bool mt (true),
+	bool out16 (false)
 )</pre>
             </td>
         </tr>
@@ -1598,7 +1603,8 @@
     <p>Maximal change of pixel chroma.</p>
     <p class="var">lsb</p>
     <p>
-        Generates 16-bit data when set to true.
+        Note: since 2.7.26 "out16" is available for native 16bit output.
+        The option generates 16-bit data from 8 bit inputs when set to true.
         The picture made of the most siginificant bytes (MSB) is stacked
         on the top of the least significant byte (LSB) block.
         Hence a twice taller resulting picture.
@@ -1623,6 +1629,13 @@
     </p>
     <p class="var">mt</p>
     <p>Enables multi-threading.</p>
+    <p class="var">out16</p>
+    <p>
+        Since 2.7.26.
+        Generates 16-bit data from 8 bit inputs when set to true.
+        It is like lsb=true but the output format is native 16bits.
+        A bit faster than lsb=true. Cannot be mixed with lsb=true.
+    </p>
 
     <h3>MRecalculate</h3>
 <pre class="proto">MRecalculate (
@@ -2116,20 +2129,30 @@ Planar2Interleaved() # convert back to normal interleave YUY2
     </ul>
 
     <h2><a name="revisions"></a>VI) Revisions</h2>
+    <p>2.7.26 (20180314)</p>
+    <ul>
+        <li>MDegrain1-6 and N: new parameter bool "out16" = false. If set, 8 bit input results in native 16bit output (like lsb=true hack but this is native). Faster than lsb=true by up to 12% (i7-7700)</li>
+        <li>Faster: special 10 bit SAD functions instead of the generic 10-16bit one. Depending on the block size, 4-17% gain for a typical MDegrain1-5 session</li>
+    </ul>
+
     <p>2.7.25 (20180227)</p>
     <ul>
         <li>Fix: x64: not-cleared mmx state in MSuper assembly code would cause crash later, e.g. in x264 encoding, depending on following filters.</li>
         <li>Fix: MSCDetection SC value parameter name to Ysc from Yth (must be an ancient typo), docs are OK, but the fix is mentioned in docs</li>
-        <li>MSuper: import 8 bit sse2 interpolators from mvtools-vs. Extend them for 10-16bits (faster super clip). Some filters are still todo.
+        <li>
+            MSuper: import 8 bit sse2 interpolators from mvtools-vs. Extend them for 10-16bits (faster super clip). Some filters are still todo.
+        </li>
         <li>MSuper: support 32bit float clips, which can be used later by MDegrains (but not for MAnalyse)</li>
         <li>MDegrains: allow degraining clip with different bit depth from vectors. Clip and Super must be the same bit depth. Their subsampling must match that of motion vector base clips</li>
         <li>MDegrains: consistently use limit and limitC, 255 do nothing, otherwise scale 0-254 value to the current bit-depth range</li>
-        <li>Overlaps: more correct internal rounding for 8 bits:<br />
-        old: pixel = Sum( (tmp + 256) >> 6) >> 5<br />
-        new: pixel = (Sum( (tmp + 32) >> 6) + 16) >> 5<br />
-        Overlaps: round for 16bits<br />
-        old: pixel = Sum(tmp) >> 11<br />
-        new: pixel = (Sum(tmp) + 1024) >> 11<br />
+        <li>
+            Overlaps: more correct internal rounding for 8 bits:<br />
+            old: pixel = Sum( (tmp + 256) >> 6) >> 5<br />
+            new: pixel = (Sum( (tmp + 32) >> 6) + 16) >> 5<br />
+            Overlaps: round for 16bits<br />
+            old: pixel = Sum(tmp) >> 11<br />
+            new: pixel = (Sum(tmp) + 1024) >> 11<br />
+        </li>
         <li>Overlaps: 32bit float (but still use the original 11 bit window constants)</li>
         <li>Project: change from yasm to nasm.</li>
     </ul>
