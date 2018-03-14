@@ -36,14 +36,58 @@
 #define MAKE_FN(a) a##_sse2
 #endif
 
-// Sad16_sse2_4xN_avx and Sad16_sse2_4xN_sse2
+
 template<int nBlkHeight>
-unsigned int MAKE_FN(Sad16_sse2_4xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+unsigned int MAKE_FN(Sad10_ssse3_4xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
+  // 10 bit version
+  // a uint16 can hold maximum sum of 64 differences. We are good till 4x128 (but max is 64 atm)
+  assert(blkHeight > 128);
+  __m128i zero = _mm_setzero_si128();
+  __m128i sumw = _mm_setzero_si128(); // word sized sums
+
+  const int vert_inc = (nBlkHeight % 2) == 0 ? 2 : 1;
+
+  for (int y = 0; y < nBlkHeight; y += vert_inc)
+  {
+    // 1st row 4 pixels 8 bytes
+    if (vert_inc == 1) {
+      auto src1 = _mm_loadl_epi64((__m128i *) (pSrc));
+      auto src2 = _mm_loadl_epi64((__m128i *) (pRef));
+      __m128i absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+      sumw = _mm_add_epi16(sumw, absdiff);
+    }
+
+    if (vert_inc >= 2) {
+      auto src1 = _mm_loadl_epi64((__m128i *) (pSrc));
+      auto src2 = _mm_loadl_epi64((__m128i *) (pRef));
+      // 2nd row 4 pixels 8 bytes
+      auto src1_next = _mm_loadl_epi64((__m128i *) (pSrc + nSrcPitch * 1));
+      auto src2_next = _mm_loadl_epi64((__m128i *) (pRef + nRefPitch * 1));
+      __m128i absdiff = _mm_abs_epi16(_mm_sub_epi16(_mm_unpacklo_epi16(src1, src1_next), _mm_unpacklo_epi16(src2, src2_next)));
+      sumw = _mm_add_epi16(sumw, absdiff);
+    }
+    pSrc += nSrcPitch * vert_inc;
+    pRef += nRefPitch * vert_inc;
+  }
+  // sum up 8 words
+  __m128i sum = _mm_add_epi32(_mm_unpacklo_epi16(sumw, zero), _mm_unpackhi_epi16(sumw, zero));
+  // sum up 4 integers
+  sum = _mm_hadd_epi32(sum, sum);
+  sum = _mm_hadd_epi32(sum, sum);
+  unsigned int result = _mm_cvtsi128_si32(sum);
+
 #ifdef __AVX__
   _mm256_zeroupper();
 #endif
 
+  return result;
+}
+
+// Sad16_sse2_4xN_avx and Sad16_sse2_4xN_sse2
+template<int nBlkHeight>
+unsigned int MAKE_FN(Sad16_sse2_4xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+{
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128();
 
@@ -88,7 +132,62 @@ unsigned int MAKE_FN(Sad16_sse2_4xN)(const uint8_t *pSrc, int nSrcPitch, const u
   unsigned int result = _mm_cvtsi128_si32(sum);
 
 #ifdef __AVX__
-  _mm256_zeroupper(); // diff from main sse2, paranoia, bacause here we have no ymm regs
+  _mm256_zeroupper();
+#endif
+
+  return result;
+}
+
+// min: SSSE3
+template<int nBlkHeight>
+unsigned int MAKE_FN(Sad10_ssse3_6xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+{
+  // 10 bit version
+  // a uint16 can hold maximum sum of 64 differences. We are good till 6x64
+  assert(blkHeight > 64);
+  __m128i zero = _mm_setzero_si128();
+  __m128i sumw = _mm_setzero_si128(); // word sized sums
+  __m128i mask6_16bit = _mm_set_epi16(0, 0, -1, -1, -1, -1, -1, -1); // -1: 0xFFFF
+
+  const int vert_inc = (nBlkHeight % 2) == 0 ? 2 : 1;
+
+  for (int y = 0; y < nBlkHeight; y += vert_inc)
+  {
+    // 6 pixels: 12 bytes 8+4, source is aligned
+    auto src1 = _mm_load_si128((__m128i *) (pSrc)); // full 16 byte safe
+    src1 = _mm_and_si128(src1, mask6_16bit);
+
+    auto src2 = _mm_loadl_epi64((__m128i *) (pRef)); // lower 8 bytes
+    auto srcRest32 = _mm_load_ss(reinterpret_cast<const float *>(pRef + 8)); // upper 4 bytes
+    src2 = _mm_castps_si128(_mm_movelh_ps(_mm_castsi128_ps(src2), srcRest32)); // lower 64 bits from src2 low 64 bits, high 64 bits from src4b low 64 bits
+
+    __m128i absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+    sumw = _mm_add_epi16(sumw, absdiff);
+
+    if (vert_inc >= 2) {
+      // 2nd row 6 pixels: 12 bytes 8+4, source is aligned
+      src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch * 1)); // safe to read
+      src1 = _mm_and_si128(src1, mask6_16bit);
+
+      src2 = _mm_loadl_epi64((__m128i *) (pRef + nRefPitch * 1));
+      auto srcRest32 = _mm_load_ss(reinterpret_cast<const float *>(pRef + nRefPitch * 1 + 8));
+      src2 = _mm_castps_si128(_mm_movelh_ps(_mm_castsi128_ps(src2), srcRest32)); // lower 64 bits from src2 low 64 bits, high 64 bits from src4b low 64 bits
+
+      __m128i absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+      sumw = _mm_add_epi16(sumw, absdiff);
+    }
+    pSrc += nSrcPitch * vert_inc;
+    pRef += nRefPitch * vert_inc;
+  }
+  // sum up 8 words
+  __m128i sum = _mm_add_epi32(_mm_unpacklo_epi16(sumw, zero), _mm_unpackhi_epi16(sumw, zero));
+  // sum up 4 integers
+  sum = _mm_hadd_epi32(sum, sum);
+  sum = _mm_hadd_epi32(sum, sum);
+  unsigned int result = _mm_cvtsi128_si32(sum);
+
+#ifdef __AVX__
+  _mm256_zeroupper();
 #endif
 
   return result;
@@ -97,13 +196,9 @@ unsigned int MAKE_FN(Sad16_sse2_4xN)(const uint8_t *pSrc, int nSrcPitch, const u
 template<int nBlkHeight>
 unsigned int MAKE_FN(Sad16_sse2_6xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
-#ifdef __AVX__
-  _mm256_zeroupper(); // diff from main sse2
-#endif
-
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128();
-  __m128i mask6_16bit = _mm_set_epi16(0, 0, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF);
+  __m128i mask6_16bit = _mm_set_epi16(0, 0, -1, -1, -1, -1, -1, -1); // -1: 0xFFFF
 
   for (int y = 0; y < nBlkHeight; y++)
   {
@@ -140,19 +235,64 @@ unsigned int MAKE_FN(Sad16_sse2_6xN)(const uint8_t *pSrc, int nSrcPitch, const u
   unsigned int result = _mm_cvtsi128_si32(sum);
 
 #ifdef __AVX__
-  _mm256_zeroupper(); // diff from main sse2, paranoia, bacause here we have no ymm regs
+  _mm256_zeroupper();
 #endif
 
   return result;
 }
 
+
+
+// min: SSSE3
+template<int nBlkHeight>
+unsigned int MAKE_FN(Sad10_ssse3_8xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+{
+  // 10 bit version
+  // a uint16 can hold maximum sum of 64 differences. We are good till 8x64
+  assert(blkHeight > 64);
+  __m128i zero = _mm_setzero_si128();
+  __m128i sumw = _mm_setzero_si128(); // word sized sums
+
+  const int vert_inc = (nBlkHeight % 2) == 0 ? 2 : 1;
+  // looking at the VS2017 asm code for 8x8, unroll 4 is slower due to saving and restoring extra 3 registers used for indexing
+  // we stick at unroll 2 at most
+
+  for (int y = 0; y < nBlkHeight; y += vert_inc)
+  {
+    // 1st row 8 pixels 16 bytes
+    auto src1 = _mm_load_si128((__m128i *) (pSrc));
+    auto src2 = _mm_loadu_si128((__m128i *) (pRef));
+    __m128i absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+    sumw = _mm_add_epi16(sumw, absdiff);
+
+    if (vert_inc >= 2) {
+      // 2nd row 8 pixels 16 bytes
+      src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch * 1));
+      src2 = _mm_loadu_si128((__m128i *) (pRef + nRefPitch * 1));
+      __m128i absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+      sumw = _mm_add_epi16(sumw, absdiff);
+    }
+    pSrc += nSrcPitch * vert_inc;
+    pRef += nRefPitch * vert_inc;
+  }
+  // sum up 8 words
+  __m128i sum = _mm_add_epi32(_mm_unpacklo_epi16(sumw, zero), _mm_unpackhi_epi16(sumw, zero));
+  // sum up 4 integers
+  sum = _mm_hadd_epi32(sum, sum);
+  sum = _mm_hadd_epi32(sum, sum);
+  unsigned int result = _mm_cvtsi128_si32(sum);
+
+#ifdef __AVX__
+  _mm256_zeroupper();
+#endif
+
+  return result;
+}
+
+
 template<int nBlkHeight>
 unsigned int MAKE_FN(Sad16_sse2_8xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
-#ifdef __AVX__
-  _mm256_zeroupper(); // diff from main sse2
-#endif
-
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128();
 
@@ -199,7 +339,75 @@ unsigned int MAKE_FN(Sad16_sse2_8xN)(const uint8_t *pSrc, int nSrcPitch, const u
   unsigned int result = _mm_cvtsi128_si32(sum);
 
 #ifdef __AVX__
-  _mm256_zeroupper(); // diff from main sse2, paranoia, bacause here we have no ymm regs
+  _mm256_zeroupper();
+#endif
+
+  return result;
+}
+
+// min: SSSE3
+template<int nBlkHeight>
+unsigned int MAKE_FN(Sad10_ssse3_12xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+{
+  // 10 bit version
+  // a uint16 can hold maximum sum of 64 differences. We are good till 16x32
+  assert(blkHeight > 64);
+  __m128i zero = _mm_setzero_si128();
+  __m128i sum = _mm_setzero_si128(); // outer sum
+
+  constexpr int vert_inc = (nBlkHeight % 2) == 0 ? 2 : 1;
+
+  // over a nBlkHeight we sum up after each 8 height (limit would be a bit less, this is the rule for blkSize==16)
+  // 12x16, 12x24, 12x48
+  constexpr int lane_count = 2; // though we use oly half of the 2nd lane
+  constexpr int blkHeight_max_safe = 64 / lane_count;
+  constexpr int blkHeight_safe = (blkHeight_max_safe >= nBlkHeight) ? nBlkHeight :
+    (nBlkHeight % 16 == 0 && blkHeight_max_safe >= 16) ? 16 :
+    (nBlkHeight % 8 == 0 && blkHeight_max_safe >= 8) ? 8 :
+    (nBlkHeight % 4 == 0 && blkHeight_max_safe >= 4) ? 4 : 2;
+  constexpr int blkHeight_outer = nBlkHeight / blkHeight_safe; // if safe
+  assert(blkHeight_outer * blkHeight_safe == nBlkHeight);
+
+  for (int y_outer = 0; y_outer < blkHeight_outer; y_outer++) {
+    __m128i sumw = _mm_setzero_si128(); // word sized sums
+    for (int y = 0; y < blkHeight_safe; y += vert_inc)
+    {
+      // BlkSizeX==12: 8+4 pixels, 16+8 bytes
+      auto src1 = _mm_load_si128((__m128i *) (pSrc));
+      auto src2 = _mm_loadu_si128((__m128i *) (pRef));
+      __m128i absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+      sumw = _mm_add_epi16(sumw, absdiff);
+      // 2nd 4 pixels
+      src1 = _mm_loadl_epi64((__m128i *) (pSrc + 16));
+      src2 = _mm_loadl_epi64((__m128i *) (pRef + 16));
+      absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+      sumw = _mm_add_epi16(sumw, absdiff);
+
+      if (vert_inc >= 2) {
+        // 2nd row 8 pixels 16 bytes
+        src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch * 1));
+        src2 = _mm_loadu_si128((__m128i *) (pRef + nRefPitch * 1));
+        __m128i absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+        sumw = _mm_add_epi16(sumw, absdiff);
+
+        src1 = _mm_loadl_epi64((__m128i *) (pSrc + nSrcPitch * 1 + 16));
+        src2 = _mm_loadl_epi64((__m128i *) (pRef + nRefPitch * 1 + 16));
+        absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+        sumw = _mm_add_epi16(sumw, absdiff);
+      }
+      pSrc += nSrcPitch * vert_inc;
+      pRef += nRefPitch * vert_inc;
+    }
+    // sum up 8 words
+    sum = _mm_add_epi32(sum, _mm_add_epi32(_mm_unpacklo_epi16(sumw, zero), _mm_unpackhi_epi16(sumw, zero)));
+  }
+  // sum up 4 integers
+  sum = _mm_hadd_epi32(sum, sum);
+  sum = _mm_hadd_epi32(sum, sum);
+  unsigned int result = _mm_cvtsi128_si32(sum);
+
+#ifdef __AVX__
+  _mm256_zeroupper();
 #endif
 
   return result;
@@ -208,10 +416,6 @@ unsigned int MAKE_FN(Sad16_sse2_8xN)(const uint8_t *pSrc, int nSrcPitch, const u
 template<int nBlkHeight>
 unsigned int MAKE_FN(Sad16_sse2_12xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
-#ifdef __AVX__
-  _mm256_zeroupper(); // diff from main sse2
-#endif
-
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128(); // 2x or 4x int is probably enough for 32x32
 
@@ -238,7 +442,7 @@ unsigned int MAKE_FN(Sad16_sse2_12xN)(const uint8_t *pSrc, int nSrcPitch, const 
     pSrc += nSrcPitch;
     pRef += nRefPitch;
   }
-#ifdef __AVX__ // avx or avx2
+#ifdef __AVX__
   __m128i sum1 = _mm_hadd_epi32(sum, sum);
   sum = _mm_hadd_epi32(sum1, sum1);
 #else
@@ -255,7 +459,73 @@ unsigned int MAKE_FN(Sad16_sse2_12xN)(const uint8_t *pSrc, int nSrcPitch, const 
   unsigned int result = _mm_cvtsi128_si32(sum);
 
 #ifdef __AVX__
-  _mm256_zeroupper(); // diff from main sse2, paranoia, bacause here we have no ymm regs
+  _mm256_zeroupper();
+#endif
+
+  return result;
+}
+
+// min: SSSE3
+template<int nBlkHeight>
+unsigned int MAKE_FN(Sad10_ssse3_16xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+{
+  // 10 bit version
+  // a uint16 can hold maximum sum of 64 differences. We are good till 16x32
+  assert(blkHeight > 64);
+  __m128i zero = _mm_setzero_si128();
+  __m128i sum = _mm_setzero_si128(); // outer sum
+
+  constexpr int vert_inc = (nBlkHeight % 2) == 0 ? 2 : 1;
+
+  constexpr int lane_count = 2; // 16 pixels
+  constexpr int blkHeight_max_safe = 64 / lane_count;
+  constexpr int blkHeight_safe = (blkHeight_max_safe >= nBlkHeight) ? nBlkHeight :
+    (nBlkHeight % 16 == 0 && blkHeight_max_safe >= 16) ? 16 :
+    (nBlkHeight % 8 == 0 && blkHeight_max_safe >= 8) ? 8 :
+    (nBlkHeight % 4 == 0 && blkHeight_max_safe >= 4) ? 4 : 2;
+  constexpr int blkHeight_outer = nBlkHeight / blkHeight_safe; // if safe
+  assert(blkHeight_outer * blkHeight_safe == nBlkHeight);
+
+  for (int y_outer = 0; y_outer < blkHeight_outer; y_outer++) {
+    __m128i sumw = _mm_setzero_si128(); // word sized sums
+    for (int y = 0; y < blkHeight_safe; y += vert_inc)
+    {
+      // 1st row 8 pixels 16 bytes
+      auto src1 = _mm_load_si128((__m128i *) (pSrc));
+      auto src2 = _mm_loadu_si128((__m128i *) (pRef));
+      __m128i absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+      sumw = _mm_add_epi16(sumw, absdiff);
+
+      src1 = _mm_load_si128((__m128i *) (pSrc + 16));
+      src2 = _mm_loadu_si128((__m128i *) (pRef + 16));
+      absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+      sumw = _mm_add_epi16(sumw, absdiff);
+
+      if (vert_inc >= 2) {
+        // 2nd row 8 pixels 16 bytes
+        src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch * 1));
+        src2 = _mm_loadu_si128((__m128i *) (pRef + nRefPitch * 1));
+        __m128i absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+        sumw = _mm_add_epi16(sumw, absdiff);
+
+        src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch * 1 + 16));
+        src2 = _mm_loadu_si128((__m128i *) (pRef + nRefPitch * 1 + 16));
+        absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+        sumw = _mm_add_epi16(sumw, absdiff);
+      }
+      pSrc += nSrcPitch * vert_inc;
+      pRef += nRefPitch * vert_inc;
+    }
+    // sum up 8 words
+    sum = _mm_add_epi32(sum, _mm_add_epi32(_mm_unpacklo_epi16(sumw, zero), _mm_unpackhi_epi16(sumw, zero)));
+  }
+  // sum up 4 integers
+  sum = _mm_hadd_epi32(sum, sum);
+  sum = _mm_hadd_epi32(sum, sum);
+  unsigned int result = _mm_cvtsi128_si32(sum);
+
+#ifdef __AVX__
+  _mm256_zeroupper();
 #endif
 
   return result;
@@ -265,14 +535,12 @@ unsigned int MAKE_FN(Sad16_sse2_12xN)(const uint8_t *pSrc, int nSrcPitch, const 
 template<int nBlkHeight>
 unsigned int MAKE_FN(Sad16_sse2_16xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
-#ifdef __AVX__
-  _mm256_zeroupper(); // diff from main sse2
-#endif
-
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128();
 
-  for (int y = 0; y < nBlkHeight; y++)
+  constexpr int vert_inc = (nBlkHeight % 2) == 0 ? 2 : 1;
+
+  for (int y = 0; y < nBlkHeight; y += vert_inc)
   {
     // 16 pixels: 2x8 pixels = 2x16 bytes
     // 2nd 8 pixels
@@ -292,11 +560,31 @@ unsigned int MAKE_FN(Sad16_sse2_16xN)(const uint8_t *pSrc, int nSrcPitch, const 
     absdiff = _mm_or_si128(greater_t, smaller_t); //abs(s1-s2)  == (satsub(s1,s2) | satsub(s2,s1))
     sum = _mm_add_epi32(sum, _mm_unpacklo_epi16(absdiff, zero));
     sum = _mm_add_epi32(sum, _mm_unpackhi_epi16(absdiff, zero));
+    if (vert_inc >= 2) {
+      // 16 pixels: 2x8 pixels = 2x16 bytes
+      // 2nd 8 pixels
+      auto src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch*1));
+      auto src2 = _mm_loadu_si128((__m128i *) (pRef + nRefPitch * 1));
+      __m128i greater_t = _mm_subs_epu16(src1, src2); // unsigned sub with saturation
+      __m128i smaller_t = _mm_subs_epu16(src2, src1);
+      __m128i absdiff = _mm_or_si128(greater_t, smaller_t); //abs(s1-s2)  == (satsub(s1,s2) | satsub(s2,s1))
+                                                            // 8 x uint16 absolute differences
+      sum = _mm_add_epi32(sum, _mm_unpacklo_epi16(absdiff, zero));
+      sum = _mm_add_epi32(sum, _mm_unpackhi_epi16(absdiff, zero));
+      // 2nd 8 pixels
+      src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch * 1 + 16));
+      src2 = _mm_loadu_si128((__m128i *) (pRef + nRefPitch * 1 + 16));
+      greater_t = _mm_subs_epu16(src1, src2); // unsigned sub with saturation
+      smaller_t = _mm_subs_epu16(src2, src1);
+      absdiff = _mm_or_si128(greater_t, smaller_t); //abs(s1-s2)  == (satsub(s1,s2) | satsub(s2,s1))
+      sum = _mm_add_epi32(sum, _mm_unpacklo_epi16(absdiff, zero));
+      sum = _mm_add_epi32(sum, _mm_unpackhi_epi16(absdiff, zero));
+    }
     // sum1_32, sum2_32, sum3_32, sum4_32
-    pSrc += nSrcPitch;
-    pRef += nRefPitch;
+    pSrc += nSrcPitch * vert_inc;
+    pRef += nRefPitch * vert_inc;
   }
-#ifdef __AVX__ // avx or avx2
+#ifdef __AVX__
   __m128i sum1 = _mm_hadd_epi32(sum, sum);
   sum = _mm_hadd_epi32(sum1, sum1);
 #else
@@ -313,20 +601,91 @@ unsigned int MAKE_FN(Sad16_sse2_16xN)(const uint8_t *pSrc, int nSrcPitch, const 
   unsigned int result = _mm_cvtsi128_si32(sum);
 
 #ifdef __AVX__
-  _mm256_zeroupper(); // diff from main sse2, paranoia, bacause here we have no ymm regs
+  _mm256_zeroupper();
 #endif
 
   return result;
 }
 
+// min: SSSE3
+template<int nBlkHeight>
+unsigned int MAKE_FN(Sad10_ssse3_24xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+{
+  // 10 bit version
+  // a uint16 can hold maximum sum of 64 differences. We are good till approx 24x21 (3 lanes add together, 64/3 = 21)
+  assert(blkHeight > 64);
+  __m128i zero = _mm_setzero_si128();
+  __m128i sum = _mm_setzero_si128(); // outer sum
+
+  constexpr int vert_inc = (nBlkHeight % 2) == 0 ? 2 : 1;
+
+  constexpr int lane_count = 3; // 24 pixels
+  constexpr int blkHeight_max_safe = 64 / lane_count;
+  constexpr int blkHeight_safe = (blkHeight_max_safe >= nBlkHeight) ? nBlkHeight :
+    (nBlkHeight % 16 == 0 && blkHeight_max_safe >= 16) ? 16 :
+    (nBlkHeight % 8 == 0 && blkHeight_max_safe >= 8) ? 8 :
+    (nBlkHeight % 4 == 0 && blkHeight_max_safe >= 4) ? 4 : 2;
+  constexpr int blkHeight_outer = nBlkHeight / blkHeight_safe; // if safe
+  assert(blkHeight_outer * blkHeight_safe == nBlkHeight);
+
+  for (int y_outer = 0; y_outer < blkHeight_outer; y_outer++) {
+    __m128i sumw = _mm_setzero_si128(); // word sized sums
+    for (int y = 0; y < blkHeight_safe; y += vert_inc)
+    {
+      // 1st row 8 pixels 16 bytes
+      auto src1 = _mm_load_si128((__m128i *) (pSrc));
+      auto src2 = _mm_loadu_si128((__m128i *) (pRef));
+      __m128i absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+      sumw = _mm_add_epi16(sumw, absdiff);
+      // 2nd group
+      src1 = _mm_load_si128((__m128i *) (pSrc + 16));
+      src2 = _mm_loadu_si128((__m128i *) (pRef + 16));
+      absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+      sumw = _mm_add_epi16(sumw, absdiff);
+      // 3rd group
+      src1 = _mm_load_si128((__m128i *) (pSrc + 32));
+      src2 = _mm_loadu_si128((__m128i *) (pRef + 32));
+      absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+      sumw = _mm_add_epi16(sumw, absdiff);
+
+      if (vert_inc >= 2) {
+        // 2nd row 8 pixels 16 bytes
+        src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch * 1));
+        src2 = _mm_loadu_si128((__m128i *) (pRef + nRefPitch * 1));
+        __m128i absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+        sumw = _mm_add_epi16(sumw, absdiff);
+        // 2nd group
+        src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch * 1 + 16));
+        src2 = _mm_loadu_si128((__m128i *) (pRef + nRefPitch * 1 + 16));
+        absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+        sumw = _mm_add_epi16(sumw, absdiff);
+        // 3rd group
+        src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch * 1 + 32));
+        src2 = _mm_loadu_si128((__m128i *) (pRef + nRefPitch * 1 + 32));
+        absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+        sumw = _mm_add_epi16(sumw, absdiff);
+      }
+      pSrc += nSrcPitch * vert_inc;
+      pRef += nRefPitch * vert_inc;
+    }
+    // sum up 8 words
+    sum = _mm_add_epi32(sum, _mm_add_epi32(_mm_unpacklo_epi16(sumw, zero), _mm_unpackhi_epi16(sumw, zero)));
+  }
+  // sum up 4 integers
+  sum = _mm_hadd_epi32(sum, sum);
+  sum = _mm_hadd_epi32(sum, sum);
+  unsigned int result = _mm_cvtsi128_si32(sum);
+
+#ifdef __AVX__
+  _mm256_zeroupper();
+#endif
+
+  return result;
+}
 
 template<int nBlkHeight>
 unsigned int MAKE_FN(Sad16_sse2_24xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
-#ifdef __AVX__
-  _mm256_zeroupper(); // diff from main sse2
-#endif
-
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128();
 
@@ -360,7 +719,7 @@ unsigned int MAKE_FN(Sad16_sse2_24xN)(const uint8_t *pSrc, int nSrcPitch, const 
     pSrc += nSrcPitch;
     pRef += nRefPitch;
   }
-#ifdef __AVX__ // avx or avx2
+#ifdef __AVX__
   __m128i sum1 = _mm_hadd_epi32(sum, sum);
   sum = _mm_hadd_epi32(sum1, sum1);
 #else
@@ -377,7 +736,93 @@ unsigned int MAKE_FN(Sad16_sse2_24xN)(const uint8_t *pSrc, int nSrcPitch, const 
   unsigned int result = _mm_cvtsi128_si32(sum);
 
 #ifdef __AVX__
-  _mm256_zeroupper(); // diff from main sse2, paranoia, bacause here we have no ymm regs
+  _mm256_zeroupper();
+#endif
+
+  return result;
+}
+
+// min: SSSE3
+template<int nBlkHeight>
+unsigned int MAKE_FN(Sad10_ssse3_32xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+{
+  // 10 bit version
+  // a uint16 can hold maximum sum of 64 differences.
+  assert(blkHeight > 64);
+  __m128i zero = _mm_setzero_si128();
+  __m128i sum = _mm_setzero_si128(); // outer sum
+
+  constexpr int vert_inc = (nBlkHeight % 2) == 0 ? 2 : 1;
+
+  constexpr int lane_count = 4; // 32 pixels
+  constexpr int blkHeight_max_safe = 64 / lane_count;
+  constexpr int blkHeight_safe = (blkHeight_max_safe >= nBlkHeight) ? nBlkHeight :
+    (nBlkHeight % 16 == 0 && blkHeight_max_safe >= 16) ? 16 :
+    (nBlkHeight % 8 == 0 && blkHeight_max_safe >= 8) ? 8 :
+    (nBlkHeight % 4 == 0 && blkHeight_max_safe >= 4) ? 4 : 2;
+  constexpr int blkHeight_outer = nBlkHeight / blkHeight_safe; // if safe
+  assert(blkHeight_outer * blkHeight_safe == nBlkHeight);
+
+  for (int y_outer = 0; y_outer < blkHeight_outer; y_outer++) {
+    __m128i sumw = _mm_setzero_si128(); // word sized sums
+    for (int y = 0; y < blkHeight_safe; y += vert_inc)
+    {
+      // 1st row 8 pixels 16 bytes
+      auto src1 = _mm_load_si128((__m128i *) (pSrc));
+      auto src2 = _mm_loadu_si128((__m128i *) (pRef));
+      __m128i absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+      sumw = _mm_add_epi16(sumw, absdiff);
+      // 2nd group
+      src1 = _mm_load_si128((__m128i *) (pSrc + 16));
+      src2 = _mm_loadu_si128((__m128i *) (pRef + 16));
+      absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+      sumw = _mm_add_epi16(sumw, absdiff);
+      // 3rd group
+      src1 = _mm_load_si128((__m128i *) (pSrc + 32));
+      src2 = _mm_loadu_si128((__m128i *) (pRef + 32));
+      absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+      sumw = _mm_add_epi16(sumw, absdiff);
+      // 4th group
+      src1 = _mm_load_si128((__m128i *) (pSrc + 48));
+      src2 = _mm_loadu_si128((__m128i *) (pRef + 48));
+      absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+      sumw = _mm_add_epi16(sumw, absdiff);
+
+      if (vert_inc >= 2) {
+        // 2nd row 8 pixels 16 bytes
+        src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch * 1));
+        src2 = _mm_loadu_si128((__m128i *) (pRef + nRefPitch * 1));
+        __m128i absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+        sumw = _mm_add_epi16(sumw, absdiff);
+        // 2nd group
+        src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch * 1 + 16));
+        src2 = _mm_loadu_si128((__m128i *) (pRef + nRefPitch * 1 + 16));
+        absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+        sumw = _mm_add_epi16(sumw, absdiff);
+        // 3rd group
+        src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch * 1 + 32));
+        src2 = _mm_loadu_si128((__m128i *) (pRef + nSrcPitch * 1 + 32));
+        absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+        sumw = _mm_add_epi16(sumw, absdiff);
+        // 4th group
+        src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch * 1 + 48));
+        src2 = _mm_loadu_si128((__m128i *) (pRef + nSrcPitch * 1 + 48));
+        absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+        sumw = _mm_add_epi16(sumw, absdiff);
+      }
+      pSrc += nSrcPitch * vert_inc;
+      pRef += nRefPitch * vert_inc;
+    }
+    // sum up 8 words
+    sum = _mm_add_epi32(sum, _mm_add_epi32(_mm_unpacklo_epi16(sumw, zero), _mm_unpackhi_epi16(sumw, zero)));
+  }
+  // sum up 4 integers
+  sum = _mm_hadd_epi32(sum, sum);
+  sum = _mm_hadd_epi32(sum, sum);
+  unsigned int result = _mm_cvtsi128_si32(sum);
+
+#ifdef __AVX__
+  _mm256_zeroupper();
 #endif
 
   return result;
@@ -386,10 +831,6 @@ unsigned int MAKE_FN(Sad16_sse2_24xN)(const uint8_t *pSrc, int nSrcPitch, const 
 template<int nBlkHeight>
 unsigned int MAKE_FN(Sad16_sse2_32xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
-#ifdef __AVX__
-  _mm256_zeroupper(); // diff from main sse2
-#endif
-
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128();
 
@@ -431,7 +872,7 @@ unsigned int MAKE_FN(Sad16_sse2_32xN)(const uint8_t *pSrc, int nSrcPitch, const 
     pSrc += nSrcPitch;
     pRef += nRefPitch;
   }
-#ifdef __AVX__ // avx or avx2
+#ifdef __AVX__
   __m128i sum1 = _mm_hadd_epi32(sum, sum);
   sum = _mm_hadd_epi32(sum1, sum1);
 #else
@@ -447,7 +888,77 @@ unsigned int MAKE_FN(Sad16_sse2_32xN)(const uint8_t *pSrc, int nSrcPitch, const 
   unsigned int result = _mm_cvtsi128_si32(sum);
 
 #ifdef __AVX__
-  _mm256_zeroupper(); // diff from main sse2, paranoia, bacause here we have no ymm regs
+  _mm256_zeroupper();
+#endif
+
+  return result;
+}
+
+// min: SSSE3
+template<int nBlkHeight>
+unsigned int MAKE_FN(Sad10_ssse3_48xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+{
+  // 10 bit version
+  // a uint16 can hold maximum sum of 64 differences.
+  assert(blkHeight > 64);
+  __m128i zero = _mm_setzero_si128();
+  __m128i sum = _mm_setzero_si128(); // outer sum
+
+  constexpr int vert_inc = (nBlkHeight % 2) == 0 ? 2 : 1;
+
+  constexpr int lane_count = 6; // 48 pixels
+  constexpr int blkHeight_max_safe = 64 / lane_count;
+  constexpr int blkHeight_safe = (blkHeight_max_safe >= nBlkHeight) ? nBlkHeight :
+    (nBlkHeight % 16 == 0 && blkHeight_max_safe >= 16) ? 16 :
+    (nBlkHeight % 8 == 0 && blkHeight_max_safe >= 8) ? 8 :
+    (nBlkHeight % 4 == 0 && blkHeight_max_safe >= 4) ? 4 : 2;
+  constexpr int blkHeight_outer = nBlkHeight / blkHeight_safe; // if safe
+  assert(blkHeight_outer * blkHeight_safe == nBlkHeight);
+
+  for (int y_outer = 0; y_outer < blkHeight_outer; y_outer++) {
+    __m128i sumw = _mm_setzero_si128(); // word sized sums
+    for (int y = 0; y < blkHeight_safe; y += vert_inc)
+    {
+      // BlockSizeX==48: 3x(8+8) pixels cycles, 3x32 bytes
+      for (int x = 0; x < 48 * 2; x += 32)
+      {
+        // 1st row 8 pixels 16 bytes
+        auto src1 = _mm_load_si128((__m128i *) (pSrc + x));
+        auto src2 = _mm_loadu_si128((__m128i *) (pRef + x));
+        __m128i absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+        sumw = _mm_add_epi16(sumw, absdiff);
+        // 2nd group
+        src1 = _mm_load_si128((__m128i *) (pSrc + x + 16));
+        src2 = _mm_loadu_si128((__m128i *) (pRef + x + 16));
+        absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+        sumw = _mm_add_epi16(sumw, absdiff);
+
+        if (vert_inc >= 2) {
+          // 2nd row 8 pixels 16 bytes
+          src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch * 1 + x));
+          src2 = _mm_loadu_si128((__m128i *) (pRef + nRefPitch * 1 + x));
+          __m128i absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+          sumw = _mm_add_epi16(sumw, absdiff);
+          // 2nd group
+          src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch * 1 + x + 16));
+          src2 = _mm_loadu_si128((__m128i *) (pRef + nRefPitch * 1 + x + 16));
+          absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+          sumw = _mm_add_epi16(sumw, absdiff);
+        }
+      }
+      pSrc += nSrcPitch * vert_inc;
+      pRef += nRefPitch * vert_inc;
+    }
+    // sum up 8 words
+    sum = _mm_add_epi32(sum, _mm_add_epi32(_mm_unpacklo_epi16(sumw, zero), _mm_unpackhi_epi16(sumw, zero)));
+  }
+  // sum up 4 integers
+  sum = _mm_hadd_epi32(sum, sum);
+  sum = _mm_hadd_epi32(sum, sum);
+  unsigned int result = _mm_cvtsi128_si32(sum);
+
+#ifdef __AVX__
+  _mm256_zeroupper();
 #endif
 
   return result;
@@ -456,10 +967,6 @@ unsigned int MAKE_FN(Sad16_sse2_32xN)(const uint8_t *pSrc, int nSrcPitch, const 
 template<int nBlkHeight>
 unsigned int MAKE_FN(Sad16_sse2_48xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
-#ifdef __AVX__
-  _mm256_zeroupper(); // diff from main sse2
-#endif
-
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128();
 
@@ -489,7 +996,7 @@ unsigned int MAKE_FN(Sad16_sse2_48xN)(const uint8_t *pSrc, int nSrcPitch, const 
     pSrc += nSrcPitch;
     pRef += nRefPitch;
   }
-#ifdef __AVX__ // avx or avx2
+#ifdef __AVX__
   __m128i sum1 = _mm_hadd_epi32(sum, sum);
   sum = _mm_hadd_epi32(sum1, sum1);
 #else
@@ -505,20 +1012,85 @@ unsigned int MAKE_FN(Sad16_sse2_48xN)(const uint8_t *pSrc, int nSrcPitch, const 
   unsigned int result = _mm_cvtsi128_si32(sum);
 
 #ifdef __AVX__
-  _mm256_zeroupper(); // diff from main sse2, paranoia, bacause here we have no ymm regs
+  _mm256_zeroupper();
 #endif
 
   return result;
 }
 
+// min: SSSE3
+template<int nBlkHeight>
+unsigned int MAKE_FN(Sad10_ssse3_64xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+{
+  // 10 bit version
+  // a uint16 can hold maximum sum of 64 differences.
+  assert(blkHeight > 64);
+  __m128i zero = _mm_setzero_si128();
+  __m128i sum = _mm_setzero_si128(); // outer sum
+
+  constexpr int vert_inc = (nBlkHeight % 2) == 0 ? 2 : 1;
+
+  constexpr int lane_count = 8; // 64 pixels
+  constexpr int blkHeight_max_safe = 64 / lane_count;
+  constexpr int blkHeight_safe = (blkHeight_max_safe >= nBlkHeight) ? nBlkHeight :
+    (nBlkHeight % 16 == 0 && blkHeight_max_safe >= 16) ? 16 :
+    (nBlkHeight % 8 == 0 && blkHeight_max_safe >= 8) ? 8 :
+    (nBlkHeight % 4 == 0 && blkHeight_max_safe >= 4) ? 4 : 2;
+  constexpr int blkHeight_outer = nBlkHeight / blkHeight_safe; // if safe
+  assert(blkHeight_outer * blkHeight_safe == nBlkHeight);
+
+  for (int y_outer = 0; y_outer < blkHeight_outer; y_outer++) {
+    __m128i sumw = _mm_setzero_si128(); // word sized sums
+    for (int y = 0; y < blkHeight_safe; y += vert_inc)
+    {
+      // BlockSizeX==48: 3x(8+8) pixels cycles, 3x32 bytes
+      for (int x = 0; x < 48 * 2; x += 32)
+      {
+        // 1st row 8 pixels 16 bytes
+        auto src1 = _mm_load_si128((__m128i *) (pSrc + x));
+        auto src2 = _mm_loadu_si128((__m128i *) (pRef + x));
+        __m128i absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+        sumw = _mm_add_epi16(sumw, absdiff);
+        // 2nd group
+        src1 = _mm_load_si128((__m128i *) (pSrc + x + 16));
+        src2 = _mm_loadu_si128((__m128i *) (pRef + x + 16));
+        absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+        sumw = _mm_add_epi16(sumw, absdiff);
+
+        if (vert_inc >= 2) {
+          // 2nd row 8 pixels 16 bytes
+          src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch * 1 + x));
+          src2 = _mm_loadu_si128((__m128i *) (pRef + nRefPitch * 1 + x));
+          __m128i absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+          sumw = _mm_add_epi16(sumw, absdiff);
+          // 2nd group
+          src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch * 1 + x + 16));
+          src2 = _mm_loadu_si128((__m128i *) (pRef + nRefPitch * 1 + x + 16));
+          absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+          sumw = _mm_add_epi16(sumw, absdiff);
+        }
+    }
+      pSrc += nSrcPitch * vert_inc;
+      pRef += nRefPitch * vert_inc;
+  }
+    // sum up 8 words
+    sum = _mm_add_epi32(sum, _mm_add_epi32(_mm_unpacklo_epi16(sumw, zero), _mm_unpackhi_epi16(sumw, zero)));
+}
+  // sum up 4 integers
+  sum = _mm_hadd_epi32(sum, sum);
+  sum = _mm_hadd_epi32(sum, sum);
+  unsigned int result = _mm_cvtsi128_si32(sum);
+
+#ifdef __AVX__
+  _mm256_zeroupper();
+#endif
+
+  return result;
+}
 
 template<int nBlkHeight>
 unsigned int MAKE_FN(Sad16_sse2_64xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
-#ifdef __AVX__
-  _mm256_zeroupper(); // diff from main sse2
-#endif
-
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128();
 
@@ -547,7 +1119,7 @@ unsigned int MAKE_FN(Sad16_sse2_64xN)(const uint8_t *pSrc, int nSrcPitch, const 
     pSrc += nSrcPitch;
     pRef += nRefPitch;
   }
-#ifdef __AVX__ // avx or avx2
+#ifdef __AVX__
   __m128i sum1 = _mm_hadd_epi32(sum, sum);
   sum = _mm_hadd_epi32(sum1, sum1);
 #else
@@ -563,7 +1135,7 @@ unsigned int MAKE_FN(Sad16_sse2_64xN)(const uint8_t *pSrc, int nSrcPitch, const 
   unsigned int result = _mm_cvtsi128_si32(sum);
 
 #ifdef __AVX__
-  _mm256_zeroupper(); // diff from main sse2, paranoia, bacause here we have no ymm regs
+  _mm256_zeroupper();
 #endif
 
   return result;

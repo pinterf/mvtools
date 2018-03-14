@@ -37,7 +37,7 @@
  // put it into a common h
 #include "sadfunctions16.h"
 
-SADFunction* get_sad_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
+SADFunction* get_sad_function(int BlockX, int BlockY, int bits_per_pixel, arch_t arch);
 
 SADFunction* get_satd_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
 
@@ -77,16 +77,21 @@ SAD_ISSE(2,2);
 
 #if 0
 // test-test-test-failed
+#define SAD16_FROM_X265
 #ifdef SAD16_FROM_X265
-#define SAD16_x264(blsizex, blsizey, type) extern "C" unsigned int __cdecl x264_16_pixel_sad_##blsizex##x##blsizey##_##type##(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+#define SAD10_x264(blsizex, blsizey, type) extern "C" unsigned int __cdecl x264_10_pixel_sad_##blsizex##x##blsizey##_##type##(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 // experimental from sad16-a.asm
 // arrgh problems: 
-// - pitches are not byte level, but have 16bit granularity instead in the original asm.
+// - pitches are not byte level, but have 16bit granularity instead in the original asm. <-- biggest problem for using it out-of-box
 // - subw, absw is used, which is 16 bit incompatible, internal sum limits, all stuff can be used safely for 10-12 bits max
-// will not differentiate by bit-depth, too much work a.t.m.
-SAD16_x264(16, 16, sse2);
-SAD16_x264(8, 8, sse2);
-#undef SAD16_x264
+// I will not differentiate by bit-depth, too much work a.t.m., it is excluded from Build, anyway
+// check: sad16-a.asm preprocessor options (for x86): PREFIX;private_prefix=x264_10;ARCH_X86_64=0;BIT_DEPTH=10;HIGH_BIT_DEPTH=1
+// BIT_DEPTH should be 10, HIGH_BIT_DEPTH set to 1. private_prefix: functions will name like that
+// check: const16-a.asm preprocessor options (for x86): PREFIX;private_prefix=x264_10;ARCH_X86_64=0;BIT_DEPTH=10;HIGH_BIT_DEPTH=1
+SAD10_x264(16, 16, sse2);
+SAD10_x264(8, 8, sse2);
+SAD10_x264(4, 4, sse2);
+#undef SAD10_x264
 #endif
 #endif
 

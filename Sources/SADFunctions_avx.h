@@ -45,27 +45,45 @@ template<int nBlkWidth, int nBlkHeight, typename pixel_t>
 unsigned int Sad16_sse2_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
 
 template<int nBlkHeight>
+unsigned int Sad10_ssse3_4xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+template<int nBlkHeight>
 unsigned int Sad16_sse2_4xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+template<int nBlkHeight>
+unsigned int Sad10_ssse3_6xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
 template<int nBlkHeight>
 unsigned int Sad16_sse2_6xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
 template<int nBlkHeight>
+unsigned int Sad10_ssse3_8xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+template<int nBlkHeight>
 unsigned int Sad16_sse2_8xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+template<int nBlkHeight>
+unsigned int Sad10_ssse3_12xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
 template<int nBlkHeight>
 unsigned int Sad16_sse2_12xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
 template<int nBlkHeight>
+unsigned int Sad10_ssse3_16xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+template<int nBlkHeight>
 unsigned int Sad16_sse2_16xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+template<int nBlkHeight>
+unsigned int Sad10_ssse3_24xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
 template<int nBlkHeight>
 unsigned int Sad16_sse2_24xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
 template<int nBlkHeight>
+unsigned int Sad10_ssse3_32xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+template<int nBlkHeight>
 unsigned int Sad16_sse2_32xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
 template<int nBlkHeight>
+unsigned int Sad10_ssse3_48xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+template<int nBlkHeight>
 unsigned int Sad16_sse2_48xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+template<int nBlkHeight>
+unsigned int Sad10_ssse3_64xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
 template<int nBlkHeight>
 unsigned int Sad16_sse2_64xN_avx(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
 
 // match with SADFunctions.cpp which includes sadfunction16.h
-#define MAKE_SAD_FN(x, y) template unsigned int Sad16_sse2_##x##xN_avx<y>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
-//#define MAKE_SAD_FN(x, y) template unsigned int Sad16_sse2_avx<x, y, uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+#define MAKE_SAD_FN(x, y) template unsigned int Sad16_sse2_##x##xN_avx<y>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch); \
+ template unsigned int Sad10_ssse3_##x##xN_avx<y>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
   MAKE_SAD_FN(64, 64)
   MAKE_SAD_FN(64, 48)
   MAKE_SAD_FN(64, 32)

@@ -153,8 +153,8 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
   else
     arch = NO_SIMD;
 
-  SAD = get_sad_function(nBlkSizeX, nBlkSizeY, pixelsize, arch);
-  SADCHROMA = get_sad_function(nBlkSizeX / xRatioUV, nBlkSizeY / yRatioUV, pixelsize, arch);
+  SAD = get_sad_function(nBlkSizeX, nBlkSizeY, bits_per_pixel, arch);
+  SADCHROMA = get_sad_function(nBlkSizeX / xRatioUV, nBlkSizeY / yRatioUV, bits_per_pixel, arch);
   BLITLUMA = get_copy_function(nBlkSizeX, nBlkSizeY, pixelsize, arch);
   BLITCHROMA = get_copy_function(nBlkSizeX / xRatioUV, nBlkSizeY / yRatioUV, pixelsize, arch);
   //VAR        = get_var_function(nBlkSizeX/xRatioUV, nBlkSizeY/yRatioUV, pixelsize, arch); // variance.h PF: no VAR

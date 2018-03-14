@@ -1,10 +1,129 @@
 #include "SADFunctions_avx2.h"
-//#include "overlap.h"
 #include <map>
 #include <tuple>
 #include <immintrin.h>
 #include <stdint.h>
 #include "def.h"
+
+// 64x (16-64)
+// 48x (12x64)
+// 32x (8-64)
+// 16x (1-64)
+template<int nBlkWidth, int nBlkHeight>
+unsigned int Sad10_avx2(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+{
+#if 0
+  // check AVX2 result against C
+  unsigned int result2 = Sad_AVX2_C<nBlkWidth, nBlkHeight, pixel_t>(pSrc, nSrcPitch, pRef, nRefPitch);
+#endif
+
+  if constexpr((nBlkWidth < 8)) {
+    assert("AVX2 not supported for uint16_t with BlockSize<8");
+    return 0;
+  }
+
+  __m256i zero = _mm256_setzero_si256();
+  __m256i sum = _mm256_setzero_si256();
+
+  constexpr bool two_16byte_rows = (nBlkWidth == 8);
+  if (two_16byte_rows && nBlkHeight == 1) {
+    assert("AVX2 not supported BlockHeight==1 for uint16_t with BlockSize=8");
+    return 0;
+  }
+  constexpr bool one_cycle = (sizeof(uint16_t) * nBlkWidth) <= 32;
+  constexpr bool unroll_by2 = !two_16byte_rows && nBlkHeight >= 2; // unroll by 4: slower
+
+  constexpr int lane_count = (two_16byte_rows || nBlkWidth <= 16) ? 1 : (nBlkWidth / 16); // for 64 bit: 4 lanes
+  // 10 bit version
+  // a uint16 can hold maximum sum of 64 differences.
+  // over nBlkHeight "X" we sum up after each "blkHeight_safe" height
+  // one lane here: ymm register holding 16 pixels
+  // 1x lane  16 pixels: 64   height ok (one difference for each pixel row) -> basically everything is ok, no width over 64 yet
+  // 2x lanes 32 pixels: 32   height ok -> 32 ok, 64 not
+  // 3x lanes 48 pixels: 21.3 height ok -> 12 ok, 24,48,64 not
+  // 4x lanes 64 pixels: 16   height ok -> 16 ok, 32, 48 not
+
+  constexpr int blkHeight_max_safe = 64 / lane_count;
+  constexpr int blkHeight_safe = (blkHeight_max_safe >= nBlkHeight) ? nBlkHeight :
+    (nBlkHeight % 16 == 0 && blkHeight_max_safe >= 16) ? 16 :
+    (nBlkHeight % 8 == 0 && blkHeight_max_safe >= 8) ? 8 :
+    (nBlkHeight % 4 == 0 && blkHeight_max_safe >= 4) ? 4 : 2;
+  constexpr int blkHeight_outer = nBlkHeight / blkHeight_safe; // if safe
+  
+  assert(blkHeight_outer * blkHeight_safe == nBlkHeight);
+
+  constexpr int vert_inc = (two_16byte_rows || unroll_by2) ? 2 : 1;
+  
+  for (int y_outer = 0; y_outer < blkHeight_outer; y_outer++) {
+    __m256i sumw = _mm256_setzero_si256();
+    for (int y = 0; y < blkHeight_safe; y += vert_inc)
+    {
+      if (two_16byte_rows) { // 8xN pixels
+        __m256i src1, src2;
+        // two 16 byte rows at a time
+        src1 = _mm256_loadu2_m128i((const __m128i *) (pSrc + nSrcPitch), (const __m128i *) (pSrc));
+        src2 = _mm256_loadu2_m128i((const __m128i *) (pRef + nRefPitch), (const __m128i *) (pRef));
+        sumw = _mm256_add_epi16(sumw, _mm256_abs_epi16(_mm256_sub_epi16(src1, src2)));
+      }
+      else if (one_cycle) { // no x loop, 16xN pixels
+        __m256i src1, src2;
+        src1 = _mm256_loadu_si256((__m256i *) (pSrc));
+        src2 = _mm256_loadu_si256((__m256i *) (pRef));
+        sumw = _mm256_add_epi16(sumw, _mm256_abs_epi16(_mm256_sub_epi16(src1, src2)));
+        if (unroll_by2) {
+          src1 = _mm256_loadu_si256((__m256i *) (pSrc + nSrcPitch));
+          src2 = _mm256_loadu_si256((__m256i *) (pRef + nRefPitch));
+          sumw = _mm256_add_epi16(sumw, _mm256_abs_epi16(_mm256_sub_epi16(src1, src2)));
+        }
+      }
+      else if ((nBlkWidth * sizeof(uint16_t)) % 32 == 0) {
+        // 16*2 bytes yes,
+        // 24*2 bytes not supported, one 256bit and one 128bit lane
+        // 32*2 bytes yes
+        // 48*2 bytes yes
+        // 64*2 bytes yes
+        for (int x = 0; x < nBlkWidth * sizeof(uint16_t); x += 32)
+        {
+          __m256i src1, src2;
+          src1 = _mm256_loadu_si256((__m256i *) (pSrc + x));
+          src2 = _mm256_loadu_si256((__m256i *) (pRef + x));
+          sumw = _mm256_add_epi16(sumw, _mm256_abs_epi16(_mm256_sub_epi16(src1, src2)));
+          if (unroll_by2) {
+            src1 = _mm256_loadu_si256((__m256i *) (pSrc + x + nSrcPitch));
+            src2 = _mm256_loadu_si256((__m256i *) (pRef + x + nRefPitch));
+            sumw = _mm256_add_epi16(sumw, _mm256_abs_epi16(_mm256_sub_epi16(src1, src2)));
+          }
+        }
+      }
+      else {
+        assert(0);
+      }
+      pSrc += nSrcPitch * vert_inc;
+      pRef += nRefPitch * vert_inc;
+    }
+    // sum up 8 words
+    sum = _mm256_add_epi32(sum, _mm256_add_epi32(_mm256_unpacklo_epi16(sumw, zero), _mm256_unpackhi_epi16(sumw, zero)));
+  }
+
+  unsigned int result;
+  sum = _mm256_hadd_epi32(sum, sum);
+  sum = _mm256_hadd_epi32(sum, sum);
+  __m128i sum128 = _mm_add_epi32(_mm256_castsi256_si128(sum), _mm256_extractf128_si256(sum, 1));
+  result = _mm_cvtsi128_si32(sum128);
+
+#if 0
+  // check AVX2 result against C
+  if (result != result2) {
+    result = result2;
+  }
+#endif
+
+  _mm256_zeroupper();
+  /* Use VZEROUPPER to avoid the penalty of switching from AVX to SSE */
+
+  return result;
+}
+
 
 // integer 256 with SSE2-like function from AVX2
 // above width==16 for uint16_t and width==32 for uint8_t
@@ -148,34 +267,24 @@ unsigned int Sad16_avx2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
       pRef += nRefPitch;
     }
   }
-  /*
-  [Low64, Hi64]
-  _mm_unpacklo_epi64(_mm_setzero_si128(), x)  [0, x0]
-  _mm_unpackhi_epi64(_mm_setzero_si128(), x)  [0, x1]
-  _mm_move_epi64(x)                           [x0, 0]
-  _mm_unpackhi_epi64(x, _mm_setzero_si128())  [x1, 0]
-  */
-  __m256i a03;
-  __m256i a47;
-  if(sizeof(pixel_t) == 2) {
-    // at 16 bits: we have 8 integers for sum: a0 a1 a2 a3 a4 a5 a6 a7
-    a03 = _mm256_unpacklo_epi32(sum, zero); // a0 0 a1 0 a2 0 a3 0
-    a47 = _mm256_unpackhi_epi32(sum, zero); // a4 0 a5 0 a6 0 a7 0
-    a03 = _mm256_add_epi32(a03, a47); // a0+a4,0, a1+a5, 0, a2+a6, 0, a3+a7, 0
-                                      // sum here: sum1 0 sum2 0 sum3 0 sum4 0, as in uint8_t case
+
+  unsigned int result;
+  if (sizeof(pixel_t) == 2) {
+    sum = _mm256_hadd_epi32(sum, sum);
+    sum = _mm256_hadd_epi32(sum, sum);
+    __m128i sum128 = _mm_add_epi32(_mm256_castsi256_si128(sum), _mm256_extractf128_si256(sum, 1));
+    result = _mm_cvtsi128_si32(sum128);
   }
-  if(sizeof(pixel_t) == 1) {
-    a03 = sum;
+  else {
+    // add the low 128 bit to the high 128 bit
+    __m128i sum128 = _mm_add_epi32(_mm256_castsi256_si128(sum), _mm256_extractf128_si256(sum, 1));
+    // a0+a4+a2+a6, 0, a1+a5+a3+a7, 0,
+
+    __m128i sum_hi = _mm_unpackhi_epi64(sum128, _mm_setzero_si128()); // a1+a5+a3+a7
+    sum128 = _mm_add_epi32(sum128, sum_hi); // a0+a4+a2+a6 + a1+a5+a3+a7
+
+    result = _mm_cvtsi128_si32(sum128);
   }
-
-  // add the low 128 bit to the high 128 bit
-  __m128i sum128 = _mm_add_epi32(_mm256_castsi256_si128(a03),_mm256_extractf128_si256(a03, 1));
-  // a0+a4+a2+a6, 0, a1+a5+a3+a7, 0,
-
-  __m128i sum_hi = _mm_unpackhi_epi64(sum128, _mm_setzero_si128()); // a1+a5+a3+a7
-  sum128 = _mm_add_epi32(sum128, sum_hi); // a0+a4+a2+a6 + a1+a5+a3+a7
-
-  unsigned int result = _mm_cvtsi128_si32(sum128);
 
 #if 0
   // check AVX2 result against C
