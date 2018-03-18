@@ -15,14 +15,15 @@ http://avisynth.nl/index.php/AviSynth%2B#AviSynth.2B_x64_plugins
 
 Change log
 - 2.7.27 (20180318)
-  - Fix: MDepan: use zerow parameter. The parameter had no effect probably since it had been introduced.
+  - Fix: MDepan: use zerow parameter. The parameter had no effect probably since it had been introduced. (veins1)
   - MDepan: report MT mode for Avisynth+. MT_MULTI_INSTANCE, except for logfile writing output mode when it reports MT_SERIALIZED.
+    (other filters already have proper registration, MDepan was missed)
 
 - 2.7.26 (20180314)
   -New: MDegrain1-6 and N: new parameter bool "out16" = false. If set, 8 bit input results in native 16bit output (like lsb=true hack but this is native).
    Faster than lsb=true by up to 12% (i7-7700)
   -Faster: special 10 bit SAD functions instead of the generic 10-16bit one. 
-   Depending on the block size, 4-17% gain for a typical MDegrain1-5 session
+   Depending on the block size, 4-17% gain for a typical MDegrain1-6 session
 
 - 2.7.25 (20180227)
   Fix: x64: not-cleared mmx state in MSuper assembly code would cause crash later, e.g. in x264 encoding, depending on following filters.
