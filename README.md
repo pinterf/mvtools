@@ -14,6 +14,10 @@ Modification base:
 http://avisynth.nl/index.php/AviSynth%2B#AviSynth.2B_x64_plugins
 
 Change log
+- 2.7.27 (20180318)
+  - Fix: MDepan: use zerow parameter. The parameter had no effect probably since it had been introduced.
+  - MDepan: report MT mode for Avisynth+. MT_MULTI_INSTANCE, except for logfile writing output mode when it reports MT_SERIALIZED.
+
 - 2.7.26 (20180314)
   -New: MDegrain1-6 and N: new parameter bool "out16" = false. If set, 8 bit input results in native 16bit output (like lsb=true hack but this is native).
    Faster than lsb=true by up to 12% (i7-7700)
