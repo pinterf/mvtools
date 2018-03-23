@@ -680,8 +680,8 @@ MDegrainN::MDegrainN(
   if (out16_flag) {
     if (pixelsize != 1 || pixelsize_super != 1)
       env_ptr->ThrowError("MDegrainN : out16 flag only for 8 bit sources");
-    if (!vi.IsYV12() && !vi.IsYV16() && !vi.IsYV24())
-      env_ptr->ThrowError("MDegrainN : only YV12, YV16 or YV24 allowed for out16");
+    if (!vi.IsY8() && !vi.IsYV12() && !vi.IsYV16() && !vi.IsYV24())
+      env_ptr->ThrowError("MDegrainN : only YV8, YV12, YV16 or YV24 allowed for out16");
   }
 
   if (lsb_flag && out16_flag)
@@ -813,7 +813,9 @@ MDegrainN::MDegrainN(
   }
 
   if (out16_flag) {
-    if (vi.IsYV12())
+    if (vi.IsY8())
+      vi.pixel_type = VideoInfo::CS_Y16;
+    else if (vi.IsYV12())
       vi.pixel_type = VideoInfo::CS_YUV420P16;
     else if (vi.IsYV16())
       vi.pixel_type = VideoInfo::CS_YUV422P16;
