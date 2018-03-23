@@ -14,6 +14,9 @@ Modification base:
 http://avisynth.nl/index.php/AviSynth%2B#AviSynth.2B_x64_plugins
 
 Change log
+- 2.7.28 (20180323)
+  - Fix: in MDegrain1-6/N allow Y8 input for out16 parameter
+
 - 2.7.27 (20180318)
   - Fix: MDepan: use zerow parameter. The parameter had no effect probably since it had been introduced. (veins1)
   - MDepan: report MT mode for Avisynth+. MT_MULTI_INSTANCE, except for logfile writing output mode when it reports MT_SERIALIZED.
