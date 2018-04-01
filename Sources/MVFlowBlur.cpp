@@ -191,8 +191,8 @@ void MVFlowBlur::FlowBlur(BYTE * pdst8, int dst_pitch, const BYTE *pref8, int re
 
       if (rel_y > heightLimitRel)
         rel_y = heightLimitRel;
-      else if (rel_y + (h << 1) < 0)
-        rel_y = -(h << 1);
+      else if (rel_y + (h << nLOGPEL) < 0)
+        rel_y = -(h << nLOGPEL);
 
       int vxF0 = (rel_x * blur256);
       int vyF0 = (rel_y * blur256);
