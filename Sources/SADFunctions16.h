@@ -42,7 +42,7 @@ unsigned int MAKE_FN(Sad10_ssse3_4xN)(const uint8_t *pSrc, int nSrcPitch, const 
 {
   // 10 bit version
   // a uint16 can hold maximum sum of 64 differences. We are good till 4x128 (but max is 64 atm)
-  assert(blkHeight > 128);
+  assert(nBlkHeight > 128);
   __m128i zero = _mm_setzero_si128();
   __m128i sumw = _mm_setzero_si128(); // word sized sums
 
@@ -144,7 +144,7 @@ unsigned int MAKE_FN(Sad10_ssse3_6xN)(const uint8_t *pSrc, int nSrcPitch, const 
 {
   // 10 bit version
   // a uint16 can hold maximum sum of 64 differences. We are good till 6x64
-  assert(blkHeight > 64);
+  assert(nBlkHeight > 64);
   __m128i zero = _mm_setzero_si128();
   __m128i sumw = _mm_setzero_si128(); // word sized sums
   __m128i mask6_16bit = _mm_set_epi16(0, 0, -1, -1, -1, -1, -1, -1); // -1: 0xFFFF
@@ -249,7 +249,7 @@ unsigned int MAKE_FN(Sad10_ssse3_8xN)(const uint8_t *pSrc, int nSrcPitch, const 
 {
   // 10 bit version
   // a uint16 can hold maximum sum of 64 differences. We are good till 8x64
-  assert(blkHeight > 64);
+  assert(nBlkHeight > 64);
   __m128i zero = _mm_setzero_si128();
   __m128i sumw = _mm_setzero_si128(); // word sized sums
 
@@ -351,7 +351,7 @@ unsigned int MAKE_FN(Sad10_ssse3_12xN)(const uint8_t *pSrc, int nSrcPitch, const
 {
   // 10 bit version
   // a uint16 can hold maximum sum of 64 differences. We are good till 16x32
-  assert(blkHeight > 64);
+  assert(nBlkHeight > 64);
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128(); // outer sum
 
@@ -471,7 +471,7 @@ unsigned int MAKE_FN(Sad10_ssse3_16xN)(const uint8_t *pSrc, int nSrcPitch, const
 {
   // 10 bit version
   // a uint16 can hold maximum sum of 64 differences. We are good till 16x32
-  assert(blkHeight > 64);
+  assert(nBlkHeight > 64);
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128(); // outer sum
 
@@ -613,7 +613,7 @@ unsigned int MAKE_FN(Sad10_ssse3_24xN)(const uint8_t *pSrc, int nSrcPitch, const
 {
   // 10 bit version
   // a uint16 can hold maximum sum of 64 differences. We are good till approx 24x21 (3 lanes add together, 64/3 = 21)
-  assert(blkHeight > 64);
+  assert(nBlkHeight > 64);
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128(); // outer sum
 
@@ -748,7 +748,7 @@ unsigned int MAKE_FN(Sad10_ssse3_32xN)(const uint8_t *pSrc, int nSrcPitch, const
 {
   // 10 bit version
   // a uint16 can hold maximum sum of 64 differences.
-  assert(blkHeight > 64);
+  assert(nBlkHeight > 64);
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128(); // outer sum
 
@@ -900,7 +900,7 @@ unsigned int MAKE_FN(Sad10_ssse3_48xN)(const uint8_t *pSrc, int nSrcPitch, const
 {
   // 10 bit version
   // a uint16 can hold maximum sum of 64 differences.
-  assert(blkHeight > 64);
+  assert(nBlkHeight > 64);
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128(); // outer sum
 
@@ -1024,7 +1024,7 @@ unsigned int MAKE_FN(Sad10_ssse3_64xN)(const uint8_t *pSrc, int nSrcPitch, const
 {
   // 10 bit version
   // a uint16 can hold maximum sum of 64 differences.
-  assert(blkHeight > 64);
+  assert(nBlkHeight > 64);
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128(); // outer sum
 
