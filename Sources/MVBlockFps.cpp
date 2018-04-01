@@ -145,8 +145,18 @@ MVBlockFps::MVBlockFps(
   OVERSCHROMA16 = get_overlaps_function(nBlkSizeX >> nLogxRatioUV, nBlkSizeY >> nLogyRatioUV, sizeof(uint16_t), arch);
 
   // may be padded for full frame cover
+  /*
   nBlkXP = (nBlkX*(nBlkSizeX - nOverlapX) + nOverlapX < nWidth) ? nBlkX + 1 : nBlkX;
   nBlkYP = (nBlkY*(nBlkSizeY - nOverlapY) + nOverlapY < nHeight) ? nBlkY + 1 : nBlkY;
+  */
+  // 2.7.27- sometimes +1 is not enough 
+  nBlkXP = nBlkX;
+  while (nBlkXP*(nBlkSizeX - nOverlapX) + nOverlapX < nWidth)
+    nBlkXP++;
+  nBlkYP = nBlkY;
+  while (nBlkYP*(nBlkSizeY - nOverlapY) + nOverlapY < nHeight)
+    nBlkYP++;
+
   nWidthP = nBlkXP*(nBlkSizeX - nOverlapX) + nOverlapX;
   nHeightP = nBlkYP*(nBlkSizeY - nOverlapY) + nOverlapY;
   // for YV12 and any type
