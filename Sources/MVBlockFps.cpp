@@ -243,10 +243,6 @@ MVBlockFps::~MVBlockFps()
     _aligned_free(DstShort); // PF 161116
     _aligned_free(DstShortU);
     _aligned_free(DstShortV);
-    /*delete[] DstShort;
-    delete[] DstShortU;
-    delete[] DstShortV;
-    */
   }
 }
 
@@ -533,8 +529,6 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
   PVideoFrame	src = super->GetFrame(nleft, env);
   PVideoFrame ref = super->GetFrame(nright, env);//  ref for backward compensation
 
-//	const Time256ProviderCst	t256_prov_cst (time256, 0, 0); 2.6.0.5
-
   dst = env->NewVideoFrame(vi);
 
   bool needProcessPlanes[3] = { true, !!(nSuperModeYUV & UPLANE), !!(nSuperModeYUV & VPLANE) };
@@ -598,28 +592,6 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
         pSrc[p] = src->GetReadPtr(plane);
         nSrcPitches[p] = src->GetPitch(plane);
       }
-      /*
-      pDst[0] = YWPLAN(dst);
-      pDst[1] = UWPLAN(dst);
-      pDst[2] = VWPLAN(dst);
-      nDstPitches[0] = YPITCH(dst);
-      nDstPitches[1] = UPITCH(dst);
-      nDstPitches[2] = VPITCH(dst);
-
-      pRef[0] = YRPLAN(ref);
-      pRef[1] = URPLAN(ref);
-      pRef[2] = VRPLAN(ref);
-      nRefPitches[0] = YPITCH(ref);
-      nRefPitches[1] = UPITCH(ref);
-      nRefPitches[2] = VPITCH(ref);
-
-      pSrc[0] = YRPLAN(src);
-      pSrc[1] = URPLAN(src);
-      pSrc[2] = VRPLAN(src);
-      nSrcPitches[0] = YPITCH(src);
-      nSrcPitches[1] = UPITCH(src);
-      nSrcPitches[2] = VPITCH(src);
-      */
     }
     PROFILE_STOP(MOTION_PROFILE_YUY2CONVERT);
 
@@ -836,12 +808,12 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
             Blend<uint8_t>(pDst[p], pSrc[p], pRef[p],
               p == 0 ? nHeight - nBlkSizeY*nBlkY : nHeightUV - nBlkSizeY_UV*nBlkY,
               p == 0 ? nWidth : nWidthUV,
-              nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256 /*t256_prov_cst*/, cpuFlags);
+              nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256, cpuFlags);
           else if (pixelsize == 2)
             Blend<uint16_t>(pDst[p], pSrc[p], pRef[p],
               p == 0 ? nHeight - nBlkSizeY*nBlkY : nHeightUV - nBlkSizeY_UV*nBlkY,
               p == 0 ? nWidth : nWidthUV,
-              nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256 /*t256_prov_cst*/, cpuFlags);
+              nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256, cpuFlags);
         }
       }
     } // overlapx,y == 0
@@ -863,14 +835,14 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
               pRef[p] + pixelsize*(p == 0 ? nWidth_B : nWidth_B_UV),   // -"-
               p == 0 ? nHeight_B : nHeight_B_UV, // P.F. nHeight_B is enough, bottom will take care of buttom right edge
               p == 0 ? nWidth - nWidth_B : nWidthUV - nWidth_B_UV,
-              nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256 /*t256_prov_cst*/, cpuFlags);
+              nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256, cpuFlags);
           else if (pixelsize == 2)
             Blend<uint16_t>(pDst[p] + pixelsize*(p == 0 ? nWidth_B : nWidth_B_UV),   // PF 161115 nWidth_B / xRatioUV instead of 0 for UV (2.5.11.22 bug)
               pSrc[p] + pixelsize*(p == 0 ? nWidth_B : nWidth_B_UV),   // -"-
               pRef[p] + pixelsize*(p == 0 ? nWidth_B : nWidth_B_UV),   // -"-
               p == 0 ? nHeight_B : nHeight_B_UV,
               p == 0 ? nWidth - nWidth_B : nWidthUV - nWidth_B_UV,
-              nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256 /*t256_prov_cst*/, cpuFlags);
+              nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256, cpuFlags);
         }
       }
       // blend rest right with time weight
@@ -888,14 +860,14 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
               pRef[p] + nRefPitches[p] * (p == 0 ? nHeight_B : nHeight_B_UV),
               p == 0 ? nHeight - nHeight_B : nHeightUV - nHeight_B_UV,
               p == 0 ? nWidth : nWidthUV,
-              nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256 /*t256_prov_cst*/, cpuFlags);
+              nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256, cpuFlags);
           else if (pixelsize == 2)
             Blend<uint16_t>(pDst[p] + nDstPitches[p] * (p == 0 ? nHeight_B : nHeight_B_UV),
               pSrc[p] + nSrcPitches[p] * (p == 0 ? nHeight_B : nHeight_B_UV),
               pRef[p] + nRefPitches[p] * (p == 0 ? nHeight_B : nHeight_B_UV),
               p == 0 ? nHeight - nHeight_B : nHeightUV - nHeight_B_UV,
               p == 0 ? nWidth : nWidthUV,
-              nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256 /*t256_prov_cst*/, cpuFlags);
+              nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256, cpuFlags);
         }
       }
       
@@ -1053,7 +1025,7 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
         nRefPitches[0] = ref->GetPitch();
         pDstYUY2 = dst->GetWritePtr();
         nDstPitchYUY2 = dst->GetPitch();
-        Blend<uint8_t>(pDstYUY2, pSrc[0], pRef[0], nHeight, nWidth * 2, nDstPitchYUY2, nSrcPitches[0], nRefPitches[0], time256 /*t256_prov_cst*/, cpuFlags);
+        Blend<uint8_t>(pDstYUY2, pSrc[0], pRef[0], nHeight, nWidth * 2, nDstPitchYUY2, nSrcPitches[0], nRefPitches[0], time256, cpuFlags);
       }
       else
       {
@@ -1086,13 +1058,13 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
               Blend<uint8_t>(pDst[p], pSrc[p], pRef[p],
                 p == 0 ? nHeight : nHeightUV,
                 p == 0 ? nWidth : nWidthUV,
-                nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256 /*t256_prov_cst*/, cpuFlags);
+                nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256, cpuFlags);
             }
             else if (pixelsize == 2) {
               Blend<uint16_t>(pDst[p], pSrc[p], pRef[p],
                 p == 0 ? nHeight : nHeightUV,
                 p == 0 ? nWidth : nWidthUV,
-                nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256 /*t256_prov_cst*/, cpuFlags);
+                nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256, cpuFlags);
             }
           }
         }
