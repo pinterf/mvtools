@@ -19,8 +19,6 @@ private:
   int time256;
   double ml;
   PClip finest;
-  //PClip	timeclip;
-  //bool isse;
   int cpuFlags;
   bool planar;
   bool blend;
@@ -84,12 +82,6 @@ private:
   int nHPaddingUV;
   int nVPaddingUV;
 
-  /*
-  typedef	short	VectLut[VECT_AMP];
-  VectLut	*LUTVB; // [time256] [v] lookup table for v
-  VectLut	*LUTVF;
-  */
-
   SimpleResize *upsizer;
   SimpleResize *upsizerUV;
 
@@ -98,7 +90,7 @@ private:
 
 public:
   MVFlowInter(PClip _child, PClip _finest, PClip _mvbw, PClip _mvfw, int _time256, double _ml,
-    bool _blend, sad_t nSCD1, int nSCD2, bool isse, bool _planar, PClip _timeclip, IScriptEnvironment* env);
+    bool _blend, sad_t nSCD1, int nSCD2, bool isse, bool _planar, IScriptEnvironment* env);
   ~MVFlowInter();
   PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
 

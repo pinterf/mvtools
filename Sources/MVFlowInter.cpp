@@ -23,33 +23,17 @@
 #include "MaskFun.h"
 #include "MVFinest.h"
 #include "SuperParams64Bits.h"
-#include "Time256ProviderCst.h"
-#include "Time256ProviderPlane.h"
+//#include "Time256ProviderCst.h"
+//#include "Time256ProviderPlane.h"
 #include "commonfunctions.h"
 
 MVFlowInter::MVFlowInter(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, int _time256, double _ml,
-  bool _blend, sad_t nSCD1, int nSCD2, bool _isse, bool _planar, PClip _timeclip, IScriptEnvironment* env) :
+  bool _blend, sad_t nSCD1, int nSCD2, bool _isse, bool _planar, IScriptEnvironment* env) :
   GenericVideoFilter(_child),
   MVFilter(_mvfw, "MFlowInter", env, 1, 0),
   mvClipB(_mvbw, nSCD1, nSCD2, env, 1, 0),
   mvClipF(_mvfw, nSCD1, nSCD2, env, 1, 0)
-  //timeclip(_timeclip)
 {
-  /*
-  if (_timeclip != 0)
-  {
-    const ::VideoInfo &	vi_tst = timeclip->GetVideoInfo();
-    const bool		same_format_flag = (vi_tst.height == vi.height
-      && vi_tst.width == vi.width
-      && vi_tst.num_frames == vi.num_frames
-      && vi_tst.IsSameColorspace(vi));
-    if (!same_format_flag)
-    {
-      env->ThrowError("MFlow: tclip format is different from the main clip.");
-    }
-  }
-  */
-
   time256 = _time256;
   ml = _ml;
   cpuFlags = _isse ? env->GetCPUFlags() : 0;
@@ -97,11 +81,9 @@ MVFlowInter::MVFlowInter(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, in
   /*
   nBlkXP = (nBlkX*(nBlkSizeX - nOverlapX) + nOverlapX < nWidth) ? nBlkX + 1 : nBlkX;
   nBlkYP = (nBlkY*(nBlkSizeY - nOverlapY) + nOverlapY < nHeight) ? nBlkY + 1 : nBlkY;
-  nWidthP = nBlkXP*(nBlkSizeX - nOverlapX) + nOverlapX;
-  nHeightP = nBlkYP*(nBlkSizeY - nOverlapY) + nOverlapY;
   */
   // e.g. BlkSizeY==8, nOverLapY=2, nHeight==1080, nBlkY==178 -> nBlkYP = 179 would still result in nHeightP == 1076
-  // 2.7.27- sometimes +1 is not enough 
+  // fix in 2.7.29- sometimes +1 is not enough 
   nBlkXP = nBlkX;
   while (nBlkXP*(nBlkSizeX - nOverlapX) + nOverlapX < nWidth)
     nBlkXP++;
@@ -112,7 +94,6 @@ MVFlowInter::MVFlowInter(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, in
   nWidthP = nBlkXP * (nBlkSizeX - nOverlapX) + nOverlapX;
   nHeightP = nBlkYP * (nBlkSizeY - nOverlapY) + nOverlapY;
 
-  // for YV12
   nWidthPUV = nWidthP / xRatioUV;
   nHeightPUV = nHeightP / yRatioUV;
   nHeightUV = nHeight / yRatioUV;
@@ -177,23 +158,7 @@ MVFlowInter::MVFlowInter(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, in
 
   upsizer = new SimpleResize(nWidthP, nHeightP, nBlkXP, nBlkYP, cpuFlags);
   upsizerUV = new SimpleResize(nWidthPUV, nHeightPUV, nBlkXP, nBlkYP, cpuFlags);
-  /* no in 2.5.11.22
-  if (timeclip == 0)
-  {
-    LUTVB = new VectLut [1];
-    LUTVF = new VectLut [1];
-    Create_LUTV(time256, LUTVB [0], LUTVF [0]);
-  }
-  else
-  {
-    LUTVB = new VectLut [256];
-    LUTVF = new VectLut [256];
-    for (int t256 = 0; t256 < 256; ++t256)
-    {
-      Create_LUTV(t256, LUTVB [t256], LUTVF [t256]);
-    }
-  }
-  */
+
   if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
   {
     DstPlanes = new YUY2Planes(nWidth, nHeight);
@@ -254,18 +219,12 @@ MVFlowInter::~MVFlowInter()
 
   _aligned_free(SADMaskSmallB);
   _aligned_free(SADMaskSmallF);
-
-  /* no in 2.5.11.22
-  delete [] LUTVB;
-  delete [] LUTVF;
-  */
 }
 
 //-------------------------------------------------------------------------
 PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
 {
   PVideoFrame dst;
-  // PVideoFrame t256; 2.6.0.5? removed at 2.5.11.22 merge
   BYTE *pDst[3];
   const BYTE *pRef[3], *pSrc[3];
   int nDstPitches[3], nRefPitches[3], nSrcPitches[3];
@@ -301,16 +260,8 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
   PVideoFrame ref = finest->GetFrame(nref, env);//  ref for  compensation
   dst = env->NewVideoFrame(vi);
 
-  //const Time256ProviderCst	t256_prov_cst (time256, LUTVB [0], LUTVF [0]);
-
   if (mvClipB.IsUsable() && mvClipF.IsUsable())
   {
-    /* 2.6.0.5? removed at 2.5.11.22 merge
-    if (timeclip != 0)
-    {
-      t256 = timeclip->GetFrame (n, env);
-    }
-    */
     if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2)
     {
       // planar data packed to interleaved format (same as interleved2planar by kassandro) - v2.0.0.5
@@ -348,18 +299,6 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
         nDstPitches[1] = nDstPitches[0];
         nDstPitches[2] = nDstPitches[0];
       }
-
-      /* 2.6.0.5? removed at 2.5.11.22 merge
-      if (timeclip != 0)
-      {
-        pt256[0] = t256->GetReadPtr();
-        pt256[1] = pt256[0] + t256->GetRowSize()/2;
-        pt256[2] = pt256[1] + t256->GetRowSize()/4;
-        nt256Pitches[0] = t256->GetPitch();
-        nt256Pitches[1] = nt256Pitches[0];
-        nt256Pitches[2] = nt256Pitches[0];
-      }
-      */
     }
 
     else
@@ -384,18 +323,6 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
       nSrcPitches[0] = YPITCH(src);
       nSrcPitches[1] = UPITCH(src);
       nSrcPitches[2] = VPITCH(src);
-
-      /* 2.6.0.5? removed at 2.5.11.22 merge
-      if (timeclip != 0)
-      {
-        pt256[0] = YRPLAN(t256);
-        pt256[1] = URPLAN(t256);
-        pt256[2] = VRPLAN(t256);
-        nt256Pitches[0] = YPITCH(t256);
-        nt256Pitches[1] = UPITCH(t256);
-        nt256Pitches[2] = VPITCH(t256);
-      }
-      */
     }
 
     int nOffsetY = nRefPitches[0] * nVPadding*nPel + nHPadding*nPel*pixelsize;
@@ -432,43 +359,15 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
 
     // analyse vectors field to detect occlusion
 
-    // 2.6.0.5? removed at 2.5.11.22 merge
-    //if (timeclip == 0) // 2.6.0.5? feature 
-    {
-      //	  double occNormB = (256-time256)/(256*ml);
-      MakeVectorOcclusionMaskTime(mvClipB, nBlkX, nBlkY, ml, 1.0,
-        nPel, MaskSmallB, nBlkXP, (256 - time256),
-        nBlkSizeX - nOverlapX, nBlkSizeY - nOverlapY);
-      //	  double occNormF = time256/(256*ml);
-      MakeVectorOcclusionMaskTime(mvClipF, nBlkX, nBlkY, ml, 1.0,
-        nPel, MaskSmallF, nBlkXP, time256,
-        nBlkSizeX - nOverlapX, nBlkSizeY - nOverlapY);
-    }
-    /* 2.6.0.5? removed at 2.5.11.22 merge
-    else
-    {
-      class OpFwd
-      {
-      public:
-        static inline int compute (int t) { return (      t); }
-      };
+    //	  double occNormB = (256-time256)/(256*ml);
+    MakeVectorOcclusionMaskTime(mvClipB, nBlkX, nBlkY, ml, 1.0,
+      nPel, MaskSmallB, nBlkXP, (256 - time256),
+      nBlkSizeX - nOverlapX, nBlkSizeY - nOverlapY);
+    //	  double occNormF = time256/(256*ml);
+    MakeVectorOcclusionMaskTime(mvClipF, nBlkX, nBlkY, ml, 1.0,
+      nPel, MaskSmallF, nBlkXP, time256,
+      nBlkSizeX - nOverlapX, nBlkSizeY - nOverlapY);
 
-      class OpBkw
-      {
-      public:
-        static inline int compute (int t) { return (256 - t); }
-      };
-
-      MakeVectorOcclusionMaskTimePlane <OpBkw> (
-        mvClipB, nBlkX, nBlkY, ml,
-        nPel, MaskSmallB, nBlkXP, pt256[0], nt256Pitches[0],
-        nBlkSizeX - nOverlapX, nBlkSizeY - nOverlapY);
-      MakeVectorOcclusionMaskTimePlane <OpFwd> (
-        mvClipF, nBlkX, nBlkY, ml,
-        nPel, MaskSmallF, nBlkXP, pt256[0], nt256Pitches[0],
-        nBlkSizeX - nOverlapX, nBlkSizeY - nOverlapY);
-    }
-    */
     if (nBlkXP > nBlkX) // fill right
     {
       for (int j = 0; j < nBlkY; j++)
@@ -554,7 +453,7 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
       upsizer->SimpleResizeDo_uint16(VYFullYFF, nWidthP, nHeightP, VPitchY, VYSmallYFF, nBlkXP, nBlkXP);
       upsizerUV->SimpleResizeDo_uint16(VXFullUVFF, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVFF, nBlkXP, nBlkXP);
       upsizerUV->SimpleResizeDo_uint16(VYFullUVFF, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVFF, nBlkXP, nBlkXP);
-      // back to 2.5.11.22 what is timeclip??? in 2.6.0.5
+
       if (pixelsize == 1) {
         FlowInterExtra<uint8_t>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, pSrc[0] + nOffsetY, nRefPitches[0],
           VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
@@ -577,45 +476,9 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
           VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
           nWidthUV, nHeightUV, time256, nPel, VXFullUVBB, VXFullUVFF, VYFullUVBB, VYFullUVFF);
       }
-    /* 2.6.0.5? removed at 2.5.11.22 merge
-      if (timeclip == 0)
-      {
-        FlowInterExtra(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, pSrc[0] + nOffsetY, nRefPitches[0],
-          VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
-          nWidth, nHeight, nPel, t256_prov_cst,
-          VXFullYBB, VXFullYFF, VYFullYBB, VYFullYFF);
-        FlowInterExtra(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
-          VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
-          nWidthUV, nHeightUV, nPel, t256_prov_cst,
-          VXFullUVBB, VXFullUVFF, VYFullUVBB, VYFullUVFF);
-        FlowInterExtra(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
-          VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
-          nWidthUV, nHeightUV, nPel, t256_prov_cst,
-          VXFullUVBB, VXFullUVFF, VYFullUVBB, VYFullUVFF);
-      }
-      else
-      {
-        FlowInterExtra(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, pSrc[0] + nOffsetY, nRefPitches[0],
-          VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
-          nWidth, nHeight, nPel,
-          Time256ProviderPlane (pt256 [0], nt256Pitches [0], LUTVB, LUTVF),
-          VXFullYBB, VXFullYFF, VYFullYBB, VYFullYFF);
-        FlowInterExtra(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
-          VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
-          nWidthUV, nHeightUV, nPel,
-          Time256ProviderPlane (pt256 [1], nt256Pitches [1], LUTVB, LUTVF),
-          VXFullUVBB, VXFullUVFF, VYFullUVBB, VYFullUVFF);
-        FlowInterExtra(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
-          VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
-          nWidthUV, nHeightUV, nPel,
-          Time256ProviderPlane (pt256 [2], nt256Pitches [2], LUTVB, LUTVF),
-          VXFullUVBB, VXFullUVFF, VYFullUVBB, VYFullUVFF);
-      }
-      */
     }
     else // bad extra frames, use old method without extra frames
     {
-      // back to 2.5.11.22 what is timeclip??? in 2.6.0.5
       if (pixelsize == 1) {
         FlowInter<uint8_t>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, pSrc[0] + nOffsetY, nRefPitches[0],
           VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
@@ -638,36 +501,6 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
           VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
           nWidthUV, nHeightUV, time256, nPel);
       }
-
-    /* 2.6.0.5? removed at 2.5.11.22 merge
-    if (timeclip == 0)
-      {
-        FlowInter(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, pSrc[0] + nOffsetY, nRefPitches[0],
-          VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
-          nWidth, nHeight, nPel, t256_prov_cst);
-        FlowInter(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
-          VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
-          nWidthUV, nHeightUV, nPel, t256_prov_cst);
-        FlowInter(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
-          VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
-          nWidthUV, nHeightUV, nPel, t256_prov_cst);
-      }
-      else
-      {
-        FlowInter(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, pSrc[0] + nOffsetY, nRefPitches[0],
-          VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
-          nWidth, nHeight, nPel,
-          Time256ProviderPlane (pt256 [0], nt256Pitches [0], LUTVB, LUTVF));
-        FlowInter(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
-          VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
-          nWidthUV, nHeightUV, nPel,
-          Time256ProviderPlane (pt256 [1], nt256Pitches [1], LUTVB, LUTVF));
-        FlowInter(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
-          VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
-          nWidthUV, nHeightUV, nPel,
-          Time256ProviderPlane (pt256 [2], nt256Pitches [2], LUTVB, LUTVF));
-      }
-      */
     }
 
     if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
@@ -688,12 +521,7 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
     if (blend) //let's blend src with ref frames like ConvertFPS
     {
       PVideoFrame ref = child->GetFrame(nref, env);
-      /*
-      if (timeclip != 0)
-      {
-        t256 = timeclip->GetFrame (n, env);
-      }
-      */
+
       if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2)
       {
         pSrc[0] = src->GetReadPtr(); // we can blend YUY2
@@ -704,25 +532,6 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
         nDstPitchYUY2 = dst->GetPitch();
 
         Blend<uint8_t>(pDstYUY2, pSrc[0], pRef[0], nHeight, nWidth * 2, nDstPitchYUY2, nSrcPitches[0], nRefPitches[0], time256, cpuFlags);
-
-    /* 2.6.0.5? removed at 2.5.11.22 merge
-    if (timeclip == 0)
-        {
-          const Time256ProviderCst	t256_provider (time256, 0, 0);
-          Blend(pDstYUY2, pSrc[0], pRef[0], nHeight, nWidth*2,
-            nDstPitchYUY2, nSrcPitches[0], nRefPitches[0],
-            t256_provider, isse);
-        }
-        else
-        {
-          pt256[0] = t256->GetReadPtr();
-          nt256Pitches[0] = t256->GetPitch();
-
-          Blend(pDstYUY2, pSrc[0], pRef[0], nHeight, nWidth*2,
-            nDstPitchYUY2, nSrcPitches[0], nRefPitches[0],
-            Time256ProviderPlane (pt256[0], nt256Pitches[0], 0, 0), isse);
-        }
-        */
       }
 
       else
@@ -759,39 +568,6 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
           Blend<uint16_t>(pDst[1], pSrc[1], pRef[1], nHeightUV, nWidthUV, nDstPitches[1], nSrcPitches[1], nRefPitches[1], time256, cpuFlags);
           Blend<uint16_t>(pDst[2], pSrc[2], pRef[2], nHeightUV, nWidthUV, nDstPitches[2], nSrcPitches[2], nRefPitches[2], time256, cpuFlags);
         }
-        /* 2.6.0.5
-        if (timeclip == 0)
-        {
-          Blend(pDst[0], pSrc[0], pRef[0], nHeight, nWidth,
-            nDstPitches[0], nSrcPitches[0], nRefPitches[0],
-            t256_prov_cst, cpuFlags);
-          Blend(pDst[1], pSrc[1], pRef[1], nHeightUV, nWidthUV,
-            nDstPitches[1], nSrcPitches[1], nRefPitches[1],
-            t256_prov_cst, cpuFlags);
-          Blend(pDst[2], pSrc[2], pRef[2], nHeightUV, nWidthUV,
-            nDstPitches[2], nSrcPitches[2], nRefPitches[2],
-            t256_prov_cst, cpuFlags);
-        }
-        else
-        {
-          pt256[0] = YRPLAN(t256);
-          pt256[1] = URPLAN(t256);
-          pt256[2] = VRPLAN(t256);
-          nt256Pitches[0] = YPITCH(t256);
-          nt256Pitches[1] = UPITCH(t256);
-          nt256Pitches[2] = VPITCH(t256);
-
-          Blend(pDst[0], pSrc[0], pRef[0], nHeight, nWidth,
-            nDstPitches[0], nSrcPitches[0], nRefPitches[0],
-            Time256ProviderPlane (pt256[0], nt256Pitches[0], 0, 0), isse);
-          Blend(pDst[1], pSrc[1], pRef[1], nHeightUV, nWidthUV,
-            nDstPitches[1], nSrcPitches[1], nRefPitches[1],
-            Time256ProviderPlane (pt256[1], nt256Pitches[1], 0, 0), isse);
-          Blend(pDst[2], pSrc[2], pRef[2], nHeightUV, nWidthUV,
-            nDstPitches[2], nSrcPitches[2], nRefPitches[2],
-            Time256ProviderPlane (pt256[2], nt256Pitches[2], 0, 0), isse);
-        }
-        */
       }
       return dst;
     }

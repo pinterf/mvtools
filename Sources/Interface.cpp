@@ -295,7 +295,6 @@ AVSValue __cdecl Create_MVFlowInter(AVSValue args, void* , IScriptEnvironment* e
       args[8].AsInt(MV_DEFAULT_SCD2),
       args[9].AsBool(true),   // isse
       args[10].AsBool(false), // planar
-		args[11].IsClip() ? args[11].AsClip() : 0,
 		env);
 }
 
