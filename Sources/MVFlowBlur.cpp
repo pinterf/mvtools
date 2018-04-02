@@ -178,6 +178,7 @@ void MVFlowBlur::FlowBlur(BYTE * pdst8, int dst_pitch, const BYTE *pref8, int re
 
       // 2.7.24: limit x and y to prevent overflow in pel ref frame indexing
       // valid pref[x;y] is [0..(height<<nLogPel)-1 ; 0..(width<<nLogPel)-1]
+      // invalid indexes appeared when enlarging small vector mask to full mask
 
       // forward
       rel_x = VXFullF[w];
@@ -365,6 +366,7 @@ PVideoFrame __stdcall MVFlowBlur::GetFrame(int n, IScriptEnvironment* env)
     upsizerUV->SimpleResizeDo_uint16(VXFullUVF, nWidthUV, nHeightUV, VPitchUV, VXSmallUVF, nBlkX, nBlkX);
     upsizerUV->SimpleResizeDo_uint16(VYFullUVF, nWidthUV, nHeightUV, VPitchUV, VYSmallUVF, nBlkX, nBlkX);
 
+    // Warning: vectors enlarged from small mask to full resolution mask may point to off-screen pixels
 
     if (pixelsize == 1) {
       if (nPel == 1) {
