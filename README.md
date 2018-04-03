@@ -1,6 +1,6 @@
 # mvtools
 Motion estimation and compensation plugin for Avisynth+ and Avisynth v2.6 family.
-Supporting YUY2, 4:2:0, 4:2:2, 4:4:4 at native 8, 10, 12, 14 and 16 bit depths.
+Supporting YUY2, 4:2:0, 4:2:2, 4:4:4 at native 8, 10, 12, 14 and 16 bit depths, 32bit float in selected filters.
 Still supporting Windows XP.
 x86 and x64 versions
 
@@ -9,23 +9,23 @@ File: mvtools2.dll
 Credits: 
 - Manao, Fizick, Tsp, TSchniede, SEt, Vit, Firesledge, cretindesalpes 
 
-Modification base:
-- mvtools2, 2.6.0.5 64 bit version from
-http://avisynth.nl/index.php/AviSynth%2B#AviSynth.2B_x64_plugins
-
 Change log
+- 2.7.29 (20180403)
+  Fix: MFlowInter (and possibly other MFlow...) crash with specific combination of analyze parameters (e.g. blkSize=16,overlapv=4,divide=1)
+    Bug existed since at least 2.5.11.22
+
 - 2.7.28 (20180323)
-  - Fix: in MDegrain1-6/N allow Y8 input for out16 parameter
+  Fix: in MDegrain1-6/N allow Y8 input for out16 parameter
 
 - 2.7.27 (20180318)
-  - Fix: MDepan: use zerow parameter. The parameter had no effect probably since it had been introduced. (veins1)
-  - MDepan: report MT mode for Avisynth+. MT_MULTI_INSTANCE, except for logfile writing output mode when it reports MT_SERIALIZED.
+  Fix: MDepan: use zerow parameter. The parameter had no effect probably since it had been introduced. (veins1)
+  MDepan: report MT mode for Avisynth+. MT_MULTI_INSTANCE, except for logfile writing output mode when it reports MT_SERIALIZED.
     (other filters already have proper registration, MDepan was missed)
 
 - 2.7.26 (20180314)
-  -New: MDegrain1-6 and N: new parameter bool "out16" = false. If set, 8 bit input results in native 16bit output (like lsb=true hack but this is native).
-   Faster than lsb=true by up to 12% (i7-7700)
-  -Faster: special 10 bit SAD functions instead of the generic 10-16bit one. 
+  New: MDegrain1-6 and N: new parameter bool "out16" = false. If set, 8 bit input results in native 16bit output (like lsb=true hack but this is native).
+  Faster than lsb=true by up to 12% (i7-7700)
+  Faster: special 10 bit SAD functions instead of the generic 10-16bit one. 
    Depending on the block size, 4-17% gain for a typical MDegrain1-6 session
 
 - 2.7.25 (20180227)
@@ -270,12 +270,17 @@ External dependencies:
 - libfftw3f-3.dll (or renamed to FFT3W.DLL)
 from http://www.fftw.org/ or look at ICL builds at http://forum.doom9.org/showthread.php?t=173229
   
-- May require Microsoft Visual C++ Redistributable 2015 Update 3
-  
+- May require Microsoft Visual C++ Redistributables https://www.visualstudio.com/downloads/
+   
 Others
-- For asm compilation use yasm (1.2): http://yasm.tortall.net/Download.html
+For asm compilation use nasm https://www.nasm.us/
+Visual Studio integration: https://github.com/ShiftMediaProject/VSNASM/releases
 
-hint: vsyasm.* files should be renamed to yasm.
+(Pre-2018: For asm compilation use yasm (1.2): http://yasm.tortall.net/Download.html ,vsyasm.* files should be renamed to yasm.)
+
+Modification base:
+- mvtools2, 2.6.0.5 64 bit version from
+http://avisynth.nl/index.php/AviSynth%2B#AviSynth.2B_x64_plugins
 
 Source code:
 https://github.com/pinterf/mvtools
