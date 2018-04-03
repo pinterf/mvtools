@@ -37,7 +37,7 @@ MStoreVect::MStoreVect(std::vector <::PClip> clip_arr, const char *vccs_0, ::ISc
   assert(!clip_arr.empty());
   assert(&env != 0);
 
-  const int nbr_clips = clip_arr.size();
+  const int nbr_clips = (int)clip_arr.size();
   _vect_arr.resize(nbr_clips);
 
   int max_blk_x = 0;
