@@ -242,7 +242,7 @@ void Short2Bytes_Int32toWord16_sse4(uint16_t *pDst, int nDstPitch, int *pDstInt,
   typedef uint16_t pixel_t;
   const int max_pixel_value = (1 << bits_per_pixel) - 1;
 
-  __m128i limits, limits16;
+  __m128i limits16;
   limits16 = _mm_set1_epi16(max_pixel_value);
   // origin: overlap windows have 11 bits precision
   auto rounder = _mm_set1_epi32(1 << 10);

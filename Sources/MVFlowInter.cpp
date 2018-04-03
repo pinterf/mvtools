@@ -228,8 +228,6 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
   BYTE *pDst[3];
   const BYTE *pRef[3], *pSrc[3];
   int nDstPitches[3], nRefPitches[3], nSrcPitches[3];
-  const BYTE *pt256[3];
-  int nt256Pitches[3];
   unsigned char *pDstYUY2;
   int nDstPitchYUY2;
 
