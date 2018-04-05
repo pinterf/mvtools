@@ -431,24 +431,9 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
       PROFILE_START(MOTION_PROFILE_MASK);
       // make  vector vx and vy small masks
       MakeVectorSmallMasks(mvClipB, nBlkX, nBlkY, VXSmallYB, nBlkXP, VYSmallYB, nBlkXP);
-      if (nBlkXP > nBlkX) // fill right
-      {
-        for (int j = 0; j < nBlkY; j++)
-        {
-          VXSmallYB[j*nBlkXP + nBlkX] = std::min(VXSmallYB[j*nBlkXP + nBlkX - 1], short(0)); // 2.5.11.22
-          //VXSmallYB[j*nBlkXP + nBlkX] = std::min(VXSmallYB[j*nBlkXP + nBlkX-1], uint8_t (128));
-          VYSmallYB[j*nBlkXP + nBlkX] = VYSmallYB[j*nBlkXP + nBlkX - 1];
-        }
-      }
-      if (nBlkYP > nBlkY) // fill bottom
-      {
-        for (int i = 0; i < nBlkXP; i++)
-        {
-          VXSmallYB[nBlkXP*nBlkY + i] = VXSmallYB[nBlkXP*(nBlkY - 1) + i];
-        //	VYSmallYB[nBlkXP*nBlkY +i] = std::min(VYSmallYB[nBlkXP*(nBlkY-1) +i], uint8_t (128));
-          VYSmallYB[nBlkXP*nBlkY + i] = std::min(VYSmallYB[nBlkXP*(nBlkY - 1) + i], short(0));  // 2.5.11.22
-        }
-      }
+
+      CheckAndPadSmallY(VXSmallYB, VYSmallYB, nBlkXP, nBlkYP, nBlkX, nBlkY);
+
       VectorSmallMaskYToHalfUV(VXSmallYB, nBlkXP, nBlkYP, VXSmallUVB, xRatioUV);
       VectorSmallMaskYToHalfUV(VYSmallYB, nBlkXP, nBlkYP, VYSmallUVB, yRatioUV);
 
@@ -469,20 +454,9 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
 //		double occNormB = (256-time256)/(256*ml);
 //		MakeVectorOcclusionMask(mvClipB, nBlkX, nBlkY, occNormB, 1.0, nPel, MaskSmallB, nBlkXP);
     MakeVectorOcclusionMaskTime(mvClipB, nBlkX, nBlkY, ml, 1.0, nPel, MaskSmallB, nBlkXP, (256 - time256), nBlkSizeX - nOverlapX, nBlkSizeY - nOverlapY);
-    if (nBlkXP > nBlkX) // fill right
-    {
-      for (int j = 0; j < nBlkY; j++)
-      {
-        MaskSmallB[j*nBlkXP + nBlkX] = MaskSmallB[j*nBlkXP + nBlkX - 1];
-      }
-    }
-    if (nBlkYP > nBlkY) // fill bottom
-    {
-      for (int i = 0; i < nBlkXP; i++)
-      {
-        MaskSmallB[nBlkXP*nBlkY + i] = MaskSmallB[nBlkXP*(nBlkY - 1) + i];
-      }
-    }
+
+    CheckAndPadMaskSmall(MaskSmallB, nBlkXP, nBlkYP, nBlkX, nBlkY);
+
     PROFILE_STOP(MOTION_PROFILE_MASK);
     PROFILE_START(MOTION_PROFILE_RESIZE);
   // upsize (bilinear interpolate) vector masks to fullframe size
@@ -498,24 +472,9 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
      // make  vector vx and vy small masks
       PROFILE_START(MOTION_PROFILE_MASK);
       MakeVectorSmallMasks(mvClipF, nBlkX, nBlkY, VXSmallYF, nBlkXP, VYSmallYF, nBlkXP);
-      if (nBlkXP > nBlkX) // fill right
-      {
-        for (int j = 0; j < nBlkY; j++)
-        {
-          VXSmallYF[j*nBlkXP + nBlkX] = std::min(VXSmallYF[j*nBlkXP + nBlkX - 1], short(0)); // 2.5.11.22
-          //VXSmallYF[j*nBlkXP + nBlkX] = std::min(VXSmallYF[j*nBlkXP + nBlkX-1], uint8_t (128));
-          VYSmallYF[j*nBlkXP + nBlkX] = VYSmallYF[j*nBlkXP + nBlkX - 1];
-        }
-      }
-      if (nBlkYP > nBlkY) // fill bottom
-      {
-        for (int i = 0; i < nBlkXP; i++)
-        {
-          VXSmallYF[nBlkXP*nBlkY + i] = VXSmallYF[nBlkXP*(nBlkY - 1) + i];
-          //VYSmallYF[nBlkXP*nBlkY +i] = std::min(VYSmallYF[nBlkXP*(nBlkY-1) +i], uint8_t (128));
-          VYSmallYF[nBlkXP*nBlkY + i] = std::min(VYSmallYF[nBlkXP*(nBlkY - 1) + i], short(0)); // 2.5.11.22 Line 458
-        }
-      }
+
+      CheckAndPadSmallY(VXSmallYF, VYSmallYF, nBlkXP, nBlkYP, nBlkX, nBlkY);
+
       VectorSmallMaskYToHalfUV(VXSmallYF, nBlkXP, nBlkYP, VXSmallUVF, xRatioUV);
       VectorSmallMaskYToHalfUV(VYSmallYF, nBlkXP, nBlkYP, VYSmallUVF, yRatioUV);
 
@@ -534,20 +493,9 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
    // Forward part
     PROFILE_START(MOTION_PROFILE_MASK);
     MakeVectorOcclusionMaskTime(mvClipF, nBlkX, nBlkY, ml, 1.0, nPel, MaskSmallF, nBlkXP, time256, nBlkSizeX - nOverlapX, nBlkSizeY - nOverlapY);
-    if (nBlkXP > nBlkX) // fill right
-    {
-      for (int j = 0; j < nBlkY; j++)
-      {
-        MaskSmallF[j*nBlkXP + nBlkX] = MaskSmallF[j*nBlkXP + nBlkX - 1];
-      }
-    }
-    if (nBlkYP > nBlkY) // fill bottom
-    {
-      for (int i = 0; i < nBlkXP; i++)
-      {
-        MaskSmallF[nBlkXP*nBlkY + i] = MaskSmallF[nBlkXP*(nBlkY - 1) + i];
-      }
-    }
+
+    CheckAndPadMaskSmall(MaskSmallF, nBlkXP, nBlkYP, nBlkX, nBlkY);
+
     PROFILE_STOP(MOTION_PROFILE_MASK);
     PROFILE_START(MOTION_PROFILE_RESIZE);
   // upsize (bilinear interpolate) vector masks to fullframe size
@@ -578,30 +526,9 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
       PROFILE_START(MOTION_PROFILE_MASK);
       MakeVectorSmallMasks(mvClipB, nBlkX, nBlkY, VXSmallYBB, nBlkXP, VYSmallYBB, nBlkXP);
       MakeVectorSmallMasks(mvClipF, nBlkX, nBlkY, VXSmallYFF, nBlkXP, VYSmallYFF, nBlkXP);
-      if (nBlkXP > nBlkX) // fill right
-      {
-        for (int j = 0; j < nBlkY; j++)
-        {
-          VXSmallYBB[j*nBlkXP + nBlkX] = std::min(VXSmallYBB[j*nBlkXP + nBlkX - 1], short(0)); // 2.5.11.22
-          //VXSmallYBB[j*nBlkXP + nBlkX] = std::min(VXSmallYBB[j*nBlkXP + nBlkX-1], uint8_t (128));
-          VYSmallYBB[j*nBlkXP + nBlkX] = VYSmallYBB[j*nBlkXP + nBlkX - 1];
-          VXSmallYFF[j*nBlkXP + nBlkX] = std::min(VXSmallYFF[j*nBlkXP + nBlkX - 1], short(0)); // 2.5.11.22 Line 522
-          //VXSmallYFF[j*nBlkXP + nBlkX] = std::min(VXSmallYFF[j*nBlkXP + nBlkX-1], uint8_t (128));
-          VYSmallYFF[j*nBlkXP + nBlkX] = VYSmallYFF[j*nBlkXP + nBlkX - 1];
-        }
-      }
-      if (nBlkYP > nBlkY) // fill bottom
-      {
-        for (int i = 0; i < nBlkXP; i++)
-        {
-          VXSmallYBB[nBlkXP*nBlkY + i] = VXSmallYBB[nBlkXP*(nBlkY - 1) + i];
-          //VYSmallYBB[nBlkXP*nBlkY +i] = std::min(VYSmallYBB[nBlkXP*(nBlkY-1) +i], uint8_t (128));
-          VYSmallYBB[nBlkXP*nBlkY + i] = std::min(VYSmallYBB[nBlkXP*(nBlkY - 1) + i], short(0)); // 2.5.11.22 typecast needed in vs2015
-          VXSmallYFF[nBlkXP*nBlkY + i] = VXSmallYFF[nBlkXP*(nBlkY - 1) + i];
-          //VYSmallYFF[nBlkXP*nBlkY +i] = std::min(VYSmallYFF[nBlkXP*(nBlkY-1) +i], uint8_t (128));
-          VYSmallYFF[nBlkXP*nBlkY + i] = std::min(VYSmallYFF[nBlkXP*(nBlkY - 1) + i], short(0)); // 2.5.11.22 typecast needed in vs2015
-        }
-      }
+
+      CheckAndPadSmallY_BF(VXSmallYBB, VXSmallYFF, VYSmallYBB, VYSmallYFF, nBlkXP, nBlkYP, nBlkX, nBlkY);
+
       VectorSmallMaskYToHalfUV(VXSmallYBB, nBlkXP, nBlkYP, VXSmallUVBB, xRatioUV);
       VectorSmallMaskYToHalfUV(VYSmallYBB, nBlkXP, nBlkYP, VYSmallUVBB, yRatioUV);
       VectorSmallMaskYToHalfUV(VXSmallYFF, nBlkXP, nBlkYP, VXSmallUVFF, xRatioUV);

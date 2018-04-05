@@ -326,22 +326,8 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
     int nOffsetUV = nRefPitches[1] * nVPaddingUV*nPel + nHPaddingUV*nPel*pixelsize;
 
     MakeVectorSmallMasks(mvClip, nBlkX, nBlkY, VXSmallY, nBlkXP, VYSmallY, nBlkXP);
-    if (nBlkXP > nBlkX) // fill right
-    {
-      for (int j = 0; j < nBlkY; j++)
-      {
-        VXSmallY[j*nBlkXP + nBlkX] = std::min(VXSmallY[j*nBlkXP + nBlkX - 1], short(0)); // not positive
-        VYSmallY[j*nBlkXP + nBlkX] = VYSmallY[j*nBlkXP + nBlkX - 1];
-      }
-    }
-    if (nBlkYP > nBlkY) // fill bottom
-    {
-      for (int i = 0; i < nBlkXP; i++)
-      {
-        VXSmallY[nBlkXP*nBlkY + i] = VXSmallY[nBlkXP*(nBlkY - 1) + i];
-        VYSmallY[nBlkXP*nBlkY + i] = std::min(VYSmallY[nBlkXP*(nBlkY - 1) + i], short(0)); // not positive
-      }
-    }
+
+    CheckAndPadSmallY(VXSmallY, VYSmallY, nBlkXP, nBlkYP, nBlkX, nBlkY);
 
     const int		fieldShift =
       ClipFnc::compute_fieldshift(finest, fields, nPel, n, nref);

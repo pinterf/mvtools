@@ -28,6 +28,10 @@
 
 class MVClip;
 
+void CheckAndPadSmallY(short *VXSmallY, short *VYSmallY, int nBlkXP, int nBlkYP, int nBlkX, int nBlkY);
+void CheckAndPadSmallY_BF(short *VXSmallYB, short *VXSmallYF, short *VYSmallYB, short *VYSmallYF, int nBlkXP, int nBlkYP, int nBlkX, int nBlkY);
+void CheckAndPadMaskSmall(BYTE *MaskSmall, int nBlkXP, int nBlkYP, int nBlkX, int nBlkY);
+void CheckAndPadMaskSmall_BF(BYTE *MaskSmallB, BYTE *MaskSmallF, int nBlkXP, int nBlkYP, int nBlkX, int nBlkY);
 
 void MakeVectorOcclusionMaskTime(MVClip &mvClip, int nBlkX, int nBlkY, double dMaskNormDivider, double fGamma, int nPel, uint8_t * occMask, int occMaskPitch, int time256, int nBlkStepX, int nBlkStepY);
 

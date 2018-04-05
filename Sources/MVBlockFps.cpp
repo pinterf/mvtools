@@ -632,12 +632,9 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
         MakeVectorOcclusionMaskTime(mvClipF, nBlkX, nBlkY, ml, 1.0, nPel, smallMaskF, nBlkXP, time256, nBlkSizeX - nOverlapX, nBlkSizeY - nOverlapY);
       else // 6 to 8  // PF 161115 bits_per_pixel scale through dSADNormFactor
         MakeSADMaskTime(mvClipF, nBlkX, nBlkY, 4.0 / (ml*nBlkSizeX*nBlkSizeY) / (1 << (bits_per_pixel - 8)), 1.0, nPel, smallMaskF, nBlkXP, time256, nBlkSizeX - nOverlapX, nBlkSizeY - nOverlapY);
-      if (nBlkXP > nBlkX) // fill right
-        for (int j = 0; j < nBlkY; j++)
-          smallMaskF[j*nBlkXP + nBlkX] = smallMaskF[j*nBlkXP + nBlkX - 1];
-      if (nBlkYP > nBlkY) // fill bottom
-        for (int i = 0; i < nBlkXP; i++)
-          smallMaskF[nBlkXP*nBlkY + i] = smallMaskF[nBlkXP*(nBlkY - 1) + i];
+
+      CheckAndPadMaskSmall(smallMaskF, nBlkXP, nBlkYP, nBlkX, nBlkY);
+
       PROFILE_STOP(MOTION_PROFILE_MASK);
 
       PROFILE_START(MOTION_PROFILE_RESIZE);
@@ -652,11 +649,8 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
       else // 6 to 8  // PF 161115 bits_per_pixel scale through dSADNormFactor
         MakeSADMaskTime(mvClipB, nBlkX, nBlkY, 4.0 / (ml*nBlkSizeX*nBlkSizeY) / (1 << (bits_per_pixel - 8)), 1.0, nPel, smallMaskB, nBlkXP, 256 - time256, nBlkSizeX - nOverlapX, nBlkSizeY - nOverlapY);
 
-      if (nBlkXP > nBlkX) // fill right
-        for (int j = 0; j < nBlkY; j++)
-          if (nBlkYP > nBlkY) // fill bottom
-            for (int i = 0; i < nBlkXP; i++)
-              smallMaskB[nBlkXP*nBlkY + i] = smallMaskB[nBlkXP*(nBlkY - 1) + i];
+      CheckAndPadMaskSmall(smallMaskB, nBlkXP, nBlkYP, nBlkX, nBlkY);
+
       PROFILE_STOP(MOTION_PROFILE_MASK);
       PROFILE_START(MOTION_PROFILE_RESIZE);
       // upsize (bilinear interpolate) vector masks to fullframe size

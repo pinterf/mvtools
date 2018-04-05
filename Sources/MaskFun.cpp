@@ -48,6 +48,75 @@
 #endif
 
 
+// Common funtions and clone multiple 2.7.30-
+// Padding when blocks don't cover fully the area
+void CheckAndPadSmallY(short *VXSmallY, short *VYSmallY, int nBlkXP, int nBlkYP, int nBlkX, int nBlkY)
+{
+  if (nBlkXP > nBlkX) // fill right
+  {
+    for (int j = 0; j < nBlkY; j++)
+    {
+      short VXright = std::min(VXSmallY[j*nBlkXP + nBlkX - 1], short(0)); // not positive
+      short VYright = VYSmallY[j*nBlkXP + nBlkX - 1];
+      // clone: multiple 2.7.30-
+      for (int dx = nBlkX; dx < nBlkXP; dx++) {
+        VXSmallY[j*nBlkXP + dx] = VXright;
+        VYSmallY[j*nBlkXP + dx] = VYright;
+      }
+    }
+  }
+  if (nBlkYP > nBlkY) // fill bottom
+  {
+    for (int i = 0; i < nBlkXP; i++)
+    {
+      short VXbottom = VXSmallY[nBlkXP*(nBlkY - 1) + i];
+      short VYbottom = std::min(VYSmallY[nBlkXP*(nBlkY - 1) + i], short(0));
+      for (int dy = nBlkY; dy < nBlkYP; dy++) {
+        VXSmallY[nBlkXP*dy + i] = VXbottom;
+        VYSmallY[nBlkXP*dy + i] = VYbottom;
+      }
+    }
+  }
+}
+
+void CheckAndPadSmallY_BF(short *VXSmallYB, short *VXSmallYF, short *VYSmallYB, short *VYSmallYF, int nBlkXP, int nBlkYP, int nBlkX, int nBlkY)
+{
+  CheckAndPadSmallY(VXSmallYB, VYSmallYB, nBlkXP, nBlkYP, nBlkX, nBlkY);
+  CheckAndPadSmallY(VXSmallYF, VYSmallYF, nBlkXP, nBlkYP, nBlkX, nBlkY);
+}
+
+void CheckAndPadMaskSmall(BYTE *MaskSmall, int nBlkXP, int nBlkYP, int nBlkX, int nBlkY)
+{
+  if (nBlkXP > nBlkX) // fill right
+  {
+    for (int j = 0; j < nBlkY; j++)
+    {
+      BYTE right = MaskSmall[j*nBlkXP + nBlkX - 1];
+      // clone: multiple 2.7.30-
+      for (int dx = nBlkX; dx < nBlkXP; dx++) {
+        MaskSmall[j*nBlkXP + dx] = right;
+      }
+    }
+  }
+  if (nBlkYP > nBlkY) // fill bottom
+  {
+    for (int i = 0; i < nBlkXP; i++)
+    {
+      BYTE bottom = MaskSmall[nBlkXP*(nBlkY - 1) + i];
+      // clone: multiple 2.7.30-
+      for (int dy = nBlkY; dy < nBlkYP; dy++) {
+        MaskSmall[nBlkXP*dy + i] = bottom;
+      }
+    }
+  }
+}
+
+void CheckAndPadMaskSmall_BF(BYTE *MaskSmallB, BYTE *MaskSmallF, int nBlkXP, int nBlkYP, int nBlkX, int nBlkY)
+{
+  CheckAndPadMaskSmall(MaskSmallB, nBlkXP, nBlkYP, nBlkX, nBlkY);
+  CheckAndPadMaskSmall(MaskSmallF, nBlkXP, nBlkYP, nBlkX, nBlkY);
+}
+
 
 void MakeVectorOcclusionMaskTime(MVClip &mvClip, int nBlkX, int nBlkY, double dMaskNormFactor, double fGamma, int nPel, uint8_t * occMask, int occMaskPitch, int time256, int blkSizeX, int blkSizeY)
 {	// analyse vectors field to detect occlusion

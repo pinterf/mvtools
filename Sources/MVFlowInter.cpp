@@ -330,26 +330,9 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
     // make  vector vx and vy small masks
     MakeVectorSmallMasks(mvClipB, nBlkX, nBlkY, VXSmallYB, nBlkXP, VYSmallYB, nBlkXP);
     MakeVectorSmallMasks(mvClipF, nBlkX, nBlkY, VXSmallYF, nBlkXP, VYSmallYF, nBlkXP);
-    if (nBlkXP > nBlkX) // fill right
-    {
-      for (int j = 0; j < nBlkY; j++)
-      {
-        VXSmallYB[j*nBlkXP + nBlkX] = std::min(VXSmallYB[j*nBlkXP + nBlkX - 1], short(0)); // 2.5.11.22
-        VYSmallYB[j*nBlkXP + nBlkX] = VYSmallYB[j*nBlkXP + nBlkX - 1];
-        VXSmallYF[j*nBlkXP + nBlkX] = std::min(VXSmallYF[j*nBlkXP + nBlkX - 1], short(0)); // 2.5.11.22
-        VYSmallYF[j*nBlkXP + nBlkX] = VYSmallYF[j*nBlkXP + nBlkX - 1];
-      }
-    }
-    if (nBlkYP > nBlkY) // fill bottom
-    {
-      for (int i = 0; i < nBlkXP; i++)
-      {
-        VXSmallYB[nBlkXP*nBlkY + i] = VXSmallYB[nBlkXP*(nBlkY - 1) + i];
-        VYSmallYB[nBlkXP*nBlkY + i] = std::min(VYSmallYB[nBlkXP*(nBlkY - 1) + i], short(0)); // 2.5.11.22
-        VXSmallYF[nBlkXP*nBlkY + i] = VXSmallYF[nBlkXP*(nBlkY - 1) + i];
-        VYSmallYF[nBlkXP*nBlkY + i] = std::min(VYSmallYF[nBlkXP*(nBlkY - 1) + i], short(0)); // 2.5.11.22
-      }
-    }
+
+    CheckAndPadSmallY_BF(VXSmallYB, VXSmallYF, VYSmallYB, VYSmallYF, nBlkXP, nBlkYP, nBlkX, nBlkY);
+
     VectorSmallMaskYToHalfUV(VXSmallYB, nBlkXP, nBlkYP, VXSmallUVB, xRatioUV);
     VectorSmallMaskYToHalfUV(VYSmallYB, nBlkXP, nBlkYP, VYSmallUVB, yRatioUV);
     VectorSmallMaskYToHalfUV(VXSmallYF, nBlkXP, nBlkYP, VXSmallUVF, xRatioUV);
@@ -366,22 +349,8 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
       nPel, MaskSmallF, nBlkXP, time256,
       nBlkSizeX - nOverlapX, nBlkSizeY - nOverlapY);
 
-    if (nBlkXP > nBlkX) // fill right
-    {
-      for (int j = 0; j < nBlkY; j++)
-      {
-        MaskSmallB[j*nBlkXP + nBlkX] = MaskSmallB[j*nBlkXP + nBlkX - 1];
-        MaskSmallF[j*nBlkXP + nBlkX] = MaskSmallF[j*nBlkXP + nBlkX - 1];
-      }
-    }
-    if (nBlkYP > nBlkY) // fill bottom
-    {
-      for (int i = 0; i < nBlkXP; i++)
-      {
-        MaskSmallB[nBlkXP*nBlkY + i] = MaskSmallB[nBlkXP*(nBlkY - 1) + i];
-        MaskSmallF[nBlkXP*nBlkY + i] = MaskSmallF[nBlkXP*(nBlkY - 1) + i];
-      }
-    }
+    CheckAndPadMaskSmall_BF(MaskSmallB, MaskSmallF, nBlkXP, nBlkYP, nBlkX, nBlkY);
+
     // upsize (bilinear interpolate) vector masks to fullframe size
 
 
@@ -416,26 +385,9 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
       // get vector mask from extra frames
       MakeVectorSmallMasks(mvClipB, nBlkX, nBlkY, VXSmallYBB, nBlkXP, VYSmallYBB, nBlkXP);
       MakeVectorSmallMasks(mvClipF, nBlkX, nBlkY, VXSmallYFF, nBlkXP, VYSmallYFF, nBlkXP);
-      if (nBlkXP > nBlkX) // fill right
-      {
-        for (int j = 0; j < nBlkY; j++)
-        {
-          VXSmallYBB[j*nBlkXP + nBlkX] = std::min(VXSmallYBB[j*nBlkXP + nBlkX - 1], short(0)); // 2.5.11.22
-          VYSmallYBB[j*nBlkXP + nBlkX] = VYSmallYBB[j*nBlkXP + nBlkX - 1];
-          VXSmallYFF[j*nBlkXP + nBlkX] = std::min(VXSmallYFF[j*nBlkXP + nBlkX - 1], short(0)); // 2.5.11.22
-          VYSmallYFF[j*nBlkXP + nBlkX] = VYSmallYFF[j*nBlkXP + nBlkX - 1];
-        }
-      }
-      if (nBlkYP > nBlkY) // fill bottom
-      {
-        for (int i = 0; i < nBlkXP; i++)
-        {
-          VXSmallYBB[nBlkXP*nBlkY + i] = VXSmallYBB[nBlkXP*(nBlkY - 1) + i];
-          VYSmallYBB[nBlkXP*nBlkY + i] = std::min(VYSmallYBB[nBlkXP*(nBlkY - 1) + i], short(0)); // 2.5.11.22
-          VXSmallYFF[nBlkXP*nBlkY + i] = VXSmallYFF[nBlkXP*(nBlkY - 1) + i];
-          VYSmallYFF[nBlkXP*nBlkY + i] = std::min(VYSmallYFF[nBlkXP*(nBlkY - 1) + i], short(0)); // 2.5.11.22
-        }
-      }
+
+      CheckAndPadSmallY_BF(VXSmallYBB, VXSmallYFF, VYSmallYBB, VYSmallYFF, nBlkXP, nBlkYP, nBlkX, nBlkY);
+
       VectorSmallMaskYToHalfUV(VXSmallYBB, nBlkXP, nBlkYP, VXSmallUVBB, xRatioUV);
       VectorSmallMaskYToHalfUV(VYSmallYBB, nBlkXP, nBlkYP, VYSmallUVBB, yRatioUV);
       VectorSmallMaskYToHalfUV(VXSmallYFF, nBlkXP, nBlkYP, VXSmallUVFF, xRatioUV);
