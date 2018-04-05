@@ -10,6 +10,10 @@ Credits:
 - Manao, Fizick, Tsp, TSchniede, SEt, Vit, Firesledge, cretindesalpes 
 
 Change log
+- 2.7.30 (20180405)
+  Fix: crash in MFlowInter (and possibly other MFlow...). v2.7.29 revelead this additional bug (which was not even 100% reproducible), 
+  this fix is basically the 2nd part of the solution.
+ 
 - 2.7.29 (20180403)
   Fix: MFlowInter (and possibly other MFlow...) crash with specific combination of analyze parameters (e.g. blkSize=16,overlapv=4,divide=1)
     Bug existed since at least 2.5.11.22
