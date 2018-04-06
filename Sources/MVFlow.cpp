@@ -246,7 +246,6 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
   unsigned char *pDstYUY2;
   int nDstPitchYUY2;
 
-  bool usable_flag = mvClip.IsUsable(); // in 2 5.11.22 later
   int nref;
 
   int off = mvClip.GetDeltaFrame(); // integer offset of reference frame
@@ -266,6 +265,9 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
 
   PVideoFrame mvn = mvClip.GetFrame(n, env);
   mvClip.Update(mvn, env);// backward from next to current
+  
+  bool usable_flag = mvClip.IsUsable(); // moved after mvclip update in 2.7.31 like fixed in 2.5.11.22
+
   mvn = 0;
 
   if (usable_flag)
