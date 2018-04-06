@@ -24,7 +24,6 @@
 #include "MVFlowFps.h"
 #include "profile.h"
 #include "SuperParams64Bits.h"
-#include "Time256ProviderCst.h"
 #include "info.h"
 
 
@@ -92,8 +91,6 @@ MVFlowFps::MVFlowFps(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, unsign
   if (!((nWidth + nHPadding * 2) == super->GetVideoInfo().width && (nHeight + nVPadding * 2) <= super->GetVideoInfo().height))
     env->ThrowError("MFlowFps: inconsistent clips frame size!");
 
-//	if (isSuper)
-//	{
     // get parameters of prepared super clip - v2.0
   SuperParams64Bits params;
   memcpy(&params, &super->GetVideoInfo().num_audio_samples, 8);
@@ -105,8 +102,6 @@ MVFlowFps::MVFlowFps(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, unsign
   int nSuperLevels = params.nLevels;
   int nSuperWidth = super->GetVideoInfo().width; // really super
   int nSuperHeight = super->GetVideoInfo().height;
-//		pRefBGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse, yRatioUV);
-//		pRefFGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, isse, yRatioUV);
 
   if (nHeight != nHeightS
     || nWidth != nSuperWidth - nSuperHPad * 2
@@ -114,7 +109,6 @@ MVFlowFps::MVFlowFps(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, unsign
   {
     env->ThrowError("MFlowFps : wrong super frame clip");
   }
-//	}
 
   if (nPel == 1)
   {
@@ -123,8 +117,6 @@ MVFlowFps::MVFlowFps(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, unsign
   else
   {
     finest = new MVFinest(super, _isse, env);
-//		AVSValue finest_args[2] = { super, isse };
-//		finest = env->Invoke("MVFinest", AVSValue(finest_args,2)).AsClip();
     AVSValue cache_args[1] = { finest };
     finest = env->Invoke("InternalCache", AVSValue(cache_args, 1)).AsClip(); // add cache for speed
   }
@@ -144,21 +136,18 @@ MVFlowFps::MVFlowFps(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, unsign
 
   nWidthP = nBlkXP*(nBlkSizeX - nOverlapX) + nOverlapX;
   nHeightP = nBlkYP*(nBlkSizeY - nOverlapY) + nOverlapY;
-  // for YV12 // NO! for every format
-  nWidthPUV = nWidthP / xRatioUV;   // PF160923 yet another /2
+
+  nWidthPUV = nWidthP / xRatioUV;
   nHeightPUV = nHeightP / yRatioUV;
   nHeightUV = nHeight / yRatioUV;
-  nWidthUV = nWidth / xRatioUV; // PF160923 yet another /2
+  nWidthUV = nWidth / xRatioUV;
 
-  nHPaddingUV = nHPadding / xRatioUV; // PF160923 yet another /2
+  nHPaddingUV = nHPadding / xRatioUV;
   nVPaddingUV = nVPadding / yRatioUV;
 
   VPitchY = AlignNumber(nWidthP, 16);
   VPitchUV = AlignNumber(nWidthPUV, 16);
 
-  // 2.5.11.22: 
-  // old: VXFullYB = new BYTE [nHeightP*VPitchY]
-  // new: VXFullYB = (short*) _aligned_malloc(2*nHeightP*VPitchY+128, 128);
   // 2*: sizeof(short)
   VXFullYB = (short*)_aligned_malloc(2 * nHeightP*VPitchY + 128, 128);
   VXFullUVB = (short*)_aligned_malloc(2 * nHeightPUV*VPitchUV + 128, 128);
@@ -344,9 +333,6 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
   PVideoFrame	src = finest->GetFrame(nleft, env); // move here - v2.0
   PVideoFrame ref = finest->GetFrame(nright, env);//  right frame for  compensation
 
-// 2.5.11.22	Create_LUTV(time256, LUTVB, LUTVF); // lookup table
-// 2.5.11.22		const Time256ProviderCst	t256_prov_cst (time256, LUTVB, LUTVF);
-
   dst = env->NewVideoFrame(vi);
 
   bool isUsableB = mvClipB.IsUsable();
@@ -451,8 +437,6 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
    // analyse vectors field to detect occlusion
    // Backward part
     PROFILE_START(MOTION_PROFILE_MASK);
-//		double occNormB = (256-time256)/(256*ml);
-//		MakeVectorOcclusionMask(mvClipB, nBlkX, nBlkY, occNormB, 1.0, nPel, MaskSmallB, nBlkXP);
     MakeVectorOcclusionMaskTime(mvClipB, nBlkX, nBlkY, ml, 1.0, nPel, MaskSmallB, nBlkXP, (256 - time256), nBlkSizeX - nOverlapX, nBlkSizeY - nOverlapY);
 
     CheckAndPadMaskSmall(MaskSmallB, nBlkXP, nBlkYP, nBlkX, nBlkY);
@@ -734,7 +718,6 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
         nRefPitches[0] = ref->GetPitch();
         pDstYUY2 = dst->GetWritePtr();
         nDstPitchYUY2 = dst->GetPitch();
-              //Blend(pDstYUY2, pSrc[0], pRef[0], nHeight, nWidth*2, nDstPitchYUY2, nSrcPitches[0], nRefPitches[0], t256_prov_cst, isse);
         Blend<uint8_t>(pDstYUY2, pSrc[0], pRef[0], nHeight, nWidth * 2, nDstPitchYUY2, nSrcPitches[0], nRefPitches[0], time256, cpuFlags);
       }
       else
@@ -760,11 +743,6 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
         nSrcPitches[1] = UPITCH(src);
         nSrcPitches[2] = VPITCH(src);
       // blend with time weight
-        /* 2.6.0.5: t256_prov_cst
-       Blend(pDst[0], pSrc[0], pRef[0], nHeight, nWidth, nDstPitches[0], nSrcPitches[0], nRefPitches[0], t256_prov_cst, isse);
-       Blend(pDst[1], pSrc[1], pRef[1], nHeightUV, nWidthUV, nDstPitches[1], nSrcPitches[1], nRefPitches[1], t256_prov_cst, isse);
-       Blend(pDst[2], pSrc[2], pRef[2], nHeightUV, nWidthUV, nDstPitches[2], nSrcPitches[2], nRefPitches[2], t256_prov_cst, isse);
-       */
         if (pixelsize == 1) {
           Blend<uint8_t>(pDst[0], pSrc[0], pRef[0], nHeight, nWidth, nDstPitches[0], nSrcPitches[0], nRefPitches[0], time256, cpuFlags);
           Blend<uint8_t>(pDst[1], pSrc[1], pRef[1], nHeightUV, nWidthUV, nDstPitches[1], nSrcPitches[1], nRefPitches[1], time256, cpuFlags);
