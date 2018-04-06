@@ -385,8 +385,8 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
       else { // pixelsize == 2
         int max_pixel_value = (1 << bits_per_pixel) - 1;
         fill_plane<uint16_t>(pDst[0], nHeight, nDstPitches[0], max_pixel_value);
-        fill_plane<uint16_t>(pDst[1], nHeight, nDstPitches[0], max_pixel_value);
-        fill_plane<uint16_t>(pDst[2], nHeight, nDstPitches[0], max_pixel_value);
+        fill_plane<uint16_t>(pDst[1], nHeightUV, nDstPitches[1], max_pixel_value);
+        fill_plane<uint16_t>(pDst[2], nHeightUV, nDstPitches[2], max_pixel_value);
         Shift<uint16_t>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, nRefPitches[0], VXFullY, VPitchY, VYFullY, VPitchY, nWidth, nHeight, time256);
         Shift<uint16_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, nRefPitches[1], VXFullUV, VPitchUV, VYFullUV, VPitchUV, nWidthUV, nHeightUV, time256);
         Shift<uint16_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, nRefPitches[2], VXFullUV, VPitchUV, VYFullUV, VPitchUV, nWidthUV, nHeightUV, time256);
