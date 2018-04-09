@@ -10,6 +10,11 @@ Credits:
 - Manao, Fizick, Tsp, TSchniede, SEt, Vit, Firesledge, cretindesalpes 
 
 Change log
+- 2.7.31 (20180409)
+  Fix: MFlow: SC detection after having the mv clip. Fixed in 2.5.11.22 but was missed during 2.6.0.5 merge.
+  Fix: MFlow: crash in 16bit 4:2:0, mode=1
+  Fix: MDegrain, out16=true: Green bottom lines when overlap blocks are not covering the full vertical area
+
 - 2.7.30 (20180405)
   Fix: crash in MFlowInter (and possibly other MFlow...). v2.7.29 revelead this additional bug (which was not even 100% reproducible), 
   this fix is basically the 2nd part of the solution.
