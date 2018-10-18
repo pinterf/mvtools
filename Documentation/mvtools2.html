@@ -365,7 +365,7 @@
     </p>
     <p>Other useful example is EEDI2 edge-directed resampler.</p>
     <p class="var">mt</p>
-    <p>Enables multi-threading.</p>
+    <p>Enables internal multi-threading (through avstp.dll).</p>
 
     <h3>MAnalyse</h3>
 <pre class="proto">MAnalyse (
@@ -581,8 +581,9 @@
         <li>and so on…</li>
     </ul>
     <p>
-        Important: using <var>outfile</var> in a multi-threaded context (MT modes
-        1, 2 and 4) has an undefined behaviour and will generate a corrupted file.
+        Important: using <var>outfile</var> in a multi-threaded context (Classic Avisynth MT modes
+        1, 2 and 4, or setting other than MT_SERIALIZED for Avisynth+) has an undefined behaviour and will generate a corrupted file.
+        Note: Since 2.7.32 the filter registers itself automatically MT_SERIALIZED instead of MT_MULTI_INSTANCE under Avisynth+ when an output file is given
     </p>
     <p class="var">dct</p>
     <p>
@@ -661,8 +662,9 @@
     <p class="var">temporal</p>
     <p>
         Use temporal predictors from previous frame motion vectors.
-        Not compatible with <code>SetMTMode</code>, and requires a linear access to
+        Not compatible with <code>SetMTMode</code> (classic Avisynth) or other than MT_SERIALIZED mode for Avisynth+, and requires a linear access to
         work correctly.
+        Note: Since 2.7.32 the filter registers itself automatically MT_SERIALIZED instead of MT_MULTI_INSTANCE under Avisynth+ when temporal=true is given.
     </p>
     <p class="var">trymany</p>
     <p>Try to start searches around many predictors (besides finest level).</p>
@@ -680,7 +682,7 @@
         <code>SelectEvery(delta*2, n)</code>.
     </p>
     <p class="var">mt</p>
-    <p>Enables multi-threading.</p>
+    <p>Enables internal multi-threading (through avstp.dll).</p>
     <p class="var">scaleCSAD</p>
     <p>
         Fine tune chroma part weight in SAD calculation (since 2.7.18.22)<br />
@@ -847,7 +849,7 @@
         Try using it for deinterlacing (not for denoising).
     </p>
     <p class="var">mt</p>
-    <p>Enables multi-threading.</p>
+    <p>Enables internal multi-threading (through avstp.dll).</p>
     <p class="var">tr</p>
     <p>
         Allows generating multiple compensations using a multi-vector clip.
@@ -1628,7 +1630,7 @@
         bluring.
     </p>
     <p class="var">mt</p>
-    <p>Enables multi-threading.</p>
+    <p>Enables internal multi-threading (through avstp.dll).</p>
     <p class="var">out16</p>
     <p>
         Since 2.7.26.
@@ -2129,6 +2131,11 @@ Planar2Interleaved() # convert back to normal interleave YUY2
     </ul>
 
     <h2><a name="revisions"></a>VI) Revisions</h2>
+    <p>2.7.32 (20181018?)</p>
+    <ul>
+        <li>MAnalyze: Enhance mt mode report for Avisynth+: MT_SERIALIZED instead of MT_MULTI_INSTANCE when temporal=true or using output file.</li>
+    </ul>
+
     <p>2.7.31 (20180409)</p>
     <ul>
         <li>Fix: MFlow: SC detection after having the mv clip. Fixed in 2.5.11.22 but was missed during 2.6.0.5 merge.</li>
