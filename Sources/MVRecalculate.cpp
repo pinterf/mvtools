@@ -249,7 +249,14 @@ MVRecalculate::MVRecalculate(
 
   nLambda = lambda;
   // lambda is finally scaled in PlaneOfBlocks::WorkingArea::MotionDistorsion(int vx, int vy) const
-  // as return (nLambda * dist) >> (16 - bits_per_pixel) 
+  // as return (nLambda * dist) >> (16 - bits_per_pixel)
+  // To have it 8x8 normalized, we would use 
+  //   nLambda = lambda * ((_blksizex * _blksizey) / (8 * 8)) << (bits_per_pixel-8);  // normalize to 8x8 block size
+  // and use 
+  //   (nLambda * dist) >> 8  in PlaneOfBlocks::WorkingArea::MotionDistorsion
+  // and change default lambda generation in truemotion=true preset
+  // But doing this would kill compatibility, there are scripts which are using lambda properly scaled by the block size.
+
   pnew = _pnew;
   meander = _meander;
 

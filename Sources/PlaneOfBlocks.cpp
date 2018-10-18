@@ -721,8 +721,25 @@ void PlaneOfBlocks::FetchPredictors(WorkingArea &workarea)
     }
   */
   //	if ( workarea.predictor.sad > LSAD ) { workarea.nLambda = 0; } // generalized (was LSAD=400) by Fizick
-  typedef typename std::conditional < sizeof(pixel_t) == 1, sad_t, bigsad_t >::type safe_sad_t;
-  workarea.nLambda = workarea.nLambda*(safe_sad_t)LSAD / ((safe_sad_t)LSAD + (workarea.predictor.sad >> 1))*LSAD / ((safe_sad_t)LSAD + (workarea.predictor.sad >> 1));
+  
+  // v2.7.11.32:
+  typedef bigsad_t safe_sad_t;
+  // for large block sizes int32 overflows during calculation even for 8 bits, so we always use 64 bit bigsad_t intermediate here
+  // (some calculations for truemotion=true)
+  // blksize  lambda                LSAD   LSAD (renormalized)        lambda*LSAD
+  // 8x8      1000*(8*8)/64=1000    1200   1200*8x8/64<<0=1200          1 200 000
+  // 16x16    1000*(16*16)/64=4000  1200   1200*16x16/64<<0=4800       19 200 000
+  // 24x24    1000*(24*24)/64=9000  1200   1200*24x24/64<<0=10800      97 200 000
+  // 32x32    1000*(32*32)/64=16000 1200   1200*32x32/64<<0=19200     307 200 000
+  //          other level:   128000                         19200   2 457 600 000 (int32 overflow!)
+  // 48x48    1000*(48*48)/64=36000 1200   1200*48x48/64<<0=43200   1 555 200 000 still OK
+  // 64x64    1000*(64*64)/64=64000 1200   1200*64x64/64<<0=76800   4 915 200 000 (int32 overflow!)
+
+  workarea.nLambda = workarea.nLambda
+                     *(safe_sad_t)LSAD
+                     / ((safe_sad_t)LSAD + (workarea.predictor.sad >> 1))
+                     *LSAD 
+                     / ((safe_sad_t)LSAD + (workarea.predictor.sad >> 1));
   // replaced hard threshold by soft in v1.10.2 by Fizick (a liitle complex expression to avoid overflow)
   //	int a = LSAD/(LSAD + (workarea.predictor.sad>>1));
   //	workarea.nLambda = workarea.nLambda*a*a;
@@ -3471,10 +3488,28 @@ template<typename pixel_t>
 sad_t PlaneOfBlocks::WorkingArea::MotionDistorsion(int vx, int vy) const
 {
   int dist = SquareDifferenceNorm(predictor, vx, vy);
-  if(sizeof(pixel_t) == 1)
+  if (sizeof(pixel_t) == 1)
+  {
+#if 0
+    // 20181018 PF: hope it'll not overflow, could not produce such case
+    // left here for future tests
+    if (dist != 0) {
+      if (nLambda > std::numeric_limits<int>::max() / dist)
+      {
+        int x = 0;
+        _RPT1(0, "Lambda is over! %d\r\n", nLambda);
+      }
+    }
+#endif
     return (nLambda * dist) >> 8; // 8 bit: faster
+  }
   else
     return (nLambda * dist) >> (16 - bits_per_pixel) /*8*/; // PF scaling because it appears as a sad addition 
+    // nLambda itself is bit-depth independent, but blocksize-dependent. 
+    // For historical reasons this parameter is not normalized, 
+    // Caller have to scale it properly by the actual block sizes, like MAnalyze does it when truemotion=true: 1000*blocksize*blocksizeV/64.
+    // Because of the bit-depth scaling above the parameter is at least bit-depth independent.
+    // To have lambda blocksize independent, it should be scaled in MvAnalyze and MvRecalculate but it kills compatibility.
 }
 
 /* computes the length cost of a vector (vx, vy) */
