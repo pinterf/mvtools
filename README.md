@@ -10,8 +10,9 @@ Credits:
 - Manao, Fizick, Tsp, TSchniede, SEt, Vit, Firesledge, cretindesalpes 
 
 Change log
-- 2.7.32 (20181018?)
+- 2.7.32 (20181018)
   MAnalyze: Enhance mt mode report for Avisynth+: MT_SERIALIZED instead of MT_MULTI_INSTANCE when temporal=true or using output file.
+  MAnalyze: fix a possible internal overflow on larger blocksizes and lambda combinations. e.g. truemotion=true with blksize=32
 
 - 2.7.31 (20180409)
   Fix: MFlow: SC detection after having the mv clip. Fixed in 2.5.11.22 but was missed during 2.6.0.5 merge.
