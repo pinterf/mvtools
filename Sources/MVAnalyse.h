@@ -131,7 +131,9 @@ public:
   ::PVideoFrame __stdcall	GetFrame(int n, ::IScriptEnvironment* env);
 
   int __stdcall SetCacheHints(int cachehints, int frame_range) override {
-    return cachehints == CACHE_GET_MTMODE ? MT_MULTI_INSTANCE : 0;
+    return cachehints == CACHE_GET_MTMODE ? (_temporal_flag || lstrlen(outfilename)>0 ? MT_SERIALIZED : MT_MULTI_INSTANCE) : 0;
+    // adaptive!
+    // temporal = true or using output file is not MT-friendly
   }
 
 private:
