@@ -60,8 +60,8 @@ class LockFreeStack
 
 public:
 
-	typedef	T	ValueType;
-	typedef	LockFreeCell <T>	CellType;
+  using ValueType = T;
+  using CellType = typename LockFreeCell <T>;
 
 						LockFreeStack ();
 	virtual			~LockFreeStack () {}
@@ -91,8 +91,7 @@ private:
 private:
 
 						LockFreeStack (const LockFreeStack <T> &other);
-	LockFreeStack <T> &
-						operator = (const LockFreeStack <T> &other);
+	LockFreeStack <T> &operator = (const LockFreeStack <T> &other);
 	bool				operator == (const LockFreeStack <T> &other) const;
 	bool				operator != (const LockFreeStack <T> &other) const;
 

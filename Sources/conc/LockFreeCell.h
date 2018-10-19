@@ -48,8 +48,7 @@ class LockFreeCell
 /*\\\ PUBLIC \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
 public:
-
-	typedef	T	ValueType;
+  using ValueType = T;
 
 	AtomicPtr <LockFreeCell <T> >
 					_next_ptr;

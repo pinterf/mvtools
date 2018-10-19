@@ -45,7 +45,7 @@ class MTFlowGraphSimple
 
 public:
 
-	typedef	MTFlowGraphSimple <MAXT>	ThisType;
+  using ThisType = MTFlowGraphSimple <MAXT>;
 
 	class Iterator
 	{

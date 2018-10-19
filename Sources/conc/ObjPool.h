@@ -60,8 +60,8 @@ class ObjPool
 
 public:
 
-	typedef	T	ObjType;
-	typedef	ObjFactoryInterface <ObjType>	Factory;
+  using ObjType = T;
+  using Factory = ObjFactoryInterface <ObjType>;
 
 						ObjPool ();
 	virtual			~ObjPool ();
@@ -85,9 +85,9 @@ protected:
 
 private:
 
-	typedef	CellPool <ObjType *>	PtrPool;
-	typedef	typename PtrPool::CellType	PtrCell;
-	typedef	LockFreeStack <ObjType *>	PtrStack;
+  using PtrPool = CellPool <ObjType *>;
+  using PtrCell = typename PtrPool::CellType;
+  using PtrStack = LockFreeStack <ObjType *>;
 
 	int				delete_obj_stack (PtrStack &ptr_stack, bool destroy_flag);
 

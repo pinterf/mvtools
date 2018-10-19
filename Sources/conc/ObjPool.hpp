@@ -246,7 +246,8 @@ int	ObjPool <T>::delete_obj_stack (PtrStack &ptr_stack, bool destroy_flag)
 {
 	assert (&ptr_stack != 0);
 
-	PtrStack::CellType *		cell_ptr = 0;
+  typename PtrStack::CellType *cell_ptr = 0;
+
 	int				count = 0;
 	do
 	{

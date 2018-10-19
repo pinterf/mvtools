@@ -78,7 +78,7 @@ class MTFlowGraphSched
 
 public:
 
-	typedef	MTFlowGraphSched <T, GR, GD, MAXT>	ThisType;
+  using ThisType =  MTFlowGraphSched <T, GR, GD, MAXT>;
 
 	explicit			MTFlowGraphSched (bool mt_flag = true);
 	virtual			~MTFlowGraphSched ();
@@ -112,7 +112,9 @@ protected:
 
 private:
 
-	void				complete_task (TaskData &td);
+  // When a task is finished, updates the dependency counter on the dependent
+  // tasks and enqueues them if they become ready.
+  void				complete_task(TaskData &td);
 
 	static void		redirect_task (avstp_TaskDispatcher *dispatcher_ptr, void *data_ptr);
 
