@@ -23,6 +23,7 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
 #include	<cassert>
+#include <memory>
 
 
 
@@ -107,6 +108,11 @@ void	SharedPtr <T>::swap (SharedPtr <T> &other)
 	other._count_ptr = tmp_count_ptr;
 }
 
+/*
+E.g. boost::static_pointer_cast the replacement for boost::shared_static_cast
+shared_*_cast names are deprecated. Use *_pointer_cast instead.
+And there is no shared_*_casts since Boost 1.53.0.
+*/
 
 template <class T>
 template <class U>
@@ -115,8 +121,9 @@ void	SharedPtr <T>::assign_static (const SharedPtr <U> & other)
 	assert (&other != 0);
 	
 	operator = (
-		shared_static_cast <T, U> (other)
-	);
+		//shared_static_cast <T, U> (other)
+    std::static_pointer_cast <T, U> (other)
+    );
 }
 
 
@@ -128,7 +135,8 @@ void	SharedPtr <T>::assign_dynamic (const SharedPtr <U> & other)
 	assert (&other != 0);
 	
 	operator = (
-		shared_dynamic_cast <T, U> (other)
+		//shared_dynamic_cast <T, U> (other)
+    std::dynamic_pointer_cast <T, U> (other)
 	);
 }
 
@@ -141,7 +149,8 @@ void	SharedPtr <T>::assign_reinterpret (const SharedPtr <U> & other)
 	assert (&other != 0);
 	
 	operator = (
-		shared_reinterpret_cast <T, U> (other)
+		//shared_reinterpret_cast <T, U> (other)
+    std::reinterpret_pointer_cast <T, U> (other)
 	);
 }
 
