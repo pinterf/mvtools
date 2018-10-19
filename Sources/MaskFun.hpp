@@ -51,7 +51,9 @@ void MakeVectorOcclusionMaskTimePlane(MVClip &mvClip, int nBlkX, int nBlkY, doub
   pt256 += t256_pitch * (blkSizeY / 2) + (blkSizeX / 2);
 
   MemZoneSet(occMask, 0, nBlkX, nBlkY, 0, 0, nBlkX);
+#ifndef _M_X64 
   _mm_empty();
+#endif
   double occnorm = 10 / dMaskNormFactor / nPel;
   int occlusion;
 
@@ -157,11 +159,11 @@ static void FlowInter_NPel(
     prefB += ref_pitch << NPELL2;
     prefF += ref_pitch << NPELL2;
     VXFullB += VPitch;
-    VYFullB += VPitch;
-    VXFullF += VPitch;
-    VYFullF += VPitch;
-    MaskB += VPitch;
-    MaskF += VPitch;
+VYFullB += VPitch;
+VXFullF += VPitch;
+VYFullF += VPitch;
+MaskB += VPitch;
+MaskF += VPitch;
   }
 }
 
@@ -247,14 +249,65 @@ static void FlowInterSimple_NPel(
   {
     for (int h = 0; h < height; h++)
     {
+      int heightLimitRel = ((height - h) << NPELL2) - 1;
       for (int w = 0; w < width; w += 1)
       {
+#if 1
         int vxF = (VXFullF[w]) >> 1; // 2.5.11.22
+#else
+        // todo PF.20181019: test further, limit not here but rather when creating VXFull/VYFull vectors
+        // in order that the vectors not go out of the frame boundaries
+        // vectors would reach from valid area during the Smallvector->FullSize resize process
+        // similar action was done in MFlowBlur
+        int rel_x;
+        // forward
+        rel_x = VXFullF[w];
+        if (rel_x >= (width - w) << NPELL2)
+          rel_x = ((width - w) << NPELL2) - 1;
+        else if (rel_x + (w << NPELL2) < 0)
+          rel_x = -(w << NPELL2);
+        int vxF = (rel_x) >> 1;
+#endif
+
+#if 1
         int vyF = (VYFullF[w]) >> 1; // 2.5.11.22
+#else
+        int rel_y;
+        rel_y = VYFullF[w];
+        if (rel_y > heightLimitRel)
+          rel_y = heightLimitRel;
+        else if (rel_y + (h << NPELL2) < 0)
+          rel_y = -(h << NPELL2);
+        int vyF = (rel_y) >> 1; // 2.5.11.22
+#endif
+
+
         int adrF = vyF * ref_pitch + vxF + (w << NPELL2);
         int dstF = prefF[adrF];
+#if 1
         int vxB = (VXFullB[w]) >> 1; // 2.5.11.22
+#else
+        // forward
+        rel_x = VXFullB[w];
+        if (rel_x >= (width - w) << NPELL2)
+          rel_x = ((width - w) << NPELL2) - 1;
+        else if (rel_x + (w << NPELL2) < 0)
+          rel_x = -(w << NPELL2);
+        int vxB = (rel_x) >> 1;
+
+#endif
+
+#if 1
         int vyB = (VYFullB[w]) >> 1; // 2.5.11.22
+#else
+        rel_y = VYFullB[w];
+        if (rel_y > heightLimitRel)
+          rel_y = heightLimitRel;
+        else if (rel_y + (h << NPELL2) < 0)
+          rel_y = -(h << NPELL2);
+        int vyB = (rel_y) >> 1; // 2.5.11.22
+#endif
+
         int adrB = vyB * ref_pitch + vxB + (w << NPELL2);
         int dstB = prefB[adrB];
         pdst[w] = (((dstF + dstB) << 8) + (dstB - dstF)*(MaskF[w] - MaskB[w])) >> 9;
