@@ -108,11 +108,8 @@ void	SharedPtr <T>::swap (SharedPtr <T> &other)
 	other._count_ptr = tmp_count_ptr;
 }
 
-/*
-E.g. boost::static_pointer_cast the replacement for boost::shared_static_cast
-shared_*_cast names are deprecated. Use *_pointer_cast instead.
-And there is no shared_*_casts since Boost 1.53.0.
-*/
+// 20181019 problems with vs2017 15.8.7: problems with shared_*_cast
+// These names are deprecated. Use *_pointer_cast instead.
 
 template <class T>
 template <class U>
