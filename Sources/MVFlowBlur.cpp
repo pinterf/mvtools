@@ -165,6 +165,9 @@ void MVFlowBlur::FlowBlur(BYTE * pdst8, int dst_pitch, const BYTE *pref8, int re
   pixel_t *pdst = reinterpret_cast<pixel_t *>(pdst8);
   const pixel_t *pref = reinterpret_cast<const pixel_t *>(pref8);
 
+  MakeVFullSafe<nLOGPEL>(VXFullF, VYFullF, VPitch, width, height);
+  MakeVFullSafe<nLOGPEL>(VXFullB, VYFullB, VPitch, width, height);
+
   // very slow, but precise motion blur
   for (int h = 0; h < height; h++)
   {
@@ -182,18 +185,7 @@ void MVFlowBlur::FlowBlur(BYTE * pdst8, int dst_pitch, const BYTE *pref8, int re
 
       // forward
       rel_x = VXFullF[w];
-
-      if (rel_x >= (width - w) << nLOGPEL)
-        rel_x = ((width - w) << nLOGPEL) - 1;
-      else if (rel_x + (w << nLOGPEL) < 0)
-        rel_x = -(w << nLOGPEL);
-
       rel_y = VYFullF[w];
-
-      if (rel_y > heightLimitRel)
-        rel_y = heightLimitRel;
-      else if (rel_y + (h << nLOGPEL) < 0)
-        rel_y = -(h << nLOGPEL);
 
       int vxF0 = (rel_x * blur256);
       int vyF0 = (rel_y * blur256);
@@ -216,18 +208,7 @@ void MVFlowBlur::FlowBlur(BYTE * pdst8, int dst_pitch, const BYTE *pref8, int re
 
       // backward
       rel_x = VXFullB[w];
-
-      if (rel_x >= (width - w) << nLOGPEL)
-        rel_x = ((width - w) << nLOGPEL) - 1;
-      else if (rel_x + (w << nLOGPEL) < 0)
-        rel_x = -(w << nLOGPEL);
-
       rel_y = VYFullB[w];
-
-      if (rel_y > heightLimitRel)
-        rel_y = heightLimitRel;
-      else if (rel_y + (h << nLOGPEL) < 0)
-        rel_y = -(h << nLOGPEL);
 
       int vxB0 = (rel_x * blur256);
       int vyB0 = (rel_y * blur256);
