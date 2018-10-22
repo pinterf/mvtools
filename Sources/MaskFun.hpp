@@ -127,6 +127,40 @@ MV_FORCEINLINE int Median3r(int a, int b, int c)
 
 }
 
+// v2.7.33-
+// prevent access violation by limiting vectors pointing out of frame area
+// limit x and y to prevent overflow in pel ref frame indexing
+// valid pref[x;y] is [0..(height<<nLogPel)-1 ; 0..(width<<nLogPel)-1]
+// invalid indexes appeared when enlarging small vector mask to full mask
+
+template <int NPELL2>
+void MakeVFullSafe(short *VXFull, short *VYFull, int VPitch, int width, int height)
+{
+  for (int h = 0; h < height; h++)
+  {
+    int heightLimitRel = ((height - h) << NPELL2) - 1;
+    for (int w = 0; w < width; w += 1)
+    {
+      int rel_x;
+      // forward
+      rel_x = VXFull[w];
+      if (rel_x >= (width - w) << NPELL2)
+        VXFull[w] = ((width - w) << NPELL2) - 1;
+      else if (rel_x + (w << NPELL2) < 0)
+        VXFull[w] = -(w << NPELL2);
+
+      int rel_y;
+      rel_y = VYFull[w];
+      if (rel_y > heightLimitRel)
+        VYFull[w] = heightLimitRel;
+      else if (rel_y + (h << NPELL2) < 0)
+        VYFull[w] = -(h << NPELL2);
+    }
+    VXFull += VPitch;
+    VYFull += VPitch;
+  }
+}
+
 template <typename pixel_t, int NPELL2>
 static void FlowInter_NPel(
   uint8_t * pdst8, int dst_pitch, const uint8_t *prefB8, const uint8_t *prefF8, int ref_pitch,
@@ -139,6 +173,9 @@ static void FlowInter_NPel(
   const pixel_t *prefB = reinterpret_cast<const pixel_t *>(prefB8);
   const pixel_t *prefF = reinterpret_cast<const pixel_t *>(prefF8);
 
+  MakeVFullSafe<NPELL2>(VXFullF, VYFullF, VPitch, width, height);
+  MakeVFullSafe<NPELL2>(VXFullB, VYFullB, VPitch, width, height);
+
   for (int h = 0; h < height; h++)
   {
     for (int w = 0; w < width; w++)
@@ -147,11 +184,12 @@ static void FlowInter_NPel(
       int vyF = (VYFullF[w] * time256) >> 8; // 2.5.11.22
       int dstF = prefF[vyF*ref_pitch + vxF + (w << NPELL2)];
       int dstF0 = prefF[(w << NPELL2)]; // zero
+
       int vxB = (VXFullB[w] * (256 - time256)) >> 8; // 2.5.11.22
       int vyB = (VYFullB[w] * (256 - time256)) >> 8; // 2.5.11.22
-
       int dstB = prefB[vyB*ref_pitch + vxB + (w << NPELL2)];
       int dstB0 = prefB[(w << NPELL2)]; // zero
+
       pdst[w] = (((dstF*(255 - MaskF[w]) + ((MaskF[w] * (dstB*(255 - MaskB[w]) + MaskB[w] * dstF0) + 255) >> 8) + 255) >> 8)*(256 - time256) +
         ((dstB*(255 - MaskB[w]) + ((MaskB[w] * (dstF*(255 - MaskF[w]) + MaskF[w] * dstB0) + 255) >> 8) + 255) >> 8)*     time256) >> 8;
     }
@@ -159,11 +197,11 @@ static void FlowInter_NPel(
     prefB += ref_pitch << NPELL2;
     prefF += ref_pitch << NPELL2;
     VXFullB += VPitch;
-VYFullB += VPitch;
-VXFullF += VPitch;
-VYFullF += VPitch;
-MaskB += VPitch;
-MaskF += VPitch;
+    VYFullB += VPitch;
+    VXFullF += VPitch;
+    VYFullF += VPitch;
+    MaskB += VPitch;
+    MaskF += VPitch;
   }
 }
 
@@ -180,6 +218,11 @@ static void FlowInterExtra_NPel(
   pixel_t *pdst = reinterpret_cast<pixel_t *>(pdst8);
   const pixel_t *prefB = reinterpret_cast<const pixel_t *>(prefB8);
   const pixel_t *prefF = reinterpret_cast<const pixel_t *>(prefF8);
+
+  MakeVFullSafe<NPELL2>(VXFullF, VYFullF, VPitch, width, height);
+  MakeVFullSafe<NPELL2>(VXFullB, VYFullB, VPitch, width, height);
+  MakeVFullSafe<NPELL2>(VXFullFF, VYFullFF, VPitch, width, height);
+  MakeVFullSafe<NPELL2>(VXFullBB, VYFullBB, VPitch, width, height);
 
   for (int h = 0; h < height; h++)
   {
@@ -245,6 +288,9 @@ static void FlowInterSimple_NPel(
   const pixel_t *prefB = reinterpret_cast<const pixel_t *>(prefB8);
   const pixel_t *prefF = reinterpret_cast<const pixel_t *>(prefF8);
 
+  MakeVFullSafe<NPELL2>(VXFullF, VYFullF, VPitch, width, height);
+  MakeVFullSafe<NPELL2>(VXFullB, VYFullB, VPitch, width, height);
+
   if (time256 == 128 /*t256_provider.is_half ()*/) // special case double fps - fastest
   {
     for (int h = 0; h < height; h++)
@@ -252,64 +298,16 @@ static void FlowInterSimple_NPel(
       int heightLimitRel = ((height - h) << NPELL2) - 1;
       for (int w = 0; w < width; w += 1)
       {
-#if 1
         int vxF = (VXFullF[w]) >> 1; // 2.5.11.22
-#else
-        // todo PF.20181019: test further, limit not here but rather when creating VXFull/VYFull vectors
-        // in order that the vectors not go out of the frame boundaries
-        // vectors would reach from valid area during the Smallvector->FullSize resize process
-        // similar action was done in MFlowBlur
-        int rel_x;
-        // forward
-        rel_x = VXFullF[w];
-        if (rel_x >= (width - w) << NPELL2)
-          rel_x = ((width - w) << NPELL2) - 1;
-        else if (rel_x + (w << NPELL2) < 0)
-          rel_x = -(w << NPELL2);
-        int vxF = (rel_x) >> 1;
-#endif
-
-#if 1
         int vyF = (VYFullF[w]) >> 1; // 2.5.11.22
-#else
-        int rel_y;
-        rel_y = VYFullF[w];
-        if (rel_y > heightLimitRel)
-          rel_y = heightLimitRel;
-        else if (rel_y + (h << NPELL2) < 0)
-          rel_y = -(h << NPELL2);
-        int vyF = (rel_y) >> 1; // 2.5.11.22
-#endif
-
-
         int adrF = vyF * ref_pitch + vxF + (w << NPELL2);
         int dstF = prefF[adrF];
-#if 1
+
         int vxB = (VXFullB[w]) >> 1; // 2.5.11.22
-#else
-        // forward
-        rel_x = VXFullB[w];
-        if (rel_x >= (width - w) << NPELL2)
-          rel_x = ((width - w) << NPELL2) - 1;
-        else if (rel_x + (w << NPELL2) < 0)
-          rel_x = -(w << NPELL2);
-        int vxB = (rel_x) >> 1;
-
-#endif
-
-#if 1
         int vyB = (VYFullB[w]) >> 1; // 2.5.11.22
-#else
-        rel_y = VYFullB[w];
-        if (rel_y > heightLimitRel)
-          rel_y = heightLimitRel;
-        else if (rel_y + (h << NPELL2) < 0)
-          rel_y = -(h << NPELL2);
-        int vyB = (rel_y) >> 1; // 2.5.11.22
-#endif
-
         int adrB = vyB * ref_pitch + vxB + (w << NPELL2);
         int dstB = prefB[adrB];
+
         pdst[w] = (((dstF + dstB) << 8) + (dstB - dstF)*(MaskF[w] - MaskB[w])) >> 9;
       }
       pdst += dst_pitch;
@@ -365,6 +363,9 @@ static void FlowInterSimple_Pel1(
   pixel_t *pdst = reinterpret_cast<pixel_t *>(pdst8);
   const pixel_t *prefB = reinterpret_cast<const pixel_t *>(prefB8);
   const pixel_t *prefF = reinterpret_cast<const pixel_t *>(prefF8);
+
+  MakeVFullSafe<0>(VXFullF, VYFullF, VPitch, width, height);
+  MakeVFullSafe<0>(VXFullB, VYFullB, VPitch, width, height);
 
   if (time256 == 128) // special case double fps - fastest
   {
