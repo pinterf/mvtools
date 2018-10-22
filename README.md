@@ -10,6 +10,10 @@ Credits:
 - Manao, Fizick, Tsp, TSchniede, SEt, Vit, Firesledge, cretindesalpes 
 
 Change log
+
+- 2.7.33 (20181021)
+  MFlowXX: Fix random access violation caused by enlarged vectors pointing on out-of-frame positions
+
 - 2.7.32 (20181018)
   MAnalyze: Enhance mt mode report for Avisynth+: MT_SERIALIZED instead of MT_MULTI_INSTANCE when temporal=true or using output file.
   MAnalyze: fix a possible internal overflow on larger blocksizes and lambda combinations. e.g. truemotion=true with blksize=32
