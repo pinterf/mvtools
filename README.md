@@ -11,6 +11,9 @@ Credits:
 
 Change log
 
+- 2.7.34 (20181108)
+  MFlowInter: Use less memory, eliminates ten full-frame internal buffers
+
 - 2.7.33 (20181021)
   MFlowXX: Fix random access violation caused by enlarged vectors pointing on out-of-frame positions
 
