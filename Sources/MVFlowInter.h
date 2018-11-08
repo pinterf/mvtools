@@ -23,23 +23,15 @@ private:
   bool planar;
   bool blend;
 
-  // fullframe vector mask
-  short *VXFullYB; //backward
-  short *VXFullUVB;
-  short *VYFullYB;
-  short *VYFullUVB;
-  short *VXFullYF;  // forward
-  short *VXFullUVF;
-  short *VYFullYF;
-  short *VYFullUVF;
-  short *VXFullYBB; //backward backward
-  short *VXFullUVBB;
-  short *VYFullYBB;
-  short *VYFullUVBB;
-  short *VXFullYFF; // forward forward
-  short *VXFullUVFF;
-  short *VYFullYFF;
-  short *VYFullUVFF;
+  // fullframe vector mask, common for all planes
+  short *VXFull_B; //backward
+  short *VYFull_B;
+  short *VXFull_F; // forward
+  short *VYFull_F;
+  short *VXFull_BB; //backward backward
+  short *VYFull_BB;
+  short *VXFull_FF; // forward forward
+  short *VYFull_FF;
 
   // Small vector mask
   short *VXSmallYB;
@@ -60,11 +52,9 @@ private:
   short *VYSmallUVFF;
 
   BYTE *MaskSmallB;
-  BYTE *MaskFullYB;
-  BYTE *MaskFullUVB;
+  BYTE *MaskFull_B; // common for all planes
   BYTE *MaskSmallF;
-  BYTE *MaskFullYF;
-  BYTE *MaskFullUVF;
+  BYTE *MaskFull_F; // common for all planes
 
   BYTE *SADMaskSmallB;
   BYTE *SADMaskSmallF;

@@ -105,15 +105,12 @@ MVFlowInter::MVFlowInter(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, in
   VPitchY = AlignNumber(nWidthP, 16);
   VPitchUV = AlignNumber(nWidthPUV, 16);
 
-  VXFullYB = (short*)_aligned_malloc(2 * nHeightP*VPitchY + 128, 128);
-  VXFullUVB = (short*)_aligned_malloc(2 * nHeightPUV*VPitchUV + 128, 128);
-  VYFullYB = (short*)_aligned_malloc(2 * nHeightP*VPitchY + 128, 128);
-  VYFullUVB = (short*)_aligned_malloc(2 * nHeightPUV*VPitchUV + 128, 128);
+  // v2.7.34 common full size buffers for all planes, eliminates ten large buffer
+  VXFull_B = (short*)_aligned_malloc(2 * nHeightP*VPitchY + 128, 128);
+  VYFull_B = (short*)_aligned_malloc(2 * nHeightP*VPitchY + 128, 128);
 
-  VXFullYF = (short*)_aligned_malloc(2 * nHeightP*VPitchY + 128, 128);
-  VXFullUVF = (short*)_aligned_malloc(2 * nHeightPUV*VPitchUV + 128, 128);
-  VYFullYF = (short*)_aligned_malloc(2 * nHeightP*VPitchY + 128, 128);
-  VYFullUVF = (short*)_aligned_malloc(2 * nHeightPUV*VPitchUV + 128, 128);
+  VXFull_F = (short*)_aligned_malloc(2 * nHeightP*VPitchY + 128, 128);
+  VYFull_F = (short*)_aligned_malloc(2 * nHeightP*VPitchY + 128, 128);
 
   VXSmallYB = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
   VYSmallYB = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
@@ -125,15 +122,11 @@ MVFlowInter::MVFlowInter(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, in
   VXSmallUVF = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
   VYSmallUVF = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
 
-  VXFullYBB = (short*)_aligned_malloc(2 * nHeightP*VPitchY + 128, 128);
-  VXFullUVBB = (short*)_aligned_malloc(2 * nHeightPUV*VPitchUV + 128, 128);
-  VYFullYBB = (short*)_aligned_malloc(2 * nHeightP*VPitchY + 128, 128);
-  VYFullUVBB = (short*)_aligned_malloc(2 * nHeightPUV*VPitchUV + 128, 128);
+  VXFull_BB = (short*)_aligned_malloc(2 * nHeightP*VPitchY + 128, 128);
+  VYFull_BB = (short*)_aligned_malloc(2 * nHeightP*VPitchY + 128, 128);
 
-  VXFullYFF = (short*)_aligned_malloc(2 * nHeightP*VPitchY + 128, 128);
-  VXFullUVFF = (short*)_aligned_malloc(2 * nHeightPUV*VPitchUV + 128, 128);
-  VYFullYFF = (short*)_aligned_malloc(2 * nHeightP*VPitchY + 128, 128);
-  VYFullUVFF = (short*)_aligned_malloc(2 * nHeightPUV*VPitchUV + 128, 128);
+  VXFull_FF = (short*)_aligned_malloc(2 * nHeightP*VPitchY + 128, 128);
+  VYFull_FF = (short*)_aligned_malloc(2 * nHeightP*VPitchY + 128, 128);
 
   VXSmallYBB = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
   VYSmallYBB = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
@@ -146,12 +139,10 @@ MVFlowInter::MVFlowInter(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, in
   VYSmallUVFF = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
 
   MaskSmallB = (unsigned char*)_aligned_malloc(nBlkXP*nBlkYP + 128, 128);
-  MaskFullYB = (unsigned char*)_aligned_malloc(nHeightP*VPitchY + 128, 128);
-  MaskFullUVB = (unsigned char*)_aligned_malloc(nHeightPUV*VPitchUV + 128, 128);
+  MaskFull_B = (unsigned char*)_aligned_malloc(nHeightP*VPitchY + 128, 128);
 
   MaskSmallF = (unsigned char*)_aligned_malloc(nBlkXP*nBlkYP + 128, 128);
-  MaskFullYF = (unsigned char*)_aligned_malloc(nHeightP*VPitchY + 128, 128);
-  MaskFullUVF = (unsigned char*)_aligned_malloc(nHeightPUV*VPitchUV + 128, 128);
+  MaskFull_F = (unsigned char*)_aligned_malloc(nHeightP*VPitchY + 128, 128);
 
   SADMaskSmallB = (unsigned char*)_aligned_malloc(nBlkXP*nBlkYP + 128, 128);
   SADMaskSmallF = (unsigned char*)_aligned_malloc(nBlkXP*nBlkYP + 128, 128);
@@ -176,42 +167,34 @@ MVFlowInter::~MVFlowInter()
   delete upsizer;
   delete upsizerUV;
 
-  _aligned_free(VXFullYB);
-  _aligned_free(VXFullUVB);
-  _aligned_free(VYFullYB);
-  _aligned_free(VYFullUVB);
+  _aligned_free(VXFull_B);
+  _aligned_free(VYFull_B);
   _aligned_free(VXSmallYB);
   _aligned_free(VYSmallYB);
   _aligned_free(VXSmallUVB);
   _aligned_free(VYSmallUVB);
-  _aligned_free(VXFullYF);
-  _aligned_free(VXFullUVF);
-  _aligned_free(VYFullYF);
-  _aligned_free(VYFullUVF);
+
+  _aligned_free(VXFull_F);
+  _aligned_free(VYFull_F);
   _aligned_free(VXSmallYF);
   _aligned_free(VYSmallYF);
   _aligned_free(VXSmallUVF);
   _aligned_free(VYSmallUVF);
 
   _aligned_free(MaskSmallB);
-  _aligned_free(MaskFullYB);
-  _aligned_free(MaskFullUVB);
+  _aligned_free(MaskFull_B);
   _aligned_free(MaskSmallF);
-  _aligned_free(MaskFullYF);
-  _aligned_free(MaskFullUVF);
+  _aligned_free(MaskFull_F);
 
-  _aligned_free(VXFullYBB);
-  _aligned_free(VXFullUVBB);
-  _aligned_free(VYFullYBB);
-  _aligned_free(VYFullUVBB);
+  _aligned_free(VXFull_BB);
+  _aligned_free(VYFull_BB);
   _aligned_free(VXSmallYBB);
   _aligned_free(VYSmallYBB);
   _aligned_free(VXSmallUVBB);
   _aligned_free(VYSmallUVBB);
-  _aligned_free(VXFullYFF);
-  _aligned_free(VXFullUVFF);
-  _aligned_free(VYFullYFF);
-  _aligned_free(VYFullUVFF);
+
+  _aligned_free(VXFull_FF);
+  _aligned_free(VYFull_FF);
   _aligned_free(VXSmallYFF);
   _aligned_free(VYSmallYFF);
   _aligned_free(VXSmallUVFF);
@@ -353,24 +336,16 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
 
     // upsize (bilinear interpolate) vector masks to fullframe size
 
-
     int dummyplane = PLANAR_Y; // use luma plane resizer code for all planes if we resize from luma small mask
-    upsizer->SimpleResizeDo_uint16(VXFullYB, nWidthP, nHeightP, VPitchY, VXSmallYB, nBlkXP, nBlkXP);
-    upsizer->SimpleResizeDo_uint16(VYFullYB, nWidthP, nHeightP, VPitchY, VYSmallYB, nBlkXP, nBlkXP);
-    upsizerUV->SimpleResizeDo_uint16(VXFullUVB, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVB, nBlkXP, nBlkXP);
-    upsizerUV->SimpleResizeDo_uint16(VYFullUVB, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVB, nBlkXP, nBlkXP);
-
-    upsizer->SimpleResizeDo_uint16(VXFullYF, nWidthP, nHeightP, VPitchY, VXSmallYF, nBlkXP, nBlkXP);
-    upsizer->SimpleResizeDo_uint16(VYFullYF, nWidthP, nHeightP, VPitchY, VYSmallYF, nBlkXP, nBlkXP);
-    upsizerUV->SimpleResizeDo_uint16(VXFullUVF, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVF, nBlkXP, nBlkXP);
-    upsizerUV->SimpleResizeDo_uint16(VYFullUVF, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVF, nBlkXP, nBlkXP);
-
-    upsizer->SimpleResizeDo_uint8(MaskFullYB, nWidthP, nHeightP, VPitchY, MaskSmallB, nBlkXP, nBlkXP, dummyplane);
-    upsizerUV->SimpleResizeDo_uint8(MaskFullUVB, nWidthPUV, nHeightPUV, VPitchUV, MaskSmallB, nBlkXP, nBlkXP, dummyplane);
-
-    upsizer->SimpleResizeDo_uint8(MaskFullYF, nWidthP, nHeightP, VPitchY, MaskSmallF, nBlkXP, nBlkXP, dummyplane);
-    upsizerUV->SimpleResizeDo_uint8(MaskFullUVF, nWidthPUV, nHeightPUV, VPitchUV, MaskSmallF, nBlkXP, nBlkXP, dummyplane);
-
+    // v2.7.34- fullframe upsize later, in order to have common buffer for Y and U/V
+    // VXFullYB VXFullUVB -> VXFull_B
+    // VYFullYB VYFullUVB -> VYFull_B
+    // VXFullYF VXFullUVF -> VXFull_F
+    // VYFullYF VYFullUVF -> VYFull_F
+    // VXFullYBB VXFullUVBB -> VXFull_BB
+    // VYFullYBB VYFullUVBB -> VYFull_BB
+    // VXFullYFF VXFullUVFF -> VXFull_FF
+    // VYFullYFF VYFullUVFF -> VYFull_FF
 
     // Get motion info from more frames for occlusion areas
     PVideoFrame mvFF = mvClipF.GetFrame(n, env);
@@ -393,62 +368,114 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
       VectorSmallMaskYToHalfUV(VXSmallYFF, nBlkXP, nBlkYP, VXSmallUVFF, xRatioUV);
       VectorSmallMaskYToHalfUV(VYSmallYFF, nBlkXP, nBlkYP, VYSmallUVFF, yRatioUV);
 
-      // upsize vectors to full frame
-      upsizer->SimpleResizeDo_uint16(VXFullYBB, nWidthP, nHeightP, VPitchY, VXSmallYBB, nBlkXP, nBlkXP);
-      upsizer->SimpleResizeDo_uint16(VYFullYBB, nWidthP, nHeightP, VPitchY, VYSmallYBB, nBlkXP, nBlkXP);
-      upsizerUV->SimpleResizeDo_uint16(VXFullUVBB, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVBB, nBlkXP, nBlkXP);
-      upsizerUV->SimpleResizeDo_uint16(VYFullUVBB, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVBB, nBlkXP, nBlkXP);
+      // Upsize Y: B and F vectors and mask to full frame (same for MFlowInter and MFlowInterExtra)
+      upsizer->SimpleResizeDo_uint16(VXFull_B, nWidthP, nHeightP, VPitchY, VXSmallYB, nBlkXP, nBlkXP);
+      upsizer->SimpleResizeDo_uint16(VYFull_B, nWidthP, nHeightP, VPitchY, VYSmallYB, nBlkXP, nBlkXP);
+      upsizer->SimpleResizeDo_uint16(VXFull_F, nWidthP, nHeightP, VPitchY, VXSmallYF, nBlkXP, nBlkXP);
+      upsizer->SimpleResizeDo_uint16(VYFull_F, nWidthP, nHeightP, VPitchY, VYSmallYF, nBlkXP, nBlkXP);
 
-      upsizer->SimpleResizeDo_uint16(VXFullYFF, nWidthP, nHeightP, VPitchY, VXSmallYFF, nBlkXP, nBlkXP);
-      upsizer->SimpleResizeDo_uint16(VYFullYFF, nWidthP, nHeightP, VPitchY, VYSmallYFF, nBlkXP, nBlkXP);
-      upsizerUV->SimpleResizeDo_uint16(VXFullUVFF, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVFF, nBlkXP, nBlkXP);
-      upsizerUV->SimpleResizeDo_uint16(VYFullUVFF, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVFF, nBlkXP, nBlkXP);
+      upsizer->SimpleResizeDo_uint8(MaskFull_B, nWidthP, nHeightP, VPitchY, MaskSmallB, nBlkXP, nBlkXP, dummyplane);
+      upsizer->SimpleResizeDo_uint8(MaskFull_F, nWidthP, nHeightP, VPitchY, MaskSmallF, nBlkXP, nBlkXP, dummyplane);
 
+      // Upsize Y: BB and FF vectors to full frame (MFlowInterExtra only)
+      upsizer->SimpleResizeDo_uint16(VXFull_BB, nWidthP, nHeightP, VPitchY, VXSmallYBB, nBlkXP, nBlkXP);
+      upsizer->SimpleResizeDo_uint16(VYFull_BB, nWidthP, nHeightP, VPitchY, VYSmallYBB, nBlkXP, nBlkXP);
+      upsizer->SimpleResizeDo_uint16(VXFull_FF, nWidthP, nHeightP, VPitchY, VXSmallYFF, nBlkXP, nBlkXP);
+      upsizer->SimpleResizeDo_uint16(VYFull_FF, nWidthP, nHeightP, VPitchY, VYSmallYFF, nBlkXP, nBlkXP);
+
+      // FlowInterExtra Y
       if (pixelsize == 1) {
         FlowInterExtra<uint8_t>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, pSrc[0] + nOffsetY, nRefPitches[0],
-          VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
-          nWidth, nHeight, time256, nPel, VXFullYBB, VXFullYFF, VYFullYBB, VYFullYFF);
-        FlowInterExtra<uint8_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
-          VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
-          nWidthUV, nHeightUV, time256, nPel, VXFullUVBB, VXFullUVFF, VYFullUVBB, VYFullUVFF);
-        FlowInterExtra<uint8_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
-          VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
-          nWidthUV, nHeightUV, time256, nPel, VXFullUVBB, VXFullUVFF, VYFullUVBB, VYFullUVFF);
+          VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchY,
+          nWidth, nHeight, time256, nPel, VXFull_BB, VXFull_FF, VYFull_BB, VYFull_FF);
       }
       else {
         FlowInterExtra<uint16_t>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, pSrc[0] + nOffsetY, nRefPitches[0],
-          VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
-          nWidth, nHeight, time256, nPel, VXFullYBB, VXFullYFF, VYFullYBB, VYFullYFF);
-        FlowInterExtra<uint16_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
-          VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
-          nWidthUV, nHeightUV, time256, nPel, VXFullUVBB, VXFullUVFF, VYFullUVBB, VYFullUVFF);
-        FlowInterExtra<uint16_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
-          VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
-          nWidthUV, nHeightUV, time256, nPel, VXFullUVBB, VXFullUVFF, VYFullUVBB, VYFullUVFF);
+          VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchY,
+          nWidth, nHeight, time256, nPel, VXFull_BB, VXFull_FF, VYFull_BB, VYFull_FF);
       }
+
+      // Upsize UV: B and F vectors and mask to full frame (same for MFlowInter and MFlowInterExtra)
+      upsizerUV->SimpleResizeDo_uint16(VXFull_B, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVB, nBlkXP, nBlkXP);
+      upsizerUV->SimpleResizeDo_uint16(VYFull_B, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVB, nBlkXP, nBlkXP);
+      upsizerUV->SimpleResizeDo_uint16(VXFull_F, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVF, nBlkXP, nBlkXP);
+      upsizerUV->SimpleResizeDo_uint16(VYFull_F, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVF, nBlkXP, nBlkXP);
+
+      upsizerUV->SimpleResizeDo_uint8(MaskFull_B, nWidthPUV, nHeightPUV, VPitchUV, MaskSmallB, nBlkXP, nBlkXP, dummyplane);
+      upsizerUV->SimpleResizeDo_uint8(MaskFull_F, nWidthPUV, nHeightPUV, VPitchUV, MaskSmallF, nBlkXP, nBlkXP, dummyplane);
+
+      // Upsize UV: BB and FF vectors to full frame (MFlowInterExtra only)
+      upsizerUV->SimpleResizeDo_uint16(VXFull_BB, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVBB, nBlkXP, nBlkXP);
+      upsizerUV->SimpleResizeDo_uint16(VYFull_BB, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVBB, nBlkXP, nBlkXP);
+      upsizerUV->SimpleResizeDo_uint16(VXFull_FF, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVFF, nBlkXP, nBlkXP);
+      upsizerUV->SimpleResizeDo_uint16(VYFull_FF, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVFF, nBlkXP, nBlkXP);
+
+      // FlowInterExtra U/V
+      if (pixelsize == 1) {
+        FlowInterExtra<uint8_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
+          VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchUV,
+          nWidthUV, nHeightUV, time256, nPel, VXFull_BB, VXFull_FF, VYFull_BB, VYFull_FF);
+        FlowInterExtra<uint8_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
+          VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchUV,
+          nWidthUV, nHeightUV, time256, nPel, VXFull_BB, VXFull_FF, VYFull_BB, VYFull_FF);
+      }
+      else {
+        FlowInterExtra<uint16_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
+          VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchUV,
+          nWidthUV, nHeightUV, time256, nPel, VXFull_BB, VXFull_FF, VYFull_BB, VYFull_FF);
+        FlowInterExtra<uint16_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
+          VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchUV,
+          nWidthUV, nHeightUV, time256, nPel, VXFull_BB, VXFull_FF, VYFull_BB, VYFull_FF);
+      }
+
     }
     else // bad extra frames, use old method without extra frames
     {
+      // Upsize Y: B and F vectors and mask to full frame (same for MFlowInter and MFlowInterExtra)
+      upsizer->SimpleResizeDo_uint16(VXFull_B, nWidthP, nHeightP, VPitchY, VXSmallYB, nBlkXP, nBlkXP);
+      upsizer->SimpleResizeDo_uint16(VYFull_B, nWidthP, nHeightP, VPitchY, VYSmallYB, nBlkXP, nBlkXP);
+      upsizer->SimpleResizeDo_uint16(VXFull_F, nWidthP, nHeightP, VPitchY, VXSmallYF, nBlkXP, nBlkXP);
+      upsizer->SimpleResizeDo_uint16(VYFull_F, nWidthP, nHeightP, VPitchY, VYSmallYF, nBlkXP, nBlkXP);
+
+      upsizer->SimpleResizeDo_uint8(MaskFull_B, nWidthP, nHeightP, VPitchY, MaskSmallB, nBlkXP, nBlkXP, dummyplane);
+      upsizer->SimpleResizeDo_uint8(MaskFull_F, nWidthP, nHeightP, VPitchY, MaskSmallF, nBlkXP, nBlkXP, dummyplane);
+
+      // FlowInter Y
       if (pixelsize == 1) {
         FlowInter<uint8_t>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, pSrc[0] + nOffsetY, nRefPitches[0],
-          VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
+          VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchY,
           nWidth, nHeight, time256, nPel);
-        FlowInter<uint8_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
-          VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
-          nWidthUV, nHeightUV, time256, nPel);
-        FlowInter<uint8_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
-          VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
-          nWidthUV, nHeightUV, time256, nPel);
       }
       else { // pixelsize == 2
         FlowInter<uint16_t>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, pSrc[0] + nOffsetY, nRefPitches[0],
-          VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
+          VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchY,
           nWidth, nHeight, time256, nPel);
+      }
+
+      // Upsize UV: B and F vectors and mask to full frame (same for MFlowInter and MFlowInterExtra)
+      upsizerUV->SimpleResizeDo_uint16(VXFull_B, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVB, nBlkXP, nBlkXP);
+      upsizerUV->SimpleResizeDo_uint16(VYFull_B, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVB, nBlkXP, nBlkXP);
+      upsizerUV->SimpleResizeDo_uint16(VXFull_F, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVF, nBlkXP, nBlkXP);
+      upsizerUV->SimpleResizeDo_uint16(VYFull_F, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVF, nBlkXP, nBlkXP);
+
+      upsizerUV->SimpleResizeDo_uint8(MaskFull_B, nWidthPUV, nHeightPUV, VPitchUV, MaskSmallB, nBlkXP, nBlkXP, dummyplane);
+      upsizerUV->SimpleResizeDo_uint8(MaskFull_F, nWidthPUV, nHeightPUV, VPitchUV, MaskSmallF, nBlkXP, nBlkXP, dummyplane);
+
+      // FlowInter U/V
+      if (pixelsize == 1) {
+        FlowInter<uint8_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
+          VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchUV,
+          nWidthUV, nHeightUV, time256, nPel);
+        FlowInter<uint8_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
+          VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchUV,
+          nWidthUV, nHeightUV, time256, nPel);
+      }
+      else { // pixelsize == 2
         FlowInter<uint16_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
-          VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
+          VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchUV,
           nWidthUV, nHeightUV, time256, nPel);
         FlowInter<uint16_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
-          VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
+          VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchUV,
           nWidthUV, nHeightUV, time256, nPel);
       }
     }
