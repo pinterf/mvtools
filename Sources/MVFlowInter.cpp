@@ -336,7 +336,6 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
 
     // upsize (bilinear interpolate) vector masks to fullframe size
 
-    int dummyplane = PLANAR_Y; // use luma plane resizer code for all planes if we resize from luma small mask
     // v2.7.34- fullframe upsize later, in order to have common buffer for Y and U/V
     // VXFullYB VXFullUVB -> VXFull_B
     // VYFullYB VYFullUVB -> VYFull_B
@@ -369,19 +368,19 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
       VectorSmallMaskYToHalfUV(VYSmallYFF, nBlkXP, nBlkYP, VYSmallUVFF, yRatioUV);
 
       // Upsize Y: B and F vectors and mask to full frame (same for MFlowInter and MFlowInterExtra)
-      upsizer->SimpleResizeDo_uint16(VXFull_B, nWidthP, nHeightP, VPitchY, VXSmallYB, nBlkXP, nBlkXP);
-      upsizer->SimpleResizeDo_uint16(VYFull_B, nWidthP, nHeightP, VPitchY, VYSmallYB, nBlkXP, nBlkXP);
-      upsizer->SimpleResizeDo_uint16(VXFull_F, nWidthP, nHeightP, VPitchY, VXSmallYF, nBlkXP, nBlkXP);
-      upsizer->SimpleResizeDo_uint16(VYFull_F, nWidthP, nHeightP, VPitchY, VYSmallYF, nBlkXP, nBlkXP);
+      upsizer->SimpleResizeDo_int16(VXFull_B, nWidthP, nHeightP, VPitchY, VXSmallYB, nBlkXP, nBlkXP, nPel, true);
+      upsizer->SimpleResizeDo_int16(VYFull_B, nWidthP, nHeightP, VPitchY, VYSmallYB, nBlkXP, nBlkXP, nPel, false);
+      upsizer->SimpleResizeDo_int16(VXFull_F, nWidthP, nHeightP, VPitchY, VXSmallYF, nBlkXP, nBlkXP, nPel, true);
+      upsizer->SimpleResizeDo_int16(VYFull_F, nWidthP, nHeightP, VPitchY, VYSmallYF, nBlkXP, nBlkXP, nPel, false);
 
-      upsizer->SimpleResizeDo_uint8(MaskFull_B, nWidthP, nHeightP, VPitchY, MaskSmallB, nBlkXP, nBlkXP, dummyplane);
-      upsizer->SimpleResizeDo_uint8(MaskFull_F, nWidthP, nHeightP, VPitchY, MaskSmallF, nBlkXP, nBlkXP, dummyplane);
+      upsizer->SimpleResizeDo_uint8(MaskFull_B, nWidthP, nHeightP, VPitchY, MaskSmallB, nBlkXP, nBlkXP);
+      upsizer->SimpleResizeDo_uint8(MaskFull_F, nWidthP, nHeightP, VPitchY, MaskSmallF, nBlkXP, nBlkXP);
 
       // Upsize Y: BB and FF vectors to full frame (MFlowInterExtra only)
-      upsizer->SimpleResizeDo_uint16(VXFull_BB, nWidthP, nHeightP, VPitchY, VXSmallYBB, nBlkXP, nBlkXP);
-      upsizer->SimpleResizeDo_uint16(VYFull_BB, nWidthP, nHeightP, VPitchY, VYSmallYBB, nBlkXP, nBlkXP);
-      upsizer->SimpleResizeDo_uint16(VXFull_FF, nWidthP, nHeightP, VPitchY, VXSmallYFF, nBlkXP, nBlkXP);
-      upsizer->SimpleResizeDo_uint16(VYFull_FF, nWidthP, nHeightP, VPitchY, VYSmallYFF, nBlkXP, nBlkXP);
+      upsizer->SimpleResizeDo_int16(VXFull_BB, nWidthP, nHeightP, VPitchY, VXSmallYBB, nBlkXP, nBlkXP, nPel, true);
+      upsizer->SimpleResizeDo_int16(VYFull_BB, nWidthP, nHeightP, VPitchY, VYSmallYBB, nBlkXP, nBlkXP, nPel, false);
+      upsizer->SimpleResizeDo_int16(VXFull_FF, nWidthP, nHeightP, VPitchY, VXSmallYFF, nBlkXP, nBlkXP, nPel, true);
+      upsizer->SimpleResizeDo_int16(VYFull_FF, nWidthP, nHeightP, VPitchY, VYSmallYFF, nBlkXP, nBlkXP, nPel, false);
 
       // FlowInterExtra Y
       if (pixelsize == 1) {
@@ -396,19 +395,19 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
       }
 
       // Upsize UV: B and F vectors and mask to full frame (same for MFlowInter and MFlowInterExtra)
-      upsizerUV->SimpleResizeDo_uint16(VXFull_B, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVB, nBlkXP, nBlkXP);
-      upsizerUV->SimpleResizeDo_uint16(VYFull_B, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVB, nBlkXP, nBlkXP);
-      upsizerUV->SimpleResizeDo_uint16(VXFull_F, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVF, nBlkXP, nBlkXP);
-      upsizerUV->SimpleResizeDo_uint16(VYFull_F, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVF, nBlkXP, nBlkXP);
+      upsizerUV->SimpleResizeDo_int16(VXFull_B, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVB, nBlkXP, nBlkXP, nPel, true);
+      upsizerUV->SimpleResizeDo_int16(VYFull_B, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVB, nBlkXP, nBlkXP, nPel, false);
+      upsizerUV->SimpleResizeDo_int16(VXFull_F, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVF, nBlkXP, nBlkXP, nPel, true);
+      upsizerUV->SimpleResizeDo_int16(VYFull_F, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVF, nBlkXP, nBlkXP, nPel, false);
 
-      upsizerUV->SimpleResizeDo_uint8(MaskFull_B, nWidthPUV, nHeightPUV, VPitchUV, MaskSmallB, nBlkXP, nBlkXP, dummyplane);
-      upsizerUV->SimpleResizeDo_uint8(MaskFull_F, nWidthPUV, nHeightPUV, VPitchUV, MaskSmallF, nBlkXP, nBlkXP, dummyplane);
+      upsizerUV->SimpleResizeDo_uint8(MaskFull_B, nWidthPUV, nHeightPUV, VPitchUV, MaskSmallB, nBlkXP, nBlkXP);
+      upsizerUV->SimpleResizeDo_uint8(MaskFull_F, nWidthPUV, nHeightPUV, VPitchUV, MaskSmallF, nBlkXP, nBlkXP);
 
       // Upsize UV: BB and FF vectors to full frame (MFlowInterExtra only)
-      upsizerUV->SimpleResizeDo_uint16(VXFull_BB, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVBB, nBlkXP, nBlkXP);
-      upsizerUV->SimpleResizeDo_uint16(VYFull_BB, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVBB, nBlkXP, nBlkXP);
-      upsizerUV->SimpleResizeDo_uint16(VXFull_FF, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVFF, nBlkXP, nBlkXP);
-      upsizerUV->SimpleResizeDo_uint16(VYFull_FF, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVFF, nBlkXP, nBlkXP);
+      upsizerUV->SimpleResizeDo_int16(VXFull_BB, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVBB, nBlkXP, nBlkXP, nPel, true);
+      upsizerUV->SimpleResizeDo_int16(VYFull_BB, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVBB, nBlkXP, nBlkXP, nPel, false);
+      upsizerUV->SimpleResizeDo_int16(VXFull_FF, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVFF, nBlkXP, nBlkXP, nPel, true);
+      upsizerUV->SimpleResizeDo_int16(VYFull_FF, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVFF, nBlkXP, nBlkXP, nPel, false);
 
       // FlowInterExtra U/V
       if (pixelsize == 1) {
@@ -432,13 +431,13 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
     else // bad extra frames, use old method without extra frames
     {
       // Upsize Y: B and F vectors and mask to full frame (same for MFlowInter and MFlowInterExtra)
-      upsizer->SimpleResizeDo_uint16(VXFull_B, nWidthP, nHeightP, VPitchY, VXSmallYB, nBlkXP, nBlkXP);
-      upsizer->SimpleResizeDo_uint16(VYFull_B, nWidthP, nHeightP, VPitchY, VYSmallYB, nBlkXP, nBlkXP);
-      upsizer->SimpleResizeDo_uint16(VXFull_F, nWidthP, nHeightP, VPitchY, VXSmallYF, nBlkXP, nBlkXP);
-      upsizer->SimpleResizeDo_uint16(VYFull_F, nWidthP, nHeightP, VPitchY, VYSmallYF, nBlkXP, nBlkXP);
+      upsizer->SimpleResizeDo_int16(VXFull_B, nWidthP, nHeightP, VPitchY, VXSmallYB, nBlkXP, nBlkXP, nPel, true);
+      upsizer->SimpleResizeDo_int16(VYFull_B, nWidthP, nHeightP, VPitchY, VYSmallYB, nBlkXP, nBlkXP, nPel, false);
+      upsizer->SimpleResizeDo_int16(VXFull_F, nWidthP, nHeightP, VPitchY, VXSmallYF, nBlkXP, nBlkXP, nPel, true);
+      upsizer->SimpleResizeDo_int16(VYFull_F, nWidthP, nHeightP, VPitchY, VYSmallYF, nBlkXP, nBlkXP, nPel, false);
 
-      upsizer->SimpleResizeDo_uint8(MaskFull_B, nWidthP, nHeightP, VPitchY, MaskSmallB, nBlkXP, nBlkXP, dummyplane);
-      upsizer->SimpleResizeDo_uint8(MaskFull_F, nWidthP, nHeightP, VPitchY, MaskSmallF, nBlkXP, nBlkXP, dummyplane);
+      upsizer->SimpleResizeDo_uint8(MaskFull_B, nWidthP, nHeightP, VPitchY, MaskSmallB, nBlkXP, nBlkXP);
+      upsizer->SimpleResizeDo_uint8(MaskFull_F, nWidthP, nHeightP, VPitchY, MaskSmallF, nBlkXP, nBlkXP);
 
       // FlowInter Y
       if (pixelsize == 1) {
@@ -453,13 +452,13 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
       }
 
       // Upsize UV: B and F vectors and mask to full frame (same for MFlowInter and MFlowInterExtra)
-      upsizerUV->SimpleResizeDo_uint16(VXFull_B, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVB, nBlkXP, nBlkXP);
-      upsizerUV->SimpleResizeDo_uint16(VYFull_B, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVB, nBlkXP, nBlkXP);
-      upsizerUV->SimpleResizeDo_uint16(VXFull_F, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVF, nBlkXP, nBlkXP);
-      upsizerUV->SimpleResizeDo_uint16(VYFull_F, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVF, nBlkXP, nBlkXP);
+      upsizerUV->SimpleResizeDo_int16(VXFull_B, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVB, nBlkXP, nBlkXP, nPel, true);
+      upsizerUV->SimpleResizeDo_int16(VYFull_B, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVB, nBlkXP, nBlkXP, nPel, false);
+      upsizerUV->SimpleResizeDo_int16(VXFull_F, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVF, nBlkXP, nBlkXP, nPel, true);
+      upsizerUV->SimpleResizeDo_int16(VYFull_F, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVF, nBlkXP, nBlkXP, nPel, false);
 
-      upsizerUV->SimpleResizeDo_uint8(MaskFull_B, nWidthPUV, nHeightPUV, VPitchUV, MaskSmallB, nBlkXP, nBlkXP, dummyplane);
-      upsizerUV->SimpleResizeDo_uint8(MaskFull_F, nWidthPUV, nHeightPUV, VPitchUV, MaskSmallF, nBlkXP, nBlkXP, dummyplane);
+      upsizerUV->SimpleResizeDo_uint8(MaskFull_B, nWidthPUV, nHeightPUV, VPitchUV, MaskSmallB, nBlkXP, nBlkXP);
+      upsizerUV->SimpleResizeDo_uint8(MaskFull_F, nWidthPUV, nHeightPUV, VPitchUV, MaskSmallF, nBlkXP, nBlkXP);
 
       // FlowInter U/V
       if (pixelsize == 1) {

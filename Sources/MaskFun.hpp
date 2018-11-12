@@ -127,40 +127,6 @@ MV_FORCEINLINE int Median3r(int a, int b, int c)
 
 }
 
-// v2.7.33-
-// prevent access violation by limiting vectors pointing out of frame area
-// limit x and y to prevent overflow in pel ref frame indexing
-// valid pref[x;y] is [0..(height<<nLogPel)-1 ; 0..(width<<nLogPel)-1]
-// invalid indexes appeared when enlarging small vector mask to full mask
-
-template <int NPELL2>
-void MakeVFullSafe(short *VXFull, short *VYFull, int VPitch, int width, int height)
-{
-  for (int h = 0; h < height; h++)
-  {
-    int heightLimitRel = ((height - h) << NPELL2) - 1;
-    for (int w = 0; w < width; w += 1)
-    {
-      int rel_x;
-      // forward
-      rel_x = VXFull[w];
-      if (rel_x >= (width - w) << NPELL2)
-        VXFull[w] = ((width - w) << NPELL2) - 1;
-      else if (rel_x + (w << NPELL2) < 0)
-        VXFull[w] = -(w << NPELL2);
-
-      int rel_y;
-      rel_y = VYFull[w];
-      if (rel_y > heightLimitRel)
-        VYFull[w] = heightLimitRel;
-      else if (rel_y + (h << NPELL2) < 0)
-        VYFull[w] = -(h << NPELL2);
-    }
-    VXFull += VPitch;
-    VYFull += VPitch;
-  }
-}
-
 template <typename pixel_t, int NPELL2>
 static void FlowInter_NPel(
   uint8_t * pdst8, int dst_pitch, const uint8_t *prefB8, const uint8_t *prefF8, int ref_pitch,
@@ -172,9 +138,6 @@ static void FlowInter_NPel(
   pixel_t *pdst = reinterpret_cast<pixel_t *>(pdst8);
   const pixel_t *prefB = reinterpret_cast<const pixel_t *>(prefB8);
   const pixel_t *prefF = reinterpret_cast<const pixel_t *>(prefF8);
-
-  MakeVFullSafe<NPELL2>(VXFullF, VYFullF, VPitch, width, height);
-  MakeVFullSafe<NPELL2>(VXFullB, VYFullB, VPitch, width, height);
 
   for (int h = 0; h < height; h++)
   {
@@ -218,11 +181,6 @@ static void FlowInterExtra_NPel(
   pixel_t *pdst = reinterpret_cast<pixel_t *>(pdst8);
   const pixel_t *prefB = reinterpret_cast<const pixel_t *>(prefB8);
   const pixel_t *prefF = reinterpret_cast<const pixel_t *>(prefF8);
-
-  MakeVFullSafe<NPELL2>(VXFullF, VYFullF, VPitch, width, height);
-  MakeVFullSafe<NPELL2>(VXFullB, VYFullB, VPitch, width, height);
-  MakeVFullSafe<NPELL2>(VXFullFF, VYFullFF, VPitch, width, height);
-  MakeVFullSafe<NPELL2>(VXFullBB, VYFullBB, VPitch, width, height);
 
   for (int h = 0; h < height; h++)
   {
@@ -287,9 +245,6 @@ static void FlowInterSimple_NPel(
   pixel_t *pdst = reinterpret_cast<pixel_t *>(pdst8);
   const pixel_t *prefB = reinterpret_cast<const pixel_t *>(prefB8);
   const pixel_t *prefF = reinterpret_cast<const pixel_t *>(prefF8);
-
-  MakeVFullSafe<NPELL2>(VXFullF, VYFullF, VPitch, width, height);
-  MakeVFullSafe<NPELL2>(VXFullB, VYFullB, VPitch, width, height);
 
   if (time256 == 128 /*t256_provider.is_half ()*/) // special case double fps - fastest
   {
@@ -363,9 +318,6 @@ static void FlowInterSimple_Pel1(
   pixel_t *pdst = reinterpret_cast<pixel_t *>(pdst8);
   const pixel_t *prefB = reinterpret_cast<const pixel_t *>(prefB8);
   const pixel_t *prefF = reinterpret_cast<const pixel_t *>(prefF8);
-
-  MakeVFullSafe<0>(VXFullF, VYFullF, VPitch, width, height);
-  MakeVFullSafe<0>(VXFullB, VYFullB, VPitch, width, height);
 
   if (time256 == 128) // special case double fps - fastest
   {

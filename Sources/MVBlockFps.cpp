@@ -618,8 +618,6 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
     MemZoneSet(MaskFullYB, 0, nWidthP, nHeightP, 0, 0, nPitchY); // put zeros
     MemZoneSet(MaskFullYF, 0, nWidthP, nHeightP, 0, 0, nPitchY);
 
-    int dummyplane = PLANAR_Y; // always use it for resizer
-
     PROFILE_START(MOTION_PROFILE_COMPENSATION);
     int blocks = mvClipB.GetBlkCount();
 
@@ -639,8 +637,8 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
 
       PROFILE_START(MOTION_PROFILE_RESIZE);
       // upsize (bilinear interpolate) vector masks to fullframe size
-      upsizer->SimpleResizeDo_uint8(MaskFullYF, nWidthP, nHeightP, nPitchY, smallMaskF, nBlkXP, nBlkXP, dummyplane);
-      upsizerUV->SimpleResizeDo_uint8(MaskFullUVF, nWidthPUV, nHeightPUV, nPitchUV, smallMaskF, nBlkXP, nBlkXP, dummyplane);
+      upsizer->SimpleResizeDo_uint8(MaskFullYF, nWidthP, nHeightP, nPitchY, smallMaskF, nBlkXP, nBlkXP);
+      upsizerUV->SimpleResizeDo_uint8(MaskFullUVF, nWidthPUV, nHeightPUV, nPitchUV, smallMaskF, nBlkXP, nBlkXP);
       // now we have forward fullframe blured occlusion mask in maskF arrays
       PROFILE_STOP(MOTION_PROFILE_RESIZE);
       PROFILE_START(MOTION_PROFILE_MASK);
@@ -654,8 +652,8 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
       PROFILE_STOP(MOTION_PROFILE_MASK);
       PROFILE_START(MOTION_PROFILE_RESIZE);
       // upsize (bilinear interpolate) vector masks to fullframe size
-      upsizer->SimpleResizeDo_uint8(MaskFullYB, nWidthP, nHeightP, nPitchY, smallMaskB, nBlkXP, nBlkXP, dummyplane);
-      upsizerUV->SimpleResizeDo_uint8(MaskFullUVB, nWidthPUV, nHeightPUV, nPitchUV, smallMaskB, nBlkXP, nBlkXP, dummyplane);
+      upsizer->SimpleResizeDo_uint8(MaskFullYB, nWidthP, nHeightP, nPitchY, smallMaskB, nBlkXP, nBlkXP);
+      upsizerUV->SimpleResizeDo_uint8(MaskFullUVB, nWidthPUV, nHeightPUV, nPitchUV, smallMaskB, nBlkXP, nBlkXP);
       PROFILE_STOP(MOTION_PROFILE_RESIZE);
     }
     if (mode == 4 || mode == 5 || mode == 7 || mode == 8)
@@ -664,8 +662,8 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
       MultMasks(smallMaskF, smallMaskB, smallMaskO, nBlkXP, nBlkYP);
       //InflateMask(smallMaskO, nBlkXP, nBlkYP);
       // upsize small mask to full frame size
-      upsizer->SimpleResizeDo_uint8(MaskOccY, nWidthP, nHeightP, nPitchY, smallMaskO, nBlkXP, nBlkXP, dummyplane);
-      upsizerUV->SimpleResizeDo_uint8(MaskOccUV, nWidthPUV, nHeightPUV, nPitchUV, smallMaskO, nBlkXP, nBlkXP, dummyplane);
+      upsizer->SimpleResizeDo_uint8(MaskOccY, nWidthP, nHeightP, nPitchY, smallMaskO, nBlkXP, nBlkXP);
+      upsizerUV->SimpleResizeDo_uint8(MaskOccUV, nWidthPUV, nHeightPUV, nPitchUV, smallMaskO, nBlkXP, nBlkXP);
     }
 
     // pointers

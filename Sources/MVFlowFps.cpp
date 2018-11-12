@@ -257,7 +257,7 @@ MVFlowFps::~MVFlowFps()
 PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
 {
   if (reentrancy_check) {
-    env->ThrowError("MFlowFps: cannot work in reentrant multithread mode!");
+    env->ThrowError("MFlowFps: error in frame %d: Previous GetFrame did not finished properly. There was a crash or filter was set to reentrant multithread mode!", n);
   }
   reentrancy_check = true;
 
@@ -410,8 +410,6 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
     int nOffsetY = nRefPitches[0] * nVPadding*nPel + nHPadding*nPel*pixelsize;
     int nOffsetUV = nRefPitches[1] * nVPaddingUV*nPel + nHPaddingUV*nPel*pixelsize;
 
-    int dummyplane = PLANAR_Y; // use luma plane resizer code for all planes if we resize from luma small mask
-
     if (nright != nrightLast)
     {
       PROFILE_START(MOTION_PROFILE_MASK);
@@ -427,10 +425,10 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
       // upsize (bilinear interpolate) vector masks to fullframe size
       PROFILE_START(MOTION_PROFILE_RESIZE);
 
-      upsizer->SimpleResizeDo_uint16(VXFullYB, nWidthP, nHeightP, VPitchY, VXSmallYB, nBlkXP, nBlkXP);
-      upsizer->SimpleResizeDo_uint16(VYFullYB, nWidthP, nHeightP, VPitchY, VYSmallYB, nBlkXP, nBlkXP);
-      upsizerUV->SimpleResizeDo_uint16(VXFullUVB, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVB, nBlkXP, nBlkXP);
-      upsizerUV->SimpleResizeDo_uint16(VYFullUVB, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVB, nBlkXP, nBlkXP);
+      upsizer->SimpleResizeDo_int16(VXFullYB, nWidthP, nHeightP, VPitchY, VXSmallYB, nBlkXP, nBlkXP, nPel, true);
+      upsizer->SimpleResizeDo_int16(VYFullYB, nWidthP, nHeightP, VPitchY, VYSmallYB, nBlkXP, nBlkXP, nPel, false);
+      upsizerUV->SimpleResizeDo_int16(VXFullUVB, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVB, nBlkXP, nBlkXP, nPel, true);
+      upsizerUV->SimpleResizeDo_int16(VYFullUVB, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVB, nBlkXP, nBlkXP, nPel, false);
       PROFILE_STOP(MOTION_PROFILE_RESIZE);
 
     }
@@ -444,8 +442,8 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
     PROFILE_STOP(MOTION_PROFILE_MASK);
     PROFILE_START(MOTION_PROFILE_RESIZE);
   // upsize (bilinear interpolate) vector masks to fullframe size
-    upsizer->SimpleResizeDo_uint8(MaskFullYB, nWidthP, nHeightP, VPitchY, MaskSmallB, nBlkXP, nBlkXP, dummyplane);
-    upsizerUV->SimpleResizeDo_uint8(MaskFullUVB, nWidthPUV, nHeightPUV, VPitchUV, MaskSmallB, nBlkXP, nBlkXP, dummyplane);
+    upsizer->SimpleResizeDo_uint8(MaskFullYB, nWidthP, nHeightP, VPitchY, MaskSmallB, nBlkXP, nBlkXP);
+    upsizerUV->SimpleResizeDo_uint8(MaskFullUVB, nWidthPUV, nHeightPUV, VPitchUV, MaskSmallB, nBlkXP, nBlkXP);
     PROFILE_STOP(MOTION_PROFILE_RESIZE);
 
     nrightLast = nright;
@@ -466,10 +464,10 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
       // upsize (bilinear interpolate) vector masks to fullframe size
       PROFILE_START(MOTION_PROFILE_RESIZE);
 
-      upsizer->SimpleResizeDo_uint16(VXFullYF, nWidthP, nHeightP, VPitchY, VXSmallYF, nBlkXP, nBlkXP);
-      upsizer->SimpleResizeDo_uint16(VYFullYF, nWidthP, nHeightP, VPitchY, VYSmallYF, nBlkXP, nBlkXP);
-      upsizerUV->SimpleResizeDo_uint16(VXFullUVF, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVF, nBlkXP, nBlkXP);
-      upsizerUV->SimpleResizeDo_uint16(VYFullUVF, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVF, nBlkXP, nBlkXP);
+      upsizer->SimpleResizeDo_int16(VXFullYF, nWidthP, nHeightP, VPitchY, VXSmallYF, nBlkXP, nBlkXP, nPel, true);
+      upsizer->SimpleResizeDo_int16(VYFullYF, nWidthP, nHeightP, VPitchY, VYSmallYF, nBlkXP, nBlkXP, nPel, false);
+      upsizerUV->SimpleResizeDo_int16(VXFullUVF, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVF, nBlkXP, nBlkXP, nPel, true);
+      upsizerUV->SimpleResizeDo_int16(VYFullUVF, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVF, nBlkXP, nBlkXP, nPel, false);
       PROFILE_STOP(MOTION_PROFILE_RESIZE);
 
     }
@@ -483,8 +481,8 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
     PROFILE_STOP(MOTION_PROFILE_MASK);
     PROFILE_START(MOTION_PROFILE_RESIZE);
   // upsize (bilinear interpolate) vector masks to fullframe size
-    upsizer->SimpleResizeDo_uint8(MaskFullYF, nWidthP, nHeightP, VPitchY, MaskSmallF, nBlkXP, nBlkXP, dummyplane);
-    upsizerUV->SimpleResizeDo_uint8(MaskFullUVF, nWidthPUV, nHeightPUV, VPitchUV, MaskSmallF, nBlkXP, nBlkXP, dummyplane);
+    upsizer->SimpleResizeDo_uint8(MaskFullYF, nWidthP, nHeightP, VPitchY, MaskSmallF, nBlkXP, nBlkXP);
+    upsizerUV->SimpleResizeDo_uint8(MaskFullUVF, nWidthPUV, nHeightPUV, VPitchUV, MaskSmallF, nBlkXP, nBlkXP);
     PROFILE_STOP(MOTION_PROFILE_RESIZE);
 
     nleftLast = nleft;
@@ -521,15 +519,15 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
 
       PROFILE_START(MOTION_PROFILE_RESIZE);
     // upsize vectors to full frame
-      upsizer->SimpleResizeDo_uint16(VXFullYBB, nWidthP, nHeightP, VPitchY, VXSmallYBB, nBlkXP, nBlkXP);
-      upsizer->SimpleResizeDo_uint16(VYFullYBB, nWidthP, nHeightP, VPitchY, VYSmallYBB, nBlkXP, nBlkXP);
-      upsizerUV->SimpleResizeDo_uint16(VXFullUVBB, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVBB, nBlkXP, nBlkXP);
-      upsizerUV->SimpleResizeDo_uint16(VYFullUVBB, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVBB, nBlkXP, nBlkXP);
+      upsizer->SimpleResizeDo_int16(VXFullYBB, nWidthP, nHeightP, VPitchY, VXSmallYBB, nBlkXP, nBlkXP, nPel, true);
+      upsizer->SimpleResizeDo_int16(VYFullYBB, nWidthP, nHeightP, VPitchY, VYSmallYBB, nBlkXP, nBlkXP, nPel, false);
+      upsizerUV->SimpleResizeDo_int16(VXFullUVBB, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVBB, nBlkXP, nBlkXP, nPel, true);
+      upsizerUV->SimpleResizeDo_int16(VYFullUVBB, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVBB, nBlkXP, nBlkXP, nPel, false);
 
-      upsizer->SimpleResizeDo_uint16(VXFullYFF, nWidthP, nHeightP, VPitchY, VXSmallYFF, nBlkXP, nBlkXP);
-      upsizer->SimpleResizeDo_uint16(VYFullYFF, nWidthP, nHeightP, VPitchY, VYSmallYFF, nBlkXP, nBlkXP);
-      upsizerUV->SimpleResizeDo_uint16(VXFullUVFF, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVFF, nBlkXP, nBlkXP);
-      upsizerUV->SimpleResizeDo_uint16(VYFullUVFF, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVFF, nBlkXP, nBlkXP);
+      upsizer->SimpleResizeDo_int16(VXFullYFF, nWidthP, nHeightP, VPitchY, VXSmallYFF, nBlkXP, nBlkXP, nPel, true);
+      upsizer->SimpleResizeDo_int16(VYFullYFF, nWidthP, nHeightP, VPitchY, VYSmallYFF, nBlkXP, nBlkXP, nPel, false);
+      upsizerUV->SimpleResizeDo_int16(VXFullUVFF, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVFF, nBlkXP, nBlkXP, nPel, true);
+      upsizerUV->SimpleResizeDo_int16(VYFullUVFF, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVFF, nBlkXP, nBlkXP, nPel, false);
       PROFILE_STOP(MOTION_PROFILE_RESIZE);
 
       PROFILE_START(MOTION_PROFILE_FLOWINTER);

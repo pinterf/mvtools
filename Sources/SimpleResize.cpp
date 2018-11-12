@@ -43,6 +43,7 @@
 #include <emmintrin.h>
 #include <smmintrin.h>
 #include "def.h"
+#include <algorithm>    // std::max
 
 #if !(defined(_M_X64))
 //#define OLD_ASM // for testing similarity with old code P.F. 161204
@@ -123,7 +124,9 @@ static MV_FORCEINLINE __m128i simd_blend_epi8(__m128i const &selector, __m128i c
 // unsigned char
 // or short
 // or 8->16 bits: for MMask, scaling 8 bit masks to 10-16 bits
-template<typename src_type, typename dst_type>
+
+// for non 16->16 bit: limitIt = false, nPelLog1 and isXpart are n/a (e.g. 0, true)
+template<typename src_type, typename dst_type, bool limitIt, int nPel, bool isXpart>
 void SimpleResize::SimpleResizeDo_New(uint8_t *dstp8, int row_size, int height, int dst_pitch,
   const uint8_t* srcp8, int src_row_size, int src_pitch, int bits_per_pixel)
 {
@@ -151,9 +154,61 @@ void SimpleResize::SimpleResizeDo_New(uint8_t *dstp8, int row_size, int height, 
   unsigned int* vOffsetsW = vOffsets;
   unsigned int* vWeightsW = vWeights;
 
+  // variables for int16->int16 vector (X or Y) resize
+  constexpr int nPelLog2 = nPel == 1 ? 0 : nPel == 2 ? 1 : nPel == 4 ? 2 : 0; // for !limitIt -> n/a
+  __m128i minRelY, maxRelY; // used when we have Y parts of the vector
+  int minRelY_c, maxRelY_c;
+  const __m128i relInc =  isXpart ? _mm_set1_epi16(nPel * 4) : _mm_set1_epi16(nPel);
+  // for X : simd code does 4 pixels at a time, decrement by 4 X-unit
+  const int relInc_c = nPel; // no difference for X
+  const int width = row_size;
+  const __m128i maxRelXStart = _mm_set_epi16(
+    ((width - 7) << nPelLog2) - 1,
+    ((width - 6) << nPelLog2) - 1,
+    ((width - 5) << nPelLog2) - 1,
+    ((width - 4) << nPelLog2) - 1,
+    ((width - 3) << nPelLog2) - 1,
+    ((width - 2) << nPelLog2) - 1,
+    ((width - 1) << nPelLog2) - 1,
+    ((width - 0) << nPelLog2) - 1);
+  const __m128i minRelXStart = _mm_set_epi16(
+    -7 << nPelLog2,
+    -6 << nPelLog2,
+    -5 << nPelLog2,
+    -4 << nPelLog2,
+    -3 << nPelLog2,
+    -2 << nPelLog2,
+    -1 << nPelLog2,
+    0 << nPelLog2);
+
+  const int row_size_mod4 = row_size & ~3;
+  const int maxRelXStart_c = ((width - row_size_mod4) << nPelLog2) - 1;
+  const int minRelXStart_c = (-row_size_mod4) << nPelLog2;
+
   unsigned int last_vOffsetsW = vOffsetsW[height - 1];
+
+  if constexpr (limitIt && !isXpart)
+  {
+    maxRelY_c = (height << nPelLog2) - 1;
+    minRelY_c = 0;
+    maxRelY = _mm_set1_epi16(maxRelY_c);
+    minRelY = _mm_set1_epi16(0);
+  }
+
   for (int y = 0; y < height; y++)
   {
+
+    __m128i minRelX, maxRelX;
+    int minRelX_c, maxRelX_c;
+
+    if constexpr (limitIt && isXpart)
+    {
+      maxRelX = maxRelXStart;
+      minRelX = minRelXStart;
+      maxRelX_c = maxRelXStart_c;
+      minRelX_c = minRelXStart_c;
+    }
+
     int CurrentWeight = vWeightsW[y];
     int invCurrentWeight = 256 - CurrentWeight;
 
@@ -238,7 +293,6 @@ void SimpleResize::SimpleResizeDo_New(uint8_t *dstp8, int row_size, int height, 
     // rework
     // We've taken care of the vertical scaling, now do horizontal
     // vvv for src_type char it can be loop by 8
-    int row_size_mod4 = row_size & ~3;
     for (int x = 0; x < row_size_mod4; x += 4) {
 #ifdef USE_SSE2_HORIZONTAL_HELPERS        
       unsigned int pc0, pc1, pc2, pc3;
@@ -367,6 +421,18 @@ void SimpleResize::SimpleResizeDo_New(uint8_t *dstp8, int row_size, int height, 
       }
       else {
         // for short to short version: 
+        if constexpr (limitIt) {
+          if constexpr (isXpart)
+          {
+            result = _mm_max_epi16(_mm_min_epi16(result, maxRelX), minRelX);
+            maxRelX = _mm_sub_epi16(maxRelX, relInc); // 4 pixels at a time, decrement by 4 X-unit
+            minRelX = _mm_sub_epi16(minRelX, relInc); // 4 pixels at a time, decrement by 4 X-unit;
+          }
+          else
+          {
+            result = _mm_max_epi16(_mm_min_epi16(result, maxRelY), minRelY);
+          }
+        }
         _mm_storel_epi64(reinterpret_cast<__m128i *>(&dstp[x]), result);
       }
     }
@@ -395,29 +461,48 @@ void SimpleResize::SimpleResizeDo_New(uint8_t *dstp8, int row_size, int height, 
 
       }
       else {
-        dstp[x] = (vWorkYW[offs] * wY1 + vWorkYW[offs + 1] * wY2 + 128) >> 8;
+        int result = (vWorkYW[offs] * wY1 + vWorkYW[offs + 1] * wY2 + 128) >> 8;
+        // resize of signed 16 bit vectors needs limiting
+        if constexpr (limitIt) {
+          if constexpr (isXpart)
+          {
+            result = std::max(std::min(result, maxRelX_c), minRelX_c);
+            maxRelX_c -= relInc_c;
+            minRelX_c -= relInc_c;
+          }
+          else
+          {
+            result = std::max(std::min(result, maxRelY_c), minRelY_c);
+          }
+        }
+        dstp[x] = result;
       }
     }
-    // rework end
 
+    if constexpr (limitIt)
+    {
+      if constexpr (!isXpart) {
+        maxRelY = _mm_sub_epi16(maxRelY, relInc);
+        minRelY = _mm_sub_epi16(minRelY, relInc);
+        maxRelY_c -= relInc_c;
+        minRelY_c -= relInc_c;
+      }
+    }
     dstp += dst_pitch;
 
   } // for y
 }
 
 void SimpleResize::SimpleResizeDo_uint8_to_uint16(uint8_t *dstp, int row_size, int height, int dst_pitch,
-  const uint8_t* srcp, int src_row_size, int src_pitch, int Planar_Type, int bits_per_pixel) {
+  const uint8_t* srcp, int src_row_size, int src_pitch, int bits_per_pixel) {
   dst_pitch /= sizeof(uint16_t);  // pitch from byte granularity to uint16 for SimpleResizeDo
-  SimpleResizeDo_New<uint8_t, uint16_t>(dstp, row_size, height, dst_pitch, srcp, src_row_size, src_pitch, bits_per_pixel);
+  SimpleResizeDo_New<uint8_t, uint16_t, false, 0, true>(dstp, row_size, height, dst_pitch, srcp, src_row_size, src_pitch, bits_per_pixel);
   return;
 }
 
-// YV12 Luma, PF: not YV12 specific!
-// srcp2 is the next line to srcp1
 void SimpleResize::SimpleResizeDo_uint8(uint8_t *dstp, int row_size, int height, int dst_pitch,
-  const uint8_t* srcp, int src_row_size, int src_pitch, int Planar_Type)
+  const uint8_t* srcp, int src_row_size, int src_pitch)
 {
-  // Note: PlanarType is dummy, I (Fizick) do not use croma planes code for resize in MVTools
 /* test:
 SetMemoryMax(6000)
 a=Avisource("c:\tape13\Videos\Tape02_digitall_Hi8.avi").assumefps(25,1).trim(0, 499)
@@ -430,30 +515,14 @@ a=a.MFlowInter(sup, bw, fw, time=50, thSCD1=400) # MFlowInter uses SimpleResize
 a
 */
 
-  bool use_c = false;
-#ifndef OLD_ASM
   if (SSE2enabled) {
-    SimpleResizeDo_New<uint8_t, uint8_t>(dstp, row_size, height, dst_pitch, srcp, src_row_size, src_pitch, 8);
+    SimpleResizeDo_New<uint8_t, uint8_t, false, 0, true>(dstp, row_size, height, dst_pitch, srcp, src_row_size, src_pitch, 8);
     return;
   }
-#endif
-  use_c = true; 
+  // C-only
   typedef unsigned char src_type;
-  // later for the other SimpleResizeDo for vectors this is unsigned short
-  // typedef short src_type; 
-
+  
   typedef src_type workY_type; // be the same
-
-#ifdef OLD_ASM
-  int vWeight1[4];
-  int vWeight2[4];
-  // not needed for short
-  const __int64 FPround1[2] = { 0x0080008000800080,0x0080008000800080 }; // round words
-                                                                         // needed for byte and short
-  const __int64 FPround2[2] = { 0x0000008000000080,0x0000008000000080 };// round dwords
-                                                                        // not needed for short
-  const __int64 FPround4 = 0x0080008000800080;// round words
-#endif
 
   const unsigned int* pControl = &hControl[0];
 
@@ -464,12 +533,6 @@ a
   unsigned int* vOffsetsW = vOffsets;
   unsigned int* vWeightsW = vWeights;
 
-#ifdef OLD_ASM
-  bool	SSE2enabledW = SSE2enabled;		// in local storage for asm
-  bool	SSEMMXenabledW = SSEMMXenabled;		// in local storage for asm
-#endif
-  // Just in case things are not aligned right, maybe turn off sse2
-
   unsigned int last_vOffsetsW = vOffsetsW[height - 1];
 
   for (int y = 0; y < height; y++)
@@ -477,427 +540,155 @@ a
     int CurrentWeight = vWeightsW[y];
     int invCurrentWeight = 256 - CurrentWeight;
 
-#ifdef OLD_ASM
-    // fill 4x(16x2) bit for inline asm 
-    // for intrinsic it is not needed anymore
-    vWeight1[0] = vWeight1[1] = vWeight1[2] = vWeight1[3] =
-      (invCurrentWeight << 16) | invCurrentWeight;
-
-    vWeight2[0] = vWeight2[1] = vWeight2[2] = vWeight2[3] =
-      (CurrentWeight << 16) | CurrentWeight;
-#endif
     srcp1 = srcp + vOffsetsW[y] * src_pitch;
 
+    // srcp2 is the next line to srcp1
     // fix in 2.7.14.22: srcp2 may reach beyond block
     // see comment in SimpleResizeDo_New
     bool UseNextLine = vOffsetsW[y] < last_vOffsetsW;
     srcp2 = UseNextLine ? srcp1 + src_pitch : srcp; // pitch is uchar/short-aware
 
-    if (use_c) // always C here
-    {
-      // recovered (and commented) C version as sort of doc
-      for (int x = 0; x < src_row_size; x++) {
-        vWorkYW[x] = (srcp1[x] * invCurrentWeight + srcp2[x] * CurrentWeight + 128) >> 8;
-      }
-      // We've taken care of the vertical scaling, now do horizontal
-      for (int x = 0; x < row_size; x++) {
-        unsigned int pc;
-        unsigned int offs;
-
-        // eax: get data offset in pixels, 1st pixel pair. Control[4]=offs
-        if ((x & 1) == 0) { // even
-          pc = pControl[3 * x];
-          offs = pControl[3 * x + 4];
-        }
-        else { // odd
-          pc = pControl[3 * x - 2]; // [3*xeven+1]
-          offs = pControl[3 * x + 2]; // [3*xeven+5]
-        }
-        unsigned int wY1 = pc & 0x0000ffff; //low
-        unsigned int wY2 = pc >> 16; //high
-        dstp[x] = (vWorkYW[offs] * wY1 + vWorkYW[offs + 1] * wY2 + 128) >> 8;
-      }
-
-
+    // recovered (and commented) C version as sort of doc
+    for (int x = 0; x < src_row_size; x++) {
+      vWorkYW[x] = (srcp1[x] * invCurrentWeight + srcp2[x] * CurrentWeight + 128) >> 8;
     }
-#ifdef OLD_ASM
-    // inline asm ignored 
-    else {
-      // Do Vertical. First SSE2 (mod16) then MMX (mod8) then MMX (for last_pos-8)
-      // This one already ported to intrinsics (SSE2 mod16) + rest C
-      _asm
-      {
-        //emms // added by paranoid Fizick
-        //push	ecx						// have to save this? Intel2017:should be commented out
-        mov		ecx, src_row_size
-        shr		ecx, 3					// 8 bytes a time
-        mov		rsi, srcp1				// top of 2 src lines to get
-        mov		rdx, srcp2				// next "
-        mov		rdi, vWorkYW			// luma work destination line
-        xor		rax, rax                // P.F. 16.04.28 should be rax here not eax (hack! define rax as eax in 32 bit) eax/rax is an indexer 
-        xor   rbx, rbx                // P.F. 16.04.28 later we use only EBX but index with RBX
+    // We've taken care of the vertical scaling, now do horizontal
+    for (int x = 0; x < row_size; x++) {
+      unsigned int pc;
+      unsigned int offs;
 
-        // Let's check here to see if we are on a P4 or higher and can use SSE2 instructions.
-        // This first loop is not the performance bottleneck anyway but it is trivial to tune
-        // using SSE2 if we have proper alignment.
-
-        test    SSE2enabledW, 1			// is SSE2 supported?
-        jz		vMaybeSSEMMX				// n, can't do anyway
-
-// if src_row_size < 16 jump to vMaybeSSEMMX
-cmp     ecx, 2					// we have at least 16 byts, 2 qwords?
-jl		vMaybeSSEMMX				// n, don't bother
-// srcp1 and srcp2 should be 16 byte aligned else jump to vMaybeSSEMMX
-mov		rbx, rsi
-or rbx, rdx
-test    rbx, 0xf				// both src rows 16 byte aligned?
-jnz		vMaybeSSEMMX			// n, don't use sse2
-// SSE2 part from here
-shr		ecx, 1					// do 16 bytes at a time instead. ecx now src_row_size/16
-dec		ecx						// jigger loop ct
-align	16
-movdqu  xmm0, FPround1 // { 0x0080008000800080,0x0080008000800080 }; // round words _mm_set1_epi16(0x0080)
-movdqu	xmm5, vWeight1  // __m128i weight1_xmm5 = _mm_loadu_si128(vWeight1)
-movdqu	xmm6, vWeight2  // __m128i weight2_xmm6 = _mm_loadu_si128(vWeight2)
-pxor	xmm7, xmm7        // __m128i zero = _mm_setzero_si128()
-
-align   16
-vLoopSSE2_Fetch:
-        prefetcht0[rsi + rax * 2 + 16]
-          prefetcht0[rdx + rax * 2 + 16]
-
-          // move unaligned
-          vLoopSSE2 :
-          // __mm128i src_lo_xmm1 = _mm_loadu_si128(src1 + x_eax)
-          movdqu	xmm1, xmmword ptr[rsi + rax] // top of 2 lines to interpolate
-            // __mm128i src_hi_xmm3 = _mm_loadu_si128(src2 + x_eax)
-          movdqu	xmm3, xmmword ptr[rdx + rax] // 2nd of 2 lines
-            // xmm2 = xmm1
-            // xmm4 = xmm3
-          movdqa  xmm2, xmm1
-          movdqa  xmm4, xmm3
-            // xmm1 = _mm_unpacklo_epi8(xmm1, zero)
-            // xmm2 = _mm_unpackhi_epi8(xmm2, zero)
-          punpcklbw xmm1, xmm7			// make words
-          punpckhbw xmm2, xmm7			// "
-            // xmm3 = _mm_unpacklo_epi8(xmm3, zero)
-            // xmm4 = _mm_unpackhi_epi8(xmm4, zero)
-          punpcklbw xmm3, xmm7			// "
-          punpckhbw xmm4, xmm7			// "
-
-            // xmm1 = _mm_mullo_epi16(xmm1, weight1_xmm5) // mult by weighting factor 1
-            // xmm2 = _mm_mullo_epi16(xmm2, weight1_xmm5)
-          pmullw	xmm1, xmm5				// mult by top weighting factor
-          pmullw	xmm2, xmm5              // "
-          // xmm3 = _mm_mullo_epi16(xmm3, weight2_xmm6) // mult by weighting factor 2
-          // xmm4 = _mm_mullo_epi16(xmm4, weight2_xmm6)
-          pmullw	xmm3, xmm6				// mult by bot weighting factor
-          pmullw	xmm4, xmm6              // "
-            // xmm1 = _mm_add_epi16(xmm1,xmm3) // combine lumas low
-          paddw	xmm1, xmm3				// combine lumas low
-            // xmm2 = _mm_add_epi16(xmm2,xmm4) // combine lumas high
-          paddw	xmm2, xmm4				// combine lumas high
-            // xmm1 = _mm_adds_epu16(xmm1, round_xmm0)
-            // xmm2 = _mm_adds_epu16(xmm2, round_xmm0)
-          paddusw	xmm1, xmm0				// round
-          paddusw	xmm2, xmm0				// round
-            // xmm1 = _mm_srli_epi16(xmm1, 8) // right adjust luma
-            // xmm2 = _mm_srli_epi16(xmm2, 8)
-          psrlw	xmm1, 8					// right adjust luma
-          psrlw	xmm2, 8					// right adjust luma
-            // xmm1 = _mm_packus_epi16(xmm1, xmm2)
-          packuswb xmm1, xmm2				// pack words to our 16 byte answer
-            // _mm_stream_si128(vWorkYW+eax, xmm1) // movntdq don't pollute cache
-          movntdq	xmmword ptr[rdi + rax], xmm1	// save lumas in our work area
-            //x_eax+=16
-          lea     rax, [rax + 16]  // P.F. 16.04.28 ?should be rax here not eax (hack! define rax eax in 32 bit)
-          dec		ecx						// was: src_row_size/16 loop until zero
-          jg		vLoopSSE2_Fetch			// if not on last one loop, prefetch
-          jz		vLoopSSE2				// or just loop, or not
-
-    // done with our SSE2 fortified loop but we may need to pick up the spare change
-          sfence
-          mov		ecx, src_row_size		// get count again
-          and		ecx, 0x0000000f			// just need mod 16
-          movq	mm5, vWeight1
-          movq	mm6, vWeight2
-          movq	mm0, FPround1			// useful rounding constant
-          shr		ecx, 3					// 8 bytes at a time, any?
-          jz		MoreSpareChange			// n, did them all		
-
-
-    // Let's check here to see if we are on a P2 or Athlon and can use SSEMMX instructions.
-    // This first loop is not the performance bottleneck anyway but it is trivial to tune
-    // using SSE if we have proper alignment.
-        vMaybeSSEMMX:
-        movq	mm5, vWeight1
-          movq	mm6, vWeight2
-          movq	mm0, FPround1			// useful rounding constant
-          pxor	mm7, mm7
-          test    SSEMMXenabledW, 1		// is SSE supported?
-          jz		vLoopMMX				// n, can't do anyway
-          dec     ecx						// jigger loop ctr
-
-          align	16
-          vLoopSSEMMX_Fetch:
-        prefetcht0[rsi + rax + 8]
-          prefetcht0[rdx + rax + 8]
-
-          vLoopSSEMMX :
-          movq	mm1, qword ptr[rsi + rax] // top of 2 lines to interpolate
-          movq	mm3, qword ptr[rdx + rax] // 2nd of 2 lines
-          movq	mm2, mm1				// copy top bytes
-          movq	mm4, mm3				// copy 2nd bytes
-
-          punpcklbw mm1, mm7				// make words
-          punpckhbw mm2, mm7				// "
-          punpcklbw mm3, mm7				// "
-          punpckhbw mm4, mm7				// "
-
-          pmullw	mm1, mm5				// mult by weighting factor
-          pmullw	mm2, mm5				// mult by weighting factor
-          pmullw	mm3, mm6				// mult by weighting factor
-          pmullw	mm4, mm6				// mult by weighting factor
-
-          paddw	mm1, mm3				// combine lumas
-          paddw	mm2, mm4				// combine lumas
-
-          paddusw	mm1, mm0				// round
-          paddusw	mm2, mm0				// round
-
-          psrlw	mm1, 8					// right adjust luma
-          psrlw	mm2, 8					// right adjust luma
-
-          packuswb mm1, mm2				// pack UV's into low dword
-
-          movntq	qword ptr[rdi + rax], mm1	// save in our work area
-
-          lea     rax, [rax + 8]      // P.F. 16.04.28 should be rax here not eax (hack! define rax eax in 32 bit)
-          dec		ecx
-          jg		vLoopSSEMMX_Fetch			// if not on last one loop, prefetch
-          jz		vLoopSSEMMX				// or just loop, or not
-          sfence
-          jmp		MoreSpareChange			// all done with vertical
-
-          align	16
-          vLoopMMX:
-        movq	mm1, qword ptr[rsi + rax] // top of 2 lines to interpolate
-          movq	mm3, qword ptr[rdx + rax] // 2nd of 2 lines
-          movq	mm2, mm1				// copy top bytes
-          movq	mm4, mm3				// copy 2nd bytes
-
-          punpcklbw mm1, mm7				// make words
-          punpckhbw mm2, mm7				// "
-          punpcklbw mm3, mm7				// "
-          punpckhbw mm4, mm7				// "
-
-          pmullw	mm1, mm5				// mult by weighting factor
-          pmullw	mm2, mm5				// mult by weighting factor
-          pmullw	mm3, mm6				// mult by weighting factor
-          pmullw	mm4, mm6				// mult by weighting factor
-
-          paddw	mm1, mm3				// combine lumas
-          paddw	mm2, mm4				// combine lumas
-
-          paddusw	mm1, mm0				// round
-          paddusw	mm2, mm0				// round
-
-          psrlw	mm1, 8					// right just 
-          psrlw	mm2, 8					// right just 
-
-          packuswb mm1, mm2				// pack UV's into low dword
-
-          movq	qword ptr[rdi + rax], mm1	// save lumas in our work area
-
-          lea     rax, [rax + 8]            // P.F. 16.04.28 should be rax here not eax (hack! define rax eax in 32 bit)
-          loop	vLoopMMX
-
-          // Trick!
-          // Add a little code here to check if we have more pixels to do and, if so, make one
-          // more pass thru vLoopMMX. We were processing in multiples of 8 pixels and alway have
-          // an even number so there will never be more than 7 left. 
-        MoreSpareChange:
-        cmp		eax, src_row_size		// EAX! did we get them all // P.F. 16.04.28 should be rax here not eax (hack! define rax eax in 32 bit)
-          jnl		DoHorizontal			// yes, else have 2 left
-          mov		ecx, 1					// jigger loop ct
-          mov		eax, src_row_size       // EAX! P.F. 16.04.28 should be rax here not eax (hack! define rax eax in 32 bit)
-          sub		rax, 8					// back up to last 8 pixels // P.F. 16.04.28 should be rax here not eax (hack! define rax eax in 32 bit)
-          jmp		vLoopMMX
-
-          // Do vertical END This one already ported to intrinsics (SSE2 mod16) + rest C
-
-//-----------------------------------------------------
-         // We've taken care of the vertical scaling, now do horizontal
-        DoHorizontal:
-        pxor    mm7, mm7
-          movq	mm6, FPround2		// useful rounding constant, dwords
-          mov		rsi, pControl		// @ horiz control bytes			
-          mov		ecx, row_size
-          shr		ecx, 2				// 4 bytes a time, 4 pixels
-          mov     rdx, vWorkYW		// our luma data
-          mov		rdi, dstp			// the destination line
-          test    SSEMMXenabledW, 1		// is SSE2 supported?
-          jz		hLoopMMX				// n
-
-    // With SSE support we will make 8 pixels (from 8 pairs) at a time
-          shr		ecx, 1				// 8 bytes a time instead of 4
-          jz		LessThan8
-          align 16
-          hLoopMMXSSE:
-        // handle first 2 pixels			
-        mov		eax, [rsi + 16]		// EAX! get data offset in pixels, 1st pixel pair 
-          mov		ebx, [rsi + 20]		// EBX! get data offset in pixels, 2nd pixel pair 
-          movd	mm0, [rdx + rax]		// copy luma pair 0000xxYY
-          punpcklwd mm0, [rdx + rbx]    // 2nd luma pair, now xxxxYYYY
-          punpcklbw mm0, mm7		    // make words out of bytes, 0Y0Y0Y0Y
-          mov		eax, [rsi + 16 + 24]	// EAX! get data offset in pixels, 3rd pixel pair 
-          mov		ebx, [rsi + 20 + 24]	// EBX! get data offset in pixels, 4th pixel pair 
-          pmaddwd mm0, [rsi]			// mult and sum lumas by ctl weights
-          paddusw	mm0, mm6			// round
-          psrlw	mm0, 8				// right just 4 luma pixel value 0Y0Y0Y0Y
-
-          // handle 3rd and 4th pixel pairs			
-          movd	mm1, [rdx + rax]		// copy luma pair 0000xxYY
-          punpcklwd mm1, [rdx + rbx]    // 2nd luma pair, now xxxxYYYY
-          punpcklbw mm1, mm7		    // make words out of bytes, 0Y0Y0Y0Y
-          mov		eax, [rsi + 16 + 48]	// EAX! get data offset in pixels, 5th pixel pair 
-          mov		ebx, [rsi + 20 + 48]	// EBX! get data offset in pixels, 6th pixel pair 
-          pmaddwd mm1, [rsi + 24]		// mult and sum lumas by ctl weights
-          paddusw	mm1, mm6			// round
-          psrlw	mm1, 8				// right just 4 luma pixel value 0Y0Y0Y0Y
-
-          // handle 5th and 6th pixel pairs			
-          movd	mm2, [rdx + rax]		// copy luma pair 0000xxYY
-          punpcklwd mm2, [rdx + rbx]    // 2nd luma pair, now xxxxYYYY
-          punpcklbw mm2, mm7		    // make words out of bytes, 0Y0Y0Y0Y
-          mov		eax, [rsi + 16 + 72]	// EAX! get data offset in pixels, 7th pixel pair 
-          mov		ebx, [rsi + 20 + 72]	// EBX! get data offset in pixels, 8th pixel pair 
-          pmaddwd mm2, [rsi + 48]			// mult and sum lumas by ctl weights
-          paddusw	mm2, mm6			// round
-          psrlw	mm2, 8				// right just 4 luma pixel value 0Y0Y0Y0Y
-
-          // handle 7th and 8th pixel pairs			
-          movd	mm3, [rdx + rax]		// copy luma pair
-          punpcklwd mm3, [rdx + rbx]    // 2nd luma pair
-          punpcklbw mm3, mm7		    // make words out of bytes
-          pmaddwd mm3, [rsi + 72]		// mult and sum lumas by ctl weights
- // _mm_adds_epu16
-          paddusw	mm3, mm6			// round
-          psrlw	mm3, 8				// right just 4 luma pixel value 0Y0Y0Y0Y
-
-          // combine, store, and loop
-          packuswb mm0, mm1			// pack into qword, 0Y0Y0Y0Y
-          packuswb mm2, mm3			// pack into qword, 0Y0Y0Y0Y
-          packuswb mm0, mm2			// and again into  YYYYYYYY				
-          movntq	qword ptr[rdi], mm0	// done with 4 pixels
-
-          lea    rsi, [rsi + 96]		// bump to next control bytest
-          lea    rdi, [rdi + 8]			// bump to next output pixel addr
-          dec	   ecx
-          jg	   hLoopMMXSSE				// loop for more
-          sfence
-
-          LessThan8 :
-        mov		ecx, row_size
-          and		ecx, 7				// we have done all but maybe this
-          shr		ecx, 2				// now do only 4 bytes at a time
-          jz		LessThan4
-
-          align 16
-          hLoopMMX:
-        // handle first 2 pixels			
-        mov		eax, [rsi + 16]		// EAX! get data offset in pixels, 1st pixel pair 
-          mov		ebx, [rsi + 20]		// EBX! get data offset in pixels, 2nd pixel pair 
-          movd	mm0, [rdx + rax]		// copy luma pair 0000xxYY
-          punpcklwd mm0, [rdx + rbx]    // 2nd luma pair, now xxxxYYYY
-          punpcklbw mm0, mm7		    // make words out of bytes, 0Y0Y0Y0Y
-          mov		eax, [rsi + 16 + 24]	// get data offset in pixels, 3rd pixel pair
-          mov		ebx, [rsi + 20 + 24]	// get data offset in pixels, 4th pixel pair
-          pmaddwd mm0, [rsi]			// mult and sum lumas by ctl weights
-          paddusw	mm0, mm6			// round
-          psrlw	mm0, 8				// right just 4 luma pixel value 0Y0Y0Y0Y
-
-          // handle 3rd and 4th pixel pairs			
-          movd	mm1, [rdx + rax]		// copy luma pair
-          punpcklwd mm1, [rdx + rbx]    // 2nd luma pair
-          punpcklbw mm1, mm7		    // make words out of bytes
-          pmaddwd mm1, [rsi + 24]			// mult and sum lumas by ctl weights
-          paddusw	mm1, mm6			// round
-          psrlw	mm1, 8				// right just 4 luma pixel value 0Y0Y0Y0Y
-
-          // combine, store, and loop
-          packuswb mm0, mm1			// pack all into qword, 0Y0Y0Y0Y
-          packuswb mm0, mm7			// and again into  0000YYYY				
-          movd	dword ptr[rdi], mm0	// done with 4 pixels
-          lea    rsi, [rsi + 48]		// bump to next control bytest
-          lea    rdi, [rdi + 4]			// bump to next output pixel addr
-          loop   hLoopMMX				// loop for more
-
-    // test to see if we have a mod 4 size row, if not then more spare change
-          LessThan4 :
-        mov		ecx, row_size
-          and		ecx, 3				// remainder size mod 4
-          cmp		ecx, 2
-          jl		LastOne				// none, done
-
-          // handle 2 more pixels			
-          mov		eax, [rsi + 16]		// EAX! get data offset in pixels, 1st pixel pair 
-          mov		ebx, [rsi + 20]		// EBX! get data offset in pixels, 2nd pixel pair 
-          movd	mm0, [rdx + rax]		// copy luma pair 0000xxYY
-          punpcklwd mm0, [rdx + rbx]    // 2nd luma pair, now xxxxYYYY
-          punpcklbw mm0, mm7		    // make words out of bytes, 0Y0Y0Y0Y
-
-          pmaddwd mm0, [rsi]			// mult and sum lumas by ctl weights
-          paddusw	mm0, mm6			// round
-          psrlw	mm0, 8				// right just 2 luma pixel value 000Y,000Y
-          packuswb mm0, mm7			// pack all into qword, 00000Y0Y
-          packuswb mm0, mm7			// and again into  000000YY		
-          movd	dword ptr[rdi], mm0	// store, we are guarrenteed room in buffer (8 byte mult)
-          sub		ecx, 2
-          lea		rsi, [rsi + 24]		// bump to next control bytest
-          lea		rdi, [rdi + 2]			// bump to next output pixel addr
-
-          // maybe one last pixel
-          LastOne:
-        cmp		ecx, 0				// still more?
-          jz		AllDone				// n, done
-
-          mov		eax, [rsi + 16]		// EAX! get data offset in pixels, 1st pixel pair 
-          movd	mm0, [rdx + rax]		// copy luma pair 0000xxYY
-          punpcklbw mm0, mm7		    // make words out of bytes, xxxx0Y0Y
-
-          pmaddwd mm0, [rsi]			// mult and sum lumas by ctl weights
-          paddusw	mm0, mm6			// round
-          psrlw	mm0, 8				// right just 2 luma pixel value xxxx000Y
-          movd	eax, mm0
-          mov		byte ptr[rdi], al	// store last one
-
-          AllDone :
-        //pop		ecx Intel2017:should be commented out
-        emms
+      // eax: get data offset in pixels, 1st pixel pair. Control[4]=offs
+      if ((x & 1) == 0) { // even
+        pc = pControl[3 * x];
+        offs = pControl[3 * x + 4];
       }
-    }                               // done with one line
-#endif // MSVC x64 asm ignore
-
+      else { // odd
+        pc = pControl[3 * x - 2]; // [3*xeven+1]
+        offs = pControl[3 * x + 2]; // [3*xeven+5]
+      }
+      unsigned int wY1 = pc & 0x0000ffff; //low
+      unsigned int wY2 = pc >> 16; //high
+      dstp[x] = (vWorkYW[offs] * wY1 + vWorkYW[offs + 1] * wY2 + 128) >> 8;
+    }
     dstp += dst_pitch;
   }
 
 }
 
+static void MakeVectorsSafe_c(short *dstp, int row_size, int height, int dst_pitch, int nPel, bool isXpart)
+{
+  const int nPelLog2 = nPel == 1 ? 0 : nPel == 2 ? 1 : nPel == 4 ? 2 : 0; // convert to needed shift count
+  if (isXpart) {
+    // dealing with the horizontal part of motion vectors
+    short *VXFull = dstp;
+    const int width = row_size;
+    for (int h = 0; h < height; h++)
+    {
+      // todo: what about the vectors in a future 8K era?! with nPel=2 (<<2) they may not be safe anymore
+      short maxRelX = ((width - 0) << nPelLog2) - 1;
+      short minRelX = 0;
+      short diff = 1 << nPelLog2;
+      for (int w = 0; w < row_size; w++)
+      {
+        /*
+        int rel_x = VXFull[w];
+        short maxRelX = ((width - w) << nPelLog2) - 1;
+        short minRelX = -(w << nPelLog2);
+        if (rel_x > maxRelX)
+          VXFull[w] = maxRelX; // dont reach out on the right
+        else if (rel_x < minRelX)
+          VXFull[w] = minRelX; // dont reach out on the left
+          */
+        VXFull[w] = std::max(std::min(VXFull[w], maxRelX), minRelX);
+        minRelX -= diff;
+        maxRelX -= diff;
+      }
+      VXFull += dst_pitch;
+    }
+  }
+  else {
+    // dealing with the vertical part of motion vectors
+    short *VYFull = dstp;
+    const int width = row_size;
+
+    short maxRelY = ((height - 0) << nPelLog2) - 1;
+    short minRelY = 0;
+    short diff = 1 << nPelLog2;
+
+    for (int h = 0; h < height; h++)
+    {
+      //short maxRelY = ((height - h) << nPelLog2) - 1;
+      //short minRelY = -(h << nPelLog2);
+      for (int w = 0; w < width; w++)
+      {
+        /*
+        int rel_y = VYFull[w];
+        if (rel_y > maxRelY)
+          VYFull[w] = maxRelY; // dont reach out downward
+        else if (rel_y < minRelY)
+          VYFull[w] = minRelY; // dont reach out upward
+          */
+        VYFull[w] = std::max(std::min(VYFull[w], maxRelY), minRelY);
+      }
+      minRelY -= diff;
+      maxRelY -= diff;
+      VYFull += dst_pitch;
+    }
+  }
+}
+
 // brand new in 2.5.11.2 -> 2.5.11.22
 // bilinear resizer for vectors as short integer
-void SimpleResize::SimpleResizeDo_uint16(short *dstp, int row_size, int height, int dst_pitch,
-  const short* srcp, int src_row_size, int src_pitch)
+// 20181111: In a previous attempt we used MakeVFullSafe<NPELL2> (v2.7.33-) just before the usage of this resized vector set (MFlowXXX).
+// It prevented access violation by limiting vectors pointing out of frame area
+// limit x and y to prevent overflow in pel ref frame indexing
+// valid pref[x;y] is [0..(height<<nLogPel)-1 ; 0..(width<<nLogPel)-1]
+// invalid indexes appeared when enlarging small vector mask to full mask
+
+// Vector validity was checked and were made safe by limiting them, since during the resize operation some vectors can point out of the valid frame dimensions.
+// When enlarging the X part of the vectors, they may point to negative X positions on the left or beyond the rightmost pixel on the right.
+// When enlarging the Y part of the vectors, they may point to negative Y positions at the top or below the most bottom line
+// These vectors when converted to source pixel memory addresses will couse out-of-buffer access violation exceptions.
+// Though the vectors are enlarged to frame size, they may point to an enlarged (frame size << nPel) reference frame, the limits should
+// take nPel into account.
+void SimpleResize::SimpleResizeDo_int16(short *dstp, int row_size, int height, int dst_pitch,
+  const short* srcp, int src_row_size, int src_pitch, int nPel, bool isXpart)
 {
+  const bool limitVectors = true;
+
   if (SSE2enabled) {
-    SimpleResizeDo_New<short, short>((uint8_t *)dstp, row_size, height, dst_pitch, (uint8_t *)srcp, src_row_size, src_pitch, 16);
+    if (limitVectors)
+    {
+      if (isXpart) {
+        if (nPel == 1)
+          SimpleResizeDo_New<short, short, true, 1, true>((uint8_t *)dstp, row_size, height, dst_pitch, (uint8_t *)srcp, src_row_size, src_pitch, 16);
+        else if (nPel == 2)
+          SimpleResizeDo_New<short, short, true, 2, true>((uint8_t *)dstp, row_size, height, dst_pitch, (uint8_t *)srcp, src_row_size, src_pitch, 16);
+        else if (nPel == 4)
+          SimpleResizeDo_New<short, short, true, 4, true>((uint8_t *)dstp, row_size, height, dst_pitch, (uint8_t *)srcp, src_row_size, src_pitch, 16);
+      }
+      else {
+        if (nPel == 1)
+          SimpleResizeDo_New<short, short, true, 1, false>((uint8_t *)dstp, row_size, height, dst_pitch, (uint8_t *)srcp, src_row_size, src_pitch, 16);
+        else if (nPel == 2)
+          SimpleResizeDo_New<short, short, true, 2, false>((uint8_t *)dstp, row_size, height, dst_pitch, (uint8_t *)srcp, src_row_size, src_pitch, 16);
+        else if (nPel == 4)
+          SimpleResizeDo_New<short, short, true, 4, false>((uint8_t *)dstp, row_size, height, dst_pitch, (uint8_t *)srcp, src_row_size, src_pitch, 16);
+      }
+    }
+    else
+    {
+      // we really do not have yet int16->int16 resize which needs no limiting, but for the sake of completeness
+      SimpleResizeDo_New<short, short, false, 0, true>((uint8_t *)dstp, row_size, height, dst_pitch, (uint8_t *)srcp, src_row_size, src_pitch, 16);
+    }
+    
+    // it's done in SimpleResizeDo_New sse2 version
+    //if(limitVectors) MakeVectorsSafe_c(dstp, row_size, height, dst_pitch, nPel, isXpart);
+
     return;
   }
   
-  int vWeight1[4];
-  int vWeight2[4];
-  const __int64 FPround2[2] = { 0x0000008000000080,0x0000008000000080 };// round dwords
-
+  // C version
   const unsigned int* pControl = &hControl[0];
 
   const  short* srcp1;
@@ -912,17 +703,8 @@ void SimpleResize::SimpleResizeDo_uint16(short *dstp, int row_size, int height, 
 
   for (int y = 0; y < height; y++)
   {
-
     int CurrentWeight = vWeightsW[y];
     int invCurrentWeight = 256 - CurrentWeight;
-
-    // fill 4x(16x2) bit for inline asm 
-    // for intrinsic it is not needed anymore
-    vWeight1[0] = vWeight1[1] = vWeight1[2] = vWeight1[3] =
-      (invCurrentWeight << 16) | invCurrentWeight;
-
-    vWeight2[0] = vWeight2[1] = vWeight2[2] = vWeight2[3] =
-      (CurrentWeight << 16) | CurrentWeight;
 
     srcp1 = srcp + vOffsetsW[y] * src_pitch;
 
@@ -931,204 +713,38 @@ void SimpleResize::SimpleResizeDo_uint16(short *dstp, int row_size, int height, 
     bool UseNextLine = vOffsetsW[y] < last_vOffsetsW;
     srcp2 = UseNextLine ? srcp1 + src_pitch : srcp; // pitch is uchar/short-aware
 
-    if (true) // make it true for C version
-    {
-      // recovered (and commented) C version as sort of doc
-      for (int x = 0; x < src_row_size; x++) {
-        vWorkYW[x] = (srcp1[x] * invCurrentWeight + srcp2[x] * CurrentWeight + 128) >> 8;
-      }
-      // We've taken care of the vertical scaling, now do horizontal
-      for (int x = 0; x < row_size; x++) {
-        unsigned int pc;
-        unsigned int offs;
-        if ((x & 1) == 0) { // even
-          pc = pControl[3 * x];
-          offs = pControl[3 * x + 4];
-        }
-        else { // odd
-          pc = pControl[3 * x - 2]; // [3*xeven+1]
-          offs = pControl[3 * x + 2]; // [3*xeven+5]
-        }
-        unsigned int wY1 = pc & 0x0000ffff; //low
-        unsigned int wY2 = pc >> 16; //high
-        dstp[x] = (vWorkYW[offs] * wY1 + vWorkYW[offs + 1] * wY2 + 128) >> 8;
-      }
+    // recovered (and commented) C version as sort of doc
+    for (int x = 0; x < src_row_size; x++) {
+      vWorkYW[x] = (srcp1[x] * invCurrentWeight + srcp2[x] * CurrentWeight + 128) >> 8;
     }
-#if 0
-    // inline asm ignored for MSVC X64 build: !(defined(_M_X64) && defined(_MSC_VER))
-    else {
-
-      _asm
-      { // MMX resizer code adopted to sized short int
-        //push	ecx Intel2017:should be commented out
-        mov		ecx, src_row_size // size in words
-        shr		ecx, 2					// 8 bytes = 4 words a time
-        mov		rsi, srcp1				// top of 2 src lines to get
-        mov		rdx, srcp2				// next "
-        mov		rdi, vWorkYW			// luma work destination line
-        xor		rax, rax                // P.F. 16.04.28 should be rax here not eax (hack! define rax eax in 32 bit)
-        xor       rbx, rbx                // P.F. 16.04.28 leater only ebx used
-
-        movq	mm5, vWeight1
-        movq	mm6, vWeight2
-        movq	mm0, FPround2			// useful rounding constant
-        pxor	mm7, mm7
-        align	16
-        vLoopMMX:
-        movq	mm1, qword ptr[rsi + rax * 2] // top of 2 lines to interpolate (4 vectors)
-          movq	mm3, qword ptr[rdx + rax * 2] // 2nd of 2 lines (4 vectors)
-          movq	mm2, mm1				// copy top bytes
-          movq	mm4, mm3				// copy 2nd bytes
-
-          //__m128i _mm_mullo_epi16 (__m128i a, __m128i b);
-          pmullw	mm1, mm5				// mult by weighting factor
-          //__m128i _mm_mulhi_epi16 (__m128i a, __m128i b);
-          pmulhw	mm2, mm5				// mult by weighting factor, high
-          pmullw	mm3, mm6				// mult by weighting factor
-          pmulhw	mm4, mm6				// mult by weighting factor, high
-
-          movq    mm7, mm1 // copy
-          // _mm_unpacklo_epi16
-          punpcklwd mm1, mm2 // double from low and high
-          // _mm_unpackhi_epi16
-          punpckhwd mm7, mm2 // double from low and high
-
-          movq    mm2, mm3 // copy
-          punpcklwd mm3, mm4 // double from low and high
-          punpckhwd mm2, mm4 // double from low and high
-           // __m128i _mm_add_epi32 (__m128i a, __m128i b);
-          paddd	mm1, mm3				// combine lumas
-          paddd	mm2, mm7				// combine lumas
-
-          paddd	mm1, mm0				// round
-          paddd	mm2, mm0				// round
-
-          // _mm_sra_epi32
-          psrad	mm1, 8					// right just
-          psrad	mm2, 8					// right just
-
-          //_mm_packs_epi32
-          packssdw mm1, mm2				// pack into 4 words
-
-          movq	qword ptr[rdi + rax * 2], mm1	// save 4 words in our work area 
-
-          lea     rax, [rax + 4]
-          loop	vLoopMMX // decrement ecx
-
-                   // Add a little code here to check if we have more pixels to do and, if so, make one
-                   // more pass thru vLoopMMX. We were processing in multiples of 8 pixels and alway have
-                   // an even number so there will never be more than 7 left.
-                   //	MoreSpareChange:
-          cmp		eax, src_row_size		// EAX! did we get them all
-          jnl		DoHorizontal			// yes, else have 2 left
-          mov		ecx, 1					// jigger loop ct
-          mov		eax, src_row_size       // EAX!
-          sub		eax, 4					// back up to last 8 pixels
-          jmp		vLoopMMX
-
-          // We've taken care of the vertical scaling, now do horizontal
-          // x pixels at a time
-          DoHorizontal :
-        pxor    mm7, mm7
-          movq	mm6, FPround2		// useful rounding constant, dwords
-          mov		rsi, pControl		// @ horiz control bytes
-          mov		ecx, row_size // size in words
-          shr		ecx, 2				// 8 bytes a time, 4 words
-          mov     rdx, vWorkYW		// our luma data
-          mov		rdi, dstp			// the destination line
-          align 16
-          hLoopMMX:
-        // handle first 2 pixels
-        mov		eax, [rsi + 16]		// EAX! get data offset in pixels, 1st pixel pair. Control[4]=offs
-          mov		ebx, [rsi + 20]		// EBX! get data offset in pixels, 2nd pixel pair. Control[5]=offsodd
-          // (uint32_t)pair1     = (uint32_t *)((short *)(vWorkYW)[offs])      // vWorkYW[offs] and vWorkYW[offs+1]
-          // (uint32_t)pair2odds = (uint32_t *)((short *)(vWorkYW)[offsodds])  // vWorkYW[offsodds] and vWorkYW[offsodds+1]
-
-          // using only 64 bit MMX registers
-            // __m128i _mm_cvtsi32_si128 (uint32_t*(vWorkYW)[offs]);
-            // __m128i _mm_cvtsi64_si128 (uint32_t*(vWorkYW)[offs]);
-          movd	mm0, [rdx + rax * 2]		// copy luma pair 0000W1W0  work[offs]
-            // _mm_unpacklo_epi32 (mm0, uint32_t*(&ushort*(vWorkYW)[offsodd])
-          punpckldq mm0, [rdx + rbx * 2]    // 2nd luma pair, now V1V0W1W0
-            // _mm_madd_epi16(.. PControl[0-1])
-          pmaddwd mm0, [rsi]			// mult and sum lumas by ctl weights. v1v0 Control[1] and w1w0 Control[0]
-            // _mm_add_epi32
-          paddd	mm0, mm6			// round
-            // _mm_srai_epi32
-          psrad	mm0, 8				// right just 2 luma pixel
-
-                    // handle 3rd and 4th pixel pairs
-          mov		eax, [rsi + 16 + 24]	// EAX! get data offset in pixels, 3rd pixel pair. Control[4+6}
-          mov		ebx, [rsi + 20 + 24]	// EBX! get data offset in pixels, 4th pixel pair. Control[5+6}
-          movd	mm1, [rdx + rax * 2]		// copy luma pair
-          punpckldq mm1, [rdx + rbx * 2]    // 2nd luma pair
-          pmaddwd mm1, [rsi + 24]		// mult and sum lumas by ctl weights. Control[6] and Control[7]
-          paddd	mm1, mm6			// round
-          psrad	mm1, 8				// right just 2 luma pixel
-
-                    // combine, store, and loop
-            // _mm_packs_epi32
-          packssdw mm0, mm1			// pack all 4 into qword, 0Y0Y0Y0Y
-            // store 4 word, 8 bytes
-            // _mm_move_epi64
-          movq	qword ptr[rdi], mm0	// done with 4 pixels
-
-          lea    rsi, [rsi + 48]		// bump to next control bytest. Control[12]
-          lea    rdi, [rdi + 8]			// bump to next output pixel addr
-          loop   hLoopMMX				// loop for more
-
-                      // test to see if we have a mod 4 size row, if not then more spare change
-                      //	LessThan4:
-          mov		ecx, row_size
-          and		ecx, 3				// remainder size mod 4
-          cmp		ecx, 2
-          jl		LastOne				// none, done
-
-                    // handle 2 more pixels
-          mov		eax, [rsi + 16]		// EAX! get data offset in pixels, 1st pixel pair
-          mov		ebx, [rsi + 20]		// EBX! get data offset in pixels, 2nd pixel pair
-          movd	mm0, [rdx + rax * 2]		// copy luma pair 0000xxYY
-          punpckldq mm0, [rdx + rbx * 2]    // 2nd luma pair, now xxxxYYYY
-
-          pmaddwd mm0, [rsi]			// mult and sum lumas by ctl weights
-          paddd	mm0, mm6			// round
-          psrad	mm0, 8				// right just 2 luma pixel value 000Y,000Y
-          packssdw mm0, mm7			// and again into  00000Y0Y
-          movd	dword ptr[rdi], mm0	// store, we are guarrenteed room in buffer (8 byte mult)
-          sub		ecx, 2
-          lea		rsi, [rsi + 24]		// bump to next control bytest
-          lea		rdi, [rdi + 4]			// bump to next output pixel addr
-
-                        // maybe one last pixel
-          LastOne:
-        cmp		ecx, 0				// still more?
-          jz		AllDone				// n, done
-
-          mov		eax, [rsi + 16]		// EAX! get data offset in pixels, 1st pixel pair
-          movd	mm0, [rdx + rax * 2]		// copy luma pair 0000xxYY
-          punpckldq mm0, mm7		    // make dwords out of words, xxxx0Y0Y
-
-          pmaddwd mm0, [rsi]			// mult and sum lumas by ctl weights
-          paddd	mm0, mm6			// round
-          psrad	mm0, 8				// right just 1 luma pixel value xxxx000Y
-          movd	eax, mm0
-          mov		word ptr[rdi], ax	// store last one
-
-          AllDone :
-        //pop		ecx Intel2017:should be commented out
-        emms
+    // We've taken care of the vertical scaling, now do horizontal
+    for (int x = 0; x < row_size; x++) {
+      unsigned int pc;
+      unsigned int offs;
+      if ((x & 1) == 0) { // even
+        pc = pControl[3 * x];
+        offs = pControl[3 * x + 4];
       }
+      else { // odd
+        pc = pControl[3 * x - 2]; // [3*xeven+1]
+        offs = pControl[3 * x + 2]; // [3*xeven+5]
+      }
+      unsigned int wY1 = pc & 0x0000ffff; //low
+      unsigned int wY2 = pc >> 16; //high
+      dstp[x] = (vWorkYW[offs] * wY1 + vWorkYW[offs + 1] * wY2 + 128) >> 8;
     }
-#endif // asm ignore
     dstp += dst_pitch;
   }
+
+  // for reference. We don't try to integrate it to the C code above
+  if (limitVectors) MakeVectorsSafe_c(dstp, row_size, height, dst_pitch, nPel, isXpart);
 
 }
 
 
 // YV12
 
-// For each horizontal output pair of pixels there is are 2 qword masks followed by 2 int
+// For each horizontal output pair of pixels there are 2 qword masks followed by 2 int
 // offsets. The 2 masks are the weights to be used for the luma and chroma, respectively.
 // Each mask contains LeftWeight1, RightWeight1, LeftWeight2, RightWeight2. So a pair of pixels
 // will later be processed each pass through the horizontal resize loop.  I think with my
@@ -1149,7 +765,7 @@ void SimpleResize::InitTables(void)
 
   // First set up horizontal table, use for both luma & chroma since 
   // it seems to have the same equation.
-  // We will geneerate these values in pairs, mostly because that's the way
+  // We will generate these values in pairs, mostly because that's the way
   // I wrote it for YUY2 above.
 
   for (i = 0; i < newwidth; i += 2)

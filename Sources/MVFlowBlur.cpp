@@ -165,14 +165,9 @@ void MVFlowBlur::FlowBlur(BYTE * pdst8, int dst_pitch, const BYTE *pref8, int re
   pixel_t *pdst = reinterpret_cast<pixel_t *>(pdst8);
   const pixel_t *pref = reinterpret_cast<const pixel_t *>(pref8);
 
-  MakeVFullSafe<nLOGPEL>(VXFullF, VYFullF, VPitch, width, height);
-  MakeVFullSafe<nLOGPEL>(VXFullB, VYFullB, VPitch, width, height);
-
   // very slow, but precise motion blur
   for (int h = 0; h < height; h++)
   {
-    int heightLimitRel = ((height - h) << nLOGPEL) - 1;
-
     for (int w = 0; w < width; w++)
     {
       int rel_x, rel_y;
@@ -336,16 +331,15 @@ PVideoFrame __stdcall MVFlowBlur::GetFrame(int n, IScriptEnvironment* env)
       // upsize (bilinear interpolate) vector masks to fullframe size
 
 
-    int dummyplane = PLANAR_Y; // use luma plane resizer code for all planes if we resize from luma small mask
-    upsizer->SimpleResizeDo_uint16(VXFullYB, nWidth, nHeight, VPitchY, VXSmallYB, nBlkX, nBlkX);
-    upsizer->SimpleResizeDo_uint16(VYFullYB, nWidth, nHeight, VPitchY, VYSmallYB, nBlkX, nBlkX);
-    upsizerUV->SimpleResizeDo_uint16(VXFullUVB, nWidthUV, nHeightUV, VPitchUV, VXSmallUVB, nBlkX, nBlkX);
-    upsizerUV->SimpleResizeDo_uint16(VYFullUVB, nWidthUV, nHeightUV, VPitchUV, VYSmallUVB, nBlkX, nBlkX);
+    upsizer->SimpleResizeDo_int16(VXFullYB, nWidth, nHeight, VPitchY, VXSmallYB, nBlkX, nBlkX, nPel, true);
+    upsizer->SimpleResizeDo_int16(VYFullYB, nWidth, nHeight, VPitchY, VYSmallYB, nBlkX, nBlkX, nPel, false);
+    upsizerUV->SimpleResizeDo_int16(VXFullUVB, nWidthUV, nHeightUV, VPitchUV, VXSmallUVB, nBlkX, nBlkX, nPel, true);
+    upsizerUV->SimpleResizeDo_int16(VYFullUVB, nWidthUV, nHeightUV, VPitchUV, VYSmallUVB, nBlkX, nBlkX, nPel, false);
 
-    upsizer->SimpleResizeDo_uint16(VXFullYF, nWidth, nHeight, VPitchY, VXSmallYF, nBlkX, nBlkX);
-    upsizer->SimpleResizeDo_uint16(VYFullYF, nWidth, nHeight, VPitchY, VYSmallYF, nBlkX, nBlkX);
-    upsizerUV->SimpleResizeDo_uint16(VXFullUVF, nWidthUV, nHeightUV, VPitchUV, VXSmallUVF, nBlkX, nBlkX);
-    upsizerUV->SimpleResizeDo_uint16(VYFullUVF, nWidthUV, nHeightUV, VPitchUV, VYSmallUVF, nBlkX, nBlkX);
+    upsizer->SimpleResizeDo_int16(VXFullYF, nWidth, nHeight, VPitchY, VXSmallYF, nBlkX, nBlkX, nPel, true);
+    upsizer->SimpleResizeDo_int16(VYFullYF, nWidth, nHeight, VPitchY, VYSmallYF, nBlkX, nBlkX, nPel, false);
+    upsizerUV->SimpleResizeDo_int16(VXFullUVF, nWidthUV, nHeightUV, VPitchUV, VXSmallUVF, nBlkX, nBlkX, nPel, true);
+    upsizerUV->SimpleResizeDo_int16(VYFullUVF, nWidthUV, nHeightUV, VPitchUV, VYSmallUVF, nBlkX, nBlkX, nPel, false);
 
     // Warning: vectors enlarged from small mask to full resolution mask may point to off-screen pixels
 

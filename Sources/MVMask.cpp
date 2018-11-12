@@ -170,7 +170,6 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
   if (needSrcFrame)
     src = child->GetFrame(n, env);
   PVideoFrame	dst = env->NewVideoFrame(vi);
-  int dummyplane = PLANAR_Y; // use luma plane resizer code for all planes if we resize from luma small mask
   const BYTE *pSrc[3];
   BYTE *pDst[3];
   int nDstPitches[3];
@@ -327,7 +326,7 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
     else {
       // different upsizers to scale smallMask from 8 bit-only to bits_per_pixel
       if (maskclip_pixelsize == 1) {
-        upsizer->SimpleResizeDo_uint8(pDst[0], nWidthB, nHeightB, nDstPitches[0], smallMask, nBlkX, nBlkX, dummyplane);
+        upsizer->SimpleResizeDo_uint8(pDst[0], nWidthB, nHeightB, nDstPitches[0], smallMask, nBlkX, nBlkX);
         if (maskclip_nWidth > nWidthB) // fill right
           for (int h = 0; h < maskclip_nHeight; h++)
             for (int w = nWidthB; w < maskclip_nWidth; w++)
@@ -335,7 +334,7 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
       }
       else if (maskclip_pixelsize == 2) {
         // 8 bit source, 10-16 bit target
-        upsizer->SimpleResizeDo_uint8_to_uint16(pDst[0], nWidthB, nHeightB, nDstPitches[0], smallMask, nBlkX, nBlkX, dummyplane, maskclip_bits_per_pixel);
+        upsizer->SimpleResizeDo_uint8_to_uint16(pDst[0], nWidthB, nHeightB, nDstPitches[0], smallMask, nBlkX, nBlkX, maskclip_bits_per_pixel);
         if (maskclip_nWidth > nWidthB) // fill right
           for (int h = 0; h < maskclip_nHeight; h++)
             for (int w = nWidthB; w < maskclip_nWidth; w++)
@@ -350,12 +349,12 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
     if (chroma) {
       if (maskclip_pixelsize == 1) {
         // chroma
-        upsizerUV->SimpleResizeDo_uint8(pDst[1], nWidthBUV, nHeightBUV, nDstPitches[1], smallMask, nBlkX, nBlkX, dummyplane);
+        upsizerUV->SimpleResizeDo_uint8(pDst[1], nWidthBUV, nHeightBUV, nDstPitches[1], smallMask, nBlkX, nBlkX);
 
         if (kind == 5)
-          upsizerUV->SimpleResizeDo_uint8(pDst[2], nWidthBUV, nHeightBUV, nDstPitches[2], smallMaskV, nBlkX, nBlkX, dummyplane);
+          upsizerUV->SimpleResizeDo_uint8(pDst[2], nWidthBUV, nHeightBUV, nDstPitches[2], smallMaskV, nBlkX, nBlkX);
         else
-          upsizerUV->SimpleResizeDo_uint8(pDst[2], nWidthBUV, nHeightBUV, nDstPitches[2], smallMask, nBlkX, nBlkX, dummyplane);
+          upsizerUV->SimpleResizeDo_uint8(pDst[2], nWidthBUV, nHeightBUV, nDstPitches[2], smallMask, nBlkX, nBlkX);
         if (nWidthUV > nWidthBUV) // fill right
           for (int h = 0; h < nHeightUV; h++)
             for (int w = nWidthBUV; w < nWidthUV; w++)
@@ -366,12 +365,12 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
       }
       else {
         // chroma
-        upsizerUV->SimpleResizeDo_uint8_to_uint16(pDst[1], nWidthBUV, nHeightBUV, nDstPitches[1], smallMask, nBlkX, nBlkX, dummyplane, maskclip_bits_per_pixel);
+        upsizerUV->SimpleResizeDo_uint8_to_uint16(pDst[1], nWidthBUV, nHeightBUV, nDstPitches[1], smallMask, nBlkX, nBlkX, maskclip_bits_per_pixel);
 
         if (kind == 5)
-          upsizerUV->SimpleResizeDo_uint8_to_uint16(pDst[2], nWidthBUV, nHeightBUV, nDstPitches[2], smallMaskV, nBlkX, nBlkX, dummyplane, maskclip_bits_per_pixel);
+          upsizerUV->SimpleResizeDo_uint8_to_uint16(pDst[2], nWidthBUV, nHeightBUV, nDstPitches[2], smallMaskV, nBlkX, nBlkX, maskclip_bits_per_pixel);
         else
-          upsizerUV->SimpleResizeDo_uint8_to_uint16(pDst[2], nWidthBUV, nHeightBUV, nDstPitches[2], smallMask, nBlkX, nBlkX, dummyplane, maskclip_bits_per_pixel);
+          upsizerUV->SimpleResizeDo_uint8_to_uint16(pDst[2], nWidthBUV, nHeightBUV, nDstPitches[2], smallMask, nBlkX, nBlkX, maskclip_bits_per_pixel);
         if (nWidthUV > nWidthBUV) // fill right
           for (int h = 0; h < nHeightUV; h++)
             for (int w = nWidthBUV; w < nWidthUV; w++)

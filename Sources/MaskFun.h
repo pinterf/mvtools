@@ -75,9 +75,6 @@ template<typename pixel_t>
 void Blend(uint8_t * pdst8, const uint8_t * psrc8, const uint8_t * pref8, int height, int width, int dst_pitch, int src_pitch, int ref_pitch, int time256, int cpuFlags);
 // in *.hpp
 
-template <int NPELL2>
-void MakeVFullSafe(short *VXFull, short *VYFull, int VPitch, int width, int height);
-// in *.hpp
 
 // lookup table size 256
 void Create_LUTV(int time256, short *LUTVB, short *LUTVF);
