@@ -72,8 +72,9 @@ public:
   /* plane initialisation */
 
     /* compute the predictors from the upper plane */
-  template<typename pixel_t>
+  template<typename safe_sad_t, typename smallOverlapSafeSad_t>
   void InterpolatePrediction(const PlaneOfBlocks &pob);
+
 
   void WriteHeaderToArray(int *array);
   int WriteDefaultToArray(int *array, int divideExtra);
@@ -82,6 +83,8 @@ public:
   void EstimateGlobalMVDoubled(VECTOR *globalMVec, Slicer &slicer); // Fizick
   MV_FORCEINLINE int GetnBlkX() { return nBlkX; }
   MV_FORCEINLINE int GetnBlkY() { return nBlkY; }
+  MV_FORCEINLINE int GetnBlkSizeX() { return nBlkSizeX; }
+  MV_FORCEINLINE int GetnBlkSizeY() { return nBlkSizeY; }
 
   void RecalculateMVs(MVClip & mvClip, MVFrame *_pSrcFrame, MVFrame *_pRefFrame, SearchType st,
     int stp, int _lambda, sad_t _lSAD, int _pennew,

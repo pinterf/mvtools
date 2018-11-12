@@ -467,8 +467,7 @@ void PlaneOfBlocks::RecalculateMVs(
 
 
 
-
-template<typename pixel_t>
+template<typename safe_sad_t, typename smallOverlapSafeSad_t>
 void PlaneOfBlocks::InterpolatePrediction(const PlaneOfBlocks &pob)
 {
   int normFactor = 3 - nLogPel + pob.nLogPel;
@@ -483,8 +482,28 @@ void PlaneOfBlocks::InterpolatePrediction(const PlaneOfBlocks &pob)
   // PF todo make faster
 
   // 2.7.19.22 max safe: BlkX*BlkY: sqrt(2147483647 / 3 / 255) = 1675 ,(2147483647 = 0x7FFFFFFF)
+  //bool isSafeBlkSizeFor8bits = (nBlkSizeX*nBlkSizeY) < 1675;
+
+  // 2.7.35: 
+  // the limit was too small for smallOverlap case e.g. BlkSizeX=32 BlkSizeY=32 OverLapX=0 OverLapY=4
+  // Worst case (approximately) ax1 * ay1: (nBlkSizeX*3 * nBlkSizeY*3)
+  // 32 bit usability for 8 bits (10+bits are always using bigsad_t):
+  // (evenOrOdd_xMax * evenOrOdd_yMax) * SadMax                              *4 < 0x7FFFFFFF
+  //    *4: four components before /normov
+  // (nBlkSizeX*3 * nBlkSizeY*3) * SadMax                                    *4 < 0x7FFFFFFF
+  //    SadMax: 3 full planes (worst case 4:4:4 luma and chroma)
+  // (nBlkSizeX*3 * nBlkSizeY*3) * (nBlkSizeX * nBlkSizeY * 255 * 3plane)    *4 < 0x7FFFFFFF
+  // (nBlkSizeX*nBlkSizeY)^2 *9*255*3 * 4 < 0x7FFFFFFF
+  // nBlkSizeX*nBlkSizeY < sqrt(...) 
+  // nBlkSizeX*nBlkSizeY < 279.24 -> 280
+  // => smallOverlapSafeSad_t needs to be bigsad_t when (nBlkSizeX*nBlkSizeY) >= 280
+
+  // safe_sad_t: 16 bit worst case: 16 * sad_max: 16 * 3x32x32x65536 = 4+5+5+16 > 2^31 over limit
+  //             in case of BlockSize > 32, e.g. 128x128x65536 is even more: 7+7+16=30 bits
+  //             generally use big_sad_t for 10+ bits
+
+
   bool bNoOverlap = (nOverlapX == 0 && nOverlapY == 0);
-  bool isSafeBlkSizeFor8bits = (nBlkSizeX*nBlkSizeY) < 1675;
   bool bSmallOverlap = nOverlapX <= (nBlkSizeX >> 1) && nOverlapY <= (nBlkSizeY >> 1);
 
   for (int l = 0, index = 0; l < nBlkY; l++)
@@ -531,9 +550,8 @@ void PlaneOfBlocks::InterpolatePrediction(const PlaneOfBlocks &pob)
         v3 = pob.vectors[iper2 + (jper2 + offy) * pob.nBlkX];
         v4 = pob.vectors[iper2 + offx + (jper2 + offy) * pob.nBlkX];
       }
-      typedef typename std::conditional < sizeof(pixel_t) == 1, sad_t, bigsad_t >::type safe_sad_t;
-      safe_sad_t tmp_sad; // 16 bit worst case: 16 * sad_max: 16 * 3x32x32x65536 = 4+5+5+16 > 2^31 over limit
-      // in case of BlockSize > 32, e.g. 128x128x65536 is even more: 7+7+16=30 bits
+
+      safe_sad_t tmp_sad;
 
       if (bNoOverlap)
       {
@@ -551,20 +569,12 @@ void PlaneOfBlocks::InterpolatePrediction(const PlaneOfBlocks &pob)
         int a11 = ax1*ay1, a12 = ax1*ay2, a21 = ax2*ay1, a22 = ax2*ay2;
         vectors[index].x = (a11*v1.x + a21*v2.x + a12*v3.x + a22*v4.x) / normov;
         vectors[index].y = (a11*v1.y + a21*v2.y + a12*v3.y + a22*v4.y) / normov;
-        if (isSafeBlkSizeFor8bits && sizeof(pixel_t)==1) {
-          // old max blkSize==32 worst case: 
-          //   normov = (32-2)*(32-2) 
-          //   sad = 32x32x255 *3 (3 planes) // 705,024,000 < 2^31 OK
-          // blkSize == 48 worst case:
-          //   normov = (48-2)*(48-2) = 2116
-          //   sad = 48x48x255 * 3 // 3,729,576,960 not OK, already fails in 8 bits
-          // max safe: BlkX*BlkY: sqrt(0x7FFFFFF / 3 / 255) = 1675
-          tmp_sad = ((safe_sad_t)a11*v1.sad + (safe_sad_t)a21*v2.sad + (safe_sad_t)a12*v3.sad + (safe_sad_t)a22*v4.sad) / normov;
-        }
-        else {
-          // safe multiplication
-          tmp_sad = ((bigsad_t)a11*v1.sad + (bigsad_t)a21*v2.sad + (bigsad_t)a12*v3.sad + (bigsad_t)a22*v4.sad) / normov;
-        }
+        // generic safe_sad_t is not always safe for the next calculations
+        tmp_sad = (safe_sad_t)(((smallOverlapSafeSad_t)a11*v1.sad + (smallOverlapSafeSad_t)a21*v2.sad + (smallOverlapSafeSad_t)a12*v3.sad + (smallOverlapSafeSad_t)a22*v4.sad) / normov);
+#if 0
+        if (tmp_sad < 0)
+          _RPT1(0, "Vector and SAD Interpolate Problem: possible SAD overflow %d\n", (sad_t)tmp_sad);
+#endif
       }
       else // large overlap. Weights are not quite correct but let it be
       {
@@ -575,14 +585,18 @@ void PlaneOfBlocks::InterpolatePrediction(const PlaneOfBlocks &pob)
       vectors[index].x = (vectors[index].x >> normFactor) << mulFactor;
       vectors[index].y = (vectors[index].y >> normFactor) << mulFactor;
       vectors[index].sad = (sad_t)(tmp_sad >> 4);
+#if 0
+      if (vectors[index].sad < 0)
+        _RPT1(0, "Vector and SAD Interpolate Problem: possible SAD overflow: %d\n", vectors[index].sad);
+#endif
     }	// for k < nBlkX
   }	// for l < nBlkY
 }
 
 // instantiate
-template void PlaneOfBlocks::InterpolatePrediction<uint8_t>(const PlaneOfBlocks &pob);
-template void PlaneOfBlocks::InterpolatePrediction<uint16_t>(const PlaneOfBlocks &pob);
-
+template void PlaneOfBlocks::InterpolatePrediction<sad_t, sad_t>(const PlaneOfBlocks &pob);
+template void PlaneOfBlocks::InterpolatePrediction<sad_t, bigsad_t>(const PlaneOfBlocks &pob);
+template void PlaneOfBlocks::InterpolatePrediction<bigsad_t, bigsad_t>(const PlaneOfBlocks &pob);
 
 void PlaneOfBlocks::WriteHeaderToArray(int *array)
 {
@@ -734,12 +748,12 @@ void PlaneOfBlocks::FetchPredictors(WorkingArea &workarea)
   //          other level:   128000                         19200   2 457 600 000 (int32 overflow!)
   // 48x48    1000*(48*48)/64=36000 1200   1200*48x48/64<<0=43200   1 555 200 000 still OK
   // 64x64    1000*(64*64)/64=64000 1200   1200*64x64/64<<0=76800   4 915 200 000 (int32 overflow!)
-
-  workarea.nLambda = workarea.nLambda
+  safe_sad_t divisor = (safe_sad_t)LSAD + (workarea.predictor.sad >> 1); // 20181112: this is zero! predictor = -87647 and LSAD is 43823
+  workarea.nLambda = (int)(workarea.nLambda
                      *(safe_sad_t)LSAD
-                     / ((safe_sad_t)LSAD + (workarea.predictor.sad >> 1))
+                     / divisor
                      *LSAD 
-                     / ((safe_sad_t)LSAD + (workarea.predictor.sad >> 1));
+                     / divisor);
   // replaced hard threshold by soft in v1.10.2 by Fizick (a liitle complex expression to avoid overflow)
   //	int a = LSAD/(LSAD + (workarea.predictor.sad>>1));
   //	workarea.nLambda = workarea.nLambda*a*a;

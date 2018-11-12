@@ -197,10 +197,16 @@ void	GroupOfPlanes::SearchMVs(
       planes[i + 1]->EstimateGlobalMVDoubled(&globalMV, slicer_glob);
       //			DebugPrintf("SearchMV globalMV %i, %i", globalMV.x, globalMV.y);
     }
-    if(pixelsize==1)
-      planes[i]->InterpolatePrediction<uint8_t>(*(planes[i + 1]));
+
+    if (pixelsize == 1) {
+      if (planes[i]->GetnBlkSizeX()*planes[i]->GetnBlkSizeY() < 280) // for why 280: see calculation inside InterpolatePrediction
+        planes[i]->InterpolatePrediction<sad_t, sad_t>(*(planes[i + 1])); // use 32 bit intermediate for smallOverlap
+      else
+        planes[i]->InterpolatePrediction<sad_t, bigsad_t>(*(planes[i + 1])); // use 64bit intermediate for smallOverLap
+    }
     else
-      planes[i]->InterpolatePrediction<uint16_t>(*(planes[i + 1]));
+      planes[i]->InterpolatePrediction<bigsad_t, bigsad_t>(*(planes[i + 1])); // always use 64bit temporary inside
+
     if (global)
     {
       slicer_glob.wait();
