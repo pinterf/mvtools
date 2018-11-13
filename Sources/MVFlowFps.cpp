@@ -39,8 +39,8 @@ MVFlowFps::MVFlowFps(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, unsign
   reentrancy_check = false;
   _RPT1(0, "MVFlowFps.Create id=%d\n", _instance_id);
 
-  if (!vi.IsYUV() && !vi.IsYUVA())
-    env->ThrowError("MFlowFps: Clip must be YUV or YUY2");
+  if (!vi.IsYUV() && !vi.IsYUVA() && !vi.IsPlanarRGB() && !vi.IsPlanarRGBA())
+    env->ThrowError("MFlowFps: Clip must be YUV or YUY2 or planar RGB/RGBA");
   if (vi.BitsPerComponent() > 16)
     env->ThrowError("MFlowFps: only 8-16 bit clips are allowed");
 
@@ -148,61 +148,85 @@ MVFlowFps::MVFlowFps(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, unsign
   VPitchY = AlignNumber(nWidthP, 16);
   VPitchUV = AlignNumber(nWidthPUV, 16);
 
+  is444 = vi.Is444();
+  isGrey = vi.IsY();
+  isRGB = vi.IsPlanarRGB() || vi.IsPlanarRGBA(); // planar only
+  needDistinctChroma = !is444 && !isGrey && !isRGB;
+
   // 2*: sizeof(short)
   VXFullYB = (short*)_aligned_malloc(2 * nHeightP*VPitchY + 128, 128);
-  VXFullUVB = (short*)_aligned_malloc(2 * nHeightPUV*VPitchUV + 128, 128);
   VYFullYB = (short*)_aligned_malloc(2 * nHeightP*VPitchY + 128, 128);
-  VYFullUVB = (short*)_aligned_malloc(2 * nHeightPUV*VPitchUV + 128, 128);
+  if (needDistinctChroma) {
+    VYFullUVB = (short*)_aligned_malloc(2 * nHeightPUV*VPitchUV + 128, 128);
+    VXFullUVB = (short*)_aligned_malloc(2 * nHeightPUV*VPitchUV + 128, 128);
+  }
 
   VXFullYF = (short*)_aligned_malloc(2 * nHeightP*VPitchY + 128, 128);
-  VXFullUVF = (short*)_aligned_malloc(2 * nHeightPUV*VPitchUV + 128, 128);
   VYFullYF = (short*)_aligned_malloc(2 * nHeightP*VPitchY + 128, 128);
-  VYFullUVF = (short*)_aligned_malloc(2 * nHeightPUV*VPitchUV + 128, 128);
+  if (needDistinctChroma) {
+    VXFullUVF = (short*)_aligned_malloc(2 * nHeightPUV*VPitchUV + 128, 128);
+    VYFullUVF = (short*)_aligned_malloc(2 * nHeightPUV*VPitchUV + 128, 128);
+  }
 
   VXSmallYB = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
   VYSmallYB = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
-  VXSmallUVB = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
-  VYSmallUVB = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
+  if (needDistinctChroma) {
+    VXSmallUVB = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
+    VYSmallUVB = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
+  }
 
   VXSmallYF = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
   VYSmallYF = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
-  VXSmallUVF = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
-  VYSmallUVF = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
+  if (needDistinctChroma) {
+    VXSmallUVF = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
+    VYSmallUVF = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
+  }
 
   VXFullYBB = (short*)_aligned_malloc(2 * nHeightP*VPitchY + 128, 128);
-  VXFullUVBB = (short*)_aligned_malloc(2 * nHeightPUV*VPitchUV + 128, 128);
   VYFullYBB = (short*)_aligned_malloc(2 * nHeightP*VPitchY + 128, 128);
-  VYFullUVBB = (short*)_aligned_malloc(2 * nHeightPUV*VPitchUV + 128, 128);
+  if (needDistinctChroma) {
+    VXFullUVBB = (short*)_aligned_malloc(2 * nHeightPUV*VPitchUV + 128, 128);
+    VYFullUVBB = (short*)_aligned_malloc(2 * nHeightPUV*VPitchUV + 128, 128);
+  }
 
   VXFullYFF = (short*)_aligned_malloc(2 * nHeightP*VPitchY + 128, 128);
-  VXFullUVFF = (short*)_aligned_malloc(2 * nHeightPUV*VPitchUV + 128, 128);
   VYFullYFF = (short*)_aligned_malloc(2 * nHeightP*VPitchY + 128, 128);
-  VYFullUVFF = (short*)_aligned_malloc(2 * nHeightPUV*VPitchUV + 128, 128);
+  if (needDistinctChroma) {
+    VXFullUVFF = (short*)_aligned_malloc(2 * nHeightPUV*VPitchUV + 128, 128);
+    VYFullUVFF = (short*)_aligned_malloc(2 * nHeightPUV*VPitchUV + 128, 128);
+  }
 
   VXSmallYBB = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
   VYSmallYBB = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
-  VXSmallUVBB = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
-  VYSmallUVBB = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
+  if (needDistinctChroma) {
+    VXSmallUVBB = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
+    VYSmallUVBB = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
+  }
 
   VXSmallYFF = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
   VYSmallYFF = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
-  VXSmallUVFF = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
-  VYSmallUVFF = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
+  if (needDistinctChroma) {
+    VXSmallUVFF = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
+    VYSmallUVFF = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
+  }
 
   // PF remark: masks are 8 bits
   MaskSmallB = (unsigned char*)_aligned_malloc(nBlkXP*nBlkYP + 128, 128);
   MaskFullYB = (unsigned char*)_aligned_malloc(nHeightP*VPitchY + 128, 128);
-  MaskFullUVB = (unsigned char*)_aligned_malloc(nHeightPUV*VPitchUV + 128, 128);
+  if(needDistinctChroma)
+    MaskFullUVB = (unsigned char*)_aligned_malloc(nHeightPUV*VPitchUV + 128, 128);
 
   MaskSmallF = (unsigned char*)_aligned_malloc(nBlkXP*nBlkYP + 128, 128);
   MaskFullYF = (unsigned char*)_aligned_malloc(nHeightP*VPitchY + 128, 128);
-  MaskFullUVF = (unsigned char*)_aligned_malloc(nHeightPUV*VPitchUV + 128, 128);
+  if(needDistinctChroma)
+    MaskFullUVF = (unsigned char*)_aligned_malloc(nHeightPUV*VPitchUV + 128, 128);
 
   SADMaskSmallB = (unsigned char*)_aligned_malloc(nBlkXP*nBlkYP + 128, 128);
   SADMaskSmallF = (unsigned char*)_aligned_malloc(nBlkXP*nBlkYP + 128, 128);
 
   upsizer = new SimpleResize(nWidthP, nHeightP, nBlkXP, nBlkYP, cpuFlags);
-  upsizerUV = new SimpleResize(nWidthPUV, nHeightPUV, nBlkXP, nBlkYP, cpuFlags);
+  if(needDistinctChroma)
+    upsizerUV = new SimpleResize(nWidthPUV, nHeightPUV, nBlkXP, nBlkYP, cpuFlags);
 
   nleftLast = -1000;
   nrightLast = -1000;
@@ -222,31 +246,46 @@ MVFlowFps::~MVFlowFps()
   }
 
   delete upsizer;
-  delete upsizerUV;
+  if(needDistinctChroma)
+    delete upsizerUV;
 
   _aligned_free(MaskSmallB);
   _aligned_free(MaskFullYB);
-  _aligned_free(MaskFullUVB);
+  if(needDistinctChroma)
+    _aligned_free(MaskFullUVB);
   _aligned_free(MaskSmallF);
   _aligned_free(MaskFullYF);
-  _aligned_free(MaskFullUVF);
+  if (needDistinctChroma)
+    _aligned_free(MaskFullUVF);
 
   _aligned_free(VXFullYBB);
-  _aligned_free(VXFullUVBB);
   _aligned_free(VYFullYBB);
-  _aligned_free(VYFullUVBB);
+  if (needDistinctChroma) {
+    _aligned_free(VXFullUVBB);
+    _aligned_free(VYFullUVBB);
+  }
+
   _aligned_free(VXSmallYBB);
   _aligned_free(VYSmallYBB);
-  _aligned_free(VXSmallUVBB);
-  _aligned_free(VYSmallUVBB);
+  if (needDistinctChroma) {
+    _aligned_free(VXSmallUVBB);
+    _aligned_free(VYSmallUVBB);
+  }
+
   _aligned_free(VXFullYFF);
-  _aligned_free(VXFullUVFF);
   _aligned_free(VYFullYFF);
-  _aligned_free(VYFullUVFF);
+  if (needDistinctChroma) {
+    _aligned_free(VXFullUVFF);
+    _aligned_free(VYFullUVFF);
+  }
+
+
   _aligned_free(VXSmallYFF);
   _aligned_free(VYSmallYFF);
-  _aligned_free(VXSmallUVFF);
-  _aligned_free(VYSmallUVFF);
+  if (needDistinctChroma) {
+    _aligned_free(VXSmallUVFF);
+    _aligned_free(VYSmallUVFF);
+  }
 
   _aligned_free(SADMaskSmallB);
   _aligned_free(SADMaskSmallF);
@@ -276,6 +315,7 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
   int nDstPitches[3], nRefPitches[3], nSrcPitches[3];
   unsigned char *pDstYUY2;
   int nDstPitchYUY2;
+  int planecount;
 
 
   int off = mvClipB.GetDeltaFrame(); // integer offset of reference frame
@@ -380,29 +420,25 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
         nDstPitches[1] = nDstPitches[0];
         nDstPitches[2] = nDstPitches[0];
       }
+      planecount = 3;
     }
     else
     {
-      pDst[0] = YWPLAN(dst);
-      pDst[1] = UWPLAN(dst);
-      pDst[2] = VWPLAN(dst);
-      nDstPitches[0] = YPITCH(dst);
-      nDstPitches[1] = UPITCH(dst);
-      nDstPitches[2] = VPITCH(dst);
+      int planes_y[4] = { PLANAR_Y, PLANAR_U, PLANAR_V, PLANAR_A };
+      int planes_r[4] = { PLANAR_G, PLANAR_B, PLANAR_R, PLANAR_A };
+      int *planes = (vi.IsYUV() || vi.IsYUVA()) ? planes_y : planes_r;
+      planecount = std::min(vi.NumComponents(), 3);
+      for (int p = 0; p < planecount; ++p) {
+        const int plane = planes[p];
+        pSrc[p] = src->GetReadPtr(plane);
+        nSrcPitches[p] = src->GetPitch(plane);
 
-      pRef[0] = YRPLAN(ref);
-      pRef[1] = URPLAN(ref);
-      pRef[2] = VRPLAN(ref);
-      nRefPitches[0] = YPITCH(ref);
-      nRefPitches[1] = UPITCH(ref);
-      nRefPitches[2] = VPITCH(ref);
+        pRef[p] = ref->GetReadPtr(plane);
+        nRefPitches[p] = ref->GetPitch(plane);
 
-      pSrc[0] = YRPLAN(src);
-      pSrc[1] = URPLAN(src);
-      pSrc[2] = VRPLAN(src);
-      nSrcPitches[0] = YPITCH(src);
-      nSrcPitches[1] = UPITCH(src);
-      nSrcPitches[2] = VPITCH(src);
+        pDst[p] = dst->GetWritePtr(plane);
+        nDstPitches[p] = dst->GetPitch(plane);
+      }
     }
 
     PROFILE_STOP(MOTION_PROFILE_YUY2CONVERT);
@@ -418,8 +454,10 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
 
       CheckAndPadSmallY(VXSmallYB, VYSmallYB, nBlkXP, nBlkYP, nBlkX, nBlkY);
 
-      VectorSmallMaskYToHalfUV(VXSmallYB, nBlkXP, nBlkYP, VXSmallUVB, xRatioUV);
-      VectorSmallMaskYToHalfUV(VYSmallYB, nBlkXP, nBlkYP, VYSmallUVB, yRatioUV);
+      if (needDistinctChroma) {
+        VectorSmallMaskYToHalfUV(VXSmallYB, nBlkXP, nBlkYP, VXSmallUVB, xRatioUV);
+        VectorSmallMaskYToHalfUV(VYSmallYB, nBlkXP, nBlkYP, VYSmallUVB, yRatioUV);
+      }
 
       PROFILE_STOP(MOTION_PROFILE_MASK);
       // upsize (bilinear interpolate) vector masks to fullframe size
@@ -427,8 +465,10 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
 
       upsizer->SimpleResizeDo_int16(VXFullYB, nWidthP, nHeightP, VPitchY, VXSmallYB, nBlkXP, nBlkXP, nPel, true);
       upsizer->SimpleResizeDo_int16(VYFullYB, nWidthP, nHeightP, VPitchY, VYSmallYB, nBlkXP, nBlkXP, nPel, false);
-      upsizerUV->SimpleResizeDo_int16(VXFullUVB, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVB, nBlkXP, nBlkXP, nPel, true);
-      upsizerUV->SimpleResizeDo_int16(VYFullUVB, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVB, nBlkXP, nBlkXP, nPel, false);
+      if (needDistinctChroma) {
+        upsizerUV->SimpleResizeDo_int16(VXFullUVB, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVB, nBlkXP, nBlkXP, nPel, true);
+        upsizerUV->SimpleResizeDo_int16(VYFullUVB, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVB, nBlkXP, nBlkXP, nPel, false);
+      }
       PROFILE_STOP(MOTION_PROFILE_RESIZE);
 
     }
@@ -443,7 +483,8 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
     PROFILE_START(MOTION_PROFILE_RESIZE);
   // upsize (bilinear interpolate) vector masks to fullframe size
     upsizer->SimpleResizeDo_uint8(MaskFullYB, nWidthP, nHeightP, VPitchY, MaskSmallB, nBlkXP, nBlkXP);
-    upsizerUV->SimpleResizeDo_uint8(MaskFullUVB, nWidthPUV, nHeightPUV, VPitchUV, MaskSmallB, nBlkXP, nBlkXP);
+    if(needDistinctChroma)
+      upsizerUV->SimpleResizeDo_uint8(MaskFullUVB, nWidthPUV, nHeightPUV, VPitchUV, MaskSmallB, nBlkXP, nBlkXP);
     PROFILE_STOP(MOTION_PROFILE_RESIZE);
 
     nrightLast = nright;
@@ -457,8 +498,10 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
 
       CheckAndPadSmallY(VXSmallYF, VYSmallYF, nBlkXP, nBlkYP, nBlkX, nBlkY);
 
-      VectorSmallMaskYToHalfUV(VXSmallYF, nBlkXP, nBlkYP, VXSmallUVF, xRatioUV);
-      VectorSmallMaskYToHalfUV(VYSmallYF, nBlkXP, nBlkYP, VYSmallUVF, yRatioUV);
+      if (needDistinctChroma) {
+        VectorSmallMaskYToHalfUV(VXSmallYF, nBlkXP, nBlkYP, VXSmallUVF, xRatioUV);
+        VectorSmallMaskYToHalfUV(VYSmallYF, nBlkXP, nBlkYP, VYSmallUVF, yRatioUV);
+      }
 
       PROFILE_STOP(MOTION_PROFILE_MASK);
       // upsize (bilinear interpolate) vector masks to fullframe size
@@ -466,8 +509,10 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
 
       upsizer->SimpleResizeDo_int16(VXFullYF, nWidthP, nHeightP, VPitchY, VXSmallYF, nBlkXP, nBlkXP, nPel, true);
       upsizer->SimpleResizeDo_int16(VYFullYF, nWidthP, nHeightP, VPitchY, VYSmallYF, nBlkXP, nBlkXP, nPel, false);
-      upsizerUV->SimpleResizeDo_int16(VXFullUVF, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVF, nBlkXP, nBlkXP, nPel, true);
-      upsizerUV->SimpleResizeDo_int16(VYFullUVF, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVF, nBlkXP, nBlkXP, nPel, false);
+      if (needDistinctChroma) {
+        upsizerUV->SimpleResizeDo_int16(VXFullUVF, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVF, nBlkXP, nBlkXP, nPel, true);
+        upsizerUV->SimpleResizeDo_int16(VYFullUVF, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVF, nBlkXP, nBlkXP, nPel, false);
+      }
       PROFILE_STOP(MOTION_PROFILE_RESIZE);
 
     }
@@ -482,7 +527,8 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
     PROFILE_START(MOTION_PROFILE_RESIZE);
   // upsize (bilinear interpolate) vector masks to fullframe size
     upsizer->SimpleResizeDo_uint8(MaskFullYF, nWidthP, nHeightP, VPitchY, MaskSmallF, nBlkXP, nBlkXP);
-    upsizerUV->SimpleResizeDo_uint8(MaskFullUVF, nWidthPUV, nHeightPUV, VPitchUV, MaskSmallF, nBlkXP, nBlkXP);
+    if(needDistinctChroma)
+      upsizerUV->SimpleResizeDo_uint8(MaskFullUVF, nWidthPUV, nHeightPUV, VPitchUV, MaskSmallF, nBlkXP, nBlkXP);
     PROFILE_STOP(MOTION_PROFILE_RESIZE);
 
     nleftLast = nleft;
@@ -511,23 +557,29 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
 
       CheckAndPadSmallY_BF(VXSmallYBB, VXSmallYFF, VYSmallYBB, VYSmallYFF, nBlkXP, nBlkYP, nBlkX, nBlkY);
 
-      VectorSmallMaskYToHalfUV(VXSmallYBB, nBlkXP, nBlkYP, VXSmallUVBB, xRatioUV);
-      VectorSmallMaskYToHalfUV(VYSmallYBB, nBlkXP, nBlkYP, VYSmallUVBB, yRatioUV);
-      VectorSmallMaskYToHalfUV(VXSmallYFF, nBlkXP, nBlkYP, VXSmallUVFF, xRatioUV);
-      VectorSmallMaskYToHalfUV(VYSmallYFF, nBlkXP, nBlkYP, VYSmallUVFF, yRatioUV);
+      if (needDistinctChroma) {
+        VectorSmallMaskYToHalfUV(VXSmallYBB, nBlkXP, nBlkYP, VXSmallUVBB, xRatioUV);
+        VectorSmallMaskYToHalfUV(VYSmallYBB, nBlkXP, nBlkYP, VYSmallUVBB, yRatioUV);
+        VectorSmallMaskYToHalfUV(VXSmallYFF, nBlkXP, nBlkYP, VXSmallUVFF, xRatioUV);
+        VectorSmallMaskYToHalfUV(VYSmallYFF, nBlkXP, nBlkYP, VYSmallUVFF, yRatioUV);
+      }
       PROFILE_STOP(MOTION_PROFILE_MASK);
 
       PROFILE_START(MOTION_PROFILE_RESIZE);
     // upsize vectors to full frame
       upsizer->SimpleResizeDo_int16(VXFullYBB, nWidthP, nHeightP, VPitchY, VXSmallYBB, nBlkXP, nBlkXP, nPel, true);
       upsizer->SimpleResizeDo_int16(VYFullYBB, nWidthP, nHeightP, VPitchY, VYSmallYBB, nBlkXP, nBlkXP, nPel, false);
-      upsizerUV->SimpleResizeDo_int16(VXFullUVBB, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVBB, nBlkXP, nBlkXP, nPel, true);
-      upsizerUV->SimpleResizeDo_int16(VYFullUVBB, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVBB, nBlkXP, nBlkXP, nPel, false);
+      if (needDistinctChroma) {
+        upsizerUV->SimpleResizeDo_int16(VXFullUVBB, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVBB, nBlkXP, nBlkXP, nPel, true);
+        upsizerUV->SimpleResizeDo_int16(VYFullUVBB, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVBB, nBlkXP, nBlkXP, nPel, false);
+      }
 
       upsizer->SimpleResizeDo_int16(VXFullYFF, nWidthP, nHeightP, VPitchY, VXSmallYFF, nBlkXP, nBlkXP, nPel, true);
       upsizer->SimpleResizeDo_int16(VYFullYFF, nWidthP, nHeightP, VPitchY, VYSmallYFF, nBlkXP, nBlkXP, nPel, false);
-      upsizerUV->SimpleResizeDo_int16(VXFullUVFF, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVFF, nBlkXP, nBlkXP, nPel, true);
-      upsizerUV->SimpleResizeDo_int16(VYFullUVFF, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVFF, nBlkXP, nBlkXP, nPel, false);
+      if (needDistinctChroma) {
+        upsizerUV->SimpleResizeDo_int16(VXFullUVFF, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVFF, nBlkXP, nBlkXP, nPel, true);
+        upsizerUV->SimpleResizeDo_int16(VYFullUVFF, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVFF, nBlkXP, nBlkXP, nPel, false);
+      }
       PROFILE_STOP(MOTION_PROFILE_RESIZE);
 
       PROFILE_START(MOTION_PROFILE_FLOWINTER);
@@ -536,23 +588,47 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
           FlowInterExtra<uint8_t>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, pSrc[0] + nOffsetY, nRefPitches[0],
             VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
             nWidth, nHeight, time256, nPel, VXFullYBB, VXFullYFF, VYFullYBB, VYFullYFF);
-          FlowInterExtra<uint8_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
-            VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
-            nWidthUV, nHeightUV, time256, nPel, VXFullUVBB, VXFullUVFF, VYFullUVBB, VYFullUVFF);
-          FlowInterExtra<uint8_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
-            VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
-            nWidthUV, nHeightUV, time256, nPel, VXFullUVBB, VXFullUVFF, VYFullUVBB, VYFullUVFF);
+          if (!isGrey) {
+            if (needDistinctChroma) {
+              FlowInterExtra<uint8_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
+                VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
+                nWidthUV, nHeightUV, time256, nPel, VXFullUVBB, VXFullUVFF, VYFullUVBB, VYFullUVFF);
+              FlowInterExtra<uint8_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
+                VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
+                nWidthUV, nHeightUV, time256, nPel, VXFullUVBB, VXFullUVFF, VYFullUVBB, VYFullUVFF);
+            }
+            else {
+              FlowInterExtra<uint8_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetY, pSrc[1] + nOffsetY, nRefPitches[1],
+                VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
+                nWidth, nHeight, time256, nPel, VXFullYBB, VXFullYFF, VYFullYBB, VYFullYFF);
+              FlowInterExtra<uint8_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetY, pSrc[2] + nOffsetY, nRefPitches[2],
+                VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
+                nWidth, nHeight, time256, nPel, VXFullYBB, VXFullYFF, VYFullYBB, VYFullYFF);
+            }
+          }
         }
         else {
           FlowInterExtra<uint16_t>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, pSrc[0] + nOffsetY, nRefPitches[0],
             VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
             nWidth, nHeight, time256, nPel, VXFullYBB, VXFullYFF, VYFullYBB, VYFullYFF);
-          FlowInterExtra<uint16_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
-            VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
-            nWidthUV, nHeightUV, time256, nPel, VXFullUVBB, VXFullUVFF, VYFullUVBB, VYFullUVFF);
-          FlowInterExtra<uint16_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
-            VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
-            nWidthUV, nHeightUV, time256, nPel, VXFullUVBB, VXFullUVFF, VYFullUVBB, VYFullUVFF);
+          if (!isGrey) {
+            if (needDistinctChroma) {
+              FlowInterExtra<uint16_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
+                VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
+                nWidthUV, nHeightUV, time256, nPel, VXFullUVBB, VXFullUVFF, VYFullUVBB, VYFullUVFF);
+              FlowInterExtra<uint16_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
+                VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
+                nWidthUV, nHeightUV, time256, nPel, VXFullUVBB, VXFullUVFF, VYFullUVBB, VYFullUVFF);
+            }
+            else {
+              FlowInterExtra<uint16_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetY, pSrc[1] + nOffsetY, nRefPitches[1],
+                VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
+                nWidth, nHeight, time256, nPel, VXFullYBB, VXFullYFF, VYFullYBB, VYFullYFF);
+              FlowInterExtra<uint16_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetY, pSrc[2] + nOffsetY, nRefPitches[2],
+                VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
+                nWidth, nHeight, time256, nPel, VXFullYBB, VXFullYFF, VYFullYBB, VYFullYFF);
+            }
+          }
         }
       }
       PROFILE_STOP(MOTION_PROFILE_FLOWINTER);
@@ -570,23 +646,47 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
           FlowInter<uint8_t>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, pSrc[0] + nOffsetY, nRefPitches[0],
             VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
             nWidth, nHeight, time256, nPel);
-          FlowInter<uint8_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
-            VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
-            nWidthUV, nHeightUV, time256, nPel);
-          FlowInter<uint8_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
-            VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
-            nWidthUV, nHeightUV, time256, nPel);
+          if (!isGrey) {
+            if (needDistinctChroma) {
+              FlowInter<uint8_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
+                VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
+                nWidthUV, nHeightUV, time256, nPel);
+              FlowInter<uint8_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
+                VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
+                nWidthUV, nHeightUV, time256, nPel);
+            }
+            else {
+              FlowInter<uint8_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetY, pSrc[1] + nOffsetY, nRefPitches[1],
+                VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
+                nWidth, nHeight, time256, nPel);
+              FlowInter<uint8_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetY, pSrc[2] + nOffsetY, nRefPitches[2],
+                VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
+                nWidth, nHeight, time256, nPel);
+            }
+          }
         }
         else { // pixelsize==2
           FlowInter<uint16_t>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, pSrc[0] + nOffsetY, nRefPitches[0],
             VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
             nWidth, nHeight, time256, nPel);
-          FlowInter<uint16_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
-            VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
-            nWidthUV, nHeightUV, time256, nPel);
-          FlowInter<uint16_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
-            VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
-            nWidthUV, nHeightUV, time256, nPel);
+          if (!isGrey) {
+            if (needDistinctChroma) {
+              FlowInter<uint16_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
+                VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
+                nWidthUV, nHeightUV, time256, nPel);
+              FlowInter<uint16_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
+                VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
+                nWidthUV, nHeightUV, time256, nPel);
+            }
+            else {
+              FlowInter<uint16_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetY, pSrc[1] + nOffsetY, nRefPitches[1],
+                VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
+                nWidth, nHeight, time256, nPel);
+              FlowInter<uint16_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetY, pSrc[2] + nOffsetY, nRefPitches[2],
+                VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
+                nWidth, nHeight, time256, nPel);
+            }
+          }
         }
       }
       if (optDebug > 0) {
@@ -605,23 +705,47 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
           FlowInterSimple<uint8_t>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, pSrc[0] + nOffsetY, nRefPitches[0],
             VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
             nWidth, nHeight, time256, nPel);
-          FlowInterSimple<uint8_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
-            VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
-            nWidthUV, nHeightUV, time256, nPel);
-          FlowInterSimple<uint8_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
-            VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
-            nWidthUV, nHeightUV, time256, nPel); // 2.5.11.22 Line 598
+          if (!isGrey) {
+            if (needDistinctChroma) {
+              FlowInterSimple<uint8_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
+                VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
+                nWidthUV, nHeightUV, time256, nPel);
+              FlowInterSimple<uint8_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
+                VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
+                nWidthUV, nHeightUV, time256, nPel); // 2.5.11.22 Line 598
+            }
+            else {
+              FlowInterSimple<uint8_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetY, pSrc[1] + nOffsetY, nRefPitches[1],
+                VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
+                nWidth, nHeight, time256, nPel);
+              FlowInterSimple<uint8_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetY, pSrc[2] + nOffsetY, nRefPitches[2],
+                VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
+                nWidth, nHeight, time256, nPel);
+            }
+          }
         }
         else { // pixelsize==2
           FlowInterSimple<uint16_t>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, pSrc[0] + nOffsetY, nRefPitches[0],
             VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
             nWidth, nHeight, time256, nPel);
-          FlowInterSimple<uint16_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
-            VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
-            nWidthUV, nHeightUV, time256, nPel);
-          FlowInterSimple<uint16_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
-            VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
-            nWidthUV, nHeightUV, time256, nPel); // 2.5.11.22 Line 598
+          if (!isGrey) {
+            if (needDistinctChroma) {
+              FlowInterSimple<uint16_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
+                VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
+                nWidthUV, nHeightUV, time256, nPel);
+              FlowInterSimple<uint16_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
+                VXFullUVB, VXFullUVF, VYFullUVB, VYFullUVF, MaskFullUVB, MaskFullUVF, VPitchUV,
+                nWidthUV, nHeightUV, time256, nPel); // 2.5.11.22 Line 598
+            }
+            else {
+              FlowInterSimple<uint16_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetY, pSrc[1] + nOffsetY, nRefPitches[1],
+                VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
+                nWidth, nHeight, time256, nPel);
+              FlowInterSimple<uint16_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetY, pSrc[2] + nOffsetY, nRefPitches[2],
+                VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
+                nWidth, nHeight, time256, nPel);
+            }
+          }
         }
         if (optDebug > 0) {
           int sum_VXFullYB = 0;
@@ -720,36 +844,47 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
       }
       else
       {
-        pDst[0] = YWPLAN(dst);
-        pDst[1] = UWPLAN(dst);
-        pDst[2] = VWPLAN(dst);
-        nDstPitches[0] = YPITCH(dst);
-        nDstPitches[1] = UPITCH(dst);
-        nDstPitches[2] = VPITCH(dst);
+        int planes_y[4] = { PLANAR_Y, PLANAR_U, PLANAR_V, PLANAR_A };
+        int planes_r[4] = { PLANAR_G, PLANAR_B, PLANAR_R, PLANAR_A };
+        int *planes = (vi.IsYUV() || vi.IsYUVA()) ? planes_y : planes_r;
+        planecount = std::min(vi.NumComponents(), 3);
+        for (int p = 0; p < planecount; ++p) {
+          const int plane = planes[p];
+          pSrc[p] = src->GetReadPtr(plane);
+          nSrcPitches[p] = src->GetPitch(plane);
 
-        pRef[0] = YRPLAN(ref);
-        pRef[1] = URPLAN(ref);
-        pRef[2] = VRPLAN(ref);
-        nRefPitches[0] = YPITCH(ref);
-        nRefPitches[1] = UPITCH(ref);
-        nRefPitches[2] = VPITCH(ref);
+          pRef[p] = ref->GetReadPtr(plane);
+          nRefPitches[p] = ref->GetPitch(plane);
 
-        pSrc[0] = YRPLAN(src);
-        pSrc[1] = URPLAN(src);
-        pSrc[2] = VRPLAN(src);
-        nSrcPitches[0] = YPITCH(src);
-        nSrcPitches[1] = UPITCH(src);
-        nSrcPitches[2] = VPITCH(src);
-      // blend with time weight
+          pDst[p] = dst->GetWritePtr(plane);
+          nDstPitches[p] = dst->GetPitch(plane);
+        }
+        // blend with time weight
         if (pixelsize == 1) {
           Blend<uint8_t>(pDst[0], pSrc[0], pRef[0], nHeight, nWidth, nDstPitches[0], nSrcPitches[0], nRefPitches[0], time256, cpuFlags);
-          Blend<uint8_t>(pDst[1], pSrc[1], pRef[1], nHeightUV, nWidthUV, nDstPitches[1], nSrcPitches[1], nRefPitches[1], time256, cpuFlags);
-          Blend<uint8_t>(pDst[2], pSrc[2], pRef[2], nHeightUV, nWidthUV, nDstPitches[2], nSrcPitches[2], nRefPitches[2], time256, cpuFlags);
+          if (!isGrey) {
+            if (needDistinctChroma) {
+              Blend<uint8_t>(pDst[1], pSrc[1], pRef[1], nHeightUV, nWidthUV, nDstPitches[1], nSrcPitches[1], nRefPitches[1], time256, cpuFlags);
+              Blend<uint8_t>(pDst[2], pSrc[2], pRef[2], nHeightUV, nWidthUV, nDstPitches[2], nSrcPitches[2], nRefPitches[2], time256, cpuFlags);
+            }
+            else {
+              Blend<uint8_t>(pDst[1], pSrc[1], pRef[1], nHeight, nWidth, nDstPitches[1], nSrcPitches[1], nRefPitches[1], time256, cpuFlags);
+              Blend<uint8_t>(pDst[2], pSrc[2], pRef[2], nHeight, nWidth, nDstPitches[2], nSrcPitches[2], nRefPitches[2], time256, cpuFlags);
+            }
+          }
         }
         else {
           Blend<uint16_t>(pDst[0], pSrc[0], pRef[0], nHeight, nWidth, nDstPitches[0], nSrcPitches[0], nRefPitches[0], time256, cpuFlags);
-          Blend<uint16_t>(pDst[1], pSrc[1], pRef[1], nHeightUV, nWidthUV, nDstPitches[1], nSrcPitches[1], nRefPitches[1], time256, cpuFlags);
-          Blend<uint16_t>(pDst[2], pSrc[2], pRef[2], nHeightUV, nWidthUV, nDstPitches[2], nSrcPitches[2], nRefPitches[2], time256, cpuFlags);
+          if (!isGrey) {
+            if (needDistinctChroma) {
+              Blend<uint16_t>(pDst[1], pSrc[1], pRef[1], nHeightUV, nWidthUV, nDstPitches[1], nSrcPitches[1], nRefPitches[1], time256, cpuFlags);
+              Blend<uint16_t>(pDst[2], pSrc[2], pRef[2], nHeightUV, nWidthUV, nDstPitches[2], nSrcPitches[2], nRefPitches[2], time256, cpuFlags);
+            }
+            else {
+              Blend<uint16_t>(pDst[1], pSrc[1], pRef[1], nHeight, nWidth, nDstPitches[1], nSrcPitches[1], nRefPitches[1], time256, cpuFlags);
+              Blend<uint16_t>(pDst[2], pSrc[2], pRef[2], nHeight, nWidth, nDstPitches[2], nSrcPitches[2], nRefPitches[2], time256, cpuFlags);
+            }
+          }
         }
       }
       PROFILE_STOP(MOTION_PROFILE_FLOWINTER);

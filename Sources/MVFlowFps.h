@@ -97,6 +97,11 @@ private:
   int nHPaddingUV;
   int nVPaddingUV;
 
+  bool is444;
+  bool isGrey;
+  bool isRGB; // avs+ planar
+  bool needDistinctChroma;
+
   SimpleResize *upsizer;
   SimpleResize *upsizerUV;
 
