@@ -39,8 +39,8 @@ void PadCorner(pixel_t *p, pixel_t v, int hPad, int vPad, int refPitch)
 Padding::Padding(PClip _child, int hPad, int vPad, bool _planar, IScriptEnvironment* env) :
   GenericVideoFilter(_child)
 {
-  if (!vi.IsYUV() && !vi.IsYUY2())
-    env->ThrowError("Padding : clip must be in the YUV or YUY2 color format");
+  if (!vi.IsYUV() && !vi.IsYUY2() && !vi.IsPlanarRGB() && !vi.IsPlanarRGBA())
+    env->ThrowError("Padding : clip must be in the YUV or YUY2 or planar RGB/RGBA color format");
 
   horizontalPadding = hPad;
   verticalPadding = vPad;
@@ -82,18 +82,15 @@ PVideoFrame __stdcall Padding::GetFrame(int n, IScriptEnvironment *env)
   unsigned char *pDstYUY2;
   int nDstPitchYUY2;
 
-  int xRatioUV;
-  int yRatioUV;
+  int xRatioUVs[3] = { 1, 1, 1 };
+  int yRatioUVs[3] = { 1, 1, 1 };
+  int planecount;
 
-  if (!vi.IsY()) {
-    xRatioUV = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U)); // PF
-    yRatioUV = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U)); // PF
+  if (!vi.IsY() && !vi.IsRGB()) {
+    xRatioUVs[1] = xRatioUVs[2] = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U));
+    yRatioUVs[2] = yRatioUVs[2] = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U));
   }
-  else {
-    xRatioUV = 1; // n/a
-    yRatioUV = 1; // n/a
-  }
-  int pixelsize = vi.ComponentSize(); // PF
+  int pixelsize = vi.ComponentSize();
 
   if ((vi.pixel_type & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2)
   {
@@ -131,52 +128,34 @@ PVideoFrame __stdcall Padding::GetFrame(int n, IScriptEnvironment *env)
       pDst[1] = pDst[0] + dst->GetRowSize() / 2;
       pDst[2] = pDst[1] + dst->GetRowSize() / 4;
     }
+    planecount = 3;
   }
   else
   {
-    pDst[0] = dst->GetWritePtr(PLANAR_Y);
-    pDst[1] = dst->GetWritePtr(PLANAR_U);
-    pDst[2] = dst->GetWritePtr(PLANAR_V);
-    nDstPitches[0] = dst->GetPitch(PLANAR_Y);
-    nDstPitches[1] = dst->GetPitch(PLANAR_U);
-    nDstPitches[2] = dst->GetPitch(PLANAR_V);
-    pSrc[0] = src->GetReadPtr(PLANAR_Y);
-    pSrc[1] = src->GetReadPtr(PLANAR_U);
-    pSrc[2] = src->GetReadPtr(PLANAR_V);
-    nSrcPitches[0] = src->GetPitch(PLANAR_Y);
-    nSrcPitches[1] = src->GetPitch(PLANAR_U);
-    nSrcPitches[2] = src->GetPitch(PLANAR_V);
+    int planes_y[4] = { PLANAR_Y, PLANAR_U, PLANAR_V, PLANAR_A };
+    int planes_r[4] = { PLANAR_G, PLANAR_B, PLANAR_R, PLANAR_A };
+    int *planes = (vi.IsYUV() || vi.IsYUVA()) ? planes_y : planes_r;
+    planecount = std::min(vi.NumComponents(), 3);
+    for (int p = 0; p < planecount; ++p) {
+      const int plane = planes[p];
+      pDst[p] = dst->GetWritePtr(plane);
+      nDstPitches[p] = dst->GetPitch(plane);
+      pSrc[p] = src->GetReadPtr(plane);
+      nSrcPitches[p] = src->GetPitch(plane);
+    }
   }
 
 
-  env->BitBlt(pDst[0] + horizontalPadding * pixelsize + verticalPadding * nDstPitches[0], nDstPitches[0],
-    pSrc[0], nSrcPitches[0], width*pixelsize, height);
-  if (pixelsize == 1)
-    PadReferenceFrame<uint8_t>(pDst[0], nDstPitches[0], horizontalPadding, verticalPadding, width, height);
-  else if (pixelsize == 2)
-    PadReferenceFrame<uint16_t>(pDst[0], nDstPitches[0], horizontalPadding, verticalPadding, width, height);
-  else
-    PadReferenceFrame<float>(pDst[0], nDstPitches[0], horizontalPadding, verticalPadding, width, height);
-
-
-  env->BitBlt(pDst[1] + horizontalPadding / xRatioUV * pixelsize + verticalPadding / yRatioUV * nDstPitches[1],
-    nDstPitches[1], pSrc[1], nSrcPitches[1], width / xRatioUV * pixelsize, height / yRatioUV);
-  if (pixelsize == 1)
-    PadReferenceFrame<uint8_t>(pDst[1], nDstPitches[1], horizontalPadding / xRatioUV, verticalPadding / yRatioUV, width / xRatioUV, height / yRatioUV);
-  else if (pixelsize == 2)
-    PadReferenceFrame<uint16_t>(pDst[1], nDstPitches[1], horizontalPadding / xRatioUV, verticalPadding / yRatioUV, width / xRatioUV, height / yRatioUV);
-  else
-    PadReferenceFrame<float>(pDst[1], nDstPitches[1], horizontalPadding / xRatioUV, verticalPadding / yRatioUV, width / xRatioUV, height / yRatioUV);
-
-
-  env->BitBlt(pDst[2] + horizontalPadding / xRatioUV * pixelsize + verticalPadding / yRatioUV * nDstPitches[2],
-    nDstPitches[2], pSrc[2], nSrcPitches[2], width / xRatioUV * pixelsize, height / yRatioUV);
-  if (pixelsize == 1)
-    PadReferenceFrame<uint8_t>(pDst[2], nDstPitches[2], horizontalPadding / xRatioUV, verticalPadding / yRatioUV, width / xRatioUV, height / yRatioUV);
-  else if (pixelsize == 2)
-    PadReferenceFrame<uint16_t>(pDst[2], nDstPitches[2], horizontalPadding / xRatioUV, verticalPadding / yRatioUV, width / xRatioUV, height / yRatioUV);
-  else
-    PadReferenceFrame<float>(pDst[2], nDstPitches[2], horizontalPadding / xRatioUV, verticalPadding / yRatioUV, width / xRatioUV, height / yRatioUV);
+  for (int p = 0; p < planecount; ++p) {
+    env->BitBlt(pDst[p] + horizontalPadding / xRatioUVs[p] * pixelsize + verticalPadding / yRatioUVs[p] * nDstPitches[p],
+      nDstPitches[p], pSrc[p], nSrcPitches[p], width / xRatioUVs[p] * pixelsize, height / yRatioUVs[p]);
+    if (pixelsize == 1)
+      PadReferenceFrame<uint8_t>(pDst[p], nDstPitches[p], horizontalPadding / xRatioUVs[p], verticalPadding / yRatioUVs[p], width / xRatioUVs[p], height / yRatioUVs[p]);
+    else if (pixelsize == 2)
+      PadReferenceFrame<uint16_t>(pDst[p], nDstPitches[p], horizontalPadding / xRatioUVs[p], verticalPadding / yRatioUVs[p], width / xRatioUVs[p], height / yRatioUVs[p]);
+    else
+      PadReferenceFrame<float>(pDst[p], nDstPitches[p], horizontalPadding / xRatioUVs[p], verticalPadding / yRatioUVs[p], width / xRatioUVs[p], height / yRatioUVs[p]);
+  }
 
   if ((vi.pixel_type & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
   {

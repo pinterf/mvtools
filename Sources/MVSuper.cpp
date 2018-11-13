@@ -55,10 +55,10 @@ MVSuper::MVSuper(
 
   nHeight = vi.height;
 
-  if (!vi.IsYUV() && !vi.IsYUY2()) // YUY2 is also YUV but let's see what is supported
-                                    //if (! vi.IsYV12 () && ! vi.IsYUY2 ())
+  // 2.7.35 planar RGB support
+  if (!vi.IsYUV() && !vi.IsYUY2() && !vi.IsPlanarRGB() && !vi.IsPlanarRGBA()) // YUY2 is also YUV but let's see what is supported
   {
-    env->ThrowError("MSuper: Clip must be YUV or YUY2");
+    env->ThrowError("MSuper: Clip must be YUV or YUY2 or planar RGB/RGBA");
   }
 
   nPel = _pel;
@@ -71,14 +71,18 @@ MVSuper::MVSuper(
   nVPad = _vPad;
   rfilter = _rfilter;
   sharp = _sharp; // pel2 interpolation type
-  //isse = _isse;
   cpuFlags = _isse ? env->GetCPUFlags() : 0;
 
   chroma = _chroma;
+  if (vi.IsRGB())
+    chroma = true; // Chroma means: all channels, for RGB: compulsory
+  if (vi.IsY())
+    chroma = false; // Grey support, no U V plane usage
+
   nModeYUV = chroma ? YUVPLANES : YPLANE;
 
   pixelType = vi.pixel_type;
-  if (!vi.IsY()) {
+  if (!vi.IsY() && !vi.IsRGB()) {
     yRatioUV = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U));
     xRatioUV = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U)); // for YV12 and YUY2, really do not used and assumed to 2
   }
@@ -176,15 +180,16 @@ MVSuper::~MVSuper()
 
 PVideoFrame __stdcall MVSuper::GetFrame(int n, IScriptEnvironment* env)
 {
-  const unsigned char *pSrcY, *pSrcU, *pSrcV;
-  unsigned char *pDstY, *pDstU, *pDstV;
-  const unsigned char *pSrcPelY, *pSrcPelU, *pSrcPelV;
+  const unsigned char *pSrc[3];
+  unsigned char *pDst[3];
+  const unsigned char *pSrcPel[3];
   //	unsigned char *pDstYUY2;
-  int nSrcPitchY, nSrcPitchUV;
-  int nDstPitchY, nDstPitchUV;
-  int nSrcPelPitchY, nSrcPelPitchUV;
-  //	int nDstPitchYUY2;
-
+  int nSrcPitch[3];
+  int nDstPitch[3];
+  int nSrcPelPitch[3];
+  
+  int planecount;
+  
     //DebugPrintf("MSuper: Get src frame %d clip %d",n,child);
 
   PVideoFrame src = child->GetFrame(n, env);
@@ -199,38 +204,38 @@ PVideoFrame __stdcall MVSuper::GetFrame(int n, IScriptEnvironment* env)
   {
     if (!planar)
     {
-      pSrcY = SrcPlanes->GetPtr();
-      pSrcU = SrcPlanes->GetPtrU();
-      pSrcV = SrcPlanes->GetPtrV();
-      nSrcPitchY = SrcPlanes->GetPitch();
-      nSrcPitchUV = SrcPlanes->GetPitchUV();
+      pSrc[0] = SrcPlanes->GetPtr();
+      pSrc[1] = SrcPlanes->GetPtrU();
+      pSrc[2] = SrcPlanes->GetPtrV();
+      nSrcPitch[0] = SrcPlanes->GetPitch();
+      nSrcPitch[1] = nSrcPitch[2] = SrcPlanes->GetPitchUV();
       YUY2ToPlanes(src->GetReadPtr(), src->GetPitch(), nWidth, nHeight,
-        pSrcY, nSrcPitchY, pSrcU, pSrcV, nSrcPitchUV, cpuFlags);
+        pSrc[0], nSrcPitch[0], pSrc[1], pSrc[1], nSrcPitch[1], cpuFlags);
       if (usePelClip)
       {
-        pSrcPelY = SrcPelPlanes->GetPtr();
-        pSrcPelU = SrcPelPlanes->GetPtrU();
-        pSrcPelV = SrcPelPlanes->GetPtrV();
-        nSrcPelPitchY = SrcPelPlanes->GetPitch();
-        nSrcPelPitchUV = SrcPelPlanes->GetPitchUV();
+        pSrcPel[0] = SrcPelPlanes->GetPtr();
+        pSrcPel[1] = SrcPelPlanes->GetPtrU();
+        pSrcPel[2] = SrcPelPlanes->GetPtrV();
+        nSrcPelPitch[0] = SrcPelPlanes->GetPitch();
+        nSrcPelPitch[1] = nSrcPelPitch[2] = SrcPelPlanes->GetPitchUV();
         YUY2ToPlanes(srcPel->GetReadPtr(), srcPel->GetPitch(), srcPel->GetRowSize() / 2, srcPel->GetHeight(),
-          pSrcPelY, nSrcPelPitchY, pSrcPelU, pSrcPelV, nSrcPelPitchUV, cpuFlags);
+          pSrcPel[0], nSrcPelPitch[0], pSrcPel[1], pSrcPel[2], nSrcPelPitch[1], cpuFlags);
       }
     }
     else
     {
-      pSrcY = src->GetReadPtr();
-      pSrcU = pSrcY + src->GetRowSize() / 2;
-      pSrcV = pSrcU + src->GetRowSize() / 4;
-      nSrcPitchY = src->GetPitch();
-      nSrcPitchUV = nSrcPitchY;
+      pSrc[0] = src->GetReadPtr();
+      pSrc[1] = pSrc[0] + src->GetRowSize() / 2;
+      pSrc[2]= pSrc[1] + src->GetRowSize() / 4;
+      nSrcPitch[0] = src->GetPitch();
+      nSrcPitch[1] = nSrcPitch[2] = nSrcPitch[0];
       if (usePelClip)
       {
-        pSrcPelY = srcPel->GetReadPtr();
-        pSrcPelU = pSrcPelY + srcPel->GetRowSize() / 2;
-        pSrcPelV = pSrcPelU + srcPel->GetRowSize() / 4;
-        nSrcPelPitchY = srcPel->GetPitch();
-        nSrcPelPitchUV = nSrcPelPitchY;
+        pSrcPel[0] = srcPel->GetReadPtr();
+        pSrcPel[1] = pSrcPel[0] + srcPel->GetRowSize() / 2;
+        pSrcPel[2] = pSrcPel[1] + srcPel->GetRowSize() / 4;
+        nSrcPelPitch[0] = srcPel->GetPitch();
+        nSrcPelPitch[1] = nSrcPelPitch[2] = nSrcPelPitch[0];
       }
     }
     //		pDstY = DstPlanes->GetPtr();
@@ -239,32 +244,31 @@ PVideoFrame __stdcall MVSuper::GetFrame(int n, IScriptEnvironment* env)
     //		nDstPitchY  = DstPlanes->GetPitch();
     //		nDstPitchUV  = DstPlanes->GetPitchUV();
         // planer data packed to interleaved format (same as interleved2planar by kassandro) - v2.0.0.5
-    pDstY = dst->GetWritePtr();
-    pDstU = pDstY + nSuperWidth;
-    pDstV = pDstU + nSuperWidth / 2; // YUY2
-    nDstPitchY = dst->GetPitch();
-    nDstPitchUV = nDstPitchY;
+    pDst[0] = dst->GetWritePtr();
+    pDst[1] = pDst[0] + nSuperWidth;
+    pDst[2] = pDst[1] + nSuperWidth / 2; // YUY2
+    nDstPitch[0] = dst->GetPitch();
+    nDstPitch[1] = nDstPitch[2] = nDstPitch[0];
+    planecount = 3;
   }
   else
   {
-    pSrcY = src->GetReadPtr(PLANAR_Y);
-    pSrcU = src->GetReadPtr(PLANAR_U);
-    pSrcV = src->GetReadPtr(PLANAR_V);
-    nSrcPitchY = src->GetPitch(PLANAR_Y);
-    nSrcPitchUV = src->GetPitch(PLANAR_U);
-    if (usePelClip)
-    {
-      pSrcPelY = srcPel->GetReadPtr(PLANAR_Y);
-      pSrcPelU = srcPel->GetReadPtr(PLANAR_U);
-      pSrcPelV = srcPel->GetReadPtr(PLANAR_V);
-      nSrcPelPitchY = srcPel->GetPitch(PLANAR_Y);
-      nSrcPelPitchUV = srcPel->GetPitch(PLANAR_U);
+    int planes_y[4] = { PLANAR_Y, PLANAR_U, PLANAR_V, PLANAR_A };
+    int planes_r[4] = { PLANAR_G, PLANAR_B, PLANAR_R, PLANAR_A };
+    int *planes = (vi.IsYUV() || vi.IsYUVA()) ? planes_y : planes_r;
+    planecount = std::min(vi.NumComponents(), 3);
+    for (int p = 0; p < planecount; ++p) {
+      const int plane = planes[p];
+      pSrc[p] = src->GetReadPtr(plane);
+      nSrcPitch[p] = src->GetPitch(plane);
+      if (usePelClip)
+      {
+        pSrcPel[p] = srcPel->GetReadPtr(plane);
+        nSrcPelPitch[p] = srcPel->GetPitch(plane);
+      }
+      pDst[p] = dst->GetWritePtr(plane);
+      nDstPitch[p] = dst->GetPitch(plane);
     }
-    pDstY = dst->GetWritePtr(PLANAR_Y);
-    pDstU = dst->GetWritePtr(PLANAR_U);
-    pDstV = dst->GetWritePtr(PLANAR_V);
-    nDstPitchY = dst->GetPitch(PLANAR_Y);
-    nDstPitchUV = dst->GetPitch(PLANAR_U);
   }
   // P.F. 170519 debug: clear super area
   // todo: check how it affects for non-modulo blocksize vs. supersize_padded
@@ -281,11 +285,14 @@ PVideoFrame __stdcall MVSuper::GetFrame(int n, IScriptEnvironment* env)
 
   PROFILE_START(MOTION_PROFILE_INTERPOLATION);
 
-  pSrcGOF->Update(YUVPLANES, pDstY, nDstPitchY, pDstU, nDstPitchUV, pDstV, nDstPitchUV);
+  pSrcGOF->Update(YUVPLANES, pDst[0], nDstPitch[0], pDst[1], nDstPitch[1], pDst[2], nDstPitch[2]);
+  // constant name is Y U and V but for MVFrame this is good for RGB
+  MVPlaneSet planes[3] = { YPLANE, UPLANE, VPLANE };
 
-  pSrcGOF->SetPlane(pSrcY, nSrcPitchY, YPLANE);
-  pSrcGOF->SetPlane(pSrcU, nSrcPitchUV, UPLANE);
-  pSrcGOF->SetPlane(pSrcV, nSrcPitchUV, VPLANE);
+  for (int p = 0; p < planecount; ++p) {
+    const MVPlaneSet plane = planes[p];
+    pSrcGOF->SetPlane(pSrc[p], nSrcPitch[p], plane);
+  }
 
   pSrcGOF->Reduce(nModeYUV);
   pSrcGOF->Pad(nModeYUV);
@@ -294,32 +301,19 @@ PVideoFrame __stdcall MVSuper::GetFrame(int n, IScriptEnvironment* env)
   {
     MVFrame *srcFrames = pSrcGOF->GetFrame(0);
 
-    MVPlane *srcPlaneY = srcFrames->GetPlane(YPLANE);
-    if (nModeYUV & YPLANE)
-      if (pixelsize == 1)
-        srcPlaneY->RefineExt<uint8_t>(pSrcPelY, nSrcPelPitchY, isPelClipPadded);
-      else if (pixelsize == 2)
-        srcPlaneY->RefineExt<uint16_t>(pSrcPelY, nSrcPelPitchY, isPelClipPadded);
-      else
-        srcPlaneY->RefineExt<float>(pSrcPelY, nSrcPelPitchY, isPelClipPadded);
+    for (int p = 0; p < planecount; ++p) {
+      const MVPlaneSet plane = planes[p];
+      MVPlane *srcPlane = srcFrames->GetPlane(plane);
 
-    MVPlane *srcPlaneU = srcFrames->GetPlane(UPLANE);
-    if (nModeYUV & UPLANE)
-      if (pixelsize == 1)
-        srcPlaneU->RefineExt<uint8_t>(pSrcPelU, nSrcPelPitchUV, isPelClipPadded);
-      else if (pixelsize == 2)
-        srcPlaneU->RefineExt<uint16_t>(pSrcPelU, nSrcPelPitchUV, isPelClipPadded);
-      else
-        srcPlaneU->RefineExt<float>(pSrcPelU, nSrcPelPitchUV, isPelClipPadded);
-
-    MVPlane *srcPlaneV = srcFrames->GetPlane(VPLANE);
-    if (nModeYUV & VPLANE)
-      if (pixelsize == 1)
-        srcPlaneV->RefineExt<uint8_t>(pSrcPelV, nSrcPelPitchUV, isPelClipPadded);
-      else if (pixelsize == 2)
-        srcPlaneV->RefineExt<uint16_t>(pSrcPelV, nSrcPelPitchUV, isPelClipPadded);
-      else
-        srcPlaneV->RefineExt<float>(pSrcPelV, nSrcPelPitchUV, isPelClipPadded);
+      if (nModeYUV & plane) {
+        if (pixelsize == 1)
+          srcPlane->RefineExt<uint8_t>(pSrcPel[p], nSrcPelPitch[p], isPelClipPadded);
+        else if (pixelsize == 2)
+          srcPlane->RefineExt<uint16_t>(pSrcPel[p], nSrcPelPitch[p], isPelClipPadded);
+        else
+          srcPlane->RefineExt<float>(pSrcPel[p], nSrcPelPitch[p], isPelClipPadded);
+      }
+    }
   }
   else
   {

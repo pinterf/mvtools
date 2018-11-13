@@ -80,7 +80,10 @@ MV_FORCEINLINE unsigned int PlaneSuperOffset(bool chroma, int src_height, int le
 
     for (int i = 1; i < level; i++)
     {
-      height = chroma ? PlaneHeightLuma(src_height*yRatioUV, i, yRatioUV, vpad*yRatioUV) / yRatioUV : PlaneHeightLuma(src_height, i, yRatioUV, vpad);
+      height = chroma ? 
+                  PlaneHeightLuma(src_height*yRatioUV, i, yRatioUV, vpad*yRatioUV) / yRatioUV : 
+        // PF 20181113: Why is it good to use yRatioUV for luma???
+        PlaneHeightLuma(src_height, i, yRatioUV, vpad);
 
       offset += plane_pitch * (height + vpad * 2);
     }

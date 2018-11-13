@@ -49,13 +49,13 @@ GenericVideoFilter(_super)
 	int nHeight = nHeightS;
     int xRatioUV;
     int yRatioUV;
-    if(!vi.IsY()) {
+    if(!vi.IsY() && !vi.IsRGB()) {
         xRatioUV = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U));
         yRatioUV = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U));;
     }
     else {
-        xRatioUV = 1; // n/a
-        yRatioUV = 1; // n/a
+        xRatioUV = 1;
+        yRatioUV = 1;
     }
 
     pixelsize = _super->GetVideoInfo().ComponentSize();
@@ -90,24 +90,27 @@ PVideoFrame __stdcall MVFinest::GetFrame(int n, IScriptEnvironment* env)
 
 	PVideoFrame dst = env->NewVideoFrame(vi);
 
+  int planecount;
   if (nPel == 1) // simply copy top lines
-	{
-		if ((vi.pixel_type & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2)
-		{
-			env->BitBlt(dst->GetWritePtr(), dst->GetPitch(),
-				ref->GetReadPtr(), ref->GetPitch(), dst->GetRowSize(), dst->GetHeight());
-		}
-		else // YUV
-		{
-			env->BitBlt(dst->GetWritePtr(PLANAR_Y), dst->GetPitch(PLANAR_Y),
-				ref->GetReadPtr(PLANAR_Y), ref->GetPitch(PLANAR_Y), dst->GetRowSize(PLANAR_Y), dst->GetHeight(PLANAR_Y));
-			env->BitBlt(dst->GetWritePtr(PLANAR_U), dst->GetPitch(PLANAR_U),
-				ref->GetReadPtr(PLANAR_U), ref->GetPitch(PLANAR_U), dst->GetRowSize(PLANAR_U), dst->GetHeight(PLANAR_U));
-			env->BitBlt(dst->GetWritePtr(PLANAR_V), dst->GetPitch(PLANAR_V),
-				ref->GetReadPtr(PLANAR_V), ref->GetPitch(PLANAR_V), dst->GetRowSize(PLANAR_V), dst->GetHeight(PLANAR_V));
-		}
-	}
-
+  {
+    if ((vi.pixel_type & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2)
+    {
+      env->BitBlt(dst->GetWritePtr(), dst->GetPitch(),
+        ref->GetReadPtr(), ref->GetPitch(), dst->GetRowSize(), dst->GetHeight());
+    }
+    else // YUV, RGB
+    {
+      int planes_y[4] = { PLANAR_Y, PLANAR_U, PLANAR_V, PLANAR_A };
+      int planes_r[4] = { PLANAR_G, PLANAR_B, PLANAR_R, PLANAR_A };
+      int *planes = (vi.IsYUV() || vi.IsYUVA()) ? planes_y : planes_r;
+      planecount = std::min(vi.NumComponents(), 3);
+      for (int p = 0; p < planecount; ++p) {
+        const int plane = planes[p];
+        env->BitBlt(dst->GetWritePtr(plane), dst->GetPitch(plane),
+          ref->GetReadPtr(plane), ref->GetPitch(plane), dst->GetRowSize(plane), dst->GetHeight(plane));
+      }
+    }
+  }
 	else	// nPel > 1
 	{
 		PROFILE_START(MOTION_PROFILE_2X);
@@ -127,35 +130,41 @@ PVideoFrame __stdcall MVFinest::GetFrame(int n, IScriptEnvironment* env)
 			nDstPitches[0] = dst->GetPitch();
 			nDstPitches[1] = nDstPitches[0];
 			nDstPitches[2] = nDstPitches[0];
+      planecount = 3;
 		}
-		else
-		{
-			pDst[0] = YWPLAN(dst);
-			pDst[1] = UWPLAN(dst);
-			pDst[2] = VWPLAN(dst);
-			nDstPitches[0] = YPITCH(dst);
-			nDstPitches[1] = UPITCH(dst);
-			nDstPitches[2] = VPITCH(dst);
+    else
+    {
+      int planes_y[4] = { PLANAR_Y, PLANAR_U, PLANAR_V, PLANAR_A };
+      int planes_r[4] = { PLANAR_G, PLANAR_B, PLANAR_R, PLANAR_A };
+      int *planes = (vi.IsYUV() || vi.IsYUVA()) ? planes_y : planes_r;
+      planecount = std::min(vi.NumComponents(), 3);
+      for (int p = 0; p < planecount; ++p) {
+        const int plane = planes[p];
+        pDst[p] = dst->GetWritePtr(plane);
+        nDstPitches[p] = dst->GetPitch(plane);
+        pRef[p] = ref->GetReadPtr(plane);
+        nRefPitches[p] = ref->GetPitch(plane);
+      }
+    }
 
-			pRef[0] = YRPLAN(ref);
-			pRef[1] = URPLAN(ref);
-			pRef[2] = VRPLAN(ref);
-			nRefPitches[0] = YPITCH(ref);
-			nRefPitches[1] = UPITCH(ref);
-			nRefPitches[2] = VPITCH(ref);
-		}
-
-		pRefGOF->Update(YUVPLANES, (BYTE*)pRef[0], nRefPitches[0], (BYTE*)pRef[1], nRefPitches[1], (BYTE*)pRef[2], nRefPitches[2]);// v2.0
+    MVPlaneSet nMode = vi.IsY() ? YPLANE : YUVPLANES;
+		pRefGOF->Update(nMode, (BYTE*)pRef[0], nRefPitches[0], (BYTE*)pRef[1], nRefPitches[1], (BYTE*)pRef[2], nRefPitches[2]);// v2.0
 
 		MVPlane *pPlanes[3];
 
-		pPlanes[0] = pRefGOF->GetFrame(0)->GetPlane(YPLANE);
-		pPlanes[1] = pRefGOF->GetFrame(0)->GetPlane(UPLANE);
-		pPlanes[2] = pRefGOF->GetFrame(0)->GetPlane(VPLANE);
+    MVPlaneSet planes[3] = { YPLANE, UPLANE, VPLANE };
+    for (int p = 0; p < planecount; ++p) {
+      const MVPlaneSet plane = planes[p];
+      pPlanes[p] = pRefGOF->GetFrame(0)->GetPlane(plane);
+      if (pPlanes[p]->GetAbsolutePointer(0, 0) == 0)
+      {
+        int x = 1;
+      }
+    }
 
 		if (nPel == 2)
 		{
-      for (int p = 0; p < 3; p++) {
+      for (int p = 0; p < planecount; p++) {
         MVPlane *plane = pPlanes[p];
         if (plane) {
           // merge refined planes to big singpe plane
@@ -169,7 +178,7 @@ PVideoFrame __stdcall MVFinest::GetFrame(int n, IScriptEnvironment* env)
 		}
 		else if (nPel==4)
 		{
-      for (int p = 0; p < 3; p++) {
+      for (int p = 0; p < planecount; p++) {
         MVPlane *plane = pPlanes[p];
         if (plane) {
           // merge refined planes to big single plane
