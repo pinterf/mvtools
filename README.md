@@ -11,6 +11,16 @@ Credits:
 
 Change log
 
+- 2.7.35 (20181113)
+  MFlowXXX: Slight speed gain by putting the out-of-frame vector check to resizer
+  Fix: MAnalyze: Fix a possible internal overflow on larger blocksizes with small overlap e.g. BlkSize=32, OverlapX=0, OverlapY=4
+  MSuper: Planar RGB support. Now MSuper supports Y and YUV and planar RGB 8-32 bits, and YUY2
+          note: different filters may support only a limited set of super clip formats.
+  MFlowFPS: Planar RGB support: generate vectors in YUV, use RGB input and super clip
+  MFlowFPS: less memory for 4:4:4 and greyscale
+  MFlowFPS: a bit faster 4:4:4, much faster greyscale
+  MFlowFPS: support different bit depth for clip and the vectors (use vectors from 8 bit analysis for a 16 bit clip)
+
 - 2.7.34 (20181108)
   MFlowInter: Use less memory, eliminates ten full-frame internal buffers
 

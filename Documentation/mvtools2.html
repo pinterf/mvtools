@@ -12,11 +12,14 @@
     <h2>Abstract</h2>
     <table class="n">
         <tr><td class="n"><b>Authors:      </b></td><td class="n">&nbsp;</td><td class="n">Manao, Tsp, TSchniede, SEt, Fizick (Alexander Balakhnin), Vit, Firesledge, pinterf</td></tr>
-        <tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.34</td></tr>
+        <tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.35</td></tr>
         <tr><td class="n"><b>Base versions:</b></td><td class="n">&nbsp;</td><td class="n">2.6.0.5 + 2.5.11.22</td></tr>
         <tr><td class="n"><b>Base download:</b></td><td class="n">&nbsp;</td><td class="n">Contained in the Dither package, <a href="http://ldesoras.free.fr/prod.html#src_ditheravsi">http://ldesoras.free.fr/prod.html</a></td></tr>
         <tr><td class="n"><b>Category:     </b></td><td class="n">&nbsp;</td><td class="n">Misc Plugins</td></tr>
-        <tr><td class="n"><b>Requirements: </b></td><td class="n">&nbsp;</td><td class="n">YV12, YV16, YV24 or YUY2 Color format, YUV420P10-16, YUV422P10-16, YUV444P10-16, 32bit float for MSuper and MDegrains</td></tr>
+        <tr><td class="n"><b>Requirements: </b></td><td class="n">&nbsp;</td><td class="n">YV12, YV16, YV24 or YUY2 Color format, YUV420P10-16, YUV422P10-16, YUV444P10-16</td></tr>
+        <tr><td class="n"><b>              </b></td><td class="n">&nbsp;</td><td class="n">Float support for MSuper and MDegrains</td></tr>
+        <tr><td class="n"><b>              </b></td><td class="n">&nbsp;</td><td class="n">Greyscale support for MSuper, MFlowFPS and other selected filters</td></tr>
+        <tr><td class="n"><b>              </b></td><td class="n">&nbsp;</td><td class="n">Planar RGB support for MSuper and MFlowFPS</td></tr>
         <tr><td class="n"><b>License:      </b></td><td class="n">&nbsp;</td><td class="n">GPL</td></tr>
     </table>
 
@@ -268,18 +271,22 @@
 	bool planar,
 	bool mt (true)
 )</pre>
-    <p>
-        Get source clip and prepare special "super" clip with multilevel
-        (hierarchical scaled) frames data.
-        The super clip is used by both <code>MAnalyse</code> and motion compensation
-        (client) functions.
-        For storing and transferring its parameters we use audio properties of super
-        clip (specifically, <code>num_audio_samples</code>) as a trick.
-        So, audio is killed in super clip.
-        That is one of reasons why we additionally use source clip with client
-        functions.
-        You may have a look to super clip yourself (it has normal format).
-    </p>
+<p>
+    Get source clip and prepare special "super" clip with multilevel
+    (hierarchical scaled) frames data.
+    The super clip is used by both <code>MAnalyse</code> and motion compensation
+    (client) functions.
+    For storing and transferring its parameters we use audio properties of super
+    clip (specifically, <code>num_audio_samples</code>) as a trick.
+    So, audio is killed in super clip.
+    That is one of reasons why we additionally use source clip with client
+    functions.
+    You may have a look to super clip yourself (it has normal format).
+    Supported formats: greyscale, YUV and planar RGB 8-32 bits, YUY2
+    You can use different Super clip for generationg vectors with MAnalyze and a different
+    super clip format for the actual action. Thus MFlowFPS can support native RGB (planar), 
+    and MDegrain can work with 32 bit float input clips.
+</p>
     <p class="var">hpad</p>
     <p>
         It is horizontal padding added to source frame (both left and right).
@@ -2131,7 +2138,17 @@ Planar2Interleaved() # convert back to normal interleave YUY2
     </ul>
 
     <h2><a name="revisions"></a>VI) Revisions</h2>
-    
+    <p>2.7.35 (20181113)</p>
+    <ul>
+        <li>MFlowXXX: Slight speed gain by putting the out-of-frame vector check to resizer</li>
+        <li>MAnalyze: Fix a possible internal overflow on larger blocksizes with small overlap e.g. BlkSize=32, OverlapX=0, OverlapY=4.</li>
+        <li>MSuper: Planar RGB support</li>
+        <li>MFlowFPS: Planar RGB support: generate vectors in YUV, use RGB input and super clip</li>
+        <li>MFlowFPS: less memory for 4:4:4 and greyscale</li>
+        <li>MFlowFPS: a bit faster 4:4:4, much faster greyscale</li>
+        <li>MFlowFPS: support different bit depth for clip and the vectors (use vectors from 8 bit analysis for a 16 bit clip)</li>
+    </ul>
+
     <p>2.7.34 (20181108)</p>
     <ul>
         <li>MFlowInter: Use less memory, eliminates ten full-frame internal buffers</li>
