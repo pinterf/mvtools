@@ -102,6 +102,12 @@ MVFlowFps::MVFlowFps(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, unsign
   int nSuperLevels = params.nLevels;
   int nSuperWidth = super->GetVideoInfo().width; // really super
   int nSuperHeight = super->GetVideoInfo().height;
+  int super_pixelsize = super->GetVideoInfo().ComponentSize();
+  int vectors_pixelsize = pixelsize;
+  int input_pixelsize = child->GetVideoInfo().ComponentSize();
+
+  if (super_pixelsize != input_pixelsize)
+    env->ThrowError("MFlowFps: input and super clip bit depth is different");
 
   if (nHeight != nHeightS
     || nWidth != nSuperWidth - nSuperHPad * 2
@@ -374,6 +380,7 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
   PVideoFrame ref = finest->GetFrame(nright, env);//  right frame for  compensation
 
   dst = env->NewVideoFrame(vi);
+  const int target_pixelsize = vi.ComponentSize(); // input and super clip. Vectors can be different.
 
   bool isUsableB = mvClipB.IsUsable();
   bool isUsableF = mvClipF.IsUsable();
@@ -443,8 +450,8 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
 
     PROFILE_STOP(MOTION_PROFILE_YUY2CONVERT);
 
-    int nOffsetY = nRefPitches[0] * nVPadding*nPel + nHPadding*nPel*pixelsize;
-    int nOffsetUV = nRefPitches[1] * nVPaddingUV*nPel + nHPaddingUV*nPel*pixelsize;
+    int nOffsetY = nRefPitches[0] * nVPadding*nPel + nHPadding*nPel*target_pixelsize;
+    int nOffsetUV = nRefPitches[1] * nVPaddingUV*nPel + nHPaddingUV*nPel*target_pixelsize;
 
     if (nright != nrightLast)
     {
@@ -584,7 +591,7 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
 
       PROFILE_START(MOTION_PROFILE_FLOWINTER);
       {
-        if (pixelsize == 1) {
+        if (target_pixelsize == 1) {
           FlowInterExtra<uint8_t>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, pSrc[0] + nOffsetY, nRefPitches[0],
             VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
             nWidth, nHeight, time256, nPel, VXFullYBB, VXFullYFF, VYFullYBB, VYFullYFF);
@@ -642,7 +649,7 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
     {
       PROFILE_START(MOTION_PROFILE_FLOWINTER);
       {
-        if (pixelsize == 1) {
+        if (target_pixelsize == 1) {
           FlowInter<uint8_t>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, pSrc[0] + nOffsetY, nRefPitches[0],
             VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
             nWidth, nHeight, time256, nPel);
@@ -665,7 +672,7 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
             }
           }
         }
-        else { // pixelsize==2
+        else { // target_pixelsize==2
           FlowInter<uint16_t>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, pSrc[0] + nOffsetY, nRefPitches[0],
             VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
             nWidth, nHeight, time256, nPel);
@@ -701,7 +708,7 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
 
       PROFILE_START(MOTION_PROFILE_FLOWINTER);
       {
-        if (pixelsize == 1) {
+        if (target_pixelsize == 1) {
           FlowInterSimple<uint8_t>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, pSrc[0] + nOffsetY, nRefPitches[0],
             VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
             nWidth, nHeight, time256, nPel);
@@ -724,7 +731,7 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
             }
           }
         }
-        else { // pixelsize==2
+        else { // target_pixelsize==2
           FlowInterSimple<uint16_t>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, pSrc[0] + nOffsetY, nRefPitches[0],
             VXFullYB, VXFullYF, VYFullYB, VYFullYF, MaskFullYB, MaskFullYF, VPitchY,
             nWidth, nHeight, time256, nPel);
@@ -860,7 +867,7 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
           nDstPitches[p] = dst->GetPitch(plane);
         }
         // blend with time weight
-        if (pixelsize == 1) {
+        if (target_pixelsize == 1) {
           Blend<uint8_t>(pDst[0], pSrc[0], pRef[0], nHeight, nWidth, nDstPitches[0], nSrcPitches[0], nRefPitches[0], time256, cpuFlags);
           if (!isGrey) {
             if (needDistinctChroma) {
