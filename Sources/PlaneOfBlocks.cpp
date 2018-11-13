@@ -748,7 +748,7 @@ void PlaneOfBlocks::FetchPredictors(WorkingArea &workarea)
   //          other level:   128000                         19200   2 457 600 000 (int32 overflow!)
   // 48x48    1000*(48*48)/64=36000 1200   1200*48x48/64<<0=43200   1 555 200 000 still OK
   // 64x64    1000*(64*64)/64=64000 1200   1200*64x64/64<<0=76800   4 915 200 000 (int32 overflow!)
-  safe_sad_t divisor = (safe_sad_t)LSAD + (workarea.predictor.sad >> 1); // 20181112: this is zero! predictor = -87647 and LSAD is 43823
+  safe_sad_t divisor = (safe_sad_t)LSAD + (workarea.predictor.sad >> 1);
   workarea.nLambda = (int)(workarea.nLambda
                      *(safe_sad_t)LSAD
                      / divisor

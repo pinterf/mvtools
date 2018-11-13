@@ -584,7 +584,7 @@ static void MakeVectorsSafe_c(short *dstp, int row_size, int height, int dst_pit
     const int width = row_size;
     for (int h = 0; h < height; h++)
     {
-      // todo: what about the vectors in a future 8K era?! with nPel=2 (<<2) they may not be safe anymore
+      // todo: what about the vectors in a future 8K era?! with nPel=4 (<<2) they may not be safe anymore
       short maxRelX = ((width - 0) << nPelLog2) - 1;
       short minRelX = 0;
       short diff = 1 << nPelLog2;
