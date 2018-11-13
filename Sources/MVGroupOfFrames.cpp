@@ -116,8 +116,10 @@ void MVGroupOfFrames::Reduce(MVPlaneSet _nMode)
    for (int i = 0; i < nLevelCount - 1; i++ )
    {
       pFrames[i]->ReduceTo(pFrames[i+1], _nMode);
-      pFrames[i+1]->Pad(YUVPLANES);
-		// LDS: why padding all the planes when ReduceTo only applies to _nMode?
+      //pFrames[i+1]->Pad(YUVPLANES);
+      // LDS: why padding all the planes when ReduceTo only applies to _nMode?
+      pFrames[i+1]->Pad(_nMode);
+      // PF: good question, now that we support Y-only, let's modified it 20181113
    }
 }
 
