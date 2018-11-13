@@ -29,52 +29,52 @@
 /*! \brief Filter which shows the motion mask
  */
 class MVMask
-:	public GenericVideoFilter
-,	public MVFilter {
+  : public GenericVideoFilter
+  , public MVFilter {
 private:
-	MVClip mvClip;
+  MVClip mvClip;
 
-	double fHalfGamma;
-	double fGamma;
-	double fMaskNormFactor;
-	double fMaskNormFactor2;
+  double fHalfGamma;
+  double fGamma;
+  double fMaskNormFactor;
+  double fMaskNormFactor2;
   double fSADMaskNormFactor; // 2.7.17.22
-//	bool showsad;
-	int kind; // new param instead of showsad - Fizick
+// bool showsad;
+  int kind; // new param instead of showsad - Fizick
   int time256;
   unsigned char nSceneChangeValue;
   uint16_t nSceneChangeValue16;
 
-//	unsigned char *LUTBilinear;
-	unsigned char *smallMask;
-	unsigned char *smallMaskV;
-	unsigned char **destinations;
+  // unsigned char *LUTBilinear;
+  unsigned char *smallMask;
+  unsigned char *smallMaskV;
+  unsigned char **destinations;
 
-//	Upsizer *upsizer; // old slow bugged resizer replaced by fast SimpleResize (Fizick)
-   SimpleResize *upsizer;
-   SimpleResize *upsizerUV;
+  // Upsizer *upsizer; // old slow bugged resizer replaced by fast SimpleResize (Fizick)
+  SimpleResize *upsizer;
+  SimpleResize *upsizerUV;
 
-   int nWidthB;
-   int nHeightB;
-    int nWidthBUV;
-   int nHeightBUV;
+  int nWidthB;
+  int nHeightB;
+  int nWidthBUV;
+  int nHeightBUV;
 
-    int nWidthUV;
-   int nHeightUV;
+  int nWidthUV;
+  int nHeightUV;
 
-//	bool isInitialized;
+  // bool isInitialized;
 
-//	void ComputeLUTBilinear();
-	unsigned char Length(VECTOR v, unsigned char pel);
-//	unsigned char SAD(unsigned int); PF uncomm
-//	void EnlargeMaskBilinear(unsigned char *derp, const int pitch);
-//	void Reorganize(unsigned char *d, int dp);
+  // void ComputeLUTBilinear();
+  unsigned char Length(VECTOR v, unsigned char pel);
+  // unsigned char SAD(unsigned int); PF uncomm
+  // void EnlargeMaskBilinear(unsigned char *derp, const int pitch);
+  // void Reorganize(unsigned char *d, int dp);
 
-	YUY2Planes * DstPlanes;
-	YUY2Planes * SrcPlanes;
-	//bool isse;
+  YUY2Planes * DstPlanes;
+  YUY2Planes * SrcPlanes;
+  //bool isse;
   int cpuFlags;
-	bool planar;
+  bool planar;
 
   bool chroma;
   int maskclip_bits_per_pixel;
@@ -83,10 +83,10 @@ private:
   int maskclip_nHeight;
 
 public:
-	MVMask(::PClip _child, ::PClip mvs, double _maxlength, double _gamma, int _kind, double _time100,
-		int _scvalue, sad_t nSCD1, int nSCD2, bool isse, bool _planar, ::IScriptEnvironment* env);
-	~MVMask();
-	::PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
+  MVMask(::PClip _child, ::PClip mvs, double _maxlength, double _gamma, int _kind, double _time100,
+    int _scvalue, sad_t nSCD1, int nSCD2, bool isse, bool _planar, ::IScriptEnvironment* env);
+  ~MVMask();
+  ::PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
 
   int __stdcall SetCacheHints(int cachehints, int frame_range) override {
     return cachehints == CACHE_GET_MTMODE ? MT_MULTI_INSTANCE : 0;
