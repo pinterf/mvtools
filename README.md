@@ -11,6 +11,11 @@ Credits:
 
 Change log
 
+- 2.7.36 (201811??)
+  Fix: MCompensate: new parameter checking: when overlaps is used, 
+       (Width-OverlapX)/(nBlkSizeX-OverlapX) must be > 2 (and the same applies for Y)
+       E.g. Height=68, BlkSizeY=32, OverlapY=4 -> number of Y blocks is 2 -> division by zero w/o parameter validation
+
 - 2.7.35 (20181113)
   MFlowXXX: Slight speed gain by putting the out-of-frame vector check to resizer
   Fix: MAnalyze: Fix a possible internal overflow on larger blocksizes with small overlap e.g. BlkSize=32, OverlapX=0, OverlapY=4

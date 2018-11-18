@@ -107,6 +107,14 @@ MVCompensate::MVCompensate(
     env_ptr->ThrowError("MCompensate: fields option is for fieldbased video and pel > 1");
   }
 
+  // v2.7.36 anti div by zero in overlaps calculation
+  if ((nOverlapX > 0 || nOverlapY > 0) && (nBlkX <= 2 || nBlkY <= 2)) {
+    if(nBlkX <= 2)
+      env_ptr->ThrowError("MCompensate: number of X blocks [%d = (Width-OverlapX)/(nBlkSizeX-OverlapX)] should be > 2! W=%d BlkSizeX=%d,OverlapX=%d", nBlkX, nWidth, nBlkSizeX, nOverlapX);
+    else // if (nBlkY <= 2)
+      env_ptr->ThrowError("MCompensate: number of Y blocks [%d = (Height-OverlapY)/(nBlkSizeY-OverlapY)] should be > 2! H=%d BlkSizeY=%d,OverlapY=%d", nBlkY, nHeight, nBlkSizeY, nOverlapY);
+  }
+
   // Normalize to block SAD
   for (int k = 0; k < int(_mv_clip_arr.size()); ++k)
   {
