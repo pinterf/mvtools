@@ -12,7 +12,7 @@
     <h2>Abstract</h2>
     <table class="n">
         <tr><td class="n"><b>Authors:      </b></td><td class="n">&nbsp;</td><td class="n">Manao, Tsp, TSchniede, SEt, Fizick (Alexander Balakhnin), Vit, Firesledge, pinterf</td></tr>
-        <tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.35</td></tr>
+        <tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.36</td></tr>
         <tr><td class="n"><b>Base versions:</b></td><td class="n">&nbsp;</td><td class="n">2.6.0.5 + 2.5.11.22</td></tr>
         <tr><td class="n"><b>Base download:</b></td><td class="n">&nbsp;</td><td class="n">Contained in the Dither package, <a href="http://ldesoras.free.fr/prod.html#src_ditheravsi">http://ldesoras.free.fr/prod.html</a></td></tr>
         <tr><td class="n"><b>Category:     </b></td><td class="n">&nbsp;</td><td class="n">Misc Plugins</td></tr>
@@ -271,22 +271,22 @@
 	bool planar,
 	bool mt (true)
 )</pre>
-<p>
-    Get source clip and prepare special "super" clip with multilevel
-    (hierarchical scaled) frames data.
-    The super clip is used by both <code>MAnalyse</code> and motion compensation
-    (client) functions.
-    For storing and transferring its parameters we use audio properties of super
-    clip (specifically, <code>num_audio_samples</code>) as a trick.
-    So, audio is killed in super clip.
-    That is one of reasons why we additionally use source clip with client
-    functions.
-    You may have a look to super clip yourself (it has normal format).
-    Supported formats: greyscale, YUV and planar RGB 8-32 bits, YUY2
-    You can use different Super clip for generationg vectors with MAnalyze and a different
-    super clip format for the actual action. Thus MFlowFPS can support native RGB (planar), 
-    and MDegrain can work with 32 bit float input clips.
-</p>
+    <p>
+        Get source clip and prepare special "super" clip with multilevel
+        (hierarchical scaled) frames data.
+        The super clip is used by both <code>MAnalyse</code> and motion compensation
+        (client) functions.
+        For storing and transferring its parameters we use audio properties of super
+        clip (specifically, <code>num_audio_samples</code>) as a trick.
+        So, audio is killed in super clip.
+        That is one of reasons why we additionally use source clip with client
+        functions.
+        You may have a look to super clip yourself (it has normal format).
+        Supported formats: greyscale, YUV and planar RGB 8-32 bits, YUY2
+        You can use different Super clip for generationg vectors with MAnalyze and a different
+        super clip format for the actual action. Thus MFlowFPS can support native RGB (planar),
+        and MDegrain can work with 32 bit float input clips.
+    </p>
     <p class="var">hpad</p>
     <p>
         It is horizontal padding added to source frame (both left and right).
@@ -467,24 +467,24 @@
         Size of a block (horizontal).
         Larger blocks are less sensitive to noise, are faster, but also less
         accurate.<br />
-            List of available block sizes (blksize x blksizeV)<br />
-            64x64, 64x48, 64x32, 64x16<br />
-            48x64, 48x48, 48x24, 48x12<br />
-            32x64, 32x32, 32x24, 32x16, 32x8<br />
-            24x48, 24x24, 24x32, 24x12, 24x6<br />
-            16x64, 16x32, 16x16, 16x12, 16x8, 16x4, 16x2<br />
-            12x48, 12x24, 12x16, 12x12, 12x6, 12x3<br />
-            8x32, 8x16, 8x8, 8x4, 8x2, 8x1<br />
-            6x24, 6x12, 6x6, 6x3<br />
-            4x8, 4x4, 4x2<br />
-            3x6, 3x3<br />
-            2x4, 2x2<br />
+        List of available block sizes (blksize x blksizeV)<br />
+        64x64, 64x48, 64x32, 64x16<br />
+        48x64, 48x48, 48x24, 48x12<br />
+        32x64, 32x32, 32x24, 32x16, 32x8<br />
+        24x48, 24x24, 24x32, 24x12, 24x6<br />
+        16x64, 16x32, 16x16, 16x12, 16x8, 16x4, 16x2<br />
+        12x48, 12x24, 12x16, 12x12, 12x6, 12x3<br />
+        8x32, 8x16, 8x8, 8x4, 8x2, 8x1<br />
+        6x24, 6x12, 6x6, 6x3<br />
+        4x8, 4x4, 4x2<br />
+        3x6, 3x3<br />
+        2x4, 2x2<br />
         Note: some smaller block sizes can only be available in 4:4:4 formats, due to block size division (chroma subsampling)
     </p>
     <p class="var">blksizeV</p>
     <p>
         Vertical size of a block.
-        Default is equal to horizontal size.       
+        Default is equal to horizontal size.
     </p>
     <p class="var">levels</p>
     <p>
@@ -574,7 +574,7 @@
         <code>MFlow</code>, <code>MFlowInter</code>, <code>MFlowFps</code>,
         <code>MShow</code>, <code>MMask</code>, <code>MCompensate</code> and all the
         <code>MDeGrain*</code>.
-<pre>
+<pre class="proto">
                                                                                                 
                             <----oh--->      <---oh---->       <---oh--->                               
                                                                                                         
@@ -2199,6 +2199,16 @@ Planar2Interleaved() # convert back to normal interleave YUY2
     </ul>
 
     <h2><a name="revisions"></a>VI) Revisions</h2>
+    <p>2.7.36 (20181120)</p>
+    <ul>
+        <li>Fix: Allow overlap operation when there are only two blocks in either horizontal or vertical direction (was: division by 0 crash)</li>
+        <li>
+            Fix: Fallback to overlap=0 mode when block count is only 1 in either h or v direction (was: undefined behaviour)<br />
+            The cases above occured for small frame sizes, when frame size and overlap values resulted in less than 3 blocks in a direction.
+        </li>
+        <li>Misc: update html docs with overlap drawing and others.</li>
+    </ul>
+
     <p>2.7.35 (20181113)</p>
     <ul>
         <li>MFlowXXX: Slight speed gain by putting the out-of-frame vector check to resizer</li>

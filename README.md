@@ -11,10 +11,11 @@ Credits:
 
 Change log
 
-- 2.7.36 (201811??)
-  Fix: MCompensate: new parameter checking: when overlaps is used, 
-       (Width-OverlapX)/(nBlkSizeX-OverlapX) must be > 2 (and the same applies for Y)
-       E.g. Height=68, BlkSizeY=32, OverlapY=4 -> number of Y blocks is 2 -> division by zero w/o parameter validation
+- 2.7.36 (20181120)
+  Fix: Allow overlap operation when there are only two blocks in either horizontal or vertical direction (was: division by 0 crash)
+  Fix: Fallback to overlap=0 mode when block count is only 1 in either h or v direction (was: undefined behaviour)
+       The cases above occured for small frame sizes, when frame size and overlap values resulted in less than 3 blocks in a direction.
+  Misc: update html docs with overlap drawing and others.
 
 - 2.7.35 (20181113)
   MFlowXXX: Slight speed gain by putting the out-of-frame vector check to resizer
