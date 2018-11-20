@@ -465,16 +465,26 @@
     <p class="var">blksize</p>
     <p>
         Size of a block (horizontal).
-        It's either 4, 8 or 16.
         Larger blocks are less sensitive to noise, are faster, but also less
-        accurate.
+        accurate.<br />
+            List of available block sizes (blksize x blksizeV)<br />
+            64x64, 64x48, 64x32, 64x16<br />
+            48x64, 48x48, 48x24, 48x12<br />
+            32x64, 32x32, 32x24, 32x16, 32x8<br />
+            24x48, 24x24, 24x32, 24x12, 24x6<br />
+            16x64, 16x32, 16x16, 16x12, 16x8, 16x4, 16x2<br />
+            12x48, 12x24, 12x16, 12x12, 12x6, 12x3<br />
+            8x32, 8x16, 8x8, 8x4, 8x2, 8x1<br />
+            6x24, 6x12, 6x6, 6x3<br />
+            4x8, 4x4, 4x2<br />
+            3x6, 3x3<br />
+            2x4, 2x2<br />
+        Note: some smaller block sizes can only be available in 4:4:4 formats, due to block size division (chroma subsampling)
     </p>
     <p class="var">blksizeV</p>
     <p>
         Vertical size of a block.
-        Default is equal to horizontal size.
-        Additional options: 4 for <var>blksize&nbsp;= 8</var> and 8 or 2 for
-        <var>blksize&nbsp;= 16</var>.
+        Default is equal to horizontal size.       
     </p>
     <p class="var">levels</p>
     <p>
@@ -564,6 +574,57 @@
         <code>MFlow</code>, <code>MFlowInter</code>, <code>MFlowFps</code>,
         <code>MShow</code>, <code>MMask</code>, <code>MCompensate</code> and all the
         <code>MDeGrain*</code>.
+<pre>
+                                                                                                
+                            <----oh--->      <---oh---->       <---oh--->                               
+                                                                                                        
+                            <------------bh------------>       <------------bh------------>             
+           <------------bh------------>      <------------bh------------>                               
+                                                                                                        
+       ^   +--------------------------+      +--------------------------+                               
+       |   |                +---------|----------------+       +--------------------------+             
+       |   |                |         |      |         |       |        |                 |             
+       |   |                |         |      |         |       |        |                 |             
+       |   |                |         |      |         |       |        |                 |             
+       |   |                |         |      |         |       |        |                 |             
+       bv  |                |         |      |         |       |        |                 |             
+       |   |                |         |      |         |       |        |                 |             
+ ^  ^  |   |+--------------------------+     |+--------------------------+                |             
+ |  |  |   ||               |+---------|----------------+      |+--------------------------+            
+ ov |  |   ||               ||        ||     ||        ||      ||       ||                ||            
+ |  |  |   ||               ||        ||     ||        ||      ||       ||                ||            
+ |  |  |   ||               ||        ||     ||        ||      ||       ||                ||            
+ v  |  v   +|----------------|--------+|     +|--------||------||-------+|                ||            
+    |       |               +|---------|------|--------+|      +|--------|----------------+|            
+    bv      |                |         |      |         |       |        |                 |            
+ ^  |      +--------------------------+|     +--------------------------+|                 |            
+ |  |  ^   ||               +---------|----------------+|      +--------------------------+|            
+ ov |  |   ||               ||        ||     ||        ||      ||       ||                ||            
+ |  |  |   ||               ||        ||     ||        ||      ||       ||                ||            
+ |  |  |   ||               ||        ||     ||        ||      ||       ||                ||            
+ v  v  |   |+---------------|---------|+     |+--------||------||-------|+                ||            
+       |   |                |+--------|------|---------|+      |+-------|-----------------|+            
+       |   |                |         |      |         |       |        |                 |             
+ ^  ^  bv  |+--------------------------+     |+--------------------------+                |             
+ |  |  |   ||               |+---------|----------------+      |+--------------------------+            
+ ov |  |   ||               ||        ||     ||        ||      ||       ||                ||            
+ |  |  |   ||               ||        ||     ||        ||      ||       ||                ||            
+ |  |  |   ||               ||        ||     ||        ||      ||       ||                ||            
+ v  |  |   +|----------------|--------+|     +|--------||------||-------+|                ||            
+    bv v    |               +|---------|------|--------+|      +|--------|----------------+|            
+    |       |                |         |      |         |       |        |                 |            
+    |       |                |         |      |         |       |        |                 |            
+    |       |                |         |      |         |       |        |                 |            
+    |       |                |         |      |         |       |        |                 |            
+    |       |                |         |      |         |       |        |                 |            
+    |       |                |         |      |         |       |        |                 |            
+    v       +--------------------------+      +---------|-------|--------+                 |            
+                             +--------------------------+       +--------------------------+            
+                                                                                                        
+                  bh=blocksize horizontal    bv=blocksize vertical                                                     
+                  oh=overlap horizntal       ov=overlap vertical                                                  
+</pre>
+
     </p>
     <p class="var">overlapv</p>
     <p>
@@ -1224,7 +1285,7 @@
     </p>
     <p class="var">blend</p>
     <p>
-        Blend frames at scane change like <code>ConvertFps</code> if true, or
+        Blend frames at scene change like <code>ConvertFps</code> if true, or
         repeat last frame like <code>ChangeFps</code> if false.
     </p>
     <p class="var">tclip</p>
@@ -1305,7 +1366,7 @@
     </p>
     <p class="var">blend</var></p>
     <p>
-        Blend frames at scane change like <code>ConvertFps</code> if true, or
+        Blend frames at scene change like <code>ConvertFps</code> if true, or
         repeat last frame like <code>ChangeFps</code> if false.
     </p>
 
@@ -1378,7 +1439,7 @@
     </p>
     <p class="var">blend</var></p>
     <p>
-        Blend frames at scane change like <code>ConvertFps</code> if true, or
+        Blend frames at scene change like <code>ConvertFps</code> if true, or
         repeat last frame like <code>ChangeFps</code> if false.
     </p>
 
