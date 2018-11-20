@@ -931,12 +931,20 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
 
       for (int by = 0; by < nBlkY; by++)
       {
-        int wby = ((by + nBlkY - 3) / (nBlkY - 2)) * 3;
+        // indexing overlap windows weighting table: top=0 middle=3 bottom=6
+        /*
+        0 = Top Left    1 = Top Middle    2 = Top Right
+        3 = Middle Left 4 = Middle Middle 5 = Middle Right
+        6 = Bottom Left 7 = Bottom Middle 8 = Bottom Right
+        */
+
+        int wby = (by == 0) ? 0 * 3 : (by == nBlkY - 1) ? 2 * 3 : 1 * 3; // 0 for very first, 2*3 for very last, 1*3 for all others in the middle
         int xx = 0; // logical offset. Mul by 2 for pixelsize_super==2. Don't mul for indexing int* array
-        for (int bx = 0; bx < nBlkX; bx++)
+        for (int bx = 0; bx < nBlkX; ++bx)
         {
           // select window
-          int wbx = (bx + nBlkX - 3) / (nBlkX - 2);
+          // indexing overlap windows weighting table: left=+0 middle=+1 rightmost=+2
+          int wbx = (bx == 0) ? 0 : (bx == nBlkX - 1) ? 2 : 1; // 0 for very first, 2 for very last, 1 for all others in the middle
           short *winOver = OverWins->GetWindow(wby + wbx);
 
           int i = by*nBlkX + bx;
@@ -1221,12 +1229,20 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
 
       for (int by = 0; by < nBlkY; by++)
       {
-        int wby = ((by + nBlkY - 3) / (nBlkY - 2)) * 3;
+        // indexing overlap windows weighting table: top=0 middle=3 bottom=6
+        /*
+        0 = Top Left    1 = Top Middle    2 = Top Right
+        3 = Middle Left 4 = Middle Middle 5 = Middle Right
+        6 = Bottom Left 7 = Bottom Middle 8 = Bottom Right
+        */
+
+        int wby = (by == 0) ? 0 * 3 : (by == nBlkY - 1) ? 2 * 3 : 1 * 3; // 0 for very first, 2*3 for very last, 1*3 for all others in the middle
         int xx = 0; // logical offset. Mul by 2 for pixelsize_super==2. Don't mul for indexing int* array
-        for (int bx = 0; bx < nBlkX; bx++)
+        for (int bx = 0; bx < nBlkX; ++bx)
         {
           // select window
-          int wbx = (bx + nBlkX - 3) / (nBlkX - 2);
+          // indexing overlap windows weighting table: left=+0 middle=+1 rightmost=+2
+          int wbx = (bx == 0) ? 0 : (bx == nBlkX - 1) ? 2 : 1; // 0 for very first, 2 for very last, 1 for all others in the middle
           short *winOverUV = OverWinsUV->GetWindow(wby + wbx);
 
           int i = by*nBlkX + bx;

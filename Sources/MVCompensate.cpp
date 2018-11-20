@@ -107,14 +107,6 @@ MVCompensate::MVCompensate(
     env_ptr->ThrowError("MCompensate: fields option is for fieldbased video and pel > 1");
   }
 
-  // v2.7.36 anti div by zero in overlaps calculation
-  if ((nOverlapX > 0 || nOverlapY > 0) && (nBlkX <= 2 || nBlkY <= 2)) {
-    if(nBlkX <= 2)
-      env_ptr->ThrowError("MCompensate: number of X blocks [%d = (Width-OverlapX)/(nBlkSizeX-OverlapX)] should be > 2! W=%d BlkSizeX=%d,OverlapX=%d", nBlkX, nWidth, nBlkSizeX, nOverlapX);
-    else // if (nBlkY <= 2)
-      env_ptr->ThrowError("MCompensate: number of Y blocks [%d = (Height-OverlapY)/(nBlkSizeY-OverlapY)] should be > 2! H=%d BlkSizeY=%d,OverlapY=%d", nBlkY, nHeight, nBlkSizeY, nOverlapY);
-  }
-
   // Normalize to block SAD
   for (int k = 0; k < int(_mv_clip_arr.size()); ++k)
   {
@@ -765,20 +757,22 @@ void	MVCompensate::compensate_slice_overlap(int y_beg, int y_end)
   pSrcCur[1] = pSrc[1] + y_beg * rowsize_c * nSrcPitches[1];
   pSrcCur[2] = pSrc[2] + y_beg * rowsize_c * nSrcPitches[2];
 
-  /*
-  0 = Top Left    1 = Top Middle    2 = Top Right
-  3 = Middle Left 4 = Middle Middle 5 = Middle Right
-  6 = Bottom Left 7 = Bottom Middle 8 = Bottom Right
-  */
-
   for (int by = y_beg; by < y_end; ++by)
   {
-    int wby = ((by + nBlkY - 3) / (nBlkY - 2)) * 3; // indexing overlap windows weighting table: top=0 middle=3 bottom=6
+    // indexing overlap windows weighting table: top=0 middle=3 bottom=6
+    /*
+    0 = Top Left    1 = Top Middle    2 = Top Right
+    3 = Middle Left 4 = Middle Middle 5 = Middle Right
+    6 = Bottom Left 7 = Bottom Middle 8 = Bottom Right
+    */
+
+    int wby = (by == 0) ? 0 * 3 : (by == nBlkY - 1) ? 2 * 3 : 1 * 3; // 0 for very first, 2*3 for very last, 1*3 for all others in the middle
     int xx = 0; // xx is pixelsize-aware
     for (int bx = 0; bx < nBlkX; ++bx)
     {
       // select window
-      int            wbx = (bx + nBlkX - 3) / (nBlkX - 2); // indexing overlap windows weighting table: left=+0 middle=+1 rightmost=+2
+      // indexing overlap windows weighting table: left=+0 middle=+1 rightmost=+2
+      int wbx = (bx == 0) ? 0 : (bx == nBlkX - 1) ? 2 : 1; // 0 for very first, 2 for very last, 1 for all others in the middle
       short *        winOver = OverWins->GetWindow(wby + wbx);
       short *        winOverUV = OverWinsUV->GetWindow(wby + wbx);
 
