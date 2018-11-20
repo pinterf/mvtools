@@ -259,10 +259,18 @@ MVAnalyse::MVAnalyse(
   analysisData.nOverlapX = _overlapx;
   analysisData.nOverlapY = _overlapy;
 
-  const int		nBlkX = (analysisData.nWidth - analysisData.nOverlapX)
+  int		nBlkX = (analysisData.nWidth - analysisData.nOverlapX)
     / (analysisData.nBlkSizeX - analysisData.nOverlapX);
-  const int		nBlkY = (analysisData.nHeight - analysisData.nOverlapY)
+  int		nBlkY = (analysisData.nHeight - analysisData.nOverlapY)
     / (analysisData.nBlkSizeY - analysisData.nOverlapY);
+
+  // 2.7.36: fallback to no overlap when either nBlk count is less that 2
+  if (nBlkX < 2 || nBlkY < 2) {
+    analysisData.nOverlapX = 0;
+    analysisData.nOverlapY = 0;
+    nBlkX = analysisData.nWidth / analysisData.nBlkSizeX;
+    nBlkY = analysisData.nHeight / analysisData.nBlkSizeY;
+  }
 
   analysisData.nBlkX = nBlkX;
   analysisData.nBlkY = nBlkY;
@@ -304,7 +312,7 @@ MVAnalyse::MVAnalyse(
   analysisData.isBackward = isb;
 
   nLambda = lambda;
-  lsad = _lsad   * (_blksizex * _blksizey) / 64 * (1 << (bits_per_pixel - 8)); // normalized to 8x8 blocksize todo: float
+  lsad = _lsad   * (_blksizex * _blksizey) / 64 * (1 << (bits_per_pixel - 8));
   pnew = _pnew;
   plevel = _plevel;
   global = _global;
