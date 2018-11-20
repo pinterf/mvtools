@@ -765,14 +765,20 @@ void	MVCompensate::compensate_slice_overlap(int y_beg, int y_end)
   pSrcCur[1] = pSrc[1] + y_beg * rowsize_c * nSrcPitches[1];
   pSrcCur[2] = pSrc[2] + y_beg * rowsize_c * nSrcPitches[2];
 
+  /*
+  0 = Top Left    1 = Top Middle    2 = Top Right
+  3 = Middle Left 4 = Middle Middle 5 = Middle Right
+  6 = Bottom Left 7 = Bottom Middle 8 = Bottom Right
+  */
+
   for (int by = y_beg; by < y_end; ++by)
   {
-    int wby = ((by + nBlkY - 3) / (nBlkY - 2)) * 3;
+    int wby = ((by + nBlkY - 3) / (nBlkY - 2)) * 3; // indexing overlap windows weighting table: top=0 middle=3 bottom=6
     int xx = 0; // xx is pixelsize-aware
     for (int bx = 0; bx < nBlkX; ++bx)
     {
       // select window
-      int            wbx = (bx + nBlkX - 3) / (nBlkX - 2);
+      int            wbx = (bx + nBlkX - 3) / (nBlkX - 2); // indexing overlap windows weighting table: left=+0 middle=+1 rightmost=+2
       short *        winOver = OverWins->GetWindow(wby + wbx);
       short *        winOverUV = OverWinsUV->GetWindow(wby + wbx);
 

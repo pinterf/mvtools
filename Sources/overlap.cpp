@@ -37,7 +37,61 @@
 
 
 //--------------------------------------------------------------------
+/*
+                            <----oh--->      <---oh---->       <---oh--->
+
+                            <------------bh------------>       <------------bh------------>
+           <------------bh------------>      <------------bh------------>
+
+       ^   +--------------------------+      +--------------------------+
+       |   |                +---------|----------------+       +--------------------------+
+       |   |                |         |      |         |       |        |                 |
+       |   |                |         |      |         |       |        |                 |
+       |   |                |         |      |         |       |        |                 |
+       |   |                |         |      |         |       |        |                 |
+       bv  |                |         |      |         |       |        |                 |
+       |   |                |         |      |         |       |        |                 |
+ ^  ^  |   |+--------------------------+     |+--------------------------+                |
+ |  |  |   ||               |+---------|----------------+      |+--------------------------+
+ ov |  |   ||               ||        ||     ||        ||      ||       ||                ||
+ |  |  |   ||               ||        ||     ||        ||      ||       ||                ||
+ |  |  |   ||               ||        ||     ||        ||      ||       ||                ||
+ v  |  v   +|----------------|--------+|     +|--------||------||-------+|                ||
+    |       |               +|---------|------|--------+|      +|--------|----------------+|
+    bv      |                |         |      |         |       |        |                 |
+ ^  |      +--------------------------+|     +--------------------------+|                 |
+ |  |  ^   ||               +---------|----------------+|      +--------------------------+|
+ ov |  |   ||               ||        ||     ||        ||      ||       ||                ||
+ |  |  |   ||               ||        ||     ||        ||      ||       ||                ||
+ |  |  |   ||               ||        ||     ||        ||      ||       ||                ||
+ v  v  |   |+---------------|---------|+     |+--------||------||-------|+                ||
+       |   |                |+--------|------|---------|+      |+-------|-----------------|+
+       |   |                |         |      |         |       |        |                 |
+ ^  ^  bv  |+--------------------------+     |+--------------------------+                |
+ |  |  |   ||               |+---------|----------------+      |+--------------------------+
+ ov |  |   ||               ||        ||     ||        ||      ||       ||                ||
+ |  |  |   ||               ||        ||     ||        ||      ||       ||                ||
+ |  |  |   ||               ||        ||     ||        ||      ||       ||                ||
+ v  |  |   +|----------------|--------+|     +|--------||------||-------+|                ||
+    bv v    |               +|---------|------|--------+|      +|--------|----------------+|
+    |       |                |         |      |         |       |        |                 |
+    |       |                |         |      |         |       |        |                 |
+    |       |                |         |      |         |       |        |                 |
+    |       |                |         |      |         |       |        |                 |
+    |       |                |         |      |         |       |        |                 |
+    |       |                |         |      |         |       |        |                 |
+    v       +--------------------------+      +---------|-------|--------+                 |
+                             +--------------------------+       +--------------------------+
+
+                  bh=blocksize horizontal    bv=blocksize vertical
+                  oh=overlap horizntal       ov=overlap vertical
+
+*/
 // Overlap Windows class
+// nx: blocksize horizontal
+// ny: blocksize vertical
+// ox: overlap horizontal
+// oy: overlap vertical
 OverlapWindows::OverlapWindows(int _nx, int _ny, int _ox, int _oy)
 {
 	nx = _nx;
@@ -50,28 +104,40 @@ OverlapWindows::OverlapWindows(int _nx, int _ny, int _ox, int _oy)
 	   fWin1UVx = new float[nx];
 	   fWin1UVxfirst = new float[nx];
 	   fWin1UVxlast = new float[nx];
+     // FFFFFFFF                LLLLLLLL   F=First block, L=Last block
+     //       ========    ========
+     // ========    ========    ========
+     //       AABBBBCC                     A:0..ox-1 ; B:ox..nx-ox-1 ; C:nx-ox..nx-1
+     // For BlkSize=8, Overlap=2           A:0..1  B:2..5  C:6..7
+     
+     // Horizontal part of weights
+     // overlapping left area weights
 	   for (int i=0; i<ox; i++)
 	   {
-			fWin1UVx[i] = float (cos(PI*(i-ox+0.5f)/(ox*2)));
+      fWin1UVx[i] = float (cos(PI*(i-ox+0.5f)/(ox*2)));
 			fWin1UVx[i] = fWin1UVx[i]*fWin1UVx[i];// left window (rised cosine)
-			fWin1UVxfirst[i] = 1; // very first window
-			fWin1UVxlast[i] = fWin1UVx[i]; // very last
+			fWin1UVxfirst[i] = 1; // very first window, leftmost block, no overlap on the left side here
+      fWin1UVxlast[i] = fWin1UVx[i]; // very last, rightmost block, but yes, we still have overlap on the left side
 	   }
-	   for (int i=ox; i<nx-ox; i++)
+     // non-overlapping middle area weights. No overlap: weight=1!
+     for (int i=ox; i<nx-ox; i++)
 	   {
-			fWin1UVx[i] = 1;
+       // overlapping left area weights
+       fWin1UVx[i] = 1;
 			fWin1UVxfirst[i] = 1; // very first window
 			fWin1UVxlast[i] = 1; // very last
 	   }
-	   for (int i=nx-ox; i<nx; i++)
+     // overlapping right area weights
+     for (int i=nx-ox; i<nx; i++)
 	   {
       fWin1UVx[i] = float (cos(PI*(i-nx+ox+0.5f)/(ox*2)));
 			fWin1UVx[i] = fWin1UVx[i]*fWin1UVx[i];// right window (falled cosine)
-			fWin1UVxfirst[i] = fWin1UVx[i]; // very first window
-			fWin1UVxlast[i] = 1; // very last
+			fWin1UVxfirst[i] = fWin1UVx[i]; // very first window, leftmost block, but yes, we still have overlap on the right side
+			fWin1UVxlast[i] = 1; // very last, rightmost block, no overlap on the right side here
 	   }
 
-	   fWin1UVy = new float[ny];
+     // Similar to the horizontal: vertical part of weights
+     fWin1UVy = new float[ny];
 	   fWin1UVyfirst = new float[ny];
 	   fWin1UVylast = new float[ny];
 	   for (int i=0; i<oy; i++)
@@ -108,6 +174,19 @@ OverlapWindows::OverlapWindows(int _nx, int _ny, int _ox, int _oy)
 	   short *winOverUVBM = Overlap9Windows + size*7;
 	   short *winOverUVBR = Overlap9Windows + size*8;
 
+     // Cos^2 based weigthing factors with 11 bits precision. (0-2048)
+     // SourceBlocks overlap sample for Blocksize=4 Overlaps=2:
+     // a1     a1   | a1+b1         a1+b1       | b1      b1    | b1+c1         b1+c1       | c1       c1   
+     // a1     a1   | a1+b1         a1+b1       | b1      b1    | b1+c1         b1+c1       | c1      c1   
+     // ------------+---------------------------+---------------+---------------------------+--------------
+     // a1+a2  a1+a2| a1+a2+b1+b2   a1+a2+b1+b2 | b1+b2   b1+b2 | b1+b2+c1+c2   b1+b2+c1+c2 | c1+c2   c1+c2
+     // a1+a2  a1+a2| a1+a2+b1+b2   a1+a2+b1+b2 | b1+b2   b1+b2 | b1+b2+c1+c2   b1+b2+c1+c2 | c1+c2   c1+c2
+     // ------------+---------------------------+---------------+---------------------------+--------------
+     // a2+a3  a2+a3| a2+a3+b2+b3   a2+a3+b2+b3 | b2+b3   b2+b3 | b2+b3+c2+c3   b2+b3+c2+c3 | c2+c3   c2+c3
+     // a2+a3  a2+a3| a2+a3+b2+b3   a2+a3+b2+b3 | b2+b3   b2+b3 | b2+b3+c2+c3   b2+b3+c2+c3 | c2+c3   c2+c3
+     // ...
+
+     // Combine precomputed horizontal and vertical weights for 3x3 special areas
 	   for (int j=0; j<ny; j++)
 	   {
 		   for (int i=0; i<nx; i++)
