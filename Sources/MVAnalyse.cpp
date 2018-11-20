@@ -81,10 +81,12 @@ MVAnalyse::MVAnalyse(
   }
 
   if (!vi.IsYUV() && !vi.IsYUY2()) // YUY2 is also YUV but let's see what is supported
-//if (! vi.IsYV12 () && ! vi.IsYUY2 ())
   {
     env->ThrowError("MAnalyse: Clip must be YUV or YUY2");
   }
+
+  if (vi.IsY())
+    chroma = false; // silent fallback
 
   // get parameters of super clip - v2.0
   SuperParams64Bits	params;
@@ -123,9 +125,13 @@ MVAnalyse::MVAnalyse(
   analysisData.pixelsize = pixelsize;
   analysisData.bits_per_pixel = bits_per_pixel;
 
+  if (_chromaSADScale < -2 || _chromaSADScale>2)
+    env->ThrowError(
+      "MAnalyze: scaleCSAD must be -2..2"
+    );
+
   analysisData.chromaSADScale = _chromaSADScale;
 
-//	env->ThrowError ("MVAnalyse: %d, %d, %d, %d, %d", nPrepHPad, nPrepVPad, nPrepPel, nPrepModeYUV, nPrepLevels);
   pSrcGOF = new MVGroupOfFrames(
     nSuperLevels, analysisData.nWidth, analysisData.nHeight,
     nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV,
@@ -137,44 +143,10 @@ MVAnalyse::MVAnalyse(
     _isse, analysisData.xRatioUV, analysisData.yRatioUV, pixelsize, bits_per_pixel, mt_flag
   );
 
-  if(analysisData.chromaSADScale<-2 || analysisData.chromaSADScale>2)
-    env->ThrowError(
-      "MAnalyse: chromaSADScale must be -2..2"
-    );
-
   analysisData.nBlkSizeX = _blksizex;
   analysisData.nBlkSizeY = _blksizey;
-#if 0
-  if ((analysisData.nBlkSizeX != 4 || analysisData.nBlkSizeY != 4)
-    && (analysisData.nBlkSizeX != 8 || analysisData.nBlkSizeY != 4)
-    && (analysisData.nBlkSizeX != 8 || analysisData.nBlkSizeY != 8)
-    && (analysisData.nBlkSizeX != 16 || analysisData.nBlkSizeY != 2)
-    && (analysisData.nBlkSizeX != 16 || analysisData.nBlkSizeY != 8)
-    && (analysisData.nBlkSizeX != 16 || analysisData.nBlkSizeY != 16)
-    && (analysisData.nBlkSizeX != 32 || analysisData.nBlkSizeY != 32)
-    && (analysisData.nBlkSizeX != 32 || analysisData.nBlkSizeY != 16))
-  {
-    env->ThrowError(
-      "MAnalyse: Block's size must be "
-      "4x4, 8x4, 8x8, 16x2, 16x8, 16x16, 32x16, 32x32"
-    );
-  }
-#endif
   // same blocksize check in MAnalyze and MRecalculate
   // some blocksizes may not work in 4:2:0 (chroma subsampling division), but o.k. in 4:4:4
-  /*
-  64x64, 64x48, 64x32, 64x16
-  48x64, 48x48, 48x24, 48x12
-  32x64, 32x32, 32x24, 32x16, 32x8
-  24x48, 24x24, 24x32, 24x12, 24x6
-  16x64, 16x32, 16x16, 16x12, 16x8, 16x4, (16x2)
-  12x48, 12x24, 12x16, 12x12, 12x6, 12x3
-  8x32, 8x16, 8x8, 8x4, (8x2, 8x1)
-  6x24, 6x12, 6x6, 6x3(C)
-  4x8, 4x4, 4x2
-  3x6, 3x3 (C)
-  2x4, 2x2
-  */
   const std::vector< std::pair< int, int > > allowed_blksizes =
   {
     { 64, 64 },{ 64,48 },{ 64,32 },{ 64,16 },
@@ -200,6 +172,7 @@ MVAnalyse::MVAnalyse(
     env->ThrowError(
       "MAnalyse: Invalid block size: %d x %d", analysisData.nBlkSizeX, analysisData.nBlkSizeY);
   }
+
   analysisData.nPel = nSuperPel;
   if (analysisData.nPel != 1
     && analysisData.nPel != 2
@@ -220,8 +193,7 @@ MVAnalyse::MVAnalyse(
     env->ThrowError("MAnalyse: overlap must be less or equal than half block size");
   }
 
-   //if (_overlapx % 2 || (_overlapy % 2 > 0 && vi.IsYV12 ())) // was: _overlapx % 2
-  if (_overlapx % analysisData.xRatioUV || _overlapy % analysisData.yRatioUV) // PF subsampling-aware
+  if (_overlapx % analysisData.xRatioUV || _overlapy % analysisData.yRatioUV)
   {
     env->ThrowError("MAnalyse: wrong overlap for the colorspace subsampling");
   }
@@ -233,17 +205,6 @@ MVAnalyse::MVAnalyse(
     );
   }
 
-  if (vi.IsY() && chroma)
-  {
-    chroma = false; // PF 22d silent fallback
-    //env->ThrowError ("MAnalyse: chroma is not allowed for greyscale mode");
-  }
-  /*
- if (   _divide != 0
-    && (   (_overlapx % 4                    )
-        || (_overlapy % 4 > 0 && vi.IsYV12 ())
-        || (_overlapy % 2 > 0 && vi.IsYUY2 ()))) // todo check
-*/
   if (_divide != 0
     && ((_overlapx % (2 * analysisData.xRatioUV)) || (_overlapy % (2 * analysisData.yRatioUV))) // PF subsampling-aware
     )
@@ -312,6 +273,16 @@ MVAnalyse::MVAnalyse(
   analysisData.isBackward = isb;
 
   nLambda = lambda;
+
+  // lambda is finally scaled in PlaneOfBlocks::WorkingArea::MotionDistorsion(int vx, int vy) const
+  // as return (nLambda * dist) >> (16 - bits_per_pixel)
+  // To have it 8x8 normalized, we would use 
+  //   nLambda = lambda * ((_blksizex * _blksizey) / (8 * 8)) << (bits_per_pixel-8);  // normalize to 8x8 block size
+  // and use 
+  //   (nLambda * dist) >> 8  in PlaneOfBlocks::WorkingArea::MotionDistorsion
+  // and change default lambda generation in truemotion=true preset
+  // But doing this would kill compatibility, there are scripts which are using lambda properly scaled by the block size.
+
   lsad = _lsad   * (_blksizex * _blksizey) / 64 * (1 << (bits_per_pixel - 8));
   pnew = _pnew;
   plevel = _plevel;

@@ -35,8 +35,6 @@
 #include <cmath>
 #include <cstdio>
 
-//extern MVCore mvCore;
-
 MVRecalculate::MVRecalculate(
   PClip _super, PClip _vectors, sad_t _thSAD, int _smooth,
   int _blksizex, int _blksizey, int st, int stp, int lambda, bool chroma,
@@ -71,11 +69,15 @@ MVRecalculate::MVRecalculate(
   MVAnalysisData &	analysisData = _srd_arr[0]._analysis_data;
   MVAnalysisData &	analysisDataDivided = _srd_arr[0]._analysis_data_divided;
 
-  // or? todo PF 161025
-  /*
-  pixelsize = analysisData.pixelsize;
-  bits_per_pixel = analysisData.bits_per_pixel;
-  */
+  if (pixelsize == 4)
+  {
+    env->ThrowError("MRecalculate: Clip with float pixel type is not supported");
+  }
+
+  if (!vi.IsYUV() && !vi.IsYUY2()) // YUY2 is also YUV but let's see what is supported
+  {
+    env->ThrowError("MRecalculate: Clip must be YUV or YUY2");
+  }
 
   vi.num_frames *= _nbr_srd;
   vi.MulDivFPS(_nbr_srd, 1);
@@ -84,12 +86,12 @@ MVRecalculate::MVRecalculate(
 
   SuperParams64Bits	params;
   memcpy(&params, &child->GetVideoInfo().num_audio_samples, 8);
-  const int		nHeight = params.nHeight;
-  const int		nSuperHPad = params.nHPad;
-  const int		nSuperVPad = params.nVPad;
-  const int		nSuperPel = params.nPel;
-  const int		nSuperModeYUV = params.nModeYUV;
-  const int		nSuperLevels = params.nLevels;
+  const int nHeight = params.nHeight;
+  const int nSuperHPad = params.nHPad;
+  const int nSuperVPad = params.nVPad;
+  const int nSuperPel = params.nPel;
+  const int nSuperModeYUV = params.nModeYUV;
+  const int nSuperLevels = params.nLevels;
 
   if (vi.IsY())
     chroma = false; // silent fallback
@@ -127,7 +129,7 @@ MVRecalculate::MVRecalculate(
 
   if (_chromaSADScale<-2 || _chromaSADScale>2)
     env->ThrowError(
-      "MVRecalculate: scaleCSAD must be -2..2"
+      "MRecalculate: scaleCSAD must be -2..2"
     );
 
   analysisData.chromaSADScale = _chromaSADScale;
@@ -142,8 +144,8 @@ MVRecalculate::MVRecalculate(
     nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV,
     cpuFlags, analysisData.xRatioUV, analysisData.yRatioUV, analysisData.pixelsize, analysisData.bits_per_pixel, mt_flag
   );
-  const int		nSuperWidth = child->GetVideoInfo().width;
-  const int		nSuperHeight = child->GetVideoInfo().height;
+  const int nSuperWidth = child->GetVideoInfo().width;
+  const int nSuperHeight = child->GetVideoInfo().height;
 
   if (nHeight != analysisData.nHeight
     || nSuperWidth - 2 * nSuperHPad != analysisData.nWidth)
@@ -157,36 +159,21 @@ MVRecalculate::MVRecalculate(
 
   analysisData.nBlkSizeX = _blksizex;
   analysisData.nBlkSizeY = _blksizey;
-  /*
-  if ((analysisData.nBlkSizeX != 4 || analysisData.nBlkSizeY != 4)
-    && (analysisData.nBlkSizeX != 8 || analysisData.nBlkSizeY != 4)
-    && (analysisData.nBlkSizeX != 8 || analysisData.nBlkSizeY != 8)
-    && (analysisData.nBlkSizeX != 16 || analysisData.nBlkSizeY != 2)
-    && (analysisData.nBlkSizeX != 16 || analysisData.nBlkSizeY != 8)
-    && (analysisData.nBlkSizeX != 16 || analysisData.nBlkSizeY != 16)
-    && (analysisData.nBlkSizeX != 32 || analysisData.nBlkSizeY != 32)
-    && (analysisData.nBlkSizeX != 32 || analysisData.nBlkSizeY != 16))
-  {
-    env->ThrowError(
-      "MVRecalculate: Block's size must be "
-      "4x4, 8x4, 8x8, 16x2, 16x8, 16x16, 32x16, 32x32"
-    );
-  }
-  */
   // same blocksize check in MAnalyze and MRecalculate
+  // some blocksizes may not work in 4:2:0 (chroma subsampling division), but o.k. in 4:4:4
   const std::vector< std::pair< int, int > > allowed_blksizes =
   {
-  { 64, 64 },{ 64,48 },{ 64,32 },{ 64,16 },
-  { 48,64 },{ 48,48 }, { 48,24 }, { 48,12 },
-  { 32,64 },{ 32,32 },{ 32,24 },{ 32,16 },{ 32,8 },
-  { 24,48 },{ 24,32 },{ 24,24 },{ 24,12 },{ 24,6 },
-  { 16,64 },{ 16,32 },{ 16,16 },{ 16,12 },{ 16,8 },{ 16,4 },{ 16,2 },
-  { 12,48 },{ 12,24 },{ 12,16 },{ 12,12 },{ 12,6 },{ 12,3 },
-  { 8,32 },{ 8,16 },{ 8,8 },{ 8,4 },{ 8,2 },{ 8,1 },
-  { 6,24 },{ 6,12 },{ 6,6 },{ 6,3 },
-  { 4,8 },{ 4,4 },{ 4,2 },
-  { 3,6 },{ 3,3 },
-  { 2,4 },{ 2,2 }
+    { 64, 64 },{ 64,48 },{ 64,32 },{ 64,16 },
+    { 48,64 },{ 48,48 }, { 48,24 }, { 48,12 },
+    { 32,64 },{ 32,32 },{ 32,24 },{ 32,16 },{ 32,8 },
+    { 24,48 },{ 24,32 },{ 24,24 },{ 24,12 },{ 24,6 },
+    { 16,64 },{ 16,32 },{ 16,16 },{ 16,12 },{ 16,8 },{ 16,4 },{ 16,2 },
+    { 12,48 },{ 12,24 },{ 12,16 },{ 12,12 },{ 12,6 },{ 12,3 },
+    { 8,32 },{ 8,16 },{ 8,8 },{ 8,4 },{ 8,2 },{ 8,1 },
+    { 6,24 },{ 6,12 },{ 6,6 },{ 6,3 },
+    { 4,8 },{ 4,4 },{ 4,2 },
+    { 3,6 },{ 3,3 },
+    { 2,4 },{ 2,2 }
   };
   bool found = false;
   for (int i = 0; i < allowed_blksizes.size(); i++) {
@@ -200,19 +187,19 @@ MVRecalculate::MVRecalculate(
       "MRecalculate: Invalid block size: %d x %d", analysisData.nBlkSizeX, analysisData.nBlkSizeY);
   }
 
-  analysisData.nPel = nSuperPel;	//pAnalyseFilter->GetPel();
+  analysisData.nPel = nSuperPel;
   analysisData.nDeltaFrame = pAnalyseFilter->GetDeltaFrame();
   analysisData.isBackward = pAnalyseFilter->IsBackward();
 
-  if (_overlapx < 0 || _overlapx >= _blksizex
-    || _overlapy < 0 || _overlapy >= _blksizey)
+  if (_overlapx < 0 || _overlapx > _blksizex / 2
+    || _overlapy < 0 || _overlapy > _blksizey / 2)
   {
-    env->ThrowError("MRecalculate: overlap must be less than block size");
+    env->ThrowError("MRecalculate: overlap must be less or equal than half block size");
   }
 
-  if (_overlapx % 2 || (_overlapy % 2 > 0 && (analysisData.yRatioUV != 1) /*vi.IsYV12 ()*/))
+  if (_overlapx % analysisData.xRatioUV || _overlapy % analysisData.yRatioUV)
   {
-    env->ThrowError("MRecalculate: overlap must be more even");
+    env->ThrowError("MRecalculate: wrong overlap for the colorspace subsampling");
   }
 
   if (_divide != 0 && (_blksizex < 8 || _blksizey < 8)) // 2.5.11.22 || instead of &&
@@ -221,12 +208,11 @@ MVRecalculate::MVRecalculate(
       "MRecalculate: Block sizes must be 8 or more for divide mode"
     );
   }
-  if (_divide != 0 // todo check here and others too
-    && ((_overlapx % 4 > 0 && (analysisData.xRatioUV != 1 || vi.IsYUY2()))
-      || (_overlapy % 4 > 0 && (analysisData.yRatioUV != 1)/*vi.IsYV12 ()*/)
-      || (_overlapy % 2 > 0 && vi.IsYUY2()))) // ? todo
+  if (_divide != 0
+    && ((_overlapx % (2 * analysisData.xRatioUV)) || (_overlapy % (2 * analysisData.yRatioUV))) // PF subsampling-aware
+    )
   {
-    env->ThrowError("MRecalculate: overlap must be more even for divide mode");
+    env->ThrowError("MRecalculate: wrong overlap for the colorspace subsampling for divide mode");
   }
 
   divideExtra = _divide;
