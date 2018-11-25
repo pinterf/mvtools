@@ -348,6 +348,55 @@ SAD  4,  4
     paddd   m0,  m3
 %endmacro
 
+;mvtools2 extra PF
+%macro PROCESS_SAD_4x4 0
+    movd        m1, [r2]
+    movd        m2, [r2 + r3]
+    lea         r2, [r2 + 2 * r3]
+    movd        m3, [r0]
+    movd        m4, [r0 + r1]
+    lea         r0, [r0 + 2 * r1]
+    punpcklqdq  m1, m2
+    punpcklqdq  m3, m4
+    psadbw      m1, m3
+    paddd       m0, m1
+    movd        m1, [r2]
+    movd        m2, [r2 + r3]
+    lea         r2, [r2 + 2 * r3]
+    movd        m3, [r0]
+    movd        m4, [r0 + r1]
+    lea         r0, [r0 + 2 * r1]
+    punpcklqdq  m1, m2
+    punpcklqdq  m3, m4
+    psadbw      m1, m3
+    paddd       m0, m1
+%endmacro
+
+;mvtools2 extra PF
+;no final pointer increase
+%macro PROCESS_SAD_4x4_NOFINALSETPTR 0
+    movd        m1, [r2]
+    movd        m2, [r2 + r3]
+    lea         r2, [r2 + 2 * r3]
+    movd        m3, [r0]
+    movd        m4, [r0 + r1]
+    lea         r0, [r0 + 2 * r1]
+    punpcklqdq  m1, m2
+    punpcklqdq  m3, m4
+    psadbw      m1, m3
+    paddd       m0, m1
+    movd        m1, [r2]
+    movd        m2, [r2 + r3]
+    ;lea         r2, [r2 + 2 * r3]
+    movd        m3, [r0]
+    movd        m4, [r0 + r1]
+    ;lea         r0, [r0 + 2 * r1]
+    punpcklqdq  m1, m2
+    punpcklqdq  m3, m4
+    psadbw      m1, m3
+    paddd       m0, m1
+%endmacro
+
 %macro PROCESS_SAD_8x4 0
     movq        m1, [r2]
     movq        m2, [r2 + r3]
@@ -365,6 +414,29 @@ SAD  4,  4
     movq        m3, [r0]
     movq        m4, [r0 + r1]
     lea         r0, [r0 + 2 * r1]
+    punpcklqdq  m1, m2
+    punpcklqdq  m3, m4
+    psadbw      m1, m3
+    paddd       m0, m1
+%endmacro
+
+%macro PROCESS_SAD_8x4_NOFINALSETPTR 0
+    movq        m1, [r2]
+    movq        m2, [r2 + r3]
+    lea         r2, [r2 + 2 * r3]
+    movq        m3, [r0]
+    movq        m4, [r0 + r1]
+    lea         r0, [r0 + 2 * r1]
+    punpcklqdq  m1, m2
+    punpcklqdq  m3, m4
+    psadbw      m1, m3
+    paddd       m0, m1
+    movq        m1, [r2]
+    movq        m2, [r2 + r3]
+    ;lea         r2, [r2 + 2 * r3]
+    movq        m3, [r0]
+    movq        m4, [r0 + r1]
+    ;lea         r0, [r0 + 2 * r1]
     punpcklqdq  m1, m2
     punpcklqdq  m3, m4
     psadbw      m1, m3
@@ -644,6 +716,50 @@ cglobal pixel_sad_16x4, 4,4,3
     movd    eax, m0
     RET
 
+
+;mvtools extra test instead of mmx2
+;-----------------------------------------------------------------------------
+; int pixel_sad_4x4( uint8_t *, intptr_t, uint8_t *, intptr_t )
+;-----------------------------------------------------------------------------
+cglobal pixel_sad_4x4, 4,4,3
+    pxor  m0,  m0
+    PROCESS_SAD_4x4_NOFINALSETPTR
+
+    movhlps m1,  m0
+    paddd   m0,  m1
+    movd    eax, m0
+    RET
+
+;mvtools extra test instead of mmx2
+;-----------------------------------------------------------------------------
+; int pixel_sad_4x8( uint8_t *, intptr_t, uint8_t *, intptr_t )
+;-----------------------------------------------------------------------------
+cglobal pixel_sad_4x8, 4,4,3
+    pxor  m0,  m0
+    PROCESS_SAD_4x4
+    PROCESS_SAD_4x4_NOFINALSETPTR
+
+    movhlps m1,  m0
+    paddd   m0,  m1
+    movd    eax, m0
+    RET
+
+;mvtools extra test instead of mmx2
+;-----------------------------------------------------------------------------
+; int pixel_sad_4x16( uint8_t *, intptr_t, uint8_t *, intptr_t )
+;-----------------------------------------------------------------------------
+cglobal pixel_sad_4x16, 4,4,3
+    pxor  m0,  m0
+    PROCESS_SAD_4x4
+    PROCESS_SAD_4x4
+    PROCESS_SAD_4x4
+    PROCESS_SAD_4x4_NOFINALSETPTR
+
+    movhlps m1,  m0
+    paddd   m0,  m1
+    movd    eax, m0
+    RET
+
 ;-----------------------------------------------------------------------------
 ; int pixel_sad_32x8( uint8_t *, intptr_t, uint8_t *, intptr_t )
 ;-----------------------------------------------------------------------------
@@ -719,6 +835,33 @@ cglobal pixel_sad_32x64, 4,5,3
     PROCESS_SAD_32x4
     dec  r4d
     jnz .loop
+
+    movhlps m1,  m0
+    paddd   m0,  m1
+    movd    eax, m0
+    RET
+
+;mvtools extra test instead of mmx2
+;-----------------------------------------------------------------------------
+; int pixel_sad_8x4( uint8_t *, intptr_t, uint8_t *, intptr_t )
+;-----------------------------------------------------------------------------
+cglobal pixel_sad_8x4, 4,4,3
+    pxor  m0,  m0
+    PROCESS_SAD_8x4_NOFINALSETPTR
+
+    movhlps m1,  m0
+    paddd   m0,  m1
+    movd    eax, m0
+    RET
+
+;mvtools extra test instead of mmx2
+;-----------------------------------------------------------------------------
+; int pixel_sad_8x8( uint8_t *, intptr_t, uint8_t *, intptr_t )
+;-----------------------------------------------------------------------------
+cglobal pixel_sad_8x8, 4,4,3
+    pxor  m0,  m0
+    PROCESS_SAD_8x4
+    PROCESS_SAD_8x4_NOFINALSETPTR
 
     movhlps m1,  m0
     paddd   m0,  m1
