@@ -35,8 +35,8 @@
 
 MVCompensate::MVCompensate(
   PClip _child, PClip _super, PClip vectors, bool sc, double _recursionPercent,
-  sad_t thsad, bool _fields, double _time100, sad_t nSCD1, int nSCD2, bool _isse2, bool _planar,
-  bool mt_flag, int trad, bool center_flag, PClip cclip_sptr, sad_t thsad2,
+  sad_t _thsad, bool _fields, double _time100, sad_t _nSCD1, int _nSCD2, bool _isse2, bool _planar,
+  bool mt_flag, int trad, bool center_flag, PClip cclip_sptr, sad_t _thsad2,
   IScriptEnvironment* env_ptr
 )
   : GenericVideoFilter(_child)
@@ -64,7 +64,7 @@ MVCompensate::MVCompensate(
   if (_trad <= 0)
   {
     _mv_clip_arr[0]._clip_sptr =
-      MVClipSPtr(new MVClip(vectors, nSCD1, nSCD2, env_ptr, 1, 0));
+      MVClipSPtr(new MVClip(vectors, _nSCD1, _nSCD2, env_ptr, 1, 0)); // MVClip limit to valid thSCD ranges
   }
   else
   {
@@ -72,7 +72,7 @@ MVCompensate::MVCompensate(
     for (int k = 0; k < _trad * 2; ++k)
     {
       _mv_clip_arr[k]._clip_sptr = MVClipSPtr(
-        new MVClip(vectors, nSCD1, nSCD2, env_ptr, _trad * 2, k)
+        new MVClip(vectors, _nSCD1, _nSCD2, env_ptr, _trad * 2, k)
       );
       CheckSimilarity(*(_mv_clip_arr[k]._clip_sptr), "vectors", env_ptr);
     }
@@ -87,7 +87,6 @@ MVCompensate::MVCompensate(
     vi.fps_numerator *= tbsize;
   }
 
-  //isse_flag = _isse2;
   scBehavior = sc;
   recursion = std::max(0, std::min(256, int(_recursionPercent / 100 * 256))); // convert to int scaled 0 to 256
   fields = _fields;
@@ -107,30 +106,22 @@ MVCompensate::MVCompensate(
     env_ptr->ThrowError("MCompensate: fields option is for fieldbased video and pel > 1");
   }
 
+  // limit parameters to valid ranges to avoid overflow 2.7.37-
+  int nSCD1 = std::min(_nSCD1, 8 * 8 * (255 - 0)); // max for 8 bits, normalized to 8x8 blocksize, avoid overflow later
+  int thsad = std::min(_thsad, 8 * 8 * (255 - 0));
+  int thsad2 = std::min(_thsad2, 8 * 8 * (255 - 0));
+
   // Normalize to block SAD
   for (int k = 0; k < int(_mv_clip_arr.size()); ++k)
   {
-    MvClipInfo &	c_info = _mv_clip_arr[k];
-    const sad_t		thscd1 = c_info._clip_sptr->GetThSCD1();
-    const sad_t		thsadn = thsad * thscd1 / nSCD1; // PF check todo bits_per_pixel
-    const sad_t		thsadn2 = thsad2 * thscd1 / nSCD1;
-    const int		d = k / 2 + 1;
+    MvClipInfo & c_info = _mv_clip_arr[k];
+    const sad_t thscd1 = c_info._clip_sptr->GetThSCD1();
+    const sad_t thsadn = (uint64_t)thsad * thscd1 / nSCD1; // PF 18.11.23 thSAD 100000 thSCD1 65280 nSCD1 100000
+    const sad_t thsadn2 = (uint64_t)thsad2 * thscd1 / nSCD1;
+    const int d = k / 2 + 1;
     c_info._thsad = ClipFnc::interpolate_thsad(thsadn, thsadn2, d, _trad); // P.F. when testing, d=0, _trad=1, will assert inside.
   }
 
-  // in overlaps.h
-  // OverlapsLsbFunction
-  // OverlapsFunction
-  // in M(V)DegrainX: DenoiseXFunction
-/*
-  arch_t arch;
-  if ((pixelsize == 1) && (((env_ptr->GetCPUFlags() & CPUF_SSE2) != 0) & isse2))
-      arch = USE_SSE2;
-  else if ((pixelsize == 1) && isse2)
-      arch = USE_MMX;
-  else
-      arch = NO_SIMD;
-      */
   arch_t arch;
   if ((cpuFlags & CPUF_AVX2) != 0)
     arch = USE_AVX2;
@@ -438,21 +429,39 @@ PVideoFrame __stdcall MVCompensate::GetFrame(int n, IScriptEnvironment* env_ptr)
       slicer.start(nBlkY, *this, &MVCompensate::compensate_slice_overlap, 2);
       slicer.wait();
 
-      if (pixelsize == 1) {
+      if (pixelsize == 1) { // todo: or rather: pixelsize_super and bits_per_pixel_super // like in MDegrainX
         // nWidth_B and nHeight_B, right and bottom was blended
-        Short2Bytes(pDst[0], nDstPitches[0], DstShort, dstShortPitch, nWidth_B, nHeight_B);
-        if (pPlanes[1])
-          Short2Bytes(pDst[1], nDstPitches[1], DstShortU, dstShortPitchUV, nWidth_B >> nLogxRatioUV, nHeight_B >> nLogyRatioUV);
-        if (pPlanes[2])
-          Short2Bytes(pDst[2], nDstPitches[2], DstShortV, dstShortPitchUV, nWidth_B >> nLogxRatioUV, nHeight_B >> nLogyRatioUV);
+        if ((cpuFlags & CPUF_SSE2) != 0) {
+          Short2Bytes_sse2(pDst[0], nDstPitches[0], DstShort, dstShortPitch, nWidth_B, nHeight_B);
+          if (pPlanes[1])
+            Short2Bytes_sse2(pDst[1], nDstPitches[1], DstShortU, dstShortPitchUV, nWidth_B >> nLogxRatioUV, nHeight_B >> nLogyRatioUV);
+          if (pPlanes[2])
+            Short2Bytes_sse2(pDst[2], nDstPitches[2], DstShortV, dstShortPitchUV, nWidth_B >> nLogxRatioUV, nHeight_B >> nLogyRatioUV);
+        }
+        else {
+          Short2Bytes(pDst[0], nDstPitches[0], DstShort, dstShortPitch, nWidth_B, nHeight_B);
+          if (pPlanes[1])
+            Short2Bytes(pDst[1], nDstPitches[1], DstShortU, dstShortPitchUV, nWidth_B >> nLogxRatioUV, nHeight_B >> nLogyRatioUV);
+          if (pPlanes[2])
+            Short2Bytes(pDst[2], nDstPitches[2], DstShortV, dstShortPitchUV, nWidth_B >> nLogxRatioUV, nHeight_B >> nLogyRatioUV);
+        }
       }
       else if (pixelsize == 2)
       {
-        Short2Bytes_Int32toWord16((uint16_t *)(pDst[0]), nDstPitches[0], (int *)DstShort, dstShortPitch, nWidth_B, nHeight_B, bits_per_pixel);
-        if (pPlanes[1])
-          Short2Bytes_Int32toWord16((uint16_t *)(pDst[1]), nDstPitches[1], (int *)DstShortU, dstShortPitchUV, nWidth_B >> nLogxRatioUV, nHeight_B >> nLogyRatioUV, bits_per_pixel);
-        if (pPlanes[2])
-          Short2Bytes_Int32toWord16((uint16_t *)(pDst[2]), nDstPitches[2], (int *)DstShortV, dstShortPitchUV, nWidth_B >> nLogxRatioUV, nHeight_B >> nLogyRatioUV, bits_per_pixel);
+        if ((cpuFlags & CPUF_SSE4_1) != 0) {
+          Short2Bytes_Int32toWord16_sse4((uint16_t *)(pDst[0]), nDstPitches[0], (int *)DstShort, dstShortPitch, nWidth_B, nHeight_B, bits_per_pixel);
+          if (pPlanes[1])
+            Short2Bytes_Int32toWord16_sse4((uint16_t *)(pDst[1]), nDstPitches[1], (int *)DstShortU, dstShortPitchUV, nWidth_B >> nLogxRatioUV, nHeight_B >> nLogyRatioUV, bits_per_pixel);
+          if (pPlanes[2])
+            Short2Bytes_Int32toWord16_sse4((uint16_t *)(pDst[2]), nDstPitches[2], (int *)DstShortV, dstShortPitchUV, nWidth_B >> nLogxRatioUV, nHeight_B >> nLogyRatioUV, bits_per_pixel);
+        }
+        else {
+          Short2Bytes_Int32toWord16((uint16_t *)(pDst[0]), nDstPitches[0], (int *)DstShort, dstShortPitch, nWidth_B, nHeight_B, bits_per_pixel);
+          if (pPlanes[1])
+            Short2Bytes_Int32toWord16((uint16_t *)(pDst[1]), nDstPitches[1], (int *)DstShortU, dstShortPitchUV, nWidth_B >> nLogxRatioUV, nHeight_B >> nLogyRatioUV, bits_per_pixel);
+          if (pPlanes[2])
+            Short2Bytes_Int32toWord16((uint16_t *)(pDst[2]), nDstPitches[2], (int *)DstShortV, dstShortPitchUV, nWidth_B >> nLogxRatioUV, nHeight_B >> nLogyRatioUV, bits_per_pixel);
+        }
       }
     }
 
@@ -462,6 +471,13 @@ PVideoFrame __stdcall MVCompensate::GetFrame(int n, IScriptEnvironment* env_ptr)
 
     if (nWidth_B < nWidth) // Right padding
     {
+      // todo: << pixelsize_super_shift
+      /* in MDegrainX
+          BitBlt(pDst[0] + (nWidth_B << pixelsize_super_shift), nDstPitches[0],
+            pSrc[0] + (nWidth_B << pixelsize_super_shift), nSrcPitches[0],
+            (nWidth - nWidth_B) << pixelsize_super_shift, nHeight_B);
+
+      */
       BitBlt(pDst[0] + nWidth_B * pixelsize, nDstPitches[0], pSrcMapped[0] + (nWidth_B + nHPadding)*pixelsize + nVPadding * pPitchesMapped[0], pPitchesMapped[0], pixelsize * (nWidth - nWidth_B), nHeight_B);
       if (pPlanes[1]) // chroma u
         BitBlt(pDst[1] + (nWidth_B >> nLogxRatioUV)*pixelsize, nDstPitches[1], pSrcMapped[1] + ((nWidth_B >> nLogxRatioUV) + (nHPadding >> nLogxRatioUV))*pixelsize + (nVPadding >> nLogyRatioUV) * pPitchesMapped[1], pPitchesMapped[1], pixelsize*(nWidth - nWidth_B) >> nLogxRatioUV, nHeight_B >> nLogyRatioUV);
@@ -471,6 +487,14 @@ PVideoFrame __stdcall MVCompensate::GetFrame(int n, IScriptEnvironment* env_ptr)
 
     if (nHeight_B < nHeight) // Bottom padding
     {
+      /*  MDegrainX: itt miert nincs nHpadding vajh
+          BitBlt(pDst[0] + nHeight_B * nDstPitches[0], nDstPitches[0],
+            pSrc[0] + nHeight_B * nSrcPitches[0], nSrcPitches[0],
+            nWidth << pixelsize_super_shift, nHeight - nHeight_B);
+          BitBlt(pDst + ((nWidth_B >> nLogxRatioUV) << pixelsize_super_shift), nDstPitch,
+            pSrc + ((nWidth_B >> nLogxRatioUV) << pixelsize_super_shift), nSrcPitch,
+            ((nWidth - nWidth_B) >> nLogxRatioUV) << pixelsize_super_shift, nHeight_B >> nLogyRatioUV);
+      */
       BitBlt(pDst[0] + nHeight_B * nDstPitches[0], nDstPitches[0], pSrcMapped[0] + nHPadding * pixelsize + (nHeight_B + nVPadding) * pPitchesMapped[0], pPitchesMapped[0], nWidth*pixelsize, nHeight - nHeight_B);
       if (pPlanes[1])	// chroma u
         // PF fix 161117: nHPadding was not shifted for bottom padding, exists in 2.5.11.22??
