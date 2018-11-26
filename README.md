@@ -13,8 +13,9 @@ Change log
 - 2.7.37 (201811??)
   MCompensate: limit thSAD, thSAD2, thSCD1 to valid range 0-(8x8x255) (e.g. given thSAD = 100000 will go back to 16320)
   Fix: MCompensate: use int64 to avoid effective thSAD and thSAD2 overflow typically happen at bigger block sizes or large thSAD parameter value.
-  MCompensate: SSE2 (8bit) and SSE4 (10-16 bit) overlap result accumulation
+  MCompensate: SSE2 (8bit) and SSE4 (10-16 bit) overlap result calculation
   Changed: SAD 8x8, 8x4, 4x4, 4x8 to use SSE2 instead of MMX registers
+  Fix: MDegrain if overlap<>0: missing rounder in rightmost 8 pixels for non-mod8 width 8 bit clips
 
 - 2.7.36 (20181120)
   Fix: Allow overlap operation when there are only two blocks in either horizontal or vertical direction (was: division by 0 crash)
