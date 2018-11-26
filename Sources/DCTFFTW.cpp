@@ -86,17 +86,19 @@ DCTFFTW::DCTFFTW(int _sizex, int _sizey, HINSTANCE hinstFFTW3, int _dctmode, int
 
   int cursize = 1;
   dctshift = 0;
+  // dctshift won't be exact when side2d is not power of 2, such as 12x12
+  // todo check it
   while (cursize < size2d)
   {
     dctshift++;
     cursize = (cursize << 1);
   }
 
-  dctshift0 = dctshift + 2;
+  dctshift0 = dctshift + 2; // *4 scaling for the DC component
 
   // FFTW plan construction and destruction are not thread-safe.
   // http://www.fftw.org/fftw3_doc/Thread-safety.html#Thread-safety
-  conc::CritSec	lock(_fftw_mutex);
+  conc::CritSec lock(_fftw_mutex);
 
   fSrc = (float *)fftwf_malloc_addr(sizeof(float) * size2d);
   fSrcDCT = (float *)fftwf_malloc_addr(sizeof(float) * size2d);
