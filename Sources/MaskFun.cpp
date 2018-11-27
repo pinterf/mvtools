@@ -764,13 +764,18 @@ void Blend(uint8_t * pdst8, const uint8_t * psrc8, const uint8_t * pref8, int he
   dst_pitch /= sizeof(pixel_t);
   src_pitch /= sizeof(pixel_t);
   ref_pitch /= sizeof(pixel_t);
-  // add isse
-  int h, w;
-  for (h = 0; h<height; h++)
+
+  const float time_f = time256 / 256.0f;
+
+  // todo: add isse
+  for (int h = 0; h<height; h++)
   {
-    for (w = 0; w<width; w++)
+    for (int w = 0; w<width; w++)
     {
-      pdst[w] =(pixel_t)( (psrc[w] * (256 - time256) + pref[w] * time256) >> 8);
+      if constexpr(sizeof(pixel_t) < 4)
+        pdst[w] =(pixel_t)( (psrc[w] * (256 - time256) + pref[w] * time256) >> 8);
+      else // pixel_t is float
+        pdst[w] = (pixel_t)((psrc[w] * (1.0f - time_f) + pref[w] * time_f));
     }
     pdst += dst_pitch;
     psrc += src_pitch;
@@ -781,6 +786,7 @@ void Blend(uint8_t * pdst8, const uint8_t * psrc8, const uint8_t * pref8, int he
 // instantiate Blend
 template void Blend<uint8_t>(uint8_t * pdst8, const uint8_t * psrc8, const uint8_t * pref8, int height, int width, int dst_pitch, int src_pitch, int ref_pitch, int time256, int cpuFlags);
 template void Blend<uint16_t>(uint8_t * pdst8, const uint8_t * psrc8, const uint8_t * pref8, int height, int width, int dst_pitch, int src_pitch, int ref_pitch, int time256, int cpuFlags);
+template void Blend<float>(uint8_t * pdst8, const uint8_t * psrc8, const uint8_t * pref8, int height, int width, int dst_pitch, int src_pitch, int ref_pitch, int time256, int cpuFlags);
 
 template<typename pixel_t>
 void FlowInter(
