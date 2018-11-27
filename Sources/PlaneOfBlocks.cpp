@@ -1057,7 +1057,7 @@ void PlaneOfBlocks::PseudoEPZSearch(WorkingArea &workarea)
   vectors[workarea.blkIdx].y = workarea.bestMV.y;
   vectors[workarea.blkIdx].sad = workarea.bestMV.sad;
 
-  workarea.planeSAD += workarea.bestMV.sad; // todo PF check int overflow
+  workarea.planeSAD += workarea.bestMV.sad; // todo PF check int overflow. Done: bigsad_t
 }
 
 
@@ -2460,10 +2460,13 @@ sad_t	PlaneOfBlocks::LumaSADx(WorkingArea &workarea, const unsigned char *pRef0)
   switch (dctmode)
   {
   case 1: // dct SAD
+  {
     workarea.DCT->DCTBytes2D(pRef0, nRefPitch[0], &workarea.dctRef[0], dctpitch);
     sad = ((safe_sad_t)SAD(&workarea.dctSrc[0], dctpitch, &workarea.dctRef[0], dctpitch) +
-           abs(reinterpret_cast<pixel_t *>(&workarea.dctSrc[0])[0] - reinterpret_cast<pixel_t *>(&workarea.dctRef[0])[0]) * 3)*nBlkSizeX / 2; //correct reduced DC component
+      // P.F. 20181123: why *3? when dct'ing (random pixels) and (random pixels + 100), the first element differs only by 100/2
+      abs(reinterpret_cast<pixel_t *>(&workarea.dctSrc[0])[0] - reinterpret_cast<pixel_t *>(&workarea.dctRef[0])[0]) * 3)*nBlkSizeX / 2; //correct reduced DC component
     break;
+  }
   case 2: //  globally (lumaChange) weighted spatial and DCT
     sad = SAD(workarea.pSrc[0], nSrcPitch[0], pRef0, nRefPitch[0]);
     if (dctweight16 > 0)
@@ -2827,7 +2830,9 @@ MV_FORCEINLINE unsigned int	PlaneOfBlocks::SquareDifferenceNorm(const VECTOR& v1
 /* computes square distance between two vectors */
 MV_FORCEINLINE unsigned int	PlaneOfBlocks::SquareDifferenceNorm(const VECTOR& v1, const int v2x, const int v2y)
 {
-  return (v1.x - v2x) * (v1.x - v2x) + (v1.y - v2y) * (v1.y - v2y);
+  const int d1 = (v1.x - v2x);
+  const int d2 = (v1.y - v2y);
+  return d1 * d1 + d2 * d2;
 }
 
 /* check if an index is inside the block's min and max indexes */
@@ -3044,7 +3049,7 @@ void	PlaneOfBlocks::search_mv_slice(Slicer::TaskData &td)
     workarea.y[2] += nBlkSizeY_Ovr[2];
   }	// for workarea.blky
 
-  planeSAD += workarea.planeSAD; // PF todo check int overflow
+  planeSAD += workarea.planeSAD; // PF todo check int overflow done, bigsad_t
   sumLumaChange += workarea.sumLumaChange;
 
   if (isse)
@@ -3499,10 +3504,10 @@ MV_FORCEINLINE bool	PlaneOfBlocks::WorkingArea::IsVectorOK(int vx, int vy) const
 
 /* computes the cost of a vector (vx, vy) */
 template<typename pixel_t>
-sad_t PlaneOfBlocks::WorkingArea::MotionDistorsion(int vx, int vy) const
+MV_FORCEINLINE sad_t PlaneOfBlocks::WorkingArea::MotionDistorsion(int vx, int vy) const
 {
   int dist = SquareDifferenceNorm(predictor, vx, vy);
-  if (sizeof(pixel_t) == 1)
+  if constexpr(sizeof(pixel_t) == 1)
   {
 #if 0
     // 20181018 PF: hope it'll not overflow, could not produce such case
