@@ -375,8 +375,9 @@ COPYFunction* get_copy_function(int BlockX, int BlockY, int pixelsize, arch_t ar
     std::map<std::tuple<int, int, int, arch_t>, COPYFunction*> func_copy;
     using std::make_tuple;
 #define MAKE_COPY_FN(x, y) func_copy[make_tuple(x, y, 1, NO_SIMD)] = Copy_C<x, y, uint8_t>; \
-func_copy[make_tuple(x, y, 2, NO_SIMD)] = Copy_C<x, y, uint16_t>;
-// same list as in overlap.cpp SadFunction.cpp, Sad_C selector
+func_copy[make_tuple(x, y, 2, NO_SIMD)] = Copy_C<x, y, uint16_t>; \
+func_copy[make_tuple(x, y, 4, NO_SIMD)] = Copy_C<x, y, float>;
+    // same list as in overlap.cpp SadFunction.cpp, Sad_C selector
     MAKE_COPY_FN(64, 64)
       MAKE_COPY_FN(64, 48)
       MAKE_COPY_FN(64, 32)
