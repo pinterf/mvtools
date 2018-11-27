@@ -16,6 +16,9 @@ Change log
   MCompensate: SSE2 (8bit) and SSE4 (10-16 bit) overlap result calculation
   Changed: SAD 8x8, 8x4, 4x4, 4x8 to use SSE2 instead of MMX registers
   Fix: MDegrain if overlap<>0: missing rounder in rightmost 8 pixels for non-mod8 width 8 bit clips
+  Fix: MSuper artifacts at 10-32 bits and nPel==4
+  New: MCompensate 32 bit float and planar RGB support (by using motion vectors made from 8-16 bit YUV clip). 
+       Input and super clip can be of a different format than the one used for motion vector creation. (Similar to MDegrain1-6)
 
 - 2.7.36 (20181120)
   Fix: Allow overlap operation when there are only two blocks in either horizontal or vertical direction (was: division by 0 crash)
