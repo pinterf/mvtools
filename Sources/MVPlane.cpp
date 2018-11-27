@@ -34,7 +34,7 @@ boundaries.
 
 #include "CopyCode.h"
 #include "Interpolation.h"
-#include	"MVPlane.h"
+#include "MVPlane.h"
 #include "Padding.h"
 #include <stdint.h>
 #include <commonfunctions.h>
@@ -487,11 +487,11 @@ void MVPlane::refine_pel4(SchedulerRefine::TaskData &td)
     default: _wiener_hor_ptr(pPlane[2], pPlane[0], nPitch, nPitch, nExtendedWidth, nExtendedHeight, bits_per_pixel); break;
     }
     break;
-  case 3:  _average_ptr(pPlane[3], pPlane[0] + 1, pPlane[2], nPitch, nExtendedWidth - 1, nExtendedHeight); break;
+  case 3:  _average_ptr(pPlane[3], pPlane[0] + 1 * pixelsize, pPlane[2], nPitch, nExtendedWidth - 1, nExtendedHeight); break;
   case 4:  _average_ptr(pPlane[4], pPlane[0], pPlane[8], nPitch, nExtendedWidth, nExtendedHeight); break;
   case 5:  _average_ptr(pPlane[5], pPlane[4], pPlane[6], nPitch, nExtendedWidth, nExtendedHeight); break;
   case 6:  _average_ptr(pPlane[6], pPlane[2], pPlane[10], nPitch, nExtendedWidth, nExtendedHeight); break;
-  case 7:  _average_ptr(pPlane[7], pPlane[4] + 1, pPlane[6], nPitch, nExtendedWidth - 1, nExtendedHeight); break;
+  case 7:  _average_ptr(pPlane[7], pPlane[4] + 1 * pixelsize, pPlane[6], nPitch, nExtendedWidth - 1, nExtendedHeight); break;
   case 8:
     switch (nSharp)
     {
@@ -509,11 +509,11 @@ void MVPlane::refine_pel4(SchedulerRefine::TaskData &td)
     default: _wiener_hor_ptr(pPlane[10], pPlane[8], nPitch, nPitch, nExtendedWidth, nExtendedHeight, bits_per_pixel); break;	// faster from ready-made horizontal
     }
     break;
-  case 11: _average_ptr(pPlane[11], pPlane[8] + 1, pPlane[10], nPitch, nExtendedWidth - 1, nExtendedHeight); break;
+  case 11: _average_ptr(pPlane[11], pPlane[8] + 1*pixelsize, pPlane[10], nPitch, nExtendedWidth - 1, nExtendedHeight); break;
   case 12: _average_ptr(pPlane[12], pPlane[0] + nPitch, pPlane[8], nPitch, nExtendedWidth, nExtendedHeight - 1); break;
   case 13: _average_ptr(pPlane[13], pPlane[12], pPlane[14], nPitch, nExtendedWidth, nExtendedHeight); break;
   case 14: _average_ptr(pPlane[14], pPlane[2] + nPitch, pPlane[10], nPitch, nExtendedWidth, nExtendedHeight - 1); break;
-  case 15: _average_ptr(pPlane[15], pPlane[12] + 1, pPlane[14], nPitch, nExtendedWidth - 1, nExtendedHeight); break;
+  case 15: _average_ptr(pPlane[15], pPlane[12] + 1 * pixelsize, pPlane[14], nPitch, nExtendedWidth - 1, nExtendedHeight); break;
   default:
     assert(false);
     break;
