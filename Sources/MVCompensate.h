@@ -79,9 +79,12 @@ private:
 	OverlapsFunction *OVERSCHROMA;
   OverlapsFunction *OVERSLUMA16;
   OverlapsFunction *OVERSCHROMA16;
-  unsigned short * DstShort;
-	unsigned short * DstShortU;
-	unsigned short * DstShortV;
+  OverlapsFunction *OVERSLUMA32;
+  OverlapsFunction *OVERSCHROMA32;
+
+  BYTE *DstShort; // holds unsigned short or int or float elements: overlap temp buffer
+  BYTE *DstShortU;
+  BYTE *DstShortV;
 	int dstShortPitch;
 	int dstShortPitchUV;
 
@@ -117,6 +120,14 @@ private:
 
   int pixelsize_super;
   int bits_per_pixel_super;
+  int pixelsize_super_shift;
+  int ovrBufferElementSize;
+  int ovrBufferElementSize_shift;
+  int planecount;
+  int xRatioUVs[3];
+  int yRatioUVs[3];
+  int nLogxRatioUVs[3];
+  int nLogyRatioUVs[3];
 
 	// This array has an nBlkY size. It is used in vertical overlap mode
 	// to avoid read/write sync problems when processing is multithreaded.
