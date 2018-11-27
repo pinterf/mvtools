@@ -640,7 +640,7 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
     mvF[j] = 0; // v2.0.9.2 -  it seems, we do not need in vectors clip anymore when we finished copiing them to fakeblockdatas
   }
   for (int j = 0; j < level; j++)
-  {
+    {
     mvB[j] = mvClipB[j]->GetFrame(n, env);
     mvClipB[j]->Update(mvB[j], env);
     isUsableB[j] = mvClipB[j]->IsUsable();
@@ -1025,7 +1025,7 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
       }
       else if (pixelsize_super == 4)
       {
-        Short2Bytes_FloatInInt32ArrayToFloat((float *)(pDst[0]), nDstPitches[0], DstInt, dstIntPitch, nWidth_B, nHeight_B);
+        Short2Bytes_FloatInInt32ArrayToFloat((float *)(pDst[0]), nDstPitches[0], (float *)DstInt, dstIntPitch, nWidth_B, nHeight_B);
       }
       if (nWidth_B < nWidth)
       {
@@ -1324,7 +1324,7 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
       }
       else if (pixelsize_super == 4)
       {
-        Short2Bytes_FloatInInt32ArrayToFloat((float *)(pDst), nDstPitch, DstInt, dstIntPitch, nWidth_B >> nLogxRatioUV, nHeight_B >> nLogyRatioUV);
+        Short2Bytes_FloatInInt32ArrayToFloat((float *)(pDst), nDstPitch, (float *)DstInt, dstIntPitch, nWidth_B >> nLogxRatioUV, nHeight_B >> nLogyRatioUV);
       }      
       if (nWidth_B < nWidth)
       {
