@@ -1127,7 +1127,7 @@ static void plane_copy_8_to_16_c(uint8_t *dstp, int dstpitch, const uint8_t *src
       {
         Short2Bytes_FloatInInt32ArrayToFloat(
           (float *)_dst_ptr_arr[0], _dst_pitch_arr[0],
-          &_dst_int[0], _dst_int_pitch,
+          (float *)&_dst_int[0], _dst_int_pitch,
           _covered_width, _covered_height
         );
       }
@@ -1340,7 +1340,7 @@ void	MDegrainN::process_chroma(int plane_mask)
       {
         Short2Bytes_FloatInInt32ArrayToFloat(
           (float *)_dst_ptr_arr[P], _dst_pitch_arr[P],
-          &_dst_int[0], _dst_int_pitch,
+          (float *)&_dst_int[0], _dst_int_pitch,
           _covered_width >> _xratiouv_log, _covered_height >> _yratiouv_log
         );
       }
