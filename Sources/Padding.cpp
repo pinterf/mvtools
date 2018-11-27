@@ -88,7 +88,7 @@ PVideoFrame __stdcall Padding::GetFrame(int n, IScriptEnvironment *env)
 
   if (!vi.IsY() && !vi.IsRGB()) {
     xRatioUVs[1] = xRatioUVs[2] = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U));
-    yRatioUVs[2] = yRatioUVs[2] = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U));
+    yRatioUVs[1] = yRatioUVs[2] = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U));
   }
   int pixelsize = vi.ComponentSize();
 
