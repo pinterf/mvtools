@@ -352,17 +352,16 @@ void Short2Bytes_Int32toWord16_sse4(uint16_t *pDst, int nDstPitch, int *pDstInt,
   }
 }
 
-void Short2Bytes_FloatInInt32ArrayToFloat(float *pDst, int nDstPitch, int *pDstInt, int dstIntPitch, int nWidth, int nHeight)
+void Short2Bytes_FloatInInt32ArrayToFloat(float *pDst, int nDstPitch, float *pDstInt, int dstIntPitch, int nWidth, int nHeight)
 {
-  float *pDstIntF = reinterpret_cast<float *>(pDstInt);
   for (int h=0; h<nHeight; h++)
   {
     for (int i=0; i<nWidth; i++)
     {
-      pDst[i] = pDstIntF[i]; // no clamp! min(pDstIntF[i], 1.0f);
+      pDst[i] = pDstInt[i]; // no clamp! min(pDstIntF[i], 1.0f);
     }
     pDst += nDstPitch/sizeof(float);
-    pDstIntF += dstIntPitch; // this pitch is int/float (4 byte) granularity
+    pDstInt += dstIntPitch; // this pitch is int/float (4 byte) granularity
   }
 }
 
