@@ -197,7 +197,7 @@ PVideoFrame __stdcall MVSuper::GetFrame(int n, IScriptEnvironment* env)
   if (usePelClip)
     srcPel = pelclip->GetFrame(n, env);
 
-  PVideoFrame	dst = env->NewVideoFrame(vi);
+  PVideoFrame dst = env->NewVideoFrame(vi);
 
   PROFILE_START(MOTION_PROFILE_YUY2CONVERT);
   if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2)

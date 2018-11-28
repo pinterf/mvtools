@@ -979,10 +979,12 @@ func_sad[make_tuple(x, y, 16, USE_SSE2)] = Sad16_sse2_##x##xN_sse2<y>;
     // Block Size: 8*x
     // Supported: 8x32, 8x16, 8x8, 8x4, (8x2, 8x1)
     func_sad[make_tuple(8, 32, 8, USE_SSE2)] = x264_pixel_sad_8x32_sse2;
-    func_sad[make_tuple(8, 16, 8, USE_SSE2)] = x264_pixel_sad_8x16_sse2; // or mmx2 check which is faster
-    func_sad[make_tuple(8,  8, 8, USE_SSE2)] = x264_pixel_sad_8x8_sse2; // 20181125 test instead of mmx2;
-    func_sad[make_tuple(8,  4, 8, USE_SSE2)] = x264_pixel_sad_8x4_sse2; //  20181125 test instead of mmx2;
-    
+    func_sad[make_tuple(8, 16, 8, USE_SSE2)] = x264_pixel_sad_8x16_sse2;
+    func_sad[make_tuple(8,  8, 8, USE_SSE2)] = x264_pixel_sad_8x8_sse2; // 2.7.37 instead of mmx2;
+    //func_sad[make_tuple(8, 8, 8, USE_SSE2)] = x264_pixel_sad_8x8_mmx2;
+    func_sad[make_tuple(8,  4, 8, USE_SSE2)] = x264_pixel_sad_8x4_sse2; // 2.7.37 instead of mmx2;
+    //func_sad[make_tuple(8, 4, 8, USE_SSE2)] = x264_pixel_sad_8x4_mmx2;
+
     func_sad[make_tuple(8 , 2 , 8, USE_SSE2)] = Sad8x2_iSSE;
     func_sad[make_tuple(8 , 1 , 8, USE_SSE2)] = Sad8x1_iSSE;
 
@@ -992,8 +994,10 @@ func_sad[make_tuple(x, y, 16, USE_SSE2)] = Sad16_sse2_##x##xN_sse2<y>;
 
     // Block Size: 4*x
     // Supported: 4x8, 4x4, 4x2
-    func_sad[make_tuple(4 , 8 , 8, USE_SSE2)] = x264_pixel_sad_4x8_sse2; //  20181125 test instead of mmx2;
-    func_sad[make_tuple(4 , 4 , 8, USE_SSE2)] = x264_pixel_sad_4x4_sse2; //  20181125 test instead of mmx2;
+    func_sad[make_tuple(4 , 8 , 8, USE_SSE2)] = x264_pixel_sad_4x8_sse2; // 2.7.37 instead of mmx2;
+    //func_sad[make_tuple(4, 8, 8, USE_SSE2)] = x264_pixel_sad_4x8_mmx2;
+    func_sad[make_tuple(4 , 4 , 8, USE_SSE2)] = x264_pixel_sad_4x4_sse2; // 2.7.37 instead of mmx2;
+    //func_sad[make_tuple(4, 4, 8, USE_SSE2)] = x264_pixel_sad_4x4_mmx2;
     func_sad[make_tuple(4 , 2 , 8, USE_SSE2)] = Sad4x2_iSSE;
     // Block Size: 2*x
     // Supported: 2x4, 2x2

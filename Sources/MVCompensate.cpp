@@ -54,6 +54,7 @@ MVCompensate::MVCompensate(
 {
   cpuFlags = _isse2 ? env_ptr->GetCPUFlags() : 0;
 
+  // actual format can differ from the base clip of vectors
   pixelsize_super = super->GetVideoInfo().ComponentSize();
   bits_per_pixel_super = super->GetVideoInfo().BitsPerComponent();
   pixelsize_super_shift = ilog2(pixelsize_super);
@@ -98,7 +99,7 @@ MVCompensate::MVCompensate(
       CheckSimilarity(*(_mv_clip_arr[k]._clip_sptr), "vectors", env_ptr);
     }
 
-    int				tbsize = _trad * 2;
+    int tbsize = _trad * 2;
     if (_center_flag)
     {
       ++tbsize;
@@ -203,9 +204,9 @@ MVCompensate::MVCompensate(
   {
     DstPlanes = new YUY2Planes(nWidth, nHeight);
   }
-  // pitch: not byte* but short* or int* granurality, no need pixelsize correction
-  dstShortPitch = AlignNumber(nWidth, 16); // ((nWidth + 15) / 16) * 16;
-  dstShortPitchUV = AlignNumber(nWidth >> nLogxRatioUVs[1], 16); //  (((nWidth >> nLogxRatioUV) + 15) / 16) * 16;
+  // pitch: not byte* but short* or int*/float* granurality, no need pixelsize correction
+  dstShortPitch = AlignNumber(nWidth, 16);
+  dstShortPitchUV = AlignNumber(nWidth >> nLogxRatioUVs[1], 16);
   if (nOverlapX > 0 || nOverlapY > 0)
   {
     OverWins = new OverlapWindows(nBlkSizeX, nBlkSizeY, nOverlapX, nOverlapY);
@@ -228,7 +229,7 @@ MVCompensate::MVCompensate(
   {
     if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2)
     {
-      nLoopPitches[0] = AlignNumber(nSuperWidth * 2, 16); // ((nSuperWidth * 2 + 15) / 16) * 16;
+      nLoopPitches[0] = AlignNumber(nSuperWidth * 2, 16);
       nLoopPitches[1] = nLoopPitches[0];
       nLoopPitches[2] = nLoopPitches[1];
       pLoop[0] = (unsigned char *)_aligned_malloc(nLoopPitches[0] * nSuperHeight, 32);
@@ -237,7 +238,6 @@ MVCompensate::MVCompensate(
     }
     else
     {
-      // todo check pixelsize_super?
       nLoopPitches[0] = AlignNumber(nSuperWidth*pixelsize_super, 32);
       nLoopPitches[1] = nLoopPitches[2] = AlignNumber((nSuperWidth >> nLogxRatioUVs[1])*pixelsize_super, 32);
       pLoop[0] = (unsigned char *)_aligned_malloc(nLoopPitches[0] * nSuperHeight, 32);
@@ -274,7 +274,6 @@ MVCompensate::~MVCompensate()
       _aligned_free(pLoop[2]);
     }
   }
-
 }
 
 PVideoFrame __stdcall MVCompensate::GetFrame(int n, IScriptEnvironment* env_ptr)
@@ -304,8 +303,6 @@ PVideoFrame __stdcall MVCompensate::GetFrame(int n, IScriptEnvironment* env_ptr)
     nOffset[0] = (nHPadding << pixelsize_super_shift) + nVPadding * nLoopPitches[0];
     nOffset[1] = nOffset[2] = ((nHPadding >> nLogxRatioUVs[1]) << pixelsize_super_shift) + (nVPadding >> nLogyRatioUVs[1]) * nLoopPitches[1];
   }
-
-  int nLogPel = ilog2(nPel); //shift
 
   PVideoFrame mvn = _mv_clip_ptr->GetFrame(nvec, env_ptr);
   _mv_clip_ptr->Update(mvn, env_ptr);
@@ -426,7 +423,7 @@ PVideoFrame __stdcall MVCompensate::GetFrame(int n, IScriptEnvironment* env_ptr)
 
     PROFILE_START(MOTION_PROFILE_COMPENSATION);
 
-    Slicer         slicer(_mt_flag);
+    Slicer         slicer(_mt_flag); // prepare internal avstp multithreading
 
     // No overlap
     if (nOverlapX == 0 && nOverlapY == 0)
@@ -456,7 +453,7 @@ PVideoFrame __stdcall MVCompensate::GetFrame(int n, IScriptEnvironment* env_ptr)
       slicer.start(nBlkY, *this, &MVCompensate::compensate_slice_overlap, 2);
       slicer.wait();
 
-      if (pixelsize_super == 1) { // todo: or rather: pixelsize_super and bits_per_pixel_super // like in MDegrainX
+      if (pixelsize_super == 1) {
         // nWidth_B and nHeight_B, right and bottom was blended
         if ((cpuFlags & CPUF_SSE2) != 0) {
           Short2Bytes_sse2(pDst[0], nDstPitches[0], (unsigned short *)DstShort, dstShortPitch, nWidth_B, nHeight_B);
@@ -505,13 +502,6 @@ PVideoFrame __stdcall MVCompensate::GetFrame(int n, IScriptEnvironment* env_ptr)
 
     if (nWidth_B < nWidth) // Right padding
     {
-      // todo: << pixelsize_super_shift
-      /* in MDegrainX
-          BitBlt(pDst[0] + (nWidth_B << pixelsize_super_shift), nDstPitches[0],
-            pSrc[0] + (nWidth_B << pixelsize_super_shift), nSrcPitches[0],
-            (nWidth - nWidth_B) << pixelsize_super_shift, nHeight_B);
-
-      */
       for (int i = 0; i < planecount; i++) {
         if (pPlanes[i])
           BitBlt(pDst[i] + ((nWidth_B >> nLogxRatioUVs[i]) << pixelsize_super_shift), nDstPitches[i],
@@ -522,14 +512,6 @@ PVideoFrame __stdcall MVCompensate::GetFrame(int n, IScriptEnvironment* env_ptr)
 
     if (nHeight_B < nHeight) // Bottom padding
     {
-      /*  MDegrainX: itt miert nincs nHpadding vajh
-          BitBlt(pDst[0] + nHeight_B * nDstPitches[0], nDstPitches[0],
-            pSrc[0] + nHeight_B * nSrcPitches[0], nSrcPitches[0],
-            nWidth << pixelsize_super_shift, nHeight - nHeight_B);
-          BitBlt(pDst + ((nWidth_B >> nLogxRatioUV) << pixelsize_super_shift), nDstPitch,
-            pSrc + ((nWidth_B >> nLogxRatioUV) << pixelsize_super_shift), nSrcPitch,
-            ((nWidth - nWidth_B) >> nLogxRatioUV) << pixelsize_super_shift, nHeight_B >> nLogyRatioUV);
-      */
       for (int i = 0; i < planecount; i++) {
         if (pPlanes[i])
           BitBlt(pDst[i] + (nHeight_B >> nLogyRatioUVs[i])*nDstPitches[i], nDstPitches[i],
@@ -740,7 +722,7 @@ void	MVCompensate::compensate_slice_overlap(Slicer::TaskData &td)
 
     compensate_slice_overlap(td._y_beg, td._y_end - 1);
 
-    const conc::AioAdd <int>	inc_ftor(+1);
+    const conc::AioAdd <int> inc_ftor(+1);
 
     const int		cnt_top = conc::AtomicIntOp::exec_new(
       _boundary_cnt_arr[td._y_beg],
@@ -751,7 +733,7 @@ void	MVCompensate::compensate_slice_overlap(Slicer::TaskData &td)
       compensate_slice_overlap(td._y_beg - 1, td._y_beg);
     }
 
-    int				cnt_bot = 2;
+    int cnt_bot = 2;
     if (td._y_end < nBlkY)
     {
       cnt_bot = conc::AtomicIntOp::exec_new(
@@ -810,8 +792,8 @@ void	MVCompensate::compensate_slice_overlap(int y_beg, int y_end)
       // select window
       // indexing overlap windows weighting table: left=+0 middle=+1 rightmost=+2
       int wbx = (bx == 0) ? 0 : (bx == nBlkX - 1) ? 2 : 1; // 0 for very first, 2 for very last, 1 for all others in the middle
-      short *        winOver = OverWins->GetWindow(wby + wbx);
-      short *        winOverUV = OverWinsUV->GetWindow(wby + wbx);
+      short *winOver = OverWins->GetWindow(wby + wbx);
+      short *winOverUV = OverWinsUV->GetWindow(wby + wbx);
 
       const int index = by * nBlkX + bx;
       const FakeBlockData & block = _mv_clip_ptr->GetBlock(0, index);
@@ -820,8 +802,8 @@ void	MVCompensate::compensate_slice_overlap(int y_beg, int y_end)
      blx = block.GetX() * nPel + block.GetMV().x * time256 / 256;
      bly = block.GetY() * nPel + block.GetMV().y * time256 / 256 + fieldShift;
      */
-      const int      blx = block.GetX() * nPel + block.GetMV().x * time256 / 256; // 2.5.11.22
-      const int      bly = block.GetY() * nPel + block.GetMV().y * time256 / 256 + fieldShift; // 2.5.11.22
+      const int blx = block.GetX() * nPel + block.GetMV().x * time256 / 256; // 2.5.11.22
+      const int bly = block.GetY() * nPel + block.GetMV().y * time256 / 256 + fieldShift; // 2.5.11.22
 
       if (block.GetSAD() < _thsad)
       {
@@ -949,11 +931,11 @@ void	MVCompensate::compensate_slice_overlap(int y_beg, int y_end)
 
 
 // Returns false if center frame should be used.
-bool	MVCompensate::compute_src_frame(int &nsrc, int &nvec, int &vindex, int n) const
+bool MVCompensate::compute_src_frame(int &nsrc, int &nvec, int &vindex, int n) const
 {
   assert(n >= 0);
 
-  bool           comp_flag = true;
+  bool comp_flag = true;
 
   nsrc = n;
   nvec = n;
@@ -961,13 +943,13 @@ bool	MVCompensate::compute_src_frame(int &nsrc, int &nvec, int &vindex, int n) c
 
   if (_multi_flag)
   {
-    int				tbsize = _trad * 2;
+    int tbsize = _trad * 2;
     if (_center_flag)
     {
       ++tbsize;
 
-      const int		base = n / tbsize;
-      const int		offset = n - base * tbsize;
+      const int base = n / tbsize;
+      const int offset = n - base * tbsize;
       if (offset == _trad)
       {
         comp_flag = false;
@@ -976,8 +958,8 @@ bool	MVCompensate::compute_src_frame(int &nsrc, int &nvec, int &vindex, int n) c
       }
       else
       {
-        const int		bf = (offset > _trad) ? 1 - 2 : 0 - 2;
-        const int		td = abs(offset - _trad);
+        const int bf = (offset > _trad) ? 1 - 2 : 0 - 2;
+        const int td = abs(offset - _trad);
         vindex = td * 2 + bf;
       }
       nsrc = base;
