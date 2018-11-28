@@ -10,7 +10,7 @@ Credits:
 - Manao, Fizick, Tsp, TSchniede, SEt, Vit, Firesledge, cretindesalpes 
 
 Change log
-- 2.7.37 (201811??)
+- 2.7.37 (20181128)
   MCompensate: limit thSAD, thSAD2, thSCD1 to valid range 0-(8x8x255) (e.g. given thSAD = 100000 will go back to 16320)
   Fix: MCompensate: use int64 to avoid effective thSAD and thSAD2 overflow typically happen at bigger block sizes or large thSAD parameter value.
   MCompensate: SSE2 (8bit) and SSE4 (10-16 bit) overlap result calculation
