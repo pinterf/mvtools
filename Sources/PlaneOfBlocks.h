@@ -100,6 +100,7 @@ private:
   const int      nBlkY;            /* height in number of blocks */
   const int      nBlkSizeX;        /* size of a block */
   const int      nBlkSizeY;        /* size of a block */
+  const int      nSqrtBlkSize2D;   /* precalc for DCT 2.7.38- */
   const int      nBlkCount;        /* number of blocks in the plane */
   const int      nPel;             /* pel refinement accuracy */
   const int      nLogPel;          /* logarithm of the pel refinement accuracy */

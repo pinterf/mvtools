@@ -35,8 +35,8 @@
 
 #include <mmintrin.h>
 
-#include	<algorithm>
-#include	<stdexcept>
+#include <algorithm>
+#include <stdexcept>
 #include <stdint.h>
 
 PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSizeY, int _nPel, int _nLevel, int _nFlags, int _nOverlapX, int _nOverlapY, int _xRatioUV, int _yRatioUV, int _pixelsize, int _bits_per_pixel, conc::ObjPool <DCTClass> *dct_pool_ptr, bool mt_flag, int _chromaSADscale, IScriptEnvironment* env)
@@ -44,6 +44,7 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
   , nBlkY(_nBlkY)
   , nBlkSizeX(_nBlkSizeX)
   , nBlkSizeY(_nBlkSizeY)
+  , nSqrtBlkSize2D((int)(std::sqrt((float)_nBlkSizeX * _nBlkSizeY) + 0.5f)) // precalc for DCT 2.7.38-
   , nBlkCount(_nBlkX * _nBlkY)
   , nPel(_nPel)
   , nLogPel(ilog2(_nPel))	// nLogPel=0 for nPel=1, 1 for nPel=2, 2 for nPel=4, i.e. (x*nPel) = (x<<nLogPel)
@@ -2452,7 +2453,7 @@ MV_FORCEINLINE const uint8_t *	PlaneOfBlocks::GetSrcBlock(int nX, int nY)
 }
 
 template<typename pixel_t>
-sad_t	PlaneOfBlocks::LumaSADx(WorkingArea &workarea, const unsigned char *pRef0)
+sad_t PlaneOfBlocks::LumaSADx(WorkingArea &workarea, const unsigned char *pRef0)
 {
   sad_t sad;
   sad_t refLuma;
@@ -2462,9 +2463,13 @@ sad_t	PlaneOfBlocks::LumaSADx(WorkingArea &workarea, const unsigned char *pRef0)
   case 1: // dct SAD
   {
     workarea.DCT->DCTBytes2D(pRef0, nRefPitch[0], &workarea.dctRef[0], dctpitch);
+    const pixel_t src_DC = reinterpret_cast<pixel_t *>(&workarea.dctSrc[0])[0];
+    const pixel_t ref_DC = reinterpret_cast<pixel_t *>(&workarea.dctRef[0])[0];
     sad = ((safe_sad_t)SAD(&workarea.dctSrc[0], dctpitch, &workarea.dctRef[0], dctpitch) +
-      // P.F. 20181123: why *3? when dct'ing (random pixels) and (random pixels + 100), the first element differs only by 100/2
-      abs(reinterpret_cast<pixel_t *>(&workarea.dctSrc[0])[0] - reinterpret_cast<pixel_t *>(&workarea.dctRef[0])[0]) * 3)*nBlkSizeX / 2; //correct reduced DC component
+      // correct reduced DC component: *3: because DC component was normalized by an additional 1/4 factor
+      abs(src_DC - ref_DC) * 3)
+      * nSqrtBlkSize2D // instead of nBlkSizeX, sqrt(nBlkSizeX * nBlkSizeY)
+      / 2;
     break;
   }
   case 2: //  globally (lumaChange) weighted spatial and DCT
@@ -2472,8 +2477,13 @@ sad_t	PlaneOfBlocks::LumaSADx(WorkingArea &workarea, const unsigned char *pRef0)
     if (dctweight16 > 0)
     {
       workarea.DCT->DCTBytes2D(pRef0, nRefPitch[0], &workarea.dctRef[0], dctpitch);
+      const pixel_t src_DC = reinterpret_cast<pixel_t *>(&workarea.dctSrc[0])[0];
+      const pixel_t ref_DC = reinterpret_cast<pixel_t *>(&workarea.dctRef[0])[0];
       sad_t dctsad = ((safe_sad_t)SAD(&workarea.dctSrc[0], dctpitch, &workarea.dctRef[0], dctpitch) +
-        abs(reinterpret_cast<pixel_t *>(&workarea.dctSrc[0])[0] - reinterpret_cast<pixel_t *>(&workarea.dctRef[0])[0]) * 3)*nBlkSizeX / 2;
+        // correct reduced DC component: *3: because DC component was normalized by an additional 1/4 factor
+        abs(src_DC - ref_DC) * 3)
+        * nSqrtBlkSize2D // instead of nBlkSizeX, sqrt(nBlkSizeX * nBlkSizeY)
+        / 2;
       sad = (sad*(16 - dctweight16) + dctsad*dctweight16) / 16;
     }
     break;
@@ -2483,7 +2493,9 @@ sad_t	PlaneOfBlocks::LumaSADx(WorkingArea &workarea, const unsigned char *pRef0)
     if (abs((int)workarea.srcLuma - (int)refLuma) > ((int)workarea.srcLuma + (int)refLuma) >> 5)
     {
       workarea.DCT->DCTBytes2D(pRef0, nRefPitch[0], &workarea.dctRef[0], dctpitch);
-      sad_t dctsad = (safe_sad_t)SAD(&workarea.dctSrc[0], dctpitch, &workarea.dctRef[0], dctpitch)*nBlkSizeX / 2;
+      sad_t dctsad = (safe_sad_t)SAD(&workarea.dctSrc[0], dctpitch, &workarea.dctRef[0], dctpitch)
+        * nSqrtBlkSize2D // instead of nBlkSizeX, sqrt(nBlkSizeX * nBlkSizeY)
+        / 2;
       sad = sad / 2 + dctsad / 2;
     }
     break;
@@ -2493,7 +2505,9 @@ sad_t	PlaneOfBlocks::LumaSADx(WorkingArea &workarea, const unsigned char *pRef0)
     if (abs((int)workarea.srcLuma - (int)refLuma) > ((int)workarea.srcLuma + (int)refLuma) >> 5)
     {
       workarea.DCT->DCTBytes2D(pRef0, nRefPitch[0], &workarea.dctRef[0], dctpitch);
-      sad_t dctsad = (safe_sad_t)SAD(&workarea.dctSrc[0], dctpitch, &workarea.dctRef[0], dctpitch)*nBlkSizeX / 2;
+      sad_t dctsad = (safe_sad_t)SAD(&workarea.dctSrc[0], dctpitch, &workarea.dctRef[0], dctpitch)
+        * nSqrtBlkSize2D // instead of nBlkSizeX, sqrt(nBlkSizeX * nBlkSizeY)
+        / 2;
       sad = sad / 4 + dctsad / 2 + dctsad / 4;
     }
     break;
