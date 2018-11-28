@@ -19,7 +19,6 @@
 
 
 
-#include "conc/CritSec.h"
 #include "DCTFFTW.h"
 
 //#define __INTEL_COMPILER_USE_INTRINSIC_PROTOTYPES 1
@@ -33,11 +32,10 @@
 #include "def.h"
 #include <emmintrin.h>
 #include <smmintrin.h>
+#include <mutex>
+#include <cassert>
 
-
-conc::Mutex DCTFFTW::_fftw_mutex;
-
-
+std::mutex DCTFFTW::_fftw_mutex; // defined as static
 
 DCTFFTW::DCTFFTW(int _sizex, int _sizey, HINSTANCE hinstFFTW3, int _dctmode, int _pixelsize, int _bits_per_pixel, int cpu)
 {
@@ -82,12 +80,23 @@ DCTFFTW::DCTFFTW(int _sizex, int _sizey, HINSTANCE hinstFFTW3, int _dctmode, int
   bytesToFloatPROC = get_bytesToFloatPROC_function(sizex, sizey, pixelsize, arch);
   floatToBytesPROC = get_floatToBytesPROC_function(sizex, sizey, pixelsize, arch);
 
-  int size2d = sizey*sizex;
+  const int size2d = sizey*sizex;
 
+  dctNormalize_AC = 0.70710678118654752440084436210485f; // 1/sqrt(2)
+  dctNormalize_DC = 0.5f; // to be compatible with integer DCTINT8
+
+  dctNormalize_AC = dctNormalize_AC / size2d; // combined 1/dctshift and 1/sqrt(2) 
+  dctNormalize_DC = dctNormalize_DC / 4.0f / size2d; // combined 1/dctshift0 (dctshift*4) and 1/2
+
+  /*
+    Was:
+    DC: (int)(realdata[0] * 0.5f) >> dctshift0 + middlePixelValue;
+    AC: (int)(realdata[x,y] * (1/sqrt(2)) >> dctshift + middlePixelValue
+  */
+#if OLD_FFTW_DCT_DEBUG
+  // dctshift won't be exact when side2d is not power of 2, such as 12x12
   int cursize = 1;
   dctshift = 0;
-  // dctshift won't be exact when side2d is not power of 2, such as 12x12
-  // todo check it
   while (cursize < size2d)
   {
     dctshift++;
@@ -95,10 +104,11 @@ DCTFFTW::DCTFFTW(int _sizex, int _sizey, HINSTANCE hinstFFTW3, int _dctmode, int
   }
 
   dctshift0 = dctshift + 2; // *4 scaling for the DC component
+#endif
 
   // FFTW plan construction and destruction are not thread-safe.
   // http://www.fftw.org/fftw3_doc/Thread-safety.html#Thread-safety
-  conc::CritSec lock(_fftw_mutex);
+  std::lock_guard<std::mutex> lock(_fftw_mutex);
 
   fSrc = (float *)fftwf_malloc_addr(sizeof(float) * size2d);
   fSrcDCT = (float *)fftwf_malloc_addr(sizeof(float) * size2d);
@@ -110,7 +120,7 @@ DCTFFTW::DCTFFTW(int _sizex, int _sizey, HINSTANCE hinstFFTW3, int _dctmode, int
 
 DCTFFTW::~DCTFFTW()
 {
-  conc::CritSec	lock(_fftw_mutex);
+  std::lock_guard lock(_fftw_mutex);
 
   fftwf_destroy_plan_addr(dctplan);
   fftwf_free_addr(fSrc);
@@ -141,9 +151,9 @@ void DCTFFTW::Bytes2Float_SSE2(const unsigned char * srcp8, int src_pitch, float
   const pixel_t *srcp = reinterpret_cast<const pixel_t *>(srcp8);
   src_pitch /= sizeof(pixel_t);
 
-  __m128i zero = _mm_setzero_si128();
+  const __m128i zero = _mm_setzero_si128();
 
-  int floatpitch = nBlkSizeX;
+  const int floatpitch = nBlkSizeX;
   for (int y = 0; y < sizey; y++)
   {
     if (nBlkSizeX == 4) {
@@ -270,17 +280,28 @@ void DCTFFTW::Float2Bytes_SSE2(unsigned char * dstp0, int dst_pitch, float * rea
 
   //sizex = nBlkSizeX; // X from template
 
-  int floatpitch = nBlkSizeX;
+  const int floatpitch = nBlkSizeX;
 
-  int maxPixelValue = (1 << bits_per_pixel) - 1; // 255/65535
-  int middlePixelValue = 1 << (bits_per_pixel - 1);   // 128/32768 
-  constexpr auto coeff = 0.70710678118654752440084436210485f; 
-  __m128i max_pixel_value = _mm_set1_epi16((short)(maxPixelValue));
-  __m128i half = _mm_set1_epi32(middlePixelValue);
+  const int maxPixelValue = (1 << bits_per_pixel) - 1; // 255/65535
+  const int middlePixelValue = 1 << (bits_per_pixel - 1);   // 128/32768 
+  const __m128i max_pixel_value = _mm_set1_epi16((short)(maxPixelValue));
+  const __m128i half = _mm_set1_epi32(middlePixelValue);
+  const __m128 norm_factor = _mm_set1_ps(dctNormalize_AC);
+
+#if OLD_FFTW_DCT_DEBUG
+  // 2.7.38: replaced. Left here for historical reasons
+  constexpr auto coeff = 0.70710678118654752440084436210485f;
   __m128 root2div2 = _mm_set_ps(coeff, coeff, coeff, coeff);
+#endif
 
-  float f = realdata[0] * 0.5f; // to be compatible with integer DCTINT8
-  int first_integ = std::min(maxPixelValue, std::max(0, (int(f) >> dctshift0) + middlePixelValue)); // DC;
+
+  const float f = realdata[0] * dctNormalize_DC; // to be compatible with integer DCTINT8
+  const int first_integ = std::min(maxPixelValue, std::max(0, int(f) + middlePixelValue)); // DC;
+
+#if OLD_FFTW_DCT_DEBUG
+  float f1 = realdata[0] * 0.5f; // to be compatible with integer DCTINT8
+  int first_integ1 = std::min(maxPixelValue, std::max(0, (int(f1) >> dctshift0) + middlePixelValue)); // DC;
+#endif
   // we update it at the end, till then, save pointer
   // dstp[0] = std::min(maxPixelValue, std::max(0, (integ>>dctshift0) + middlePixelValue)); // DC
   pixel_t *dstp_save = dstp;
@@ -294,32 +315,58 @@ void DCTFFTW::Float2Bytes_SSE2(unsigned char * dstp0, int dst_pitch, float * rea
     __m128 src, mulres;
     __m128i intres, intres_lo, intres_hi;
     __m128i res07;
+#if OLD_FFTW_DCT_DEBUG
+    __m128i intres_lo1, intres_hi1, res07_1;
+#endif
     if (nBlkSizeX % 8 == 0) {
       for (int x = 0; x < nBlkSizeX; x += 8) // 8 pixels at a time
       {
         // 0-3
         src = _mm_loadu_ps(reinterpret_cast<float *>(realdata + x));
+        mulres = _mm_mul_ps(src, norm_factor); // (*0.7*/size2d)
+        intres = _mm_cvtps_epi32(mulres); // 4 float -> 4xint  // integ = (int)f;
+        intres_lo = _mm_add_epi32(intres, half); // (integ*0.7*/size2d) + middlePixelValue)
+#if OLD_FFTW_DCT_DEBUG
         mulres = _mm_mul_ps(src, root2div2); // f = realdata[i]*coeff; // to be compatible with integer DCTINT8
         intres = _mm_cvtps_epi32(mulres); // 4 float -> 4xint  // integ = (int)f;
         intres = _mm_srai_epi32(intres, dctshift); // (integ>>dctshift)
-        intres_lo = _mm_add_epi32(intres, half); // (integ>>dctshift) + middlePixelValue)
+        intres_lo1 = _mm_add_epi32(intres, half); // (integ>>dctshift) + middlePixelValue)
+#endif
 
 
         // 4-7
         src = _mm_loadu_ps(reinterpret_cast<float *>(realdata + x + 4));
+        mulres = _mm_mul_ps(src, norm_factor); // (*0.7*/size2d)
+        intres = _mm_cvtps_epi32(mulres); // 4 float -> 4xint  // integ = (int)f;
+        intres_hi = _mm_add_epi32(intres, half); // (integ*0.7*/size2d) + middlePixelValue)
+
+#if OLD_FFTW_DCT_DEBUG
         mulres = _mm_mul_ps(src, root2div2); // f = realdata[i]*coeff; // to be compatible with integer DCTINT8
         intres = _mm_cvtps_epi32(mulres); // 4 float -> 4xint  // integ = (int)f;
         intres = _mm_srai_epi32(intres, dctshift); // (integ>>dctshift)
-        intres_hi = _mm_add_epi32(intres, half); // (integ>>dctshift) + middlePixelValue)
+        intres_hi1 = _mm_add_epi32(intres, half); // (integ>>dctshift) + middlePixelValue)
+#endif
+
+
 
         __m128i u16res = hasSSE4 ? _mm_packus_epi32(intres_lo, intres_hi) : _MM_PACKUS_EPI32(intres_lo, intres_hi); // SSE4
-
+#if OLD_FFTW_DCT_DEBUG
+        __m128i u16res1 = hasSSE4 ? _mm_packus_epi32(intres_lo1, intres_hi1) : _MM_PACKUS_EPI32(intres_lo1, intres_hi1); // SSE4
+#endif
         if (sizeof(pixel_t) == 2) {
           res07 = _mm_min_epu16(u16res, max_pixel_value); // clamp to maxPixelValue
+#if OLD_FFTW_DCT_DEBUG
+          res07_1 = _mm_min_epu16(u16res1, max_pixel_value); // clamp to maxPixelValue
+#endif
           _mm_storeu_si128(reinterpret_cast<__m128i *>(dstp + x), res07);
         }
         else {
           res07 = _mm_packus_epi16(u16res, zero); // clamp to 255
+#if OLD_FFTW_DCT_DEBUG
+          res07_1 = _mm_packus_epi16(u16res1, zero); // clamp to 255
+          // seems that the old method with mul with float then shift as integer is usually different by 1 because of rounding
+          // the new method - dctshift is integrated into the float normalization constant - is better and even quicker, lackes the extra shifting
+#endif
           _mm_storel_epi64(reinterpret_cast<__m128i *>(dstp + x), res07);
         }
         // dstp[x] = std::min(maxPixelValue, std::max(0, (integ>>dctshift) + middlePixelValue));
@@ -330,10 +377,9 @@ void DCTFFTW::Float2Bytes_SSE2(unsigned char * dstp0, int dst_pitch, float * rea
       {
         // 0-3
         src = _mm_loadu_ps(reinterpret_cast<float *>(realdata + x));
-        mulres = _mm_mul_ps(src, root2div2); // f = realdata[i]*coeff; // to be compatible with integer DCTINT8
+        mulres = _mm_mul_ps(src, norm_factor); // (*0.7*/size2d)
         intres = _mm_cvtps_epi32(mulres); // 4 float -> 4xint  // integ = (int)f;
-        intres = _mm_srai_epi32(intres, dctshift); // (integ>>dctshift)
-        intres_lo = _mm_add_epi32(intres, half); // (integ>>dctshift) + middlePixelValue)
+        intres_lo = _mm_add_epi32(intres, half); // (integ*0.7*/size2d) + middlePixelValue)
 
         __m128i u16res = hasSSE4 ? _mm_packus_epi32(intres_lo, intres_lo) : _MM_PACKUS_EPI32(intres_lo, intres_lo); // SSE4
 
@@ -367,35 +413,29 @@ void DCTFFTW::Float2Bytes_C(unsigned char * dstp0, int dst_pitch, float * realda
   pixel_t *dstp = reinterpret_cast<pixel_t *>(dstp0);
   dst_pitch /= sizeof(pixel_t);
 
-  int floatpitch = sizex;
-  int i, j;
-  int integ;
+  const int floatpitch = sizex;
 
-  int maxPixelValue = (1 << bits_per_pixel) - 1; // 255/65535
-  int middlePixelValue = 1 << (bits_per_pixel - 1);   // 128/32768 
-  constexpr auto coeff = 0.70710678118654752440084436210485f; 
+  const int maxPixelValue = (1 << bits_per_pixel) - 1; // 255..65535
+  const int middlePixelValue = 1 << (bits_per_pixel - 1);   // 128..32768 
 
-  float f = realdata[0] * 0.5f; // to be compatible with integer DCTINT8
-  integ = int(f);
-  dstp[0] = std::min(maxPixelValue, std::max(0, (integ >> dctshift0) + middlePixelValue)); // DC
+  // normalization: to be compatible with integer DCTINT8
+  dstp[0] = std::min(maxPixelValue, std::max(0, int(realdata[0] * dctNormalize_DC) + middlePixelValue)); // DC;
 
-  for (i = 1; i < sizex; i += 1)
+  for (int i = 1; i < sizex; i += 1)
   {
-    f = realdata[i] * coeff; // to be compatible with integer DCTINT8
-    integ = int(f);
-    dstp[i] = std::min(maxPixelValue, std::max(0, (integ >> dctshift) + middlePixelValue));
+    const float f = realdata[i] * dctNormalize_AC; // to be compatible with integer DCTINT8
+    dstp[i] = std::min(maxPixelValue, std::max(0, int(f) + middlePixelValue));
   }
 
   dstp += dst_pitch;
   realdata += floatpitch;
 
-  for (j = 1; j < sizey; j++)
+  for (int j = 1; j < sizey; j++)
   {
-    for (i = 0; i < sizex; i += 1)
+    for (int i = 0; i < sizex; i += 1)
     {
-      f = realdata[i] * coeff; // to be compatible with integer DCTINT8
-      integ = (int)f;
-      dstp[i] = std::min(maxPixelValue, std::max(0, (integ >> dctshift) + middlePixelValue));
+      const float f = realdata[i] * dctNormalize_AC; // to be compatible with integer DCTINT8
+      dstp[i] = std::min(maxPixelValue, std::max(0, int(f) + middlePixelValue));
     }
     dstp += dst_pitch;
     realdata += floatpitch;

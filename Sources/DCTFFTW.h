@@ -20,7 +20,7 @@
 #ifndef __MV_DCTFFTW__
 #define __MV_DCTFFTW__
 
-#include	"conc/Mutex.h"
+#include <mutex>
 #include "DCTClass.h"
 #include "fftwlite.h"
 #include "types.h"
@@ -50,13 +50,17 @@ class DCTFFTW
   float * fSrcDCT;
 
 //  members from DCTClass (DCTClass is parent of DCTINT or DCTFFTW)
-//	int sizex;
-//	int sizey;
-//	int dctmode;
+//  int sizex;
+//  int sizey;
+//  int dctmode;
 //  int pixelsize
 //  int bits_per_pixel;
-  int dctshift;
+#if OLD_FFTW_DCT_DEBUG
+  int dctshift; //  was:log2(size2d), only usable for pow2 block sizes
   int dctshift0;
+#endif
+  float dctNormalize_DC; // combined 1/dctshift0 (dctshift*4) and 1/sqrt(2)
+  float dctNormalize_AC; // combined 1/dctshift and 1/sqrt(2) 
 
   template<typename pixel_t>
   void Bytes2Float_C(const unsigned char * srcp0, int _pitch, float * realdata);
@@ -76,7 +80,7 @@ class DCTFFTW
   DCTFFTW::Bytes2FloatFunction get_bytesToFloatPROC_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
   DCTFFTW::Bytes2FloatFunction bytesToFloatPROC;
 
-  static conc::Mutex _fftw_mutex;
+  static std::mutex _fftw_mutex;
 
 public:
 
