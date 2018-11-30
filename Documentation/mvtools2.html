@@ -2202,9 +2202,8 @@ Planar2Interleaved() # convert back to normal interleave YUY2
 
     <h2><a name="revisions"></a>VI) Revisions</h2>
 	
-    <p>2.7.36 (20181120)</p>
+    <p>2.7.37 (20181128)</p>
     <ul>
-          <li>2.7.37 (20181128)</li>
           <li>MCompensate: limit thSAD, thSAD2, thSCD1 to valid range 0-(8x8x255) (e.g. given thSAD = 100000 will go back to 16320)</li>
 		  <li>Fix: MCompensate: use int64 to avoid effective thSAD and thSAD2 overflow typically happen at bigger block sizes or large thSAD parameter value.</li>
 		  <li>MCompensate: SSE2 (8bit) and SSE4 (10-16 bit) overlap result calculation</li>
