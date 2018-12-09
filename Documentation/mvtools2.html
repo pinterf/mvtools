@@ -12,7 +12,7 @@
     <h2>Abstract</h2>
     <table class="n">
         <tr><td class="n"><b>Authors:      </b></td><td class="n">&nbsp;</td><td class="n">Manao, Tsp, TSchniede, SEt, Fizick (Alexander Balakhnin), Vit, Firesledge, pinterf</td></tr>
-        <tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.37</td></tr>
+        <tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.38</td></tr>
         <tr><td class="n"><b>Base versions:</b></td><td class="n">&nbsp;</td><td class="n">2.6.0.5 + 2.5.11.22</td></tr>
         <tr><td class="n"><b>Base download:</b></td><td class="n">&nbsp;</td><td class="n">Contained in the Dither package, <a href="http://ldesoras.free.fr/prod.html#src_ditheravsi">http://ldesoras.free.fr/prod.html</a></td></tr>
         <tr><td class="n"><b>Category:     </b></td><td class="n">&nbsp;</td><td class="n">Misc Plugins</td></tr>
@@ -574,12 +574,12 @@
         <code>MFlow</code>, <code>MFlowInter</code>, <code>MFlowFps</code>,
         <code>MShow</code>, <code>MMask</code>, <code>MCompensate</code> and all the
         <code>MDeGrain*</code>.
-<pre class="proto">
+        <pre class="proto">
                                                                                                 
-                            <----oh--->      <---oh---->       <---oh--->                               
+                            &lt----oh---&gt      &lt---oh----&gt       &lt---oh---&gt                               
                                                                                                         
-                            <------------bh------------>       <------------bh------------>             
-           <------------bh------------>      <------------bh------------>                               
+                            &lt------------bh------------&gt       &lt------------bh------------&gt             
+           &lt------------bh------------&gt      &lt------------bh------------&gt                               
                                                                                                         
        ^   +--------------------------+      +--------------------------+                               
        |   |                +---------|----------------+       +--------------------------+             
@@ -879,7 +879,7 @@
     <p>
         This is multilevel super clip prepared by <code>MSuper</code> function.
         Mandatory.
-		From 2.7.37 may more bit depths and formats supported: 8-32 bits, YUV420-422-444, Planar RGB, and YUY2 planar
+        From 2.7.37 may more bit depths and formats supported: 8-32 bits, YUV420-422-444, Planar RGB, and YUY2 planar
         Super clip format must match with the source, but can be different from the base format of vector clip.
     </p>
     <p class="var">vectors</p>
@@ -2201,19 +2201,27 @@ Planar2Interleaved() # convert back to normal interleave YUY2
     </ul>
 
     <h2><a name="revisions"></a>VI) Revisions</h2>
-	
+    <p>2.7.38 (20181209)</p>
+    <ul>
+        <li>MCompensate: Fix regression in latest v37: MCompensate w/ overlap=0 crash</li>
+        <li>MAnalyze DCT: FFTW float: quicker postprocess of DCT'd blocks, now is correct for non power-of-2 block sizes e.g. 12x12 or 24x24 (no effect on 8x8 for which fast integer DCT is used)</li>
+        <li>MAnalyze DCT: more consistent handling of post DCT internal normalization for non-square block sizes.</li>
+    </ul>
+
     <p>2.7.37 (20181128)</p>
     <ul>
-          <li>MCompensate: limit thSAD, thSAD2, thSCD1 to valid range 0-(8x8x255) (e.g. given thSAD = 100000 will go back to 16320)</li>
-		  <li>Fix: MCompensate: use int64 to avoid effective thSAD and thSAD2 overflow typically happen at bigger block sizes or large thSAD parameter value.</li>
-		  <li>MCompensate: SSE2 (8bit) and SSE4 (10-16 bit) overlap result calculation</li>
-		  <li>Changed: SAD 8x8, 8x4, 4x4, 4x8 to use SSE2 instead of MMX registers</li>
-		  <li>Fix: MDegrain if overlap<>0: missing rounder in rightmost 8 pixels for non-mod8 width 8 bit clips</li>
-		  <li>Fix: MSuper artifacts at 10-32 bits and nPel==4</li>
-		  <li>New: MCompensate 32 bit float and planar RGB support (by using motion vectors made from 8-16 bit YUV clip).
-			   Input and super clip can be of a different format than the one used for motion vector creation. (Similar to MDegrain1-6)</li>
+        <li>MCompensate: limit thSAD, thSAD2, thSCD1 to valid range 0-(8x8x255) (e.g. given thSAD = 100000 will go back to 16320)</li>
+        <li>Fix: MCompensate: use int64 to avoid effective thSAD and thSAD2 overflow typically happen at bigger block sizes or large thSAD parameter value.</li>
+        <li>MCompensate: SSE2 (8bit) and SSE4 (10-16 bit) overlap result calculation</li>
+        <li>Changed: SAD 8x8, 8x4, 4x4, 4x8 to use SSE2 instead of MMX registers</li>
+        <li>Fix: MDegrain if overlap<>0: missing rounder in rightmost 8 pixels for non-mod8 width 8 bit clips</li>
+        <li>Fix: MSuper artifacts at 10-32 bits and nPel==4</li>
+        <li>
+            New: MCompensate 32 bit float and planar RGB support (by using motion vectors made from 8-16 bit YUV clip).
+            Input and super clip can be of a different format than the one used for motion vector creation. (Similar to MDegrain1-6)
+        </li>
     </ul>
-	
+
     <p>2.7.36 (20181120)</p>
     <ul>
         <li>Fix: Allow overlap operation when there are only two blocks in either horizontal or vertical direction (was: division by 0 crash)</li>
@@ -3635,5 +3643,6 @@ Planar2Interleaved() # convert back to normal interleave YUY2
     <p>&nbsp;</p>
     <p>&nbsp;</p>
     <p>&nbsp;</p>
+    </ul>
 </div></body>
 </html>

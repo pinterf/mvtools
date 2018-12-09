@@ -10,6 +10,11 @@ Credits:
 - Manao, Fizick, Tsp, TSchniede, SEt, Vit, Firesledge, cretindesalpes 
 
 Change log
+- 2.7.38 (20181209)
+  MCompensate: Fix regression in latest v37: overlap=0 crash - ouch, sorry
+  MAnalyze DCT: FFTW float: quicker postprocess of DCT'd blocks, now is correct for non power-of-2 block sizes e.g. 12 or 24 (no effect on 8x8 for which fast integer DCT is used)
+  MAnalyze DCT: more consistent handling of post DCT internal normalization for non-square block sizes.
+
 - 2.7.37 (20181128)
   MCompensate: limit thSAD, thSAD2, thSCD1 to valid range 0-(8x8x255) (e.g. given thSAD = 100000 will go back to 16320)
   Fix: MCompensate: use int64 to avoid effective thSAD and thSAD2 overflow typically happen at bigger block sizes or large thSAD parameter value.
