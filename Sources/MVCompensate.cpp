@@ -639,7 +639,7 @@ void	MVCompensate::compensate_slice_normal(Slicer::TaskData &td)
   for (int i = 0; i < planecount; i++) {
     int rowsize = nBlkSizeY >> nLogyRatioUVs[i];
     pDstCur[i] = pDst[i] + td._y_beg * rowsize * nDstPitches[i];
-    DstCurPitches[0] = rowsize * nDstPitches[i];
+    DstCurPitches[i] = rowsize * nDstPitches[i];
     pSrcCur[i] = pSrc[i] + td._y_beg * rowsize * nSrcPitches[i];
     SrcCurPitches[i] = rowsize * nSrcPitches[i];
   }
