@@ -10,6 +10,12 @@ Credits:
 - Manao, Fizick, Tsp, TSchniede, SEt, Vit, Firesledge, cretindesalpes 
 
 Change log
+- 2.7.39 (20190102)
+  - MSuper: fix 16 bits, pel=2, sharp=2, which caused bottom-section artifacts for MDegrain using 8 bit vector origin and 16 bit real clip
+  - MDegrain1-6,N: Enhanced:\
+       Input clip (and super) format now is fully independent from vector clip's base format (subsampling had to be the same before)
+       E.g. make motion vector clips from a YV12 source and apply them on a 8-32 bit 4:4:4 input
+
 - 2.7.38 (20181209)
   - MCompensate: Fix regression in latest v37: overlap=0 crash - ouch, sorry
   - MAnalyze DCT: FFTW float: quicker postprocess of DCT'd blocks, now is correct for non power-of-2 block sizes\
@@ -24,7 +30,7 @@ Change log
   - Changed: SAD 8x8, 8x4, 4x4, 4x8 to use SSE2 instead of MMX registers
   - Fix: MDegrain if overlap<>0: missing rounder in rightmost 8 pixels for non-mod8 width 8 bit clips
   - Fix: MSuper artifacts at 10-32 bits and nPel==4
-  - New: MCompensate 32 bit float and planar RGB support (by using motion vectors made from 8-16 bit YUV clip). 
+  - New: MCompensate 32 bit float and planar RGB support (by using motion vectors made from 8-16 bit YUV clip).\ 
        Input and super clip can be of a different format than the one used for motion vector creation.\
        (Similar to MDegrain1-6)
 

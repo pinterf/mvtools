@@ -12,7 +12,7 @@
     <h2>Abstract</h2>
     <table class="n">
         <tr><td class="n"><b>Authors:      </b></td><td class="n">&nbsp;</td><td class="n">Manao, Tsp, TSchniede, SEt, Fizick (Alexander Balakhnin), Vit, Firesledge, pinterf</td></tr>
-        <tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.38</td></tr>
+        <tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.39</td></tr>
         <tr><td class="n"><b>Base versions:</b></td><td class="n">&nbsp;</td><td class="n">2.6.0.5 + 2.5.11.22</td></tr>
         <tr><td class="n"><b>Base download:</b></td><td class="n">&nbsp;</td><td class="n">Contained in the Dither package, <a href="http://ldesoras.free.fr/prod.html#src_ditheravsi">http://ldesoras.free.fr/prod.html</a></td></tr>
         <tr><td class="n"><b>Category:     </b></td><td class="n">&nbsp;</td><td class="n">Misc Plugins</td></tr>
@@ -1625,9 +1625,9 @@
         Multilevel super clip prepared by <code>MSuper</code> function.
         Mandatory.
         Its format has to match to the source clip's format.
-        The plane subsampling has to be the same as the motion vector base clip's data.
         Since v2.7.25 source and super clip's bit depth can be different that of motion vectors!
         It is possible to Degrain a 16 or 32 bit clip (and Super) with motion vectors created from a 8 bit clip.
+        Versions over 2.7.39 are giving full freedom: even subsampling can be different from the motion vector base clip's data.
     </p>
     <p class="var">mvbw, mvfw, mvbw2, mvfw2, mvbw3, mvfw3, mvmulti</p>
     <p>
@@ -1691,6 +1691,7 @@
     </p>
     <p class="var">thSAD2, thSADC2</p>
     <p>
+        Parameter is for MDegrainN
         Define the SAD soft threshold for the furthest frames.
         The actual SAD threshold for each reference frame is a smooth interpolation
         between the original <var>thSAD</var> (close to the current frame) and
@@ -2201,6 +2202,15 @@ Planar2Interleaved() # convert back to normal interleave YUY2
     </ul>
 
     <h2><a name="revisions"></a>VI) Revisions</h2>
+    <p>2.7.39 (20190102)</p>
+    <ul>
+        <li>MSuper: fix 16 bits, pel=2, sharp=2, which caused bottom section artifacts for MDegrains for 8 bit vector origin and 16 bit real clip</li>
+        <li>MDegrain1-6,N: Enhanced:<br />
+            Input clip (and super) format now is fully independent from vector clip's base format (subsampling had to be the same before)<br />
+            E.g. make motion vector clips from a YV12 source and apply them on a 8-32 bit 4:4:4 input
+        </li>
+    </ul>
+
     <p>2.7.38 (20181209)</p>
     <ul>
         <li>MCompensate: Fix regression in latest v37: MCompensate w/ overlap=0 crash</li>
