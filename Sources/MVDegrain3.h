@@ -63,12 +63,13 @@ private:
   bool lsb_flag;
   bool out16_flag; // native 16 bit out instead of fake lsb
   int height_lsb_or_out16_mul;
-  //int pixelsize; // in MVFilter
-  //int bits_per_pixel; // in MVFilter
-  
+  //int pixelsize, bits_per_pixel; // in MVFilter
+  //int xRatioUV, yRatioUV; // in MVFilter
   int pixelsize_super; // PF not param, from create
   int bits_per_pixel_super; // PF not param, from create
   int pixelsize_super_shift;
+  int xRatioUV_super, nLogxRatioUV_super; // 2.7.39-
+  int yRatioUV_super, nLogyRatioUV_super;
   
   // 2.7.26
   int pixelsize_output;

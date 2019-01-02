@@ -526,8 +526,6 @@ MDegrainN::MDegrainN(
   , _mt_flag(mt_flag)
   , _out16_flag(out16_flag)
   , _height_lsb_or_out16_mul((lsb_flag || out16_flag) ? 2 : 1)
-  , _xratiouv_log((xRatioUV == 2) ? 1 : 0)
-  , _yratiouv_log((yRatioUV == 2) ? 1 : 0)
   , _nsupermodeyuv(-1)
   , _dst_planes(nullptr)
   , _src_planes(nullptr)
@@ -593,22 +591,18 @@ MDegrainN::MDegrainN(
 
   if (!vi.IsSameColorspace(_super->GetVideoInfo()))
     env_ptr->ThrowError("MDegrainN: source and super clip video format is different!");
-  if (!vi.IsY()) {
-    // This is not strictly necessary, because motion vectors original pixel format now can be 
-    // somewhat independent that of source/Super clip. Width, height, padding should match however.
-    // Todo: This could be done by replacing 
-    // nLogxRatioUV and nLogyRatioUV and xRatioUV and yRatioUV usage
-    // with the source/super clip's similar attributes and use them
-    //
-    if (_super->GetVideoInfo().GetPlaneHeightSubsampling(PLANAR_U) != nLogyRatioUV ||
-      _super->GetVideoInfo().GetPlaneWidthSubsampling(PLANAR_U) != nLogxRatioUV)
-      env_ptr->ThrowError("MDegrainN: source clip and vectors: plane width or height subsampling is different!");
+
+  // v2.7.39- make subsampling independent from motion vector's origin:
+  // because xRatioUV and yRatioUV: in MVFilter, property of motion vectors
+  xRatioUV_super = 1;
+  yRatioUV_super = 1;
+  if (!vi.IsY() && !vi.IsRGB()) {
+    xRatioUV_super = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U));
+    yRatioUV_super = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U));
   }
-  /* allow super clip format different of that from vector clip
-  if (bits_per_pixel_super != bits_per_pixel) {
-  env_ptr->ThrowError("MDegrainX : clip and super clip have different bit depths");
-  }
-  */
+  nLogxRatioUV_super = ilog2(xRatioUV_super);
+  nLogyRatioUV_super = ilog2(yRatioUV_super);
+
   pixelsize_super = vi_super.ComponentSize(); // of MVFilter
   bits_per_pixel_super = vi_super.BitsPerComponent();
 
@@ -645,8 +639,8 @@ MDegrainN::MDegrainN(
       nSuperVPad,
       _nsupermodeyuv,
       _cpuFlags,
-      xRatioUV,
-      yRatioUV,
+      xRatioUV_super,
+      yRatioUV_super,
       pixelsize_super,
       bits_per_pixel_super,
       mt_flag
@@ -714,8 +708,8 @@ MDegrainN::MDegrainN(
       new OverlapWindows(nBlkSizeX, nBlkSizeY, nOverlapX, nOverlapY)
       );
     _overwins_uv = std::unique_ptr <OverlapWindows>(new OverlapWindows(
-      nBlkSizeX >> _xratiouv_log, nBlkSizeY >> _yratiouv_log,
-      nOverlapX >> _xratiouv_log, nOverlapY >> _yratiouv_log
+      nBlkSizeX >> nLogxRatioUV_super, nBlkSizeY >> nLogyRatioUV_super,
+      nOverlapX >> nLogxRatioUV_super, nOverlapY >> nLogyRatioUV_super
     ));
     if (_lsb_flag || pixelsize_output > 1)
     {
@@ -749,19 +743,19 @@ MDegrainN::MDegrainN(
 
 // C only -> NO_SIMD
   _oversluma_lsb_ptr = get_overlaps_lsb_function(nBlkSizeX, nBlkSizeY, sizeof(uint8_t), NO_SIMD);
-  _overschroma_lsb_ptr = get_overlaps_lsb_function(nBlkSizeX / xRatioUV, nBlkSizeY / yRatioUV, sizeof(uint8_t), NO_SIMD);
+  _overschroma_lsb_ptr = get_overlaps_lsb_function(nBlkSizeX / xRatioUV_super, nBlkSizeY / yRatioUV_super, sizeof(uint8_t), NO_SIMD);
 
   _oversluma_ptr = get_overlaps_function(nBlkSizeX, nBlkSizeY, sizeof(uint8_t), arch);
-  _overschroma_ptr = get_overlaps_function(nBlkSizeX / xRatioUV, nBlkSizeY / yRatioUV, sizeof(uint8_t), arch);
+  _overschroma_ptr = get_overlaps_function(nBlkSizeX / xRatioUV_super, nBlkSizeY / yRatioUV_super, sizeof(uint8_t), arch);
 
   _oversluma16_ptr = get_overlaps_function(nBlkSizeX, nBlkSizeY, sizeof(uint16_t), arch);
-  _overschroma16_ptr = get_overlaps_function(nBlkSizeX >> nLogxRatioUV, nBlkSizeY >> nLogyRatioUV, sizeof(uint16_t), arch);
+  _overschroma16_ptr = get_overlaps_function(nBlkSizeX >> nLogxRatioUV_super, nBlkSizeY >> nLogyRatioUV_super, sizeof(uint16_t), arch);
 
   _oversluma32_ptr = get_overlaps_function(nBlkSizeX, nBlkSizeY, sizeof(float), arch);
-  _overschroma32_ptr = get_overlaps_function(nBlkSizeX >> nLogxRatioUV, nBlkSizeY >> nLogyRatioUV, sizeof(float), arch);
+  _overschroma32_ptr = get_overlaps_function(nBlkSizeX >> nLogxRatioUV_super, nBlkSizeY >> nLogyRatioUV_super, sizeof(float), arch);
 
   _degrainluma_ptr = get_denoiseN_function(nBlkSizeX, nBlkSizeY, bits_per_pixel_super, lsb_flag, out16_flag, arch);
-  _degrainchroma_ptr = get_denoiseN_function(nBlkSizeX / xRatioUV, nBlkSizeY / yRatioUV, bits_per_pixel_super, lsb_flag, out16_flag, arch);
+  _degrainchroma_ptr = get_denoiseN_function(nBlkSizeX / xRatioUV_super, nBlkSizeY / yRatioUV_super, bits_per_pixel_super, lsb_flag, out16_flag, arch);
 
   if (!_oversluma_lsb_ptr)
     env_ptr->ThrowError("MDegrainN : no valid _oversluma_lsb_ptr function for %dx%d, pixelsize=%d, lsb_flag=%d", nBlkSizeX, nBlkSizeY, pixelsize_super, (int)lsb_flag);
@@ -932,8 +926,8 @@ static void plane_copy_8_to_16_c(uint8_t *dstp, int dstpitch, const uint8_t *src
   }
 
   _lsb_offset_arr[0] = _dst_pitch_arr[0] * nHeight;
-  _lsb_offset_arr[1] = _dst_pitch_arr[1] * (nHeight >> _yratiouv_log);
-  _lsb_offset_arr[2] = _dst_pitch_arr[2] * (nHeight >> _yratiouv_log);
+  _lsb_offset_arr[1] = _dst_pitch_arr[1] * (nHeight >> nLogyRatioUV_super);
+  _lsb_offset_arr[2] = _dst_pitch_arr[2] * (nHeight >> nLogyRatioUV_super);
 
   if (_lsb_flag)
   {
@@ -1234,14 +1228,14 @@ void	MDegrainN::process_chroma(int plane_mask)
       // copy 8 bit source to 16bit target
       plane_copy_8_to_16_c(_dst_ptr_arr[P], _dst_pitch_arr[P],
         _src_ptr_arr[P], _src_pitch_arr[P],
-        nWidth >> _xratiouv_log, nHeight >> _yratiouv_log
+        nWidth >> nLogxRatioUV_super, nHeight >> nLogyRatioUV_super
       );
     }
     else {
       BitBlt(
         _dst_ptr_arr[P], _dst_pitch_arr[P],
         _src_ptr_arr[P], _src_pitch_arr[P],
-        (nWidth >> _xratiouv_log) << pixelsize_super_shift, nHeight >> _yratiouv_log
+        (nWidth >> nLogxRatioUV_super) << pixelsize_super_shift, nHeight >> nLogyRatioUV_super
       );
     }
   }
@@ -1270,7 +1264,7 @@ void	MDegrainN::process_chroma(int plane_mask)
       {
         MemZoneSet(
           reinterpret_cast <unsigned char *> (pDstInt), 0,
-          (_covered_width * sizeof(int)) >> _xratiouv_log, _covered_height >> _yratiouv_log,
+          (_covered_width * sizeof(int)) >> nLogxRatioUV_super, _covered_height >> nLogyRatioUV_super,
           0, 0, _dst_int_pitch * sizeof(int)
         );
       }
@@ -1278,7 +1272,7 @@ void	MDegrainN::process_chroma(int plane_mask)
       {  
         MemZoneSet(
           reinterpret_cast <unsigned char *> (pDstShort), 0,
-          (_covered_width * sizeof(short)) >> _xratiouv_log, _covered_height >> _yratiouv_log,
+          (_covered_width * sizeof(short)) >> nLogxRatioUV_super, _covered_height >> nLogyRatioUV_super,
           0, 0, _dst_short_pitch * sizeof(short)
         );
       }
@@ -1307,7 +1301,7 @@ void	MDegrainN::process_chroma(int plane_mask)
           _dst_ptr_arr[P] + _lsb_offset_arr[P], // 8 bit only
           _dst_pitch_arr[P],
           &_dst_int[0], _dst_int_pitch,
-          _covered_width >> _xratiouv_log, _covered_height >> _yratiouv_log
+          _covered_width >> nLogxRatioUV_super, _covered_height >> nLogyRatioUV_super
         );
       }
       else if (_out16_flag)
@@ -1315,7 +1309,7 @@ void	MDegrainN::process_chroma(int plane_mask)
         Short2Bytes_Int32toWord16(
           (uint16_t *)_dst_ptr_arr[P], _dst_pitch_arr[P],
           &_dst_int[0], _dst_int_pitch,
-          _covered_width >> _xratiouv_log, _covered_height >> _yratiouv_log,
+          _covered_width >> nLogxRatioUV_super, _covered_height >> nLogyRatioUV_super,
           bits_per_pixel_output
         );
       }
@@ -1324,7 +1318,7 @@ void	MDegrainN::process_chroma(int plane_mask)
         Short2Bytes(
           _dst_ptr_arr[P], _dst_pitch_arr[P],
           &_dst_short[0], _dst_short_pitch,
-          _covered_width >> _xratiouv_log, _covered_height >> _yratiouv_log
+          _covered_width >> nLogxRatioUV_super, _covered_height >> nLogyRatioUV_super
         );
       }
       else if (pixelsize_super == 2)
@@ -1332,7 +1326,7 @@ void	MDegrainN::process_chroma(int plane_mask)
         Short2Bytes_Int32toWord16(
           (uint16_t *)_dst_ptr_arr[P], _dst_pitch_arr[P],
           &_dst_int[0], _dst_int_pitch,
-          _covered_width >> _xratiouv_log, _covered_height >> _yratiouv_log,
+          _covered_width >> nLogxRatioUV_super, _covered_height >> nLogyRatioUV_super,
           bits_per_pixel_super
         );
       }
@@ -1341,7 +1335,7 @@ void	MDegrainN::process_chroma(int plane_mask)
         Short2Bytes_FloatInInt32ArrayToFloat(
           (float *)_dst_ptr_arr[P], _dst_pitch_arr[P],
           (float *)&_dst_int[0], _dst_int_pitch,
-          _covered_width >> _xratiouv_log, _covered_height >> _yratiouv_log
+          _covered_width >> nLogxRatioUV_super, _covered_height >> nLogyRatioUV_super
         );
       }
 
@@ -1349,16 +1343,16 @@ void	MDegrainN::process_chroma(int plane_mask)
       {
         if (_out16_flag) {
           // copy 8 bit source to 16bit target
-          plane_copy_8_to_16_c(_dst_ptr_arr[P] + ((_covered_width >> _xratiouv_log) << pixelsize_output_shift), _dst_pitch_arr[P],
-            _src_ptr_arr[P] + (_covered_width >> _xratiouv_log), _src_pitch_arr[P],
-            (nWidth - _covered_width) >> _xratiouv_log, _covered_height >> _yratiouv_log
+          plane_copy_8_to_16_c(_dst_ptr_arr[P] + ((_covered_width >> nLogxRatioUV_super) << pixelsize_output_shift), _dst_pitch_arr[P],
+            _src_ptr_arr[P] + (_covered_width >> nLogxRatioUV_super), _src_pitch_arr[P],
+            (nWidth - _covered_width) >> nLogxRatioUV_super, _covered_height >> nLogyRatioUV_super
           );
         }
         else {
           BitBlt(
-            _dst_ptr_arr[P] + ((_covered_width >> _xratiouv_log) << pixelsize_super_shift), _dst_pitch_arr[P],
-            _src_ptr_arr[P] + ((_covered_width >> _xratiouv_log) << pixelsize_super_shift), _src_pitch_arr[P],
-            ((nWidth - _covered_width) >> _xratiouv_log) << pixelsize_super_shift, _covered_height >> _yratiouv_log
+            _dst_ptr_arr[P] + ((_covered_width >> nLogxRatioUV_super) << pixelsize_super_shift), _dst_pitch_arr[P],
+            _src_ptr_arr[P] + ((_covered_width >> nLogxRatioUV_super) << pixelsize_super_shift), _src_pitch_arr[P],
+            ((nWidth - _covered_width) >> nLogxRatioUV_super) << pixelsize_super_shift, _covered_height >> nLogyRatioUV_super
           );
         }
       }
@@ -1366,16 +1360,16 @@ void	MDegrainN::process_chroma(int plane_mask)
       {
         if (_out16_flag) {
           // copy 8 bit source to 16bit target
-          plane_copy_8_to_16_c(_dst_ptr_arr[P] + ((_dst_pitch_arr[P] * _covered_height) >> _yratiouv_log), _dst_pitch_arr[P],
-            _src_ptr_arr[P] + ((_src_pitch_arr[P] * _covered_height) >> _yratiouv_log), _src_pitch_arr[P],
-            nWidth >> _xratiouv_log, ((nHeight - _covered_height) >> _yratiouv_log)
+          plane_copy_8_to_16_c(_dst_ptr_arr[P] + ((_dst_pitch_arr[P] * _covered_height) >> nLogyRatioUV_super), _dst_pitch_arr[P],
+            _src_ptr_arr[P] + ((_src_pitch_arr[P] * _covered_height) >> nLogyRatioUV_super), _src_pitch_arr[P],
+            nWidth >> nLogxRatioUV_super, ((nHeight - _covered_height) >> nLogyRatioUV_super)
           );
         }
         else {
           BitBlt(
-            _dst_ptr_arr[P] + ((_dst_pitch_arr[P] * _covered_height) >> _yratiouv_log), _dst_pitch_arr[P],
-            _src_ptr_arr[P] + ((_src_pitch_arr[P] * _covered_height) >> _yratiouv_log), _src_pitch_arr[P],
-            (nWidth >> _xratiouv_log) << pixelsize_super_shift, ((nHeight - _covered_height) >> _yratiouv_log)
+            _dst_ptr_arr[P] + ((_dst_pitch_arr[P] * _covered_height) >> nLogyRatioUV_super), _dst_pitch_arr[P],
+            _src_ptr_arr[P] + ((_src_pitch_arr[P] * _covered_height) >> nLogyRatioUV_super), _src_pitch_arr[P],
+            (nWidth >> nLogxRatioUV_super) << pixelsize_super_shift, ((nHeight - _covered_height) >> nLogyRatioUV_super)
           );
         }
       }
@@ -1391,7 +1385,7 @@ void	MDegrainN::process_chroma(int plane_mask)
         realLimitc = (float)_nlimitc / 255.0f;
       LimitFunction(_dst_ptr_arr[P], _dst_pitch_arr[P],
         _src_ptr_arr[P], _src_pitch_arr[P],
-        nWidth >> _xratiouv_log, nHeight >> _yratiouv_log,
+        nWidth >> nLogxRatioUV_super, nHeight >> nLogyRatioUV_super,
         realLimitc
       );
     }
@@ -1638,12 +1632,12 @@ template <int P>
 void	MDegrainN::process_chroma_normal_slice(Slicer::TaskData &td)
 {
   assert(&td != 0);
-  const int rowsize = nBlkSizeY >> _yratiouv_log; // bad name. it's height really
+  const int rowsize = nBlkSizeY >> nLogyRatioUV_super; // bad name. it's height really
   BYTE *pDstCur = _dst_ptr_arr[P] + td._y_beg * rowsize * _dst_pitch_arr[P];
   const BYTE *pSrcCur = _src_ptr_arr[P] + td._y_beg * rowsize * _src_pitch_arr[P];
 
-  int effective_nSrcPitch = (nBlkSizeY >> _yratiouv_log) * _src_pitch_arr[P]; // pitch is byte granularity
-  int effective_nDstPitch = (nBlkSizeY >> _yratiouv_log) * _dst_pitch_arr[P]; // pitch is short granularity
+  int effective_nSrcPitch = (nBlkSizeY >> nLogyRatioUV_super) * _src_pitch_arr[P]; // pitch is byte granularity
+  int effective_nDstPitch = (nBlkSizeY >> nLogyRatioUV_super) * _dst_pitch_arr[P]; // pitch is short granularity
 
   for (int by = td._y_beg; by < td._y_end; ++by)
   {
@@ -1683,9 +1677,9 @@ void	MDegrainN::process_chroma_normal_slice(Slicer::TaskData &td)
         ref_data_ptr_arr, pitch_arr, weight_arr, _trad
       );
 
-      //if (nLogxRatioUV != _xratiouv_log) // orphaned if. chroma processing failed between 2.7.1-2.7.20
+      //if (nLogxRatioUV != nLogxRatioUV_super) // orphaned if. chroma processing failed between 2.7.1-2.7.20
       //xx += nBlkSizeX; // blksize of Y plane, that's why there is xx >> xRatioUVlog above
-      xx += (nBlkSizeX >> nLogxRatioUV); // xx: indexing offset
+      xx += (nBlkSizeX >> nLogxRatioUV_super); // xx: indexing offset
 
       if (bx == nBlkX - 1 && _covered_width < nWidth) // right non-covered region
       {
@@ -1693,16 +1687,16 @@ void	MDegrainN::process_chroma_normal_slice(Slicer::TaskData &td)
         if (_out16_flag) {
           // copy 8 bit source to 16bit target
           plane_copy_8_to_16_c(
-            pDstCur + ((_covered_width >> _xratiouv_log) << pixelsize_output_shift), _dst_pitch_arr[P],
-            pSrcCur + ((_covered_width >> _xratiouv_log) << pixelsize_super_shift), _src_pitch_arr[P],
-            (nWidth - _covered_width) >> _xratiouv_log/* real row_size */, rowsize /* bad name. it's height = nBlkSizeY >> _yratiouv_log*/
+            pDstCur + ((_covered_width >> nLogxRatioUV_super) << pixelsize_output_shift), _dst_pitch_arr[P],
+            pSrcCur + ((_covered_width >> nLogxRatioUV_super) << pixelsize_super_shift), _src_pitch_arr[P],
+            (nWidth - _covered_width) >> nLogxRatioUV_super/* real row_size */, rowsize /* bad name. it's height = nBlkSizeY >> nLogyRatioUV_super*/
           );
         }
         else {
           BitBlt(
-            pDstCur + ((_covered_width >> _xratiouv_log) << pixelsize_super_shift), _dst_pitch_arr[P],
-            pSrcCur + ((_covered_width >> _xratiouv_log) << pixelsize_super_shift), _src_pitch_arr[P],
-            ((nWidth - _covered_width) >> _xratiouv_log) << pixelsize_super_shift /* real row_size */, rowsize /* bad name. it's height = nBlkSizeY >> _yratiouv_log*/
+            pDstCur + ((_covered_width >> nLogxRatioUV_super) << pixelsize_super_shift), _dst_pitch_arr[P],
+            pSrcCur + ((_covered_width >> nLogxRatioUV_super) << pixelsize_super_shift), _src_pitch_arr[P],
+            ((nWidth - _covered_width) >> nLogxRatioUV_super) << pixelsize_super_shift /* real row_size */, rowsize /* bad name. it's height = nBlkSizeY >> nLogyRatioUV_super*/
           );
         }
       }
@@ -1719,14 +1713,14 @@ void	MDegrainN::process_chroma_normal_slice(Slicer::TaskData &td)
         plane_copy_8_to_16_c(
           pDstCur, _dst_pitch_arr[P],
           pSrcCur, _src_pitch_arr[P],
-          nWidth >> _xratiouv_log, (nHeight - _covered_height) >> _yratiouv_log /* height */
+          nWidth >> nLogxRatioUV_super, (nHeight - _covered_height) >> nLogyRatioUV_super /* height */
         );
       }
       else {
         BitBlt(
           pDstCur, _dst_pitch_arr[P],
           pSrcCur, _src_pitch_arr[P],
-          (nWidth >> _xratiouv_log) << pixelsize_super_shift, (nHeight - _covered_height) >> _yratiouv_log /* height */
+          (nWidth >> nLogxRatioUV_super) << pixelsize_super_shift, (nHeight - _covered_height) >> nLogyRatioUV_super /* height */
         );
       }
     }
@@ -1785,7 +1779,7 @@ void	MDegrainN::process_chroma_overlap_slice(int y_beg, int y_end)
 {
   TmpBlock       tmp_block;
 
-  const int rowsize = (nBlkSizeY - nOverlapY) >> _yratiouv_log; // bad name. it's height really
+  const int rowsize = (nBlkSizeY - nOverlapY) >> nLogyRatioUV_super; // bad name. it's height really
   const BYTE *pSrcCur = _src_ptr_arr[P] + y_beg * rowsize * _src_pitch_arr[P];
 
   unsigned short *pDstShort = (_dst_short.empty()) ? 0 : &_dst_short[0] + y_beg * rowsize * _dst_short_pitch;
@@ -1793,9 +1787,9 @@ void	MDegrainN::process_chroma_overlap_slice(int y_beg, int y_end)
   const int tmpPitch = nBlkSizeX;
   assert(tmpPitch <= TmpBlock::MAX_SIZE);
 
-  int effective_nSrcPitch = ((nBlkSizeY - nOverlapY) >> _yratiouv_log) * _src_pitch_arr[P]; // pitch is byte granularity
-  int effective_dstShortPitch = ((nBlkSizeY - nOverlapY) >> _yratiouv_log) * _dst_short_pitch; // pitch is short granularity
-  int effective_dstIntPitch = ((nBlkSizeY - nOverlapY) >> _yratiouv_log) * _dst_int_pitch; // pitch is int granularity
+  int effective_nSrcPitch = ((nBlkSizeY - nOverlapY) >> nLogyRatioUV_super) * _src_pitch_arr[P]; // pitch is byte granularity
+  int effective_dstShortPitch = ((nBlkSizeY - nOverlapY) >> nLogyRatioUV_super) * _dst_short_pitch; // pitch is short granularity
+  int effective_dstIntPitch = ((nBlkSizeY - nOverlapY) >> nLogyRatioUV_super) * _dst_int_pitch; // pitch is int granularity
 
   for (int by = y_beg; by < y_end; ++by)
   {
@@ -1851,7 +1845,7 @@ void	MDegrainN::process_chroma_overlap_slice(int y_beg, int y_end)
         _overschroma_lsb_ptr(
           pDstInt + xx, _dst_int_pitch,
           &tmp_block._d[0], tmp_block._lsb_ptr, tmpPitch,
-          winOverUV, nBlkSizeX >> _xratiouv_log
+          winOverUV, nBlkSizeX >> nLogxRatioUV_super
         );
       }
       else if (_out16_flag)
@@ -1860,30 +1854,30 @@ void	MDegrainN::process_chroma_overlap_slice(int y_beg, int y_end)
         _overschroma16_ptr(
           (uint16_t*)(pDstInt + xx), _dst_int_pitch,
           &tmp_block._d[0], tmpPitch << pixelsize_output_shift,
-          winOverUV, nBlkSizeX >> _xratiouv_log);
+          winOverUV, nBlkSizeX >> nLogxRatioUV_super);
       }
       else if (pixelsize_super == 1)
       {
         _overschroma_ptr(
           pDstShort + xx, _dst_short_pitch,
           &tmp_block._d[0], tmpPitch,
-          winOverUV, nBlkSizeX >> _xratiouv_log);
+          winOverUV, nBlkSizeX >> nLogxRatioUV_super);
       } else if (pixelsize_super == 2)
       {
         _overschroma16_ptr(
           (uint16_t*)(pDstInt + xx), _dst_int_pitch, 
           &tmp_block._d[0], tmpPitch << pixelsize_super_shift, 
-          winOverUV, nBlkSizeX >> _xratiouv_log);
+          winOverUV, nBlkSizeX >> nLogxRatioUV_super);
       }
       else // if (pixelsize_super == 4)
       {
         _overschroma32_ptr(
           (uint16_t*)(pDstInt + xx), _dst_int_pitch,
           &tmp_block._d[0], tmpPitch << pixelsize_super_shift,
-          winOverUV, nBlkSizeX >> _xratiouv_log);
+          winOverUV, nBlkSizeX >> nLogxRatioUV_super);
       }
 
-      xx += ((nBlkSizeX - nOverlapX) >> nLogxRatioUV); // no pixelsize here
+      xx += ((nBlkSizeX - nOverlapX) >> nLogxRatioUV_super); // no pixelsize here
 
     } // for bx
 
@@ -1930,7 +1924,7 @@ void	MDegrainN::use_block_uv(
     const FakeBlockData &block = c_info._clip_sptr->GetBlock(0, i);
     const int blx = block.GetX() * nPel + block.GetMV().x;
     const int bly = block.GetY() * nPel + block.GetMV().y;
-    p = plane_ptr->GetPointer(blx >> _xratiouv_log, bly >> _yratiouv_log);
+    p = plane_ptr->GetPointer(blx >> nLogxRatioUV_super, bly >> nLogyRatioUV_super);
     np = plane_ptr->GetPitch();
     const sad_t block_sad = block.GetSAD(); // SAD of MV Block. Scaled to MVClip's bits_per_pixel;
     wref = DegrainWeight(c_info._thsadc, c_info._thsadc_sq, block_sad);
@@ -1938,7 +1932,7 @@ void	MDegrainN::use_block_uv(
   else
   {
     // just to have a valid data pointer, will not count, weight is zero
-    p = src_ptr + xx; // done: kill  >> _xratiouv_log from here and put it in the caller like in MDegrainX
+    p = src_ptr + xx; // done: kill  >> nLogxRatioUV_super from here and put it in the caller like in MDegrainX
     np = src_pitch;
     wref = 0;
   }

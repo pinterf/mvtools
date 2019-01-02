@@ -126,17 +126,18 @@ private:
   const bool _mt_flag;
   int _height_lsb_or_out16_mul;
   //int pixelsize, bits_per_pixel; // in MVFilter
+  //int xRatioUV, yRatioUV; // in MVFilter
   int pixelsize_super;
   int bits_per_pixel_super;
   int pixelsize_super_shift;
+  int xRatioUV_super, nLogxRatioUV_super; // 2.7.39-
+  int yRatioUV_super, nLogyRatioUV_super;
 
   // 2.7.26
   int pixelsize_output;
   int bits_per_pixel_output;
   int pixelsize_output_shift;
 
-  const int _xratiouv_log;
-  const int _yratiouv_log;
   int _nsupermodeyuv;
 
 
