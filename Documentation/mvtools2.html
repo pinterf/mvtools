@@ -1963,7 +1963,7 @@ Last.MShow(vectors)                                     # Implicit Last = super,
     </p>
 <pre class="src">AVISource("c:\test.avi") # or MPEG2Source, DirectShowSource, some previous filter, etc
 Last=MSuper()                                           # Assigns implicit last with Super clip
-vectors = Last.MAnalyse(isb = false)                    # Implicit Last = super, 1st arg
+vectors = Last.MAnalyse(isb = true)                     # Implicit Last = super, 1st arg
 Last.MShow(vectors)                                     # Implicit Last = super, 1st arg</pre>
     <p>
         To use MMask :
