@@ -1955,14 +1955,16 @@ clip.MFlowFPS( super, bVec1, fVec1, den=0 )</pre>
         To show the motion vectors ( forward ) :
     </p>
 <pre class="src">AVISource("c:\test.avi") # or MPEG2Source, DirectShowSource, some previous filter, etc
-vectors = MSuper().MAnalyse(isb = false)
-MShow(vectors) # implicit last works properly</pre>
+Last=MSuper()                                           # Assigns implicit last with Super clip
+vectors = Last.MAnalyse(isb = false)                    # Implicit Last = super, 1st arg
+Last.MShow(vectors)                                     # Implicit Last = super, 1st arg</pre>
     <p>
         To show the backward one :
     </p>
 <pre class="src">AVISource("c:\test.avi") # or MPEG2Source, DirectShowSource, some previous filter, etc
-vectors = MSuper().MAnalyse(isb = true)
-MShow(vectors)</pre>
+Last=MSuper()                                           # Assigns implicit last with Super clip
+vectors = Last.MAnalyse(isb = false)                    # Implicit Last = super, 1st arg
+Last.MShow(vectors)                                     # Implicit Last = super, 1st arg</pre>
     <p>
         To use MMask :
     </p>
