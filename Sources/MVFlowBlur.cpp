@@ -331,15 +331,15 @@ PVideoFrame __stdcall MVFlowBlur::GetFrame(int n, IScriptEnvironment* env)
       // upsize (bilinear interpolate) vector masks to fullframe size
 
 
-    upsizer->SimpleResizeDo_int16(VXFullYB, nWidth, nHeight, VPitchY, VXSmallYB, nBlkX, nBlkX, nPel, true);
-    upsizer->SimpleResizeDo_int16(VYFullYB, nWidth, nHeight, VPitchY, VYSmallYB, nBlkX, nBlkX, nPel, false);
-    upsizerUV->SimpleResizeDo_int16(VXFullUVB, nWidthUV, nHeightUV, VPitchUV, VXSmallUVB, nBlkX, nBlkX, nPel, true);
-    upsizerUV->SimpleResizeDo_int16(VYFullUVB, nWidthUV, nHeightUV, VPitchUV, VYSmallUVB, nBlkX, nBlkX, nPel, false);
+    upsizer->SimpleResizeDo_int16(VXFullYB, nWidth, nHeight, VPitchY, VXSmallYB, nBlkX, nBlkX, nPel, true, nWidth, nHeight);
+    upsizer->SimpleResizeDo_int16(VYFullYB, nWidth, nHeight, VPitchY, VYSmallYB, nBlkX, nBlkX, nPel, false, nWidth, nHeight);
+    upsizerUV->SimpleResizeDo_int16(VXFullUVB, nWidthUV, nHeightUV, VPitchUV, VXSmallUVB, nBlkX, nBlkX, nPel, true, nWidthUV, nHeightUV);
+    upsizerUV->SimpleResizeDo_int16(VYFullUVB, nWidthUV, nHeightUV, VPitchUV, VYSmallUVB, nBlkX, nBlkX, nPel, false, nWidthUV, nHeightUV);
 
-    upsizer->SimpleResizeDo_int16(VXFullYF, nWidth, nHeight, VPitchY, VXSmallYF, nBlkX, nBlkX, nPel, true);
-    upsizer->SimpleResizeDo_int16(VYFullYF, nWidth, nHeight, VPitchY, VYSmallYF, nBlkX, nBlkX, nPel, false);
-    upsizerUV->SimpleResizeDo_int16(VXFullUVF, nWidthUV, nHeightUV, VPitchUV, VXSmallUVF, nBlkX, nBlkX, nPel, true);
-    upsizerUV->SimpleResizeDo_int16(VYFullUVF, nWidthUV, nHeightUV, VPitchUV, VYSmallUVF, nBlkX, nBlkX, nPel, false);
+    upsizer->SimpleResizeDo_int16(VXFullYF, nWidth, nHeight, VPitchY, VXSmallYF, nBlkX, nBlkX, nPel, true, nWidth, nHeight);
+    upsizer->SimpleResizeDo_int16(VYFullYF, nWidth, nHeight, VPitchY, VYSmallYF, nBlkX, nBlkX, nPel, false, nWidth, nHeight);
+    upsizerUV->SimpleResizeDo_int16(VXFullUVF, nWidthUV, nHeightUV, VPitchUV, VXSmallUVF, nBlkX, nBlkX, nPel, true, nWidthUV, nHeightUV);
+    upsizerUV->SimpleResizeDo_int16(VYFullUVF, nWidthUV, nHeightUV, VPitchUV, VYSmallUVF, nBlkX, nBlkX, nPel, false, nWidthUV, nHeightUV);
 
     // Warning: vectors enlarged from small mask to full resolution mask may point to off-screen pixels
 

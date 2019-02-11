@@ -470,11 +470,11 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
       // upsize (bilinear interpolate) vector masks to fullframe size
       PROFILE_START(MOTION_PROFILE_RESIZE);
 
-      upsizer->SimpleResizeDo_int16(VXFullYB, nWidthP, nHeightP, VPitchY, VXSmallYB, nBlkXP, nBlkXP, nPel, true);
-      upsizer->SimpleResizeDo_int16(VYFullYB, nWidthP, nHeightP, VPitchY, VYSmallYB, nBlkXP, nBlkXP, nPel, false);
+      upsizer->SimpleResizeDo_int16(VXFullYB, nWidthP, nHeightP, VPitchY, VXSmallYB, nBlkXP, nBlkXP, nPel, true, nWidth, nHeight);
+      upsizer->SimpleResizeDo_int16(VYFullYB, nWidthP, nHeightP, VPitchY, VYSmallYB, nBlkXP, nBlkXP, nPel, false, nWidth, nHeight);
       if (needDistinctChroma) {
-        upsizerUV->SimpleResizeDo_int16(VXFullUVB, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVB, nBlkXP, nBlkXP, nPel, true);
-        upsizerUV->SimpleResizeDo_int16(VYFullUVB, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVB, nBlkXP, nBlkXP, nPel, false);
+        upsizerUV->SimpleResizeDo_int16(VXFullUVB, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVB, nBlkXP, nBlkXP, nPel, true, nWidthUV, nHeightUV);
+        upsizerUV->SimpleResizeDo_int16(VYFullUVB, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVB, nBlkXP, nBlkXP, nPel, false, nWidthUV, nHeightUV);
       }
       PROFILE_STOP(MOTION_PROFILE_RESIZE);
 
@@ -514,11 +514,11 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
       // upsize (bilinear interpolate) vector masks to fullframe size
       PROFILE_START(MOTION_PROFILE_RESIZE);
 
-      upsizer->SimpleResizeDo_int16(VXFullYF, nWidthP, nHeightP, VPitchY, VXSmallYF, nBlkXP, nBlkXP, nPel, true);
-      upsizer->SimpleResizeDo_int16(VYFullYF, nWidthP, nHeightP, VPitchY, VYSmallYF, nBlkXP, nBlkXP, nPel, false);
+      upsizer->SimpleResizeDo_int16(VXFullYF, nWidthP, nHeightP, VPitchY, VXSmallYF, nBlkXP, nBlkXP, nPel, true, nWidth, nHeight);
+      upsizer->SimpleResizeDo_int16(VYFullYF, nWidthP, nHeightP, VPitchY, VYSmallYF, nBlkXP, nBlkXP, nPel, false, nWidth, nHeight);
       if (needDistinctChroma) {
-        upsizerUV->SimpleResizeDo_int16(VXFullUVF, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVF, nBlkXP, nBlkXP, nPel, true);
-        upsizerUV->SimpleResizeDo_int16(VYFullUVF, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVF, nBlkXP, nBlkXP, nPel, false);
+        upsizerUV->SimpleResizeDo_int16(VXFullUVF, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVF, nBlkXP, nBlkXP, nPel, true, nWidthUV, nHeightUV);
+        upsizerUV->SimpleResizeDo_int16(VYFullUVF, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVF, nBlkXP, nBlkXP, nPel, false, nWidthUV, nHeightUV);
       }
       PROFILE_STOP(MOTION_PROFILE_RESIZE);
 
@@ -574,18 +574,18 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
 
       PROFILE_START(MOTION_PROFILE_RESIZE);
     // upsize vectors to full frame
-      upsizer->SimpleResizeDo_int16(VXFullYBB, nWidthP, nHeightP, VPitchY, VXSmallYBB, nBlkXP, nBlkXP, nPel, true);
-      upsizer->SimpleResizeDo_int16(VYFullYBB, nWidthP, nHeightP, VPitchY, VYSmallYBB, nBlkXP, nBlkXP, nPel, false);
+      upsizer->SimpleResizeDo_int16(VXFullYBB, nWidthP, nHeightP, VPitchY, VXSmallYBB, nBlkXP, nBlkXP, nPel, true, nWidth, nHeight);
+      upsizer->SimpleResizeDo_int16(VYFullYBB, nWidthP, nHeightP, VPitchY, VYSmallYBB, nBlkXP, nBlkXP, nPel, false, nWidth, nHeight);
       if (needDistinctChroma) {
-        upsizerUV->SimpleResizeDo_int16(VXFullUVBB, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVBB, nBlkXP, nBlkXP, nPel, true);
-        upsizerUV->SimpleResizeDo_int16(VYFullUVBB, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVBB, nBlkXP, nBlkXP, nPel, false);
+        upsizerUV->SimpleResizeDo_int16(VXFullUVBB, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVBB, nBlkXP, nBlkXP, nPel, true, nWidthUV, nHeightUV);
+        upsizerUV->SimpleResizeDo_int16(VYFullUVBB, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVBB, nBlkXP, nBlkXP, nPel, false, nWidthUV, nHeightUV);
       }
 
-      upsizer->SimpleResizeDo_int16(VXFullYFF, nWidthP, nHeightP, VPitchY, VXSmallYFF, nBlkXP, nBlkXP, nPel, true);
-      upsizer->SimpleResizeDo_int16(VYFullYFF, nWidthP, nHeightP, VPitchY, VYSmallYFF, nBlkXP, nBlkXP, nPel, false);
+      upsizer->SimpleResizeDo_int16(VXFullYFF, nWidthP, nHeightP, VPitchY, VXSmallYFF, nBlkXP, nBlkXP, nPel, true, nWidth, nHeight);
+      upsizer->SimpleResizeDo_int16(VYFullYFF, nWidthP, nHeightP, VPitchY, VYSmallYFF, nBlkXP, nBlkXP, nPel, false, nWidth, nHeight);
       if (needDistinctChroma) {
-        upsizerUV->SimpleResizeDo_int16(VXFullUVFF, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVFF, nBlkXP, nBlkXP, nPel, true);
-        upsizerUV->SimpleResizeDo_int16(VYFullUVFF, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVFF, nBlkXP, nBlkXP, nPel, false);
+        upsizerUV->SimpleResizeDo_int16(VXFullUVFF, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVFF, nBlkXP, nBlkXP, nPel, true, nWidthUV, nHeightUV);
+        upsizerUV->SimpleResizeDo_int16(VYFullUVFF, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVFF, nBlkXP, nBlkXP, nPel, false, nWidthUV, nHeightUV);
       }
       PROFILE_STOP(MOTION_PROFILE_RESIZE);
 

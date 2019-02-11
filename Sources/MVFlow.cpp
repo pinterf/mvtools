@@ -348,10 +348,10 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
     // upsize (bilinear interpolate) vector masks to fullframe size
 
     const int nPel = 1;
-    upsizer->SimpleResizeDo_int16(VXFullY, nWidthP, nHeightP, VPitchY, VXSmallY, nBlkXP, nBlkXP, nPel, true);
-    upsizer->SimpleResizeDo_int16(VYFullY, nWidthP, nHeightP, VPitchY, VYSmallY, nBlkXP, nBlkXP, nPel, false);
-    upsizerUV->SimpleResizeDo_int16(VXFullUV, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUV, nBlkXP, nBlkXP, nPel, true);
-    upsizerUV->SimpleResizeDo_int16(VYFullUV, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUV, nBlkXP, nBlkXP, nPel, false);
+    upsizer->SimpleResizeDo_int16(VXFullY, nWidthP, nHeightP, VPitchY, VXSmallY, nBlkXP, nBlkXP, nPel, true, nWidth, nHeight);
+    upsizer->SimpleResizeDo_int16(VYFullY, nWidthP, nHeightP, VPitchY, VYSmallY, nBlkXP, nBlkXP, nPel, false, nWidth, nHeight);
+    upsizerUV->SimpleResizeDo_int16(VXFullUV, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUV, nBlkXP, nBlkXP, nPel, true, nWidthUV, nHeightUV);
+    upsizerUV->SimpleResizeDo_int16(VYFullUV, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUV, nBlkXP, nBlkXP, nPel, false, nWidthUV, nHeightUV);
 
     if (mode == 1)
     {

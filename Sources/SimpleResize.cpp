@@ -128,7 +128,7 @@ static MV_FORCEINLINE __m128i simd_blend_epi8(__m128i const &selector, __m128i c
 // for non 16->16 bit: limitIt = false, nPelLog1 and isXpart are n/a (e.g. 0, true)
 template<typename src_type, typename dst_type, bool limitIt, int nPel, bool isXpart>
 void SimpleResize::SimpleResizeDo_New(uint8_t *dstp8, int row_size, int height, int dst_pitch,
-  const uint8_t* srcp8, int src_row_size, int src_pitch, int bits_per_pixel)
+  const uint8_t* srcp8, int src_row_size, int src_pitch, int bits_per_pixel, int real_width, int real_height)
 {
   dst_type *dstp = reinterpret_cast<dst_type *>(dstp8);
   const src_type *srcp = reinterpret_cast<const src_type *>(srcp8);
@@ -156,40 +156,44 @@ void SimpleResize::SimpleResizeDo_New(uint8_t *dstp8, int row_size, int height, 
 
   // variables for int16->int16 vector (X or Y) resize
   constexpr int nPelLog2 = nPel == 1 ? 0 : nPel == 2 ? 1 : nPel == 4 ? 2 : 0; // for !limitIt -> n/a
+  // limitIt == true helpers
   __m128i minRelY, maxRelY; // used when we have Y parts of the vector
   int minRelY_c, maxRelY_c;
   const __m128i relInc =  isXpart ? _mm_set1_epi16(nPel * 4) : _mm_set1_epi16(nPel);
   // for X : simd code does 4 pixels at a time, decrement by 4 X-unit
   const int relInc_c = nPel; // no difference for X
-  const int width = row_size;
   const __m128i maxRelXStart = _mm_set_epi16(
-    ((width - 7) << nPelLog2) - 1,
-    ((width - 6) << nPelLog2) - 1,
-    ((width - 5) << nPelLog2) - 1,
-    ((width - 4) << nPelLog2) - 1,
-    ((width - 3) << nPelLog2) - 1,
-    ((width - 2) << nPelLog2) - 1,
-    ((width - 1) << nPelLog2) - 1,
-    ((width - 0) << nPelLog2) - 1);
+    ((real_width - 7) << nPelLog2) - 1, // not used, only lower 4x16bit pixels are processed
+    ((real_width - 6) << nPelLog2) - 1, // not used
+    ((real_width - 5) << nPelLog2) - 1, // not used
+    ((real_width - 4) << nPelLog2) - 1, // not used
+    ((real_width - 3) << nPelLog2) - 1,
+    ((real_width - 2) << nPelLog2) - 1,
+    ((real_width - 1) << nPelLog2) - 1,
+    ((real_width - 0) << nPelLog2) - 1);
   const __m128i minRelXStart = _mm_set_epi16(
-    -7 << nPelLog2,
-    -6 << nPelLog2,
-    -5 << nPelLog2,
-    -4 << nPelLog2,
+    -7 << nPelLog2, // not used, only lower 4x16bit pixels are processed
+    -6 << nPelLog2, // not used
+    -5 << nPelLog2, // not used
+    -4 << nPelLog2, // not used
     -3 << nPelLog2,
     -2 << nPelLog2,
     -1 << nPelLog2,
     0 << nPelLog2);
 
-  const int row_size_mod4 = row_size & ~3;
-  const int maxRelXStart_c = ((width - row_size_mod4) << nPelLog2) - 1;
+  const int row_size_mod4 = row_size & ~3; // covered by SIMD code
+  const int maxRelXStart_c = ((real_width - row_size_mod4) << nPelLog2) - 1;
   const int minRelXStart_c = (-row_size_mod4) << nPelLog2;
+  
+  // A note for int16->int16 version:
+  // Vectors originated from outside [(real_width << nPelLog2) - 1; (real_height << nPelLog2)-1] sized frame
+  // are not even used in FlowInterExtra and FlowInter, probably the should not even be calculated here?
 
   unsigned int last_vOffsetsW = vOffsetsW[height - 1];
 
   if constexpr (limitIt && !isXpart)
   {
-    maxRelY_c = (height << nPelLog2) - 1;
+    maxRelY_c = (real_height << nPelLog2) - 1;
     minRelY_c = 0;
     maxRelY = _mm_set1_epi16(maxRelY_c);
     minRelY = _mm_set1_epi16(0);
@@ -496,27 +500,18 @@ void SimpleResize::SimpleResizeDo_New(uint8_t *dstp8, int row_size, int height, 
 void SimpleResize::SimpleResizeDo_uint8_to_uint16(uint8_t *dstp, int row_size, int height, int dst_pitch,
   const uint8_t* srcp, int src_row_size, int src_pitch, int bits_per_pixel) {
   dst_pitch /= sizeof(uint16_t);  // pitch from byte granularity to uint16 for SimpleResizeDo
-  SimpleResizeDo_New<uint8_t, uint16_t, false, 0, true>(dstp, row_size, height, dst_pitch, srcp, src_row_size, src_pitch, bits_per_pixel);
+  SimpleResizeDo_New<uint8_t, uint16_t, false, 0, true>(dstp, row_size, height, dst_pitch, srcp, src_row_size, src_pitch, bits_per_pixel,
+    row_size, height); // n/a: no limiting in 8->16;
   return;
 }
 
 void SimpleResize::SimpleResizeDo_uint8(uint8_t *dstp, int row_size, int height, int dst_pitch,
   const uint8_t* srcp, int src_row_size, int src_pitch)
 {
-/* test:
-SetMemoryMax(6000)
-a=Avisource("c:\tape13\Videos\Tape02_digitall_Hi8.avi").assumefps(25,1).trim(0, 499)
-a=a.AssumeBFF()
-a=a.QTGMC(Preset="Slower",dct=5, ChromaMotion=true)
-sup = a.MSuper(pel=1)
-fw = sup.MAnalyse(isb=false, delta=1, overlap=4)
-bw = sup.MAnalyse(isb=true, delta=1, overlap=4)
-a=a.MFlowInter(sup, bw, fw, time=50, thSCD1=400) # MFlowInter uses SimpleResize
-a
-*/
 
   if (SSE2enabled) {
-    SimpleResizeDo_New<uint8_t, uint8_t, false, 0, true>(dstp, row_size, height, dst_pitch, srcp, src_row_size, src_pitch, 8);
+    SimpleResizeDo_New<uint8_t, uint8_t, false, 0, true>(dstp, row_size, height, dst_pitch, srcp, src_row_size, src_pitch, 8, 
+      row_size, height); // n/a: no limiting in 8->8;
     return;
   }
   // C-only
@@ -652,7 +647,7 @@ static void MakeVectorsSafe_c(short *dstp, int row_size, int height, int dst_pit
 // Though the vectors are enlarged to frame size, they may point to an enlarged (frame size << nPel) reference frame, the limits should
 // take nPel into account.
 void SimpleResize::SimpleResizeDo_int16(short *dstp, int row_size, int height, int dst_pitch,
-  const short* srcp, int src_row_size, int src_pitch, int nPel, bool isXpart)
+  const short* srcp, int src_row_size, int src_pitch, int nPel, bool isXpart, int real_width, int real_height)
 {
   const bool limitVectors = true;
 
@@ -661,29 +656,29 @@ void SimpleResize::SimpleResizeDo_int16(short *dstp, int row_size, int height, i
     {
       if (isXpart) {
         if (nPel == 1)
-          SimpleResizeDo_New<short, short, true, 1, true>((uint8_t *)dstp, row_size, height, dst_pitch, (uint8_t *)srcp, src_row_size, src_pitch, 16);
+          SimpleResizeDo_New<short, short, true, 1, true>((uint8_t *)dstp, row_size, height, dst_pitch, (uint8_t *)srcp, src_row_size, src_pitch, 16, real_width, real_height);
         else if (nPel == 2)
-          SimpleResizeDo_New<short, short, true, 2, true>((uint8_t *)dstp, row_size, height, dst_pitch, (uint8_t *)srcp, src_row_size, src_pitch, 16);
+          SimpleResizeDo_New<short, short, true, 2, true>((uint8_t *)dstp, row_size, height, dst_pitch, (uint8_t *)srcp, src_row_size, src_pitch, 16, real_width, real_height);
         else if (nPel == 4)
-          SimpleResizeDo_New<short, short, true, 4, true>((uint8_t *)dstp, row_size, height, dst_pitch, (uint8_t *)srcp, src_row_size, src_pitch, 16);
+          SimpleResizeDo_New<short, short, true, 4, true>((uint8_t *)dstp, row_size, height, dst_pitch, (uint8_t *)srcp, src_row_size, src_pitch, 16, real_width, real_height);
       }
       else {
         if (nPel == 1)
-          SimpleResizeDo_New<short, short, true, 1, false>((uint8_t *)dstp, row_size, height, dst_pitch, (uint8_t *)srcp, src_row_size, src_pitch, 16);
+          SimpleResizeDo_New<short, short, true, 1, false>((uint8_t *)dstp, row_size, height, dst_pitch, (uint8_t *)srcp, src_row_size, src_pitch, 16, real_width, real_height);
         else if (nPel == 2)
-          SimpleResizeDo_New<short, short, true, 2, false>((uint8_t *)dstp, row_size, height, dst_pitch, (uint8_t *)srcp, src_row_size, src_pitch, 16);
+          SimpleResizeDo_New<short, short, true, 2, false>((uint8_t *)dstp, row_size, height, dst_pitch, (uint8_t *)srcp, src_row_size, src_pitch, 16, real_width, real_height);
         else if (nPel == 4)
-          SimpleResizeDo_New<short, short, true, 4, false>((uint8_t *)dstp, row_size, height, dst_pitch, (uint8_t *)srcp, src_row_size, src_pitch, 16);
+          SimpleResizeDo_New<short, short, true, 4, false>((uint8_t *)dstp, row_size, height, dst_pitch, (uint8_t *)srcp, src_row_size, src_pitch, 16, real_width, real_height);
       }
     }
     else
     {
       // we really do not have yet int16->int16 resize which needs no limiting, but for the sake of completeness
-      SimpleResizeDo_New<short, short, false, 0, true>((uint8_t *)dstp, row_size, height, dst_pitch, (uint8_t *)srcp, src_row_size, src_pitch, 16);
+      SimpleResizeDo_New<short, short, false, 0, true>((uint8_t *)dstp, row_size, height, dst_pitch, (uint8_t *)srcp, src_row_size, src_pitch, 16, real_width, real_height);
     }
     
     // it's done in SimpleResizeDo_New sse2 version
-    //if(limitVectors) MakeVectorsSafe_c(dstp, row_size, height, dst_pitch, nPel, isXpart);
+    //if(limitVectors) MakeVectorsSafe_c(dstp, row_size, height, dst_pitch, nPel, isXpart, real_width, real_height);
 
     return;
   }
@@ -737,7 +732,7 @@ void SimpleResize::SimpleResizeDo_int16(short *dstp, int row_size, int height, i
   }
 
   // for reference. We don't try to integrate it to the C code above
-  if (limitVectors) MakeVectorsSafe_c(dstp, row_size, height, dst_pitch, nPel, isXpart);
+  if (limitVectors) MakeVectorsSafe_c(dstp, real_width, real_height, dst_pitch, nPel, isXpart); // use real_width, real_height instead of row_size, height
 
 }
 
