@@ -153,8 +153,11 @@ static void FlowInter_NPel(
       int dstB = prefB[vyB*ref_pitch + vxB + (w << NPELL2)];
       int dstB0 = prefB[(w << NPELL2)]; // zero
 
-      pdst[w] = (((dstF*(255 - MaskF[w]) + ((MaskF[w] * (dstB*(255 - MaskB[w]) + MaskB[w] * dstF0) + 255) >> 8) + 255) >> 8)*(256 - time256) +
-        ((dstB*(255 - MaskB[w]) + ((MaskB[w] * (dstF*(255 - MaskF[w]) + MaskF[w] * dstB0) + 255) >> 8) + 255) >> 8)*     time256) >> 8;
+      // avoid possible 8*16*8bit int32 overflow
+      typedef std::conditional < sizeof(pixel_t) == 1, int, __int64>::type calc_t;
+
+      pdst[w] = (pixel_t)((((dstF*(255 - MaskF[w]) + (((calc_t)MaskF[w] * (dstB*(255 - MaskB[w]) + MaskB[w] * dstF0) + 255) >> 8) + 255) >> 8)*(256 - time256) +
+        ((dstB*(255 - MaskB[w]) + (((calc_t)MaskB[w] * (dstF*(255 - MaskF[w]) + MaskF[w] * dstB0) + 255) >> 8) + 255) >> 8)*     time256) >> 8);
     }
     pdst += dst_pitch;
     prefB += ref_pitch << NPELL2;
