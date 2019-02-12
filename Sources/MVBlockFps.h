@@ -8,7 +8,6 @@
 #include "yuy2planes.h"
 #include "overlap.h"
 
-
 class MVGroupOfFrames;
 
 /*! \brief Filter that change fps by blocks moving
@@ -60,6 +59,21 @@ private:
 
   YUY2Planes * DstPlanes;
 
+  bool is444;
+  bool isGrey;
+  bool isRGB; // avs+ planar
+  //bool needDistinctChroma; buffer usage not yet optimized like in MFlowFPS
+  int pixelsize_super;
+  int bits_per_pixel_super;
+  int pixelsize_super_shift;
+  int planecount;
+  int xRatioUVs[3];
+  int yRatioUVs[3];
+  int nLogxRatioUVs[3];
+  int nLogyRatioUVs[3];
+
+  int DestBufElementSize;
+
   short *winOver;
   short *winOverUV;
 
@@ -70,6 +84,8 @@ private:
   OverlapsFunction *OVERSCHROMA;
   OverlapsFunction *OVERSLUMA16; // 161115
   OverlapsFunction *OVERSCHROMA16; // 161115
+  OverlapsFunction *OVERSLUMA32;
+  OverlapsFunction *OVERSCHROMA32;
   unsigned short * DstShort;
   unsigned short * DstShortU;
   unsigned short * DstShortV;
@@ -106,6 +122,6 @@ public:
     return cachehints == CACHE_GET_MTMODE ? MT_MULTI_INSTANCE : 0;
   }
 
-}
+};
 
 #endif
