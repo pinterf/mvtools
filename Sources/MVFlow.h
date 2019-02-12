@@ -87,6 +87,20 @@ private:
 
   YUY2Planes * DstPlanes;
 
+  bool is444;
+  bool isGrey;
+  bool isRGB; // avs+ planar
+  //bool needDistinctChroma; buffer usage not yet optimized like in MFlowFPS
+
+  int pixelsize_super;
+  int bits_per_pixel_super;
+  int pixelsize_super_shift;
+  int planecount;
+  int xRatioUVs[3];
+  int yRatioUVs[3];
+  int nLogxRatioUVs[3];
+  int nLogyRatioUVs[3];
+
 public:
   MVFlow(PClip _child, PClip _super, PClip _vectors, int _time256, int _mode, bool _fields,
     sad_t nSCD1, int nSCD2, bool isse, bool _planar, PClip _timeclip, IScriptEnvironment* env);
