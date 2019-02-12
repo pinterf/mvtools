@@ -65,7 +65,7 @@ public:
 
    void Update(int _nMode, uint8_t * pSrcY, int pitchY, uint8_t * pSrcU, int pitchU, uint8_t *pSrcV, int pitchV);
    void ChangePlane(const uint8_t *pNewSrc, int nNewPitch, MVPlaneSet _nMode);
-	void set_interp (MVPlaneSet _nMode, int rfilter, int sharp);
+   void set_interp (MVPlaneSet _nMode, int rfilter, int sharp);
    void Refine(MVPlaneSet _nMode);
    void Pad(MVPlaneSet _nMode);
    void ReduceTo(MVFrame *pFrame, MVPlaneSet _nMode);

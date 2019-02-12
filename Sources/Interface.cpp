@@ -204,7 +204,7 @@ AVSValue __cdecl Create_MVMask(AVSValue args, void*, IScriptEnvironment* env)
   double ml = args[2].AsFloat(100);
   if (ml <= 0)
     env->ThrowError("MVMask: ML must be > 0.0");
-  double gamma = 1;
+  float gamma = 1;
   int Ysc = 0;
   return new MVMask(
     args[0].AsClip(), // source
@@ -922,7 +922,7 @@ AVSValue __cdecl Create_MScaleVect(AVSValue args, void*, IScriptEnvironment* env
 {
   enum { CLIP, SCALE, SCALEV, MODE, FLIP, ADJUSTSUBPEL, BITS };
   int bits = args[BITS].AsInt(0);
-  float scaleX = float(args[SCALE].AsFloat(bits == 0 ? 2.0 : 1.0));
+  float scaleX = float(args[SCALE].AsFloat(bits == 0 ? 2.0f : 1.0f));
   float scaleY = float(args[SCALEV].AsFloat(scaleX));
   return new MScaleVect(args[CLIP].AsClip(),
     scaleX, scaleY,

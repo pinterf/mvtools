@@ -52,7 +52,7 @@ public :
 
    MVFrame *GetFrame(int nLevel);
    void SetPlane(const uint8_t *pNewSrc, int nNewPitch, MVPlaneSet nMode);
-	void set_interp (MVPlaneSet nMode, int rfilter, int sharp);
+   void set_interp (MVPlaneSet nMode, int rfilter, int sharp);
    void Refine(MVPlaneSet nMode);
    void Pad(MVPlaneSet nMode);
    void Reduce(MVPlaneSet nMode);
@@ -61,4 +61,4 @@ public :
 
 
 
-#endif	// __MV_MVGroupOfFrames__
+#endif // __MV_MVGroupOfFrames__
