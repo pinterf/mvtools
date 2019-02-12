@@ -14,51 +14,51 @@ class MVGroupOfFrames;
 /*! \brief Filter that change fps by blocks moving
  */
 class MVBlockFps
-:	public GenericVideoFilter
-,	public MVFilter
+  : public GenericVideoFilter
+  , public MVFilter
 {
 private:
 
-   MVClip mvClipB;
-   MVClip mvClipF;
-  	unsigned int numerator;
-	unsigned int denominator;
-  	unsigned int numeratorOld;
-	unsigned int denominatorOld;
-   int mode;
-   double ml;
-   PClip super;
-   //bool isse_flag;
-   int cpuFlags;
-   bool planar;
-   bool blend;
+  MVClip mvClipB;
+  MVClip mvClipF;
+  unsigned int numerator;
+  unsigned int denominator;
+  unsigned int numeratorOld;
+  unsigned int denominatorOld;
+  int mode;
+  double ml;
+  PClip super;
 
-   __int64 fa, fb;
+  int cpuFlags;
+  bool planar;
+  bool blend;
 
-   int nSuperModeYUV;
+  __int64 fa, fb;
 
-   BYTE *MaskFullYB; // shifted (projected) images planes
-   BYTE *MaskFullUVB;
-   BYTE *MaskFullYF;
-   BYTE *MaskFullUVF;
+  int nSuperModeYUV;
 
-   BYTE *MaskOccY; // full frame occlusion mask
-   BYTE *MaskOccUV;
+  BYTE *MaskFullYB; // shifted (projected) images planes
+  BYTE *MaskFullUVB;
+  BYTE *MaskFullYF;
+  BYTE *MaskFullUVF;
 
-   BYTE *smallMaskF;// small forward occlusion mask
-   BYTE *smallMaskB; // backward
-   BYTE *smallMaskO; // both
+  BYTE *MaskOccY; // full frame occlusion mask
+  BYTE *MaskOccUV;
 
-   BYTE *TmpBlock; // block for temporary calculations
-   int nBlkPitch;// padded (pitch)
+  BYTE *smallMaskF;// small forward occlusion mask
+  BYTE *smallMaskB; // backward
+  BYTE *smallMaskO; // both
 
-   int nWidthP, nHeightP, nPitchY, nPitchUV, nHeightPUV, nWidthPUV, nHeightUV, nWidthUV;
-   int nBlkXP, nBlkYP;
+  BYTE *TmpBlock; // block for temporary calculations
+  int nBlkPitch;// padded (pitch)
 
-   COPYFunction *BLITLUMA;
-   COPYFunction *BLITCHROMA;
+  int nWidthP, nHeightP, nPitchY, nPitchUV, nHeightPUV, nWidthPUV, nHeightUV, nWidthUV;
+  int nBlkXP, nBlkYP;
 
-	YUY2Planes * DstPlanes;
+  COPYFunction *BLITLUMA;
+  COPYFunction *BLITCHROMA;
+
+  YUY2Planes * DstPlanes;
 
   short *winOver;
   short *winOverUV;
@@ -76,36 +76,36 @@ private:
   int dstShortPitch;
   int dstShortPitchUV;
 
-	MVGroupOfFrames *pRefBGOF;
-	MVGroupOfFrames *pRefFGOF;
+  MVGroupOfFrames *pRefBGOF;
+  MVGroupOfFrames *pRefFGOF;
 
-//	void MakeSmallMask(BYTE *image, int imagePitch, BYTE *smallmask, int nBlkX, int nBlkY, int nBlkSizeX, int nBlkSizeY, int threshold);
-//	void InflateMask(BYTE *smallmask, int nBlkX, int nBlkY);
-	void MultMasks(BYTE *smallmaskF, BYTE *smallmaskB, BYTE *smallmaskO,  int nBlkX, int nBlkY);
+  //	void MakeSmallMask(BYTE *image, int imagePitch, BYTE *smallmask, int nBlkX, int nBlkY, int nBlkSizeX, int nBlkSizeY, int threshold);
+  //	void InflateMask(BYTE *smallmask, int nBlkX, int nBlkY);
+  void MultMasks(BYTE *smallmaskF, BYTE *smallmaskB, BYTE *smallmaskO, int nBlkX, int nBlkY);
   template<typename pixel_t>
   void ResultBlock(BYTE *pDst8, int dst_pitch, const BYTE * pMCB8, int MCB_pitch, const BYTE * pMCF8, int MCF_pitch,
     const BYTE * pRef8, int ref_pitch, const BYTE * pSrc8, int src_pitch, BYTE *maskB, int mask_pitch, BYTE *maskF,
     BYTE *pOcc, int nBlkSizeX, int nBlkSizeY, int time256, int mode, int bits_per_pixel);
 
-	SimpleResize *upsizer;
-   SimpleResize *upsizerUV;
+  SimpleResize *upsizer;
+  SimpleResize *upsizerUV;
 
-   int nSuperHPad, nSuperVPad;
+  int nSuperHPad, nSuperVPad;
 
 public:
-	MVBlockFps(
-		PClip _child, PClip _super, PClip _mvbw, PClip _mvfw,
-		unsigned int _num, unsigned int _den, int _mode, double _ml, bool _blend,
-		sad_t nSCD1, int nSCD2, bool isse, bool _planar, bool mt_flag,
-		IScriptEnvironment* env
-	);
-	~MVBlockFps();
-	PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
+  MVBlockFps(
+    PClip _child, PClip _super, PClip _mvbw, PClip _mvfw,
+    unsigned int _num, unsigned int _den, int _mode, double _ml, bool _blend,
+    sad_t nSCD1, int nSCD2, bool isse, bool _planar, bool mt_flag,
+    IScriptEnvironment* env
+  );
+  ~MVBlockFps();
+  PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
 
   int __stdcall SetCacheHints(int cachehints, int frame_range) override {
     return cachehints == CACHE_GET_MTMODE ? MT_MULTI_INSTANCE : 0;
   }
 
-};
+}
 
 #endif
