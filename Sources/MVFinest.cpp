@@ -156,10 +156,6 @@ PVideoFrame __stdcall MVFinest::GetFrame(int n, IScriptEnvironment* env)
     for (int p = 0; p < planecount; ++p) {
       const MVPlaneSet plane = planes[p];
       pPlanes[p] = pRefGOF->GetFrame(0)->GetPlane(plane);
-      if (pPlanes[p]->GetAbsolutePointer(0, 0) == 0)
-      {
-        int x = 1;
-      }
     }
 
 		if (nPel == 2)
