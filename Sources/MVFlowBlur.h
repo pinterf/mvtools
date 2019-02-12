@@ -52,19 +52,34 @@ private:
 
    int nWidthUV;
    int nHeightUV;
-	int	VPitchY, VPitchUV;
+   int VPitchY, VPitchUV;
 
-	 int nHPaddingUV;
-	 int nVPaddingUV;
+   int nHPaddingUV;
+   int nVPaddingUV;
 
    SimpleResize *upsizer;
    SimpleResize *upsizerUV;
+
+   bool is444;
+   bool isGrey;
+   bool isRGB; // avs+ planar
+   //bool needDistinctChroma; buffer usage not yet optimized like in MFlowFPS
+
+   int pixelsize_super;
+   int bits_per_pixel_super;
+   int pixelsize_super_shift;
+   int planecount;
+   int xRatioUVs[3];
+   int yRatioUVs[3];
+   int nLogxRatioUVs[3];
+   int nLogyRatioUVs[3];
+
    template<typename pixel_t, int nLOGPEL>
    void FlowBlur(BYTE * pdst, int dst_pitch, const BYTE *prefB, int ref_pitch,
      short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF,
      int VPitch, int width, int height, int time256, int nb);
 
-	YUY2Planes * DstPlanes;
+   YUY2Planes * DstPlanes;
 
 public:
 	MVFlowBlur(PClip _child, PClip _finest, PClip _mvbw, PClip _mvfw, int _blur256, int _prec,
