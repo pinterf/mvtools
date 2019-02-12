@@ -56,12 +56,9 @@ MVFlowInter::MVFlowInter(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, in
   int nSuperLevels = params.nLevels;
   int nSuperWidth = super->GetVideoInfo().width; // really super
   int nSuperHeight = super->GetVideoInfo().height;
-  int super_pixelsize = super->GetVideoInfo().ComponentSize();
-  int vectors_pixelsize = pixelsize;
-  int input_pixelsize = child->GetVideoInfo().ComponentSize();
 
-  if (super_pixelsize != input_pixelsize)
-    env->ThrowError("MFlowInter: input and super clip bit depth is different");
+  if (!super->GetVideoInfo().IsSameColorspace(child->GetVideoInfo()))
+    env->ThrowError("MFlowInter: input and super clip format is different");
 
   if (nHeight != nHeightS
     || nWidth != nSuperWidth - nSuperHPad * 2
