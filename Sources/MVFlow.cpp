@@ -207,11 +207,7 @@ void MVFlow::Shift_NPel(BYTE * pdst8, int dst_pitch, const BYTE *pref8, int ref_
       int href = h + vy;
       int wref = w + vx;
       if (href >= 0 && href < height && wref >= 0 && wref < width)// bound check if not padded
-          // Fixme: PF 20190212 ??? Value of source pixel multiplied by NPELL???
-        if constexpr(sizeof(pixel_t) == 4)
-          pdst[vy*dst_pitch + vx + w] = pref[w] * (1 << NPELL2);
-        else
-          pdst[vy*dst_pitch + vx + w] = pref[w] << NPELL2; // 2.5.11.22 
+        pdst[vy*dst_pitch + vx + w] = pref[w << NPELL2] ; // 2.5.11.22 fixed in 2.7.40. Was: pref[w] << NPELL2
     }
     pref += ref_pitch << NPELL2; // 2.5.11.22
     pdst += dst_pitch;
