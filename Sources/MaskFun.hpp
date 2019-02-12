@@ -128,54 +128,7 @@ MV_FORCEINLINE T Median3r(T a, T b, T c)
 }
 
 template <typename pixel_t, int NPELL2>
-std::enable_if_t<!std::is_floating_point<pixel_t>::value, void> // for non_float!
-static FlowInter_NPel(
-  uint8_t * pdst8, int dst_pitch, const uint8_t *prefB8, const uint8_t *prefF8, int ref_pitch,
-  short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
-  int VPitch, int width, int height, int time256)
-{
-  dst_pitch /= sizeof(pixel_t);
-  ref_pitch /= sizeof(pixel_t);
-  pixel_t *pdst = reinterpret_cast<pixel_t *>(pdst8);
-  const pixel_t *prefB = reinterpret_cast<const pixel_t *>(prefB8);
-  const pixel_t *prefF = reinterpret_cast<const pixel_t *>(prefF8);
-
-  for (int h = 0; h < height; h++)
-  {
-    for (int w = 0; w < width; w++)
-    {
-      int vxF = (VXFullF[w] * time256) >> 8; // 2.5.11.22
-      int vyF = (VYFullF[w] * time256) >> 8; // 2.5.11.22
-      int dstF = prefF[vyF*ref_pitch + vxF + (w << NPELL2)];
-      int dstF0 = prefF[(w << NPELL2)]; // zero
-
-      int vxB = (VXFullB[w] * (256 - time256)) >> 8; // 2.5.11.22
-      int vyB = (VYFullB[w] * (256 - time256)) >> 8; // 2.5.11.22
-      int dstB = prefB[vyB*ref_pitch + vxB + (w << NPELL2)];
-      int dstB0 = prefB[(w << NPELL2)]; // zero
-
-      // avoid possible 8*16*8bit int32 overflow
-      typedef std::conditional < sizeof(pixel_t) == 1, int, __int64>::type calc_t;
-
-      pdst[w] = (pixel_t)((((dstF*(255 - MaskF[w]) + (((calc_t)MaskF[w] * (dstB*(255 - MaskB[w]) + MaskB[w] * dstF0) + 255) >> 8) + 255) >> 8)*(256 - time256) +
-        ((dstB*(255 - MaskB[w]) + (((calc_t)MaskB[w] * (dstF*(255 - MaskF[w]) + MaskF[w] * dstB0) + 255) >> 8) + 255) >> 8)*     time256) >> 8);
-    }
-    pdst += dst_pitch;
-    prefB += ref_pitch << NPELL2;
-    prefF += ref_pitch << NPELL2;
-    VXFullB += VPitch;
-    VYFullB += VPitch;
-    VXFullF += VPitch;
-    VYFullF += VPitch;
-    MaskB += VPitch;
-    MaskF += VPitch;
-  }
-}
-
-// specialized template for pixel_t == float
-template <typename pixel_t, int NPELL2>
-std::enable_if_t<std::is_floating_point<pixel_t>::value, void>
-static FlowInter_NPel(
+static void FlowInter_NPel(
   uint8_t * pdst8, int dst_pitch, const uint8_t *prefB8, const uint8_t *prefF8, int ref_pitch,
   short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
   int VPitch, int width, int height, int time256)
@@ -194,85 +147,32 @@ static FlowInter_NPel(
     {
       int vxF = (VXFullF[w] * time256) >> 8; // 2.5.11.22
       int vyF = (VYFullF[w] * time256) >> 8; // 2.5.11.22
-      float dstF = prefF[vyF*ref_pitch + vxF + (w << NPELL2)];
-      float dstF0 = prefF[(w << NPELL2)]; // zero
+      pixel_t dstF = prefF[vyF*ref_pitch + vxF + (w << NPELL2)];
+      pixel_t dstF0 = prefF[(w << NPELL2)]; // zero
 
       int vxB = (VXFullB[w] * (256 - time256)) >> 8; // 2.5.11.22
       int vyB = (VYFullB[w] * (256 - time256)) >> 8; // 2.5.11.22
-      float dstB = prefB[vyB*ref_pitch + vxB + (w << NPELL2)];
-      float dstB0 = prefB[(w << NPELL2)]; // zero
+      pixel_t dstB = prefB[vyB*ref_pitch + vxB + (w << NPELL2)];
+      pixel_t dstB0 = prefB[(w << NPELL2)]; // zero
 
-      const float MaskF_f = MaskF[w] / 255.0f;
-      const float MaskB_f = MaskB[w] / 255.0f;
-      const float rounder_why = 255 / 256.0f / 256.0f;
-      pdst[w] = (pixel_t)(
-        (
-        ((dstF*(1.0f - MaskF_f) + ((         MaskF_f * (dstB*(1.0f - MaskB_f) + MaskB_f  * dstF0) + rounder_why)     ) + rounder_why))*(1.0f - time256_f) +
-        ((dstB*(1.0f - MaskB_f) + ((         MaskB_f * (dstF*(1.0f - MaskF_f) + MaskF_f * dstB0) + rounder_why)     ) + rounder_why))*        time256_f
-        )
-        );
-    }
-    pdst += dst_pitch;
-    prefB += ref_pitch << NPELL2;
-    prefF += ref_pitch << NPELL2;
-    VXFullB += VPitch;
-    VYFullB += VPitch;
-    VXFullF += VPitch;
-    VYFullF += VPitch;
-    MaskB += VPitch;
-    MaskF += VPitch;
-  }
-}
-
-// NPELL2 = Log2(NPEL) (shift needed)
-template <typename pixel_t, int NPELL2>
-std::enable_if_t<!std::is_floating_point<pixel_t>::value, void> // for non_float!
-static FlowInterExtra_NPel(
-  uint8_t * pdst8, int dst_pitch, const uint8_t *prefB8, const uint8_t *prefF8, int ref_pitch,
-  short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
-  int VPitch, int width, int height, int time256,
-  short *VXFullBB, short *VXFullFF, short *VYFullBB, short *VYFullFF)
-{
-  dst_pitch /= sizeof(pixel_t);
-  ref_pitch /= sizeof(pixel_t);
-  pixel_t *pdst = reinterpret_cast<pixel_t *>(pdst8);
-  const pixel_t *prefB = reinterpret_cast<const pixel_t *>(prefB8);
-  const pixel_t *prefF = reinterpret_cast<const pixel_t *>(prefF8);
-
-  for (int h = 0; h < height; h++)
-  {
-    for (int w = 0; w < width; w++)
-    {
-      int vxF = (VXFullF[w] * time256) >> 8; // 2.5.11.22
-      int vyF = (VYFullF[w] * time256) >> 8; // 2.5.11.22
-      int adrF = vyF * ref_pitch + vxF + (w << NPELL2);
-      int dstF = prefF[adrF];
-      int vxFF = (VXFullFF[w] * time256) >> 8; // is it correct time?
-      int vyFF = (VYFullFF[w] * time256) >> 8;  // 2.5.11.22
-      int adrFF = vyFF * ref_pitch + vxFF + (w << NPELL2);
-      int dstFF = prefF[adrFF];
-      int vxB = (VXFullB[w] * (256 - time256)) >> 8; // 2.5.11.22
-      int vyB = (VYFullB[w] * (256 - time256)) >> 8; // 2.5.11.22
-      int adrB = vyB * ref_pitch + vxB + (w << NPELL2);
-      int dstB = prefB[adrB];
-      int vxBB = (VXFullBB[w] * (256 - time256)) >> 8;
-      int vyBB = (VYFullBB[w] * (256 - time256)) >> 8;
-      int adrBB = vyBB * ref_pitch + vxBB + (w << NPELL2);
-      int dstBB = prefB[adrBB];
-      int minfb;
-      int maxfb;
-      if (dstF > dstB) {
-        minfb = dstB;
-        maxfb = dstF;
+      if constexpr (sizeof(pixel_t) == 4) {
+        const float MaskF_f = MaskF[w] / 255.0f;
+        const float MaskB_f = MaskB[w] / 255.0f;
+        const float rounder_why = 255 / 256.0f / 256.0f;
+        pdst[w] = (pixel_t)(
+          (
+          ((dstF*(1.0f - MaskF_f) + ((MaskF_f * (dstB*(1.0f - MaskB_f) + MaskB_f * dstF0) + rounder_why)) + rounder_why))*(1.0f - time256_f) +
+            ((dstB*(1.0f - MaskB_f) + ((MaskB_f * (dstF*(1.0f - MaskF_f) + MaskF_f * dstB0) + rounder_why)) + rounder_why))*        time256_f
+            )
+          );
       }
       else {
-        maxfb = dstB;
-        minfb = dstF;
+        // avoid possible 8*16*8bit int32 overflow
+        typedef std::conditional < sizeof(pixel_t) == 1, int, __int64>::type calc_t;
+
+        pdst[w] = (pixel_t)((((dstF*(255 - MaskF[w]) + (((calc_t)MaskF[w] * (dstB*(255 - MaskB[w]) + MaskB[w] * dstF0) + 255) >> 8) + 255) >> 8)*(256 - time256) +
+          ((dstB*(255 - MaskB[w]) + (((calc_t)MaskB[w] * (dstF*(255 - MaskF[w]) + MaskF[w] * dstB0) + 255) >> 8) + 255) >> 8)*     time256) >> 8);
       }
-      pdst[w] = (
-        ((Median3r(minfb, dstBB, maxfb)*MaskF[w] + dstF * (255 - MaskF[w]) + 255) >> 8)*(256 - time256) +
-        ((Median3r(minfb, dstFF, maxfb)*MaskB[w] + dstB * (255 - MaskB[w]) + 255) >> 8)*     time256
-        ) >> 8;
     }
     pdst += dst_pitch;
     prefB += ref_pitch << NPELL2;
@@ -283,18 +183,12 @@ static FlowInterExtra_NPel(
     VYFullF += VPitch;
     MaskB += VPitch;
     MaskF += VPitch;
-    VXFullBB += VPitch;
-    VYFullBB += VPitch;
-    VXFullFF += VPitch;
-    VYFullFF += VPitch;
   }
 }
 
 // NPELL2 = Log2(NPEL) (shift needed)
-// specialized template for pixel_t == float
 template <typename pixel_t, int NPELL2>
-std::enable_if_t<std::is_floating_point<pixel_t>::value, void>
-static FlowInterExtra_NPel(
+static void FlowInterExtra_NPel(
   uint8_t * pdst8, int dst_pitch, const uint8_t *prefB8, const uint8_t *prefF8, int ref_pitch,
   short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
   int VPitch, int width, int height, int time256,
@@ -315,21 +209,21 @@ static FlowInterExtra_NPel(
       int vxF = (VXFullF[w] * time256) >> 8; // 2.5.11.22
       int vyF = (VYFullF[w] * time256) >> 8; // 2.5.11.22
       int adrF = vyF * ref_pitch + vxF + (w << NPELL2);
-      float dstF = prefF[adrF];
+      pixel_t dstF = prefF[adrF];
       int vxFF = (VXFullFF[w] * time256) >> 8; // is it correct time?
       int vyFF = (VYFullFF[w] * time256) >> 8;  // 2.5.11.22
       int adrFF = vyFF * ref_pitch + vxFF + (w << NPELL2);
-      float dstFF = prefF[adrFF];
+      pixel_t dstFF = prefF[adrFF];
       int vxB = (VXFullB[w] * (256 - time256)) >> 8; // 2.5.11.22
       int vyB = (VYFullB[w] * (256 - time256)) >> 8; // 2.5.11.22
       int adrB = vyB * ref_pitch + vxB + (w << NPELL2);
-      float dstB = prefB[adrB];
+      pixel_t dstB = prefB[adrB];
       int vxBB = (VXFullBB[w] * (256 - time256)) >> 8;
       int vyBB = (VYFullBB[w] * (256 - time256)) >> 8;
       int adrBB = vyBB * ref_pitch + vxBB + (w << NPELL2);
-      float dstBB = prefB[adrBB];
-      float minfb;
-      float maxfb;
+      pixel_t dstBB = prefB[adrBB];
+      pixel_t minfb;
+      pixel_t maxfb;
       if (dstF > dstB) {
         minfb = dstB;
         maxfb = dstF;
@@ -338,13 +232,22 @@ static FlowInterExtra_NPel(
         maxfb = dstB;
         minfb = dstF;
       }
-      const float MaskF_f = MaskF[w] / 255.0f;
-      const float MaskB_f = MaskB[w] / 255.0f;
-      const float rounder_why = 255 / 256.0f / 256.0f; 
-      pdst[w] =
-        (Median3r(minfb, dstBB, maxfb)*MaskF_f + dstF * (1.0f - MaskF_f) + rounder_why)*(1.0f - time256_f) +
-        (Median3r(minfb, dstFF, maxfb)*MaskB_f + dstB * (1.0f - MaskB_f) + rounder_why)*        time256_f
-        ;
+
+      if constexpr (sizeof(pixel_t) == 4) {
+        const float MaskF_f = MaskF[w] / 255.0f;
+        const float MaskB_f = MaskB[w] / 255.0f;
+        const float rounder_why = 255 / 256.0f / 256.0f;
+        pdst[w] =
+          (Median3r(minfb, dstBB, maxfb)*MaskF_f + dstF * (1.0f - MaskF_f) + rounder_why)*(1.0f - time256_f) +
+          (Median3r(minfb, dstFF, maxfb)*MaskB_f + dstB * (1.0f - MaskB_f) + rounder_why)*        time256_f
+          ;
+      }
+      else {
+        pdst[w] = (
+          ((Median3r(minfb, dstBB, maxfb)*MaskF[w] + dstF * (255 - MaskF[w]) + 255) >> 8)*(256 - time256) +
+          ((Median3r(minfb, dstFF, maxfb)*MaskB[w] + dstB * (255 - MaskB[w]) + 255) >> 8)*     time256
+          ) >> 8;
+      }
     }
     pdst += dst_pitch;
     prefB += ref_pitch << NPELL2;
@@ -361,12 +264,10 @@ static FlowInterExtra_NPel(
     VYFullFF += VPitch;
   }
 }
-
 
 // todo SSE2
 template <typename pixel_t, int NPELL2>
-std::enable_if_t<!std::is_floating_point<pixel_t>::value, void> // for non_float!
-static FlowInterSimple_NPel(
+static void FlowInterSimple_NPel(
   uint8_t * pdst8, int dst_pitch, const uint8_t *prefB8, const uint8_t *prefF8, int ref_pitch,
   short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
   int VPitch, int width, int height, int time256 /* T256P &t256_provider*/)
@@ -377,7 +278,9 @@ static FlowInterSimple_NPel(
   const pixel_t *prefB = reinterpret_cast<const pixel_t *>(prefB8);
   const pixel_t *prefF = reinterpret_cast<const pixel_t *>(prefF8);
 
-  if (time256 == 128 /*t256_provider.is_half ()*/) // special case double fps - fastest
+  const float time256_f = time256 / 256.0f;
+
+  if (time256 == 128) // special case double fps - fastest
   {
     for (int h = 0; h < height; h++)
     {
@@ -386,14 +289,23 @@ static FlowInterSimple_NPel(
         int vxF = (VXFullF[w]) >> 1; // 2.5.11.22
         int vyF = (VYFullF[w]) >> 1; // 2.5.11.22
         int adrF = vyF * ref_pitch + vxF + (w << NPELL2);
-        int dstF = prefF[adrF];
+        pixel_t dstF = prefF[adrF];
 
         int vxB = (VXFullB[w]) >> 1; // 2.5.11.22
         int vyB = (VYFullB[w]) >> 1; // 2.5.11.22
         int adrB = vyB * ref_pitch + vxB + (w << NPELL2);
-        int dstB = prefB[adrB];
+        pixel_t dstB = prefB[adrB];
 
-        pdst[w] = (((dstF + dstB) << 8) + (dstB - dstF)*(MaskF[w] - MaskB[w])) >> 9;
+        if constexpr (sizeof(pixel_t) == 4)
+        {
+          const float MaskF_f = MaskF[w] / 255.0f;
+          const float MaskB_f = MaskB[w] / 255.0f;
+
+          pdst[w] = (((dstF + dstB)) + (dstB - dstF)*(MaskF_f - MaskB_f)) * 0.5f;
+        }
+        else {
+          pdst[w] = (((dstF + dstB) << 8) + (dstB - dstF)*(MaskF[w] - MaskB[w])) >> 9;
+        }
       }
       pdst += dst_pitch;
       prefB += ref_pitch << NPELL2;
@@ -416,13 +328,29 @@ static FlowInterSimple_NPel(
         int vxF = (VXFullF[w] * time256) >> 8; // 2.5.11.22
         int vyF = (VYFullF[w] * time256) >> 8; // 2.5.11.22
         int adrF = vyF * ref_pitch + vxF + (w << NPELL2);
-        int dstF = prefF[adrF];
+        pixel_t dstF = prefF[adrF];
         int vxB = (VXFullB[w] * (256 - time256)) >> 8; // 2.5.11.22
         int vyB = (VYFullB[w] * (256 - time256)) >> 8; // 2.5.11.22
         int adrB = vyB * ref_pitch + vxB + (w << NPELL2);
-        int dstB = prefB[adrB];
-        pdst[w] = (((dstF*(255 - MaskF[w]) + dstB * MaskF[w] + 255) >> 8)*(256 - time256) +
-          ((dstB*(255 - MaskB[w]) + dstF * MaskB[w] + 255) >> 8)*     time256) >> 8;
+        pixel_t dstB = prefB[adrB];
+
+        if constexpr(sizeof(pixel_t) == 4)
+        {
+          const float MaskF_f = MaskF[w] / 255.0f;
+          const float MaskB_f = MaskB[w] / 255.0f;
+          const float rounder_why = 255 / 256.0f / 256.0f;
+
+          pdst[w] =
+            (dstF*(1.0f - MaskF_f) + dstB * MaskF_f + rounder_why)*(1.0f - time256_f) +
+            (dstB*(1.0f - MaskB_f) + dstF * MaskB_f + rounder_why)*        time256_f;
+        }
+        else {
+          pdst[w] =
+            (
+            ((dstF*(255 - MaskF[w]) + dstB * MaskF[w] + 255) >> 8)*(256 - time256) +
+              ((dstB*(255 - MaskB[w]) + dstF * MaskB[w] + 255) >> 8)*     time256
+              ) >> 8;
+        }
       }
       pdst += dst_pitch;
       prefB += ref_pitch << NPELL2;
@@ -437,12 +365,8 @@ static FlowInterSimple_NPel(
   }
 }
 
-// todo SSE2
-// NPELL2 = Log2(NPEL) (shift needed)
-// specialized template for pixel_t == float
-template <typename pixel_t, int NPELL2>
-std::enable_if_t<std::is_floating_point<pixel_t>::value, void>
-static FlowInterSimple_NPel(
+template<typename pixel_t>
+static void FlowInterSimple_Pel1(
   uint8_t * pdst8, int dst_pitch, const uint8_t *prefB8, const uint8_t *prefF8, int ref_pitch,
   short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
   int VPitch, int width, int height, int time256)
@@ -455,89 +379,6 @@ static FlowInterSimple_NPel(
 
   const float time256_f = time256 / 256.0f;
 
-  if (time256 == 128 /*t256_provider.is_half ()*/) // special case double fps - fastest
-  {
-    for (int h = 0; h < height; h++)
-    {
-      for (int w = 0; w < width; w += 1)
-      {
-        int vxF = (VXFullF[w]) >> 1; // 2.5.11.22
-        int vyF = (VYFullF[w]) >> 1; // 2.5.11.22
-        int adrF = vyF * ref_pitch + vxF + (w << NPELL2);
-        float dstF = prefF[adrF];
-
-        int vxB = (VXFullB[w]) >> 1; // 2.5.11.22
-        int vyB = (VYFullB[w]) >> 1; // 2.5.11.22
-        int adrB = vyB * ref_pitch + vxB + (w << NPELL2);
-        float dstB = prefB[adrB];
-        
-        const float MaskF_f = MaskF[w] / 255.0f;
-        const float MaskB_f = MaskB[w] / 255.0f;
-
-        pdst[w] = (((dstF + dstB)) + (dstB - dstF)*(MaskF_f - MaskB_f)) * 0.5f;
-      }
-      pdst += dst_pitch;
-      prefB += ref_pitch << NPELL2;
-      prefF += ref_pitch << NPELL2;
-      VXFullB += VPitch;
-      VYFullB += VPitch;
-      VXFullF += VPitch;
-      VYFullF += VPitch;
-      MaskB += VPitch;
-      MaskF += VPitch;
-    }
-  }
-
-  else // general case
-  {
-    for (int h = 0; h < height; h++)
-    {
-      for (int w = 0; w < width; w += 1)
-      {
-        int vxF = (VXFullF[w] * time256) >> 8; // 2.5.11.22
-        int vyF = (VYFullF[w] * time256) >> 8; // 2.5.11.22
-        int adrF = vyF * ref_pitch + vxF + (w << NPELL2);
-        float dstF = prefF[adrF];
-        int vxB = (VXFullB[w] * (256 - time256)) >> 8; // 2.5.11.22
-        int vyB = (VYFullB[w] * (256 - time256)) >> 8; // 2.5.11.22
-        int adrB = vyB * ref_pitch + vxB + (w << NPELL2);
-        float dstB = prefB[adrB];
-
-        const float MaskF_f = MaskF[w] / 255.0f;
-        const float MaskB_f = MaskB[w] / 255.0f;
-        const float rounder_why = 255 / 256.0f / 256.0f;
-
-        pdst[w] =
-          (dstF*(1.0f - MaskF_f) + dstB * MaskF_f + rounder_why)*(1.0f - time256_f) +
-          (dstB*(1.0f - MaskB_f) + dstF * MaskB_f + rounder_why)*        time256_f;
-      }
-      pdst += dst_pitch;
-      prefB += ref_pitch << NPELL2;
-      prefF += ref_pitch << NPELL2;
-      VXFullB += VPitch;
-      VYFullB += VPitch;
-      VXFullF += VPitch;
-      VYFullF += VPitch;
-      MaskB += VPitch;
-      MaskF += VPitch;
-    }
-  }
-}
-
-
-template<typename pixel_t>
-std::enable_if_t<!std::is_floating_point<pixel_t>::value, void> // for non_float!
-static FlowInterSimple_Pel1(
-  uint8_t * pdst8, int dst_pitch, const uint8_t *prefB8, const uint8_t *prefF8, int ref_pitch,
-  short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
-  int VPitch, int width, int height, int time256)
-{
-  dst_pitch /= sizeof(pixel_t);
-  ref_pitch /= sizeof(pixel_t);
-  pixel_t *pdst = reinterpret_cast<pixel_t *>(pdst8);
-  const pixel_t *prefB = reinterpret_cast<const pixel_t *>(prefB8);
-  const pixel_t *prefF = reinterpret_cast<const pixel_t *>(prefF8);
-
   if (time256 == 128) // special case double fps - fastest
   {
     for (int h = 0; h < height; h++)
@@ -547,15 +388,26 @@ static FlowInterSimple_Pel1(
         int vxF = (VXFullF[w]) >> 1; // 2.5.11.22
         int vyF = (VYFullF[w]) >> 1; // 2.5.11.22
         int addrF = vyF * ref_pitch + vxF + w;
-        int dstF = prefF[addrF];
-        int dstF1 = prefF[addrF + 1]; // approximation for speed
+        pixel_t dstF = prefF[addrF];
+        pixel_t dstF1 = prefF[addrF + 1]; // approximation for speed
         int vxB = (VXFullB[w]) >> 1; // 2.5.11.22
         int vyB = (VYFullB[w]) >> 1; // 2.5.11.22
         int addrB = vyB * ref_pitch + vxB + w;
-        int dstB = prefB[addrB];
-        int dstB1 = prefB[addrB + 1];
-        pdst[w] = (((dstF + dstB) << 8) + (dstB - dstF)*(MaskF[w] - MaskB[w])) >> 9;
-        pdst[w + 1] = (((dstF1 + dstB1) << 8) + (dstB1 - dstF1)*(MaskF[w + 1] - MaskB[w + 1])) >> 9;
+        pixel_t dstB = prefB[addrB];
+        pixel_t dstB1 = prefB[addrB + 1];
+
+        if constexpr (sizeof(pixel_t) == 4) {
+          const float MaskF_f = MaskF[w] / 255.0f;
+          const float MaskB_f = MaskB[w] / 255.0f;
+          pdst[w] = ((dstF + dstB) + (dstB - dstF)*(MaskF_f - MaskB_f)) * 0.5f;
+          const float MaskF1_f = MaskF[w + 1] / 255.0f;
+          const float MaskB1_f = MaskB[w + 1] / 255.0f;
+          pdst[w + 1] = ((dstF1 + dstB1) + (dstB1 - dstF1)*(MaskF1_f - MaskB1_f)) * 0.5f;
+        }
+        else {
+          pdst[w] = (((dstF + dstB) << 8) + (dstB - dstF)*(MaskF[w] - MaskB[w])) >> 9;
+          pdst[w + 1] = (((dstF1 + dstB1) << 8) + (dstB1 - dstF1)*(MaskF[w + 1] - MaskB[w + 1])) >> 9;
+        }
       }
       pdst += dst_pitch;
       prefB += ref_pitch;
@@ -581,19 +433,36 @@ static FlowInterSimple_Pel1(
         int vxF = (VXFullF[w]) >> 1; // 2.5.11.22
         int vyF = (VYFullF[w]) >> 1; // 2.5.11.22
         int addrF = vyF * ref_pitch + vxF + w;
-        int dstF = prefF[addrF];
-        int dstF1 = prefF[addrF + 1]; // approximation for speed
+        pixel_t dstF = prefF[addrF];
+        pixel_t dstF1 = prefF[addrF + 1]; // approximation for speed
         int vxB = (VXFullB[w] * (256 - time256)) >> 8; // 2.5.11.22
         int vyB = (VYFullB[w] * (256 - time256)) >> 8; // 2.5.11.22
         int addrB = vyB * ref_pitch + vxB + w;
-        int dstB = prefB[addrB];
-        int dstB1 = prefB[addrB + 1];
-        // possible overflow for 16 bit
-        // Fixme (wondering): why "rounder" == 255?
-        pdst[w] = (((result_t)(dstF * 255 + (dstB - dstF)*MaskF[w] + 255))*(256 - time256) +
-          ((result_t)(dstB * 255 - (dstB - dstF)*MaskB[w] + 255))*     time256) >> 16;
-        pdst[w + 1] = (((result_t)(dstF1 * 255 + (dstB1 - dstF1)*MaskF[w + 1] + 255))*(256 - time256) +
-          ((result_t)(dstB1 * 255 - (dstB1 - dstF1)*MaskB[w + 1] + 255))*     time256) >> 16;
+        pixel_t dstB = prefB[addrB];
+        pixel_t dstB1 = prefB[addrB + 1];
+
+        if constexpr (sizeof(pixel_t) == 4)
+        {
+          const float MaskF_f = MaskF[w] / 255.0f;
+          const float MaskB_f = MaskB[w] / 255.0f;
+          const float rounder_why = 255 / 256.0f / 256.0f;
+          pdst[w] =
+            ((dstF * 1.0f + (dstB - dstF)*MaskF_f + rounder_why))*(1.0f - time256_f) +
+            ((dstB * 1.0f - (dstB - dstF)*MaskB_f + rounder_why))*        time256_f;
+          const float MaskF1_f = MaskF[w + 1] / 255.0f;
+          const float MaskB1_f = MaskB[w + 1] / 255.0f;
+          pdst[w + 1] =
+            ((dstF1 * 1.0f + (dstB1 - dstF1)*MaskF1_f + rounder_why))*(1.0f - time256_f) +
+            ((dstB1 * 1.0f - (dstB1 - dstF1)*MaskB1_f + rounder_why))*        time256_f;
+        }
+        else {
+          // possible overflow for 16 bit
+          // Fixme (wondering): why "rounder" == 255?
+          pdst[w] = (((result_t)(dstF * 255 + (dstB - dstF)*MaskF[w] + 255))*(256 - time256) +
+            ((result_t)(dstB * 255 - (dstB - dstF)*MaskB[w] + 255))*     time256) >> 16;
+          pdst[w + 1] = (((result_t)(dstF1 * 255 + (dstB1 - dstF1)*MaskF[w + 1] + 255))*(256 - time256) +
+            ((result_t)(dstB1 * 255 - (dstB1 - dstF1)*MaskB[w + 1] + 255))*     time256) >> 16;
+        }
       }
       pdst += dst_pitch;
       prefB += ref_pitch;
@@ -607,103 +476,3 @@ static FlowInterSimple_Pel1(
     }
   }
 }
-
-// NPELL2 = Log2(NPEL) (shift needed)
-// specialized template for pixel_t == float
-template<typename pixel_t>
-std::enable_if_t<std::is_floating_point<pixel_t>::value, void>
-static FlowInterSimple_Pel1(
-  uint8_t * pdst8, int dst_pitch, const uint8_t *prefB8, const uint8_t *prefF8, int ref_pitch,
-  short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
-  int VPitch, int width, int height, int time256)
-{
-  dst_pitch /= sizeof(pixel_t);
-  ref_pitch /= sizeof(pixel_t);
-  pixel_t *pdst = reinterpret_cast<pixel_t *>(pdst8);
-  const pixel_t *prefB = reinterpret_cast<const pixel_t *>(prefB8);
-  const pixel_t *prefF = reinterpret_cast<const pixel_t *>(prefF8);
-
-  const float time256_f = time256 / 256.0f;
-
-  if (time256 == 128) // special case double fps - fastest
-  {
-    for (int h = 0; h < height; h++)
-    {
-      for (int w = 0; w < width; w += 2) // paired for speed
-      {
-        int vxF = (VXFullF[w]) >> 1; // 2.5.11.22
-        int vyF = (VYFullF[w]) >> 1; // 2.5.11.22
-        int addrF = vyF * ref_pitch + vxF + w;
-        float dstF = prefF[addrF];
-        float dstF1 = prefF[addrF + 1]; // approximation for speed
-        int vxB = (VXFullB[w]) >> 1; // 2.5.11.22
-        int vyB = (VYFullB[w]) >> 1; // 2.5.11.22
-        int addrB = vyB * ref_pitch + vxB + w;
-        float dstB = prefB[addrB];
-        float dstB1 = prefB[addrB + 1];
-        const float MaskF_f = MaskF[w] / 255.0f;
-        const float MaskB_f = MaskB[w] / 255.0f;
-        pdst[w] = ((dstF + dstB) + (dstB - dstF)*(MaskF_f - MaskB_f)) * 0.5f;
-        const float MaskF1_f = MaskF[w + 1] / 255.0f;
-        const float MaskB1_f = MaskB[w + 1] / 255.0f;
-        pdst[w + 1] = ((dstF1 + dstB1) + (dstB1 - dstF1)*(MaskF1_f - MaskB1_f)) * 0.5f;
-      }
-      pdst += dst_pitch;
-      prefB += ref_pitch;
-      prefF += ref_pitch;
-      VXFullB += VPitch;
-      VYFullB += VPitch;
-      VXFullF += VPitch;
-      VYFullF += VPitch;
-      MaskB += VPitch;
-      MaskF += VPitch;
-    }
-  }
-
-  else // general case
-  {
-    for (int h = 0; h < height; h++)
-    {
-      for (int w = 0; w < width; w += 2) // paired for speed
-      {
-        int vxF = (VXFullF[w]) >> 1; // 2.5.11.22
-        int vyF = (VYFullF[w]) >> 1; // 2.5.11.22
-        int addrF = vyF * ref_pitch + vxF + w;
-        float dstF = prefF[addrF];
-        float dstF1 = prefF[addrF + 1]; // approximation for speed
-        int vxB = (VXFullB[w] * (256 - time256)) >> 8; // 2.5.11.22
-        int vyB = (VYFullB[w] * (256 - time256)) >> 8; // 2.5.11.22
-        int addrB = vyB * ref_pitch + vxB + w;
-        float dstB = prefB[addrB];
-        float dstB1 = prefB[addrB + 1];
-        
-        const float MaskF_f = MaskF[w] / 255.0f;
-        const float MaskB_f = MaskB[w] / 255.0f;
-        const float rounder_why = 255 / 256.0f / 256.0f;
-        pdst[w] =
-          (
-          ((dstF * 1.0f + (dstB - dstF)*MaskF_f + rounder_why))*(1.0f - time256_f) +
-          ((dstB * 1.0f - (dstB - dstF)*MaskB_f + rounder_why))*        time256_f
-          );
-        const float MaskF1_f = MaskF[w + 1] / 255.0f;
-        const float MaskB1_f = MaskB[w + 1] / 255.0f;
-        pdst[w + 1] = 
-          (
-          ((dstF1 * 1.0f + (dstB1 - dstF1)*MaskF1_f + rounder_why))*(1.0f - time256_f) +
-          ((dstB1 * 1.0f - (dstB1 - dstF1)*MaskB1_f + rounder_why))*        time256_f
-          );
-      }
-      pdst += dst_pitch;
-      prefB += ref_pitch;
-      prefF += ref_pitch;
-      VXFullB += VPitch;
-      VYFullB += VPitch;
-      VXFullF += VPitch;
-      VYFullF += VPitch;
-      MaskB += VPitch;
-      MaskF += VPitch;
-    }
-  }
-}
-
-
