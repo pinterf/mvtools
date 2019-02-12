@@ -457,7 +457,6 @@ static void Merge4PlanesToBig_sse2(
   uint8_t *pel2Plane, int pel2Pitch, const uint8_t *pPlane0, const uint8_t *pPlane1,
   const uint8_t *pPlane2, const uint8_t * pPlane3, int width, int height, int pitch, int bits_per_pixel)
 {
-  int mod8width = width;
   const int simd_width = width * sizeof(pixel_t);
   const int mod16width = (simd_width / 16) * 16;
   // copy refined planes to big one plane
@@ -895,6 +894,9 @@ template void FlowInterSimple<uint8_t>(uint8_t * pdst, int dst_pitch, const uint
 template void FlowInterSimple<uint16_t>(uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
   short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
   int VPitch, int width, int height, int time256, int nPel );
+template void FlowInterSimple<float>(uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
+  short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
+  int VPitch, int width, int height, int time256, int nPel);
 
 template void FlowInter<uint8_t>(uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
   short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
@@ -902,12 +904,19 @@ template void FlowInter<uint8_t>(uint8_t * pdst, int dst_pitch, const uint8_t *p
 template void FlowInter<uint16_t>(uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
   short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
   int VPitch, int width, int height, int time256, int nPel );
+template void FlowInter<float>(uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
+  short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
+  int VPitch, int width, int height, int time256, int nPel);
 
 template void FlowInterExtra<uint8_t>(uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
   short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
   int VPitch, int width, int height, int time256, int nPel,
   short *VXFullBB, short *VXFullFF, short *VYFullBB, short *VYFullFF);
 template void FlowInterExtra<uint16_t>(uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
+  short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
+  int VPitch, int width, int height, int time256, int nPel,
+  short *VXFullBB, short *VXFullFF, short *VYFullBB, short *VYFullFF);
+template void FlowInterExtra<float>(uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
   short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
   int VPitch, int width, int height, int time256, int nPel,
   short *VXFullBB, short *VXFullFF, short *VYFullBB, short *VYFullFF);

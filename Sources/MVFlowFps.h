@@ -97,15 +97,24 @@ private:
   int nHPaddingUV;
   int nVPaddingUV;
 
+  SimpleResize *upsizer;
+  SimpleResize *upsizerUV;
+
+  YUY2Planes * DstPlanes;
+
   bool is444;
   bool isGrey;
   bool isRGB; // avs+ planar
   bool needDistinctChroma;
 
-  SimpleResize *upsizer;
-  SimpleResize *upsizerUV;
-
-  YUY2Planes * DstPlanes;
+  int pixelsize_super;
+  int bits_per_pixel_super;
+  int pixelsize_super_shift;
+  int planecount;
+  int xRatioUVs[3];
+  int yRatioUVs[3];
+  int nLogxRatioUVs[3];
+  int nLogyRatioUVs[3];
 
 public:
   MVFlowFps(PClip _child, PClip _super, PClip _mvbw, PClip _mvfw, unsigned int _num, unsigned int _den, int _maskmode, double _ml,

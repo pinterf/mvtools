@@ -56,6 +56,12 @@ MVFlowInter::MVFlowInter(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, in
   int nSuperLevels = params.nLevels;
   int nSuperWidth = super->GetVideoInfo().width; // really super
   int nSuperHeight = super->GetVideoInfo().height;
+  int super_pixelsize = super->GetVideoInfo().ComponentSize();
+  int vectors_pixelsize = pixelsize;
+  int input_pixelsize = child->GetVideoInfo().ComponentSize();
+
+  if (super_pixelsize != input_pixelsize)
+    env->ThrowError("MFlowInter: input and super clip bit depth is different");
 
   if (nHeight != nHeightS
     || nWidth != nSuperWidth - nSuperHPad * 2
@@ -65,7 +71,9 @@ MVFlowInter::MVFlowInter(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, in
   }
 
   if (nPel == 1)
+  {
     finest = super; // v2.0.9.1
+  }
   else
   {
     finest = new MVFinest(super, _isse, env);
@@ -73,9 +81,25 @@ MVFlowInter::MVFlowInter(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, in
     finest = env->Invoke("InternalCache", AVSValue(cache_args, 1)).AsClip(); // add cache for speed
   }
 
-//	if (nWidth  != vi.width || (nWidth + nHPadding*2)*nPel != finest->GetVideoInfo().width ||
-//	    nHeight  != vi.height || (nHeight + nVPadding*2)*nPel != finest->GetVideoInfo().height )
-//		env->ThrowError("MVFlowInter: wrong source or finest frame size");
+  // actual format can differ from the base clip of vectors
+  pixelsize_super = super->GetVideoInfo().ComponentSize();
+  bits_per_pixel_super = super->GetVideoInfo().BitsPerComponent();
+  pixelsize_super_shift = ilog2(pixelsize_super);
+
+  planecount = vi.IsYUY2() ? 3 : std::min(vi.NumComponents(), 3);
+
+  xRatioUVs[0] = xRatioUVs[1] = xRatioUVs[2] = 1;
+  yRatioUVs[0] = yRatioUVs[1] = yRatioUVs[2] = 1;
+
+  if (!vi.IsY() && !vi.IsRGB()) {
+    xRatioUVs[1] = xRatioUVs[2] = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U));
+    yRatioUVs[1] = yRatioUVs[2] = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U));
+  }
+
+  for (int i = 0; i < planecount; i++) {
+    nLogxRatioUVs[i] = ilog2(xRatioUVs[i]);
+    nLogyRatioUVs[i] = ilog2(yRatioUVs[i]);
+  }
 
   // may be padded for full frame cover
   /*
@@ -94,16 +118,21 @@ MVFlowInter::MVFlowInter(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, in
   nWidthP = nBlkXP * (nBlkSizeX - nOverlapX) + nOverlapX;
   nHeightP = nBlkYP * (nBlkSizeY - nOverlapY) + nOverlapY;
 
-  nWidthPUV = nWidthP / xRatioUV;
-  nHeightPUV = nHeightP / yRatioUV;
-  nHeightUV = nHeight / yRatioUV;
-  nWidthUV = nWidth / xRatioUV;
+  nWidthPUV = nWidthP / xRatioUVs[1];
+  nHeightPUV = nHeightP / yRatioUVs[1];
+  nHeightUV = nHeight / yRatioUVs[1];
+  nWidthUV = nWidth / xRatioUVs[1];
 
-  nHPaddingUV = nHPadding / xRatioUV;
-  nVPaddingUV = nVPadding / yRatioUV;
+  nHPaddingUV = nHPadding / xRatioUVs[1];
+  nVPaddingUV = nVPadding / yRatioUVs[1];
 
   VPitchY = AlignNumber(nWidthP, 16);
   VPitchUV = AlignNumber(nWidthPUV, 16);
+
+  is444 = vi.Is444();
+  isGrey = vi.IsY();
+  isRGB = vi.IsPlanarRGB() || vi.IsPlanarRGBA(); // planar only
+  //needDistinctChroma = !is444 && !isGrey && !isRGB;
 
   // v2.7.34 common full size buffers for all planes, eliminates ten large buffer
   VXFull_B = (short*)_aligned_malloc(2 * nHeightP*VPitchY + 128, 128);
@@ -114,13 +143,17 @@ MVFlowInter::MVFlowInter(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, in
 
   VXSmallYB = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
   VYSmallYB = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
-  VXSmallUVB = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
-  VYSmallUVB = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
+  if (!isGrey) {
+    VXSmallUVB = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
+    VYSmallUVB = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
+  }
 
   VXSmallYF = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
   VYSmallYF = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
-  VXSmallUVF = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
-  VYSmallUVF = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
+  if (!isGrey) {
+    VXSmallUVF = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
+    VYSmallUVF = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
+  }
 
   VXFull_BB = (short*)_aligned_malloc(2 * nHeightP*VPitchY + 128, 128);
   VYFull_BB = (short*)_aligned_malloc(2 * nHeightP*VPitchY + 128, 128);
@@ -130,13 +163,17 @@ MVFlowInter::MVFlowInter(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, in
 
   VXSmallYBB = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
   VYSmallYBB = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
-  VXSmallUVBB = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
-  VYSmallUVBB = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
+  if (!isGrey) {
+    VXSmallUVBB = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
+    VYSmallUVBB = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
+  }
 
   VXSmallYFF = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
   VYSmallYFF = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
-  VXSmallUVFF = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
-  VYSmallUVFF = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
+  if (!isGrey) {
+    VXSmallUVFF = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
+    VYSmallUVFF = (short*)_aligned_malloc(2 * nBlkXP*nBlkYP + 128, 128);
+  }
 
   MaskSmallB = (unsigned char*)_aligned_malloc(nBlkXP*nBlkYP + 128, 128);
   MaskFull_B = (unsigned char*)_aligned_malloc(nHeightP*VPitchY + 128, 128);
@@ -148,7 +185,9 @@ MVFlowInter::MVFlowInter(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, in
   SADMaskSmallF = (unsigned char*)_aligned_malloc(nBlkXP*nBlkYP + 128, 128);
 
   upsizer = new SimpleResize(nWidthP, nHeightP, nBlkXP, nBlkYP, cpuFlags);
-  upsizerUV = new SimpleResize(nWidthPUV, nHeightPUV, nBlkXP, nBlkYP, cpuFlags);
+  if (!isGrey) {
+    upsizerUV = new SimpleResize(nWidthPUV, nHeightPUV, nBlkXP, nBlkYP, cpuFlags);
+  }
 
   if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
   {
@@ -165,21 +204,26 @@ MVFlowInter::~MVFlowInter()
   }
 
   delete upsizer;
-  delete upsizerUV;
+  if(!isGrey)
+    delete upsizerUV;
 
   _aligned_free(VXFull_B);
   _aligned_free(VYFull_B);
   _aligned_free(VXSmallYB);
   _aligned_free(VYSmallYB);
-  _aligned_free(VXSmallUVB);
-  _aligned_free(VYSmallUVB);
+  if (!isGrey) {
+    _aligned_free(VXSmallUVB);
+    _aligned_free(VYSmallUVB);
+  }
 
   _aligned_free(VXFull_F);
   _aligned_free(VYFull_F);
   _aligned_free(VXSmallYF);
   _aligned_free(VYSmallYF);
-  _aligned_free(VXSmallUVF);
-  _aligned_free(VYSmallUVF);
+  if (!isGrey) {
+    _aligned_free(VXSmallUVF);
+    _aligned_free(VYSmallUVF);
+  }
 
   _aligned_free(MaskSmallB);
   _aligned_free(MaskFull_B);
@@ -190,15 +234,19 @@ MVFlowInter::~MVFlowInter()
   _aligned_free(VYFull_BB);
   _aligned_free(VXSmallYBB);
   _aligned_free(VYSmallYBB);
-  _aligned_free(VXSmallUVBB);
-  _aligned_free(VYSmallUVBB);
+  if (!isGrey) {
+    _aligned_free(VXSmallUVBB);
+    _aligned_free(VYSmallUVBB);
+  }
 
   _aligned_free(VXFull_FF);
   _aligned_free(VYFull_FF);
   _aligned_free(VXSmallYFF);
   _aligned_free(VYSmallYFF);
-  _aligned_free(VXSmallUVFF);
-  _aligned_free(VYSmallUVFF);
+  if (!isGrey) {
+    _aligned_free(VXSmallUVFF);
+    _aligned_free(VYSmallUVFF);
+  }
 
   _aligned_free(SADMaskSmallB);
   _aligned_free(SADMaskSmallF);
@@ -280,35 +328,31 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
         nDstPitches[1] = nDstPitches[0];
         nDstPitches[2] = nDstPitches[0];
       }
+      planecount = 3;
     }
 
     else
     {
-      pDst[0] = YWPLAN(dst);
-      pDst[1] = UWPLAN(dst);
-      pDst[2] = VWPLAN(dst);
-      nDstPitches[0] = YPITCH(dst);
-      nDstPitches[1] = UPITCH(dst);
-      nDstPitches[2] = VPITCH(dst);
+      int planes_y[4] = { PLANAR_Y, PLANAR_U, PLANAR_V, PLANAR_A };
+      int planes_r[4] = { PLANAR_G, PLANAR_B, PLANAR_R, PLANAR_A };
+      int *planes = (vi.IsYUV() || vi.IsYUVA()) ? planes_y : planes_r;
+      planecount = std::min(vi.NumComponents(), 3);
+      for (int p = 0; p < planecount; ++p) {
+        const int plane = planes[p];
+        pSrc[p] = src->GetReadPtr(plane);
+        nSrcPitches[p] = src->GetPitch(plane);
 
-      pRef[0] = YRPLAN(ref);
-      pRef[1] = URPLAN(ref);
-      pRef[2] = VRPLAN(ref);
-      nRefPitches[0] = YPITCH(ref);
-      nRefPitches[1] = UPITCH(ref);
-      nRefPitches[2] = VPITCH(ref);
+        pRef[p] = ref->GetReadPtr(plane);
+        nRefPitches[p] = ref->GetPitch(plane);
 
-      pSrc[0] = YRPLAN(src);
-      pSrc[1] = URPLAN(src);
-      pSrc[2] = VRPLAN(src);
-      nSrcPitches[0] = YPITCH(src);
-      nSrcPitches[1] = UPITCH(src);
-      nSrcPitches[2] = VPITCH(src);
+        pDst[p] = dst->GetWritePtr(plane);
+        nDstPitches[p] = dst->GetPitch(plane);
+      }
+
     }
 
-    int nOffsetY = nRefPitches[0] * nVPadding*nPel + nHPadding*nPel*pixelsize;
-    int nOffsetUV = nRefPitches[1] * nVPaddingUV*nPel + nHPaddingUV*nPel*pixelsize;
-
+    int nOffsetY = nRefPitches[0] * nVPadding*nPel + nHPadding*nPel*pixelsize_super;
+    int nOffsetUV = nRefPitches[1] * nVPaddingUV*nPel + nHPaddingUV*nPel*pixelsize_super;
 
     // make  vector vx and vy small masks
     MakeVectorSmallMasks(mvClipB, nBlkX, nBlkY, VXSmallYB, nBlkXP, VYSmallYB, nBlkXP);
@@ -316,10 +360,12 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
 
     CheckAndPadSmallY_BF(VXSmallYB, VXSmallYF, VYSmallYB, VYSmallYF, nBlkXP, nBlkYP, nBlkX, nBlkY);
 
-    VectorSmallMaskYToHalfUV(VXSmallYB, nBlkXP, nBlkYP, VXSmallUVB, xRatioUV);
-    VectorSmallMaskYToHalfUV(VYSmallYB, nBlkXP, nBlkYP, VYSmallUVB, yRatioUV);
-    VectorSmallMaskYToHalfUV(VXSmallYF, nBlkXP, nBlkYP, VXSmallUVF, xRatioUV);
-    VectorSmallMaskYToHalfUV(VYSmallYF, nBlkXP, nBlkYP, VYSmallUVF, yRatioUV);
+    if (!isGrey) {
+      VectorSmallMaskYToHalfUV(VXSmallYB, nBlkXP, nBlkYP, VXSmallUVB, xRatioUVs[1]);
+      VectorSmallMaskYToHalfUV(VYSmallYB, nBlkXP, nBlkYP, VYSmallUVB, yRatioUVs[1]);
+      VectorSmallMaskYToHalfUV(VXSmallYF, nBlkXP, nBlkYP, VXSmallUVF, xRatioUVs[1]);
+      VectorSmallMaskYToHalfUV(VYSmallYF, nBlkXP, nBlkYP, VYSmallUVF, yRatioUVs[1]);
+    }
 
     // analyse vectors field to detect occlusion
 
@@ -362,10 +408,12 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
 
       CheckAndPadSmallY_BF(VXSmallYBB, VXSmallYFF, VYSmallYBB, VYSmallYFF, nBlkXP, nBlkYP, nBlkX, nBlkY);
 
-      VectorSmallMaskYToHalfUV(VXSmallYBB, nBlkXP, nBlkYP, VXSmallUVBB, xRatioUV);
-      VectorSmallMaskYToHalfUV(VYSmallYBB, nBlkXP, nBlkYP, VYSmallUVBB, yRatioUV);
-      VectorSmallMaskYToHalfUV(VXSmallYFF, nBlkXP, nBlkYP, VXSmallUVFF, xRatioUV);
-      VectorSmallMaskYToHalfUV(VYSmallYFF, nBlkXP, nBlkYP, VYSmallUVFF, yRatioUV);
+      if (!isGrey) {
+        VectorSmallMaskYToHalfUV(VXSmallYBB, nBlkXP, nBlkYP, VXSmallUVBB, xRatioUVs[1]);
+        VectorSmallMaskYToHalfUV(VYSmallYBB, nBlkXP, nBlkYP, VYSmallUVBB, yRatioUVs[1]);
+        VectorSmallMaskYToHalfUV(VXSmallYFF, nBlkXP, nBlkYP, VXSmallUVFF, xRatioUVs[1]);
+        VectorSmallMaskYToHalfUV(VYSmallYFF, nBlkXP, nBlkYP, VYSmallUVFF, yRatioUVs[1]);
+      }
 
       // Upsize Y: B and F vectors and mask to full frame (same for MFlowInter and MFlowInterExtra)
       upsizer->SimpleResizeDo_int16(VXFull_B, nWidthP, nHeightP, VPitchY, VXSmallYB, nBlkXP, nBlkXP, nPel, true, nWidth, nHeight);
@@ -383,50 +431,64 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
       upsizer->SimpleResizeDo_int16(VYFull_FF, nWidthP, nHeightP, VPitchY, VYSmallYFF, nBlkXP, nBlkXP, nPel, false, nWidth, nHeight);
 
       // FlowInterExtra Y
-      if (pixelsize == 1) {
+      if (pixelsize_super == 1) {
         FlowInterExtra<uint8_t>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, pSrc[0] + nOffsetY, nRefPitches[0],
           VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchY,
           nWidth, nHeight, time256, nPel, VXFull_BB, VXFull_FF, VYFull_BB, VYFull_FF);
       }
-      else {
+      else if (pixelsize_super == 2) {
         FlowInterExtra<uint16_t>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, pSrc[0] + nOffsetY, nRefPitches[0],
+          VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchY,
+          nWidth, nHeight, time256, nPel, VXFull_BB, VXFull_FF, VYFull_BB, VYFull_FF);
+      }
+      else if (pixelsize_super == 4) {
+        FlowInterExtra<float>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, pSrc[0] + nOffsetY, nRefPitches[0],
           VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchY,
           nWidth, nHeight, time256, nPel, VXFull_BB, VXFull_FF, VYFull_BB, VYFull_FF);
       }
 
       // Upsize UV: B and F vectors and mask to full frame (same for MFlowInter and MFlowInterExtra)
-      upsizerUV->SimpleResizeDo_int16(VXFull_B, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVB, nBlkXP, nBlkXP, nPel, true, nWidthUV, nHeightUV);
-      upsizerUV->SimpleResizeDo_int16(VYFull_B, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVB, nBlkXP, nBlkXP, nPel, false, nWidthUV, nHeightUV);
-      upsizerUV->SimpleResizeDo_int16(VXFull_F, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVF, nBlkXP, nBlkXP, nPel, true, nWidthUV, nHeightUV);
-      upsizerUV->SimpleResizeDo_int16(VYFull_F, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVF, nBlkXP, nBlkXP, nPel, false, nWidthUV, nHeightUV);
+      if (!isGrey) {
+        upsizerUV->SimpleResizeDo_int16(VXFull_B, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVB, nBlkXP, nBlkXP, nPel, true, nWidthUV, nHeightUV);
+        upsizerUV->SimpleResizeDo_int16(VYFull_B, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVB, nBlkXP, nBlkXP, nPel, false, nWidthUV, nHeightUV);
+        upsizerUV->SimpleResizeDo_int16(VXFull_F, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVF, nBlkXP, nBlkXP, nPel, true, nWidthUV, nHeightUV);
+        upsizerUV->SimpleResizeDo_int16(VYFull_F, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVF, nBlkXP, nBlkXP, nPel, false, nWidthUV, nHeightUV);
 
-      upsizerUV->SimpleResizeDo_uint8(MaskFull_B, nWidthPUV, nHeightPUV, VPitchUV, MaskSmallB, nBlkXP, nBlkXP);
-      upsizerUV->SimpleResizeDo_uint8(MaskFull_F, nWidthPUV, nHeightPUV, VPitchUV, MaskSmallF, nBlkXP, nBlkXP);
+        upsizerUV->SimpleResizeDo_uint8(MaskFull_B, nWidthPUV, nHeightPUV, VPitchUV, MaskSmallB, nBlkXP, nBlkXP);
+        upsizerUV->SimpleResizeDo_uint8(MaskFull_F, nWidthPUV, nHeightPUV, VPitchUV, MaskSmallF, nBlkXP, nBlkXP);
 
-      // Upsize UV: BB and FF vectors to full frame (MFlowInterExtra only)
-      upsizerUV->SimpleResizeDo_int16(VXFull_BB, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVBB, nBlkXP, nBlkXP, nPel, true, nWidthUV, nHeightUV);
-      upsizerUV->SimpleResizeDo_int16(VYFull_BB, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVBB, nBlkXP, nBlkXP, nPel, false, nWidthUV, nHeightUV);
-      upsizerUV->SimpleResizeDo_int16(VXFull_FF, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVFF, nBlkXP, nBlkXP, nPel, true, nWidthUV, nHeightUV);
-      upsizerUV->SimpleResizeDo_int16(VYFull_FF, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVFF, nBlkXP, nBlkXP, nPel, false, nWidthUV, nHeightUV);
+        // Upsize UV: BB and FF vectors to full frame (MFlowInterExtra only)
+        upsizerUV->SimpleResizeDo_int16(VXFull_BB, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVBB, nBlkXP, nBlkXP, nPel, true, nWidthUV, nHeightUV);
+        upsizerUV->SimpleResizeDo_int16(VYFull_BB, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVBB, nBlkXP, nBlkXP, nPel, false, nWidthUV, nHeightUV);
+        upsizerUV->SimpleResizeDo_int16(VXFull_FF, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVFF, nBlkXP, nBlkXP, nPel, true, nWidthUV, nHeightUV);
+        upsizerUV->SimpleResizeDo_int16(VYFull_FF, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVFF, nBlkXP, nBlkXP, nPel, false, nWidthUV, nHeightUV);
 
-      // FlowInterExtra U/V
-      if (pixelsize == 1) {
-        FlowInterExtra<uint8_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
-          VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchUV,
-          nWidthUV, nHeightUV, time256, nPel, VXFull_BB, VXFull_FF, VYFull_BB, VYFull_FF);
-        FlowInterExtra<uint8_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
-          VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchUV,
-          nWidthUV, nHeightUV, time256, nPel, VXFull_BB, VXFull_FF, VYFull_BB, VYFull_FF);
+        // FlowInterExtra U/V
+        if (pixelsize_super == 1) {
+          FlowInterExtra<uint8_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
+            VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchUV,
+            nWidthUV, nHeightUV, time256, nPel, VXFull_BB, VXFull_FF, VYFull_BB, VYFull_FF);
+          FlowInterExtra<uint8_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
+            VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchUV,
+            nWidthUV, nHeightUV, time256, nPel, VXFull_BB, VXFull_FF, VYFull_BB, VYFull_FF);
+        }
+        else if (pixelsize_super == 2) {
+          FlowInterExtra<uint16_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
+            VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchUV,
+            nWidthUV, nHeightUV, time256, nPel, VXFull_BB, VXFull_FF, VYFull_BB, VYFull_FF);
+          FlowInterExtra<uint16_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
+            VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchUV,
+            nWidthUV, nHeightUV, time256, nPel, VXFull_BB, VXFull_FF, VYFull_BB, VYFull_FF);
+        }
+        else if (pixelsize_super == 4) {
+          FlowInterExtra<float>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
+            VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchUV,
+            nWidthUV, nHeightUV, time256, nPel, VXFull_BB, VXFull_FF, VYFull_BB, VYFull_FF);
+          FlowInterExtra<float>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
+            VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchUV,
+            nWidthUV, nHeightUV, time256, nPel, VXFull_BB, VXFull_FF, VYFull_BB, VYFull_FF);
+        }
       }
-      else {
-        FlowInterExtra<uint16_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
-          VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchUV,
-          nWidthUV, nHeightUV, time256, nPel, VXFull_BB, VXFull_FF, VYFull_BB, VYFull_FF);
-        FlowInterExtra<uint16_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
-          VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchUV,
-          nWidthUV, nHeightUV, time256, nPel, VXFull_BB, VXFull_FF, VYFull_BB, VYFull_FF);
-      }
-
     }
     else // bad extra frames, use old method without extra frames
     {
@@ -440,42 +502,57 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
       upsizer->SimpleResizeDo_uint8(MaskFull_F, nWidthP, nHeightP, VPitchY, MaskSmallF, nBlkXP, nBlkXP);
 
       // FlowInter Y
-      if (pixelsize == 1) {
+      if (pixelsize_super == 1) {
         FlowInter<uint8_t>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, pSrc[0] + nOffsetY, nRefPitches[0],
           VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchY,
           nWidth, nHeight, time256, nPel);
       }
-      else { // pixelsize == 2
+      else if (pixelsize_super == 2) {
         FlowInter<uint16_t>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, pSrc[0] + nOffsetY, nRefPitches[0],
+          VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchY,
+          nWidth, nHeight, time256, nPel);
+      }
+      else if (pixelsize_super == 4) {
+        FlowInter<float>(pDst[0], nDstPitches[0], pRef[0] + nOffsetY, pSrc[0] + nOffsetY, nRefPitches[0],
           VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchY,
           nWidth, nHeight, time256, nPel);
       }
 
       // Upsize UV: B and F vectors and mask to full frame (same for MFlowInter and MFlowInterExtra)
-      upsizerUV->SimpleResizeDo_int16(VXFull_B, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVB, nBlkXP, nBlkXP, nPel, true, nWidthUV, nHeightUV);
-      upsizerUV->SimpleResizeDo_int16(VYFull_B, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVB, nBlkXP, nBlkXP, nPel, false, nWidthUV, nHeightUV);
-      upsizerUV->SimpleResizeDo_int16(VXFull_F, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVF, nBlkXP, nBlkXP, nPel, true, nWidthUV, nHeightUV);
-      upsizerUV->SimpleResizeDo_int16(VYFull_F, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVF, nBlkXP, nBlkXP, nPel, false, nWidthUV, nHeightUV);
+      if (!isGrey) {
+        upsizerUV->SimpleResizeDo_int16(VXFull_B, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVB, nBlkXP, nBlkXP, nPel, true, nWidthUV, nHeightUV);
+        upsizerUV->SimpleResizeDo_int16(VYFull_B, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVB, nBlkXP, nBlkXP, nPel, false, nWidthUV, nHeightUV);
+        upsizerUV->SimpleResizeDo_int16(VXFull_F, nWidthPUV, nHeightPUV, VPitchUV, VXSmallUVF, nBlkXP, nBlkXP, nPel, true, nWidthUV, nHeightUV);
+        upsizerUV->SimpleResizeDo_int16(VYFull_F, nWidthPUV, nHeightPUV, VPitchUV, VYSmallUVF, nBlkXP, nBlkXP, nPel, false, nWidthUV, nHeightUV);
 
-      upsizerUV->SimpleResizeDo_uint8(MaskFull_B, nWidthPUV, nHeightPUV, VPitchUV, MaskSmallB, nBlkXP, nBlkXP);
-      upsizerUV->SimpleResizeDo_uint8(MaskFull_F, nWidthPUV, nHeightPUV, VPitchUV, MaskSmallF, nBlkXP, nBlkXP);
+        upsizerUV->SimpleResizeDo_uint8(MaskFull_B, nWidthPUV, nHeightPUV, VPitchUV, MaskSmallB, nBlkXP, nBlkXP);
+        upsizerUV->SimpleResizeDo_uint8(MaskFull_F, nWidthPUV, nHeightPUV, VPitchUV, MaskSmallF, nBlkXP, nBlkXP);
 
-      // FlowInter U/V
-      if (pixelsize == 1) {
-        FlowInter<uint8_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
-          VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchUV,
-          nWidthUV, nHeightUV, time256, nPel);
-        FlowInter<uint8_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
-          VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchUV,
-          nWidthUV, nHeightUV, time256, nPel);
-      }
-      else { // pixelsize == 2
-        FlowInter<uint16_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
-          VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchUV,
-          nWidthUV, nHeightUV, time256, nPel);
-        FlowInter<uint16_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
-          VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchUV,
-          nWidthUV, nHeightUV, time256, nPel);
+        // FlowInter U/V
+        if (pixelsize_super == 1) {
+          FlowInter<uint8_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
+            VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchUV,
+            nWidthUV, nHeightUV, time256, nPel);
+          FlowInter<uint8_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
+            VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchUV,
+            nWidthUV, nHeightUV, time256, nPel);
+        }
+        else if (pixelsize_super == 2) {
+          FlowInter<uint16_t>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
+            VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchUV,
+            nWidthUV, nHeightUV, time256, nPel);
+          FlowInter<uint16_t>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
+            VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchUV,
+            nWidthUV, nHeightUV, time256, nPel);
+        }
+        else if (pixelsize_super == 4) {
+          FlowInter<float>(pDst[1], nDstPitches[1], pRef[1] + nOffsetUV, pSrc[1] + nOffsetUV, nRefPitches[1],
+            VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchUV,
+            nWidthUV, nHeightUV, time256, nPel);
+          FlowInter<float>(pDst[2], nDstPitches[2], pRef[2] + nOffsetUV, pSrc[2] + nOffsetUV, nRefPitches[2],
+            VXFull_B, VXFull_F, VYFull_B, VYFull_F, MaskFull_B, MaskFull_F, VPitchUV,
+            nWidthUV, nHeightUV, time256, nPel);
+        }
       }
     }
 
@@ -512,42 +589,47 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
 
       else
       {
-        pDst[0] = YWPLAN(dst);
-        pDst[1] = UWPLAN(dst);
-        pDst[2] = VWPLAN(dst);
-        nDstPitches[0] = YPITCH(dst);
-        nDstPitches[1] = UPITCH(dst);
-        nDstPitches[2] = VPITCH(dst);
+        int planes_y[4] = { PLANAR_Y, PLANAR_U, PLANAR_V, PLANAR_A };
+        int planes_r[4] = { PLANAR_G, PLANAR_B, PLANAR_R, PLANAR_A };
+        int *planes = (vi.IsYUV() || vi.IsYUVA()) ? planes_y : planes_r;
+        planecount = std::min(vi.NumComponents(), 3);
+        for (int p = 0; p < planecount; ++p) {
+          const int plane = planes[p];
+          pSrc[p] = src->GetReadPtr(plane);
+          nSrcPitches[p] = src->GetPitch(plane);
 
-        pRef[0] = YRPLAN(ref);
-        pRef[1] = URPLAN(ref);
-        pRef[2] = VRPLAN(ref);
-        nRefPitches[0] = YPITCH(ref);
-        nRefPitches[1] = UPITCH(ref);
-        nRefPitches[2] = VPITCH(ref);
+          pRef[p] = ref->GetReadPtr(plane);
+          nRefPitches[p] = ref->GetPitch(plane);
 
-        pSrc[0] = YRPLAN(src);
-        pSrc[1] = URPLAN(src);
-        pSrc[2] = VRPLAN(src);
-        nSrcPitches[0] = YPITCH(src);
-        nSrcPitches[1] = UPITCH(src);
-        nSrcPitches[2] = VPITCH(src);
+          pDst[p] = dst->GetWritePtr(plane);
+          nDstPitches[p] = dst->GetPitch(plane);
+        }
 
         // blend with time weight
-        if (pixelsize == 1) {
+        if (pixelsize_super == 1) {
           Blend<uint8_t>(pDst[0], pSrc[0], pRef[0], nHeight, nWidth, nDstPitches[0], nSrcPitches[0], nRefPitches[0], time256, cpuFlags);
-          Blend<uint8_t>(pDst[1], pSrc[1], pRef[1], nHeightUV, nWidthUV, nDstPitches[1], nSrcPitches[1], nRefPitches[1], time256, cpuFlags);
-          Blend<uint8_t>(pDst[2], pSrc[2], pRef[2], nHeightUV, nWidthUV, nDstPitches[2], nSrcPitches[2], nRefPitches[2], time256, cpuFlags);
+          if (!isGrey) {
+            Blend<uint8_t>(pDst[1], pSrc[1], pRef[1], nHeightUV, nWidthUV, nDstPitches[1], nSrcPitches[1], nRefPitches[1], time256, cpuFlags);
+            Blend<uint8_t>(pDst[2], pSrc[2], pRef[2], nHeightUV, nWidthUV, nDstPitches[2], nSrcPitches[2], nRefPitches[2], time256, cpuFlags);
+          }
         }
-        else { // pixelsize == 2
+        else if (pixelsize_super == 2) {
           Blend<uint16_t>(pDst[0], pSrc[0], pRef[0], nHeight, nWidth, nDstPitches[0], nSrcPitches[0], nRefPitches[0], time256, cpuFlags);
-          Blend<uint16_t>(pDst[1], pSrc[1], pRef[1], nHeightUV, nWidthUV, nDstPitches[1], nSrcPitches[1], nRefPitches[1], time256, cpuFlags);
-          Blend<uint16_t>(pDst[2], pSrc[2], pRef[2], nHeightUV, nWidthUV, nDstPitches[2], nSrcPitches[2], nRefPitches[2], time256, cpuFlags);
+          if (!isGrey) {
+            Blend<uint16_t>(pDst[1], pSrc[1], pRef[1], nHeightUV, nWidthUV, nDstPitches[1], nSrcPitches[1], nRefPitches[1], time256, cpuFlags);
+            Blend<uint16_t>(pDst[2], pSrc[2], pRef[2], nHeightUV, nWidthUV, nDstPitches[2], nSrcPitches[2], nRefPitches[2], time256, cpuFlags);
+          }
+        }
+        else if (pixelsize_super == 4) {
+          Blend<float>(pDst[0], pSrc[0], pRef[0], nHeight, nWidth, nDstPitches[0], nSrcPitches[0], nRefPitches[0], time256, cpuFlags);
+          if (!isGrey) {
+            Blend<float>(pDst[1], pSrc[1], pRef[1], nHeightUV, nWidthUV, nDstPitches[1], nSrcPitches[1], nRefPitches[1], time256, cpuFlags);
+            Blend<float>(pDst[2], pSrc[2], pRef[2], nHeightUV, nWidthUV, nDstPitches[2], nSrcPitches[2], nRefPitches[2], time256, cpuFlags);
+          }
         }
       }
       return dst;
     }
-
     else
     {
       return src; // like ChangeFPS
