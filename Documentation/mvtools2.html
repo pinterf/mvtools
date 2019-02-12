@@ -12,15 +12,16 @@
     <h2>Abstract</h2>
     <table class="n">
         <tr><td class="n"><b>Authors:      </b></td><td class="n">&nbsp;</td><td class="n">Manao, Tsp, TSchniede, SEt, Fizick (Alexander Balakhnin), Vit, Firesledge, pinterf</td></tr>
-        <tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.39</td></tr>
+        <tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.40</td></tr>
+        <tr><td class="n"><b>git:          </b></td><td class="n">&nbsp;</td><td class="n"><a href="https://github.com/pinterf/mvtools/tree/mvtools-pfmod">https://github.com/pinterf/mvtools/tree/mvtools-pfmod</a></td></tr>
+        <tr><td class="n"><b>Forum:        </b></td><td class="n">&nbsp;</td><td class="n"><a href="https://forum.doom9.org/showthread.php?t=173356">https://forum.doom9.org/showthread.php?t=173356</a></td></tr>
         <tr><td class="n"><b>Base versions:</b></td><td class="n">&nbsp;</td><td class="n">2.6.0.5 + 2.5.11.22</td></tr>
         <tr><td class="n"><b>Base download:</b></td><td class="n">&nbsp;</td><td class="n">Contained in the Dither package, <a href="http://ldesoras.free.fr/prod.html#src_ditheravsi">http://ldesoras.free.fr/prod.html</a></td></tr>
         <tr><td class="n"><b>Category:     </b></td><td class="n">&nbsp;</td><td class="n">Misc Plugins</td></tr>
-        <tr><td class="n"><b>Requirements: </b></td><td class="n">&nbsp;</td><td class="n">YV12, YV16, YV24 or YUY2 Color format, YUV420P10-16, YUV422P10-16, YUV444P10-16</td></tr>
-        <tr><td class="n"><b>              </b></td><td class="n">&nbsp;</td><td class="n">Float support for MSuper and MDegrains</td></tr>
-        <tr><td class="n"><b>              </b></td><td class="n">&nbsp;</td><td class="n">Greyscale support for MSuper, MFlowFPS and other selected filters</td></tr>
-        <tr><td class="n"><b>              </b></td><td class="n">&nbsp;</td><td class="n">Planar RGB support for MSuper, MFlowFPS, MCompensate</td></tr>
+        <tr><td class="n"><b>Requirements: </b></td><td class="n">&nbsp;</td><td class="n">YV12, YV16, YV24 or YUY2, Y, YUV420P10-16, YUV422P10-16, YUV444P10-16 for finding vectors</td></tr>
+        <tr><td class="n"><b>              </b></td><td class="n">&nbsp;</td><td class="n">8-32 bit Y, YUV 420, 422, 444 and planar RGB for MSuper, MCompensate and MDegrains and MFlowXX family</td></tr>
         <tr><td class="n"><b>License:      </b></td><td class="n">&nbsp;</td><td class="n">GPL</td></tr>
+        
     </table>
 
     <h2>Table of contents</h2>
@@ -41,7 +42,7 @@
 
     <h2><a name="MVTools"></a>I) About MVTools</h2>
     <p>
-        MVTools plugin for AviSynth 2.6 is collection of functions for estimation
+        MVTools plugin for Avisynth+ and AviSynth 2.6 is collection of functions for estimation
         and compensation of objects motion in video clips.
         Motion compensation may be used for strong temporal denoising, advanced
         framerate conversions, image restoration and other tasks.
@@ -107,10 +108,12 @@
         easy find numerous scientific publications (use WWW search).
     </p>
     <p>
-        Notes: The plugin is still under development.
-        Classic version have some limitations, only progressive YV12, YUY2 video is supported.
+        2.5.11.22 and 2.6.0.5 classic versions had some limitations, only progressive YV12, YUY2 video were supported.
         Versions from 2.7.5.22 support all 420, 422, 444 planar YUV formats, 8 and 10-16 bits
         with recent Avisynth Plus versions.
+        Since 2.7.40 almost all 8-32 bit Y, YUV and planar RGB colorspaces are supported for many filters.
+        Except that for motion vector search only 8-16 bit Y or YUV clips are supported.
+        
         Use color format conversion and try using (smart) bob-deinterlace for
         interlaced video (<code>SeparateFields</code> may works too with or without
         <code>SelectEven</code>/<code>SelectOdd</code>).
@@ -1006,7 +1009,7 @@
         True motion estimation is strongly recommended for this function.
         Motion compensation may be full or partial (at intermediate time).
         Important limitation: vectors with components above 127 will be reset to zero
-        length.
+        length. (PF 20190212: this sentence may not be valid since 2.5.11.22?)
     </p>
     <p class="var">super</p>
     <p>
@@ -2204,6 +2207,16 @@ Planar2Interleaved() # convert back to normal interleave YUY2
     </ul>
 
     <h2><a name="revisions"></a>VI) Revisions</h2>
+    <p>2.7.40 (20190212)</p>
+    <ul>
+        <li>Fix: MFlowInter possible crash with specific parameter and colorspace settings.</li>
+        <li>Fix: MFlowInter possible overflow at 16 bit clips (artifacts)</li>
+        <li>MFlow, MFlowInter, MFlowFPS, MFlowBlur, MBlockFPS: support all 8-16 and 32 bit float Y, YUV (4:2:0, 4:2:2, 4:4:4) and planar RGB color spaces.<br />
+            Input clip (and super) format now is fully independent from vector clip's base format (subsampling had to be the same before)<br />
+            E.g. make motion vector clips from a YV12 source and apply them on a 8-32 bit 4:4:4 input
+        </li>
+    </ul>
+
     <p>2.7.39 (20190102)</p>
     <ul>
         <li>MSuper: fix 16 bits, pel=2, sharp=2, which caused bottom section artifacts for MDegrains for 8 bit vector origin and 16 bit real clip</li>

@@ -10,6 +10,12 @@ Credits:
 - Manao, Fizick, Tsp, TSchniede, SEt, Vit, Firesledge, cretindesalpes 
 
 Change log
+- 2.7.40 (20190212)
+  - Fix: MFlowInter possible crash with specific parameter and colorspace settings.
+  - Fix: MFlowInter possible overflow at 16 bit clips (artifacts)
+  - MFlow, MFlowInter, MFlowFPS, MFlowBlur, MBlockFPS: support all 8-16 and 32 bit float Y, YUV (4:2:0, 4:2:2, 4:4:4) and planar RGB color spaces.
+    Input clip format is independent from the ones used for getting motion vectors.
+
 - 2.7.39 (20190102)
   - MSuper: fix 16 bits, pel=2, sharp=2, which caused bottom-section artifacts for MDegrain using 8 bit vector origin and 16 bit real clip
   - MDegrain1-6,N: Enhanced:\
