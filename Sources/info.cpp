@@ -1569,42 +1569,90 @@ static unsigned short font[][20] = {
 };
 
 template <typename pixel_t>
-void DrawDigit(PVideoFrame &dst, int x, int y, int num, int bits_per_pixel, int xRatioShift, int yRatioShift, bool chroma)
+void DrawDigit(PVideoFrame &dst, int x, int y, int num, int bits_per_pixel, int xRatioShift, int yRatioShift, bool chroma, bool rgb)
 {
   x = x * 10;
   y = y * 20;
 
-  const pixel_t color = 235 << (bits_per_pixel - 8);
+  const pixel_t color = sizeof(pixel_t) == 4 ? (pixel_t)(235 / 255.0f) : 235 << (bits_per_pixel - 8);
 
   int pitch = dst->GetPitch() / sizeof(pixel_t);
 
   pixel_t* dstp = reinterpret_cast<pixel_t *>(dst->GetWritePtr());
 
+  if (rgb) // planar RGB
+  {
+    pixel_t* dstp1 = reinterpret_cast<pixel_t *>(dst->GetWritePtr(PLANAR_B));
+    pixel_t* dstp2 = reinterpret_cast<pixel_t *>(dst->GetWritePtr(PLANAR_R));
+    // write only to luma
+    for (int tx = 0; tx < 10; tx++) {
+      for (int ty = 0; ty < 20; ty++) {
+        const bool pix = font[num][ty] & (1 << (15 - tx));
+        pixel_t* dp = &dstp[(x + tx) + (y + ty) * pitch];
+        pixel_t* dp1 = &dstp1[(x + tx) + (y + ty) * pitch];
+        pixel_t* dp2 = &dstp2[(x + tx) + (y + ty) * pitch];
+        if constexpr (sizeof(pixel_t) != 4) {
+          if (pix)
+            *dp = *dp1 = *dp2 = color;
+          else {
+            *dp = (*dp * 3) >> 2;
+            *dp1 = (*dp1 * 3) >> 2;
+            *dp2 = (*dp2 * 3) >> 2;
+          }
+        }
+        else {
+          // float
+          if (pix)
+            *dp = *dp1 = *dp2 = color;
+          else {
+            *dp = *dp * 3.0f * 0.25f;
+            *dp1 = *dp1 * 3.0f * 0.25f;
+            *dp2 = *dp2 * 3.0f * 0.25f;
+          }
+        }
+      }
+    }
+    return;
+  }
+
   // write only to luma
   for (int tx = 0; tx < 10; tx++) {
     for (int ty = 0; ty < 20; ty++) {
+      const bool pix = font[num][ty] & (1 << (15 - tx));
       pixel_t* dp = &dstp[(x + tx) + (y + ty) * pitch];
-      if (font[num][ty] & (1 << (15 - tx))) 
-        *dp = color;
-      else 
-        *dp = (*dp * 3) >> 2;
+      if constexpr (sizeof(pixel_t) != 4) {
+        if (pix)
+          *dp = color;
+        else
+          *dp = (*dp * 3) >> 2;
+      }
+      else {
+        // float
+        if (pix)
+          *dp = color;
+        else
+          *dp = *dp * 3.0f * 0.25f;
+      }
     }
   }
-  if (chroma)
-  {
-    pixel_t* dstpU = reinterpret_cast<pixel_t *>(dst->GetWritePtr(PLANAR_U));
-    pixel_t* dstpV = reinterpret_cast<pixel_t *>(dst->GetWritePtr(PLANAR_V));
+  if (!chroma)
+    return;
 
-    int pitchUV = dst->GetPitch(PLANAR_U);
-    int midChroma = 1 << (bits_per_pixel - 1);
-    for (int tx = 0; tx < 10; tx++)
+  pixel_t* dstpU = reinterpret_cast<pixel_t *>(dst->GetWritePtr(PLANAR_U));
+  pixel_t* dstpV = reinterpret_cast<pixel_t *>(dst->GetWritePtr(PLANAR_V));
+
+  int pitchUV = dst->GetPitch(PLANAR_U);
+  const pixel_t midChroma = sizeof(pixel_t) == 4 ? (pixel_t)0.0f : 1 << (bits_per_pixel - 1);
+  for (int tx = 0; tx < 10; tx++)
+  {
+    for (int ty = 0; ty < 20; ty++)
     {
-      for (int ty = 0; ty < 20; ty++)
-      {
-        int pos = ((x + tx) >> xRatioShift) + ((y + ty) >> yRatioShift) * pitchUV;
-        pixel_t* dpU = &dstpU[pos];
-        pixel_t* dpV = &dstpV[pos];
-        if (font[num][ty] & (1 << (15 - tx)))
+      int pos = ((x + tx) >> xRatioShift) + ((y + ty) >> yRatioShift) * pitchUV;
+      const bool pix = font[num][ty] & (1 << (15 - tx));
+      pixel_t* dpU = &dstpU[pos];
+      pixel_t* dpV = &dstpV[pos];
+      if constexpr (sizeof(pixel_t) != 4) {
+        if (pix)
         {
           *dpU = midChroma;
           *dpV = midChroma;
@@ -1615,13 +1663,27 @@ void DrawDigit(PVideoFrame &dst, int x, int y, int num, int bits_per_pixel, int 
           *dpV = (pixel_t)((*dpV + midChroma) >> 1);
         }
       }
+      else {
+        // float
+        if (pix)
+        {
+          *dpU = midChroma;
+          *dpV = midChroma;
+        }
+        else
+        {
+          *dpU = (pixel_t)((*dpU + midChroma) * 0.5f);
+          *dpV = (pixel_t)((*dpV + midChroma) * 0.5f);
+        }
+      }
     }
   }
 }
 
 // instantiate
-template void DrawDigit<uint8_t>(PVideoFrame &dst, int x, int y, int num, int bits_per_pixel, int xRatioShift, int yRatioShift, bool chroma);
-template void DrawDigit<uint16_t>(PVideoFrame &dst, int x, int y, int num, int bits_per_pixel, int xRatioShift, int yRatioShift, bool chroma);
+template void DrawDigit<uint8_t>(PVideoFrame &dst, int x, int y, int num, int bits_per_pixel, int xRatioShift, int yRatioShift, bool chroma, bool rgb);
+template void DrawDigit<uint16_t>(PVideoFrame &dst, int x, int y, int num, int bits_per_pixel, int xRatioShift, int yRatioShift, bool chroma, bool rgb);
+template void DrawDigit<float>(PVideoFrame &dst, int x, int y, int num, int bits_per_pixel, int xRatioShift, int yRatioShift, bool chroma, bool rgb);
 
 // for YUY2 and any planar
 void DrawString(PVideoFrame &dst, VideoInfo &vi, int x, int y, const char *s)
@@ -1634,12 +1696,26 @@ void DrawString(PVideoFrame &dst, VideoInfo &vi, int x, int y, const char *s)
   int bits_per_pixel = vi.BitsPerComponent();
   int xRatioShift = vi.GetPlaneWidthSubsampling(PLANAR_U);
   int yRatioShift = vi.GetPlaneHeightSubsampling(PLANAR_U);
-  bool grey = vi.IsY();
+  if (vi.IsRGB()) {
+    for (int xx = 0; *s; ++s, ++xx) {
+      if (bits_per_pixel == 8)
+        DrawDigit<uint8_t>(dst, x + xx, y, *s - ' ', bits_per_pixel, xRatioShift, yRatioShift, false, true);
+      else if (bits_per_pixel <= 16)
+        DrawDigit<uint16_t>(dst, x + xx, y, *s - ' ', bits_per_pixel, xRatioShift, yRatioShift, false, true);
+      else if (bits_per_pixel == 32)
+        DrawDigit<float>(dst, x + xx, y, *s - ' ', bits_per_pixel, xRatioShift, yRatioShift, false, true);
+    }
+    return;
+  }
+
+  const bool grey = vi.IsY();
   for (int xx = 0; *s; ++s, ++xx) {
-    if(bits_per_pixel == 8)
-      DrawDigit<uint8_t>(dst, x + xx, y, *s - ' ', bits_per_pixel, xRatioShift, yRatioShift, !grey);
-    else
-      DrawDigit<uint16_t>(dst, x + xx, y, *s - ' ', bits_per_pixel, xRatioShift, yRatioShift, !grey);
+    if (bits_per_pixel == 8)
+      DrawDigit<uint8_t>(dst, x + xx, y, *s - ' ', bits_per_pixel, xRatioShift, yRatioShift, !grey, false);
+    else if (bits_per_pixel <= 16)
+      DrawDigit<uint16_t>(dst, x + xx, y, *s - ' ', bits_per_pixel, xRatioShift, yRatioShift, !grey, false);
+    else if (bits_per_pixel == 32)
+      DrawDigit<float>(dst, x + xx, y, *s - ' ', bits_per_pixel, xRatioShift, yRatioShift, !grey, false);
   }
 }
 
