@@ -305,6 +305,14 @@ static void FlowInterSimple_NPel(
         }
         else {
           pdst[w] = (((dstF + dstB) << 8) + (dstB - dstF)*(MaskF[w] - MaskB[w])) >> 9;
+          /*
+          256*F + 256*B + B*MF - F*MF - B*MB + F*MB
+          // Inaccurate when mask 0..255 is used. 0..256 would be correct.
+          256*F + 256*B + B*256 - F*256 - B*0 + F*0 =     B*(256+256) // MF=256 MB=0
+          256*F + 256*B + B*255 - F*255 - B*0 + F*0 = F + B*(255+256) // MF=255 MB=0
+          256*F + 256*B + B*256 - F*256 - B*256 + F*256 = 2*256*B = B*256 + F*256 = 256*(B+F) // MF=256 MB=256
+          256*F + 256*B + B*256 - F*256 - B*256 + F*256 = 2*256*B = B*256 + F*256 = 256*(B+F) // MF=256 MB=256
+          */
         }
       }
       pdst += dst_pitch;
@@ -350,6 +358,13 @@ static void FlowInterSimple_NPel(
             ((dstF*(255 - MaskF[w]) + dstB * MaskF[w] + 255) >> 8)*(256 - time256) +
               ((dstB*(255 - MaskB[w]) + dstF * MaskB[w] + 255) >> 8)*     time256
               ) >> 8;
+          /*
+          Reason for +255: keep B or F as 255 when masks are extreme 0 and 255
+          test for time256 = 0
+          Inaccurate when mask 0..255 is used. 0..256 would be correct.
+          F(255-MF) + B*MF + 255 = 255*F -F*255 + B*255 + 255 = B*255 + 255 = (B+1)*255 // MF=255 MB=0 : incorrect
+          F(256-MF) + B*MF       = 256*F -F*256 + B*256                     =   B  *256 // MF=256 MB=0 (no +255 addition) : correct
+          */
         }
       }
       pdst += dst_pitch;
