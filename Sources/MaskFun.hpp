@@ -25,8 +25,6 @@
 #include <cmath>
 #include <emmintrin.h>
 
-
-
 MV_FORCEINLINE void ByteOccMask(uint8_t *occMask, int occlusion, double occnorm, double fGamma)
 {
   if (fGamma == 1.0)
@@ -156,15 +154,12 @@ static void FlowInter_NPel(
       pixel_t dstB0 = prefB[(w << NPELL2)]; // zero
 
       if constexpr (sizeof(pixel_t) == 4) {
-        const float MaskF_f = MaskF[w] / 255.0f;
-        const float MaskB_f = MaskB[w] / 255.0f;
-        const float rounder_why = 255 / 256.0f / 256.0f;
-        pdst[w] = (pixel_t)(
-          (
-          ((dstF*(1.0f - MaskF_f) + ((MaskF_f * (dstB*(1.0f - MaskB_f) + MaskB_f * dstF0) + rounder_why)) + rounder_why))*(1.0f - time256_f) +
-            ((dstB*(1.0f - MaskB_f) + ((MaskB_f * (dstF*(1.0f - MaskF_f) + MaskF_f * dstB0) + rounder_why)) + rounder_why))*        time256_f
-            )
-          );
+        constexpr float maskScale = 1.0f / 255.0f;
+        const float MaskF_f = MaskF[w] * maskScale;
+        const float MaskB_f = MaskB[w] * maskScale;
+        pdst[w] =
+          (dstF*(1.0f - MaskF_f) + MaskF_f * (dstB*(1.0f - MaskB_f) + MaskB_f * dstF0))*(1.0f - time256_f) +
+          (dstB*(1.0f - MaskB_f) + MaskB_f * (dstF*(1.0f - MaskF_f) + MaskF_f * dstB0))*        time256_f;
       }
       else {
         // avoid possible 8*16*8bit int32 overflow
@@ -234,12 +229,12 @@ static void FlowInterExtra_NPel(
       }
 
       if constexpr (sizeof(pixel_t) == 4) {
-        const float MaskF_f = MaskF[w] / 255.0f;
-        const float MaskB_f = MaskB[w] / 255.0f;
-        const float rounder_why = 255 / 256.0f / 256.0f;
+        constexpr float maskScale = 1.0f / 255.0f;
+        const float MaskF_f = MaskF[w] * maskScale;
+        const float MaskB_f = MaskB[w] * maskScale;
         pdst[w] =
-          (Median3r(minfb, dstBB, maxfb)*MaskF_f + dstF * (1.0f - MaskF_f) + rounder_why)*(1.0f - time256_f) +
-          (Median3r(minfb, dstFF, maxfb)*MaskB_f + dstB * (1.0f - MaskB_f) + rounder_why)*        time256_f
+          (Median3r(minfb, dstBB, maxfb)*MaskF_f + dstF * (1.0f - MaskF_f))*(1.0f - time256_f) +
+          (Median3r(minfb, dstFF, maxfb)*MaskB_f + dstB * (1.0f - MaskB_f))*        time256_f
           ;
       }
       else {
@@ -298,8 +293,9 @@ static void FlowInterSimple_NPel(
 
         if constexpr (sizeof(pixel_t) == 4)
         {
-          const float MaskF_f = MaskF[w] / 255.0f;
-          const float MaskB_f = MaskB[w] / 255.0f;
+          constexpr float maskScale = 1.0f / 255.0f;
+          const float MaskF_f = MaskF[w] * maskScale;
+          const float MaskB_f = MaskB[w] * maskScale;
 
           pdst[w] = (((dstF + dstB)) + (dstB - dstF)*(MaskF_f - MaskB_f)) * 0.5f;
         }
@@ -344,13 +340,13 @@ static void FlowInterSimple_NPel(
 
         if constexpr(sizeof(pixel_t) == 4)
         {
-          const float MaskF_f = MaskF[w] / 255.0f;
-          const float MaskB_f = MaskB[w] / 255.0f;
-          const float rounder_why = 255 / 256.0f / 256.0f;
+          constexpr float maskScale = 1.0f / 255.0f;
+          const float MaskF_f = MaskF[w] * maskScale;
+          const float MaskB_f = MaskB[w] * maskScale;
 
           pdst[w] =
-            (dstF*(1.0f - MaskF_f) + dstB * MaskF_f + rounder_why)*(1.0f - time256_f) +
-            (dstB*(1.0f - MaskB_f) + dstF * MaskB_f + rounder_why)*        time256_f;
+            (dstF*(1.0f - MaskF_f) + dstB * MaskF_f)*(1.0f - time256_f) +
+            (dstB*(1.0f - MaskB_f) + dstF * MaskB_f)*        time256_f;
         }
         else {
           pdst[w] =
@@ -412,15 +408,16 @@ static void FlowInterSimple_Pel1(
         pixel_t dstB1 = prefB[addrB + 1];
 
         if constexpr (sizeof(pixel_t) == 4) {
-          const float MaskF_f = MaskF[w] / 255.0f;
-          const float MaskB_f = MaskB[w] / 255.0f;
+          constexpr float maskScale = 1.0f / 255.0f;
+          const float MaskF_f = MaskF[w] * maskScale;
+          const float MaskB_f = MaskB[w] * maskScale;
           pdst[w] = ((dstF + dstB) + (dstB - dstF)*(MaskF_f - MaskB_f)) * 0.5f;
-          const float MaskF1_f = MaskF[w + 1] / 255.0f;
-          const float MaskB1_f = MaskB[w + 1] / 255.0f;
+          const float MaskF1_f = MaskF[w + 1] * maskScale;
+          const float MaskB1_f = MaskB[w + 1] * maskScale;
           pdst[w + 1] = ((dstF1 + dstB1) + (dstB1 - dstF1)*(MaskF1_f - MaskB1_f)) * 0.5f;
         }
         else {
-          pdst[w] = (((dstF + dstB) << 8) + (dstB - dstF)*(MaskF[w] - MaskB[w])) >> 9;
+          pdst[w] = (((dstF + dstB) << 8) + (dstB - dstF)*(MaskF[w] - MaskB[w])) >> 9; // /2 >>8
           pdst[w + 1] = (((dstF1 + dstB1) << 8) + (dstB1 - dstF1)*(MaskF[w + 1] - MaskB[w + 1])) >> 9;
         }
       }
@@ -458,25 +455,28 @@ static void FlowInterSimple_Pel1(
 
         if constexpr (sizeof(pixel_t) == 4)
         {
-          const float MaskF_f = MaskF[w] / 255.0f;
-          const float MaskB_f = MaskB[w] / 255.0f;
-          const float rounder_why = 255 / 256.0f / 256.0f;
+          constexpr float maskScale = 1.0f / 255.0f;
+          const float MaskF_f = MaskF[w] * maskScale;
+          const float MaskB_f = MaskB[w] * maskScale;
           pdst[w] =
-            ((dstF * 1.0f + (dstB - dstF)*MaskF_f + rounder_why))*(1.0f - time256_f) +
-            ((dstB * 1.0f - (dstB - dstF)*MaskB_f + rounder_why))*        time256_f;
-          const float MaskF1_f = MaskF[w + 1] / 255.0f;
-          const float MaskB1_f = MaskB[w + 1] / 255.0f;
+            (dstF * 1.0f + (dstB - dstF)*MaskF_f)*(1.0f - time256_f) +
+            (dstB * 1.0f - (dstB - dstF)*MaskB_f)*        time256_f;
+          const float MaskF1_f = MaskF[w + 1] * maskScale;
+          const float MaskB1_f = MaskB[w + 1] * maskScale;
           pdst[w + 1] =
-            ((dstF1 * 1.0f + (dstB1 - dstF1)*MaskF1_f + rounder_why))*(1.0f - time256_f) +
-            ((dstB1 * 1.0f - (dstB1 - dstF1)*MaskB1_f + rounder_why))*        time256_f;
+            (dstF1 * 1.0f + (dstB1 - dstF1)*MaskF1_f)*(1.0f - time256_f) +
+            (dstB1 * 1.0f - (dstB1 - dstF1)*MaskB1_f)*        time256_f;
         }
         else {
           // possible overflow for 16 bit
-          // Fixme (wondering): why "rounder" == 255?
-          pdst[w] = (((result_t)(dstF * 255 + (dstB - dstF)*MaskF[w] + 255))*(256 - time256) +
-            ((result_t)(dstB * 255 - (dstB - dstF)*MaskB[w] + 255))*     time256) >> 16;
-          pdst[w + 1] = (((result_t)(dstF1 * 255 + (dstB1 - dstF1)*MaskF[w + 1] + 255))*(256 - time256) +
-            ((result_t)(dstB1 * 255 - (dstB1 - dstF1)*MaskB[w + 1] + 255))*     time256) >> 16;
+          pdst[w] = (
+            ((result_t)(dstF * 255 + (dstB - dstF)*MaskF[w] + 255))*(256 - time256) +
+            ((result_t)(dstB * 255 - (dstB - dstF)*MaskB[w] + 255))*       time256
+            ) >> 16;
+          pdst[w + 1] = (
+            ((result_t)(dstF1 * 255 + (dstB1 - dstF1)*MaskF[w + 1] + 255))*(256 - time256) +
+            ((result_t)(dstB1 * 255 - (dstB1 - dstF1)*MaskB[w + 1] + 255))*       time256
+            ) >> 16;
         }
       }
       pdst += dst_pitch;
