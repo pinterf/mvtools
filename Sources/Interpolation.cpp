@@ -1897,7 +1897,8 @@ void HorizontalWiener_sse2(unsigned char *pDst8, const unsigned char *pSrc8, int
     pDst[0] = (pSrc[0] + pSrc[1] + 1) >> 1;
     pDst[1] = (pSrc[1] + pSrc[2] + 1) >> 1;
 
-    for (int x = 2; x < nWidth - 4; x += 8 / sizeof(pixel_t)) {
+    for (int x = 2; x < nWidth - 7; x += 8 / sizeof(pixel_t)) {
+      // safe till < nWidth - 7
       __m128i m0 = _mm_loadl_epi64((const __m128i *)&pSrc[x - 2]);
       __m128i m1 = _mm_loadl_epi64((const __m128i *)&pSrc[x - 1]);
       __m128i m2 = _mm_loadl_epi64((const __m128i *)&pSrc[x]);
@@ -1963,6 +1964,12 @@ void HorizontalWiener_sse2(unsigned char *pDst8, const unsigned char *pSrc8, int
         }
       }
       _mm_storel_epi64((__m128i *)&pDst[x], m0);
+    }
+
+    for (int i = nWidth - 7; i < nWidth - 4; i++)
+    {
+        pDst[i] = std::min(_max_pixel_value, std::max(0, ((pSrc[i - 2]) + (-(pSrc[i - 1]) + (pSrc[i] << 2)
+          + (pSrc[i + 1] << 2) - (pSrc[i + 2])) * 5 + (pSrc[i + 3]) + 16) >> 5));
     }
 
     for (int x = nWidth - 4; x < nWidth - 1; x++)
