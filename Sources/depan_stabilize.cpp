@@ -256,8 +256,8 @@ DePanStabilize::DePanStabilize(PClip _child, PClip _DePanData, float _cutoff,
   pixelsize = vi.ComponentSize();
   bits_per_pixel = vi.BitsPerComponent();
 
-  if (!vi.IsYUY2() && !vi.IsYUV())
-    env->ThrowError("DePanStabilize: input must be YUV planar!");
+  if (!vi.IsYUY2() && !vi.IsYUV() && !vi.IsYUVA() && !vi.IsPlanarRGB() && !vi.IsPlanarRGBA())
+    env->ThrowError("DePanStabilize: input must be Y or planar YUV(A)/RGB(A)!");
 
   if (method < -1 || method > 2)
     env->ThrowError("DePanStabilize: wrong method");//v1.13
@@ -985,12 +985,6 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
   // This is the implementation of the GetFrame function.
   // See the header definition for further info.
   PVideoFrame src, dst, dataframe;
-  BYTE *dstp, *dstpU, *dstpV;
-  const BYTE *srcp;
-  //const BYTE  *srcpU, *srcpV;
-  int dst_pitch, dst_pitchUV;
-  int src_width, src_height, src_pitch;
-  //int src_pitchUV, src_widthUV, src_heightUV;
   const BYTE *datap;
   float dxdif, dydif, zoomdif, rotdif;
   int border;
@@ -1338,16 +1332,6 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
   dst = env->NewVideoFrame(vi);
   vi_dst = vi; // same
 
-  // YV12/YV16/YV24/YUV420P16/YUV422P16/YUV444P16/Y8/Y16
-  dstp = dst->GetWritePtr();
-  dst_pitch = dst->GetPitch();
-  // additional info on the U and V planes
-  dstpU = dst->GetWritePtr(PLANAR_U);
-  dstpV = dst->GetWritePtr(PLANAR_V);
-  dst_pitchUV = dst->GetPitch(PLANAR_U);	// The pitch,height and width information
-
-  // --------------------------------------------------------------------
-
   // Ready to make motion stabilization,
   // use some previous frame to fill borders
   notfilled = 1;  // init as not filled (borders by neighbor frames)
@@ -1454,38 +1438,42 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
 
     _RPT5(0, "DePanStabilize phase#%d. subpixel=%d frame=%d dx=%f dy=%f\n", fillprev0next1current2, subpixel, nbase, dxdif, dydif);
 
-    int planes[] = { PLANAR_Y, PLANAR_U, PLANAR_V };
-    int plane_count = vi.IsY() ? 1 : 3;
+    const int planes_y[4] = { PLANAR_Y, PLANAR_U, PLANAR_V, PLANAR_A };
+    const int planes_r[4] = { PLANAR_G, PLANAR_B, PLANAR_R, PLANAR_A };
+    const int *planes = (vi.IsYUV() || vi.IsYUVA()) ? planes_y : planes_r;
 
-    for (int p = 0; p < plane_count; p++)
+    const int planecount = min(vi.NumComponents(), 3);
+
+    for (int p = 0; p < planecount; p++)
     {
       const int plane = planes[p];
 
-      int blur_current;
       int width_sub = vi.GetPlaneWidthSubsampling(plane);
       int height_sub = vi.GetPlaneHeightSubsampling(plane);
-
+      bool is_chroma = (plane == PLANAR_U) || (plane == PLANAR_V);
       if (notfilled == 0)
-        border = -1;  // negative - borders is filled by prev, not by black!
-      else
-        border = (plane == PLANAR_Y) ? 0 : (1 << (bits_per_pixel - 1));
-
-      blur_current = (plane == PLANAR_Y) ? blur : blur >> width_sub; // e.g. isYV12 ? blur / 2 : blur
-
-      src_pitch = src->GetPitch(plane);
-      src_width = src->GetRowSize(plane);
-      src_height = src->GetHeight(plane);
-      srcp = src->GetReadPtr(plane);
-
-      BYTE *dstp_current;
-      int dst_pitch_current;
-
-      switch (plane)
-      {
-      case PLANAR_Y: dstp_current = dstp; dst_pitch_current = dst_pitch; break;
-      case PLANAR_U: dstp_current = dstpU; dst_pitch_current = dst_pitchUV; break;
-      case PLANAR_V: dstp_current = dstpV; dst_pitch_current = dst_pitchUV; break;
+        border = -1; // negative - borders is filled by prev, not by black!
+      else {
+        if (is_chroma) {
+          // neutral value
+          const int mid_chroma = 1 << (bits_per_pixel - 1);
+          border = mid_chroma;
+        }
+        else {
+          border = 0; // black (maybe out of range)
+        }
       }
+
+      int blur_current = blur >> width_sub;
+
+      int src_width = src->GetRowSize(plane);
+      int src_height = src->GetHeight(plane);
+
+      BYTE *dstp_current = dst->GetWritePtr(plane);
+      int dst_pitch_current = dst->GetPitch(plane);
+
+      const BYTE *srcp = src->GetReadPtr(plane);
+      int src_pitch = src->GetPitch(plane);
 
       // memo: 
       // move: xc/yc 
@@ -1493,7 +1481,7 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
       // zoom: xx,yy
 
       transform *tr_current;
-      if (plane == PLANAR_Y)
+      if (!is_chroma)
         tr_current = &trY;
       else {
         // for UV plane
