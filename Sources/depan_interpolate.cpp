@@ -677,7 +677,7 @@ void compensate_plane_bicubic2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, i
   // __int64 for pixel_size uint16_t, otherwise int overflow in intermediate calculations
   std::conditional < sizeof(pixel_t) == 1, int, __int64 >::type ts[4];
   //__int64 ts[4];         // P.F. 16.06.09 Bicubic 2D force __int64 calc if used
-  int intcoef2d[16]; // P.F. 16.06.09 Bicubic 2D + 16 bit pixel -> oveflow: int->_int64  
+  int intcoef2d[16]; // P.F. 16.06.09 Bicubic 2D + 16 bit pixel -> overflow: int->_int64  
 
   int w;
   int smoothed;
@@ -754,9 +754,9 @@ void compensate_plane_bicubic2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, i
 
           rowleft = inttr0 + row;
 
-          //					xsrc = tr[0]+row;
+          // xsrc = tr[0]+row;
 
-          //  x,y point is in square: (rowleft,hlow) to (rowleft+1,hlow+1)
+          // x,y point is in square: (rowleft,hlow) to (rowleft+1,hlow+1)
 
           if ((rowleft >= 1) && (rowleft < row_size - 2)) {
             w = w0 + rowleft;
