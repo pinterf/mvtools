@@ -393,15 +393,15 @@ void compensate_plane_bilinear2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, 
                                                                      //  x,y point is in square: (rowleft,hlow) to (rowleft+1,hlow+1)
                                                                      // if ( (rowleft >= 0) && (rowleft<row_size-1)  )
           dstp[row] = (intcoef2d[0] * srcp[w] + intcoef2d[1] * srcp[w + 1] \
-            + intcoef2d[2] * srcp[w + src_pitch] + intcoef2d[3] * srcp[w + src_pitch + 1]) >> 10; // i.e. divide by 32*32
+            + intcoef2d[2] * srcp[w + src_pitch] + intcoef2d[3] * srcp[w + src_pitch + 1] + (1 << 9)) >> 10; // i.e. divide by 32*32
           dstp[row + 1] = (intcoef2d[0] * srcp[w + 1] + intcoef2d[1] * srcp[w + 2] \
-            + intcoef2d[2] * srcp[w + src_pitch + 1] + intcoef2d[3] * srcp[w + src_pitch + 2]) >> 10; // i.e. divide by 32*32
+            + intcoef2d[2] * srcp[w + src_pitch + 1] + intcoef2d[3] * srcp[w + src_pitch + 2] + (1 << 9)) >> 10; // i.e. divide by 32*32
           w += 2;
         }
         for (row = rowgoodendpaired - 1; row < rowgoodend; row++) { // if odd, process  very last
           w = w0 + inttr0 + row;
           dstp[row] = (intcoef2d[0] * srcp[w] + intcoef2d[1] * srcp[w + 1] + \
-            intcoef2d[2] * srcp[w + src_pitch] + intcoef2d[3] * srcp[w + src_pitch + 1]) >> 10; // i.e. divide by 32*32
+            intcoef2d[2] * srcp[w + src_pitch] + intcoef2d[3] * srcp[w + src_pitch + 1] + (1 << 9)) >> 10; // i.e. divide by 32*32
         }
         for (row = rowbadstart; row < rowbadend; row++) {
           rowleft = inttr0 + row;
@@ -517,7 +517,7 @@ void compensate_plane_bilinear2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, 
             // pixel = ( intcoef[iy2]*(intcoef[ix2]*srcp[w] + intcoef[ix2+1]*srcp[w+1] ) + \
             //           intcoef[iy2+1]*(intcoef[ix2]*srcp[w+src_pitch] + intcoef[ix2+1]*srcp[w+src_pitch+1] ) )/1024;
             pixel = (intcoef2dzoom[ix2] * srcp[w] + intcoef2dzoom[ix2 + 1] * srcp[w + 1] + \
-              intcoef2dzoom[ix2 + 66] * srcp[w + src_pitch] + intcoef2dzoom[ix2 + 67] * srcp[w + src_pitch + 1]) >> 10; // v1.6
+              intcoef2dzoom[ix2 + 66] * srcp[w + src_pitch] + intcoef2dzoom[ix2 + 67] * srcp[w + src_pitch + 1] + (1 << 9)) >> 10; // v1.6
 
             // dstp[row] = max(min(pixel,255),0);
             dstp[row] = pixel;   // maxmin disabled in v1.6
@@ -606,7 +606,7 @@ void compensate_plane_bilinear2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, 
           w0 = rowleft + hlow*src_pitch;
 
           pixel = ((intcoef[ix2] * srcp[w0] + intcoef[ix2 + 1] * srcp[w0 + 1])*intcoef[iy2] + \
-            (intcoef[ix2] * srcp[w0 + src_pitch] + intcoef[ix2 + 1] * srcp[w0 + src_pitch + 1])*intcoef[iy2 + 1]) >> 10;
+            (intcoef[ix2] * srcp[w0 + src_pitch] + intcoef[ix2 + 1] * srcp[w0 + src_pitch + 1])*intcoef[iy2 + 1] + (1 << 9)) >> 10;
 
           //					dstp[row] = max(min(pixel,255),0);
           dstp[row] = pixel;       //maxmin disabled in v1.6
@@ -901,9 +901,9 @@ void compensate_plane_bicubic2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, i
 
             srcp -= (src_pitch << 1);  // restore pointer, changed to shift in v 1.1.1
 
-            pixel = (int)((intcoef[iy4] * ts[0] + intcoef[iy4 + 1] * ts[1] + intcoef[iy4 + 2] * ts[2] + intcoef[iy4 + 3] * ts[3]) >> 22); // 22=2*11 bit (2*2048) scale factor
+            pixel = (int)((intcoef[iy4] * ts[0] + intcoef[iy4 + 1] * ts[1] + intcoef[iy4 + 2] * ts[2] + intcoef[iy4 + 3] * ts[3] + (1 << 21)) >> 22); // 22=2*11 bit (2*2048) scale factor
 
-            dstp[row] = max(min(pixel, pixel_max), 0); // PF
+            dstp[row] = max(min(pixel, pixel_max), 0); // limit
           }
           else if (rowleft < 0 && mleft) {
             if (blurmax > 0) {
@@ -966,7 +966,7 @@ void compensate_plane_bicubic2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, i
         for (row = 0; row < row_size; row++) {
           rowleft = rowleftwork[row];
           if (rowleft >= 0 && rowleft < row_size) {
-            dstp[row] = (srcp[w0 + rowleft] + srcp[w0 + rowleft - src_pitch]) / 2; // for some smoothing
+            dstp[row] = (srcp[w0 + rowleft] + srcp[w0 + rowleft - src_pitch] + 1) / 2; // for some smoothing
           }
           else if (rowleft < 0 && mleft) {
             dstp[row] = srcp[w0 - rowleft];
@@ -1031,8 +1031,8 @@ void compensate_plane_bicubic2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, i
           iy4 = ((int)((ysrc - hlow) * 256)) << 2; //changed to shift in v.1.1.1
 
           // 16 bit samples: 32 bit overflow. ts[] is __int64 for word sized pixels
-          pixel = (int)((intcoef[iy4] * ts[0] + intcoef[iy4 + 1] * ts[1] + intcoef[iy4 + 2] * ts[2] + intcoef[iy4 + 3] * ts[3]) >> 22); // 22=2*11 scale factor 
-          dstp[row] = max(min(pixel, pixel_max), 0); // PF
+          pixel = (int)((intcoef[iy4] * ts[0] + intcoef[iy4 + 1] * ts[1] + intcoef[iy4 + 2] * ts[2] + intcoef[iy4 + 3] * ts[3] + (1 << 21)) >> 22); // 22=2*11 scale factor 
+          dstp[row] = max(min(pixel, pixel_max), 0); // limit
         }
         else {
           if (hlow < 0 && mtop) hlow = -hlow;  // mirror borders
