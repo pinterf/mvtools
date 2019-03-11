@@ -85,9 +85,9 @@ void compensate_plane_nearest2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, i
     for (h = 0; h < height; h++) {
 
       ysrc = tr.dyc + h;
-      hlow = (int)floor(ysrc + 0.5);
+      hlow = (int)floor(ysrc + 0.5f);
 
-      inttr0 = (int)floor(tr.dxc + 0.5);
+      inttr0 = (int)floor(tr.dxc + 0.5f);
       rowleft = inttr0;
       // xsrc = tr[0];
       // rowleft = (int)floor(xsrc);  // low
@@ -156,7 +156,7 @@ void compensate_plane_nearest2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, i
     // prepare positions   (they are not dependent from h) for fast processing
     for (row = 0; row < row_size; row++) {
       xsrc = tr.dxc + tr.dxx*row;
-      rowleftwork[row] = (int)floor(xsrc + 0.5);
+      rowleftwork[row] = (int)floor(xsrc + 0.5f);
       rowleft = rowleftwork[row];
     }
 
@@ -165,7 +165,7 @@ void compensate_plane_nearest2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, i
 
       ysrc = tr.dyc + tr.dyy*h;
 
-      hlow = (int)floor(ysrc + 0.5);
+      hlow = (int)floor(ysrc + 0.5f);
 
       if (hlow < 0 && mtop) hlow = -hlow;  // mirror borders
       if (hlow >= height && mbottom) hlow = height + height - hlow - 2;
@@ -232,13 +232,13 @@ void compensate_plane_nearest2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, i
 
       for (row = 0; row < row_size; row++) {
 
-        rowleft = (int)(xsrc + 0.5); // use simply fast (int), not floor(), since followed check
+        rowleft = (int)(xsrc + 0.5f); // use simply fast (int), not floor(), since followed check
 
                                      // if (xsrc  < rowleft) {
                                      //   rowleft -=1;
                                      // }
 
-        hlow = (int)(ysrc + 0.5);  // use simply fast  (int), not floor(), since followed check
+        hlow = (int)(ysrc + 0.5f);  // use simply fast  (int), not floor(), since followed check
 
                                    // if (ysrc <  hlow) {
                                    //   hlow -=1;
@@ -805,8 +805,8 @@ void compensate_plane_bicubic2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, i
           sy = tr.dyc - inttr3;
           if ((rowleft >= 0) && (rowleft < row_size - 1)) { // bug fixed for right edge in v.1.1.1
             w = w0 + rowleft;
-            dstp[row] = (int)((1.0 - sy)*((1.0 - sx)*srcp[w] + sx*srcp[w + 1]) + \
-              sy*((1.0 - sx)*srcp[w + src_pitch] + sx*srcp[w + src_pitch + 1])); // bilinear
+            dstp[row] = (int)((1.0f - sy)*((1.0f - sx)*srcp[w] + sx*srcp[w + 1]) + \
+              sy*((1.0f - sx)*srcp[w + src_pitch] + sx*srcp[w + src_pitch + 1]) + 0.5f); // bilinear
           }
           else if (rowleft == row_size - 1) { // added in v.1.1.1
             dstp[row] = srcp[rowleft + w0];
@@ -944,8 +944,8 @@ void compensate_plane_bicubic2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, i
             xsrc = tr.dxc + tr.dxx*row;
             sx = xsrc - rowleft;
             w = w0 + rowleft;
-            pixel = (int)((1.0 - sy)*((1.0 - sx)*srcp[w] + sx*srcp[w + 1]) + \
-              sy*((1.0 - sx)*srcp[w + src_pitch] + sx*srcp[w + src_pitch + 1])); // bilinear
+            pixel = (int)((1.0f - sy)*((1.0f - sx)*srcp[w] + sx*srcp[w + 1]) + \
+              sy*((1.0f - sx)*srcp[w + src_pitch] + sx*srcp[w + src_pitch + 1]) + 0.5f); // bilinear
             dstp[row] = max(min(pixel, pixel_max), 0);
           }
           else if (rowleft == row_size - 1) { // added in v.1.1.1
