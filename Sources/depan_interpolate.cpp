@@ -751,14 +751,15 @@ void compensate_plane_bicubic2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, i
 
             // max (if pixel==16 bit) 
             // Intermediate result 1: one tag: (11+16=27 bits bit)
-            // Intermediate result 2: sum of 16 tags (*4) 27+4 = 31 bits
-            // finally >> 11 (/2048) --> 31-11 = 20 bits
+            // Intermediate result 2: same 27 bit magnitude, but max of 31 bit temporary result. No danger of *4 after summing up of 16 tags, coefficients are only weights.
+            // Finally >> 11 (/2048) --> 27-11 = 16 bits
+            const pixel_t *srcp_w = &srcp[w]; // help compiler
             pixel =
-              (intcoef2d[0] * srcp[w - src_pitch - 1] + intcoef2d[1] * srcp[w - src_pitch] + intcoef2d[2] * srcp[w - src_pitch + 1] + intcoef2d[3] * srcp[w - src_pitch + 2] + \
-                intcoef2d[4] * srcp[w - 1] + intcoef2d[5] * srcp[w] + intcoef2d[6] * srcp[w + 1] + intcoef2d[7] * srcp[w + 2] + \
-                intcoef2d[8] * srcp[w + src_pitch - 1] + intcoef2d[9] * srcp[w + src_pitch] + intcoef2d[10] * srcp[w + src_pitch + 1] + intcoef2d[11] * srcp[w + src_pitch + 2] + \
-                intcoef2d[12] * srcp[w + src_pitch * 2 - 1] + intcoef2d[13] * srcp[w + src_pitch * 2] + intcoef2d[14] * srcp[w + src_pitch * 2 + 1] + intcoef2d[15] * srcp[w + src_pitch * 2 + 2] + \
-                // +1024: fix in 1.13.1
+              (intcoef2d[0] * srcp_w[-src_pitch - 1] + intcoef2d[1] * srcp_w[-src_pitch] + intcoef2d[2] * srcp_w[-src_pitch + 1] + intcoef2d[3] * srcp_w[-src_pitch + 2] + \
+                intcoef2d[4] * srcp_w[-1] + intcoef2d[5] * srcp_w[0] + intcoef2d[6] * srcp_w[+1] + intcoef2d[7] * srcp_w[+2] + \
+                intcoef2d[8] * srcp_w[src_pitch - 1] + intcoef2d[9] * srcp_w[src_pitch] + intcoef2d[10] * srcp_w[src_pitch + 1] + intcoef2d[11] * srcp_w[src_pitch + 2] + \
+                intcoef2d[12] * srcp_w[src_pitch * 2 - 1] + intcoef2d[13] * srcp_w[src_pitch * 2] + intcoef2d[14] * srcp_w[src_pitch * 2 + 1] + intcoef2d[15] * srcp_w[src_pitch * 2 + 2] + \
+                // +1024 rounding: fix in 1.13.1
                 1024) >> 11;  // i.e. /2048
 
             dstp[row] = max(min(pixel, pixel_max), 0); // limit
