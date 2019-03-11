@@ -2,7 +2,7 @@
 <html lang="ru"><head>
 <meta http-equiv="Content-Language" content="ru">
 <meta http-equiv="Content-Type" content="text/html; charset=windows-1251">
-<title>DePan & DePanEstimate Plugins for Avisynth. Global motion tools.</title>
+<title>DePan и DePanEstimate плагины для Avisynth. Работа с глобальным движением.</title>
 <link rel="stylesheet" type="text/css" href="../avisynth.css">
 </head>
 <body>
@@ -14,7 +14,7 @@
 
 
 <p>Плагины для <a href="http://www.avisynth.org">AviSynth 2.5</a><br>
-Copyright (C)2004-2007 Александр Г. Балахнин aka Fizick.<br>
+Copyright (C)2004-2016 Александр Г. Балахнин aka Fizick.<br>
 <a href="http://avisynth.org.ru">http://avisynth.org.ru</a> </p>
 
 <h2>Введение</h2>
@@ -47,8 +47,6 @@ Deshaker).</p>
 клиентским функциям по запросу. 
 В качестве контейнера для данных по движению используется специальный служебный клип.</p>
 
-<p></p>
-
 <h2>&nbsp;&nbsp;&nbsp;
 Функции плагина DePanEstimate:</h2>
 
@@ -76,12 +74,12 @@ Deshaker).</p>
 </h4>
 
 <p><code>DePanEstimate</code> ( <var>clip,
-int range, float trust, int winx, int winy, int dxmax, int dymax, float
-zoommax, bool improve, float stab, float pixaspect, bool info, string
+int range, float trust, int winx, int winy, int wleft, int wtop, int dxmax, int dymax, float
+zoommax, float stab, float pixaspect, bool info, string
 log, bool debug, bool show, string extlog, bool fftw</var>)</p>
 
 <h4>Параметры DePanEstimate:</h4>
-
+<p>
 
 <var>clip</var>
 - входной клип;<br>
@@ -89,7 +87,7 @@ log, bool debug, bool show, string extlog, bool fftw</var>)</p>
 <var>range</var>
 - число предыдущих (и также последующих) кадров (полей) подряд для
 оценки движения<br>
- (целое число &gt;=0, по умолчанию=1);<br>
+ (целое число &gt;=0, по умолчанию=0);<br>
 
 
 <var>trust</var>
@@ -100,31 +98,31 @@ log, bool debug, bool show, string extlog, bool fftw</var>)</p>
 
 
 <var>winx</var>
-- ширина окна FFT (должна быть степенью двойки
-если не <var>fftw</var> (по умолчанию - максимально возможная
+- ширина окна FFT (по умолчанию - максимально возможная
 степень 2);<br>
 
 
 <var>winy</var>
-- высота окна FFT (должна быть степенью двойки
-если не <var>fftw</var>
+- высота окна FFT 
 (по умолчанию - максимально возможная степень 2);<br>
+
+<var>
+wleft</var> - левый отступ окна fft (по умолчанию = -1 для авто-центрирования).<br>
+
+<var>
+wtop</var> - верхний отступ окна fft window (по умолчанию = -1 для авто-центрирования).<br>
 
 
 <var>dxmax</var>
-- предел смещения по горизонтали ( по умолчанию= <var>winx</var>/4);<br>
+- предел смещения по горизонтали ( по умолчанию=-1 для <var>winx</var>/4);<br>
 
 <var>dymax</var>
-- предел смещения по вертикали ( по умолчанию= <var>winy</var>/4);<br>
+- предел смещения по вертикали ( по умолчанию=-1 для <var>winy</var>/4);<br>
 
 <var>zoommax</var>
 - максимальный зум-фактор,  если  = 1 (по умолчанию),
 то зум не оценивается;
 <br>
-
-<var>improve</var>
-- улучшить оценку зума путем итерации (по умолчанию = false, нет ). 
-С версии 1.6 данный режим отменен.<br>
 
 <var>stab</var>
 -  снижает вычисленную корреляцию для больших смещений (
@@ -132,8 +130,8 @@ log, bool debug, bool show, string extlog, bool fftw</var>)</p>
 + <var>stab</var>*abs(dx))
 ):<br>
 &nbsp;&nbsp;&nbsp;
-=0.0 (по умолчанию) - не снижать,<br>
-&nbsp;&nbsp;&nbsp;&nbsp;=1.0 - снижать наполовину для смещений <var>dxmax</var>,
+=0.0  - не снижать,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;=1.0 (по умолчанию) - снижать наполовину для смещений <var>dxmax</var>,
 <var>dymax</var>.<br>
 
 <var>pixaspect</var>
@@ -165,7 +163,7 @@ log, bool debug, bool show, string extlog, bool fftw</var>)</p>
 
 <var>fftw</var>
 - использовать внешнюю библиотеку FFTW (всегда true с версии 1.9)
-<br>
+</p>
 
 <p>Замечание. Параметр <i>trust </i>определяет некоторую
 пороговую величину межкадрового подобия (корреляции). Он определяет,
@@ -180,7 +178,7 @@ DePanEstimate зарегистрирует смену сцены для текущего кадра, если текущая
 
 <h2>&nbsp;&nbsp;&nbsp;
 Функции плагина DePan:</h2>
-
+<p>
 DePan (клиент) - делает полную или частичную компенсацию глобального
 движения<br> 
 
@@ -190,7 +188,7 @@ DePanInterleave (клиент) - генерирует длинный клип с чередующимися
 DePanStabilize (клиент) - делает частичную стабилизацию движения<br>
 
 DePanScenes(клиент) - отмечает изменение сцен<br>
-
+</p>
 <h3>Функция DePan</h3>
 
 <p> Генерирует клип, в
@@ -206,7 +204,7 @@ DePanScenes(клиент) - отмечает изменение сцен<br>
 
 <h4> Параметры DePan:</h4>
 
-
+<p>
 <var>clip</var>
 - входной клип (тот же самый что и для DePanEstimate);<br>
 
@@ -293,8 +291,9 @@ DePanEstimate;<br>
 <var>inputlog</var>
 - имя входного лог-файла с информацией по движению в формате Deshaker
 (по умолчанию - не читать)<br>
-<br>
-Замечание. Параметр "<var>offset</var>"
+</p>
+<p>
+Замечание. Параметр <var>offset</var>
 функции DePan является расширенной версией параметра "<var>delta</var>"
 плагина GenMotion.</p>
 
@@ -330,7 +329,7 @@ bool matchfields, int mirror, int blur, bool info, string inputlog</var>)<br>
 </p>
 
 <h4>Параметры DePanInterleave</h4>
-
+<p>
 <var>clip</var>
 - входной клип (тот же самый что и для DePanEstimate);<br>
 
@@ -400,21 +399,17 @@ prev</var>
 <var>inputlog</var>
 - имя входного лог-файла с информацией по движению в формате Deshaker
 (по умолчанию - не читать)<br>
-
+</p>
 <h3>&nbsp;&nbsp;&nbsp;
 Функция DePanStabilize</h3>
 
 <p>&nbsp;Делает частичную стабилизацию движения
 путем сглаживания смещений.</p>
 
-<p>Текущая версия использует инерциальный метод (видимо
-подобный используемому в Digistudio для VirtualDub).
-</p>
-
 <h4>Вызов:</h4>
 
 <p><code>DePanStabilize</code> (<var>clip,
-clip data, float cutoff, float damping, bool addzoom, int prev, int
+clip data, float cutoff, float damping, float initzoom, bool addzoom, int prev, int
 next, int mirror, int blur, int dxmax, int dymax, float zoommax, float
 rotmax, int subpixel, float pixaspect,  int fitlast, float
 tzoom, bool info, string inputlog, int method</var>)
@@ -508,6 +503,7 @@ prev</var>
 - предел коррекции поворота, в градусах (по умолчанию= 1.0);<br>
 
 &nbsp;&nbsp;&nbsp; значения данных пределов ограничивают коррекцию (c версии 1.7 - приблизительно, нестрого ) <br>
+&nbsp;&nbsp;&nbsp; Если отрицательные, то абсолютное значение являтся порогом для новой стабилизации с этого кадра.<br>
  
 
 <var>subpixel</var>
@@ -543,8 +539,11 @@ prev</var>
 (по умолчанию - не читать)<br>
 <var>
 method</var> - используемый метод стабилизации:<br>
-&nbsp;&nbsp;&nbsp; 0 - инерциальный (по умолчаниб);<br>
-&nbsp;&nbsp;&nbsp; 1 - усреднения (новый с версии 1.10)
+&nbsp;&nbsp;&nbsp; 0 - инерциальный (по умолчанию);<br>
+Ряд параметров (в том числе <var>dxmax, dymax, rotmax, zoommax, fitlast</var>) используются только в этом методе <br>.
+&nbsp;&nbsp;&nbsp; 1 - двунаправленного усреднения;<br> 
+&nbsp;&nbsp;&nbsp; 2 - неограниченная (статическая) стабилизация;<br>
+&nbsp;&nbsp;&nbsp; -1 - следящее движение (трекинг) базового (первого) кадра вместо стабилизации<br>
 </p>
 <h3> &nbsp;&nbsp;&nbsp;
 Функция DePanScenes</h3>
@@ -559,11 +558,11 @@ method</var> - используемый метод стабилизации:<br>
 
 <h4>Вызов:</h4>
 
-<p><code>DePanScenes</code> ( <var>clip, string inputlog, int plane</var>)<br></p>
+<p><code>DePanScenes</code> ( <var>clip, string inputlog, int plane</var>)</p>
 
 <h4>Параметры DePanScenes:</h4>
 
-
+<p>
 <var>clip</var>
 -входной клип специальный клип с данными по движению,
 производимый  DePanEstimate)<br>
@@ -577,7 +576,7 @@ method</var> - используемый метод стабилизации:<br>
 <var>plane</var>
 - код плоскости с отметкой (1 - Y, 2 - U, 4 - V, сумма - комбинация,
 по умолчанию=1) <br>
-
+</p>
 <h2>&nbsp;&nbsp;
 Особенности и ограничения текущей версии плагина DePan  </h2>
 
@@ -603,11 +602,11 @@ Avisynth-команду <code>SeparateFields </code>и
 
 <p>5. Режим <var>mirror</var>(зеркало) является
 уникальным, но немного странным :-). Используйте blur чтобы
-скрыть резкие отраженные детали.</p>
+скрыть резкие отраженные детали. Замечание: blur пока не реализован для вращения.</p>
 
 <p>6. Не очень быстрый, без оптимизации ассемблером моих функций.</p>
 
-<p>7. Тестирован с версиями Avisynth 2.5.3, 2.5.4, 2.5.5, 2.5.6, 2.5.7.</p>
+<p>7. Тестирован с версиями Avisynth 2.5.3, 2.5.4, 2.5.5, 2.5.6, 2.5.7, 2.5.8, 2.6.0.</p>
 
 <p>8. Старые версии использовали открытый FFT2D код Takuya Ooura
 (<cite><a href="http://momonga.t.u-tokyo.ac.jp/%7Eooura/index.html">http://momonga.t.u-tokyo.ac.jp/~ooura/index.html</a>)</cite><br>
@@ -763,9 +762,11 @@ LoadPlugin("depan.dll")
 ConvertToYV12()
 fps2to3()
 </pre>
+<p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Вот
 возможная функция для преобразования частоты кадров (прогрессивных) с
 фактором=5/3, например из 15 fps в 25 fps :
+</p>
 <pre>function fps3to5(clip) {
 # change FPS from 3 to 5 (or 15 to 25, or 18 to 30 and so on), i.e. with factor=5/3
 # uses global motion compensation
@@ -787,7 +788,7 @@ fps3to5()
 </pre>
 
 <p>Замечание. Есть более простой и общий альтернативный способ смены частоты:
- попробуйте функцию <code>ChangeFPS</code> с последующим <code>DePanStabilize></code>
+ попробуйте функцию <code>ChangeFPS</code> с последующим <code>DePanStabilize</code>
 </p>
 
 
@@ -937,7 +938,7 @@ float rot; // rotation (in degrees), (now =0 - no rotation estimated data in cur
 движения.
 Она работает на
 основе анализа векторов движений малых блоков, подобно первому проходу плагина Deshaker.
-Функция MVDepan
+Функция MVDepan (и MDepan версии 2)
 может быть использована вместо функции DePanEstimate.
 Она может
 оценивать панорамирование, зум и вращение. 
@@ -958,7 +959,7 @@ float rot; // rotation (in degrees), (now =0 - no rotation estimated data in cur
 Или обращайтесь на русскоязычный форум <cite><a href="http://forum.ixbt.com">http://forum.ixbt.com</a></cite>,
 конференция по видеозахвату,<br>
 ветка "Экстремальный Ависинт" <cite><a href="http://forum.ixbt.com/topic.cgi?id=29:9331">
-http://forum.ixbt.com/topic.cgi?id=29:9331</a></cite></p>
+http://forum.ixbt.com/topic.cgi?id=29:9331 </a></cite></p>
 
 <h3>
 &nbsp;&nbsp;&nbsp;
@@ -1093,7 +1094,7 @@ DepanStabilize.</li>
   </li>
 
   <li>
-Версия 1.4, 7 мая 2005 (обнародована 29 мая) - DePanStabilize: Улучшен режим адаптивного зума <var>addzoom</i></var>.
+Версия 1.4, 7 мая 2005 (обнародована 29 мая) - DePanStabilize: Улучшен режим адаптивного зума <var>addzoom</var>.
 Теперь скорость снижения адаптивного зума более медленная, чем скорость
 увеличения. Таким образом, уменьшаются пустые черные бордюры, и
 величина зума теперь более стабильна. 
@@ -1141,11 +1142,30 @@ Version 1.9.1, 27 Ноября, 2006 - DePanEstimate: более корректная обработка dxmax
   </li>
   <li>
 DePanEstimate Version 1.9.2, 25 марта 2007 - DePanEstimate: параметр <var>extlog</var>
- для записи расширеного лог-файла с данными Trust (как просил David). 
+ для записи расширенного лог-файла с данными Trust (как просил David). 
   </li>
   <li>
 DePan Version 1.10 beta, 8 мая 2007 - DepanStabilize:  добавлен новый <var>method</var> усреднения,<br>
 исправлена небольшая ошибка в интерполяции краев.
+ </li>
+  <li>
+DePan Version 1.10.1, 27 января 2008 - исправлена ошибка с <var>blur</var> для <var>subpixel=1</var>.
+ </li>
+  <li>
+5 августа 2011 - выложены исходники Depan по лицензии GPL v2.
+ </li>
+  <li>
+DePan Version 1.12, 31 января 2016 - стабилизация второго кадра после смены сцены, небольшие исправления.
+ </li>
+  <li>
+DePan Version 1.13, 18 февраля 2016 - Экспериментальные method=2 (неоганиченной стабилизации) и method=-1 (сопровождения) для DepanStabilize.
+ </li>
+  <li>
+DePanEstimate v1.10, 22 февраля, 2016 - DePanEstimate: добавил wleft, wtop, удалил improve. 
+Исправил документацию о значении по умолчанию range, stab (спасибо HolyWu).
+ </li>
+  <li>
+DePan Version 1.13.1, 6 апреля 2016 - Исправил старую ошибку (оттенок) для subpixel=2  без вращения и зума (Depan, DepanStabilize).
  </li>
 </ul>
 
@@ -1153,15 +1173,14 @@ DePan Version 1.10 beta, 8 мая 2007 - DepanStabilize:  добавлен новый <var>metho
 &nbsp;&nbsp;&nbsp;
 Лицензия</h3>
 
-<p>Плагин DePanEstimate - это программа, распространяемая на условиях лицензии GNU GPL. Смотри gpl-rus.txt.<br>
-Плагин DePan распространяется свободно, но без всяких гарантий. Вы не можете распространять его без данной документации<br>
-Документация распространяется на условиях лицензии <a href="http://creativecommons.org/licenses/by-sa/3.0/">CreativeCommons BY-SA 3.0 license.</a><br>
-<p>Прошу рассмотреть возможность финансовой поддержки, чтобы быть зарегистрированным пользователем.</p>
+<p>Плагины Depan и DePanEstimate - это программы, распространяемая на условиях лицензии GNU GPL. Смотри gpl-rus.txt.<br>
+Покументация распространяется на условиях лицензии <a href="http://creativecommons.org/licenses/by-sa/3.0/">CreativeCommons BY-SA 3.0 license.</a><br>
+<p>Прошу рассмотреть возможность финансовой <a href="http://avisynth.org.ru/donate-rus.html">поддержки</a>.</p>
 
 <h3>Скачивание</h3>
 
-<p><a href="depan1100.zip">Download DePan Tools version 1.10.0</a></p>
-<p><a href="depanestimate192.zip">Download DePanEstimate version 1.9.2</a></p>
+<p><a href="depan1131.zip">Download DePan tools version 1.13.1</a></p>
+<p><a href="depanestimate110.zip">Download DePanEstimate version 1.10</a></p>
 
 <p>
 <a href="../">Вернуться
