@@ -123,6 +123,7 @@
       <OmitFramePointers />
       <XMLDocumentationFileName>$(IntDir)$(ProjectName)\</XMLDocumentationFileName>
       <BrowseInformationFile>$(IntDir)$(ProjectName)\</BrowseInformationFile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -173,6 +174,8 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <XMLDocumentationFileName>$(IntDir)$(ProjectName)\</XMLDocumentationFileName>
       <BrowseInformationFile>$(IntDir)$(ProjectName)\</BrowseInformationFile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AssemblerOutput>AssemblyAndSourceCode</AssemblerOutput>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -219,6 +222,7 @@
       <AdditionalOptions>/Zc:threadSafeInit- %(AdditionalOptions)</AdditionalOptions>
       <XMLDocumentationFileName>$(IntDir)$(ProjectName)\</XMLDocumentationFileName>
       <BrowseInformationFile>$(IntDir)$(ProjectName)\</BrowseInformationFile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -265,6 +269,7 @@
       <AdditionalOptions>/Zc:threadSafeInit- %(AdditionalOptions)</AdditionalOptions>
       <XMLDocumentationFileName>$(IntDir)$(ProjectName)\</XMLDocumentationFileName>
       <BrowseInformationFile>$(IntDir)$(ProjectName)\</BrowseInformationFile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
