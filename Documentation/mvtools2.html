@@ -2016,7 +2016,7 @@ MFlowFps(super, backward_vec, forward_vec, num=50, den=1, ml=100) # get 50 fps
     <p>To double fps with MFlowFps for fastest (almost) real-time playing:</p>
 <pre class="src">AVISource("c:\test.avi") # or MPEG2Source, DirectShowSource, some previous filter, etc
 # assume progressive PAL 25 fps or NTSC Film 23.976 source
-super = MSuper(pel=1,hpad=0,vpad=0,chroma=false)
+super = MSuper(pel=1,hpad=0,vpad=0)
 backward_vec = MAnalyse(super, blksize=32, isb = true, chroma=false, searchparam=1,search=0)
 forward_vec = MAnalyse(super, blksize=32, isb = false, chroma=false, searchparam=1,search=0)
 MFlowFps(super, backward_vec, forward_vec, num=2*FramerateNumerator(last), \
