@@ -210,7 +210,7 @@ PVideoFrame __stdcall MVSuper::GetFrame(int n, IScriptEnvironment* env)
       nSrcPitch[0] = SrcPlanes->GetPitch();
       nSrcPitch[1] = nSrcPitch[2] = SrcPlanes->GetPitchUV();
       YUY2ToPlanes(src->GetReadPtr(), src->GetPitch(), nWidth, nHeight,
-        pSrc[0], nSrcPitch[0], pSrc[1], pSrc[1], nSrcPitch[1], cpuFlags);
+        pSrc[0], nSrcPitch[0], pSrc[1], pSrc[2], nSrcPitch[1], cpuFlags);
       if (usePelClip)
       {
         pSrcPel[0] = SrcPelPlanes->GetPtr();
