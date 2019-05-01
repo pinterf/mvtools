@@ -12,7 +12,7 @@
     <h2>Abstract</h2>
     <table class="n">
         <tr><td class="n"><b>Authors:      </b></td><td class="n">&nbsp;</td><td class="n">Manao, Tsp, TSchniede, SEt, Fizick (Alexander Balakhnin), Vit, Firesledge, pinterf</td></tr>
-        <tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.40</td></tr>
+        <tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.41</td></tr>
         <tr><td class="n"><b>git:          </b></td><td class="n">&nbsp;</td><td class="n"><a href="https://github.com/pinterf/mvtools/tree/mvtools-pfmod">https://github.com/pinterf/mvtools/tree/mvtools-pfmod</a></td></tr>
         <tr><td class="n"><b>Forum:        </b></td><td class="n">&nbsp;</td><td class="n"><a href="https://forum.doom9.org/showthread.php?t=173356">https://forum.doom9.org/showthread.php?t=173356</a></td></tr>
         <tr><td class="n"><b>Base versions:</b></td><td class="n">&nbsp;</td><td class="n">2.6.0.5 + 2.5.11.22</td></tr>
@@ -2207,6 +2207,14 @@ Planar2Interleaved() # convert back to normal interleave YUY2
     </ul>
 
     <h2><a name="revisions"></a>VI) Revisions</h2>
+    <p>2.7.41 (20190502)</p>
+    <ul>
+        <li>Fix: regression since 2.7.35: MSuper chroma for non-planar YUY2 (Thanks to mkauf)</li>
+        <li>Project moved to Visual Studio 2019, v141_xp and v142 toolset</li>
+        <li>(New: DepanStabilize: planar RGB support (8-16bit) - see also there<br />
+            Generate motion vectors with mvtools MDepan, use it for DepanStabilize. Input clip can be planar RGB.)</li>
+    </ul>
+
     <p>2.7.40 (20190212)</p>
     <ul>
         <li>Fix: MFlowInter possible crash with specific parameter and colorspace settings.</li>

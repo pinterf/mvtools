@@ -10,6 +10,10 @@ Credits:
 - Manao, Fizick, Tsp, TSchniede, SEt, Vit, Firesledge, cretindesalpes 
 
 Change log
+- 2.7.41 (20190502)
+  - Fix: regression since 2.7.35: MSuper chroma for non-planar YUY2 (Thanks to mkauf)
+  - Project moved to Visual Studio 2019, v141_xp and v142 toolset
+
 - 2.7.40 (20190212)
   - Fix: MFlowInter possible crash with specific parameter and colorspace settings.
   - Fix: MFlowInter possible overflow at 16 bit clips (artifacts)
