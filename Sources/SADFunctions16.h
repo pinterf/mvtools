@@ -25,7 +25,7 @@
  *  There are two versions, one in plain C, one in iSSE assembler.
  */
 
-#include "emmintrin.h"
+#include "intrin.h"
 
 // SAD routined are same for SADFunctions.h and SADFunctions_avx.cpp
 // Both includes them but with different target flags

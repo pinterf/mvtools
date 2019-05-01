@@ -8,7 +8,7 @@
 #include "yuy2planes.h"
 #include <stdint.h>
 #include "def.h"
-#include "emmintrin.h"
+#include "intrin.h"
 
 class MVGroupOfFrames;
 class MVPlane;

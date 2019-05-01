@@ -33,9 +33,10 @@
 #include "Padding.h"
 #include "profile.h"
 
-#include <mmintrin.h>
+#include <intrin.h>
 
 #include <algorithm>
+#include <cmath>
 #include <stdexcept>
 #include <stdint.h>
 
