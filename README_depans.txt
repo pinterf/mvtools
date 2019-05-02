@@ -26,7 +26,6 @@ Change log
   - DepanStabilize planar RGB 8-16 bits support: Generate motion vectors with mvtools MDepan, use it for DepanStabilize. Input clip can be planar RGB.
   - add missing roundings to some internal interpolation calculations
   - update documentation from Fizick's 2016 version
-  Built with Visual Studio 2017 Community Edition, v141-xp toolset
 - (20170525)
   Fix: DepanEstimate 2.10.0.2 : did not recognize Scene changes, giving valid motion vectors instead
   Depan: no change, rebuild with current headers 2.13.1.3 (20170525)
@@ -54,7 +53,7 @@ External dependencies for DepanEstimate:
 - libfftw3f-3.dll (or renamed to FFT3W.DLL)
 from http://www.fftw.org/ or look at ICL builds at http://forum.doom9.org/showthread.php?t=173229
   
-- Requires Microsoft Visual C++ Redistributable 2017 or 2015 Update 3
+- Requires Microsoft Visual C++ Redistributable 2019, 2017 or 2015 Update 3
   
 Source code:
 https://github.com/pinterf/mvtools
