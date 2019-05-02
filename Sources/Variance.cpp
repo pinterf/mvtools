@@ -52,7 +52,7 @@ unsigned int Luma8_sse2(const unsigned char *pSrc, int nSrcPitch)
 
   for (int y = 0; y < nBlkHeight; y += (two_rows ? 2 : 1))
   {
-    if (nBlkWidth % 16 == 0) {
+    if constexpr(nBlkWidth % 16 == 0) {
       for (int x = 0; x < nBlkWidth; x += 16)
       {
         __m128i src1 = _mm_loadu_si128((__m128i *) (pSrc + x));
@@ -62,7 +62,7 @@ unsigned int Luma8_sse2(const unsigned char *pSrc, int nSrcPitch)
       }
       pSrc += nSrcPitch;
     }
-    else if (nBlkWidth % 8 == 0) {
+    else if constexpr(nBlkWidth % 8 == 0) {
       for (int x = 0; x < nBlkWidth; x += 8)
       {
         __m128i src1 = _mm_or_si128(_mm_loadl_epi64((__m128i *) (pSrc + x)), _mm_slli_si128(_mm_loadl_epi64((__m128i *) (pSrc + x + nSrcPitch)), 8));

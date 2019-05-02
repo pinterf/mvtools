@@ -46,19 +46,19 @@ unsigned int MAKE_FN(Sad10_ssse3_4xN)(const uint8_t *pSrc, int nSrcPitch, const 
   __m128i zero = _mm_setzero_si128();
   __m128i sumw = _mm_setzero_si128(); // word sized sums
 
-  const int vert_inc = (nBlkHeight % 2) == 0 ? 2 : 1;
+  constexpr int vert_inc = (nBlkHeight % 2) == 0 ? 2 : 1;
 
   for (int y = 0; y < nBlkHeight; y += vert_inc)
   {
     // 1st row 4 pixels 8 bytes
-    if (vert_inc == 1) {
+    if constexpr(vert_inc == 1) {
       auto src1 = _mm_loadl_epi64((__m128i *) (pSrc));
       auto src2 = _mm_loadl_epi64((__m128i *) (pRef));
       __m128i absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
       sumw = _mm_add_epi16(sumw, absdiff);
     }
 
-    if (vert_inc >= 2) {
+    if constexpr(vert_inc >= 2) {
       auto src1 = _mm_loadl_epi64((__m128i *) (pSrc));
       auto src2 = _mm_loadl_epi64((__m128i *) (pRef));
       // 2nd row 4 pixels 8 bytes
@@ -91,14 +91,14 @@ unsigned int MAKE_FN(Sad16_sse2_4xN)(const uint8_t *pSrc, int nSrcPitch, const u
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128();
 
-  const int vert_inc = (nBlkHeight % 2) == 1 ? 1 : 2;
+  constexpr int vert_inc = (nBlkHeight % 2) == 1 ? 1 : 2;
 
   for (int y = 0; y < nBlkHeight; y += vert_inc)
   {
     // 4 pixels: 8 bytes
     auto src1 = _mm_loadl_epi64((__m128i *) (pSrc));
     auto src2 = _mm_loadl_epi64((__m128i *) (pRef)); // lower 8 bytes
-    if (vert_inc == 2) {
+    if constexpr(vert_inc == 2) {
       auto src1_h = _mm_loadl_epi64((__m128i *) (pSrc + nSrcPitch));
       auto src2_h = _mm_loadl_epi64((__m128i *) (pRef + nRefPitch));
       src1 = _mm_castps_si128(_mm_movelh_ps(_mm_castsi128_ps(src1), _mm_castsi128_ps(src1_h))); // lower 64 bits from src2 low 64 bits, high 64 bits from src4b low 64 bits
@@ -109,7 +109,7 @@ unsigned int MAKE_FN(Sad16_sse2_4xN)(const uint8_t *pSrc, int nSrcPitch, const u
     __m128i smaller_t = _mm_subs_epu16(src2, src1);
     __m128i absdiff = _mm_or_si128(greater_t, smaller_t); //abs(s1-s2)  == (satsub(s1,s2) | satsub(s2,s1))
     sum = _mm_add_epi32(sum, _mm_unpacklo_epi16(absdiff, zero));
-    if (vert_inc == 2) {
+    if constexpr(vert_inc == 2) {
       sum = _mm_add_epi32(sum, _mm_unpackhi_epi16(absdiff, zero));
     }
 
@@ -164,7 +164,7 @@ unsigned int MAKE_FN(Sad10_ssse3_6xN)(const uint8_t *pSrc, int nSrcPitch, const 
     __m128i absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
     sumw = _mm_add_epi16(sumw, absdiff);
 
-    if (vert_inc >= 2) {
+    if constexpr(vert_inc >= 2) {
       // 2nd row 6 pixels: 12 bytes 8+4, source is aligned
       src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch * 1)); // safe to read
       src1 = _mm_and_si128(src1, mask6_16bit);
@@ -173,7 +173,7 @@ unsigned int MAKE_FN(Sad10_ssse3_6xN)(const uint8_t *pSrc, int nSrcPitch, const 
       auto srcRest32 = _mm_load_ss(reinterpret_cast<const float *>(pRef + nRefPitch * 1 + 8));
       src2 = _mm_castps_si128(_mm_movelh_ps(_mm_castsi128_ps(src2), srcRest32)); // lower 64 bits from src2 low 64 bits, high 64 bits from src4b low 64 bits
 
-      __m128i absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+      absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
       sumw = _mm_add_epi16(sumw, absdiff);
     }
     pSrc += nSrcPitch * vert_inc;
@@ -265,11 +265,11 @@ unsigned int MAKE_FN(Sad10_ssse3_8xN)(const uint8_t *pSrc, int nSrcPitch, const 
     __m128i absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
     sumw = _mm_add_epi16(sumw, absdiff);
 
-    if (vert_inc >= 2) {
+    if constexpr(vert_inc >= 2) {
       // 2nd row 8 pixels 16 bytes
       src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch * 1));
       src2 = _mm_loadu_si128((__m128i *) (pRef + nRefPitch * 1));
-      __m128i absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+      absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
       sumw = _mm_add_epi16(sumw, absdiff);
     }
     pSrc += nSrcPitch * vert_inc;
@@ -310,7 +310,7 @@ unsigned int MAKE_FN(Sad16_sse2_8xN)(const uint8_t *pSrc, int nSrcPitch, const u
     sum = _mm_add_epi32(sum, _mm_unpacklo_epi16(absdiff, zero));
     sum = _mm_add_epi32(sum, _mm_unpackhi_epi16(absdiff, zero));
 
-    if (vert_inc == 2) {
+    if constexpr(vert_inc == 2) {
       // 2nd row 8 pixels 16 bytes
       src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch * 1));
       src2 = _mm_loadu_si128((__m128i *) (pRef + nRefPitch * 1));
@@ -383,11 +383,11 @@ unsigned int MAKE_FN(Sad10_ssse3_12xN)(const uint8_t *pSrc, int nSrcPitch, const
       absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
       sumw = _mm_add_epi16(sumw, absdiff);
 
-      if (vert_inc >= 2) {
+      if constexpr(vert_inc >= 2) {
         // 2nd row 8 pixels 16 bytes
         src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch * 1));
         src2 = _mm_loadu_si128((__m128i *) (pRef + nRefPitch * 1));
-        __m128i absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+        absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
         sumw = _mm_add_epi16(sumw, absdiff);
 
         src1 = _mm_loadl_epi64((__m128i *) (pSrc + nSrcPitch * 1 + 16));
@@ -501,11 +501,11 @@ unsigned int MAKE_FN(Sad10_ssse3_16xN)(const uint8_t *pSrc, int nSrcPitch, const
       absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
       sumw = _mm_add_epi16(sumw, absdiff);
 
-      if (vert_inc >= 2) {
+      if constexpr(vert_inc >= 2) {
         // 2nd row 8 pixels 16 bytes
         src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch * 1));
         src2 = _mm_loadu_si128((__m128i *) (pRef + nRefPitch * 1));
-        __m128i absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+        absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
         sumw = _mm_add_epi16(sumw, absdiff);
 
         src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch * 1 + 16));
@@ -560,14 +560,14 @@ unsigned int MAKE_FN(Sad16_sse2_16xN)(const uint8_t *pSrc, int nSrcPitch, const 
     absdiff = _mm_or_si128(greater_t, smaller_t); //abs(s1-s2)  == (satsub(s1,s2) | satsub(s2,s1))
     sum = _mm_add_epi32(sum, _mm_unpacklo_epi16(absdiff, zero));
     sum = _mm_add_epi32(sum, _mm_unpackhi_epi16(absdiff, zero));
-    if (vert_inc >= 2) {
+    if constexpr(vert_inc >= 2) {
       // 16 pixels: 2x8 pixels = 2x16 bytes
       // 2nd 8 pixels
       auto src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch*1));
       auto src2 = _mm_loadu_si128((__m128i *) (pRef + nRefPitch * 1));
       __m128i greater_t = _mm_subs_epu16(src1, src2); // unsigned sub with saturation
       __m128i smaller_t = _mm_subs_epu16(src2, src1);
-      __m128i absdiff = _mm_or_si128(greater_t, smaller_t); //abs(s1-s2)  == (satsub(s1,s2) | satsub(s2,s1))
+      absdiff = _mm_or_si128(greater_t, smaller_t); //abs(s1-s2)  == (satsub(s1,s2) | satsub(s2,s1))
                                                             // 8 x uint16 absolute differences
       sum = _mm_add_epi32(sum, _mm_unpacklo_epi16(absdiff, zero));
       sum = _mm_add_epi32(sum, _mm_unpackhi_epi16(absdiff, zero));
@@ -648,11 +648,11 @@ unsigned int MAKE_FN(Sad10_ssse3_24xN)(const uint8_t *pSrc, int nSrcPitch, const
       absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
       sumw = _mm_add_epi16(sumw, absdiff);
 
-      if (vert_inc >= 2) {
+      if constexpr(vert_inc >= 2) {
         // 2nd row 8 pixels 16 bytes
         src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch * 1));
         src2 = _mm_loadu_si128((__m128i *) (pRef + nRefPitch * 1));
-        __m128i absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+        absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
         sumw = _mm_add_epi16(sumw, absdiff);
         // 2nd group
         src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch * 1 + 16));
@@ -788,11 +788,11 @@ unsigned int MAKE_FN(Sad10_ssse3_32xN)(const uint8_t *pSrc, int nSrcPitch, const
       absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
       sumw = _mm_add_epi16(sumw, absdiff);
 
-      if (vert_inc >= 2) {
+      if constexpr(vert_inc >= 2) {
         // 2nd row 8 pixels 16 bytes
         src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch * 1));
         src2 = _mm_loadu_si128((__m128i *) (pRef + nRefPitch * 1));
-        __m128i absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+        absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
         sumw = _mm_add_epi16(sumw, absdiff);
         // 2nd group
         src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch * 1 + 16));
@@ -933,7 +933,7 @@ unsigned int MAKE_FN(Sad10_ssse3_48xN)(const uint8_t *pSrc, int nSrcPitch, const
         absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
         sumw = _mm_add_epi16(sumw, absdiff);
 
-        if (vert_inc >= 2) {
+        if constexpr(vert_inc >= 2) {
           // 2nd row 8 pixels 16 bytes
           src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch * 1 + x));
           src2 = _mm_loadu_si128((__m128i *) (pRef + nRefPitch * 1 + x));
@@ -1057,11 +1057,11 @@ unsigned int MAKE_FN(Sad10_ssse3_64xN)(const uint8_t *pSrc, int nSrcPitch, const
         absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
         sumw = _mm_add_epi16(sumw, absdiff);
 
-        if (vert_inc >= 2) {
+        if constexpr(vert_inc >= 2) {
           // 2nd row 8 pixels 16 bytes
           src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch * 1 + x));
           src2 = _mm_loadu_si128((__m128i *) (pRef + nRefPitch * 1 + x));
-          __m128i absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
+          absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
           sumw = _mm_add_epi16(sumw, absdiff);
           // 2nd group
           src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch * 1 + x + 16));

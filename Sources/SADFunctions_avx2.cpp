@@ -26,7 +26,7 @@ unsigned int Sad10_avx2(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef,
   __m256i sum = _mm256_setzero_si256();
 
   constexpr bool two_16byte_rows = (nBlkWidth == 8);
-  if (two_16byte_rows && nBlkHeight == 1) {
+  if constexpr(two_16byte_rows && nBlkHeight == 1) {
     assert("AVX2 not supported BlockHeight==1 for uint16_t with BlockSize=8");
     return 0;
   }
@@ -76,7 +76,7 @@ unsigned int Sad10_avx2(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef,
           sumw = _mm256_add_epi16(sumw, _mm256_abs_epi16(_mm256_sub_epi16(src1, src2)));
         }
       }
-      else if ((nBlkWidth * sizeof(uint16_t)) % 32 == 0) {
+      else if constexpr((nBlkWidth * sizeof(uint16_t)) % 32 == 0) {
         // 16*2 bytes yes,
         // 24*2 bytes not supported, one 256bit and one 128bit lane
         // 32*2 bytes yes
@@ -135,7 +135,7 @@ unsigned int Sad16_avx2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
   unsigned int result2 = Sad_AVX2_C<nBlkWidth, nBlkHeight, pixel_t>(pSrc, nSrcPitch, pRef, nRefPitch);
 #endif
 
-  if ((sizeof(pixel_t) == 2 && nBlkWidth < 8) || (sizeof(pixel_t) == 1 && nBlkWidth <= 16)) {
+  if constexpr((sizeof(pixel_t) == 2 && nBlkWidth < 8) || (sizeof(pixel_t) == 1 && nBlkWidth <= 16)) {
     assert("AVX2 not supported for uint16_t with BlockSize<8 or uint8_t with blocksize<16");
     return 0;
   }
@@ -143,13 +143,13 @@ unsigned int Sad16_avx2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
   __m256i zero = _mm256_setzero_si256();
   __m256i sum = _mm256_setzero_si256(); // 2x or 4x int is probably enough for 32x32
 
-  bool two_16byte_rows = (sizeof(pixel_t) == 2 && nBlkWidth == 8) || (sizeof(pixel_t) == 1 && nBlkWidth == 16);
-  if (two_16byte_rows && nBlkHeight==1) {
+  constexpr bool two_16byte_rows = (sizeof(pixel_t) == 2 && nBlkWidth == 8) || (sizeof(pixel_t) == 1 && nBlkWidth == 16);
+  if constexpr(two_16byte_rows && nBlkHeight==1) {
     assert("AVX2 not supported BlockHeight==1 for uint16_t with BlockSize=8 or uint8_t with blocksize<16");
     return 0;
   }
-  const bool one_cycle = (sizeof(pixel_t) * nBlkWidth) <= 32;
-  const bool unroll_by2 = !two_16byte_rows && nBlkHeight>=2; // unroll by 4: slower
+  constexpr bool one_cycle = (sizeof(pixel_t) * nBlkWidth) <= 32;
+  constexpr bool unroll_by2 = !two_16byte_rows && nBlkHeight>=2; // unroll by 4: slower
 
   for (int y = 0; y < nBlkHeight; y+= ((two_16byte_rows || unroll_by2) ? 2 : 1))
   {
@@ -158,7 +158,7 @@ unsigned int Sad16_avx2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
       // two 16 byte rows at a time
       src1 = _mm256_loadu2_m128i((const __m128i *) (pSrc + nSrcPitch), (const __m128i *) (pSrc));
       src2 = _mm256_loadu2_m128i((const __m128i *) (pRef + nRefPitch), (const __m128i *) (pRef));
-      if (sizeof(pixel_t) == 1) {
+      if constexpr(sizeof(pixel_t) == 1) {
         sum = _mm256_add_epi32(sum, _mm256_sad_epu8(src1, src2));
         // result in four 32 bit areas at each 64 bytes
       }
@@ -177,7 +177,7 @@ unsigned int Sad16_avx2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
       __m256i src1, src2;
       src1 = _mm256_loadu_si256((__m256i *) (pSrc));
       src2 = _mm256_loadu_si256((__m256i *) (pRef));
-      if (sizeof(pixel_t) == 1) {
+      if constexpr(sizeof(pixel_t) == 1) {
         sum = _mm256_add_epi32(sum, _mm256_sad_epu8(src1, src2));
         // result in four 32 bit areas at each 64 bytes
       }
@@ -194,7 +194,7 @@ unsigned int Sad16_avx2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
       if (unroll_by2) {
         src1 = _mm256_loadu_si256((__m256i *) (pSrc+nSrcPitch));
         src2 = _mm256_loadu_si256((__m256i *) (pRef+nRefPitch));
-        if (sizeof(pixel_t) == 1) {
+        if constexpr(sizeof(pixel_t) == 1) {
           sum = _mm256_add_epi32(sum, _mm256_sad_epu8(src1, src2));
           // result in four 32 bit areas at each 64 bytes
         }
@@ -210,7 +210,7 @@ unsigned int Sad16_avx2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
         }
       }
     }
-    else if ((nBlkWidth * sizeof(pixel_t)) % 32 == 0) {
+    else if constexpr((nBlkWidth * sizeof(pixel_t)) % 32 == 0) {
       // 16*2 bytes yes,
       // 24*2 bytes no
       // 32*2 bytes yes
@@ -221,7 +221,7 @@ unsigned int Sad16_avx2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
         __m256i src1, src2;
         src1 = _mm256_loadu_si256((__m256i *) (pSrc + x));
         src2 = _mm256_loadu_si256((__m256i *) (pRef + x));
-        if (sizeof(pixel_t) == 1) {
+        if constexpr(sizeof(pixel_t) == 1) {
           sum = _mm256_add_epi32(sum, _mm256_sad_epu8(src1, src2));
           // result in four 32 bit areas at each 64 bytes
         }
@@ -238,7 +238,7 @@ unsigned int Sad16_avx2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
         if (unroll_by2) {
           src1 = _mm256_loadu_si256((__m256i *) (pSrc + x + nSrcPitch));
           src2 = _mm256_loadu_si256((__m256i *) (pRef + x + nRefPitch));
-          if (sizeof(pixel_t) == 1) {
+          if constexpr(sizeof(pixel_t) == 1) {
             sum = _mm256_add_epi32(sum, _mm256_sad_epu8(src1, src2));
             // result in four 32 bit areas at each 64 bytes
           }
@@ -258,7 +258,7 @@ unsigned int Sad16_avx2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
     else {
       assert(0);
     }
-    if (two_16byte_rows || unroll_by2) {
+    if constexpr(two_16byte_rows || unroll_by2) {
       pSrc += nSrcPitch * 2;
       pRef += nRefPitch * 2;
     }
@@ -269,7 +269,7 @@ unsigned int Sad16_avx2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
   }
 
   unsigned int result;
-  if (sizeof(pixel_t) == 2) {
+  if constexpr(sizeof(pixel_t) == 2) {
     sum = _mm256_hadd_epi32(sum, sum);
     sum = _mm256_hadd_epi32(sum, sum);
     __m128i sum128 = _mm_add_epi32(_mm256_castsi256_si128(sum), _mm256_extractf128_si256(sum, 1));
