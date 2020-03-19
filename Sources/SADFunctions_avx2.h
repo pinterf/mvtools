@@ -39,47 +39,4 @@ unsigned int Sad16_avx2(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef,
 template<int nBlkWidth, int nBlkHeight>
 unsigned int Sad10_avx2(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
 
-// match with SADFunctions.cpp
-#define MAKE_SAD_FN(x, y) template unsigned int Sad16_avx2<x, y, uint16_t>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch); \
-                          template unsigned int Sad10_avx2<x, y>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
-  MAKE_SAD_FN(64, 64)
-  MAKE_SAD_FN(64, 48)
-  MAKE_SAD_FN(64, 32)
-  MAKE_SAD_FN(64, 16)
-  MAKE_SAD_FN(48, 64)
-  MAKE_SAD_FN(48, 48)
-  MAKE_SAD_FN(48, 24)
-  MAKE_SAD_FN(48, 12)
-  MAKE_SAD_FN(32, 64)
-  MAKE_SAD_FN(32, 32)
-  MAKE_SAD_FN(32, 24)
-  MAKE_SAD_FN(32, 16)
-  MAKE_SAD_FN(32, 8)
-  // MAKE_SAD_FN(24, 32) // 24*2 is not mod 32 bytes
-  MAKE_SAD_FN(16, 64)
-  MAKE_SAD_FN(16, 32)
-  MAKE_SAD_FN(16, 16)
-  MAKE_SAD_FN(16, 12)
-  MAKE_SAD_FN(16, 8)
-  MAKE_SAD_FN(16, 4)
-  MAKE_SAD_FN(16, 2)
-  MAKE_SAD_FN(16, 1) // 32 bytes with height=1 is OK for AVX2
-  //MAKE_SAD_FN(12, 16) 12*2 not mod 32 bytes
-  /* not optimal
-  MAKE_SAD_FN(8, 32)
-  MAKE_SAD_FN(8, 16)
-  MAKE_SAD_FN(8, 8)
-  MAKE_SAD_FN(8, 4)
-  MAKE_SAD_FN(8, 2)
-  */
-  // MAKE_SAD_FN(8, 1) // 16 bytes with height=1 not supported for AVX2
-  //MAKE_SAD_FN(4, 8)
-  //MAKE_SAD_FN(4, 4)
-  //MAKE_SAD_FN(4, 2)
-  //MAKE_SAD_FN(4, 1)  // 8 bytes with height=1 not supported for SSE2
-  //MAKE_SAD_FN(2, 4)  // 2 pixels 4 bytes not supported with SSE2
-  //MAKE_SAD_FN(2, 2)
-  //MAKE_SAD_FN(2, 1)
-#undef MAKE_SAD_FN
-
 #endif

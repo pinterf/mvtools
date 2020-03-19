@@ -26,6 +26,7 @@
 #include "Interpolation.h"
 
 #include <emmintrin.h>
+#include <smmintrin.h> // sse 4.1
 #include <immintrin.h>
 #include	<algorithm>
 #include	<cassert>

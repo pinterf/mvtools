@@ -26,19 +26,14 @@
  */
 
 #include "intrin.h"
-
-// SAD routined are same for SADFunctions.h and SADFunctions_avx.cpp
-// Both includes them but with different target flags
-
-#ifdef __AVX__
-#define MAKE_FN(a) a##_avx
-#else
-#define MAKE_FN(a) a##_sse2
-#endif
-
+#include <stdint.h>
+#include "include/avs/config.h"
 
 template<int nBlkHeight>
-unsigned int MAKE_FN(Sad10_ssse3_4xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("ssse3")))
+#endif 
+unsigned int Sad10_ssse3_4xN(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
   // 10 bit version
   // a uint16 can hold maximum sum of 64 differences. We are good till 4x128 (but max is 64 atm)
@@ -77,16 +72,14 @@ unsigned int MAKE_FN(Sad10_ssse3_4xN)(const uint8_t *pSrc, int nSrcPitch, const 
   sum = _mm_hadd_epi32(sum, sum);
   unsigned int result = _mm_cvtsi128_si32(sum);
 
-#ifdef __AVX__
-  _mm256_zeroupper();
-#endif
-
   return result;
 }
 
-// Sad16_sse2_4xN_avx and Sad16_sse2_4xN_sse2
 template<int nBlkHeight>
-unsigned int MAKE_FN(Sad16_sse2_4xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse2")))
+#endif 
+unsigned int Sad16_sse2_4xN(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128();
@@ -117,10 +110,6 @@ unsigned int MAKE_FN(Sad16_sse2_4xN)(const uint8_t *pSrc, int nSrcPitch, const u
     pRef += nRefPitch * vert_inc;
   }
   // we have 4 integers for sum: a0 a1 a2 a3
-#ifdef __AVX__
-  __m128i sum1 = _mm_hadd_epi32(sum, sum); // a0+a1, a2+a3, (a0+a1, a2+a3)
-  sum = _mm_hadd_epi32(sum1, sum1); // a0+a1+a2+a3, (a0+a1+a2+a3,a0+a1+a2+a3,a0+a1+a2+a3)
-#else
   __m128i a0_a1 = _mm_unpacklo_epi32(sum, zero); // a0 0 a1 0
   __m128i a2_a3 = _mm_unpackhi_epi32(sum, zero); // a2 0 a3 0
   sum = _mm_add_epi32(a0_a1, a2_a3); // a0+a2, 0, a1+a3, 0
@@ -128,19 +117,17 @@ unsigned int MAKE_FN(Sad16_sse2_4xN)(const uint8_t *pSrc, int nSrcPitch, const u
   __m128i sum_hi = _mm_castps_si128(_mm_movehl_ps(_mm_castsi128_ps(sum), _mm_castsi128_ps(sum)));
   // __m128i sum_hi  _mm_unpackhi_epi64(sum, zero); // a1 + a3. 2 dwords right 
   sum = _mm_add_epi32(sum, sum_hi);  // a0 + a2 + a1 + a3
-#endif
   unsigned int result = _mm_cvtsi128_si32(sum);
-
-#ifdef __AVX__
-  _mm256_zeroupper();
-#endif
 
   return result;
 }
 
 // min: SSSE3
 template<int nBlkHeight>
-unsigned int MAKE_FN(Sad10_ssse3_6xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("ssse3")))
+#endif
+unsigned int Sad10_ssse3_6xN(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
   // 10 bit version
   // a uint16 can hold maximum sum of 64 differences. We are good till 6x64
@@ -186,15 +173,14 @@ unsigned int MAKE_FN(Sad10_ssse3_6xN)(const uint8_t *pSrc, int nSrcPitch, const 
   sum = _mm_hadd_epi32(sum, sum);
   unsigned int result = _mm_cvtsi128_si32(sum);
 
-#ifdef __AVX__
-  _mm256_zeroupper();
-#endif
-
   return result;
 }
 
 template<int nBlkHeight>
-unsigned int MAKE_FN(Sad16_sse2_6xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse2")))
+#endif
+unsigned int Sad16_sse2_6xN(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128();
@@ -219,10 +205,6 @@ unsigned int MAKE_FN(Sad16_sse2_6xN)(const uint8_t *pSrc, int nSrcPitch, const u
     pSrc += nSrcPitch;
     pRef += nRefPitch;
   }
-#ifdef __AVX__
-  __m128i sum1 = _mm_hadd_epi32(sum, sum);
-  sum = _mm_hadd_epi32(sum1, sum1);
-#else
   // at 16 bits: we have 4 integers for sum: a0 a1 a2 a3
   __m128i a0_a1 = _mm_unpacklo_epi32(sum, zero); // a0 0 a1 0
   __m128i a2_a3 = _mm_unpackhi_epi32(sum, zero); // a2 0 a3 0
@@ -231,12 +213,7 @@ unsigned int MAKE_FN(Sad16_sse2_6xN)(const uint8_t *pSrc, int nSrcPitch, const u
   __m128i sum_hi = _mm_castps_si128(_mm_movehl_ps(_mm_castsi128_ps(sum), _mm_castsi128_ps(sum)));
   // __m128i sum_hi  _mm_unpackhi_epi64(sum, zero); // a1 + a3. 2 dwords right 
   sum = _mm_add_epi32(sum, sum_hi);  // a0 + a2 + a1 + a3
-#endif
   unsigned int result = _mm_cvtsi128_si32(sum);
-
-#ifdef __AVX__
-  _mm256_zeroupper();
-#endif
 
   return result;
 }
@@ -245,7 +222,10 @@ unsigned int MAKE_FN(Sad16_sse2_6xN)(const uint8_t *pSrc, int nSrcPitch, const u
 
 // min: SSSE3
 template<int nBlkHeight>
-unsigned int MAKE_FN(Sad10_ssse3_8xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("ssse3")))
+#endif 
+unsigned int Sad10_ssse3_8xN(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
   // 10 bit version
   // a uint16 can hold maximum sum of 64 differences. We are good till 8x64
@@ -282,16 +262,15 @@ unsigned int MAKE_FN(Sad10_ssse3_8xN)(const uint8_t *pSrc, int nSrcPitch, const 
   sum = _mm_hadd_epi32(sum, sum);
   unsigned int result = _mm_cvtsi128_si32(sum);
 
-#ifdef __AVX__
-  _mm256_zeroupper();
-#endif
-
   return result;
 }
 
 
 template<int nBlkHeight>
-unsigned int MAKE_FN(Sad16_sse2_8xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse2")))
+#endif
+unsigned int Sad16_sse2_8xN(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128();
@@ -323,10 +302,6 @@ unsigned int MAKE_FN(Sad16_sse2_8xN)(const uint8_t *pSrc, int nSrcPitch, const u
     pSrc += nSrcPitch * vert_inc;
     pRef += nRefPitch * vert_inc;
   }
-#ifdef __AVX__
-  __m128i sum1 = _mm_hadd_epi32(sum, sum);
-  sum = _mm_hadd_epi32(sum1, sum1);
-#else
   // at 16 bits: we have 4 integers for sum: a0 a1 a2 a3
   __m128i a0_a1 = _mm_unpacklo_epi32(sum, zero); // a0 0 a1 0
   __m128i a2_a3 = _mm_unpackhi_epi32(sum, zero); // a2 0 a3 0
@@ -335,19 +310,17 @@ unsigned int MAKE_FN(Sad16_sse2_8xN)(const uint8_t *pSrc, int nSrcPitch, const u
   __m128i sum_hi = _mm_castps_si128(_mm_movehl_ps(_mm_castsi128_ps(sum), _mm_castsi128_ps(sum)));
   // __m128i sum_hi  _mm_unpackhi_epi64(sum, zero); // a1 + a3. 2 dwords right 
   sum = _mm_add_epi32(sum, sum_hi);  // a0 + a2 + a1 + a3
-#endif
   unsigned int result = _mm_cvtsi128_si32(sum);
-
-#ifdef __AVX__
-  _mm256_zeroupper();
-#endif
 
   return result;
 }
 
 // min: SSSE3
 template<int nBlkHeight>
-unsigned int MAKE_FN(Sad10_ssse3_12xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("ssse3")))
+#endif
+unsigned int Sad10_ssse3_12xN(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
   // 10 bit version
   // a uint16 can hold maximum sum of 64 differences. We are good till 16x32
@@ -406,15 +379,14 @@ unsigned int MAKE_FN(Sad10_ssse3_12xN)(const uint8_t *pSrc, int nSrcPitch, const
   sum = _mm_hadd_epi32(sum, sum);
   unsigned int result = _mm_cvtsi128_si32(sum);
 
-#ifdef __AVX__
-  _mm256_zeroupper();
-#endif
-
   return result;
 }
 
 template<int nBlkHeight>
-unsigned int MAKE_FN(Sad16_sse2_12xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse2")))
+#endif
+unsigned int Sad16_sse2_12xN(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128(); // 2x or 4x int is probably enough for 32x32
@@ -442,10 +414,6 @@ unsigned int MAKE_FN(Sad16_sse2_12xN)(const uint8_t *pSrc, int nSrcPitch, const 
     pSrc += nSrcPitch;
     pRef += nRefPitch;
   }
-#ifdef __AVX__
-  __m128i sum1 = _mm_hadd_epi32(sum, sum);
-  sum = _mm_hadd_epi32(sum1, sum1);
-#else
   // at 16 bits: we have 4 integers for sum: a0 a1 a2 a3
   __m128i a0_a1 = _mm_unpacklo_epi32(sum, zero); // a0 0 a1 0
   __m128i a2_a3 = _mm_unpackhi_epi32(sum, zero); // a2 0 a3 0
@@ -454,20 +422,18 @@ unsigned int MAKE_FN(Sad16_sse2_12xN)(const uint8_t *pSrc, int nSrcPitch, const 
   __m128i sum_hi = _mm_castps_si128(_mm_movehl_ps(_mm_castsi128_ps(sum), _mm_castsi128_ps(sum)));
   // __m128i sum_hi  _mm_unpackhi_epi64(sum, zero); // a1 + a3. 2 dwords right 
   sum = _mm_add_epi32(sum, sum_hi);  // a0 + a2 + a1 + a3
-#endif
 
   unsigned int result = _mm_cvtsi128_si32(sum);
-
-#ifdef __AVX__
-  _mm256_zeroupper();
-#endif
 
   return result;
 }
 
 // min: SSSE3
 template<int nBlkHeight>
-unsigned int MAKE_FN(Sad10_ssse3_16xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("ssse3")))
+#endif
+unsigned int Sad10_ssse3_16xN(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
   // 10 bit version
   // a uint16 can hold maximum sum of 64 differences. We are good till 16x32
@@ -524,16 +490,15 @@ unsigned int MAKE_FN(Sad10_ssse3_16xN)(const uint8_t *pSrc, int nSrcPitch, const
   sum = _mm_hadd_epi32(sum, sum);
   unsigned int result = _mm_cvtsi128_si32(sum);
 
-#ifdef __AVX__
-  _mm256_zeroupper();
-#endif
-
   return result;
 }
 
 
 template<int nBlkHeight>
-unsigned int MAKE_FN(Sad16_sse2_16xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse2")))
+#endif
+unsigned int Sad16_sse2_16xN(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128();
@@ -584,10 +549,6 @@ unsigned int MAKE_FN(Sad16_sse2_16xN)(const uint8_t *pSrc, int nSrcPitch, const 
     pSrc += nSrcPitch * vert_inc;
     pRef += nRefPitch * vert_inc;
   }
-#ifdef __AVX__
-  __m128i sum1 = _mm_hadd_epi32(sum, sum);
-  sum = _mm_hadd_epi32(sum1, sum1);
-#else
   // at 16 bits: we have 4 integers for sum: a0 a1 a2 a3
   __m128i a0_a1 = _mm_unpacklo_epi32(sum, zero); // a0 0 a1 0
   __m128i a2_a3 = _mm_unpackhi_epi32(sum, zero); // a2 0 a3 0
@@ -596,20 +557,18 @@ unsigned int MAKE_FN(Sad16_sse2_16xN)(const uint8_t *pSrc, int nSrcPitch, const 
   __m128i sum_hi = _mm_castps_si128(_mm_movehl_ps(_mm_castsi128_ps(sum), _mm_castsi128_ps(sum)));
   // __m128i sum_hi  _mm_unpackhi_epi64(sum, zero); // a1 + a3. 2 dwords right 
   sum = _mm_add_epi32(sum, sum_hi);  // a0 + a2 + a1 + a3
-#endif
 
   unsigned int result = _mm_cvtsi128_si32(sum);
-
-#ifdef __AVX__
-  _mm256_zeroupper();
-#endif
 
   return result;
 }
 
 // min: SSSE3
 template<int nBlkHeight>
-unsigned int MAKE_FN(Sad10_ssse3_24xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("ssse3")))
+#endif 
+unsigned int Sad10_ssse3_24xN(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
   // 10 bit version
   // a uint16 can hold maximum sum of 64 differences. We are good till approx 24x21 (3 lanes add together, 64/3 = 21)
@@ -676,15 +635,14 @@ unsigned int MAKE_FN(Sad10_ssse3_24xN)(const uint8_t *pSrc, int nSrcPitch, const
   sum = _mm_hadd_epi32(sum, sum);
   unsigned int result = _mm_cvtsi128_si32(sum);
 
-#ifdef __AVX__
-  _mm256_zeroupper();
-#endif
-
   return result;
 }
 
 template<int nBlkHeight>
-unsigned int MAKE_FN(Sad16_sse2_24xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse2")))
+#endif
+unsigned int Sad16_sse2_24xN(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128();
@@ -719,10 +677,8 @@ unsigned int MAKE_FN(Sad16_sse2_24xN)(const uint8_t *pSrc, int nSrcPitch, const 
     pSrc += nSrcPitch;
     pRef += nRefPitch;
   }
-#ifdef __AVX__
-  __m128i sum1 = _mm_hadd_epi32(sum, sum);
-  sum = _mm_hadd_epi32(sum1, sum1);
-#else
+  /*__m128i sum1 = _mm_hadd_epi32(sum, sum);
+  sum = _mm_hadd_epi32(sum1, sum1);*/
   // at 16 bits: we have 4 integers for sum: a0 a1 a2 a3
   __m128i a0_a1 = _mm_unpacklo_epi32(sum, zero); // a0 0 a1 0
   __m128i a2_a3 = _mm_unpackhi_epi32(sum, zero); // a2 0 a3 0
@@ -731,20 +687,18 @@ unsigned int MAKE_FN(Sad16_sse2_24xN)(const uint8_t *pSrc, int nSrcPitch, const 
   __m128i sum_hi = _mm_castps_si128(_mm_movehl_ps(_mm_castsi128_ps(sum), _mm_castsi128_ps(sum)));
   // __m128i sum_hi  _mm_unpackhi_epi64(sum, zero); // a1 + a3. 2 dwords right 
   sum = _mm_add_epi32(sum, sum_hi);  // a0 + a2 + a1 + a3
-#endif
 
   unsigned int result = _mm_cvtsi128_si32(sum);
-
-#ifdef __AVX__
-  _mm256_zeroupper();
-#endif
 
   return result;
 }
 
 // min: SSSE3
 template<int nBlkHeight>
-unsigned int MAKE_FN(Sad10_ssse3_32xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("ssse3")))
+#endif
+unsigned int Sad10_ssse3_32xN(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
   // 10 bit version
   // a uint16 can hold maximum sum of 64 differences.
@@ -821,15 +775,14 @@ unsigned int MAKE_FN(Sad10_ssse3_32xN)(const uint8_t *pSrc, int nSrcPitch, const
   sum = _mm_hadd_epi32(sum, sum);
   unsigned int result = _mm_cvtsi128_si32(sum);
 
-#ifdef __AVX__
-  _mm256_zeroupper();
-#endif
-
   return result;
 }
 
 template<int nBlkHeight>
-unsigned int MAKE_FN(Sad16_sse2_32xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse2")))
+#endif
+unsigned int Sad16_sse2_32xN(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128();
@@ -872,10 +825,6 @@ unsigned int MAKE_FN(Sad16_sse2_32xN)(const uint8_t *pSrc, int nSrcPitch, const 
     pSrc += nSrcPitch;
     pRef += nRefPitch;
   }
-#ifdef __AVX__
-  __m128i sum1 = _mm_hadd_epi32(sum, sum);
-  sum = _mm_hadd_epi32(sum1, sum1);
-#else
   // at 16 bits: we have 4 integers for sum: a0 a1 a2 a3
   __m128i a0_a1 = _mm_unpacklo_epi32(sum, zero); // a0 0 a1 0
   __m128i a2_a3 = _mm_unpackhi_epi32(sum, zero); // a2 0 a3 0
@@ -883,20 +832,18 @@ unsigned int MAKE_FN(Sad16_sse2_32xN)(const uint8_t *pSrc, int nSrcPitch, const 
                                      // sum here: two 32 bit partial result: sum1 0 sum2 0
   __m128i sum_hi = _mm_unpackhi_epi64(sum, zero); // a1 + a3. 2 dwords right 
   sum = _mm_add_epi32(sum, sum_hi);  // a0 + a2 + a1 + a3
-#endif
 
   unsigned int result = _mm_cvtsi128_si32(sum);
-
-#ifdef __AVX__
-  _mm256_zeroupper();
-#endif
 
   return result;
 }
 
 // min: SSSE3
 template<int nBlkHeight>
-unsigned int MAKE_FN(Sad10_ssse3_48xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("ssse3")))
+#endif
+unsigned int Sad10_ssse3_48xN(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
   // 10 bit version
   // a uint16 can hold maximum sum of 64 differences.
@@ -957,15 +904,14 @@ unsigned int MAKE_FN(Sad10_ssse3_48xN)(const uint8_t *pSrc, int nSrcPitch, const
   sum = _mm_hadd_epi32(sum, sum);
   unsigned int result = _mm_cvtsi128_si32(sum);
 
-#ifdef __AVX__
-  _mm256_zeroupper();
-#endif
-
   return result;
 }
 
 template<int nBlkHeight>
-unsigned int MAKE_FN(Sad16_sse2_48xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse2")))
+#endif
+unsigned int Sad16_sse2_48xN(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128();
@@ -996,10 +942,6 @@ unsigned int MAKE_FN(Sad16_sse2_48xN)(const uint8_t *pSrc, int nSrcPitch, const 
     pSrc += nSrcPitch;
     pRef += nRefPitch;
   }
-#ifdef __AVX__
-  __m128i sum1 = _mm_hadd_epi32(sum, sum);
-  sum = _mm_hadd_epi32(sum1, sum1);
-#else
   // at 16 bits: we have 4 integers for sum: a0 a1 a2 a3
   __m128i a0_a1 = _mm_unpacklo_epi32(sum, zero); // a0 0 a1 0
   __m128i a2_a3 = _mm_unpackhi_epi32(sum, zero); // a2 0 a3 0
@@ -1007,20 +949,18 @@ unsigned int MAKE_FN(Sad16_sse2_48xN)(const uint8_t *pSrc, int nSrcPitch, const 
                                      // sum here: two 32 bit partial result: sum1 0 sum2 0
   __m128i sum_hi = _mm_unpackhi_epi64(sum, zero); // a1 + a3. 2 dwords right 
   sum = _mm_add_epi32(sum, sum_hi);  // a0 + a2 + a1 + a3
-#endif
 
   unsigned int result = _mm_cvtsi128_si32(sum);
-
-#ifdef __AVX__
-  _mm256_zeroupper();
-#endif
 
   return result;
 }
 
 // min: SSSE3
 template<int nBlkHeight>
-unsigned int MAKE_FN(Sad10_ssse3_64xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("ssse3")))
+#endif 
+unsigned int Sad10_ssse3_64xN(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
   // 10 bit version
   // a uint16 can hold maximum sum of 64 differences.
@@ -1081,15 +1021,14 @@ unsigned int MAKE_FN(Sad10_ssse3_64xN)(const uint8_t *pSrc, int nSrcPitch, const
   sum = _mm_hadd_epi32(sum, sum);
   unsigned int result = _mm_cvtsi128_si32(sum);
 
-#ifdef __AVX__
-  _mm256_zeroupper();
-#endif
-
   return result;
 }
 
 template<int nBlkHeight>
-unsigned int MAKE_FN(Sad16_sse2_64xN)(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse2")))
+#endif
+unsigned int Sad16_sse2_64xN(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128();
@@ -1119,10 +1058,10 @@ unsigned int MAKE_FN(Sad16_sse2_64xN)(const uint8_t *pSrc, int nSrcPitch, const 
     pSrc += nSrcPitch;
     pRef += nRefPitch;
   }
-#ifdef __AVX__
+  /*
   __m128i sum1 = _mm_hadd_epi32(sum, sum);
   sum = _mm_hadd_epi32(sum1, sum1);
-#else
+  */
   // at 16 bits: we have 4 integers for sum: a0 a1 a2 a3
   __m128i a0_a1 = _mm_unpacklo_epi32(sum, zero); // a0 0 a1 0
   __m128i a2_a3 = _mm_unpackhi_epi32(sum, zero); // a2 0 a3 0
@@ -1130,15 +1069,8 @@ unsigned int MAKE_FN(Sad16_sse2_64xN)(const uint8_t *pSrc, int nSrcPitch, const 
                                      // sum here: two 32 bit partial result: sum1 0 sum2 0
   __m128i sum_hi = _mm_unpackhi_epi64(sum, zero); // a1 + a3. 2 dwords right 
   sum = _mm_add_epi32(sum, sum_hi);  // a0 + a2 + a1 + a3
-#endif
 
   unsigned int result = _mm_cvtsi128_si32(sum);
 
-#ifdef __AVX__
-  _mm256_zeroupper();
-#endif
-
   return result;
 }
-
-#undef MAKE_FN
