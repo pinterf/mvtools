@@ -21,7 +21,7 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
-
+#include "include/avs/config.h"
 #include	"conc/def.h"
 #include	"conc/fnc.h"
 #include	"conc/Interlocked.h"
@@ -80,9 +80,10 @@ inline void* InterlockedExchangePointer(void** ptr, void* value) {
 inline void* InterlockedCompareExchangePointer(void** ptr, void* newvalue, void* oldvalue) {
   return __sync_val_compare_and_swap(ptr, oldvalue, newvalue);
 }
-#endif // of #0
+#endif // if #0
 
 #if 0
+
 #if defined(_WIN32) && !defined(__clang__)
 #include <intrin.h>
 inline static int32_t interlockedIncrement(volatile int32_t* a) { return _InterlockedIncrement((long*)a); }
@@ -214,7 +215,11 @@ void	Interlocked::swap (Data128 &old, volatile Data128 &dest, const Data128 &exc
 	while (tmp != old);
 }
 
-
+// Error		'_InterlockedCompareExchange128' needs target feature cx16
+// fixme: still unresolved external for clang + x64: __sync_val_compare_and_swap
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("cx16")))
+#endif 
 void	Interlocked::cas (Data128 &old, volatile Data128 &dest, const Data128 &excg, const Data128 &comp)
 {
 	assert (&old != 0);
