@@ -28,6 +28,90 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 #include	<intrin.h>
 #include <stdint.h>
 
+#if 0
+info on gcc builtins
+http://www.rowleydownload.co.uk/arm/documentation/gnu/gcc/_005f_005fsync-Builtins.html
+
+// another set of replacement functions for gcc/clang
+// see apple code also https://github.com/bittorrent/libbtutils/blob/master/src/interlock.h
+
+inline LONG InterlockedAdd(LONG* ptr, LONG value) {
+  return __sync_add_and_fetch(ptr, value);
+}
+
+inline long long int InterlockedAdd64(long long int* ptr, long long int value) {
+  return __sync_add_and_fetch(ptr, value);
+}
+
+inline LONG InterlockedIncrement(LONG* ptr) {
+  return __sync_add_and_fetch(ptr, 1);
+}
+
+inline long long int InterlockedIncrement64(long long int* ptr) {
+  return __sync_add_and_fetch(ptr, 1);
+}
+
+inline LONG InterlockedDecrement(LONG* ptr) {
+  return __sync_sub_and_fetch(ptr, 1);
+}
+
+inline long long int InterlockedDecrement64(long long int* ptr) {
+  return __sync_sub_and_fetch(ptr, 1);
+}
+
+inline LONG InterlockedExchange(LONG* ptr, LONG value) {
+  return __sync_lock_test_and_set(ptr, value);
+}
+
+inline LONG InterlockedExchange64(long long int* ptr, long long int value) {
+  return __sync_lock_test_and_set(ptr, value);
+}
+
+#ifdef _LP64
+#define InterlockedAddPointer InterlockedAdd64
+#else
+#define InterlockedAddPointer InterlockedAdd
+#endif // _LP64
+
+inline void* InterlockedExchangePointer(void** ptr, void* value) {
+  return __sync_lock_test_and_set(ptr, value);
+}
+
+inline void* InterlockedCompareExchangePointer(void** ptr, void* newvalue, void* oldvalue) {
+  return __sync_val_compare_and_swap(ptr, oldvalue, newvalue);
+}
+#endif // of #0
+
+#if 0
+#if defined(_WIN32) && !defined(__clang__)
+#include <intrin.h>
+inline static int32_t interlockedIncrement(volatile int32_t* a) { return _InterlockedIncrement((long*)a); }
+inline static int64_t interlockedIncrement64(volatile int64_t* a) { return _InterlockedIncrement64(a); }
+inline static int32_t interlockedDecrement(volatile int32_t* a) { return _InterlockedDecrement((long*)a); }
+inline static int64_t interlockedDecrement64(volatile int64_t* a) { return _InterlockedDecrement64(a); }
+inline static int32_t interlockedCompareExchange(volatile int32_t* a, int32_t b, int32_t c) { return _InterlockedCompareExchange((long*)a, (long)b, (long)c); }
+inline static int64_t interlockedExchangeAdd64(volatile int64_t* a, int64_t b) { return _InterlockedExchangeAdd64(a, b); }
+inline static int64_t interlockedExchange64(volatile int64_t* a, int64_t b) { return _InterlockedExchange64(a, b); }
+inline static int64_t interlockedOr64(volatile int64_t* a, int64_t b) { return _InterlockedOr64(a, b); }
+#elif defined(__GCC_HAVE_SYNC_COMPARE_AND_SWAP_8)
+#include <xmmintrin.h>
+inline static int32_t interlockedIncrement(volatile int32_t* a) { return __sync_add_and_fetch(a, 1); }
+inline static int64_t interlockedIncrement64(volatile int64_t* a) { return __sync_add_and_fetch(a, 1); }
+inline static int32_t interlockedDecrement(volatile int32_t* a) { return __sync_add_and_fetch(a, -1); }
+inline static int64_t interlockedDecrement64(volatile int64_t* a) { return __sync_add_and_fetch(a, -1); }
+inline static int32_t interlockedCompareExchange(volatile int32_t* a, int32_t b, int32_t c) { return __sync_val_compare_and_swap(a, c, b); }
+inline static int64_t interlockedExchangeAdd64(volatile int64_t* a, int64_t b) { return __sync_fetch_and_add(a, b); }
+inline static int64_t interlockedExchange64(volatile int64_t* a, int64_t b) {
+  // PF: why should be have full memory barrier here using synchronize, and in other implementations why not?
+  __sync_synchronize();
+  return __sync_lock_test_and_set(a, b);
+}
+inline static int64_t interlockedOr64(volatile int64_t* a, int64_t b) { return __sync_fetch_and_or(a, b); }
+#else
+#error No implementation of atomic instructions
+#endif
+
+#endif // if 0
 
 #include	<cassert>
 
@@ -82,8 +166,8 @@ int64_t	Interlocked::swap (int64_t volatile &dest, int64_t excg)
 	{
 		push				ebx
 		mov				esi, [dest]
-		mov				ebx, [dword ptr excg    ]
-		mov				ecx, [dword ptr excg + 4]
+		mov				ebx, dword ptr[excg    ]
+		mov				ecx, dword ptr[excg + 4]
 
 	cas_loop:
 		mov				eax, [esi    ]
@@ -91,11 +175,11 @@ int64_t	Interlocked::swap (int64_t volatile &dest, int64_t excg)
 		lock cmpxchg8b	[esi]
 		jnz				cas_loop
 
-		mov				[dword ptr old    ], eax
-		mov				[dword ptr old + 4], edx
+		mov				dword ptr[old    ], eax
+		mov				dword ptr[old + 4], edx
 		pop				ebx
 	}
-
+  
 #endif	// conc_WORD_SIZE
 
 	return (old);
@@ -129,7 +213,6 @@ void	Interlocked::swap (Data128 &old, volatile Data128 &dest, const Data128 &exc
 	}
 	while (tmp != old);
 }
-
 
 
 void	Interlocked::cas (Data128 &old, volatile Data128 &dest, const Data128 &excg, const Data128 &comp)
