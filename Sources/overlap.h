@@ -20,7 +20,7 @@
 
 #include <map>
 #include <tuple>
-#include "copycode.h"
+#include "CopyCode.h"
 #include <cstdio>
 #include "def.h"
 

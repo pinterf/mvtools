@@ -35,7 +35,7 @@
 
  // SAD routined are same for SADFunctions.h and SADFunctions_avx.cpp
  // put it into a common h
-#include "sadfunctions16.h"
+#include "SADFunctions16.h"
 
 SADFunction* get_sad_function(int BlockX, int BlockY, int bits_per_pixel, arch_t arch);
 

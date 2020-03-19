@@ -20,7 +20,7 @@
 
 #include	"ClipFnc.h"
 #include "commonfunctions.h"
-#include "maskfun.h"
+#include "MaskFun.h"
 #include "MVCompensate.h"
 #include "MVFrame.h"
 #include	"MVGroupOfFrames.h"
