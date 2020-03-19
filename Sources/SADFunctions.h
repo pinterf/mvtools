@@ -98,7 +98,7 @@ SAD10_x264(4, 4, sse2);
 /* included from x264/x265 */
 // now the prefix is still x264 (see project properties preprocessor directives for sad-a.asm)
 // to be changed
-#define SAD_x264(blsizex, blsizey, type) extern "C" unsigned int __cdecl x264_pixel_sad_##blsizex##x##blsizey##_##type##(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+#define SAD_x264(blsizex, blsizey, type) extern "C" unsigned int __cdecl x264_pixel_sad_##blsizex##x##blsizey##_##type(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 
 // AVX2: Supported: 64x64, 64x48, 64x32, 64x16
 SAD_x264(64, 64, avx2);
@@ -234,7 +234,7 @@ MK_CFUNC(x264_pixel_ssd_4x4_mmx);
 #endif
 
 /* SATD: Sum of Absolute Transformed Differences, more sensitive to noise, frequency domain based - replacement to dct/SAD */
-#define SATD_SSE(blsizex, blsizey, type) extern "C" unsigned int __cdecl x264_pixel_satd_##blsizex##x##blsizey##_##type##(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+#define SATD_SSE(blsizex, blsizey, type) extern "C" unsigned int __cdecl x264_pixel_satd_##blsizex##x##blsizey##_##type(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 // Make extern functions from the satd pixel-a.asm
 // See function selector "get_satd_function" in SadFunctions.cpp
 // hard to find where they implemented, pixel-a.asm is macro-world :)
