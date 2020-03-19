@@ -71,8 +71,11 @@ class DCTFFTW
   template<typename pixel_t, int nBlkSizeX>
   void Bytes2Float_SSE2(const unsigned char * srcp8, int _pitch, float * realdata);
 
-  template <typename pixel_t, int nBlkSizeX, bool hasSSE4>
+  template <int nBlkSizeX>
   void Float2Bytes_SSE2(unsigned char * dstp0, int dst_pitch, float * realdata);
+
+  template <typename pixel_t, int nBlkSizeX>
+  void Float2Bytes_uint16_t_SSE4(unsigned char* dstp0, int dst_pitch, float* realdata);
 
   DCTFFTW::Float2BytesFunction get_floatToBytesPROC_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
   DCTFFTW::Float2BytesFunction floatToBytesPROC;

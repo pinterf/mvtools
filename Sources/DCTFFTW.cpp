@@ -80,12 +80,16 @@ DCTFFTW::DCTFFTW(int _sizex, int _sizey, HINSTANCE hinstFFTW3, int _dctmode, int
   bytesToFloatPROC = get_bytesToFloatPROC_function(sizex, sizey, pixelsize, arch);
   floatToBytesPROC = get_floatToBytesPROC_function(sizex, sizey, pixelsize, arch);
 
+  // original mvtools2 method used bit shifts (dctshift, dctshift0) for division to normalize AC and DC instead of floats
+  // since dctshift won't be exact when side2d is not power of 2, such as 12x12, proper AC and DC normalizing
+  // variables were introduced
   const int size2d = sizey*sizex;
 
   dctNormalize_AC = 0.70710678118654752440084436210485f; // 1/sqrt(2)
   dctNormalize_DC = 0.5f; // to be compatible with integer DCTINT8
 
   dctNormalize_AC = dctNormalize_AC / size2d; // combined 1/dctshift and 1/sqrt(2) 
+  // *4 scaling for the DC component
   dctNormalize_DC = dctNormalize_DC / 4.0f / size2d; // combined 1/dctshift0 (dctshift*4) and 1/2
 
   /*
@@ -93,18 +97,6 @@ DCTFFTW::DCTFFTW(int _sizex, int _sizey, HINSTANCE hinstFFTW3, int _dctmode, int
     DC: (int)(realdata[0] * 0.5f) >> dctshift0 + middlePixelValue;
     AC: (int)(realdata[x,y] * (1/sqrt(2)) >> dctshift + middlePixelValue
   */
-#if OLD_FFTW_DCT_DEBUG
-  // dctshift won't be exact when side2d is not power of 2, such as 12x12
-  int cursize = 1;
-  dctshift = 0;
-  while (cursize < size2d)
-  {
-    dctshift++;
-    cursize = (cursize << 1);
-  }
-
-  dctshift0 = dctshift + 2; // *4 scaling for the DC component
-#endif
 
   // FFTW plan construction and destruction are not thread-safe.
   // http://www.fftw.org/fftw3_doc/Thread-safety.html#Thread-safety
@@ -272,9 +264,12 @@ MV_FORCEINLINE __m128i _MM_PACKUS_EPI32_SRC_TRUEWORD(__m128i a, __m128i b)
 
 //  put source data to real array for FFT
 // only for sizex>=8!
-template <typename pixel_t, int nBlkSizeX, bool hasSSE4>
+// SSE2 only for 8 bits
+template <int nBlkSizeX>
 void DCTFFTW::Float2Bytes_SSE2(unsigned char * dstp0, int dst_pitch, float * realdata)
 {
+  using pixel_t = uint8_t;
+
   pixel_t *dstp = reinterpret_cast<pixel_t *>(dstp0);
   dst_pitch /= sizeof(pixel_t);
 
@@ -288,22 +283,10 @@ void DCTFFTW::Float2Bytes_SSE2(unsigned char * dstp0, int dst_pitch, float * rea
   const __m128i half = _mm_set1_epi32(middlePixelValue);
   const __m128 norm_factor = _mm_set1_ps(dctNormalize_AC);
 
-#if OLD_FFTW_DCT_DEBUG
-  // 2.7.38: replaced. Left here for historical reasons
-  constexpr auto coeff = 0.70710678118654752440084436210485f;
-  __m128 root2div2 = _mm_set_ps(coeff, coeff, coeff, coeff);
-#endif
-
-
   const float f = realdata[0] * dctNormalize_DC; // to be compatible with integer DCTINT8
   const int first_integ = std::min(maxPixelValue, std::max(0, int(f) + middlePixelValue)); // DC;
 
-#if OLD_FFTW_DCT_DEBUG
-  float f1 = realdata[0] * 0.5f; // to be compatible with integer DCTINT8
-  int first_integ1 = std::min(maxPixelValue, std::max(0, (int(f1) >> dctshift0) + middlePixelValue)); // DC;
-#endif
   // we update it at the end, till then, save pointer
-  // dstp[0] = std::min(maxPixelValue, std::max(0, (integ>>dctshift0) + middlePixelValue)); // DC
   pixel_t *dstp_save = dstp;
 
   // uint16_t target: 2x4 float = 32 bytes -> 8 uint16_t = 16 bytes
@@ -315,9 +298,6 @@ void DCTFFTW::Float2Bytes_SSE2(unsigned char * dstp0, int dst_pitch, float * rea
     __m128 src, mulres;
     __m128i intres, intres_lo, intres_hi;
     __m128i res07;
-#if OLD_FFTW_DCT_DEBUG
-    __m128i intres_lo1, intres_hi1, res07_1;
-#endif
     if (nBlkSizeX % 8 == 0) {
       for (int x = 0; x < nBlkSizeX; x += 8) // 8 pixels at a time
       {
@@ -326,13 +306,6 @@ void DCTFFTW::Float2Bytes_SSE2(unsigned char * dstp0, int dst_pitch, float * rea
         mulres = _mm_mul_ps(src, norm_factor); // (*0.7*/size2d)
         intres = _mm_cvtps_epi32(mulres); // 4 float -> 4xint  // integ = (int)f;
         intres_lo = _mm_add_epi32(intres, half); // (integ*0.7*/size2d) + middlePixelValue)
-#if OLD_FFTW_DCT_DEBUG
-        mulres = _mm_mul_ps(src, root2div2); // f = realdata[i]*coeff; // to be compatible with integer DCTINT8
-        intres = _mm_cvtps_epi32(mulres); // 4 float -> 4xint  // integ = (int)f;
-        intres = _mm_srai_epi32(intres, dctshift); // (integ>>dctshift)
-        intres_lo1 = _mm_add_epi32(intres, half); // (integ>>dctshift) + middlePixelValue)
-#endif
-
 
         // 4-7
         src = _mm_loadu_ps(reinterpret_cast<float *>(realdata + x + 4));
@@ -340,36 +313,9 @@ void DCTFFTW::Float2Bytes_SSE2(unsigned char * dstp0, int dst_pitch, float * rea
         intres = _mm_cvtps_epi32(mulres); // 4 float -> 4xint  // integ = (int)f;
         intres_hi = _mm_add_epi32(intres, half); // (integ*0.7*/size2d) + middlePixelValue)
 
-#if OLD_FFTW_DCT_DEBUG
-        mulres = _mm_mul_ps(src, root2div2); // f = realdata[i]*coeff; // to be compatible with integer DCTINT8
-        intres = _mm_cvtps_epi32(mulres); // 4 float -> 4xint  // integ = (int)f;
-        intres = _mm_srai_epi32(intres, dctshift); // (integ>>dctshift)
-        intres_hi1 = _mm_add_epi32(intres, half); // (integ>>dctshift) + middlePixelValue)
-#endif
-
-
-
-        __m128i u16res = hasSSE4 ? _mm_packus_epi32(intres_lo, intres_hi) : _MM_PACKUS_EPI32(intres_lo, intres_hi); // SSE4
-#if OLD_FFTW_DCT_DEBUG
-        __m128i u16res1 = hasSSE4 ? _mm_packus_epi32(intres_lo1, intres_hi1) : _MM_PACKUS_EPI32(intres_lo1, intres_hi1); // SSE4
-#endif
-        if (sizeof(pixel_t) == 2) {
-          res07 = _mm_min_epu16(u16res, max_pixel_value); // clamp to maxPixelValue
-#if OLD_FFTW_DCT_DEBUG
-          res07_1 = _mm_min_epu16(u16res1, max_pixel_value); // clamp to maxPixelValue
-#endif
-          _mm_storeu_si128(reinterpret_cast<__m128i *>(dstp + x), res07);
-        }
-        else {
-          res07 = _mm_packus_epi16(u16res, zero); // clamp to 255
-#if OLD_FFTW_DCT_DEBUG
-          res07_1 = _mm_packus_epi16(u16res1, zero); // clamp to 255
-          // seems that the old method with mul with float then shift as integer is usually different by 1 because of rounding
-          // the new method - dctshift is integrated into the float normalization constant - is better and even quicker, lackes the extra shifting
-#endif
-          _mm_storel_epi64(reinterpret_cast<__m128i *>(dstp + x), res07);
-        }
-        // dstp[x] = std::min(maxPixelValue, std::max(0, (integ>>dctshift) + middlePixelValue));
+        __m128i u16res = _MM_PACKUS_EPI32(intres_lo, intres_hi);
+        res07 = _mm_packus_epi16(u16res, zero); // clamp to 255
+        _mm_storel_epi64(reinterpret_cast<__m128i *>(dstp + x), res07);
       }
     }
     else if (nBlkSizeX % 4 == 0) {
@@ -381,17 +327,10 @@ void DCTFFTW::Float2Bytes_SSE2(unsigned char * dstp0, int dst_pitch, float * rea
         intres = _mm_cvtps_epi32(mulres); // 4 float -> 4xint  // integ = (int)f;
         intres_lo = _mm_add_epi32(intres, half); // (integ*0.7*/size2d) + middlePixelValue)
 
-        __m128i u16res = hasSSE4 ? _mm_packus_epi32(intres_lo, intres_lo) : _MM_PACKUS_EPI32(intres_lo, intres_lo); // SSE4
+        __m128i u16res = _MM_PACKUS_EPI32(intres_lo, intres_lo);
 
-        if (sizeof(pixel_t) == 2) {
-          res07 = _mm_min_epu16(u16res, max_pixel_value); // clamp to maxPixelValue
-          _mm_storel_epi64(reinterpret_cast<__m128i *>(dstp + x), res07);
-        }
-        else {
-          res07 = _mm_packus_epi16(u16res, zero); // clamp to 255
-          *(reinterpret_cast<uint32_t *>(dstp + x)) = _mm_cvtsi128_si32(res07);
-        }
-        // dstp[x] = std::min(maxPixelValue, std::max(0, (integ>>dctshift) + middlePixelValue));
+        res07 = _mm_packus_epi16(u16res, zero); // clamp to 255
+        *(reinterpret_cast<uint32_t *>(dstp + x)) = _mm_cvtsi128_si32(res07);
       }
     }
     else {
@@ -404,8 +343,103 @@ void DCTFFTW::Float2Bytes_SSE2(unsigned char * dstp0, int dst_pitch, float * rea
 
   // overwrite very first
   dstp_save[0] = (pixel_t)first_integ;
-
 }
+
+//  put source data to real array for FFT
+// only for sizex>=8!
+template <typename pixel_t, int nBlkSizeX>
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif 
+void DCTFFTW::Float2Bytes_uint16_t_SSE4(unsigned char* dstp0, int dst_pitch, float* realdata)
+{
+  pixel_t* dstp = reinterpret_cast<pixel_t*>(dstp0);
+  dst_pitch /= sizeof(pixel_t);
+
+  //sizex = nBlkSizeX; // X from template
+
+  const int floatpitch = nBlkSizeX;
+
+  const int maxPixelValue = (1 << bits_per_pixel) - 1; // 255/65535
+  const int middlePixelValue = 1 << (bits_per_pixel - 1);   // 128/32768 
+  const __m128i max_pixel_value = _mm_set1_epi16((short)(maxPixelValue));
+  const __m128i half = _mm_set1_epi32(middlePixelValue);
+  const __m128 norm_factor = _mm_set1_ps(dctNormalize_AC);
+
+  const float f = realdata[0] * dctNormalize_DC; // to be compatible with integer DCTINT8
+  const int first_integ = std::min(maxPixelValue, std::max(0, int(f) + middlePixelValue)); // DC;
+
+  // we update it at the end, till then, save pointer
+  pixel_t* dstp_save = dstp;
+
+  // uint16_t target: 2x4 float = 32 bytes -> 8 uint16_t = 16 bytes
+  // uint8_t target: 2x4 float = 32 bytes -> 8 uint8_t = 8 bytes
+  __m128i zero = _mm_setzero_si128();
+
+  for (int y = 0; y < sizey; y++)
+  {
+    __m128 src, mulres;
+    __m128i intres, intres_lo, intres_hi;
+    __m128i res07;
+    if (nBlkSizeX % 8 == 0) {
+      for (int x = 0; x < nBlkSizeX; x += 8) // 8 pixels at a time
+      {
+        // 0-3
+        src = _mm_loadu_ps(reinterpret_cast<float*>(realdata + x));
+        mulres = _mm_mul_ps(src, norm_factor); // (*0.7*/size2d)
+        intres = _mm_cvtps_epi32(mulres); // 4 float -> 4xint  // integ = (int)f;
+        intres_lo = _mm_add_epi32(intres, half); // (integ*0.7*/size2d) + middlePixelValue)
+
+        // 4-7
+        src = _mm_loadu_ps(reinterpret_cast<float*>(realdata + x + 4));
+        mulres = _mm_mul_ps(src, norm_factor); // (*0.7*/size2d)
+        intres = _mm_cvtps_epi32(mulres); // 4 float -> 4xint  // integ = (int)f;
+        intres_hi = _mm_add_epi32(intres, half); // (integ*0.7*/size2d) + middlePixelValue)
+
+        __m128i u16res = _mm_packus_epi32(intres_lo, intres_hi);
+        if (sizeof(pixel_t) == 2) {
+          res07 = _mm_min_epu16(u16res, max_pixel_value); // clamp to maxPixelValue
+          _mm_storeu_si128(reinterpret_cast<__m128i*>(dstp + x), res07);
+        }
+        else {
+          res07 = _mm_packus_epi16(u16res, zero); // clamp to 255
+          _mm_storel_epi64(reinterpret_cast<__m128i*>(dstp + x), res07);
+        }
+      }
+    }
+    else if (nBlkSizeX % 4 == 0) {
+      for (int x = 0; x < nBlkSizeX; x += 4) // 4 pixels at a time
+      {
+        // 0-3
+        src = _mm_loadu_ps(reinterpret_cast<float*>(realdata + x));
+        mulres = _mm_mul_ps(src, norm_factor); // (*0.7*/size2d)
+        intres = _mm_cvtps_epi32(mulres); // 4 float -> 4xint  // integ = (int)f;
+        intres_lo = _mm_add_epi32(intres, half); // (integ*0.7*/size2d) + middlePixelValue)
+
+        __m128i u16res = _mm_packus_epi32(intres_lo, intres_lo);
+
+        if (sizeof(pixel_t) == 2) {
+          res07 = _mm_min_epu16(u16res, max_pixel_value); // clamp to maxPixelValue
+          _mm_storel_epi64(reinterpret_cast<__m128i*>(dstp + x), res07);
+        }
+        else {
+          res07 = _mm_packus_epi16(u16res, zero); // clamp to 255
+          *(reinterpret_cast<uint32_t*>(dstp + x)) = _mm_cvtsi128_si32(res07);
+        }
+      }
+    }
+    else {
+      assert(0);
+    }
+
+    dstp += dst_pitch;
+    realdata += floatpitch;
+  }
+
+  // overwrite very first
+  dstp_save[0] = (pixel_t)first_integ;
+}
+
 
 template <typename pixel_t>
 void DCTFFTW::Float2Bytes_C(unsigned char * dstp0, int dst_pitch, float * realdata)
@@ -451,40 +485,32 @@ DCTFFTW::Float2BytesFunction DCTFFTW::get_floatToBytesPROC_function(int BlockX, 
   // SSE4
   
   // uint8_t
-  func[make_tuple(64, 1, USE_SSE41)] = &DCTFFTW::Float2Bytes_SSE2<uint8_t, 64, true>;
-  func[make_tuple(48, 1, USE_SSE41)] = &DCTFFTW::Float2Bytes_SSE2<uint8_t, 48, true>;
-  func[make_tuple(32, 1, USE_SSE41)] = &DCTFFTW::Float2Bytes_SSE2<uint8_t, 32, true>;
-  func[make_tuple(24, 1, USE_SSE41)] = &DCTFFTW::Float2Bytes_SSE2<uint8_t, 24, true>;
-  func[make_tuple(16, 1, USE_SSE41)] = &DCTFFTW::Float2Bytes_SSE2<uint8_t, 16, true>;
-  func[make_tuple(12, 1, USE_SSE41)] = &DCTFFTW::Float2Bytes_SSE2<uint8_t, 12, true>; // mod4 allowed
-  func[make_tuple(8, 1, USE_SSE41)] = &DCTFFTW::Float2Bytes_SSE2<uint8_t, 8, true>;
+  func[make_tuple(64, 1, USE_SSE41)] = &DCTFFTW::Float2Bytes_uint16_t_SSE4<uint8_t, 64>;
+  func[make_tuple(48, 1, USE_SSE41)] = &DCTFFTW::Float2Bytes_uint16_t_SSE4<uint8_t, 48>;
+  func[make_tuple(32, 1, USE_SSE41)] = &DCTFFTW::Float2Bytes_uint16_t_SSE4<uint8_t, 32>;
+  func[make_tuple(24, 1, USE_SSE41)] = &DCTFFTW::Float2Bytes_uint16_t_SSE4<uint8_t, 24>;
+  func[make_tuple(16, 1, USE_SSE41)] = &DCTFFTW::Float2Bytes_uint16_t_SSE4<uint8_t, 16>;
+  func[make_tuple(12, 1, USE_SSE41)] = &DCTFFTW::Float2Bytes_uint16_t_SSE4<uint8_t, 12>; // mod4 allowed
+  func[make_tuple(8, 1, USE_SSE41)] = &DCTFFTW::Float2Bytes_uint16_t_SSE4<uint8_t, 8>;
   // uint16_t
-  func[make_tuple(64, 2, USE_SSE41)] = &DCTFFTW::Float2Bytes_SSE2<uint16_t, 64, true>;
-  func[make_tuple(48, 2, USE_SSE41)] = &DCTFFTW::Float2Bytes_SSE2<uint16_t, 48, true>;
-  func[make_tuple(32, 2, USE_SSE41)] = &DCTFFTW::Float2Bytes_SSE2<uint16_t, 32, true>;
-  func[make_tuple(24, 2, USE_SSE41)] = &DCTFFTW::Float2Bytes_SSE2<uint16_t, 24, true>;
-  func[make_tuple(16, 2, USE_SSE41)] = &DCTFFTW::Float2Bytes_SSE2<uint16_t, 16, true>;
-  func[make_tuple(12, 2, USE_SSE41)] = &DCTFFTW::Float2Bytes_SSE2<uint16_t, 12, true>; // mod4 allowed
-  func[make_tuple(8, 2, USE_SSE41)] = &DCTFFTW::Float2Bytes_SSE2<uint16_t, 8, true>;
+  func[make_tuple(64, 2, USE_SSE41)] = &DCTFFTW::Float2Bytes_uint16_t_SSE4<uint16_t, 64>;
+  func[make_tuple(48, 2, USE_SSE41)] = &DCTFFTW::Float2Bytes_uint16_t_SSE4<uint16_t, 48>;
+  func[make_tuple(32, 2, USE_SSE41)] = &DCTFFTW::Float2Bytes_uint16_t_SSE4<uint16_t, 32>;
+  func[make_tuple(24, 2, USE_SSE41)] = &DCTFFTW::Float2Bytes_uint16_t_SSE4<uint16_t, 24>;
+  func[make_tuple(16, 2, USE_SSE41)] = &DCTFFTW::Float2Bytes_uint16_t_SSE4<uint16_t, 16>;
+  func[make_tuple(12, 2, USE_SSE41)] = &DCTFFTW::Float2Bytes_uint16_t_SSE4<uint16_t, 12>; // mod4 allowed
+  func[make_tuple(8, 2, USE_SSE41)] = &DCTFFTW::Float2Bytes_uint16_t_SSE4<uint16_t, 8>;
 
   // SSE2
 
   // uint8_t
-  func[make_tuple(64, 1, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<uint8_t, 64, false>;
-  func[make_tuple(48, 1, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<uint8_t, 48, false>;
-  func[make_tuple(32, 1, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<uint8_t, 32, false>;
-  func[make_tuple(24, 1, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<uint8_t, 24, false>;
-  func[make_tuple(16, 1, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<uint8_t, 16, false>;
-  func[make_tuple(12, 1, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<uint8_t, 12, false>; // mod4 allowed
-  func[make_tuple(8, 1, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<uint8_t, 8, false>;
-  // uint16_t
-  func[make_tuple(64, 2, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<uint16_t, 64, false>;
-  func[make_tuple(48, 2, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<uint16_t, 48, false>;
-  func[make_tuple(32, 2, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<uint16_t, 32, false>;
-  func[make_tuple(24, 2, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<uint16_t, 24, false>;
-  func[make_tuple(16, 2, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<uint16_t, 16, false>;
-  func[make_tuple(12, 2, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<uint16_t, 12, false>; // mod4 allowed
-  func[make_tuple(8, 2, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<uint16_t, 8, false>;
+  func[make_tuple(64, 1, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<64>;
+  func[make_tuple(48, 1, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<48>;
+  func[make_tuple(32, 1, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<32>;
+  func[make_tuple(24, 1, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<24>;
+  func[make_tuple(16, 1, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<16>;
+  func[make_tuple(12, 1, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<12>; // mod4 allowed
+  func[make_tuple(8, 1, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<8>;
   
   DCTFFTW::Float2BytesFunction result = nullptr;
   arch_t archlist[] = { USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
