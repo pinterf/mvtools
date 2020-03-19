@@ -133,7 +133,6 @@
     <ClCompile Include="MVCompensate.cpp">
       <Filter>Filters</Filter>
     </ClCompile>
-    <ClCompile Include="SADFunctions_avx.cpp" />
     <ClCompile Include="SADFunctions_avx2.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -410,7 +409,6 @@
     <ClInclude Include="include\avisynth.h">
       <Filter>Include</Filter>
     </ClInclude>
-    <ClInclude Include="SADFunctions_avx.h" />
     <ClInclude Include="SADFunctions_avx2.h" />
     <ClInclude Include="SADFunctions16.h" />
   </ItemGroup>
