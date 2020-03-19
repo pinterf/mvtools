@@ -8,7 +8,9 @@
 // 20170117: global variables for VfW output OPT_xxxx
 // 20170310: new MT mode: MT_SPECIAL_MT
 // 20171103: (test with SIZETMOD define: Videoframe offsets to size_t, may affect x64)
-// 20171207: C++ Standard Conformance (AVS_LinkCall_Void instead of AVS_LinkCall)
+// 20171207: C++ Standard Conformance (no change for plugin writers)
+// 20180525: AVS_UNUSED define to supress parameter not used warnings
+// 20200305: ScriptEnvironment::VSprintf parameter (void *) changed back to va_list
 
 // http://www.avisynth.org
 
@@ -44,16 +46,23 @@
 // Avisynth, such as 3rd-party filters, import and export plugins, or
 // graphical user interfaces.
 
+#ifdef AVS_POSIX
+# include "avs/posix.h"
+#endif
 
 
 
 #ifndef __AVISYNTH_6_H__
 #define __AVISYNTH_6_H__
 
-#include <avs/config.h>
-#include <avs/capi.h>
-#include <avs/types.h>
+#include "avs/config.h"
+#include "avs/capi.h"
+#include "avs/types.h"
 
+#if defined(AVS_POSIX)
+#define __stdcall
+#define __cdecl
+#endif
 
 enum { AVISYNTH_INTERFACE_VERSION = 6 };
 
@@ -61,7 +70,7 @@ enum { AVISYNTH_INTERFACE_VERSION = 6 };
 /* Compiler-specific crap */
 
 // Tell MSVC to stop precompiling here
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && !defined(__clang__)
   #pragma hdrstop
 #endif
 
@@ -195,10 +204,10 @@ struct AVS_Linkage {
   int     (VideoInfo::*BytesFromPixels)(int pixels) const;
   int     (VideoInfo::*RowSize)(int plane) const;
   int     (VideoInfo::*BMPSize)() const;
-  __int64 (VideoInfo::*AudioSamplesFromFrames)(int frames) const;
-  int     (VideoInfo::*FramesFromAudioSamples)(__int64 samples) const;
-  __int64 (VideoInfo::*AudioSamplesFromBytes)(__int64 bytes) const;
-  __int64 (VideoInfo::*BytesFromAudioSamples)(__int64 samples) const;
+  int64_t (VideoInfo::*AudioSamplesFromFrames)(int frames) const;
+  int     (VideoInfo::*FramesFromAudioSamples)(int64_t samples) const;
+  int64_t (VideoInfo::*AudioSamplesFromBytes)(int64_t bytes) const;
+  int64_t (VideoInfo::*BytesFromAudioSamples)(int64_t samples) const;
   int     (VideoInfo::*AudioChannels)() const;
   int     (VideoInfo::*SampleType)() const;
   bool    (VideoInfo::*IsSampleType)(int testtype) const;
@@ -607,7 +616,7 @@ enum {
 
   int audio_samples_per_second;   // 0 means no audio
   int sample_type;                // as of 2.5
-  __int64 num_audio_samples;      // changed as of 2.5
+  int64_t num_audio_samples;      // changed as of 2.5
   int nchannels;                  // as of 2.5
 
   // Imagetype properties
@@ -660,10 +669,10 @@ enum {
   int RowSize(int plane = 0) const AVS_BakedCode(return AVS_LinkCall(RowSize)(plane))
   int BMPSize() const AVS_BakedCode(return AVS_LinkCall(BMPSize)())
 
-  __int64 AudioSamplesFromFrames(int frames) const AVS_BakedCode(return AVS_LinkCall(AudioSamplesFromFrames)(frames))
-  int FramesFromAudioSamples(__int64 samples) const AVS_BakedCode(return AVS_LinkCall(FramesFromAudioSamples)(samples))
-  __int64 AudioSamplesFromBytes(__int64 bytes) const AVS_BakedCode(return AVS_LinkCall(AudioSamplesFromBytes)(bytes))
-  __int64 BytesFromAudioSamples(__int64 samples) const AVS_BakedCode(return AVS_LinkCall(BytesFromAudioSamples)(samples))
+  int64_t AudioSamplesFromFrames(int frames) const AVS_BakedCode(return AVS_LinkCall(AudioSamplesFromFrames)(frames))
+  int FramesFromAudioSamples(int64_t samples) const AVS_BakedCode(return AVS_LinkCall(FramesFromAudioSamples)(samples))
+  int64_t AudioSamplesFromBytes(int64_t bytes) const AVS_BakedCode(return AVS_LinkCall(AudioSamplesFromBytes)(bytes))
+  int64_t BytesFromAudioSamples(int64_t samples) const AVS_BakedCode(return AVS_LinkCall(BytesFromAudioSamples)(samples))
   int AudioChannels() const AVS_BakedCode(return AVS_LinkCall(AudioChannels)())
   int SampleType() const AVS_BakedCode(return AVS_LinkCall(SampleType)())
   bool IsSampleType(int testtype) const AVS_BakedCode(return AVS_LinkCall(IsSampleType)(testtype))
@@ -965,7 +974,7 @@ public:
   virtual int __stdcall GetVersion() { return AVISYNTH_INTERFACE_VERSION; }
   virtual PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env) = 0;
   virtual bool __stdcall GetParity(int n) = 0;  // return field parity if field_based, else parity of first field in frame
-  virtual void __stdcall GetAudio(void* buf, __int64 start, __int64 count, IScriptEnvironment* env) = 0;  // start and count are in samples
+  virtual void __stdcall GetAudio(void* buf, int64_t start, int64_t count, IScriptEnvironment* env) = 0;  // start and count are in samples
   /* Need to check GetVersion first, pre v5 will return random crap from EAX reg. */
   virtual int __stdcall SetCacheHints(int cachehints,int frame_range) = 0 ;  // We do not pass cache requests upwards, only to the next filter.
   virtual const VideoInfo& __stdcall GetVideoInfo() = 0;
@@ -1053,7 +1062,7 @@ public:
   AVSValue(const PClip& c) AVS_BakedCode( AVS_LinkCall_Void(AVSValue_CONSTRUCTOR2)(c) )
   AVSValue(bool b) AVS_BakedCode( AVS_LinkCall_Void(AVSValue_CONSTRUCTOR3)(b) )
   AVSValue(int i) AVS_BakedCode( AVS_LinkCall_Void(AVSValue_CONSTRUCTOR4)(i) )
-//  AVSValue(__int64 l);
+//  AVSValue(int64_t l);
   AVSValue(float f) AVS_BakedCode( AVS_LinkCall_Void(AVSValue_CONSTRUCTOR5)(f) )
   AVSValue(double f) AVS_BakedCode( AVS_LinkCall_Void(AVSValue_CONSTRUCTOR6)(f) )
   AVSValue(const char* s) AVS_BakedCode( AVS_LinkCall_Void(AVSValue_CONSTRUCTOR7)(s) )
@@ -1108,7 +1117,7 @@ private:
     const AVSValue* array;
     #ifdef X86_64
     // if ever, only x64 will support. It breaks struct size on 32 bit
-    __int64 longlong; // 8 bytes
+    int64_t longlong; // 8 bytes
     double double_pt; // 8 bytes
     #endif
   };
@@ -1157,6 +1166,8 @@ public:
 #undef AVS_LinkCall
 #undef AVS_BakedCode
 
+#define AVS_UNUSED(x) (void)(x)
+
 // instantiable null filter
 class GenericVideoFilter : public IClip {
 protected:
@@ -1165,16 +1176,16 @@ protected:
 public:
   GenericVideoFilter(PClip _child) : child(_child) { vi = child->GetVideoInfo(); }
   PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env) { return child->GetFrame(n, env); }
-  void __stdcall GetAudio(void* buf, __int64 start, __int64 count, IScriptEnvironment* env) { child->GetAudio(buf, start, count, env); }
+  void __stdcall GetAudio(void* buf, int64_t start, int64_t count, IScriptEnvironment* env) { child->GetAudio(buf, start, count, env); }
   const VideoInfo& __stdcall GetVideoInfo() { return vi; }
   bool __stdcall GetParity(int n) { return child->GetParity(n); }
-  int __stdcall SetCacheHints(int cachehints,int frame_range) { return 0; } ;  // We do not pass cache requests upwards, only to the next filter.
+  int __stdcall SetCacheHints(int cachehints, int frame_range) { AVS_UNUSED(cachehints); AVS_UNUSED(frame_range); return 0; };  // We do not pass cache requests upwards, only to the next filter.
 };
 
 
 
 
-#include <avs/cpuid.h>
+#include "avs/cpuid.h"
 
 
 
@@ -1187,9 +1198,14 @@ public:
   virtual char* __stdcall SaveString(const char* s, int length = -1) = 0;
   virtual char* __stdcall Sprintf(const char* fmt, ...) = 0;
   // note: val is really a va_list; I hope everyone typedefs va_list to a pointer
-  virtual char* __stdcall VSprintf(const char* fmt, void* val) = 0;
+  // 20200305: (void *) changed back to va_list
+  virtual char* __stdcall VSprintf(const char* fmt, va_list val) = 0;
 
+#ifdef AVS_WINDOWS
   __declspec(noreturn) virtual void __stdcall ThrowError(const char* fmt, ...) = 0;
+#else
+  virtual void __stdcall ThrowError(const char* fmt, ...) = 0;
+#endif
 
   class NotFound /*exception*/ {};  // thrown by Invoke and GetVar
 
@@ -1368,9 +1384,12 @@ AVSC_API(IScriptEnvironment*, CreateScriptEnvironment)(int version = AVISYNTH_IN
 #define VARNAME_Enable_PlanarToPackedRGB "OPT_Enable_PlanarToPackedRGB" // AVS+ convert Planar RGB to packed RGB (VfW)
 
 // C exports
-#include <avs/capi.h>
+#include "avs/capi.h"
 AVSC_API(IScriptEnvironment2*, CreateScriptEnvironment2)(int version = AVISYNTH_INTERFACE_VERSION);
 
+#ifndef BUILDING_AVSCORE
+#undef AVS_UNUSED
+#endif
 
 #pragma pack(pop)
 

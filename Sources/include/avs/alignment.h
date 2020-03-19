@@ -52,9 +52,9 @@
 #include <cassert>
 #include <cstdlib>
 #include <cstdint>
-#include <avs/config.h>
+#include "config.h"
 
-#if defined(MSVC)
+#if defined(MSVC) && _MSC_VER<1400
     // needed for VS2013, otherwise C++11 'alignas' works
     #define avs_alignas(x) __declspec(align(x))
 #else
