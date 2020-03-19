@@ -25,6 +25,7 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 #include	"AvstpWrapper.h"
 
 #include	<cassert>
+#include <algorithm>
 
 
 
