@@ -35,8 +35,8 @@ class GroupOfPlanes
 	int            nFlags;
 	int            nOverlapX;
 	int            nOverlapY;
-	int            yRatioUV;
-    int            xRatioUV; // PF 160729
+  int            xRatioUV; // PF 160729
+  int            yRatioUV;
     int           chromaSADScale; // P.F. 170504
     int            pixelsize; // PF 160729
     int bits_per_pixel;

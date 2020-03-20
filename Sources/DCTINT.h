@@ -32,18 +32,7 @@ class DCTINT
 
   short * pWorkArea; // 64 + 64 words for I/O block and internal buffer
 
-//	int sizex;
-//	int sizey;
-//	int dctmode;
-  int dctshift;
-  int dctshift0;
-
-
 public:
-
-
-//	float * fRef;
-//	float * fRefDCT;
 
   DCTINT(int _sizex, int _sizey, int _dctmode);
   ~DCTINT();

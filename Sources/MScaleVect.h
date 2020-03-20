@@ -43,7 +43,7 @@ public:
 	MScaleVect( PClip Child, double ScaleX, double ScaleY, ScaleMode Mode, bool Flip, bool AdjustSubpel, int Bits, IScriptEnvironment* Env );
 
 	// Filter operation
-	PVideoFrame __stdcall GetFrame( int FrameNum, IScriptEnvironment* Env );
+	PVideoFrame __stdcall GetFrame( int FrameNum, IScriptEnvironment* Env ) override;
 
   int __stdcall SetCacheHints(int cachehints, int frame_range) override {
     return cachehints == CACHE_GET_MTMODE ? MT_MULTI_INSTANCE : 0;

@@ -32,7 +32,7 @@ private:
   bool planar;
   bool blend;
 
-  __int64 fa, fb;
+  int64_t fa, fb;
 
   int nSuperModeYUV;
 
@@ -86,9 +86,9 @@ private:
   OverlapsFunction *OVERSCHROMA16; // 161115
   OverlapsFunction *OVERSLUMA32;
   OverlapsFunction *OVERSCHROMA32;
-  unsigned short * DstShort;
-  unsigned short * DstShortU;
-  unsigned short * DstShortV;
+  uint16_t * DstShort;
+  uint16_t * DstShortU;
+  uint16_t * DstShortV;
   int dstShortPitch;
   int dstShortPitchUV;
 
@@ -116,7 +116,7 @@ public:
     IScriptEnvironment* env
   );
   ~MVBlockFps();
-  PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
+  PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env) override;
 
   int __stdcall SetCacheHints(int cachehints, int frame_range) override {
     return cachehints == CACHE_GET_MTMODE ? MT_MULTI_INSTANCE : 0;

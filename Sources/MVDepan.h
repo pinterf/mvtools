@@ -91,7 +91,7 @@ public:
   MVDepan(PClip _child, PClip mvs, PClip _mask, bool _zoom, bool _rot, float _pixaspect,
     float _error, bool _info, const char * _logfilename, float _wrong, float _zerow, int _range, sad_t nSCD1, int nSCD2, bool isse, bool _planar, IScriptEnvironment* env);
   ~MVDepan();
-  PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
+  PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env) override;
 
   int __stdcall SetCacheHints(int cachehints, int frame_range) override {
     return cachehints == CACHE_GET_MTMODE ? (logfile == nullptr ? MT_MULTI_INSTANCE : MT_SERIALIZED) : 0;

@@ -55,7 +55,7 @@ MVFlowInter::MVFlowInter(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, in
   int nSuperModeYUV = params.nModeYUV;
   int nSuperLevels = params.nLevels;
   int nSuperWidth = super->GetVideoInfo().width; // really super
-  int nSuperHeight = super->GetVideoInfo().height;
+  //int nSuperHeight = super->GetVideoInfo().height;
 
   if (!super->GetVideoInfo().IsSameColorspace(child->GetVideoInfo()))
     env->ThrowError("MFlowInter: input and super clip format is different");

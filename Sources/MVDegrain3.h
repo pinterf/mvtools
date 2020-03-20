@@ -107,7 +107,7 @@ private:
 
   unsigned char *tmpBlock;
   unsigned char *tmpBlockLsb;	// Not allocated, it's just a reference to a part of the tmpBlock area (or 0 if no LSB)
-  unsigned short * DstShort;
+  uint16_t * DstShort;
   int dstShortPitch;
   int * DstInt;
   int dstIntPitch;
@@ -128,7 +128,7 @@ public:
 #endif
     IScriptEnvironment* env_ptr);
   ~MVDegrainX();
-  PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
+  PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env) override;
 
   int __stdcall SetCacheHints(int cachehints, int frame_range) override {
     return cachehints == CACHE_GET_MTMODE ? MT_MULTI_INSTANCE : 0;

@@ -456,18 +456,18 @@ PVideoFrame __stdcall MVCompensate::GetFrame(int n, IScriptEnvironment* env_ptr)
       if (pixelsize_super == 1) {
         // nWidth_B and nHeight_B, right and bottom was blended
         if ((cpuFlags & CPUF_SSE2) != 0) {
-          Short2Bytes_sse2(pDst[0], nDstPitches[0], (unsigned short *)DstShort, dstShortPitch, nWidth_B, nHeight_B);
+          Short2Bytes_sse2(pDst[0], nDstPitches[0], (uint16_t *)DstShort, dstShortPitch, nWidth_B, nHeight_B);
           if (pPlanes[1])
-            Short2Bytes_sse2(pDst[1], nDstPitches[1], (unsigned short *)DstShortU, dstShortPitchUV, nWidth_B >> nLogxRatioUVs[1], nHeight_B >> nLogyRatioUVs[1]);
+            Short2Bytes_sse2(pDst[1], nDstPitches[1], (uint16_t *)DstShortU, dstShortPitchUV, nWidth_B >> nLogxRatioUVs[1], nHeight_B >> nLogyRatioUVs[1]);
           if (pPlanes[2])
-            Short2Bytes_sse2(pDst[2], nDstPitches[2], (unsigned short *)DstShortV, dstShortPitchUV, nWidth_B >> nLogxRatioUVs[2], nHeight_B >> nLogyRatioUVs[2]);
+            Short2Bytes_sse2(pDst[2], nDstPitches[2], (uint16_t *)DstShortV, dstShortPitchUV, nWidth_B >> nLogxRatioUVs[2], nHeight_B >> nLogyRatioUVs[2]);
         }
         else {
-          Short2Bytes(pDst[0], nDstPitches[0], (unsigned short *)DstShort, dstShortPitch, nWidth_B, nHeight_B);
+          Short2Bytes(pDst[0], nDstPitches[0], (uint16_t *)DstShort, dstShortPitch, nWidth_B, nHeight_B);
           if (pPlanes[1])
-            Short2Bytes(pDst[1], nDstPitches[1], (unsigned short *)DstShortU, dstShortPitchUV, nWidth_B >> nLogxRatioUVs[1], nHeight_B >> nLogyRatioUVs[1]);
+            Short2Bytes(pDst[1], nDstPitches[1], (uint16_t *)DstShortU, dstShortPitchUV, nWidth_B >> nLogxRatioUVs[1], nHeight_B >> nLogyRatioUVs[1]);
           if (pPlanes[2])
-            Short2Bytes(pDst[2], nDstPitches[2], (unsigned short *)DstShortV, dstShortPitchUV, nWidth_B >> nLogxRatioUVs[2], nHeight_B >> nLogyRatioUVs[2]);
+            Short2Bytes(pDst[2], nDstPitches[2], (uint16_t *)DstShortV, dstShortPitchUV, nWidth_B >> nLogxRatioUVs[2], nHeight_B >> nLogyRatioUVs[2]);
         }
       }
       else if (pixelsize_super == 2)
@@ -810,14 +810,14 @@ void	MVCompensate::compensate_slice_overlap(int y_beg, int y_end)
         if (pixelsize_super == 1) {
           // luma
           OVERSLUMA(
-            (unsigned short *)(pDstShorts[0] + xx), dstShortPitches[0],
+            (uint16_t *)(pDstShorts[0] + xx), dstShortPitches[0],
             pPlanes[0]->GetPointer(blx, bly), pPlanes[0]->GetPitch(),
             winOver, nBlkSizeX
           );
           for (int i = 1; i < planecount; i++) {
             if (pPlanes[i])
               OVERSCHROMA(
-              (unsigned short *)(pDstShorts[i] + (xx >> nLogxRatioUVs[i])), dstShortPitches[i],
+              (uint16_t *)(pDstShorts[i] + (xx >> nLogxRatioUVs[i])), dstShortPitches[i],
                 pPlanes[i]->GetPointer(blx >> nLogxRatioUVs[i], bly >> nLogyRatioUVs[i]), pPlanes[i]->GetPitch(),
                 winOverUV, nBlkSizeX >> nLogxRatioUVs[i]
               );
@@ -826,7 +826,7 @@ void	MVCompensate::compensate_slice_overlap(int y_beg, int y_end)
         else if (pixelsize_super == 2) {
           // luma
           OVERSLUMA16(
-            (unsigned short *)(pDstShorts[0] + xx), dstShortPitches[0],
+            (uint16_t *)(pDstShorts[0] + xx), dstShortPitches[0],
             pPlanes[0]->GetPointer(blx, bly), pPlanes[0]->GetPitch(),
             winOver, nBlkSizeX
           );
@@ -834,7 +834,7 @@ void	MVCompensate::compensate_slice_overlap(int y_beg, int y_end)
           for (int i = 1; i < planecount; i++) {
             if (pPlanes[i])
               OVERSCHROMA16(
-              (unsigned short *)(pDstShorts[i] + (xx >> nLogxRatioUVs[i])), dstShortPitches[i],
+              (uint16_t *)(pDstShorts[i] + (xx >> nLogxRatioUVs[i])), dstShortPitches[i],
                 pPlanes[i]->GetPointer(blx >> nLogxRatioUVs[i], bly >> nLogyRatioUVs[i]), pPlanes[i]->GetPitch(),
                 winOverUV, nBlkSizeX >> nLogxRatioUVs[i]
               );
@@ -843,7 +843,7 @@ void	MVCompensate::compensate_slice_overlap(int y_beg, int y_end)
         else { // pixelsize_super == 4
      // luma
           OVERSLUMA32(
-            (unsigned short *)(pDstShorts[0] + xx), dstShortPitches[0],
+            (uint16_t *)(pDstShorts[0] + xx), dstShortPitches[0],
             pPlanes[0]->GetPointer(blx, bly), pPlanes[0]->GetPitch(),
             winOver, nBlkSizeX
           );
@@ -851,7 +851,7 @@ void	MVCompensate::compensate_slice_overlap(int y_beg, int y_end)
           for (int i = 1; i < planecount; i++) {
             if (pPlanes[i])
               OVERSCHROMA32(
-              (unsigned short *)(pDstShorts[i] + (xx >> nLogxRatioUVs[i])), dstShortPitches[i],
+              (uint16_t *)(pDstShorts[i] + (xx >> nLogxRatioUVs[i])), dstShortPitches[i],
                 pPlanes[i]->GetPointer(blx >> nLogxRatioUVs[i], bly >> nLogyRatioUVs[i]), pPlanes[i]->GetPitch(),
                 winOverUV, nBlkSizeX >> nLogxRatioUVs[i]
               );
@@ -867,7 +867,7 @@ void	MVCompensate::compensate_slice_overlap(int y_beg, int y_end)
 
         if (pixelsize_super == 1) {
           OVERSLUMA(
-            (unsigned short *)(pDstShorts[0] + xx), dstShortPitches[0],
+            (uint16_t *)(pDstShorts[0] + xx), dstShortPitches[0],
             pSrcPlanes[0]->GetPointer(blxsrc, blysrc), pSrcPlanes[0]->GetPitch(),
             winOver, nBlkSizeX
           );
@@ -875,7 +875,7 @@ void	MVCompensate::compensate_slice_overlap(int y_beg, int y_end)
           for (int i = 1; i < planecount; i++) {
             if (pSrcPlanes[i])
               OVERSCHROMA(
-              (unsigned short *)(pDstShorts[i] + (xx >> nLogxRatioUVs[i])), dstShortPitches[i],
+              (uint16_t *)(pDstShorts[i] + (xx >> nLogxRatioUVs[i])), dstShortPitches[i],
                 pSrcPlanes[i]->GetPointer(blxsrc >> nLogxRatioUVs[i], blysrc >> nLogyRatioUVs[i]), pSrcPlanes[i]->GetPitch(),
                 winOverUV, nBlkSizeX >> nLogxRatioUVs[i]
               );
@@ -884,7 +884,7 @@ void	MVCompensate::compensate_slice_overlap(int y_beg, int y_end)
         else if (pixelsize_super == 2){
           // pixelsize == 2
           OVERSLUMA16(
-            (unsigned short *)(pDstShorts[0] + xx), dstShortPitches[0],
+            (uint16_t *)(pDstShorts[0] + xx), dstShortPitches[0],
             pSrcPlanes[0]->GetPointer(blxsrc, blysrc), pSrcPlanes[0]->GetPitch(),
             winOver, nBlkSizeX
           );
@@ -892,7 +892,7 @@ void	MVCompensate::compensate_slice_overlap(int y_beg, int y_end)
           for (int i = 1; i < planecount; i++) {
             if (pSrcPlanes[i])
               OVERSCHROMA16(
-              (unsigned short *)(pDstShorts[i] + (xx >> nLogxRatioUVs[i])), dstShortPitches[i],
+              (uint16_t *)(pDstShorts[i] + (xx >> nLogxRatioUVs[i])), dstShortPitches[i],
                 pSrcPlanes[i]->GetPointer(blxsrc >> nLogxRatioUVs[i], blysrc >> nLogyRatioUVs[i]), pSrcPlanes[i]->GetPitch(),
                 winOverUV, nBlkSizeX >> nLogxRatioUVs[i]
               );
@@ -900,7 +900,7 @@ void	MVCompensate::compensate_slice_overlap(int y_beg, int y_end)
         }
         else { // if (pixelsize_super == 4)
           OVERSLUMA32(
-            (unsigned short *)(pDstShorts[0] + xx), dstShortPitches[0],
+            (uint16_t *)(pDstShorts[0] + xx), dstShortPitches[0],
             pSrcPlanes[0]->GetPointer(blxsrc, blysrc), pSrcPlanes[0]->GetPitch(),
             winOver, nBlkSizeX
           );
@@ -908,7 +908,7 @@ void	MVCompensate::compensate_slice_overlap(int y_beg, int y_end)
           for (int i = 1; i < planecount; i++) {
             if (pSrcPlanes[i])
               OVERSCHROMA32(
-              (unsigned short *)(pDstShorts[i] + (xx >> nLogxRatioUVs[i])), dstShortPitches[i],
+              (uint16_t *)(pDstShorts[i] + (xx >> nLogxRatioUVs[i])), dstShortPitches[i],
               pSrcPlanes[i]->GetPointer(blxsrc >> nLogxRatioUVs[i], blysrc >> nLogyRatioUVs[i]), pSrcPlanes[i]->GetPitch(),
               winOverUV, nBlkSizeX >> nLogxRatioUVs[i]
             );

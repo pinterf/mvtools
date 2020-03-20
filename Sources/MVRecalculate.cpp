@@ -344,7 +344,7 @@ MVRecalculate::MVRecalculate(
     {
       fwrite(&analysisData, sizeof(analysisData), 1, outfile);
       // short vx, short vy, int SAD = 4 words = 8 bytes per block
-      outfilebuf = new short[nBlkX * nBlkY * (1+1+ sizeof(sad_t)/sizeof(short))];
+      outfilebuf = new int16_t[nBlkX * nBlkY * (1+1+ sizeof(sad_t)/sizeof(int16_t))];
     }
   }
   else
@@ -566,7 +566,7 @@ PVideoFrame __stdcall MVRecalculate::GetFrame(int n, IScriptEnvironment* env)
     {
       fwrite(
         outfilebuf,
-        sizeof(short) * 4 * srd._analysis_data.nBlkX
+        sizeof(int16_t) * 4 * srd._analysis_data.nBlkX
         * srd._analysis_data.nBlkY,
         1,
         outfile

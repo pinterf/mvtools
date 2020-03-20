@@ -62,15 +62,15 @@ MVFlowFps::MVFlowFps(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, unsign
   }
 
   //  safe for big numbers since v2.1
-  fa = __int64(denominator)*__int64(numeratorOld);
-  fb = __int64(numerator)*__int64(denominatorOld);
-  __int64 fgcd = gcd(fa, fb); // general common divisor
+  fa = int64_t(denominator)*int64_t(numeratorOld);
+  fb = int64_t(numerator)*int64_t(denominatorOld);
+  int64_t fgcd = gcd(fa, fb); // general common divisor
   fa /= fgcd;
   fb /= fgcd;
 
   vi.SetFPS(numerator, denominator);
 
-  vi.num_frames = (int)(1 + __int64(vi.num_frames - 1) * fb / fa);
+  vi.num_frames = (int)(1 + int64_t(vi.num_frames - 1) * fb / fa);
 
   maskmode = _maskmode; // speed mode
   ml = _ml;
@@ -94,12 +94,12 @@ MVFlowFps::MVFlowFps(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, unsign
   memcpy(&params, &super->GetVideoInfo().num_audio_samples, 8);
   int nHeightS = params.nHeight;
   int nSuperHPad = params.nHPad;
-  int nSuperVPad = params.nVPad;
+  //int nSuperVPad = params.nVPad;
   int nSuperPel = params.nPel;
-  int nSuperModeYUV = params.nModeYUV;
-  int nSuperLevels = params.nLevels;
+  //int nSuperModeYUV = params.nModeYUV;
+  //int nSuperLevels = params.nLevels;
   int nSuperWidth = super->GetVideoInfo().width; // really super
-  int nSuperHeight = super->GetVideoInfo().height;
+  //int nSuperHeight = super->GetVideoInfo().height;
 
   if (!super->GetVideoInfo().IsSameColorspace(child->GetVideoInfo()))
     env->ThrowError("MFlowFPS: input and super clip format is different");
@@ -326,7 +326,7 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
 #endif
   _RPT2(0, "MFlowFPS GetFrame, frame=%d id=%d\n", n, _instance_id);
 
-  int nleft = (int)(__int64(n)* fa / fb);
+  int nleft = (int)(int64_t(n)* fa / fb);
   // intermediate product may be very large! Now I know how to multiply int64
   int time256 = int((double(n)*double(fa) / double(fb) - nleft) * 256 + 0.5);
 

@@ -37,7 +37,6 @@ class SimpleResize
   unsigned char* vWorkY;		// weighting masks 0Y0Y 0Y0Y...
   short* vWorkY2;		//  work array for shorts
   bool SSE2enabled;
-	bool SSEMMXenabled; 
 
   void InitTables(void);
 

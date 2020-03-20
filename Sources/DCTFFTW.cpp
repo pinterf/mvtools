@@ -150,19 +150,19 @@ void DCTFFTW::Bytes2Float_SSE2(const unsigned char * srcp8, int src_pitch, float
   {
     if (nBlkSizeX == 4) {
       // 4 pixels, no cycle
-      if (sizeof(pixel_t) == 1)
+      if constexpr(sizeof(pixel_t) == 1)
       {
         __m128i src = _mm_unpacklo_epi8(_mm_castps_si128(_mm_load_ss(reinterpret_cast<const float *>(srcp))), zero); // 4 bytes->4 words
         __m128i src_lo = _mm_unpacklo_epi16(src, zero);
         _mm_storeu_ps(realdata, _mm_cvtepi32_ps(src_lo));
       }
-      else if (sizeof(pixel_t) == 2) {
+      else if constexpr(sizeof(pixel_t) == 2) {
         // uint16_t pixels
         __m128i src = _mm_loadl_epi64(reinterpret_cast<const __m128i *>(srcp));
         __m128i src_lo = _mm_unpacklo_epi16(src, zero);
         _mm_storeu_ps(realdata, _mm_cvtepi32_ps(src_lo));
       }
-      else if (sizeof(pixel_t) == 4) {
+      else if constexpr(sizeof(pixel_t) == 4) {
         // float pixels
         __m128 src = _mm_loadu_ps(reinterpret_cast<const float *>(srcp));
         _mm_storeu_ps(realdata, src);
@@ -173,7 +173,7 @@ void DCTFFTW::Bytes2Float_SSE2(const unsigned char * srcp8, int src_pitch, float
       // 8 pixels at a time
       for (int x = 0; x < nBlkSizeX; x += 8)
       {
-        if (sizeof(pixel_t) == 1)
+        if constexpr(sizeof(pixel_t) == 1)
         {
           __m128i src = _mm_unpacklo_epi8(_mm_loadl_epi64(reinterpret_cast<const __m128i *>(srcp + x)), zero); // 8 words
           __m128i src_lo = _mm_unpacklo_epi16(src, zero);
@@ -181,7 +181,7 @@ void DCTFFTW::Bytes2Float_SSE2(const unsigned char * srcp8, int src_pitch, float
           __m128i src_hi = _mm_unpackhi_epi16(src, zero);
           _mm_storeu_ps(realdata + x + 4, _mm_cvtepi32_ps(src_hi));
         }
-        else if (sizeof(pixel_t) == 2) {
+        else if constexpr(sizeof(pixel_t) == 2) {
           // uint16_t pixels
           __m128i src = _mm_loadu_si128(reinterpret_cast<const __m128i *>(srcp + x));
           __m128i src_lo = _mm_unpacklo_epi16(src, zero);
@@ -189,7 +189,7 @@ void DCTFFTW::Bytes2Float_SSE2(const unsigned char * srcp8, int src_pitch, float
           __m128i src_hi = _mm_unpackhi_epi16(src, zero);
           _mm_storeu_ps(realdata + x + 4, _mm_cvtepi32_ps(src_hi));
         }
-        else if (sizeof(pixel_t) == 4) {
+        else if constexpr(sizeof(pixel_t) == 4) {
           // float pixels
           __m128 src = _mm_loadu_ps(reinterpret_cast<const float *>(srcp + x));
           _mm_storeu_ps(realdata + x, src);
@@ -203,19 +203,19 @@ void DCTFFTW::Bytes2Float_SSE2(const unsigned char * srcp8, int src_pitch, float
       // 4 pixels at a time
       for (int x = 0; x < nBlkSizeX; x += 4)
       {
-        if (sizeof(pixel_t) == 1)
+        if constexpr(sizeof(pixel_t) == 1)
         {
           __m128i src = _mm_unpacklo_epi8(_mm_castps_si128(_mm_load_ss(reinterpret_cast<const float *>(srcp + x))), zero); // 4 bytes
           __m128i src_lo = _mm_unpacklo_epi16(src, zero);
           _mm_storeu_ps(realdata + x, _mm_cvtepi32_ps(src_lo));
         }
-        else if (sizeof(pixel_t) == 2) {
+        else if constexpr(sizeof(pixel_t) == 2) {
           // uint16_t pixels
           __m128i src = _mm_loadl_epi64(reinterpret_cast<const __m128i *>(srcp + x)); // 4 words
           __m128i src_lo = _mm_unpacklo_epi16(src, zero);
           _mm_storeu_ps(realdata + x, _mm_cvtepi32_ps(src_lo));
         }
-        else if (sizeof(pixel_t) == 4) {
+        else if constexpr(sizeof(pixel_t) == 4) {
           // float pixels
           __m128 src = _mm_loadu_ps(reinterpret_cast<const float *>(srcp + x));
           _mm_storeu_ps(realdata + x, src);
@@ -279,7 +279,6 @@ void DCTFFTW::Float2Bytes_SSE2(unsigned char * dstp0, int dst_pitch, float * rea
 
   const int maxPixelValue = (1 << bits_per_pixel) - 1; // 255/65535
   const int middlePixelValue = 1 << (bits_per_pixel - 1);   // 128/32768 
-  const __m128i max_pixel_value = _mm_set1_epi16((short)(maxPixelValue));
   const __m128i half = _mm_set1_epi32(middlePixelValue);
   const __m128 norm_factor = _mm_set1_ps(dctNormalize_AC);
 
@@ -397,7 +396,7 @@ void DCTFFTW::Float2Bytes_uint16_t_SSE4(unsigned char* dstp0, int dst_pitch, flo
         intres_hi = _mm_add_epi32(intres, half); // (integ*0.7*/size2d) + middlePixelValue)
 
         __m128i u16res = _mm_packus_epi32(intres_lo, intres_hi);
-        if (sizeof(pixel_t) == 2) {
+        if constexpr(sizeof(pixel_t) == 2) {
           res07 = _mm_min_epu16(u16res, max_pixel_value); // clamp to maxPixelValue
           _mm_storeu_si128(reinterpret_cast<__m128i*>(dstp + x), res07);
         }
@@ -418,7 +417,7 @@ void DCTFFTW::Float2Bytes_uint16_t_SSE4(unsigned char* dstp0, int dst_pitch, flo
 
         __m128i u16res = _mm_packus_epi32(intres_lo, intres_lo);
 
-        if (sizeof(pixel_t) == 2) {
+        if constexpr(sizeof(pixel_t) == 2) {
           res07 = _mm_min_epu16(u16res, max_pixel_value); // clamp to maxPixelValue
           _mm_storel_epi64(reinterpret_cast<__m128i*>(dstp + x), res07);
         }

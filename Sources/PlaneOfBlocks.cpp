@@ -40,6 +40,13 @@
 #include <stdexcept>
 #include <stdint.h>
 
+
+static unsigned int SadDummy(const uint8_t *, int , const uint8_t *, int )
+{
+  return 0;
+}
+
+
 PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSizeY, int _nPel, int _nLevel, int _nFlags, int _nOverlapX, int _nOverlapY, int _xRatioUV, int _yRatioUV, int _pixelsize, int _bits_per_pixel, conc::ObjPool <DCTClass> *dct_pool_ptr, bool mt_flag, int _chromaSADscale, IScriptEnvironment* env)
   : nBlkX(_nBlkX)
   , nBlkY(_nBlkY)
@@ -3476,8 +3483,8 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
 
 PlaneOfBlocks::WorkingArea::WorkingArea(int nBlkSizeX, int nBlkSizeY, int dctpitch, int nLogxRatioUV, int nLogyRatioUV, int _pixelsize, int _bits_per_pixel)
   : dctSrc(nBlkSizeY*dctpitch) // dctpitch is pixelsize aware
-  , dctRef(nBlkSizeY*dctpitch)
   , DCT(0)
+  , dctRef(nBlkSizeY* dctpitch)
   , pixelsize(_pixelsize)
   , bits_per_pixel(_bits_per_pixel)
 {

@@ -33,7 +33,7 @@ public:
 		IScriptEnvironment* env_ptr
 	);
 	~MVCompensate();
-	PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
+	PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env) override;
 
   int __stdcall SetCacheHints(int cachehints, int frame_range) override {
     return cachehints == CACHE_GET_MTMODE ? MT_MULTI_INSTANCE : 0;
@@ -82,7 +82,7 @@ private:
   OverlapsFunction *OVERSLUMA32;
   OverlapsFunction *OVERSCHROMA32;
 
-  BYTE *DstShort; // holds unsigned short or int or float elements: overlap temp buffer
+  BYTE *DstShort; // holds uint16_t or int or float elements: overlap temp buffer
   BYTE *DstShortU;
   BYTE *DstShortV;
 	int dstShortPitch;

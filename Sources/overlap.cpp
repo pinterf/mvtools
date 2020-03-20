@@ -230,7 +230,7 @@ OverlapWindows::~OverlapWindows()
 // Here originally there was no rounding at all
 // So instead of: Sum((overlapped + 256)>>6) >> 5
 // So we do: (Sum((overlapped + 32) >> 6) + 16) >> 5
-void Short2Bytes_sse2(unsigned char *pDst, int nDstPitch, unsigned short *pDstShort, int dstShortPitch, int nWidth, int nHeight)
+void Short2Bytes_sse2(unsigned char *pDst, int nDstPitch, uint16_t *pDstShort, int dstShortPitch, int nWidth, int nHeight)
 {
   // v.2.7.25-: round 16 here, round 32 earlier. See comments in C
   const int rounder_i = 1 << 4;
@@ -260,7 +260,7 @@ void Short2Bytes_sse2(unsigned char *pDst, int nDstPitch, unsigned short *pDstSh
       _mm_storel_epi64((__m128i *)(pDst8 + wMod16), res);
     }
     for (int x = wMod8; x < nWidth; x++) {
-      int a = (reinterpret_cast<unsigned short *>(pSrc8)[x] + rounder_i) >> 5;
+      int a = (reinterpret_cast<uint16_t *>(pSrc8)[x] + rounder_i) >> 5;
       pDst8[x] = min(255, a);
     }
     pDst8 += nDstPitch;
@@ -268,7 +268,7 @@ void Short2Bytes_sse2(unsigned char *pDst, int nDstPitch, unsigned short *pDstSh
   }
 }
 
-void Short2Bytes(unsigned char *pDst, int nDstPitch, unsigned short *pDstShort, int dstShortPitch, int nWidth, int nHeight)
+void Short2Bytes(unsigned char *pDst, int nDstPitch, uint16_t *pDstShort, int dstShortPitch, int nWidth, int nHeight)
 {
 	for (int h=0; h<nHeight; h++)
 	{
@@ -318,7 +318,6 @@ void Short2Bytes_Int32toWord16(uint16_t *pDst, int nDstPitch, int *pDstInt, int 
 
 void Short2Bytes_Int32toWord16_sse4(uint16_t *pDst, int nDstPitch, int *pDstInt, int dstIntPitch, int nWidth, int nHeight, int bits_per_pixel)
 {
-  typedef uint16_t pixel_t;
   const int max_pixel_value = (1 << bits_per_pixel) - 1;
 
   __m128i limits16;
@@ -397,21 +396,20 @@ void LimitChanges_sse2_new(unsigned char *pDst8, int nDstPitch, const unsigned c
 {
   const int nLimit = (int)nLimit_f;
   __m128i limits;
-  if (sizeof(pixel_t) == 1)
+  if constexpr(sizeof(pixel_t) == 1)
     limits = _mm_set1_epi8(nLimit);
   else
     limits = _mm_set1_epi16(nLimit);
 
   const int stride = nWidth * sizeof(pixel_t); // back to byte size
 
-  __m128i zero = _mm_setzero_si128();
   for (int y = 0; y < nHeight; y++)
   {
     for (int x = 0; x < stride; x += 16) {
       __m128i src = _mm_load_si128((__m128i *)(pSrc8 + x));
       __m128i dst = _mm_load_si128((__m128i *)(pDst8 + x));
       __m128i res;
-      if (sizeof(pixel_t) == 1) {
+      if constexpr(sizeof(pixel_t) == 1) {
         __m128i src_plus_limit = _mm_adds_epu8(src, limits);   //  max possible
         __m128i src_minus_limit = _mm_subs_epu8(src, limits);   //  min possible
         res = _mm_min_epu8(_mm_max_epu8(src_minus_limit, dst), src_plus_limit);
@@ -488,7 +486,7 @@ template <typename pixel_t, int blockWidth, int blockHeight>
 // only src_pitch is byte-level
 // dstPitch knows int* or short* 
 // winPitch knows short *
-void Overlaps_sse4(unsigned short *pDst0, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch)
+void Overlaps_sse4(uint16_t *pDst0, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch)
 {
   // pWin from 0 to 2048
   // when pixel_t == uint16_t, dst should be int*
@@ -506,7 +504,7 @@ void Overlaps_sse4(unsigned short *pDst0, int nDstPitch, const unsigned char *pS
     if constexpr(sizeof(pixel_t) == 1) {
       assert(0); // not implemented
     }
-    else if constexpr(sizeof(pixel_t) == 2)
+    else 
     {
       if constexpr(blockWidth == 4) // half of 1x16 byte
       {

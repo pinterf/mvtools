@@ -342,7 +342,6 @@ void DegrainN_sse2(
 
 MDegrainN::DenoiseNFunction* MDegrainN::get_denoiseN_function(int BlockX, int BlockY, int _bits_per_pixel, bool _lsb_flag, bool _out16_flag, arch_t arch)
 {
-  const int _pixelsize = _bits_per_pixel == 8 ? 1 : (_bits_per_pixel <= 16 ? 2 : 4);
   //---------- DENOISE/DEGRAIN
   const int DEGRAIN_TYPE_8BIT = 1;
   const int DEGRAIN_TYPE_8BIT_STACKED = 2;
@@ -656,7 +655,6 @@ MDegrainN::MDegrainN(
   }
 
   const int nSuperWidth = vi_super.width;
-  const int nSuperHeight = vi_super.height;
   pixelsize_super_shift = ilog2(pixelsize_super);
 
   if (nHeight != nHeightS
@@ -1046,7 +1044,7 @@ static void plane_copy_8_to_16_c(uint8_t *dstp, int dstpitch, const uint8_t *src
     // Overlap
     else
     {
-      unsigned short *pDstShort = (_dst_short.empty()) ? 0 : &_dst_short[0];
+      uint16_t *pDstShort = (_dst_short.empty()) ? 0 : &_dst_short[0];
       int *pDstInt = (_dst_int.empty()) ? 0 : &_dst_int[0];
 
       if (_lsb_flag || pixelsize_output>1)
@@ -1257,7 +1255,7 @@ void	MDegrainN::process_chroma(int plane_mask)
     // Overlap
     else
     {
-      unsigned short * pDstShort = (_dst_short.empty()) ? 0 : &_dst_short[0];
+      uint16_t * pDstShort = (_dst_short.empty()) ? 0 : &_dst_short[0];
       int * pDstInt = (_dst_int.empty()) ? 0 : &_dst_int[0];
 
       if (_lsb_flag || pixelsize_output > 1)
@@ -1537,7 +1535,7 @@ void	MDegrainN::process_luma_overlap_slice(int y_beg, int y_end)
   const int      rowsize = nBlkSizeY - nOverlapY;
   const BYTE *   pSrcCur = _src_ptr_arr[0] + y_beg * rowsize * _src_pitch_arr[0];
 
-  unsigned short * pDstShort = (_dst_short.empty()) ? 0 : &_dst_short[0] + y_beg * rowsize * _dst_short_pitch;
+  uint16_t * pDstShort = (_dst_short.empty()) ? 0 : &_dst_short[0] + y_beg * rowsize * _dst_short_pitch;
   int *pDstInt = (_dst_int.empty()) ? 0 : &_dst_int[0] + y_beg * rowsize * _dst_int_pitch;
   const int tmpPitch = nBlkSizeX;
   assert(tmpPitch <= TmpBlock::MAX_SIZE);
@@ -1782,7 +1780,7 @@ void	MDegrainN::process_chroma_overlap_slice(int y_beg, int y_end)
   const int rowsize = (nBlkSizeY - nOverlapY) >> nLogyRatioUV_super; // bad name. it's height really
   const BYTE *pSrcCur = _src_ptr_arr[P] + y_beg * rowsize * _src_pitch_arr[P];
 
-  unsigned short *pDstShort = (_dst_short.empty()) ? 0 : &_dst_short[0] + y_beg * rowsize * _dst_short_pitch;
+  uint16_t *pDstShort = (_dst_short.empty()) ? 0 : &_dst_short[0] + y_beg * rowsize * _dst_short_pitch;
   int *pDstInt = (_dst_int.empty()) ? 0 : &_dst_int[0] + y_beg * rowsize * _dst_int_pitch;
   const int tmpPitch = nBlkSizeX;
   assert(tmpPitch <= TmpBlock::MAX_SIZE);

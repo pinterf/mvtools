@@ -25,7 +25,7 @@
 class SuperParams64Bits
 {
 public:
-  unsigned short nHeight;
+  uint16_t nHeight;
   unsigned char nHPad;
   unsigned char nVPad;
   unsigned char nPel;

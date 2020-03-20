@@ -29,7 +29,7 @@
 
 
 
-static unsigned short font[][20] = {
+static uint16_t font[][20] = {
 //STARTCHAR space
 	{
 		0x0000,0x0000,0x0000,0x0000,
@@ -1773,7 +1773,7 @@ void DrawString(::PVideoFrame &dst, int x, int y, const char *s)
 
 void DrawDigitYUY2(::PVideoFrame &dst, int x, int y, int num) 
 {
-	extern unsigned short font[][20];
+	extern uint16_t font[][20];
 
 	x = x * 10;
 	y = y * 20;

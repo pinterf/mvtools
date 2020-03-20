@@ -62,7 +62,7 @@ public :
    MV_FORCEINLINE short *GetWindow(int i) const { return Overlap9Windows + size*i; }
 };
 
-typedef void (OverlapsFunction)(unsigned short *pDst, int nDstPitch,
+typedef void (OverlapsFunction)(uint16_t *pDst, int nDstPitch,
                             const unsigned char *pSrc, int nSrcPitch,
 							short *pWin, int nWinPitch);
 typedef void (OverlapsLsbFunction)(int *pDst, int nDstPitch, const unsigned char *pSrc, const unsigned char *pSrcLsb, int nSrcPitch, short *pWin, int nWinPitch);
@@ -75,7 +75,7 @@ OverlapsLsbFunction* get_overlaps_lsb_function(int BlockX, int BlockY, int pixel
 
 template <typename pixel_t, int blockWidth, int blockHeight>
 // pDst is short* for 8 bit, int * for 16 bit sources
-void Overlaps_C(unsigned short *pDst0, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch)
+void Overlaps_C(uint16_t *pDst0, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch)
 {
 	// pWin from 0 to 2048 total shift 11
   // when pixel_t == uint16_t, dst should be int*
@@ -108,7 +108,7 @@ void Overlaps_C(unsigned short *pDst0, int nDstPitch, const unsigned char *pSrc,
 	    {
         int val = reinterpret_cast<const pixel_t *>(pSrc)[i];
         short win = pWin[i];
-        if (sizeof(pixel_t) == 1) {
+        if constexpr(sizeof(pixel_t) == 1) {
           // Original, this calculation appears also in Overlap-a.asm:
           // pDst[i] = ( pDst[i] + ((reinterpret_cast<const pixel_t *>(pSrc)[i]*pWin[i] + 256)>> 6)); // see rest shift 5 in Short2Bytes<uint8_t> in overlap.cpp
           // PF 180216 Why is rounding 256 (1<<8) and not 32 (1<<5) ?
@@ -138,7 +138,7 @@ void Overlaps_C(unsigned short *pDst0, int nDstPitch, const unsigned char *pSrc,
 
 template <int blockWidth, int blockHeight>
 // pDst is short* for 8 bit, int * for 16 bit sources, float * from 32 bit sources
-void Overlaps_float_C(unsigned short *pDst0, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch)
+void Overlaps_float_C(uint16_t *pDst0, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch)
 {
   // pWin from 0 to 2048 total shift 11
   // when pixel_t == uint16_t, dst should be int*
@@ -182,52 +182,52 @@ void OverlapsLsb_C(int *pDst, int nDstPitch, const unsigned char *pSrc, const un
 
 
 
-extern "C" void __cdecl  Overlaps64x64_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps64x48_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps64x32_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps64x16_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps48x64_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps48x48_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps48x24_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps48x12_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps32x64_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps32x32_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps32x24_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps32x16_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps32x8_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps24x48_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps24x32_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps24x24_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps24x12_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps24x16_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps24x6_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps16x64_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps16x32_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps16x16_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps16x12_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps16x8_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps16x4_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps16x2_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps12x48_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps12x24_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps12x16_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps12x12_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps12x6_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps12x3_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps8x32_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps8x16_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps8x8_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps8x4_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps8x2_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps8x1_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps4x8_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps4x4_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps4x2_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps2x4_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-extern "C" void __cdecl  Overlaps2x2_sse2(unsigned short *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps64x64_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps64x48_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps64x32_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps64x16_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps48x64_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps48x48_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps48x24_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps48x12_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps32x64_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps32x32_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps32x24_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps32x16_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps32x8_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps24x48_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps24x32_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps24x24_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps24x12_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps24x16_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps24x6_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps16x64_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps16x32_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps16x16_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps16x12_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps16x8_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps16x4_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps16x2_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps12x48_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps12x24_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps12x16_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps12x12_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps12x6_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps12x3_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps8x32_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps8x16_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps8x8_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps8x4_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps8x2_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps8x1_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps4x8_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps4x4_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps4x2_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps2x4_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
+extern "C" void __cdecl  Overlaps2x2_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
 
-void Short2Bytes_sse2(unsigned char *pDst, int nDstPitch, unsigned short *pDstShort, int dstShortPitch, int nWidth, int nHeight);
-void Short2Bytes(unsigned char *pDst, int nDstPitch, unsigned short *pDstShort, int dstShortPitch, int nWidth, int nHeight);
+void Short2Bytes_sse2(unsigned char *pDst, int nDstPitch, uint16_t *pDstShort, int dstShortPitch, int nWidth, int nHeight);
+void Short2Bytes(unsigned char *pDst, int nDstPitch, uint16_t *pDstShort, int dstShortPitch, int nWidth, int nHeight);
 void Short2BytesLsb(unsigned char *pDst, unsigned char *pDstLsb, int nDstPitch, int *pDstInt, int dstIntPitch, int nWidth, int nHeight);
 void Short2Bytes_Int32toWord16(uint16_t *pDst, int nDstPitch, int *pDstInt, int dstIntPitch, int nWidth, int nHeight, int bits_per_pixel);
 void Short2Bytes_Int32toWord16_sse4(uint16_t *pDst, int nDstPitch, int *pDstInt, int dstIntPitch, int nWidth, int nHeight, int bits_per_pixel);

@@ -873,7 +873,7 @@ void RB2BilinearFilteredVertical(
 #else
       if constexpr(sizeof(pixel_t) == 1)
         RB2BilinearFilteredVerticalLine_sse2<uint8_t, false>((uint8_t *)pDst, (uint8_t *)pSrc, nSrcPitch, nWidthMMX);
-      else if constexpr(sizeof(pixel_t) == 2) {
+      else  {
         if(isse41)
           RB2BilinearFilteredVerticalLine_sse2<uint16_t, true>((uint8_t *)pDst, (uint8_t *)pSrc, nSrcPitch, nWidthMMX);
         else
@@ -953,25 +953,27 @@ void RB2BilinearFilteredHorizontalInplace(
 
     int xstart = 1;
 
-    if (sizeof(pixel_t) <= 2 && isse2)
-    {
-      if constexpr(sizeof(pixel_t) == 1) {
+    if (isse2) {
+      if constexpr(sizeof(pixel_t) <= 2)
+      {
+        if constexpr (sizeof(pixel_t) == 1) {
 #ifdef OLD_MMX
-        RB2BilinearFilteredHorizontalInplaceLine_SSE((uint8_t *)pSrc, nWidthMMX); // very first is skipped
+          RB2BilinearFilteredHorizontalInplaceLine_SSE((uint8_t*)pSrc, nWidthMMX); // very first is skipped
 #ifndef _M_X64
-        _mm_empty();
+          _mm_empty();
 #endif
 #else
-        RB2BilinearFilteredHorizontalInplaceLine_sse2<uint8_t, false>(pSrc, nWidthMMX); // very first is skipped
-      }
-      else if constexpr(sizeof(pixel_t) == 2) {
-        if(isse41)
-          RB2BilinearFilteredHorizontalInplaceLine_sse2<uint16_t, true>(pSrc, nWidthMMX);
-        else
-          RB2BilinearFilteredHorizontalInplaceLine_sse2<uint16_t, false>(pSrc, nWidthMMX);
-      }
+          RB2BilinearFilteredHorizontalInplaceLine_sse2<uint8_t, false>(pSrc, nWidthMMX); // very first is skipped
+        }
+        else {
+          if (isse41)
+            RB2BilinearFilteredHorizontalInplaceLine_sse2<uint16_t, true>(pSrc, nWidthMMX);
+          else
+            RB2BilinearFilteredHorizontalInplaceLine_sse2<uint16_t, false>(pSrc, nWidthMMX);
+        }
 #endif
-      xstart = nWidthMMX;
+        xstart = nWidthMMX;
+      }
     }
     
     for (int x = xstart; x < nWidth - 1; x++)
@@ -1061,7 +1063,7 @@ void RB2QuadraticVertical(
 #else
       if constexpr(sizeof(pixel_t) == 1)
         RB2QuadraticVerticalLine_sse2<uint8_t, false>((uint8_t *)pDst, (uint8_t *)pSrc, nSrcPitch, nWidthMMX);
-      else if constexpr(sizeof(pixel_t) == 2) {
+      else  {
         if(isse41)
           RB2QuadraticVerticalLine_sse2<uint16_t, true>((uint8_t *)pDst, (uint8_t *)pSrc, nSrcPitch, nWidthMMX);
         else
@@ -1145,25 +1147,27 @@ void RB2QuadraticHorizontalInplace(
 
     int xstart = 1;
 
-    if (sizeof(pixel_t) <= 2 && isse2)
-    {
+    if (isse2) {
+      if constexpr(sizeof(pixel_t) <= 2)
+      {
 #ifdef OLD_MMX
-      RB2QuadraticHorizontalInplaceLine_SSE((uint8_t *)pSrc, nWidthMMX);
+        RB2QuadraticHorizontalInplaceLine_SSE((uint8_t*)pSrc, nWidthMMX);
 #ifndef _M_X64
-      _mm_empty();
+        _mm_empty();
 #endif
 #else
-      if constexpr(sizeof(pixel_t) == 1)
-        RB2QuadraticHorizontalInplaceLine_sse2<uint8_t, false>(pSrc, nWidthMMX);
-      else if constexpr(sizeof(pixel_t) == 2) {
-        if(isse41)
-          RB2QuadraticHorizontalInplaceLine_sse2<uint16_t, true>(pSrc, nWidthMMX);
-        else
-          RB2QuadraticHorizontalInplaceLine_sse2<uint16_t, false>(pSrc, nWidthMMX);
-      }
+        if constexpr (sizeof(pixel_t) == 1)
+          RB2QuadraticHorizontalInplaceLine_sse2<uint8_t, false>(pSrc, nWidthMMX);
+        else {
+          if (isse41)
+            RB2QuadraticHorizontalInplaceLine_sse2<uint16_t, true>(pSrc, nWidthMMX);
+          else
+            RB2QuadraticHorizontalInplaceLine_sse2<uint16_t, false>(pSrc, nWidthMMX);
+        }
 
 #endif
-      xstart = nWidthMMX;
+        xstart = nWidthMMX;
+      }
     }
     
     for (int x = xstart; x < nWidth - 1; x++)
@@ -1257,7 +1261,7 @@ void RB2CubicVertical(
 #else
         if constexpr(sizeof(pixel_t) == 1)
           RB2CubicVerticalLine_sse2<uint8_t, false>((uint8_t *)pDst, (uint8_t *)pSrc, nSrcPitch, nWidthMMX);
-        else if constexpr(sizeof(pixel_t) == 2) {
+        else  {
           if (!isse41)
             RB2CubicVerticalLine_sse2<uint16_t, false>((uint8_t *)pDst, (uint8_t *)pSrc, nSrcPitch, nWidthMMX); // 16 bit nonsse41
           else
@@ -1375,7 +1379,7 @@ void RB2CubicHorizontalInplace(
           RB2CubicHorizontalInplaceLine_sse2<uint8_t, false>((uint8_t *)pSrc, nWidthMMX);
 #endif
         }
-        else if constexpr(sizeof(pixel_t) == 2) {
+        else  {
           if (isse41)
             RB2CubicHorizontalInplaceLine_sse2<uint16_t, true>(pSrc, nWidthMMX);
           else
@@ -1591,7 +1595,7 @@ void DiagonalBilin_sse2(unsigned char *pDst8, const unsigned char *pSrc8, int nD
       __m128i m2 = _mm_loadl_epi64((const __m128i *)&pSrc8[x + nSrcPitch]);
       __m128i m3 = _mm_loadl_epi64((const __m128i *)&pSrc8[x + nSrcPitch + sizeof(pixel_t)]);
 
-      if (sizeof(pixel_t) == 1) {
+      if constexpr(sizeof(pixel_t) == 1) {
         m0 = _mm_unpacklo_epi8(m0, zeroes);
         m1 = _mm_unpacklo_epi8(m1, zeroes);
         m2 = _mm_unpacklo_epi8(m2, zeroes);
@@ -1636,7 +1640,7 @@ void DiagonalBilin_sse2(unsigned char *pDst8, const unsigned char *pSrc8, int nD
     __m128i m0 = _mm_loadl_epi64((const __m128i *)&pSrc8[x]);
     __m128i m1 = _mm_loadl_epi64((const __m128i *)&pSrc8[x + sizeof(pixel_t)]);
 
-    if (sizeof(pixel_t) == 1)
+    if constexpr(sizeof(pixel_t) == 1)
       m0 = _mm_avg_epu8(m0, m1);
     else
       m0 = _mm_avg_epu16(m0, m1);

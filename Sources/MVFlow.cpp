@@ -42,12 +42,12 @@ MVFlow::MVFlow(PClip _child, PClip super, PClip _mvec, int _time256, int _mode, 
   memcpy(&params, &super->GetVideoInfo().num_audio_samples, 8);
   int nHeightS = params.nHeight;
   int nSuperHPad = params.nHPad;
-  int nSuperVPad = params.nVPad;
+  //int nSuperVPad = params.nVPad;
   int nSuperPel = params.nPel;
-  int nSuperModeYUV = params.nModeYUV;
-  int nSuperLevels = params.nLevels;
+  //int nSuperModeYUV = params.nModeYUV;
+  //int nSuperLevels = params.nLevels;
   int nSuperWidth = super->GetVideoInfo().width; // really super
-  int nSuperHeight = super->GetVideoInfo().height;
+  //int nSuperHeight = super->GetVideoInfo().height;
 
   if (!super->GetVideoInfo().IsSameColorspace(child->GetVideoInfo()))
     env->ThrowError("MFlow: input and super clip format is different");

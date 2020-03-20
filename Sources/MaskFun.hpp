@@ -163,7 +163,7 @@ static void FlowInter_NPel(
       }
       else {
         // avoid possible 8*16*8bit int32 overflow
-        typedef std::conditional < sizeof(pixel_t) == 1, int, __int64>::type calc_t;
+        typedef typename std::conditional < sizeof(pixel_t) == 1, int, int64_t>::type calc_t;
 
         pdst[w] = (pixel_t)((((dstF*(255 - MaskF[w]) + (((calc_t)MaskF[w] * (dstB*(255 - MaskB[w]) + MaskB[w] * dstF0) + 255) >> 8) + 255) >> 8)*(256 - time256) +
           ((dstB*(255 - MaskB[w]) + (((calc_t)MaskB[w] * (dstF*(255 - MaskF[w]) + MaskF[w] * dstB0) + 255) >> 8) + 255) >> 8)*     time256) >> 8);
@@ -436,7 +436,7 @@ static void FlowInterSimple_Pel1(
   else // general case
   {
     // avoid "uint16*uint16 can't get into int32" overflows
-    typedef std::conditional < sizeof(pixel_t) == 1, int, typename std::conditional < sizeof(pixel_t) == 2, __int64, float>::type >::type result_t;
+    typedef std::conditional < sizeof(pixel_t) == 1, int, typename std::conditional < sizeof(pixel_t) == 2, int64_t, float>::type >::type result_t;
 
     for (int h = 0; h < height; h++)
     {

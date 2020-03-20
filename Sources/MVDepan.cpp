@@ -533,7 +533,7 @@ PVideoFrame __stdcall MVDepan::GetFrame(int ndest, IScriptEnvironment* env)
   float errorcur;
   int iter;
   float errordif = 0.01f; // error difference to terminate iterations
-  int itermax = 150; // maximum iteration number
+  //int itermax = 150; // maximum iteration number
 
   for (int nframe = framefirst; nframe <= framelast; nframe++)
   {

@@ -38,16 +38,13 @@
 #include "SADFunctions16.h"
 
 SADFunction* get_sad_function(int BlockX, int BlockY, int bits_per_pixel, arch_t arch);
-
 SADFunction* get_satd_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
-
-static unsigned int SadDummy(const uint8_t *, int , const uint8_t *, int )
-{
-  return 0;
-}
 
 #define MK_CFUNC(functionname) extern "C" unsigned int __cdecl functionname (const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 
+#if 0
+// not used anymore
+// SAD_iSSE.asm and SAD_iSSE_x64.asm
 #define SAD_ISSE(blsizex, blsizey) extern "C" unsigned int __cdecl Sad##blsizex##x##blsizey##_iSSE(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 //Sad16x16_iSSE( x,y can be: 32 16 8 4 2
 // used only for *1 or *2
@@ -70,10 +67,9 @@ SAD_ISSE(4,4);
 SAD_ISSE(4,2);
 SAD_ISSE(2,4);
 SAD_ISSE(2,2);
-
-
-
 #undef SAD_ISSE
+
+#endif
 
 #if 0
 // test-test-test-failed
@@ -196,42 +192,10 @@ SAD_x264(4, 8, mmx2);
 SAD_x264(4, 4, sse2); // 20181125
 SAD_x264(4, 4, mmx2);
 #undef SAD_x264
-/*
-//parameter is function name
-MK_CFUNC(x264_pixel_sad_16x16_sse2); //non optimized cache access, for AMD?
-MK_CFUNC(x264_pixel_sad_16x8_sse2);	 //non optimized cache access, for AMD?
-MK_CFUNC(x264_pixel_sad_16x16_sse3); //LDDQU Pentium4E (Core1?), not for Core2!
-MK_CFUNC(x264_pixel_sad_16x8_sse3);  //LDDQU Pentium4E (Core1?), not for Core2!
-*/
-/*MK_CFUNC(x264_pixel_sad_16x16_cache64_sse2);//core2 optimized
-MK_CFUNC(x264_pixel_sad_16x8_cache64_sse2);//core2 optimized
-MK_CFUNC(x264_pixel_sad_16x16_cache64_ssse3);//core2 optimized
-MK_CFUNC(x264_pixel_sad_16x8_cache64_ssse3); //core2 optimized
-*/
 
-//MK_CFUNC(x264_pixel_sad_16x16_cache32_mmx2);
-//MK_CFUNC(x264_pixel_sad_16x8_cache32_mmx2);
-/*
-MK_CFUNC(x264_pixel_sad_16x16_cache64_mmx2);
-MK_CFUNC(x264_pixel_sad_16x8_cache64_mmx2);
-MK_CFUNC(x264_pixel_sad_8x16_cache32_mmx2);
-MK_CFUNC(x264_pixel_sad_8x8_cache32_mmx2);
-MK_CFUNC(x264_pixel_sad_8x4_cache32_mmx2);
-MK_CFUNC(x264_pixel_sad_8x16_cache64_mmx2);
-MK_CFUNC(x264_pixel_sad_8x8_cache64_mmx2);
-MK_CFUNC(x264_pixel_sad_8x4_cache64_mmx2);
-*/
-//1.9.5.3: added ssd & SATD (TSchniede)
-/* alternative to SAD - SSD: squared sum of differences, VERY sensitive to noise */
-#if 0
-MK_CFUNC(x264_pixel_ssd_16x16_mmx);
-MK_CFUNC(x264_pixel_ssd_16x8_mmx);
-MK_CFUNC(x264_pixel_ssd_8x16_mmx);
-MK_CFUNC(x264_pixel_ssd_8x8_mmx);
-MK_CFUNC(x264_pixel_ssd_8x4_mmx);
-MK_CFUNC(x264_pixel_ssd_4x8_mmx);
-MK_CFUNC(x264_pixel_ssd_4x4_mmx);
-#endif
+// 1.9.5.3: added ssd & SATD (TSchniede)
+// alternative to SAD - SSD: squared sum of differences, VERY sensitive to noise
+// ssd did not go live. sample: x264_pixel_ssd_16x16_mmx
 
 /* SATD: Sum of Absolute Transformed Differences, more sensitive to noise, frequency domain based - replacement to dct/SAD */
 #define SATD_SSE(blsizex, blsizey, type) extern "C" unsigned int __cdecl x264_pixel_satd_##blsizex##x##blsizey##_##type(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
@@ -376,8 +340,6 @@ SATD_SSE( 8,  8, avx2);
 
 #undef SATD_SSE
 
-//dummy for testing and deactivate SAD
-//MK_CFUNC(SadDummy);
 #undef MK_CFUNC
 
 

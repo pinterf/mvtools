@@ -119,7 +119,7 @@ MVPlane::~MVPlane()
 void MVPlane::set_interp(int rfilter, int sharp)
 {
   nSharp = sharp; // for pel>1
-  nRfilter = nRfilter; // not used
+  MV_UNUSED(nRfilter); // not used
 
   switch (rfilter)
   {

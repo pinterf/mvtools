@@ -78,8 +78,6 @@ void DCTINT::DCTBytes2D(const unsigned char *srcp, int src_pit, unsigned char *d
   uint8_t * pDest = dstp;
   uint8_t * pDestW;
 
-  const unsigned __int64 i128 = 0x8080808080808080;
-
   int y;
   int ct = (rowsize / 8);
   int ctW;

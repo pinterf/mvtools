@@ -19,7 +19,7 @@
 
 #include "ClipFnc.h"
 #include "CopyCode.h"
-#include "maskfun.h"
+#include "MaskFun.h"
 #include "MVFinest.h"
 #include "MVFrame.h"
 #include "MVGroupOfFrames.h"

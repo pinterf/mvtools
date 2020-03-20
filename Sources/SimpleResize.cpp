@@ -163,23 +163,23 @@ void SimpleResize::SimpleResizeDo_New(uint8_t *dstp8, int row_size, int height, 
   // for X : simd code does 4 pixels at a time, decrement by 4 X-unit
   const int relInc_c = nPel; // no difference for X
   const __m128i maxRelXStart = _mm_set_epi16(
-    ((real_width - 7) << nPelLog2) - 1, // not used, only lower 4x16bit pixels are processed
-    ((real_width - 6) << nPelLog2) - 1, // not used
-    ((real_width - 5) << nPelLog2) - 1, // not used
-    ((real_width - 4) << nPelLog2) - 1, // not used
-    ((real_width - 3) << nPelLog2) - 1,
-    ((real_width - 2) << nPelLog2) - 1,
-    ((real_width - 1) << nPelLog2) - 1,
-    ((real_width - 0) << nPelLog2) - 1);
+    ((real_width - 7) * nPel) - 1, // not used, only lower 4x16bit pixels are processed
+    ((real_width - 6) * nPel) - 1, // not used
+    ((real_width - 5) * nPel) - 1, // not used
+    ((real_width - 4) * nPel) - 1, // not used
+    ((real_width - 3) * nPel) - 1,
+    ((real_width - 2) * nPel) - 1,
+    ((real_width - 1) * nPel) - 1,
+    ((real_width - 0) * nPel) - 1);
   const __m128i minRelXStart = _mm_set_epi16(
-    -7 << nPelLog2, // not used, only lower 4x16bit pixels are processed
-    -6 << nPelLog2, // not used
-    -5 << nPelLog2, // not used
-    -4 << nPelLog2, // not used
-    -3 << nPelLog2,
-    -2 << nPelLog2,
-    -1 << nPelLog2,
-    0 << nPelLog2);
+    -7 * nPel, // not used, only lower 4x16bit pixels are processed
+    -6 * nPel, // not used
+    -5 * nPel, // not used
+    -4 * nPel, // not used
+    -3 * nPel,
+    -2 * nPel,
+    -1 * nPel,
+    0 * nPel);
 
   const int row_size_mod4 = row_size & ~3; // covered by SIMD code
   const int maxRelXStart_c = ((real_width - row_size_mod4) << nPelLog2) - 1;

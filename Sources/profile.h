@@ -45,7 +45,7 @@
 
 extern int ProfTimeTable[MOTION_PROFILE_COUNT];
 extern int ProfResults[MOTION_PROFILE_COUNT * 2];
-extern __int64 ProfCumulatedResults[MOTION_PROFILE_COUNT * 2];
+extern int64_t ProfCumulatedResults[MOTION_PROFILE_COUNT * 2];
 
 #define PROFILE_START(x) \
 { \
@@ -81,7 +81,7 @@ inline static void PROFILE_CUMULATE()
 }
 inline static void PROFILE_SHOW()
 {
-   __int64 nTotal = 0;
+   int64_t nTotal = 0;
    for ( int i = 0; i < MOTION_PROFILE_COUNT; i++ )
       nTotal += ProfCumulatedResults[2*i];
 

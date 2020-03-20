@@ -1,6 +1,10 @@
 #ifndef __COMMON_F__
 #define __COMMON_F__
 
+#include <stdint.h>
+
+#define MV_UNUSED(x) (void)(x)
+
 // returns a > 0 ? a : 0
 inline static int satz(int a)
 {
@@ -37,7 +41,7 @@ inline static int iexp2(int i)
 }
 
 // general common divisor (from wikipedia)
-inline static __int64 gcd(__int64 u, __int64 v)
+inline static int64_t gcd(int64_t u, int64_t v)
  {
      int shift;
 
@@ -65,7 +69,7 @@ inline static __int64 gcd(__int64 u, __int64 v)
          if (u < v) {
              v -= u;
          } else {
-             __int64 diff = u - v;
+             int64_t diff = u - v;
              u = v;
              v = diff;
          }
@@ -76,11 +80,11 @@ inline static __int64 gcd(__int64 u, __int64 v)
 }
 
 // Least common multiple
-inline static __int64	lcm (__int64 u, __int64 v)
+inline static int64_t	lcm (int64_t u, int64_t v)
 {
-	const __int64		prod = u * v;
-	const __int64		gcd_uv = gcd (u, v);
-	const __int64		lcm_uv = prod / gcd_uv;
+	const int64_t		prod = u * v;
+	const int64_t		gcd_uv = gcd (u, v);
+	const int64_t		lcm_uv = prod / gcd_uv;
 
 	return (lcm_uv);
 }

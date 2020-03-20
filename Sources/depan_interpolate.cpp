@@ -666,8 +666,8 @@ void compensate_plane_bicubic2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, i
   int *intcoef = new int[4*(256 + 1)];
 
   //     int for pixel_size uint8_t
-  // __int64 for pixel_size uint16_t, otherwise int overflow in intermediate calculations
-  std::conditional < sizeof(pixel_t) == 1, int, __int64 >::type ts[4];
+  // int64_t for pixel_size uint16_t, otherwise int overflow in intermediate calculations
+  std::conditional < sizeof(pixel_t) == 1, int, int64_t >::type ts[4];
   int intcoef2d[16];
 
   int w;
@@ -1030,7 +1030,7 @@ void compensate_plane_bicubic2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, i
 
           iy4 = ((int)((ysrc - hlow) * 256)) << 2; //changed to shift in v.1.1.1
 
-          // 16 bit samples: 32 bit overflow. ts[] is __int64 for word sized pixels
+          // 16 bit samples: 32 bit overflow. ts[] is int64_t for word sized pixels
           pixel = (int)((intcoef[iy4] * ts[0] + intcoef[iy4 + 1] * ts[1] + intcoef[iy4 + 2] * ts[2] + intcoef[iy4 + 3] * ts[3] + (1 << 21)) >> 22); // 22=2*11 scale factor 
           dstp[row] = max(min(pixel, pixel_max), 0); // limit
         }

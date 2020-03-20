@@ -35,7 +35,7 @@ private:
   int nleftLast;
   int nrightLast;
 
-  __int64 fa, fb;
+  int64_t fa, fb;
 
   // fullframe vector mask
   short *VXFullYB; //backward
@@ -120,7 +120,7 @@ public:
   MVFlowFps(PClip _child, PClip _super, PClip _mvbw, PClip _mvfw, unsigned int _num, unsigned int _den, int _maskmode, double _ml,
     bool _blend, sad_t nSCD1, int nSCD2, bool isse, bool _planar, int _optDebug, IScriptEnvironment* env);
   ~MVFlowFps();
-  PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
+  PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env) override;
 
   int __stdcall SetCacheHints(int cachehints, int frame_range) override {
     return cachehints == CACHE_GET_MTMODE ? MT_MULTI_INSTANCE : 0;

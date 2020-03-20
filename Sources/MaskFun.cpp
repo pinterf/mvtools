@@ -470,7 +470,7 @@ static void Merge4PlanesToBig_sse2(
       __m128i src0 = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pPlane0 + x));
       __m128i src1 = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pPlane1 + x));
       __m128i mix_lo, mix_hi;
-      if (sizeof(pixel_t) == 1) {
+      if constexpr(sizeof(pixel_t) == 1) {
         mix_lo = _mm_unpacklo_epi8(src0, src1);
         mix_hi = _mm_unpackhi_epi8(src0, src1);
       }
@@ -483,7 +483,7 @@ static void Merge4PlanesToBig_sse2(
       // 2-3
       __m128i src2 = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pPlane2 + x));
       __m128i src3 = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pPlane3 + x));
-      if (sizeof(pixel_t) == 1) {
+      if constexpr(sizeof(pixel_t) == 1) {
         mix_lo = _mm_unpacklo_epi8(src2, src3);
         mix_hi = _mm_unpackhi_epi8(src2, src3);
       }

@@ -41,8 +41,8 @@ GroupOfPlanes::GroupOfPlanes(
   , xRatioUV(_xRatioUV)
   , yRatioUV(_yRatioUV)
   , chromaSADScale(_chromaSADScale)
-  , divideExtra(_divideExtra)
   , pixelsize(_pixelsize)
+  , divideExtra(_divideExtra)
   , bits_per_pixel(_bits_per_pixel)
   , _mt_flag(mt_flag)
   , _dct_pool_ptr(dct_pool_ptr)
@@ -137,7 +137,7 @@ void	GroupOfPlanes::SearchMVs(
     pglobal = pzero;
   }
 
-  int				meanLumaChange = 0;
+  int meanLumaChange = 0;
 
   // Search the motion vectors, for the low details interpolations first
   SearchType		searchTypeSmallest =
@@ -278,7 +278,7 @@ void	GroupOfPlanes::RecalculateMVs(
 
   out += 2;
 
-  int				meanLumaChange = 0;
+  //int meanLumaChange = 0;
 
   // Search the motion vectors, for the low details interpolations first
   // Refining the search until we reach the highest detail interpolation.

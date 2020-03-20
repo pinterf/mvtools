@@ -269,7 +269,8 @@ unsigned int Sad16_avx2(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef, 
   }
 
   unsigned int result;
-  if constexpr(sizeof(pixel_t) == 2) {
+  if constexpr (sizeof(pixel_t) == 2)
+  {
     sum = _mm256_hadd_epi32(sum, sum);
     sum = _mm256_hadd_epi32(sum, sum);
     __m128i sum128 = _mm_add_epi32(_mm256_castsi256_si128(sum), _mm256_extractf128_si256(sum, 1));

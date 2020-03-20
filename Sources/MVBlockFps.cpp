@@ -68,15 +68,15 @@ MVBlockFps::MVBlockFps(
   }
 
   //  safe for big numbers since v2.1
-  fa = __int64(denominator)*__int64(numeratorOld);
-  fb = __int64(numerator)*__int64(denominatorOld);
-  __int64 fgcd = gcd(fa, fb); // general common divisor
+  fa = int64_t(denominator)*int64_t(numeratorOld);
+  fb = int64_t(numerator)*int64_t(denominatorOld);
+  int64_t fgcd = gcd(fa, fb); // general common divisor
   fa /= fgcd;
   fb /= fgcd;
 
   vi.SetFPS(numerator, denominator);
 
-  vi.num_frames = (int)(1 + __int64(vi.num_frames - 1) * fb / fa);
+  vi.num_frames = (int)(1 + int64_t(vi.num_frames - 1) * fb / fa);
 
   mode = _mode;
   if (mode < 0 || mode >8)
@@ -241,10 +241,10 @@ MVBlockFps::MVBlockFps(
     // todo: rename to DstTemp and make BYTE *, cast later.
     // DstInt can hold 32 bit floats as well
     DestBufElementSize = pixelsize_super == 1 ? sizeof(short) : pixelsize_super == 2 ? sizeof(int) : sizeof(float);
-    DstShort = (unsigned short *)_aligned_malloc(dstShortPitch*nHeight * DestBufElementSize, tmpDstAlign); // PF aligned
+    DstShort = (uint16_t *)_aligned_malloc(dstShortPitch*nHeight * DestBufElementSize, tmpDstAlign); // PF aligned
     if (!isGrey) {
-      DstShortU = (unsigned short *)_aligned_malloc(dstShortPitchUV*nHeight * DestBufElementSize, tmpDstAlign);
-      DstShortV = (unsigned short *)_aligned_malloc(dstShortPitchUV*nHeight * DestBufElementSize, tmpDstAlign);
+      DstShortU = (uint16_t *)_aligned_malloc(dstShortPitchUV*nHeight * DestBufElementSize, tmpDstAlign);
+      DstShortV = (uint16_t *)_aligned_malloc(dstShortPitchUV*nHeight * DestBufElementSize, tmpDstAlign);
     }
   }
 }
@@ -573,7 +573,7 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
   _mm_empty();  // paranoya
 #endif
   // intermediate product may be very large! Now I know how to multiply int64
-  int nleft = (int)(__int64(n)* fa / fb);
+  int nleft = (int)(int64_t(n)* fa / fb);
   int time256 = int((double(n)*double(fa) / double(fb) - nleft) * 256 + 0.5);
 
   PVideoFrame dst;
@@ -583,9 +583,9 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
   unsigned char *pDstYUY2;
   int nDstPitchYUY2;
 
-  unsigned short *pDstShort;
-  unsigned short *pDstShortU;
-  unsigned short *pDstShortV;
+  uint16_t *pDstShort;
+  uint16_t *pDstShortU;
+  uint16_t *pDstShortV;
 
   int off = mvClipB.GetDeltaFrame(); // integer offset of reference frame
   if (off <= 0)
@@ -1100,9 +1100,9 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
                   time256, mode, bits_per_pixel_super);
                 // now write result block to short dst with overlap window weight
                 switch (p) { // pitch of TmpBlock is byte-level only, regardless of 8/16 bit 
-                case 0: OVERSLUMA16((unsigned short *)((int *)(pDstShort)+current_xx), dstShortPitch, TmpBlock, nBlkPitch * pixelsize_super, winOver, nBlkSizeX); break;
-                case 1: OVERSCHROMA16((unsigned short *)((int *)(pDstShortU)+current_xx), dstShortPitchUV, TmpBlock, nBlkPitch * pixelsize_super, winOverUV, nBlkSizeX / xRatioUVs[1]); break;
-                case 2: OVERSCHROMA16((unsigned short *)((int *)(pDstShortV)+current_xx), dstShortPitchUV, TmpBlock, nBlkPitch * pixelsize_super, winOverUV, nBlkSizeX / xRatioUVs[1]); break;
+                case 0: OVERSLUMA16((uint16_t *)((int *)(pDstShort)+current_xx), dstShortPitch, TmpBlock, nBlkPitch * pixelsize_super, winOver, nBlkSizeX); break;
+                case 1: OVERSCHROMA16((uint16_t *)((int *)(pDstShortU)+current_xx), dstShortPitchUV, TmpBlock, nBlkPitch * pixelsize_super, winOverUV, nBlkSizeX / xRatioUVs[1]); break;
+                case 2: OVERSCHROMA16((uint16_t *)((int *)(pDstShortV)+current_xx), dstShortPitchUV, TmpBlock, nBlkPitch * pixelsize_super, winOverUV, nBlkSizeX / xRatioUVs[1]); break;
                 }
               }
               else if (pixelsize_super == 4) {
@@ -1122,9 +1122,9 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
                   time256, mode, bits_per_pixel_super);
                 // now write result block to short dst with overlap window weight
                 switch (p) { // pitch of TmpBlock is byte-level only, regardless of 8/16 bit 
-                case 0: OVERSLUMA32((unsigned short *)((float *)(pDstShort)+current_xx), dstShortPitch, TmpBlock, nBlkPitch * pixelsize_super, winOver, nBlkSizeX); break;
-                case 1: OVERSCHROMA32((unsigned short *)((float *)(pDstShortU)+current_xx), dstShortPitchUV, TmpBlock, nBlkPitch * pixelsize_super, winOverUV, nBlkSizeX / xRatioUVs[1]); break;
-                case 2: OVERSCHROMA32((unsigned short *)((float *)(pDstShortV)+current_xx), dstShortPitchUV, TmpBlock, nBlkPitch * pixelsize_super, winOverUV, nBlkSizeX / xRatioUVs[1]); break;
+                case 0: OVERSLUMA32((uint16_t *)((float *)(pDstShort)+current_xx), dstShortPitch, TmpBlock, nBlkPitch * pixelsize_super, winOver, nBlkSizeX); break;
+                case 1: OVERSCHROMA32((uint16_t *)((float *)(pDstShortU)+current_xx), dstShortPitchUV, TmpBlock, nBlkPitch * pixelsize_super, winOverUV, nBlkSizeX / xRatioUVs[1]); break;
+                case 2: OVERSCHROMA32((uint16_t *)((float *)(pDstShortV)+current_xx), dstShortPitchUV, TmpBlock, nBlkPitch * pixelsize_super, winOverUV, nBlkSizeX / xRatioUVs[1]); break;
                 }
               } // pixelsize_super
             } // needprocess

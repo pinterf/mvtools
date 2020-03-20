@@ -37,7 +37,7 @@ public:
   );
   ~MDegrainN();
 
-  ::PVideoFrame __stdcall GetFrame(int n, ::IScriptEnvironment* env_ptr);
+  ::PVideoFrame __stdcall GetFrame(int n, ::IScriptEnvironment* env_ptr) override;
 
   int __stdcall SetCacheHints(int cachehints, int frame_range) override {
     return cachehints == CACHE_GET_MTMODE ? MT_MULTI_INSTANCE : 0;
@@ -163,7 +163,7 @@ private:
 // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
 // Processing variables
 
-  std::vector <unsigned short> _dst_short;
+  std::vector <uint16_t> _dst_short;
   int _dst_short_pitch;
   std::vector <int> _dst_int;
   int _dst_int_pitch;

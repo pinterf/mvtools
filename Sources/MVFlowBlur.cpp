@@ -47,12 +47,12 @@ MVFlowBlur::MVFlowBlur(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, int 
   memcpy(&params, &super->GetVideoInfo().num_audio_samples, 8);
   int nHeightS = params.nHeight;
   int nSuperHPad = params.nHPad;
-  int nSuperVPad = params.nVPad;
+  //int nSuperVPad = params.nVPad;
   int nSuperPel = params.nPel;
-  int nSuperModeYUV = params.nModeYUV;
-  int nSuperLevels = params.nLevels;
+  //int nSuperModeYUV = params.nModeYUV;
+  //int nSuperLevels = params.nLevels;
   int nSuperWidth = super->GetVideoInfo().width; // really super
-  int nSuperHeight = super->GetVideoInfo().height;
+  //int nSuperHeight = super->GetVideoInfo().height;
 
   if (!super->GetVideoInfo().IsSameColorspace(child->GetVideoInfo()))
     env->ThrowError("MFlowBlur: input and super clip format is different");
@@ -214,7 +214,7 @@ void MVFlowBlur::FlowBlur(BYTE * pdst8, int dst_pitch, const BYTE *pref8, int re
   const pixel_t *pref = reinterpret_cast<const pixel_t *>(pref8);
 
   // type for sum of pixel_t pixels
-  typedef std::conditional < sizeof(pixel_t) == 4, float, int>::type accum_t;
+  typedef typename std::conditional < sizeof(pixel_t) == 4, float, int>::type accum_t;
 
   // very slow, but precise motion blur
   for (int h = 0; h < height; h++)

@@ -61,11 +61,11 @@ MVFilter(vectors, "MShow", env, 1, 0)
 	int nHeightS = params.nHeight;
 	nSuperHPad = params.nHPad;
 	nSuperVPad = params.nVPad;
-	int nSuperPel = params.nPel;
-	int nSuperModeYUV = params.nModeYUV;
-	int nSuperLevels = params.nLevels;
+	//int nSuperPel = params.nPel;
+	//int nSuperModeYUV = params.nModeYUV;
+	//int nSuperLevels = params.nLevels;
 	int nSuperWidth = vi.width; // really super
-	int nSuperHeight = vi.height;
+	//int nSuperHeight = vi.height;
 
   nTolerance = nTolerance << (vi.BitsPerComponent() - 8); // scale sad tolerance
 

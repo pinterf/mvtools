@@ -45,14 +45,12 @@ Denoise1to6Function* MVDegrainX<level>::get_denoise123_function(int BlockX, int 
 Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY, int _bits_per_pixel, bool _lsb_flag, bool _out16_flag, int _level, arch_t arch)
 #endif
 {
-  const int _pixelsize = _bits_per_pixel == 8 ? 1 : (_bits_per_pixel <= 16 ? 2 : 4);
   //---------- DENOISE/DEGRAIN
   const int DEGRAIN_TYPE_8BIT = 1;
   const int DEGRAIN_TYPE_8BIT_STACKED = 2;
   const int DEGRAIN_TYPE_8BIT_OUT16 = 4;
   const int DEGRAIN_TYPE_10to14BIT = 8;
   const int DEGRAIN_TYPE_16BIT = 16;
-  const int DEGRAIN_TYPE_10to16BIT = DEGRAIN_TYPE_10to14BIT + DEGRAIN_TYPE_16BIT;
   const int DEGRAIN_TYPE_32BIT = 32;
   // BlkSizeX, BlkSizeY, degrain_type, level_of_MDegrain, arch_t
   std::map<std::tuple<int, int, int, int, arch_t>, Denoise1to6Function*> func_degrain;
@@ -403,7 +401,6 @@ MVDegrainX::MVDegrainX(
     pRefFGOF[i] = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, cpuFlags, xRatioUV_super, yRatioUV_super, pixelsize_super, bits_per_pixel_super, _mt_flag);
   }
   int nSuperWidth = vi_super.width;
-  int nSuperHeight = vi_super.height;
 
   if (nHeight != nHeightS
     || nHeight != vi.height
@@ -454,7 +451,7 @@ MVDegrainX::MVDegrainX(
     }
     else
     {
-      DstShort = (unsigned short *)_aligned_malloc(dstShortPitch * nHeight * sizeof(short), 32); 
+      DstShort = (uint16_t *)_aligned_malloc(dstShortPitch * nHeight * sizeof(short), 32); 
     }
   }
 
@@ -912,7 +909,7 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
 
     else // overlap
     {
-      unsigned short *pDstShort = DstShort;
+      uint16_t *pDstShort = DstShort;
       int *pDstInt = DstInt;
       const int tmpPitch = nBlkSizeX;
 
@@ -1206,7 +1203,7 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
 
     else // overlap
     {
-      unsigned short *pDstShort = DstShort;
+      uint16_t *pDstShort = DstShort;
       int *pDstInt = DstInt;
       const int tmpPitch = nBlkSizeX;
 

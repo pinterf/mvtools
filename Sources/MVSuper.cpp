@@ -36,7 +36,7 @@
 #ifdef MOTION_PROFILE
 int ProfTimeTable[MOTION_PROFILE_COUNT];
 int ProfResults[MOTION_PROFILE_COUNT * 2];
-__int64 ProfCumulatedResults[MOTION_PROFILE_COUNT * 2];
+int64_t ProfCumulatedResults[MOTION_PROFILE_COUNT * 2];
 #endif
 
 

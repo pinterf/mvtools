@@ -128,7 +128,7 @@ public:
     bool mt_flag, int _chromaSADScale, IScriptEnvironment* env);
   ~MVAnalyse();
 
-  ::PVideoFrame __stdcall	GetFrame(int n, ::IScriptEnvironment* env);
+  ::PVideoFrame __stdcall	GetFrame(int n, ::IScriptEnvironment* env) override;
 
   int __stdcall SetCacheHints(int cachehints, int frame_range) override {
     return cachehints == CACHE_GET_MTMODE ? (_temporal_flag || lstrlen(outfilename)>0 ? MT_SERIALIZED : MT_MULTI_INSTANCE) : 0;
