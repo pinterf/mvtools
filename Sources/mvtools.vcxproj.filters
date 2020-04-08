@@ -455,12 +455,6 @@
     <NASM Include="asm\Variance-a.asm">
       <Filter>Assembler</Filter>
     </NASM>
-    <NASM Include="asm\SAD_iSSE.asm">
-      <Filter>Assembler</Filter>
-    </NASM>
-    <NASM Include="asm\SAD_iSSE_x64.asm">
-      <Filter>Assembler</Filter>
-    </NASM>
     <NASM Include="asm\sad16-a.asm">
       <Filter>Assembler</Filter>
     </NASM>

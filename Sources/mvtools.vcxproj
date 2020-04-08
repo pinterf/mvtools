@@ -967,7 +967,7 @@
       <LoopUnrolling>
       </LoopUnrolling>
       <Cpp0xSupport>true</Cpp0xSupport>
-      <AssemblerOutput>NoListing</AssemblerOutput>
+      <AssemblerOutput>AssemblyAndMachineCode</AssemblerOutput>
       <ProgramDataBaseFileName>$(IntDir)\vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <XMLDocumentationFileName>$(IntDir)</XMLDocumentationFileName>
@@ -1945,110 +1945,6 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|Win32'">PREFIX;ARCH_X86_64=0;BIT_DEPTH=8;HIGH_BIT_DEPTH=0;NO_FUNCTION_PREFIX</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|Win32'">PREFIX;ARCH_X86_64=0;BIT_DEPTH=8;HIGH_BIT_DEPTH=0;NO_FUNCTION_PREFIX</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">PREFIX;ARCH_X86_64=0;BIT_DEPTH=8;HIGH_BIT_DEPTH=0;NO_FUNCTION_PREFIX</PreprocessorDefinitions>
-    </NASM>
-  </ItemGroup>
-  <ItemGroup>
-    <NASM Include="asm\SAD_iSSE.asm">
-      <FileType>Document</FileType>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-      </Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">
-      </Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-      </Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|Win32'">
-      </Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|Win32'">
-      </Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">
-      </Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">
-      </Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      </Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|x64'">
-      </Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|x64'">
-      </Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">
-      </Defines>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">true</ExcludedFromBuild>
-      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
-      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
-      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
-      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
-      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
-      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
-      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
-      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
-      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
-      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
-      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
-      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">PREFIX;ARCH_X86_64=0</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">PREFIX;ARCH_X86_64=0</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">PREFIX;ARCH_X86_64=0</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|Win32'">PREFIX;ARCH_X86_64=0</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|Win32'">PREFIX;ARCH_X86_64=0</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">PREFIX;ARCH_X86_64=0</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ARCH_X86_64=1</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">ARCH_X86_64=1</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ARCH_X86_64=1</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|x64'">ARCH_X86_64=1</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|x64'">ARCH_X86_64=1</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">ARCH_X86_64=1</PreprocessorDefinitions>
-    </NASM>
-    <NASM Include="asm\SAD_iSSE_x64.asm">
-      <FileType>Document</FileType>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NO_PREFIX</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">NO_PREFIX</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NO_PREFIX</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|x64'">NO_PREFIX</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|x64'">NO_PREFIX</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">NO_PREFIX</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NO_PREFIX</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">NO_PREFIX</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NO_PREFIX</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|Win32'">NO_PREFIX</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|Win32'">NO_PREFIX</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">NO_PREFIX</Defines>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">true</ExcludedFromBuild>
-      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
-      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
-      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
-      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
-      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
-      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">$(IntDir)$(ProjectName)\</ObjectFile>
-      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
-      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
-      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
-      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
-      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
-      <ObjectFile Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">$(IntDir)$(ProjectName)\</ObjectFile>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ARCH_X86_64=1;NO_PREFIX</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|x64'">ARCH_X86_64=1;NO_PREFIX</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ARCH_X86_64=1;NO_PREFIX</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|x64'">ARCH_X86_64=1;NO_PREFIX</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|x64'">ARCH_X86_64=1;NO_PREFIX</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|x64'">ARCH_X86_64=1;NO_PREFIX</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">PREFIX;PREFIX;ARCH_X86_64=0</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Basic_no_opt|Win32'">PREFIX;PREFIX;ARCH_X86_64=0</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">PREFIX;PREFIX;ARCH_X86_64=0</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|Win32'">PREFIX;PREFIX;ARCH_X86_64=0</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|Win32'">PREFIX;PREFIX;ARCH_X86_64=0</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='ReleaseWithDebugInfo|Win32'">PREFIX;PREFIX;ARCH_X86_64=0</PreprocessorDefinitions>
     </NASM>
   </ItemGroup>
   <ItemGroup>
