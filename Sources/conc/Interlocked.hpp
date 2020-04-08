@@ -215,8 +215,10 @@ void	Interlocked::swap (Data128 &old, volatile Data128 &dest, const Data128 &exc
 	while (tmp != old);
 }
 
-// Error		'_InterlockedCompareExchange128' needs target feature cx16
-// fixme: still unresolved external for clang + x64: __sync_val_compare_and_swap
+// clang-cl LLVM with VS2019 15.6.3: 
+// 1.) _InterlockedCompareExchange128' needs target feature cx16
+// 2.) Unresolved external for clang + x64: __sync_val_compare_and_swap_16, unless the whole project 
+//     in general is flagged as cx16 (along with sse4.1) -msse4.1 -mcx16
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("cx16")))
 #endif 
@@ -231,14 +233,17 @@ void	Interlocked::cas (Data128 &old, volatile Data128 &dest, const Data128 &excg
 		const int64_t	excg_hi = ((const int64_t *) &excg) [1];
 
 		old = comp;
-
+/*
+#if defined(CLANG)
+    __sync_val_compare_and_swap(reinterpret_cast <volatile __int128*>(&dest),* (reinterpret_cast <const __int128 *>(&excg)), *(reinterpret_cast < __int128*>(&old)));
+#else
+*/
 		_InterlockedCompareExchange128 (
 			reinterpret_cast <volatile int64_t *> (&dest),
 			excg_hi,
 			excg_lo,
 			reinterpret_cast <int64_t *> (&old)
 		);
-
 	#else
 
 		/*** To do ***/
