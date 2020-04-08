@@ -140,7 +140,8 @@ template<int nBlkWidth, int nBlkHeight, typename pixel_t>
 unsigned int Luma_C(const unsigned char *pSrc, int nSrcPitch)
 {
     const unsigned char *s = pSrc;
-    int sumLuma = 0;
+    typedef typename std::conditional < sizeof(pixel_t) == 1 && (nBlkWidth*nBlkHeight*255 < 65535), short, int>::type internal_sum_t;
+    internal_sum_t sumLuma = 0; // until sum is 16 bits, better asm is generated
     for ( int j = 0; j < nBlkHeight; j++ )
     {
         for ( int i = 0; i < nBlkWidth; i++ )
@@ -217,7 +218,7 @@ func_luma[make_tuple(x, y, 2, NO_SIMD)] = Luma_C<x, y, uint16_t>;
       MAKE_LUMA_FN(2, 2)
       MAKE_LUMA_FN(2, 1)
 #undef MAKE_LUMA_FN
-
+    // non-template functions come from Variance-a.asm
     func_luma[make_tuple(64, 64, 1, USE_SSE2)] = Luma8_sse2<64, 64>;
     func_luma[make_tuple(64, 48, 1, USE_SSE2)] = Luma8_sse2<64, 48>;
     func_luma[make_tuple(64, 32, 1, USE_SSE2)] = Luma8_sse2<64, 32>;
@@ -386,31 +387,4 @@ func_luma[make_tuple(x, y, 2, NO_SIMD)] = Luma_C<x, y, uint16_t>;
 //   }
 //
 //   return meanVariance;
-//}
-
-
-//unsigned int Luma8x8_C(const unsigned char *pSrc, int nSrcPitch)
-//{
-//   const unsigned char *s = pSrc;
-//   int meanLuma = 0;
-//   for ( int j = 0; j < 8; j++ )
-//   {
-//      for ( int i = 0; i < 8; i++ )
-//         meanLuma += s[i];
-//      s += nSrcPitch;
-//   }
-//   return meanLuma;
-//}
-//
-//unsigned int Luma4x4_C(const unsigned char *pSrc, int nSrcPitch)
-//{
-//   const unsigned char *s = pSrc;
-//   int meanLuma = 0;
-//   for ( int j = 0; j < 4; j++ )
-//   {
-//      for ( int i = 0; i < 4; i++ )
-//         meanLuma += s[i];
-//      s += nSrcPitch;
-//   }
-//   return meanLuma;
 //}
