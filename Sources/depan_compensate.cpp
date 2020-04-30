@@ -503,13 +503,20 @@ PVideoFrame __stdcall DePan::GetFrame(int ndest, IScriptEnvironment* env) {
 
   if (vi.IsYUY2()) // v1.6
   {
+    const int cpuFlags = env->GetCPUFlags();
+    src = child->GetFrame(frame_to_copy, env);
+
     src_pitch = src->GetPitch();
-    src_width = src->GetRowSize();
+    src_width = vi.width;
     src_height = src->GetHeight();
     srcp = src->GetReadPtr();
 
     // create planes from YUY2
-    YUY2ToPlanes(srcp, src_height, src_pitch, src_width, YUY2data.srcplaneY, YUY2data.planeYpitch, YUY2data.srcplaneU, YUY2data.srcplaneV, YUY2data.planeUVpitch, true);
+    void YUY2ToPlanes(const unsigned char* pSrcYUY2, int nSrcPitchYUY2, int nWidth, int nHeight,
+      const unsigned char* pSrc1, int _srcPitch,
+      const unsigned char* pSrcU1, const unsigned char* pSrcV1, int _srcPitchUV, int cpuFlags);
+
+    YUY2ToPlanes(srcp, src_pitch, src_width, src_height, YUY2data.srcplaneY, YUY2data.planeYpitch, YUY2data.srcplaneU, YUY2data.srcplaneV, YUY2data.planeUVpitch, cpuFlags);
 
     // Process Luma Plane
     border = 0;  // luma=0, black
@@ -559,7 +566,7 @@ PVideoFrame __stdcall DePan::GetFrame(int ndest, IScriptEnvironment* env) {
     }
 
     // create YUY2 from planes
-    YUY2FromPlanes(dstp, dst_pitch, src_width, src_height, YUY2data.dstplaneY, YUY2data.planeYpitch, YUY2data.dstplaneU, YUY2data.dstplaneV, YUY2data.planeUVpitch, true);
+    YUY2FromPlanes(dstp, dst_pitch, src_width, src_height, YUY2data.dstplaneY, YUY2data.planeYpitch, YUY2data.dstplaneU, YUY2data.dstplaneV, YUY2data.planeUVpitch, cpuFlags);
 
     int xmsg = (fieldbased != 0) ? (ndest % 2) * 15 : 0; // x-position of odd fields message
     if (info) { // show text info on frame image
