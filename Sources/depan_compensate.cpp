@@ -252,7 +252,7 @@ DePan::DePan(PClip _child, PClip _DePanData, float _offset, int _subpixel, float
   child->SetCacheHints(CACHE_25_RANGE, cacherange); // enabled in v1.6 CACHE_RANGE -> CACHE_25_RANGE
 #endif
 
-  if (inputlog != "") { // motion data will be readed from deshaker.log file once at start
+  if (*inputlog) { // motion data will be readed from deshaker.log file once at start
     error = read_deshakerlog(inputlog, vi.num_frames, motionx, motiony, motionrot, motionzoom, &loginterlaced);
     if (error == -1)	env->ThrowError("DePan: Input log file not found!");
     if (error == -2)	env->ThrowError("DePan: Error input log file format!");
