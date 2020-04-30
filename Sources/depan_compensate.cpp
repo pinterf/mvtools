@@ -4,6 +4,7 @@
   Version 1.10.0, April 29, 2007
   Version 1.13.1, April 6, 2016
   Version 2.13.1, November 19, 2016 by pinterf
+  Version 2.13.2, April 30, 2020 by pinterf - fix regeression: DepanInterleave allowed colorspace check
   (DePan and DePanInterleave functions)
   Copyright(c)2004-2016, A.G. Balakhnin aka Fizick
   bag@hotmail.ru
@@ -993,8 +994,8 @@ DePanInterleave::DePanInterleave(PClip _child, PClip _DePanData, int _prev, int 
 
   int num = prev + next + 1;
 
-	if (!vi.IsYUY2() && !vi.IsYUY2())	
-		env->ThrowError("DePanInterleave: input must be planar YUV or YUY2 !"); //v1.6
+  if (!vi.IsYUY2() && !vi.IsYUV() && !vi.IsYUVA())
+    env->ThrowError("DePanInterleave: input must be planar YUV or YUY2 !"); //v1.6
 
   if ((DePanData->GetVideoInfo().num_frames) != vi.num_frames)
     env->ThrowError("DePanInterleave: The length of input clip must be same as motion data clip !");
