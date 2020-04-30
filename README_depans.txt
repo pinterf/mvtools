@@ -18,6 +18,11 @@ Modification base:
 http://avisynth.org.ru/depan/depan.html
 
 Change log
+- (20200430)
+  Depan 2.13.1.5: 
+  fix regression: DepanInterleave colorspace check allowed no planar, only YUY2
+  Depan: Fix and issue when searched for inputlog file when there was inputlog filename provided
+  Depan: Fix crash on YUY2 input on internal YV16 conversion
 - (20190502)
   Moved to Visual Studio 2019 Community Edition, v141_xp and v142 toolset
   DepanEstimate 2.10.0.3
