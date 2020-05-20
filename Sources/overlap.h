@@ -24,7 +24,7 @@
 #include <cstdio>
 #include "def.h"
 
-// top, middle, botom and left, middle, right windows
+// top, middle, bottom and left, middle, right windows
 #define OW_TL 0
 #define OW_TM 1
 #define OW_TR 2
@@ -81,15 +81,19 @@ void Overlaps_C(uint16_t *pDst0, int nDstPitch, const unsigned char *pSrc, int n
   // when pixel_t == uint16_t, dst should be int*
   typedef typename std::conditional < sizeof(pixel_t) == 1, short, int>::type target_t;
   target_t *pDst = reinterpret_cast<target_t *>(pDst0);
+
+#if 0
+  // debug
   int s[blockWidth][blockHeight];
   int w[blockWidth][blockHeight];
   for (int j = 0; j < blockHeight; j++) {
     for (int i = 0; i < blockWidth; i++)
     {
-      s[j][i] = reinterpret_cast<const pixel_t *>(pSrc + j * nSrcPitch)[i];
-      w[j][i] = (pWin + j * nWinPitch)[i];
+      s[i][j] = reinterpret_cast<const pixel_t *>(pSrc + j * nSrcPitch)[i];
+      w[i][j] = (pWin + j * nWinPitch)[i];
     }
   }
+#endif
 
   // pWin: Cos^2 based weigthing factors with 11 bits precision. (0-2048)
   // SourceBlocks overlap sample for Blocksize=4 Overlaps=2:

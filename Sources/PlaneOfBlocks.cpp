@@ -71,7 +71,7 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
   , _mt_flag(mt_flag)
   , SAD(0)
   , LUMA(0)
-  , VAR(0)
+//  , VAR(0)
   , BLITLUMA(0)
   , BLITCHROMA(0)
   , SADCHROMA(0)
@@ -86,7 +86,7 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
   , verybigSAD(3 * _nBlkSizeX * _nBlkSizeY * (pixelsize == 4 ? 1 : (1 << bits_per_pixel))) // * 256, pixelsize==2 -> 65536. Float:1
   , freqArray()
   , dctmode(0)
-  , _workarea_fact(nBlkSizeX, nBlkSizeY, dctpitch, nLogxRatioUV, xRatioUV, nLogyRatioUV, yRatioUV, pixelsize, bits_per_pixel)
+  , _workarea_fact(nBlkSizeX, nBlkSizeY, dctpitch, nLogxRatioUV, nLogyRatioUV, pixelsize, bits_per_pixel)
   , _workarea_pool()
   , _gvect_estim_ptr(0)
   , _gvect_result_count(0)
@@ -3561,14 +3561,12 @@ MV_FORCEINLINE sad_t PlaneOfBlocks::WorkingArea::MotionDistorsion(int vx, int vy
 
 
 
-PlaneOfBlocks::WorkingAreaFactory::WorkingAreaFactory(int nBlkSizeX, int nBlkSizeY, int dctpitch, int nLogxRatioUV, int xRatioUV, int nLogyRatioUV, int yRatioUV, int pixelsize, int bits_per_pixel)
+PlaneOfBlocks::WorkingAreaFactory::WorkingAreaFactory(int nBlkSizeX, int nBlkSizeY, int dctpitch, int nLogxRatioUV, int nLogyRatioUV, int pixelsize, int bits_per_pixel)
   : _blk_size_x(nBlkSizeX)
   , _blk_size_y(nBlkSizeY)
   , _dctpitch(dctpitch)
   , _x_ratio_uv_log(nLogxRatioUV)
-  , _x_ratio_uv(xRatioUV)
   , _y_ratio_uv_log(nLogyRatioUV)
-  , _y_ratio_uv(yRatioUV)
   , _pixelsize(pixelsize)
   , _bits_per_pixel(bits_per_pixel)
 {

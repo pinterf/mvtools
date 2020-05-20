@@ -32,9 +32,7 @@
 
 #include	<vector>
 #include "avisynth.h"
-#ifndef __clang__
 #include <atomic>
-#endif
 
 
 
@@ -124,7 +122,7 @@ private:
 
   SADFunction *  SAD;              /* function which computes the sad */
   LUMAFunction * LUMA;             /* function which computes the mean luma */
-  VARFunction *  VAR;              /* function which computes the variance */
+  //VARFunction *  VAR;              /* function which computes the variance */
   COPYFunction * BLITLUMA;
   COPYFunction * BLITCHROMA;
   SADFunction *  SADCHROMA;
@@ -175,23 +173,14 @@ private:
 //	int nLambdaLen;             // penalty factor (lambda) for vector length
   sad_t badSAD;                 // SAD threshold for more wide search
   int badrange;               // wide search radius
-#ifndef __clang__
   std::atomic <int> badcount;      // number of bad blocks refined
-#else
-  conc::AtomicInt<int> badcount;
-#endif
   bool temporal;              // use temporal predictor
   bool tryMany;               // try refine around many predictors
 
   // PF todo this should be float or double for float format??
   // it is not AtomicInt anymore
-#ifndef __clang__
   std::atomic <bigsad_t> planeSAD;      // summary SAD of plane
   std::atomic <bigsad_t> sumLumaChange; // luma change sum
-#else
-  conc::AtomicInt<bigsad_t> planeSAD;      // summary SAD of plane
-  conc::AtomicInt<bigsad_t> sumLumaChange; // luma change sum
-#endif
   VECTOR _glob_mv_pred_def;
   int _lambda_level;
 
@@ -275,7 +264,7 @@ private:
     : public conc::ObjFactoryInterface <WorkingArea>
   {
   public:
-    WorkingAreaFactory(int nBlkSizeX, int nBlkSizeY, int dctpitch, int nLogxRatioUV, int xRatioUV, int nLogyRatioUV, int yRatioUV, int pixelsize, int bits_per_pixel);
+    WorkingAreaFactory(int nBlkSizeX, int nBlkSizeY, int dctpitch, int nLogxRatioUV, int nLogyRatioUV, int pixelsize, int bits_per_pixel);
   protected:
     // conc::ObjFactoryInterface
     virtual WorkingArea *
@@ -285,9 +274,7 @@ private:
     int _blk_size_y;
     int _dctpitch;
     int _x_ratio_uv_log; // PF
-    int _x_ratio_uv; // PF
     int _y_ratio_uv_log;
-    int _y_ratio_uv;
     int _pixelsize; // PF
     int _bits_per_pixel;
   };
