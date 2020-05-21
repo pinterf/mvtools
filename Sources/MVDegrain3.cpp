@@ -38,12 +38,7 @@
 // 170105: MDegrain6
 
 //
-#ifdef LEVEL_IS_TEMPLATE
-template<int level>
-Denoise1to6Function* MVDegrainX<level>::get_denoise123_function(int BlockX, int BlockY, int _pixelsize, bool _lsb_flag, int _level, arch_t arch)
-#else
 Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY, int _bits_per_pixel, bool _lsb_flag, bool _out16_flag, int _level, arch_t arch)
-#endif
 {
   //---------- DENOISE/DEGRAIN
   const int DEGRAIN_TYPE_8BIT = 1;
@@ -241,45 +236,28 @@ MAKE_FN(2, 1, 1)
 // If mvfw is null, mvbw is assumed to be a radius-3 multi-vector clip.
 
 
-#ifdef LEVEL_IS_TEMPLATE
-template<int level>
-MVDegrainX<level>::MVDegrainX(
-#else
 MVDegrainX::MVDegrainX(
-#endif
   PClip _child, PClip _super, 
   PClip _mvbw, PClip _mvfw, PClip _mvbw2, PClip _mvfw2, PClip _mvbw3, PClip _mvfw3, PClip _mvbw4, PClip _mvfw4, PClip _mvbw5, PClip _mvfw5, PClip _mvbw6, PClip _mvfw6,
   sad_t _thSAD, sad_t _thSADC, int _YUVplanes, sad_t _nLimit, sad_t _nLimitC,
   sad_t _nSCD1, int _nSCD2, bool _isse2, bool _planar, bool _lsb_flag,
   bool _mt_flag, bool _out16_flag,
-#ifndef LEVEL_IS_TEMPLATE
   int _level, 
-#endif
   IScriptEnvironment* env_ptr
 ) : GenericVideoFilter(_child)
 , MVFilter(
   // mvfw/mvfw2/mvfw3/mvfw4/mvfw5/mvfw6
   // MDegrain1/2/3/4/5/6
-#ifndef LEVEL_IS_TEMPLATE
   (!_mvfw) ? _mvbw : (_level == 1 ? _mvfw : (_level == 2 ? _mvfw2 : (_level == 3 ? _mvfw3 : (_level == 4 ? _mvfw4 : (_level == 5 ? _mvfw5 : _mvfw6))))),
   _level == 1 ? "MDegrain1" : (_level == 2 ? "MDegrain2" : (_level == 3 ? "MDegrain3" : (_level == 4 ? "MDegrain4" : (_level == 5 ? "MDegrain5" : "MDegrain6")))),
   env_ptr,
   (!_mvfw) ? _level * 2 : 1, 
   (!_mvfw) ? _level * 2 - 1 : 0) // 1/3/5
-#else
-  (!_mvfw) ? _mvbw : (level == 1 ? _mvfw : (level == 2 ? _mvfw2 : (level == 3 ? _mvfw3 : (level == 4 ? _mvfw4 : (level == 5 ? _mvfw5 : _mvfw6))))),
-  level == 1 ? "MDegrain1" : (level == 2 ? "MDegrain2" : (level == 3 ? "MDegrain3" : (level == 4 ? "MDegrain4" : (level == 5 ? "MDegrain5" : "MDegrain6")))),
-  env_ptr,
-  (!_mvfw) ? level * 2 : 1, 
-  (!_mvfw) ? level * 2 - 1 : 0) // 1/3/5
-#endif
   , super(_super)
   , lsb_flag(_lsb_flag)
   , out16_flag(_out16_flag)
   , height_lsb_or_out16_mul((_lsb_flag || _out16_flag) ? 2 : 1)
-#ifndef LEVEL_IS_TEMPLATE
   , level( _level )
-#endif
   , DstPlanes(0)
   , SrcPlanes(0)
 {
@@ -496,7 +474,6 @@ MVDegrainX::MVDegrainX(
   if (!DEGRAINCHROMA)
     env_ptr->ThrowError("MDegrain%d : no valid DEGRAINCHROMA function for %dx%d, bitsperpixel=%d, lsb_flag=%d, level=%d", level, nBlkSizeX, nBlkSizeY, bits_per_pixel_super, (int)lsb_flag, level);
 
-#ifndef LEVEL_IS_TEMPLATE
   switch (level) {
   case 1: NORMWEIGHTS = norm_weights<1>; break;
   case 2: NORMWEIGHTS = norm_weights<2>; break;
@@ -505,7 +482,6 @@ MVDegrainX::MVDegrainX(
   case 5: NORMWEIGHTS = norm_weights<5>; break;
   case 6: NORMWEIGHTS = norm_weights<6>; break;
   }
-#endif
 
   // max blocksize = 32, 170507: 64 (moved to const)
   const int		tmp_size = MAX_BLOCK_SIZE * MAX_BLOCK_SIZE * pixelsize_super;
@@ -558,12 +534,7 @@ MVDegrainX::MVDegrainX(
 }
 
 
-#ifdef LEVEL_IS_TEMPLATE
-template<int level>
-MVDegrainX<level>::~MVDegrainX()
-#else
 MVDegrainX::~MVDegrainX()
-#endif
 {
   if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
   {
@@ -599,12 +570,7 @@ static void plane_copy_8_to_16_c(uint8_t *dstp, int dstpitch, const uint8_t *src
 
 
 
-#ifdef LEVEL_IS_TEMPLATE
-template<int level>
-PVideoFrame __stdcall MVDegrainX<level>::GetFrame(int n, IScriptEnvironment* env)
-#else
 PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
-#endif
 {
   int nWidth_B = nBlkX*(nBlkSizeX - nOverlapX) + nOverlapX;
   int nHeight_B = nBlkY*(nBlkSizeY - nOverlapY) + nOverlapY;
@@ -858,11 +824,7 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
             use_block_y(pB[j], npB[j], WRefB[j], isUsableB[j], *mvClipB[j], i, pPlanesB[0][j], pSrcCur[0], xx << pixelsize_super_shift, nSrcPitches[0]);
             use_block_y(pF[j], npF[j], WRefF[j], isUsableF[j], *mvClipF[j], i, pPlanesF[0][j], pSrcCur[0], xx << pixelsize_super_shift, nSrcPitches[0]);
           }
-#ifndef LEVEL_IS_TEMPLATE
           NORMWEIGHTS(WSrc, WRefB, WRefF);
-#else
-          norm_weights<level>(WSrc, WRefB, WRefF);
-#endif
 
           // luma
           DEGRAINLUMA(pDstCur[0] + (xx << pixelsize_output_shift), pDstCur[0] + lsb_offset_y + (xx << pixelsize_super_shift),
@@ -953,11 +915,7 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
             use_block_y(pB[j], npB[j], WRefB[j], isUsableB[j], *mvClipB[j], i, pPlanesB[0][j], pSrcCur[0], xx << pixelsize_super_shift, nSrcPitches[0]);
             use_block_y(pF[j], npF[j], WRefF[j], isUsableF[j], *mvClipF[j], i, pPlanesF[0][j], pSrcCur[0], xx << pixelsize_super_shift, nSrcPitches[0]);
           }
-#ifndef LEVEL_IS_TEMPLATE
           NORMWEIGHTS(WSrc, WRefB, WRefF);
-#else
-          norm_weights<level>(WSrc, WRefB, WRefF);
-#endif
           // luma
           DEGRAINLUMA(tmpBlock, tmpBlockLsb, WidthHeightForC, tmpPitch << pixelsize_output_shift, pSrcCur[0] + (xx << pixelsize_super_shift), nSrcPitches[0],
             pB, npB, pF, npF,
@@ -1107,16 +1065,9 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
 
 
 
-#ifdef LEVEL_IS_TEMPLATE
-template<int level>
-void	MVDegrainX<level>::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int nDstPitch, const BYTE *pSrc, const BYTE *pSrcCur, int nSrcPitch,
+void MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int nDstPitch, const BYTE *pSrc, const BYTE *pSrcCur, int nSrcPitch,
   bool isUsableB[MAX_DEGRAIN], bool isUsableF[MAX_DEGRAIN], MVPlane *pPlanesB[MAX_DEGRAIN], MVPlane *pPlanesF[MAX_DEGRAIN],
   int lsb_offset_uv, int nWidth_B, int nHeight_B)
-#else
-void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int nDstPitch, const BYTE *pSrc, const BYTE *pSrcCur, int nSrcPitch,
-  bool isUsableB[MAX_DEGRAIN], bool isUsableF[MAX_DEGRAIN], MVPlane *pPlanesB[MAX_DEGRAIN], MVPlane *pPlanesF[MAX_DEGRAIN],
-  int lsb_offset_uv, int nWidth_B, int nHeight_B)
-#endif
 {
   if (!(YUVplanes & plane_mask))
   {
@@ -1153,11 +1104,7 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
             use_block_uv(pBV[j], npBV[j], WRefB[j], isUsableB[j], *mvClipB[j], i, pPlanesB[j], pSrcCur, xx << pixelsize_super_shift, nSrcPitch);
             use_block_uv(pFV[j], npFV[j], WRefF[j], isUsableF[j], *mvClipF[j], i, pPlanesF[j], pSrcCur, xx << pixelsize_super_shift, nSrcPitch);
           }
-#ifndef LEVEL_IS_TEMPLATE
           NORMWEIGHTS(WSrc, WRefB, WRefF);
-#else
-          norm_weights<level>(WSrc, WRefB, WRefF);
-#endif
           // chroma
           DEGRAINCHROMA(pDstCur + (xx << pixelsize_output_shift), pDstCur + (xx << pixelsize_super_shift) + lsb_offset_uv,
             WidthHeightForC_UV, nDstPitch, pSrcCur + (xx << pixelsize_super_shift), nSrcPitch,
@@ -1249,11 +1196,7 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
             use_block_uv(pBV[j], npBV[j], WRefB[j], isUsableB[j], *mvClipB[j], i, pPlanesB[j], pSrcCur, xx << pixelsize_super_shift, nSrcPitch);
             use_block_uv(pFV[j], npFV[j], WRefF[j], isUsableF[j], *mvClipF[j], i, pPlanesF[j], pSrcCur, xx << pixelsize_super_shift, nSrcPitch);
           }
-#ifndef LEVEL_IS_TEMPLATE
           NORMWEIGHTS(WSrc, WRefB, WRefF);
-#else
-          norm_weights<level>(WSrc, WRefB, WRefF);
-#endif
           // chroma
           DEGRAINCHROMA(tmpBlock, tmpBlockLsb, WidthHeightForC_UV, tmpPitch << pixelsize_output_shift, pSrcCur + (xx << pixelsize_super_shift), nSrcPitch,
             pBV, npBV, pFV, npFV,
@@ -1366,12 +1309,7 @@ void	MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
 
 // todo: put together with use_block_uv,  
 // todo: change /xRatioUV_super and /yRatioUV_super to bit shifts everywhere
-#ifdef LEVEL_IS_TEMPLATE
-template<int level>
-MV_FORCEINLINE void	MVDegrainX<level>::use_block_y(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch)
-#else
 MV_FORCEINLINE void	MVDegrainX::use_block_y(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch)
-#endif
 {
   if (isUsable)
   {
@@ -1393,12 +1331,7 @@ MV_FORCEINLINE void	MVDegrainX::use_block_y(const BYTE * &p, int &np, int &WRef,
 }
 
 // no difference for 1-2-3
-#ifdef LEVEL_IS_TEMPLATE
-template<int level>
-MV_FORCEINLINE void	MVDegrainX<level>::use_block_uv(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch)
-#else
-MV_FORCEINLINE void	MVDegrainX::use_block_uv(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch)
-#endif
+MV_FORCEINLINE void MVDegrainX::use_block_uv(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch)
 {
   if (isUsable)
   {
@@ -1457,8 +1390,8 @@ MV_FORCEINLINE void	norm_weights(int &WSrc, int(&WRefB)[MAX_DEGRAIN], int(&WRefF
     WRefF[4] = WRefF[4] * DEGRAIN_WMAX / WSum;
   }
   if constexpr(level >= 6) {
-    WRefB[5] = WRefB[5] * 256 / WSum; // normalize weights to 256
-    WRefF[5] = WRefF[5] * 256 / WSum;
+    WRefB[5] = WRefB[5] * DEGRAIN_WMAX / WSum; // normalize weights to 256
+    WRefF[5] = WRefF[5] * DEGRAIN_WMAX / WSum;
   }
   // make sure sum is DEGRAIN_WMAX
   if constexpr(level == 6)
@@ -1474,31 +1407,4 @@ MV_FORCEINLINE void	norm_weights(int &WSrc, int(&WRefB)[MAX_DEGRAIN], int(&WRefF
   else if constexpr(level == 1)
     WSrc = DEGRAIN_WMAX - WRefB[0] - WRefF[0];
 }
-
-#ifdef LEVEL_IS_TEMPLATE
-
-template class MVDegrainX<1>;
-/*
-(PClip _child, PClip _super, PClip _mvbw, PClip _mvfw, PClip _mvbw2, PClip _mvfw2, PClip _mvbw3, PClip _mvfw3, PClip _mvbw4, PClip _mvfw4, PClip _mvbw5, PClip _mvfw5,
-sad_t _thSAD, sad_t _thSADC, int _YUVplanes, sad_t _nLimit, sad_t _nLimitC,
-sad_t _nSCD1, int _nSCD2, bool _isse2, bool _planar, bool _lsb_flag,
-bool _mt_flag, 
-#ifndef LEVEL_IS_TEMPLATE
-int _level, 
-#endif
-IScriptEnvironment* env);
-*/
-template class MVDegrainX<2>;
-/*
-(PClip _child, PClip _super, PClip _mvbw, PClip _mvfw, PClip _mvbw2, PClip _mvfw2, PClip _mvbw3, PClip _mvfw3, PClip _mvbw4, PClip _mvfw4, PClip _mvbw5, PClip _mvfw5,
-sad_t _thSAD, sad_t _thSADC, int _YUVplanes, sad_t _nLimit, sad_t _nLimitC,
-sad_t _nSCD1, int _nSCD2, bool _isse2, bool _planar, bool _lsb_flag,
-bool _mt_flag, 
-#ifndef LEVEL_IS_TEMPLATE
-int _level, 
-#endif
-IScriptEnvironment* env);
-#endif
-*/
-#endif
 

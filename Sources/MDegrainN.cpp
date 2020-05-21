@@ -1938,7 +1938,7 @@ void	MDegrainN::use_block_uv(
 
 
 
-void	MDegrainN::norm_weights(int wref_arr[], int trad)
+void MDegrainN::norm_weights(int wref_arr[], int trad)
 {
   const int nbr_frames = trad * 2 + 1;
 
