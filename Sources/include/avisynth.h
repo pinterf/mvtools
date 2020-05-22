@@ -15,12 +15,12 @@
 // 20200330: removed __stdcall from variadic argument functions (Sprintf)
 //           (remove test SIZETMOD define for clarity)
 //           Integrate Avisynth Neo structures and interface, PFunction, PDevice
-// 20200423: frame property support (NewVideoFrameP and other helpers) to legacy IScriptEnvironment.
+// 20200501: frame property support (NewVideoFrameP and other helpers) to legacy IScriptEnvironment.
 //           move some former IScriptEnvironment2 functions to IScriptEnvironment:
 //           GetEnvProperty (system prop), Allocate, Free (buffer pool)
 //           GetVarTry, GetVarBool/Int/String/Double/Long
+//           Invoke2, Invoke3, InvokeTry, Invoke2Try, Invoke3Try
 //           Interface Version to 8 (classic 2.6 = 6)
-
 
 // http://www.avisynth.org
 
@@ -73,7 +73,7 @@
 #define __cdecl
 #endif
 
-// Important note on AVISYNTH_INTERFACE_VERSION change:
+// Important note on AVISYNTH_INTERFACE_VERSION V6->V8 change:
 // Note 1: Those few plugins which were using earlier IScriptEnvironment2 despite the big Warning will crash have to be rebuilt.
 // Note 2: How to support earlier avisynth interface with an up-to-date avisynth.h:
 //         Use the new frame property features adaptively after querying that at least v8 is supported
@@ -167,9 +167,7 @@ private:
 enum AvsDeviceType {
   DEV_TYPE_NONE = 0,
   DEV_TYPE_CPU = 1,
-#ifdef ENABLE_CUDA
   DEV_TYPE_CUDA = 2,
-#endif
   DEV_TYPE_ANY = 0xFFFF
 };
 
@@ -374,42 +372,43 @@ struct AVS_Linkage {
   void (VideoFrame::* setProperties)(const AVSMap& properties);
 
   // PFunction
-  void            (AVSValue::* AVSValue_CONSTRUCTOR11)(const PFunction& o);
-  bool            (AVSValue::* IsFunction)() const;
-  void            (PFunction::* PFunction_CONSTRUCTOR0)();
-  void            (PFunction::* PFunction_CONSTRUCTOR1)(IFunction* p);
-  void            (PFunction::* PFunction_CONSTRUCTOR2)(const PFunction& p);
-  PFunction& (PFunction::* PFunction_OPERATOR_ASSIGN0)(IFunction* other);
-  PFunction& (PFunction::* PFunction_OPERATOR_ASSIGN1)(const PFunction& other);
-  void            (PFunction::* PFunction_DESTRUCTOR)();
+  void          (AVSValue::* AVSValue_CONSTRUCTOR11)(const PFunction& o);
+  bool          (AVSValue::* IsFunction)() const;
+  void          (PFunction::* PFunction_CONSTRUCTOR0)();
+  void          (PFunction::* PFunction_CONSTRUCTOR1)(IFunction* p);
+  void          (PFunction::* PFunction_CONSTRUCTOR2)(const PFunction& p);
+  PFunction&    (PFunction::* PFunction_OPERATOR_ASSIGN0)(IFunction* other);
+  PFunction&    (PFunction::* PFunction_OPERATOR_ASSIGN1)(const PFunction& other);
+  void          (PFunction::* PFunction_DESTRUCTOR)();
   // end PFunction
 
   // extra VideoFrame functions
-  int             (VideoFrame::* VideoFrame_CheckMemory)() const;
-  PDevice(VideoFrame::* VideoFrame_GetDevice)() const;
+  int           (VideoFrame::* VideoFrame_CheckMemory)() const;
+  PDevice       (VideoFrame::* VideoFrame_GetDevice)() const;
 
   // class PDevice, even if only CPU device
-  void            (PDevice::* PDevice_CONSTRUCTOR0)();
-  void            (PDevice::* PDevice_CONSTRUCTOR1)(Device* p);
-  void            (PDevice::* PDevice_CONSTRUCTOR2)(const PDevice& p);
-  PDevice& (PDevice::* PDevice_OPERATOR_ASSIGN0)(Device* other);
-  PDevice& (PDevice::* PDevice_OPERATOR_ASSIGN1)(const PDevice& other);
-  void            (PDevice::* PDevice_DESTRUCTOR)();
-  AvsDeviceType(PDevice::* PDevice_GetType)() const;
-  int             (PDevice::* PDevice_GetId)() const;
-  int             (PDevice::* PDevice_GetIndex)() const;
-  const char* (PDevice::* PDevice_GetName)() const;
+  void          (PDevice::* PDevice_CONSTRUCTOR0)();
+  void          (PDevice::* PDevice_CONSTRUCTOR1)(Device* p);
+  void          (PDevice::* PDevice_CONSTRUCTOR2)(const PDevice& p);
+  PDevice&      (PDevice::* PDevice_OPERATOR_ASSIGN0)(Device* other);
+  PDevice&      (PDevice::* PDevice_OPERATOR_ASSIGN1)(const PDevice& other);
+  void          (PDevice::* PDevice_DESTRUCTOR)();
+  AvsDeviceType (PDevice::* PDevice_GetType)() const;
+  int           (PDevice::* PDevice_GetId)() const;
+  int           (PDevice::* PDevice_GetIndex)() const;
+  const char*   (PDevice::* PDevice_GetName)() const;
   // end class PDevice
 
   /**********************************************************************/
-  // Reserve pointer space so that we can keep compatibility with Neo/AviSynth+
-  void    (VideoInfo::* reserved2[64 - 23])();
-/**********************************************************************/
-  // AviSynth Neo additions
-  INeoEnv*    (__stdcall *GetNeoEnv)(IScriptEnvironment* env);
-  // As of V8 most Neo linkage entries are moved to standard avs+ place.
-  // frame property logic has been replaced entirely
+  // Reserve pointer space for Avisynth+
+  void          (VideoInfo::* reserved2[64 - 23])();
   /**********************************************************************/
+
+  // AviSynth Neo additions
+  INeoEnv*      (__stdcall *GetNeoEnv)(IScriptEnvironment* env);
+  // As of V8 most PDevice, PFunction linkage entries are moved to standard avs+ place.
+  /**********************************************************************/
+
   // this part should be identical with AVS_Linkage entries in interface.cpp
 };
 
@@ -674,6 +673,7 @@ enum {
 
     // RGB planar
     CS_RGBP   = CS_GENERIC_RGBP | CS_Sample_Bits_8,  // Planar RGB 8 bit samples
+    CS_RGBP8  = CS_GENERIC_RGBP | CS_Sample_Bits_8,  // Planar RGB 8 bit samples
     CS_RGBP10 = CS_GENERIC_RGBP | CS_Sample_Bits_10, // Planar RGB 10bit samples
     CS_RGBP12 = CS_GENERIC_RGBP | CS_Sample_Bits_12, // Planar RGB 12bit samples
     CS_RGBP14 = CS_GENERIC_RGBP | CS_Sample_Bits_14, // Planar RGB 14bit samples
@@ -682,6 +682,7 @@ enum {
 
     // RGBA planar
     CS_RGBAP   = CS_GENERIC_RGBAP | CS_Sample_Bits_8,  // Planar RGBA 8 bit samples
+    CS_RGBAP8  = CS_GENERIC_RGBAP | CS_Sample_Bits_8,  // Planar RGBA 8 bit samples
     CS_RGBAP10 = CS_GENERIC_RGBAP | CS_Sample_Bits_10, // Planar RGBA 10bit samples
     CS_RGBAP12 = CS_GENERIC_RGBAP | CS_Sample_Bits_12, // Planar RGBA 12bit samples
     CS_RGBAP14 = CS_GENERIC_RGBAP | CS_Sample_Bits_14, // Planar RGBA 14bit samples
@@ -1265,7 +1266,7 @@ public:
   const char*     AsString2(const char* def) const;
 
 #ifdef NEW_AVSVALUE
-  void            MarkArrayAsC();
+  void            MarkArrayAsC(); // for C interface, no deep-copy and deep-free
   void            CONSTRUCTOR10(const AVSValue& v, bool c_arrays);
   AVSValue(const AVSValue& v, bool c_arrays);
   void            Assign2(const AVSValue* src, bool init, bool c_arrays);
@@ -1335,6 +1336,7 @@ public:
 
 #include <avs/cpuid.h>
 
+// IScriptEnvironment GetEnvProperty
 enum AvsEnvProperty
 {
   AEP_PHYSICAL_CPUS = 1,
@@ -1353,6 +1355,7 @@ enum AvsEnvProperty
   AEP_GETFRAME_RECURSIVE = 922,
 };
 
+// IScriptEnvironment Allocate
 enum AvsAllocType
 {
   AVS_NORMAL_ALLOC = 1,
@@ -1423,6 +1426,7 @@ public:
   virtual PVideoFrame __stdcall SubframePlanar(PVideoFrame src, int rel_offset, int new_pitch, int new_row_size,
                                                int new_height, int rel_offsetU, int rel_offsetV, int new_pitchUV) = 0;
 
+  // **** AVISYNTH_INTERFACE_VERSION 5 **** defined since classic Avisynth 2.6 beta
   virtual void __stdcall DeleteScriptEnvironment() = 0;
 
   virtual void __stdcall ApplyMessage(PVideoFrame* frame, const VideoInfo& vi, const char* message, int size,
@@ -1434,7 +1438,7 @@ public:
   // noThrow version of GetVar
   virtual AVSValue __stdcall GetVarDef(const char* name, const AVSValue& def = AVSValue()) = 0;
 
-  // **** AVISYNTH_INTERFACE_VERSION 8 **** AviSynth+ 3.5.2-
+  // **** AVISYNTH_INTERFACE_VERSION 8 **** AviSynth+ 3.6.0-
   virtual PVideoFrame __stdcall SubframePlanarA(PVideoFrame src, int rel_offset, int new_pitch, int new_row_size,
     int new_height, int rel_offsetU, int rel_offsetV, int new_pitchUV, int rel_offsetA) = 0;
 
@@ -1472,7 +1476,7 @@ public:
   virtual void __stdcall freeMap(AVSMap* map) = 0;
   virtual void __stdcall clearMap(AVSMap* map) = 0;
 
-  // NewVideoFrame with frame property source. 
+  // NewVideoFrame with frame property source.
   virtual PVideoFrame __stdcall NewVideoFrameP(const VideoInfo& vi, PVideoFrame* propSrc, int align = FRAME_ALIGN) = 0;
 
   // Note: do not declare existing names like 'NewVideoFrame' again with different parameters since MSVC will reorder it
@@ -1500,6 +1504,17 @@ public:
   virtual const char* __stdcall GetVarString(const char* name, const char* def) const = 0;
   // brand new in v8 - though no real int64 support yet
   virtual int64_t __stdcall GetVarLong(const char* name, int64_t def) const = 0;
+
+  // 'Invoke' functions moved here from internal ScriptEnvironments are renamed in order to keep vtable order
+  // Invoke functions with 'Try' will return false instead of throwing NotFound().
+  // ex-IScriptEnvironment2
+  virtual bool __stdcall InvokeTry(AVSValue* result, const char* name, const AVSValue& args, const char* const* arg_names = 0) = 0;
+  // Since V8
+  virtual AVSValue __stdcall Invoke2(const AVSValue& implicit_last, const char* name, const AVSValue args, const char* const* arg_names = 0) = 0;
+  // Ex-INeo
+  virtual bool __stdcall Invoke2Try(AVSValue* result, const AVSValue& implicit_last, const char* name, const AVSValue args, const char* const* arg_names = 0) = 0;
+  virtual AVSValue __stdcall Invoke3(const AVSValue& implicit_last, const PFunction& func, const AVSValue args, const char* const* arg_names = 0) = 0;
+  virtual bool __stdcall Invoke3Try(AVSValue* result, const AVSValue& implicit_last, const PFunction& func, const AVSValue args, const char* const* arg_names = 0) = 0;
 
 }; // end class IScriptEnvironment
 
@@ -1544,7 +1559,8 @@ class IScriptEnvironment2 : public IScriptEnvironment{
 public:
   virtual ~IScriptEnvironment2() {}
 
-  // V8: SubframePlanarA, GetEnvProperty, GetVar versions, Allocate, Free moved to IScriptEnvironment
+  // V8: SubframePlanarA, GetEnvProperty, GetVar versions, Allocate, Free, no-throw Invoke moved to IScriptEnvironment
+
   // Plugin functions
   virtual bool __stdcall LoadPlugin(const char* filePath, bool throwOnError, AVSValue *result) = 0;
   virtual void __stdcall AddAutoloadDir(const char* dirPath, bool toFront) = 0;
@@ -1558,10 +1574,6 @@ public:
   virtual IJobCompletion* __stdcall NewCompletion(size_t capacity) = 0;
   virtual void __stdcall ParallelJob(ThreadWorkerFuncPtr jobFunc, void* jobData, IJobCompletion* completion) = 0;
 
-  // This version of Invoke will return false instead of throwing NotFound().
-  virtual bool __stdcall Invoke(AVSValue *result, const char* name, const AVSValue& args, const char* const* arg_names=0) = 0;
-
-
   // These lines are needed so that we can overload the older functions from IScriptEnvironment.
   using IScriptEnvironment::Invoke;
   using IScriptEnvironment::AddFunction;
@@ -1574,7 +1586,7 @@ public:
 // INeoEnv and the legacy interfaces (IScriptEnvironment/IScriptEnvironment2)
 // share the same ScriptEnvironment instance. The function with the same signature
 // is exactly identical and there is no limitation to switch interfaces.
-// You can use any inteface you like.
+// You can use any interface you like.
 class INeoEnv {
 public:
   virtual ~INeoEnv() {}
@@ -1592,7 +1604,9 @@ public:
 
   // Generic system to ask for various properties
   virtual size_t  __stdcall GetEnvProperty(AvsEnvProperty prop) = 0;
+#ifdef INTEL_INTRINSICS
   virtual int __stdcall GetCPUFlags() = 0;
+#endif
 
   // Plugin functions
   virtual bool __stdcall LoadPlugin(const char* filePath, bool throwOnError, AVSValue *result) = 0;
@@ -1607,21 +1621,23 @@ public:
   virtual bool __stdcall FunctionExists(const char* name) = 0;
   virtual bool __stdcall InternalFunctionExists(const char* name) = 0;
 
-  // Invoke function. Throws NotFound exception when the specified function is not exists.
+  // Invoke function. Throws NotFound exception when the specified function does not exist.
   virtual AVSValue __stdcall Invoke(
     const char* name, const AVSValue args, const char* const* arg_names = 0) = 0;
-  virtual AVSValue __stdcall Invoke(
+  virtual AVSValue __stdcall Invoke2(
+    const AVSValue& implicit_last, const char* name, const AVSValue args, const char* const* arg_names = 0) = 0;
+  virtual AVSValue __stdcall Invoke3(
     const AVSValue& implicit_last,
     const PFunction& func, const AVSValue args, const char* const* arg_names = 0) = 0;
 
   // These versions of Invoke will return false instead of throwing NotFound().
-  virtual bool __stdcall Invoke(
+  virtual bool __stdcall InvokeTry(
     AVSValue* result, const char* name, const AVSValue& args, const char* const* arg_names = 0) = 0;
-  virtual bool __stdcall Invoke(
+  virtual bool __stdcall Invoke2Try(
     AVSValue* result, const AVSValue& implicit_last,
     const char* name, const AVSValue args, const char* const* arg_names = 0) = 0;
-  virtual bool __stdcall Invoke(
-    AVSValue *result, const AVSValue& implicit_last,
+  virtual bool __stdcall Invoke3Try(
+    AVSValue* result, const AVSValue& implicit_last,
     const PFunction& func, const AVSValue args, const char* const* arg_names = 0) = 0;
 
   // Throws exception when the requested variable is not found.
@@ -1671,7 +1687,6 @@ public:
   virtual PVideoFrame __stdcall SubframePlanarA(PVideoFrame src, int rel_offset, int new_pitch, int new_row_size,
     int new_height, int rel_offsetU, int rel_offsetV, int new_pitchUV, int rel_offsetA) = 0;
 
-  // I keep using Neo method in which ScriptEnvironment2 is duplicated here
   // frame properties support
   virtual void __stdcall copyFrameProps(const PVideoFrame& src, PVideoFrame& dst) = 0;
   virtual const AVSMap* __stdcall getFramePropsRO(const PVideoFrame& frame) = 0;

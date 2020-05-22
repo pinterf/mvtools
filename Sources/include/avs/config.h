@@ -48,6 +48,11 @@
 #   define X86_64
 #elif defined(_M_IX86) || defined(__i386__)
 #   define X86_32
+// VS2017 introduced _M_ARM64
+#elif defined(_M_ARM64) || defined(__aarch64__)
+#   define ARM64
+#elif defined(_M_ARM) || defined(__arm__)
+#   define ARM32
 #else
 #   error Unsupported CPU architecture.
 #endif
@@ -128,6 +133,8 @@
 #endif
 
 #if defined(AVS_POSIX)
+#define NEW_AVSVALUE
+#else
 #define NEW_AVSVALUE
 #endif
 
