@@ -349,7 +349,7 @@ AVSValue __cdecl Create_MVFlowBlur(AVSValue args, void*, IScriptEnvironment* env
 
 AVSValue __cdecl Create_MVDegrainX(AVSValue args, void* user_data, IScriptEnvironment* env)
 {
-  int level = (intptr_t)user_data;
+  auto level = (intptr_t)user_data;
 
   int plane_param_index = 6; // base: MDegrain1
   int thsad_param_index = 4;
@@ -388,7 +388,8 @@ AVSValue __cdecl Create_MVDegrainX(AVSValue args, void* user_data, IScriptEnviro
 
   int thSAD = args[thsad_param_index + param_index_shift].AsInt(400);  // thSAD
 
-  int limit = args[limit_param_index + param_index_shift].AsInt(255); // change limit. 2.7.25-: use 255 as default for all bit depth
+  // change limit. 2.7.25-: use 255 as default for all bit depth. v42: float
+  const float limit = args[limit_param_index + param_index_shift].AsFloatf(255.f);
   return new MVDegrainX(
     args[0].AsClip(),       // source
     args[1].AsClip(),       // super
@@ -408,7 +409,7 @@ AVSValue __cdecl Create_MVDegrainX(AVSValue args, void* user_data, IScriptEnviro
     args[5 + param_index_shift].AsInt(thSAD),   // thSAD
     YUVplanes,              // YUV planes
     limit,                  // limit
-    args[8 + param_index_shift].AsInt(limit),  // limitC
+    args[8 + param_index_shift].AsFloatf(limit),  // limitC
     args[9 + param_index_shift].AsInt(MV_DEFAULT_SCD1), // thSCD1
     args[10 + param_index_shift].AsInt(MV_DEFAULT_SCD2), // thSCD2
     args[11 + param_index_shift].AsBool(true),  // isse
@@ -446,13 +447,13 @@ AVSValue __cdecl Create_MDegrainN(AVSValue args, void*, IScriptEnvironment* env)
     break;
   }
 
-  const int		tr = args[3].AsInt(1);       // tr
-  const int      thSAD = args[4].AsInt(400);     // thSAD
-  const int      thSADC = args[5].AsInt(thSAD);   // thSADC
+  const int tr = args[3].AsInt(1);       // tr
+  const int thSAD = args[4].AsInt(400);     // thSAD
+  const int thSADC = args[5].AsInt(thSAD);   // thSADC
   // bit-depth adaptive limit? not here
-  const int limit = args[7].AsInt(255); // change limit. 2.7.25-: use 255 as default for all bit depth
-  const int		thSAD2 = args[14].AsInt(thSAD);  // thSAD2
-  const int		thSADC2 = args[15].AsInt(thSADC); // thSADC2
+  const float limit = args[7].AsFloatf(255.f); // change limit. 2.7.25-: use 255 as default for all bit depth v42:float
+  const int thSAD2 = args[14].AsInt(thSAD);  // thSAD2
+  const int thSADC2 = args[15].AsInt(thSADC); // thSADC2
 
   // Switch to MDegrain1/2/3/4/5/6 when possible (faster)
   if (thSAD2 == thSAD && thSADC == thSADC2)
@@ -479,7 +480,7 @@ AVSValue __cdecl Create_MDegrainN(AVSValue args, void*, IScriptEnvironment* env)
         thSADC,                    // thSADC
         YUVplanes,                 // YUV planes
         limit,                     // limit
-        args[8].AsInt(limit),    // limitC
+        args[8].AsFloatf(limit),   // limitC
         args[9].AsInt(MV_DEFAULT_SCD1),  // thSCD1
         args[10].AsInt(MV_DEFAULT_SCD2), // thSCD2
         args[11].AsBool(true),   // isse
@@ -502,7 +503,7 @@ AVSValue __cdecl Create_MDegrainN(AVSValue args, void*, IScriptEnvironment* env)
     thSADC,                    // thSADC
     YUVplanes,                 // YUV planes
     limit,                     // limit
-    args[8].AsInt(limit),    // limitC
+    args[8].AsFloatf(limit),   // limitC
     args[9].AsInt(MV_DEFAULT_SCD1),  // thSCD1
     args[10].AsInt(MV_DEFAULT_SCD2), // thSCD2
     args[11].AsBool(true),   // isse

@@ -239,7 +239,7 @@ MAKE_FN(2, 1, 1)
 MVDegrainX::MVDegrainX(
   PClip _child, PClip _super, 
   PClip _mvbw, PClip _mvfw, PClip _mvbw2, PClip _mvfw2, PClip _mvbw3, PClip _mvfw3, PClip _mvbw4, PClip _mvfw4, PClip _mvbw5, PClip _mvfw5, PClip _mvbw6, PClip _mvfw6,
-  sad_t _thSAD, sad_t _thSADC, int _YUVplanes, sad_t _nLimit, sad_t _nLimitC,
+  sad_t _thSAD, sad_t _thSADC, int _YUVplanes, float _nLimit, float _nLimitC,
   sad_t _nSCD1, int _nSCD2, bool _isse2, bool _planar, bool _lsb_flag,
   bool _mt_flag, bool _out16_flag,
   int _level, 
@@ -1013,11 +1013,12 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
     if (nLimit < 255)
     {
       // limit is 0-255 relative, for any bit depth
+      // v42: moved to float to allow more granularity at 10+ bit depths
       float realLimit;
       if (pixelsize_output <= 2)
-        realLimit = float(nLimit << (bits_per_pixel_output - 8));
+        realLimit = nLimit * (1 << (bits_per_pixel_output - 8));
       else
-        realLimit = (float)nLimit / 255.0f;
+        realLimit = nLimit / 255.0f;
 
       LimitFunction(pDst[0], nDstPitches[0], pSrc[0], nSrcPitches[0], nWidth, nHeight, realLimit);
     }
@@ -1297,12 +1298,12 @@ void MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
     if (nLimitC < 255)
     {
       // limit is 0-255 relative, for any bit depth
-      float realLimitc;
+      float realLimit;
       if (pixelsize_output <= 2)
-        realLimitc = float(nLimitC << (bits_per_pixel_output - 8));
+        realLimit = nLimitC * (1 << (bits_per_pixel_output - 8));
       else
-        realLimitc = (float)nLimitC / 255.0f;
-      LimitFunction(pDst, nDstPitch, pSrc, nSrcPitch, nWidth >> nLogxRatioUV_super, nHeight >> nLogyRatioUV_super, realLimitc);
+        realLimit = nLimitC * (1 << (bits_per_pixel_output - 8));
+      LimitFunction(pDst, nDstPitch, pSrc, nSrcPitch, nWidth >> nLogxRatioUV_super, nHeight >> nLogyRatioUV_super, realLimit);
     }
   }
 }

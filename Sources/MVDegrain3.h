@@ -41,8 +41,8 @@ private:
   sad_t thSADC;
   double thSADC_sq;
   int YUVplanes;
-  sad_t nLimit;
-  sad_t nLimitC;
+  float nLimit;
+  float nLimitC;
   PClip super;
   //bool isse_flag;
   int cpuFlags;
@@ -101,7 +101,7 @@ private:
 public:
   MVDegrainX(PClip _child, PClip _super, 
     PClip _mvbw, PClip _mvfw, PClip _mvbw2, PClip _mvfw2, PClip _mvbw3, PClip _mvfw3, PClip _mvbw4, PClip _mvfw4, PClip _mvbw5, PClip _mvfw5, PClip _mvbw6, PClip _mvfw6,
-    sad_t _thSAD, sad_t _thSADC, int _YUVplanes, sad_t _nLimit, sad_t _nLimitC,
+    sad_t _thSAD, sad_t _thSADC, int _YUVplanes, float _nLimit, float _nLimitC,
     sad_t _nSCD1, int _nSCD2, bool _isse2, bool _planar, bool _lsb_flag,
     bool _mt_flag, bool _out16_flag,
     int _level, 
@@ -127,7 +127,7 @@ private:
 #pragma warning( disable : 4101)
   // out16_type: 
   //   0: native 8 or 16
-  //   1: 8bit in, lsb
+  //   1: 8bit in, lsb (stacked)
   //   2: 8bit in, native16 out
 template<typename pixel_t, int out16_type, int level >
 void Degrain1to6_C(uint8_t *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPitch, const uint8_t *pSrc, int nSrcPitch,

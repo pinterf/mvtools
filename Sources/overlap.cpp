@@ -394,7 +394,7 @@ __forceinline __m128i _MM_MAX_EPU16(__m128i x, __m128i y)
 template<typename pixel_t, bool hasSSE41>
 void LimitChanges_sse2_new(unsigned char *pDst8, int nDstPitch, const unsigned char *pSrc8, int nSrcPitch, const int nWidth, int nHeight, float nLimit_f)
 {
-  const int nLimit = (int)nLimit_f;
+  const int nLimit = (int)(nLimit_f + 0.5f);
   __m128i limits;
   if constexpr(sizeof(pixel_t) == 1)
     limits = _mm_set1_epi8(nLimit);
@@ -435,7 +435,7 @@ void LimitChanges_sse2_new(unsigned char *pDst8, int nDstPitch, const unsigned c
 // out16=true case
 void LimitChanges_src8_target16_c(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, float nLimit_f)
 {
-  const int nLimit = (int)nLimit_f;
+  const int nLimit = (int)(nLimit_f + 0.5f);
   for (int h = 0; h<nHeight; h++)
   {
     // compare 16bit target with 8 bit source
@@ -450,7 +450,7 @@ void LimitChanges_src8_target16_c(unsigned char *pDst, int nDstPitch, const unsi
 template<typename pixel_t>
 void LimitChanges_c(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, float nLimit_f)
 {
-  const int nLimit = (int)nLimit_f;
+  const int nLimit = (int)(nLimit_f + 0.5f);
 	for (int h=0; h<nHeight; h++)
 	{
 		for (int i=0; i<nWidth; i++)

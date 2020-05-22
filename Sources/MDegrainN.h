@@ -31,7 +31,7 @@ public:
 
   MDegrainN(
     ::PClip child, ::PClip super, ::PClip mvmulti, int trad,
-    sad_t thsad, sad_t thsadc, int yuvplanes, sad_t nlimit, sad_t nlimitc,
+    sad_t thsad, sad_t thsadc, int yuvplanes, float nlimit, float nlimitc,
     sad_t nscd1, int nscd2, bool isse_flag, bool planar_flag, bool lsb_flag,
     sad_t thsad2, sad_t thsadc2, bool mt_flag, bool out16_flag, ::IScriptEnvironment* env_ptr
   );
@@ -116,8 +116,8 @@ private:
 
   int _trad;// Temporal radius (nbr frames == _trad * 2 + 1)
   int _yuvplanes;
-  int _nlimit;
-  int _nlimitc;
+  float _nlimit;
+  float _nlimitc;
   PClip _super;
   int _cpuFlags;
   const bool _planar_flag;

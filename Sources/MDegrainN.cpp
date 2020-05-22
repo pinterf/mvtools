@@ -508,7 +508,7 @@ func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_OUT16, USE_SSE2)] = DegrainN_sse
 
 MDegrainN::MDegrainN(
   PClip child, PClip super, PClip mvmulti, int trad,
-  sad_t thsad, sad_t thsadc, int yuvplanes, sad_t nlimit, sad_t nlimitc,
+  sad_t thsad, sad_t thsadc, int yuvplanes, float nlimit, float nlimitc,
   sad_t nscd1, int nscd2, bool isse_flag, bool planar_flag, bool lsb_flag,
   sad_t thsad2, sad_t thsadc2, bool mt_flag, bool out16_flag, IScriptEnvironment* env_ptr
 )
@@ -1164,9 +1164,9 @@ static void plane_copy_8_to_16_c(uint8_t *dstp, int dstpitch, const uint8_t *src
       // limit is 0-255 relative, for any bit depth
       float realLimit;
       if (pixelsize_output <= 2)
-        realLimit = float(_nlimit << (bits_per_pixel_output - 8));
+        realLimit = _nlimit * (1 << (bits_per_pixel_output - 8));
       else
-        realLimit = (float)_nlimit / 255.0f;
+        realLimit = _nlimit / 255.0f;
       LimitFunction(_dst_ptr_arr[0], _dst_pitch_arr[0],
         _src_ptr_arr[0], _src_pitch_arr[0],
         nWidth, nHeight,
@@ -1376,15 +1376,15 @@ void	MDegrainN::process_chroma(int plane_mask)
     if (_nlimitc < 255)
     {
       // limit is 0-255 relative, for any bit depth
-      float realLimitc;
+      float realLimit;
       if (pixelsize_output <= 2)
-        realLimitc = float(_nlimitc << (bits_per_pixel_output - 8));
+        realLimit = _nlimitc * (1 << (bits_per_pixel_output - 8));
       else
-        realLimitc = (float)_nlimitc / 255.0f;
+        realLimit = (float)_nlimitc / 255.0f;
       LimitFunction(_dst_ptr_arr[P], _dst_pitch_arr[P],
         _src_ptr_arr[P], _src_pitch_arr[P],
         nWidth >> nLogxRatioUV_super, nHeight >> nLogyRatioUV_super,
-        realLimitc
+        realLimit
       );
     }
   }
