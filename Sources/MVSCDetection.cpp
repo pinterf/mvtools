@@ -30,6 +30,10 @@ GenericVideoFilter(_child),
 mvClip(vectors, nSCD1, nSCD2, env, 1, 0),
 MVFilter(vectors, "MSCDetection", env, 1, 0)
 {
+  has_at_least_v8 = true;
+  try { env->CheckVersion(8); }
+  catch (const AvisynthError&) { has_at_least_v8 = false; }
+
   if (pixelsize == 4) {
     if (Ysc < 0) // default if not provided: -9999
       sceneChangeValue_f = 1.0f;
@@ -50,7 +54,7 @@ MVSCDetection::~MVSCDetection()
 
 PVideoFrame __stdcall MVSCDetection::GetFrame(int n, IScriptEnvironment* env)
 {
-   PVideoFrame dst = env->NewVideoFrame(vi);
+   PVideoFrame dst = env->NewVideoFrame(vi); // no frame props here
 
 	PVideoFrame mvn = mvClip.GetFrame(n, env);
    mvClip.Update(mvn, env);

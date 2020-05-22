@@ -33,6 +33,7 @@ class MVDegrainX
 private:
   typedef void (norm_weights_Function_t)(int &WSrc, int(&WRefB)[MAX_DEGRAIN], int(&WRefF)[MAX_DEGRAIN]);
 
+  bool has_at_least_v8;
 
   MVClip *mvClipB[MAX_DEGRAIN];
   MVClip *mvClipF[MAX_DEGRAIN];

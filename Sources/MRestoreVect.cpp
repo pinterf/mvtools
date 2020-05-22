@@ -29,7 +29,7 @@
 
 
 
-MRestoreVect::MRestoreVect (::PClip src, int clip_index, ::IScriptEnvironment &env)
+MRestoreVect::MRestoreVect (::PClip src, int clip_index, IScriptEnvironment *env)
 :	::GenericVideoFilter (src)
 ,	_mad ()
 ,	_clip_index (clip_index)
@@ -37,9 +37,13 @@ MRestoreVect::MRestoreVect (::PClip src, int clip_index, ::IScriptEnvironment &e
 ,	_row_size (0)
 ,	_available_size (0)
 {
+  has_at_least_v8 = true;
+  try { env->CheckVersion(8); }
+  catch (const AvisynthError&) { has_at_least_v8 = false; }
+
 	if (_clip_index < 0)
 	{
-		env.ThrowError ("MRestoreVect: invalid index value.");
+		env->ThrowError ("MRestoreVect: invalid index value.");
 	}
 
 	_bytes_per_pix  = vi.BitsPerPixel () >> 3;
@@ -47,10 +51,10 @@ MRestoreVect::MRestoreVect (::PClip src, int clip_index, ::IScriptEnvironment &e
 	_available_size = vi.height * _row_size;
 	if (_available_size < 4 * sizeof (int32_t))
 	{
-		env.ThrowError ("MRestoreVect: frame too small to contain valid data.");
+		env->ThrowError ("MRestoreVect: frame too small to contain valid data.");
 	}
 
-	::PVideoFrame	frame_ptr = src->GetFrame (0, &env);
+	::PVideoFrame	frame_ptr = src->GetFrame (0, env);
 	int				data_offset     = 0;		// Bytes
 	int				data_len        = 0;		// Bytes
 	bool				contiguous_flag = false;
@@ -62,7 +66,7 @@ MRestoreVect::MRestoreVect (::PClip src, int clip_index, ::IScriptEnvironment &e
 	read_from_clip (pos, data_ptr, &_mad, sizeof (_mad), pitch);
 	if (_mad.GetMagicKey () != MVAnalysisData::MOTION_MAGIC_KEY)
 	{
-		env.ThrowError ("MRestoreVect: unexpected or corrupted contained data.");
+		env->ThrowError ("MRestoreVect: unexpected or corrupted contained data.");
 	}
 
 	ClipFnc::format_vector_clip (
@@ -93,7 +97,7 @@ MRestoreVect::MRestoreVect (::PClip src, int clip_index, ::IScriptEnvironment &e
 	int				data_offset     = 0;		// Bytes
 	int				data_len        = 0;		// Bytes
 	bool				contiguous_flag = false;
-	read_frame_info (data_offset, data_len, contiguous_flag, src_ptr, *env_ptr);
+	read_frame_info (data_offset, data_len, contiguous_flag, src_ptr, env_ptr);
 	if (data_len > vi.width * vi.height * _bytes_per_pix)
 	{
 		env_ptr->ThrowError ("MRestoreVect: invalid content at frame %d.", n);
@@ -108,7 +112,7 @@ MRestoreVect::MRestoreVect (::PClip src, int clip_index, ::IScriptEnvironment &e
 	}
 	else
 	{
-		dst_ptr = env_ptr->NewVideoFrame (vi);
+		dst_ptr = has_at_least_v8 ? env_ptr->NewVideoFrameP(vi, &src_ptr) : env_ptr->NewVideoFrame(vi); // frame property support
 
 		const uint8_t*	src_data_ptr = src_ptr->GetReadPtr ();
 		const int		src_pitch    = src_ptr->GetPitch ();
@@ -134,7 +138,7 @@ MRestoreVect::MRestoreVect (::PClip src, int clip_index, ::IScriptEnvironment &e
 
 
 // data_offset and data_len are in bytes
-void	MRestoreVect::read_frame_info (int &data_offset, int &data_len, bool &contiguous_flag, ::PVideoFrame frame_ptr, ::IScriptEnvironment &env) const
+void	MRestoreVect::read_frame_info (int &data_offset, int &data_len, bool &contiguous_flag, ::PVideoFrame frame_ptr, ::IScriptEnvironment *env) const
 {
 	assert (&data_offset != 0);
 	assert (&contiguous_flag != 0);
@@ -154,11 +158,11 @@ void	MRestoreVect::read_frame_info (int &data_offset, int &data_len, bool &conti
 
 	if (key != MVAnalysisData::STORE_KEY)
 	{
-		env.ThrowError ("MRestoreVect: clip does not wrap motion vector data.");
+		env->ThrowError ("MRestoreVect: clip does not wrap motion vector data.");
 	}
 	if (ver != MVAnalysisData::STORE_VERSION)
 	{
-		env.ThrowError (
+		env->ThrowError (
 			"MRestoreVect: unsupported version (%d) of the motion vector wrapper.",
 			ver
 		);
@@ -166,7 +170,7 @@ void	MRestoreVect::read_frame_info (int &data_offset, int &data_len, bool &conti
 
 	if (_clip_index >= nbr_clips)
 	{
-		env.ThrowError ("MRestoreVect: clip not found (invalid index value).");
+		env->ThrowError ("MRestoreVect: clip not found (invalid index value).");
 	}
 	pos += _clip_index * sizeof (int32_t);
 
@@ -180,7 +184,7 @@ void	MRestoreVect::read_frame_info (int &data_offset, int &data_len, bool &conti
 	    || data_len               <= sizeof (int32_t) + sizeof (_mad)
 	    || data_offset + data_len >= _available_size)
 	{
-		env.ThrowError ("MRestoreVect: corrupted data.");
+		env->ThrowError ("MRestoreVect: corrupted data.");
 	}
 
 	contiguous_flag = (pitch == _row_size);

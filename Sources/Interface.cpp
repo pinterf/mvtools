@@ -632,7 +632,7 @@ AVSValue __cdecl Create_MStoreVect(AVSValue args, void*, IScriptEnvironment* env
   return new MStoreVect(
     vect_arr,               // vectors
     args[1].AsString(""), // vccs
-    *env_ptr
+    env_ptr
   );
 }
 
@@ -641,7 +641,7 @@ AVSValue __cdecl Create_MRestoreVect(AVSValue args, void*, IScriptEnvironment* e
   return new MRestoreVect(
     args[0].AsClip(), // wrapped vectors
     args[1].AsInt(0), // index
-    *env_ptr
+    env_ptr
   );
 }
 

@@ -80,6 +80,7 @@ class DePanStabilize : public GenericVideoFilter {
   // This name is only used internally, and does not affect the name of your filter or similar.
   // This filter extends GenericVideoFilter, which incorporates basic functionality.
   // All functions present in the filter must also be present here.
+  bool has_at_least_v8;
 
   PClip DePanData;      // motion data clip
   float cutoff; // vibration frequency cutoff
@@ -1435,7 +1436,7 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
     // copy "frame_to_copy" frame
 
     src = child->GetFrame(frame_to_copy, env);
-
+    if (has_at_least_v8) env->copyFrameProps(src, dst); // frame prop v8
     _RPT5(0, "DePanStabilize phase#%d. subpixel=%d frame=%d dx=%f dy=%f\n", fillprev0next1current2, subpixel, nbase, dxdif, dydif);
 
     const int planes_y[4] = { PLANAR_Y, PLANAR_U, PLANAR_V, PLANAR_A };

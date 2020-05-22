@@ -34,6 +34,10 @@ MVFlowInter::MVFlowInter(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, in
   mvClipB(_mvbw, nSCD1, nSCD2, env, 1, 0),
   mvClipF(_mvfw, nSCD1, nSCD2, env, 1, 0)
 {
+  has_at_least_v8 = true;
+  try { env->CheckVersion(8); }
+  catch (const AvisynthError&) { has_at_least_v8 = false; }
+
   time256 = _time256;
   ml = _ml;
   cpuFlags = _isse ? env->GetCPUFlags() : 0;
@@ -284,7 +288,7 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
 //	int sharp = mvClipB.GetSharp();
   PVideoFrame	src = finest->GetFrame(n, env);
   PVideoFrame ref = finest->GetFrame(nref, env);//  ref for  compensation
-  dst = env->NewVideoFrame(vi);
+  dst = has_at_least_v8 ? env->NewVideoFrameP(vi, &src) : env->NewVideoFrame(vi); // frame property support
 
   if (mvClipB.IsUsable() && mvClipF.IsUsable())
   {

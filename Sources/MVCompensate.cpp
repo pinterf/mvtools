@@ -52,6 +52,10 @@ MVCompensate::MVCompensate(
   //,	nLogyRatioUV ((yRatioUV == 2) ? 1 : 0)
   , _boundary_cnt_arr()
 {
+  has_at_least_v8 = true;
+  try { env_ptr->CheckVersion(8); }
+  catch (const AvisynthError&) { has_at_least_v8 = false; }
+
   cpuFlags = _isse2 ? env_ptr->GetCPUFlags() : 0;
 
   // actual format can differ from the base clip of vectors
@@ -309,7 +313,7 @@ PVideoFrame __stdcall MVCompensate::GetFrame(int n, IScriptEnvironment* env_ptr)
   mvn = 0; // free
 
   PVideoFrame src = super->GetFrame(nsrc, env_ptr);
-  PVideoFrame dst = env_ptr->NewVideoFrame(vi);
+  PVideoFrame dst = env_ptr->NewVideoFrame(vi); // frame property support later
   bool usable_flag = _mv_clip_ptr->IsUsable();
   int nref;
   _mv_clip_ptr->use_ref_frame(nref, usable_flag, super, nsrc, env_ptr);
@@ -320,6 +324,7 @@ PVideoFrame __stdcall MVCompensate::GetFrame(int n, IScriptEnvironment* env_ptr)
 
   if (usable_flag)
   {
+    if (has_at_least_v8) env_ptr->copyFrameProps(src, dst); // frame property copy V8
     if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2)
     {
       if (!planar)
@@ -553,6 +558,7 @@ PVideoFrame __stdcall MVCompensate::GetFrame(int n, IScriptEnvironment* env_ptr)
     {
       src = super->GetFrame(nsrc, env_ptr);
     }
+    if (has_at_least_v8) env_ptr->copyFrameProps(src, dst); // frame property support v8
 
     if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2)
     {

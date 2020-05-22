@@ -49,6 +49,10 @@ MVSuper::MVSuper(
   , pelclip(_pelclip)
   , _mt_flag(mt_flag)
 {
+  has_at_least_v8 = true;
+  try { env->CheckVersion(8); }
+  catch (const AvisynthError&) { has_at_least_v8 = false; }
+
   planar = _planar;
 
   nWidth = vi.width;
@@ -197,7 +201,7 @@ PVideoFrame __stdcall MVSuper::GetFrame(int n, IScriptEnvironment* env)
   if (usePelClip)
     srcPel = pelclip->GetFrame(n, env);
 
-  PVideoFrame dst = env->NewVideoFrame(vi);
+  PVideoFrame dst = has_at_least_v8 ? env->NewVideoFrameP(vi, &src) : env->NewVideoFrame(vi); // frame property support
 
   PROFILE_START(MOTION_PROFILE_YUY2CONVERT);
   if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2)

@@ -261,6 +261,11 @@ MVDegrainX::MVDegrainX(
   , DstPlanes(0)
   , SrcPlanes(0)
 {
+
+  has_at_least_v8 = true;
+  try { env_ptr->CheckVersion(8); }
+  catch (const AvisynthError&) { has_at_least_v8 = false; }
+
   //DstShortAlign32 = nullptr;
   DstShort = nullptr;
   //DstIntAlign32 = nullptr;
@@ -614,7 +619,7 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
   //	if ( mvClipB.IsUsable() && mvClipF.IsUsable() && mvClipB2.IsUsable() && mvClipF2.IsUsable() )
   //	{
   PVideoFrame	src = child->GetFrame(n, env);
-  PVideoFrame dst = env->NewVideoFrame(vi);
+  PVideoFrame dst = has_at_least_v8 ? env->NewVideoFrameP(vi, &src) : env->NewVideoFrame(vi); // frame property support
   if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2)
   {
     if (!planar)

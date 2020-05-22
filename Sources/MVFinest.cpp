@@ -31,6 +31,10 @@
 MVFinest::MVFinest(PClip _super, bool _isse, IScriptEnvironment* env) :
 GenericVideoFilter(_super)
 {
+  has_at_least_v8 = true;
+  try { env->CheckVersion(8); }
+  catch (const AvisynthError&) { has_at_least_v8 = false; }
+
   cpuFlags = _isse ? env->GetCPUFlags() : 0;
 
 	// get parameters of prepared super clip - v2.0
@@ -88,7 +92,7 @@ PVideoFrame __stdcall MVFinest::GetFrame(int n, IScriptEnvironment* env)
 //	unsigned char *pDstYUY2;
 //	int nDstPitchYUY2;
 
-	PVideoFrame dst = env->NewVideoFrame(vi);
+	PVideoFrame dst = has_at_least_v8 ? env->NewVideoFrameP(vi, &ref) : env->NewVideoFrame(vi); // frame property support
 
   int planecount;
   if (nPel == 1) // simply copy top lines

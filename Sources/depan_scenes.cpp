@@ -66,6 +66,7 @@ class DePanScenes : public GenericVideoFilter {
   // This name is only used internally, and does not affect the name of your filter or similar.
   // This filter extends GenericVideoFilter, which incorporates basic functionality.
   // All functions present in the filter must also be present here.
+  bool has_at_least_v8;
 
 	// filter parameters
 //	child  - motion data clip
@@ -117,7 +118,9 @@ DePanScenes::DePanScenes(PClip _child, int _plane, const char * _inputlog, IScri
   //  where the following variables gets defined:
   //   PClip child;   // Contains the source clip.
   //   VideoInfo vi;  // Contains videoinfo on the source clip.
-
+  has_at_least_v8 = true;
+  try { env->CheckVersion(8); }
+  catch (const AvisynthError&) { has_at_least_v8 = false; }
 
 	int error;
 	int loginterlaced;
@@ -208,7 +211,7 @@ PVideoFrame __stdcall DePanScenes::GetFrame(int ndest, IScriptEnvironment* env) 
   // Construct a new frame based on the information of the current frame
   // contained in the "vi" struct.
 
-  PVideoFrame dst = env->NewVideoFrame(vi);
+  PVideoFrame dst = has_at_least_v8 ? env->NewVideoFrameP(vi, &src) : env->NewVideoFrame(vi); // frame property support
   // Request a Write pointer from the newly created destination image.
 
 	if (!vi.IsYUY2())

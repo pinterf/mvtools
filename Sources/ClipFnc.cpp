@@ -75,7 +75,7 @@ int	ClipFnc::compute_fieldshift (::PClip &clp, bool field_flag, int npel, int ns
 // Function used by MAnalyse MRecalculate and MStoreVect to format the output
 // vector clip with the given spec.
 // vccs_0 == 0: keeps the vi colorspace.
-void	ClipFnc::format_vector_clip (::VideoInfo &vi, bool single_line_flag, int nbr_blk_x, const char *vccs_0, int size_bytes, const char *funcname_0, ::IScriptEnvironment &env)
+void	ClipFnc::format_vector_clip (::VideoInfo &vi, bool single_line_flag, int nbr_blk_x, const char *vccs_0, int size_bytes, const char *funcname_0, IScriptEnvironment *env)
 {
 	assert (&vi != 0);
 	assert (nbr_blk_x > 0);
@@ -90,7 +90,7 @@ void	ClipFnc::format_vector_clip (::VideoInfo &vi, bool single_line_flag, int nb
 		    && vi.pixel_type != VideoInfo::CS_BGR24
 		    && vi.pixel_type != VideoInfo::CS_YUY2)
 		{
-			env.ThrowError (
+			env->ThrowError (
 				"%s: unsupported colorspace for the vector clip.",
 				funcname_0
 			);
@@ -111,7 +111,7 @@ void	ClipFnc::format_vector_clip (::VideoInfo &vi, bool single_line_flag, int nb
 	}
 	else
 	{
-		env.ThrowError (
+		env->ThrowError (
 			"%s: unsupported colorspace for the vector clip.",
 			funcname_0
 		);

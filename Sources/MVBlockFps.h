@@ -17,6 +17,7 @@ class MVBlockFps
   , public MVFilter
 {
 private:
+  bool has_at_least_v8;
 
   MVClip mvClipB;
   MVClip mvClipF;

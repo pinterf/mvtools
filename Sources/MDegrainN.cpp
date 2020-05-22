@@ -555,6 +555,10 @@ MDegrainN::MDegrainN(
   , _covered_height(0)
   , _boundary_cnt_arr()
 {
+  has_at_least_v8 = true;
+  try { env_ptr->CheckVersion(8); }
+  catch (const AvisynthError&) { has_at_least_v8 = false; }
+
   if (trad > MAX_TEMP_RAD)
   {
     env_ptr->ThrowError(
@@ -860,8 +864,9 @@ static void plane_copy_8_to_16_c(uint8_t *dstp, int dstpitch, const uint8_t *src
     _usable_flag_arr[k] = mv_clip.IsUsable();
   }
 
-  ::PVideoFrame src = child->GetFrame(n, env_ptr);
-  ::PVideoFrame dst = env_ptr->NewVideoFrame(vi);
+  PVideoFrame src = child->GetFrame(n, env_ptr);
+  PVideoFrame dst = has_at_least_v8 ? env_ptr->NewVideoFrameP(vi, &src) : env_ptr->NewVideoFrame(vi); // frame property support
+
   if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2)
   {
     if (!_planar_flag)

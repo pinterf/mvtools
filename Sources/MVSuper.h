@@ -95,6 +95,9 @@ MV_FORCEINLINE unsigned int PlaneSuperOffset(bool chroma, int src_height, int le
 class MVSuper
   : public GenericVideoFilter
 {
+private:
+  bool has_at_least_v8;
+
 protected:
 
   int            nHPad;

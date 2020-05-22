@@ -62,6 +62,7 @@ class DePanEstimate_fftw : public GenericVideoFilter {
   // This name is only used internally, and does not affect the name of your filter or similar.
   // This filter extends GenericVideoFilter, which incorporates basic functionality.
   // All functions present in the filter must also be present here.
+  bool has_at_least_v8;
 
 // filter parameters
   int range;  // radius of frame series for motion calculation

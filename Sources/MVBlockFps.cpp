@@ -46,6 +46,11 @@ MVBlockFps::MVBlockFps(
   , mvClipF(mvfw, nSCD1, nSCD2, env, 1, 0)
   , super(_super)
 {
+
+  has_at_least_v8 = true;
+  try { env->CheckVersion(8); }
+  catch (const AvisynthError&) { has_at_least_v8 = false; }
+
   cpuFlags = _isse2 ? env->GetCPUFlags() : 0;
 
   numeratorOld = vi.fps_numerator;
@@ -620,7 +625,7 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
   PVideoFrame src = super->GetFrame(nleft, env);
   PVideoFrame ref = super->GetFrame(nright, env);//  ref for backward compensation
 
-  dst = env->NewVideoFrame(vi);
+  dst = has_at_least_v8 ? env->NewVideoFrameP(vi, &src) : env->NewVideoFrame(vi); // frame property support
 
   bool needProcessPlanes[3] = { true, !!(nSuperModeYUV & UPLANE) && !isGrey, !!(nSuperModeYUV & VPLANE) && !isGrey};
 
@@ -1202,6 +1207,7 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
   else // bad
   {
     PVideoFrame src = child->GetFrame(nleft, env); // it is easy to use child here - v2.0
+    env->copyFrameProps(src, dst); // frame property support
 
     if (blend) //let's blend src with ref frames like ConvertFPS
     {

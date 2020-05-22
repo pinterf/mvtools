@@ -38,6 +38,10 @@ MVMask::MVMask(
   , mvClip(vectors, nSCD1, nSCD2, env, 1, 0)
   , MVFilter(vectors, "MMask", env, 1, 0)
 {
+  has_at_least_v8 = true;
+  try { env->CheckVersion(8); }
+  catch (const AvisynthError&) { has_at_least_v8 = false; }
+
   cpuFlags = _isse ? env->GetCPUFlags() : 0;
 
   fMaskNormFactor = 1.0f / ml; // Fizick
@@ -166,10 +170,10 @@ unsigned char MVMask::SAD(unsigned int s)
 PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
 {
   const bool needSrcFrame = (kind == 5); // at other types input only provides format
-  PVideoFrame	src;
+  PVideoFrame src;
   if (needSrcFrame)
     src = child->GetFrame(n, env);
-  PVideoFrame	dst = env->NewVideoFrame(vi);
+  PVideoFrame dst = has_at_least_v8 && needSrcFrame ? env->NewVideoFrameP(vi, &src) : env->NewVideoFrame(vi); // frame property support
   const BYTE *pSrc[3];
   BYTE *pDst[3];
   int nDstPitches[3];

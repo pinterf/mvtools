@@ -35,6 +35,8 @@ class Padding
 {
 
 private:
+  bool has_at_least_v8;
+
   int horizontalPadding;
   int verticalPadding;
   bool planar;

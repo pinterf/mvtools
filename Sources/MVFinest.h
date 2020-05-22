@@ -18,11 +18,9 @@ class MVFinest
 
 private:
 
-//   int mode;
-//   bool fields;
-//   PClip pelclip;
-   //bool isse;
-   int cpuFlags;
+  bool has_at_least_v8;
+  
+  int cpuFlags;
 
    int pixelsize;
    int bits_per_pixel;

@@ -39,6 +39,10 @@ void PadCorner(pixel_t *p, pixel_t v, int hPad, int vPad, int refPitch)
 Padding::Padding(PClip _child, int hPad, int vPad, bool _planar, IScriptEnvironment* env) :
   GenericVideoFilter(_child)
 {
+  has_at_least_v8 = true;
+  try { env->CheckVersion(8); }
+  catch (const AvisynthError&) { has_at_least_v8 = false; }
+
   if (!vi.IsYUV() && !vi.IsYUY2() && !vi.IsPlanarRGB() && !vi.IsPlanarRGBA())
     env->ThrowError("Padding : clip must be in the YUV or YUY2 or planar RGB/RGBA color format");
 
@@ -73,7 +77,7 @@ Padding::~Padding()
 PVideoFrame __stdcall Padding::GetFrame(int n, IScriptEnvironment *env)
 {
   PVideoFrame src = child->GetFrame(n, env);
-  PVideoFrame dst = env->NewVideoFrame(vi);
+  PVideoFrame dst = has_at_least_v8 ? env->NewVideoFrameP(vi, &src) : env->NewVideoFrame(vi); // frame property support
 
   const unsigned char *pSrc[3];
   unsigned char *pDst[3];

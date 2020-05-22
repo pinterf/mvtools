@@ -40,6 +40,10 @@ MVDepan::MVDepan(PClip _child, PClip mvs, PClip _mask, bool _zoom, bool _rot, fl
   zeroWeight(_zerow), range(_range),
   ifZoom(_zoom), ifRot(_rot), pixaspect(_pixaspect), error(_error), info(_info), logfilename(_logfilename)
 {
+  has_at_least_v8 = true;
+  try { env->CheckVersion(8); }
+  catch (const AvisynthError&) { has_at_least_v8 = false; }
+
   blockDx = new float[nBlkX * nBlkY]; // dx vector
   blockDy = new float[nBlkX * nBlkY]; // dy
   blockSAD = new sad_t[nBlkX * nBlkY];
@@ -444,7 +448,7 @@ PVideoFrame __stdcall MVDepan::GetFrame(int ndest, IScriptEnvironment* env)
   int nFields = (vi.IsFieldBased()) ? 2 : 1;
 
   PVideoFrame	src = child->GetFrame(ndest, env);
-  PVideoFrame	dst = env->NewVideoFrame(vi);
+  PVideoFrame	dst = has_at_least_v8 ? env->NewVideoFrameP(vi, &src) : env->NewVideoFrame(vi); // frame property support
 
   PVideoFrame maskf;
   if (mask)

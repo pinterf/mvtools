@@ -12,6 +12,7 @@ class MVFlowFps
   , public MVFilter
 {
 private:
+  bool has_at_least_v8 = true;
 
   MVClip mvClipB;
   MVClip mvClipF;

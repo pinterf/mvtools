@@ -63,7 +63,7 @@ class ClipFnc
 public:
 
 	static int		compute_fieldshift (::PClip &clp, bool field_flag, int npel, int nsrc, int nref);
-	static void		format_vector_clip (::VideoInfo &vi, bool single_line_flag, int nbr_blk_x, const char *vccs_0, int size_bytes, const char *funcname_0, ::IScriptEnvironment &env);
+	static void		format_vector_clip (::VideoInfo &vi, bool single_line_flag, int nbr_blk_x, const char *vccs_0, int size_bytes, const char *funcname_0, IScriptEnvironment *env);
 	static int		compute_mvclip_best_width (int nbr_blk_x, int unit_size, int align);
 	static sad_t		interpolate_thsad (sad_t thsad1, sad_t thsad2, int d, int tr);
 

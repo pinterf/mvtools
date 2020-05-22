@@ -31,6 +31,10 @@ MVFlow::MVFlow(PClip _child, PClip super, PClip _mvec, int _time256, int _mode, 
   MVFilter(_mvec, "MFlow", env, 1, 0),
   mvClip(_mvec, nSCD1, nSCD2, env, 1, 0)
 {
+  has_at_least_v8 = true;
+  try { env->CheckVersion(8); }
+  catch (const AvisynthError&) { has_at_least_v8 = false; }
+
   time256 = _time256;
   mode = _mode;
 
@@ -309,7 +313,7 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
   if (usable_flag)
   {
     ref = finest->GetFrame(nref, env);//  ref for  compensation
-    dst = env->NewVideoFrame(vi);
+    dst = has_at_least_v8 ? env->NewVideoFrameP(vi, &ref) : env->NewVideoFrame(vi); // frame property support
 
     if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2)
     {

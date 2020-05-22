@@ -36,6 +36,10 @@ GenericVideoFilter(_super),
 mvClip(vectors, nSCD1, nSCD2, env, 1, 0),
 MVFilter(vectors, "MShow", env, 1, 0)
 {
+  has_at_least_v8 = true;
+  try { env->CheckVersion(8); }
+  catch (const AvisynthError&) { has_at_least_v8 = false; }
+
   cpuFlags = _isse ? env->GetCPUFlags() : 0;
 	nScale = _scale;
 	if ( nScale < 1 )
@@ -91,7 +95,8 @@ MVShow::~MVShow()
 PVideoFrame __stdcall MVShow::GetFrame(int n, IScriptEnvironment* env)
 {
 	PVideoFrame	src = child->GetFrame(n, env);
-	PVideoFrame	dst = env->NewVideoFrame(vi);
+	PVideoFrame	dst = has_at_least_v8 ? env->NewVideoFrameP(vi, &src) : env->NewVideoFrame(vi); // frame property support
+
    BYTE *pDst[3];
 	   const BYTE *pSrc[3];
     int nDstPitches[3], nSrcPitches[3];

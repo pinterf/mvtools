@@ -47,6 +47,7 @@ public:
 protected:
 
 private:
+  bool has_at_least_v8;
 
   typedef void (DenoiseNFunction)(
     BYTE *pDst, BYTE *pDstLsb, int nDstPitch,

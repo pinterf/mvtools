@@ -61,6 +61,8 @@ protected:
 	std::unique_ptr <GroupOfPlanes>
 	               _vectorfields_aptr;	// Temporary data, structure initialised once.
 
+  bool has_at_least_v8;
+
    /*! \brief isse optimisations enabled */
 	//bool           isse;
   int cpuFlags;

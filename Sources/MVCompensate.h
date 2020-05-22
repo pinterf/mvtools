@@ -40,6 +40,7 @@ public:
   }
 
 private:
+  bool has_at_least_v8;
 
 	typedef	SharedPtr <MVClip>	MVClipSPtr;
 	class MvClipInfo

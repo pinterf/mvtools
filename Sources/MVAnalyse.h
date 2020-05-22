@@ -42,6 +42,7 @@ class MVAnalyse
   : public GenericVideoFilter
 {
 protected:
+  bool has_at_least_v8;
 
   int _instance_id; // debug unique id
 

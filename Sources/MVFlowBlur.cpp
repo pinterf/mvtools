@@ -32,6 +32,10 @@ MVFlowBlur::MVFlowBlur(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, int 
   mvClipB(_mvbw, nSCD1, nSCD2, env, 1, 0),
   mvClipF(_mvfw, nSCD1, nSCD2, env, 1, 0)
 {
+  has_at_least_v8 = true;
+  try { env->CheckVersion(8); }
+  catch (const AvisynthError&) { has_at_least_v8 = false; }
+
   blur256 = _blur256;
   prec = _prec;
   cpuFlags = _isse ? env->GetCPUFlags() : 0;
@@ -308,7 +312,7 @@ PVideoFrame __stdcall MVFlowBlur::GetFrame(int n, IScriptEnvironment* env)
   if (mvClipB.IsUsable() && mvClipF.IsUsable())
   {
     PVideoFrame ref = finest->GetFrame(n, env);//  ref for  compensation
-    dst = env->NewVideoFrame(vi);
+    dst = has_at_least_v8 ? env->NewVideoFrameP(vi, &ref) : env->NewVideoFrame(vi); // frame property support
 
     if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2)
     {

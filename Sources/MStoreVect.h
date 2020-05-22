@@ -40,8 +40,9 @@ class MStoreVect
 /*\\\ PUBLIC \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
 public:
+  bool has_at_least_v8;
 
-	explicit			MStoreVect (std::vector <::PClip> clip_arr, const char *vccs_0, ::IScriptEnvironment &env);
+	explicit			MStoreVect (std::vector <::PClip> clip_arr, const char *vccs_0, IScriptEnvironment *env);
 	virtual			~MStoreVect () {}
 
 	// GenericVideoFilter

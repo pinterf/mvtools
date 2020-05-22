@@ -18,6 +18,7 @@ class MVSCDetection
 ,	public MVFilter
 {
 private:
+  bool has_at_least_v8;
 
 	MVClip mvClip;
    int sceneChangeValue;

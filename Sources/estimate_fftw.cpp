@@ -72,6 +72,10 @@
 DePanEstimate_fftw::DePanEstimate_fftw(PClip _child, int _range, float _trust, int _winx, int _winy, int _wleft, int _wtop, int _dxmax, int _dymax, float _zoommax, float _stab, float _pixaspect, int _info, const char * _logfilename, int _debug, int _show, const char * _extlogfilename, IScriptEnvironment* env) :
   GenericVideoFilter(_child), range(_range), trust_limit(_trust), winx(_winx), winy(_winy), wleft(_wleft), wtop(_wtop), dxmax(_dxmax), dymax(_dymax), zoommax(_zoommax), stab(_stab), pixaspect(_pixaspect), info(_info), logfilename(_logfilename), debug(_debug), show(_show), extlogfilename(_extlogfilename) {
 
+  has_at_least_v8 = true;
+  try { env->CheckVersion(8); }
+  catch (const AvisynthError&) { has_at_least_v8 = false; }
+
   if (!vi.IsYUY2() && !vi.IsYUV())
     env->ThrowError("DePanEstimate: input must be YUV or YUY2!");
   // if (!vi.IsYV12() && !vi.IsYUY2())	env->ThrowError("DePanEstimate: input to filter must be in YV12 or YUY2!");
@@ -843,7 +847,7 @@ PVideoFrame __stdcall DePanEstimate_fftw::GetFrame(int ndest, IScriptEnvironment
   // Request frame 'ndest' from the child (source) clip.
 
  // create output frame with crypted motion data info
-  PVideoFrame dst = env->NewVideoFrame(vi);
+  PVideoFrame dst = has_at_least_v8 ? env->NewVideoFrameP(vi, &src) : env->NewVideoFrame(vi); // frame property support
 
   // ---------------------------------------------------------------------------
   // isYUY2 = vi.IsYUY2(); // v.1.1 move to init

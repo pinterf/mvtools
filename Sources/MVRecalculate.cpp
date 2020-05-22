@@ -50,6 +50,10 @@ MVRecalculate::MVRecalculate(
   , _nbr_srd((trad > 0) ? trad * 2 : 1)
   , _mt_flag(mt_flag)
 {
+  has_at_least_v8 = true;
+  try { env->CheckVersion(8); }
+  catch (const AvisynthError&) { has_at_least_v8 = false; }
+
   _srd_arr.resize(_nbr_srd);
 
   cpuFlags = _isse ? env->GetCPUFlags() : 0;
@@ -356,7 +360,7 @@ MVRecalculate::MVRecalculate(
   // Defines the format of the output vector clip
   const int		width_bytes = headerSize + _vectorfields_aptr->GetArraySize() * 4;
   ClipFnc::format_vector_clip(
-    vi, true, nBlkX, "rgb32", width_bytes, "MRecalculate", *env
+    vi, true, nBlkX, "rgb32", width_bytes, "MRecalculate", env
   );
 
   if (divideExtra)	//v1.8.1
@@ -493,7 +497,7 @@ PVideoFrame __stdcall MVRecalculate::GetFrame(int n, IScriptEnvironment* env)
     maxframe = nbr_src_frames;
   }
 
-  ::PVideoFrame		dst = env->NewVideoFrame(vi);
+  PVideoFrame dst = env->NewVideoFrame(vi); // frame prop copy later if needed
   unsigned char *	pDst = dst->GetWritePtr();
 
   // write analysis parameters as a header to frame
@@ -524,7 +528,8 @@ PVideoFrame __stdcall MVRecalculate::GetFrame(int n, IScriptEnvironment* env)
   else
   {
     //		DebugPrintf ("MVRecalculate: Get src frame %d",nsrc);
-    ::PVideoFrame	src = child->GetFrame(nsrc, env); // v2.0
+    PVideoFrame src = child->GetFrame(nsrc, env); // v2.0
+    if (has_at_least_v8) env->copyFrameProps(src, dst); // frame prop copy support v8
     load_src_frame(*pSrcGOF, src, srd._analysis_data);
 
     //		DebugPrintf("MVRecalculate: Get ref frame %d", nref);

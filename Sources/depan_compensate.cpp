@@ -136,6 +136,8 @@ class DePan : public GenericVideoFilter {
   // This filter extends GenericVideoFilter, which incorporates basic functionality.
   // All functions present in the filter must also be present here.
 
+  bool has_at_least_v8;
+
   // filter parameters
   PClip DePanData;  // motion data clip
   float offset;  // offset in frame units
@@ -218,6 +220,9 @@ DePan::DePan(PClip _child, PClip _DePanData, float _offset, int _subpixel, float
   //   PClip child;   // Contains the source clip.
   //   VideoInfo vi;  // Contains videoinfo on the source clip.
 
+  has_at_least_v8 = true;
+  try { env->CheckVersion(8); }
+  catch (const AvisynthError&) { has_at_least_v8 = false; }
 
   int error;
   int loginterlaced;
@@ -494,7 +499,7 @@ PVideoFrame __stdcall DePan::GetFrame(int ndest, IScriptEnvironment* env) {
   // Create destination frame
 
   VideoInfo vi_dst;
-  dst = env->NewVideoFrame(vi);
+  dst = env->NewVideoFrame(vi); // v8 frameprop copy later
   vi_dst = vi; // same
 
   // YV12/YV16/YV24/YUV420P16/YUV422P16/YUV444P16/Y8/Y16
@@ -505,6 +510,7 @@ PVideoFrame __stdcall DePan::GetFrame(int ndest, IScriptEnvironment* env) {
   {
     const int cpuFlags = env->GetCPUFlags();
     src = child->GetFrame(frame_to_copy, env);
+    if (has_at_least_v8) env->copyFrameProps(src, dst); // inherit frameprops
 
     src_pitch = src->GetPitch();
     src_width = vi.width;
@@ -595,6 +601,7 @@ PVideoFrame __stdcall DePan::GetFrame(int ndest, IScriptEnvironment* env) {
     //VideoInfo vi_src;
 
     src = child->GetFrame(frame_to_copy, env);
+    if(has_at_least_v8) env->copyFrameProps(src, dst); // inherit frameprops v8
 
     // we are working with 
     //   PVideoFrame src  

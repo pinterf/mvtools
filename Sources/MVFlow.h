@@ -16,6 +16,7 @@ class MVFlow
 {
 
 private:
+  bool has_at_least_v8;
 
   enum { VECT_AMP = 256 };
 

@@ -12,6 +12,10 @@
 MScaleVect::MScaleVect( PClip Child, double ScaleX, double ScaleY, ScaleMode Mode, bool Flip, bool AdjustSubpel, int Bits, IScriptEnvironment* Env )
 	 : mScaleX(ScaleX), mScaleY(ScaleY), mMode(Mode), mAdjustSubpel(AdjustSubpel), GenericVideoFilter( Child ), mRevert (false), mNewBits(Bits)
 {
+  has_at_least_v8 = true;
+  try { Env->CheckVersion(8); }
+  catch (const AvisynthError&) { has_at_least_v8 = false; }
+
 	// Get vector data
 	if (vi.nchannels >= 0 &&  vi.nchannels < 9) 
 		Env->ThrowError("MScaleVect: Clip does not contain motion vectors");
@@ -157,7 +161,7 @@ MScaleVect::MScaleVect( PClip Child, double ScaleX, double ScaleY, ScaleMode Mod
 PVideoFrame __stdcall MScaleVect::GetFrame( int FrameNum, IScriptEnvironment* Env )
 {
 	PVideoFrame src = child->GetFrame(FrameNum, Env);
-	PVideoFrame dst = Env->NewVideoFrame(vi);
+	PVideoFrame dst = has_at_least_v8 ? Env->NewVideoFrameP(vi, &src) : Env->NewVideoFrame(vi); // frame property support
 	const int* pData = reinterpret_cast<const int*>(src->GetReadPtr());
 	int* pDst = reinterpret_cast<int*>(dst->GetWritePtr());
 

@@ -30,12 +30,16 @@
 
 
 
-MStoreVect::MStoreVect(std::vector <::PClip> clip_arr, const char *vccs_0, ::IScriptEnvironment &env)
+MStoreVect::MStoreVect(std::vector <::PClip> clip_arr, const char *vccs_0, IScriptEnvironment *env)
   : GenericVideoFilter(clip_arr[0])
   , _vect_arr()
 {
   assert(!clip_arr.empty());
   assert(&env != 0);
+
+  has_at_least_v8 = true;
+  try { env->CheckVersion(8); }
+  catch (const AvisynthError&) { has_at_least_v8 = false; }
 
   const int nbr_clips = (int)clip_arr.size();
   _vect_arr.resize(nbr_clips);
@@ -50,7 +54,7 @@ MStoreVect::MStoreVect(std::vector <::PClip> clip_arr, const char *vccs_0, ::ISc
     // Checks basic parameters
     if (vd_vi.num_frames != vi.num_frames)
     {
-      env.ThrowError(
+      env->ThrowError(
         "MStoreVect: all vector clips should have the same number of frames."
       );
     }
@@ -58,7 +62,7 @@ MStoreVect::MStoreVect(std::vector <::PClip> clip_arr, const char *vccs_0, ::ISc
     // Checks if the clip contains vectors
     if (vd_vi.nchannels >= 0 && vd_vi.nchannels < 9)
     {
-      env.ThrowError("MStoreVect: invalid vector stream.");
+      env->ThrowError("MStoreVect: invalid vector stream.");
     }
 #if !defined(_WIN64)
     const MVAnalysisData &	mad =
@@ -70,7 +74,7 @@ MStoreVect::MStoreVect(std::vector <::PClip> clip_arr, const char *vccs_0, ::ISc
 #endif
     if (mad.GetMagicKey() != MVAnalysisData::MOTION_MAGIC_KEY)
     {
-      env.ThrowError("MStoreVect: invalid vector stream.");
+      env->ThrowError("MStoreVect: invalid vector stream.");
     }
 
     max_blk_x = std::max(max_blk_x, mad.nBlkX);
@@ -107,7 +111,7 @@ MStoreVect::MStoreVect(std::vector <::PClip> clip_arr, const char *vccs_0, ::ISc
   assert(n < vi.num_frames);
   assert(env_ptr != 0);
 
-  ::PVideoFrame	dst_ptr = env_ptr->NewVideoFrame(vi);
+  PVideoFrame	dst_ptr = env_ptr->NewVideoFrame(vi); // frameprop copy later
 
   uint8_t *		data_ptr = dst_ptr->GetWritePtr();
   const int		pitch = dst_ptr->GetPitch();
@@ -137,7 +141,9 @@ MStoreVect::MStoreVect(std::vector <::PClip> clip_arr, const char *vccs_0, ::ISc
     const VectData &	vect_info = _vect_arr[clip_cnt];
     assert(vect_info._data_offset * sizeof(int32_t) == dst_pos);
 
-    ::PVideoFrame	clip_ptr = vect_info._clip_sptr->GetFrame(n, env_ptr);
+    PVideoFrame	clip_ptr = vect_info._clip_sptr->GetFrame(n, env_ptr);
+    if(clip_cnt == 0) // only from the first one
+      if (has_at_least_v8) env_ptr->copyFrameProps(clip_ptr, dst_ptr); // frame prop support
     const uint8_t*	src_ptr = clip_ptr->GetReadPtr();
     const int		len_bytes = vect_info._data_len * sizeof(int32_t);
     write_to_clip(dst_pos, data_ptr, src_ptr, len_bytes, pitch);

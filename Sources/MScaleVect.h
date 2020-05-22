@@ -24,6 +24,8 @@ public:
 	enum ScaleMode { IncreaseBlockSize, DecreaseBlockSize, VectorsOnly };
 
 private:
+  bool has_at_least_v8;
+
 	// Filter data
 	MVAnalysisData mVectorsInfo;  // Clip dimensions, block layout etc.
 	ScaleMode      mMode;         // See ScaleMode enum above

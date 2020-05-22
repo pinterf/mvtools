@@ -35,9 +35,13 @@ MVFlowFps::MVFlowFps(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, unsign
   mvClipF(_mvfw, nSCD1, nSCD2, env, 1, 0),
   optDebug(_optDebug)
 {
+  has_at_least_v8 = true;
+  try { env->CheckVersion(8); }
+  catch (const AvisynthError&) { has_at_least_v8 = false; }
+
   static int id = 0; _instance_id = id++;
   reentrancy_check = false;
-  _RPT1(0, "MVFlowFps.Create id=%d\n", _instance_id);
+  // _RPT1(0, "MVFlowFps.Create id=%d\n", _instance_id);
 
   if (!vi.IsYUV() && !vi.IsYUVA() && !vi.IsPlanarRGB() && !vi.IsPlanarRGBA())
     env->ThrowError("MFlowFps: Clip must be Y, YUV or YUY2 or planar RGB/RGBA");
@@ -393,7 +397,7 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
   PVideoFrame	src = finest->GetFrame(nleft, env); // move here - v2.0
   PVideoFrame ref = finest->GetFrame(nright, env);//  right frame for  compensation
 
-  dst = env->NewVideoFrame(vi);
+  dst = has_at_least_v8 ? env->NewVideoFrameP(vi, &src) : env->NewVideoFrame(vi); // frame property support
 
   bool isUsableB = mvClipB.IsUsable();
   bool isUsableF = mvClipF.IsUsable();

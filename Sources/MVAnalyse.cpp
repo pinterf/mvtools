@@ -56,6 +56,10 @@ MVAnalyse::MVAnalyse(
   , _delta_max(0)
   
 {
+  has_at_least_v8 = true;
+  try { env->CheckVersion(8); }
+  catch (const AvisynthError&) { has_at_least_v8 = false; }
+
   static int id = 0; _instance_id = id++;
   _RPT1(0, "MvAnalyse.Create id=%d\n", _instance_id);
 
@@ -413,7 +417,7 @@ MVAnalyse::MVAnalyse(
   // count of 32 bit integers: 2_size_validity+(foreachblock(1_validity+blockCount*3))
   const int		width_bytes = headerSize + _vectorfields_aptr->GetArraySize() * 4;
   ClipFnc::format_vector_clip(
-    vi, true, nBlkX, "rgb32", width_bytes, "MAnalyse", *env
+    vi, true, nBlkX, "rgb32", width_bytes, "MAnalyse", env
   );
 
   if (divideExtra)	//v1.8.1
@@ -548,7 +552,7 @@ PVideoFrame __stdcall MVAnalyse::GetFrame(int n, IScriptEnvironment* env)
     maxframe = nbr_src_frames;
   }
 
-  PVideoFrame			dst = env->NewVideoFrame(vi);
+  PVideoFrame			dst = env->NewVideoFrame(vi); // frameprop inheritance later (if there is source)
   unsigned char *	pDst = dst->GetWritePtr();
 
   // 0 headersize (max(4+sizeof(analysisData),256)
@@ -586,7 +590,10 @@ PVideoFrame __stdcall MVAnalyse::GetFrame(int n, IScriptEnvironment* env)
   {
 //		DebugPrintf ("MVAnalyse: Get src frame %d",nsrc);
     _RPT3(0, "MAnalyze GetFrame, frame_nsrc=%d nref=%d id=%d\n", nsrc, nref, _instance_id);
-    ::PVideoFrame	src = child->GetFrame(nsrc, env); // v2.0
+    
+    PVideoFrame	src = child->GetFrame(nsrc, env); // v2.0
+    if(has_at_least_v8) env->copyFrameProps(src, dst); // frame property support
+
     load_src_frame(*pSrcGOF, src, srd._analysis_data);
 
 //		DebugPrintf ("MVAnalyse: Get ref frame %d", nref);
