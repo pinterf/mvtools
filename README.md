@@ -10,6 +10,9 @@ Credits:
 - Manao, Fizick, Tsp, TSchniede, SEt, Vit, Firesledge, cretindesalpes 
 
 Change log
+- 2.7.42 (20200522)
+  - MDegrain family: limit and limitc to float, allowing more granurality for 10+ bit depth
+
 - 2.7.41 (20190502)
   - Fix: regression since 2.7.35: MSuper chroma for non-planar YUY2 (Thanks to mkauf)
   - Project moved to Visual Studio 2019, v141_xp and v142 toolset

@@ -12,7 +12,7 @@
     <h2>Abstract</h2>
     <table class="n">
         <tr><td class="n"><b>Authors:      </b></td><td class="n">&nbsp;</td><td class="n">Manao, Tsp, TSchniede, SEt, Fizick (Alexander Balakhnin), Vit, Firesledge, pinterf</td></tr>
-        <tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.41</td></tr>
+        <tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.42</td></tr>
         <tr><td class="n"><b>git:          </b></td><td class="n">&nbsp;</td><td class="n"><a href="https://github.com/pinterf/mvtools/tree/mvtools-pfmod">https://github.com/pinterf/mvtools/tree/mvtools-pfmod</a></td></tr>
         <tr><td class="n"><b>Forum:        </b></td><td class="n">&nbsp;</td><td class="n"><a href="https://forum.doom9.org/showthread.php?t=173356">https://forum.doom9.org/showthread.php?t=173356</a></td></tr>
         <tr><td class="n"><b>Base versions:</b></td><td class="n">&nbsp;</td><td class="n">2.6.0.5 + 2.5.11.22</td></tr>
@@ -1504,8 +1504,8 @@
 	int  thSAD (400),
 	int  thSADC (thSAD),
 	int  plane (4),
-	int  limit (255),
-	int  limitC (limit),
+	float limit (255.0),
+	float limitC (limit),
 	int  thSCD1,
 	int  thSCD2,
 	bool isse,
@@ -1525,8 +1525,8 @@
 	int  thSAD (400),
 	int  thSADC (thSAD),
 	int  plane (4),
-	int  limit (255),
-	int  limitC (limit),
+	float limit (255.0),
+	float limitC (limit),
 	int  thSCD1,
 	int  thSCD2,
 	bool isse,
@@ -1556,8 +1556,8 @@
 	int  thSAD (400),
 	int  thSADC (thSAD),
 	int  plane (4),
-	int  limit (255),
-	int  limitC (limit),
+	float limit (255.0),
+	float limitC (limit),
 	int  thSCD1,
 	int  thSCD2,
 	bool isse,
@@ -1578,8 +1578,8 @@
 	int  thSAD (400),
 	int  thSADC (thSAD),
 	int  plane (4),
-	int  limit (255),
-	int  limitC (limit),
+	float limit (255.0),
+	float limitC (limit),
 	int  thSCD1,
 	int  thSCD2,
 	bool isse,
@@ -1648,8 +1648,8 @@
         Block with low SAD has highest weight.
         Rest of weight is taken from pixels of source clip.
         The provided <var>thSAD</var> value is scaled to a 8x8 blocksize.
-        Low values can result in staggered denoising, large values can rezult in
-        ghosting and artefacts.
+        Low values can result in staggered denoising, large values can result in
+        ghosting and artifacts.
     </p>
     <p class="var">thSADC</p>
     <p>
@@ -1659,7 +1659,7 @@
         is used for luma.
     </p>
     <p class="var">plane</p>
-    <p>parameter set procesed color plane:</p>
+    <p>parameter set processed color plane:</p>
     <table>
         <tr><td><b>0</b></td><td>Luma</td></tr>
         <tr><td><b>1</b></td><td>Chroma U</td></tr>
@@ -1671,8 +1671,14 @@
     <p>
         Maximal change of pixel luma. This is a post-processing like the
         <code>DeGrainMedian</code> plugin and <code>LimitChange</code> function
-        from the SSETools plugin, to prevent some artefacts).
+        from the SSETools plugin, to prevent some artifacts).
         Value is 0 to 255. 255 does nothing. Other values are scaled proportionally for the given bit depth.
+        From 2.7.42 version the type of parameter is float instead of integer. This allows more granurality
+        at 10+ bits. 
+        Calculation:
+          real_limit = limit * (2^(bit_depth - 8)) for 8-16 bits (=limit for 8 bit videos)
+        and
+          real_limit = limit / 255.0 for 32 bit float formats.
     </p>
     <p class="var">limitC</p>
     <p>Maximal change of pixel chroma.</p>
@@ -2207,6 +2213,10 @@ Planar2Interleaved() # convert back to normal interleave YUY2
     </ul>
 
     <h2><a name="revisions"></a>VI) Revisions</h2>
+    <p>2.7.42 (20200522)</p>
+    <ul>
+        <li>MDegrain family: limit and limitc parameters to float - allowing more granurality for 10+ bits. Range is still 0-255 but floating point</li>
+    </ul>
     <p>2.7.41/b (20200430)</p>
     <ul>
         <li>(no change in MVTools2, but fixes in Depan.DLL: DepanInterleave and Depan. See their readme)<br />
