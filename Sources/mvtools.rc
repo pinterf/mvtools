@@ -36,7 +36,7 @@ BEGIN
             VALUE "FileDescription", "MVTools plugin for AviSynth 2.6 API"
             VALUE "FileVersion", "2.7.42"
             VALUE "InternalName", "mvtools"
-            VALUE "LegalCopyright", "©2004 Manao, ©2005 Fizick, ©2008 TSchniede under GNU GPL v2"
+            VALUE "LegalCopyright", "©2004 Manao, ©2005-2016 Fizick, ©2008 TSchniede under GNU GPL v2"
             VALUE "OriginalFilename", "mvtools.dll"
             VALUE "ProductName", "mvtools"
             VALUE "ProductVersion", "2.7.42"

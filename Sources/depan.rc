@@ -1,6 +1,6 @@
 1 VERSIONINFO
- FILEVERSION 2,13,1,5
- PRODUCTVERSION 2,13,1,5
+ FILEVERSION 2,13,1,6
+ PRODUCTVERSION 2,13,1,6
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -18,14 +18,14 @@ BEGIN
             VALUE "Comments", "Compensate and stabilize global motion (pan, zoom)\0"
             VALUE "CompanyName", "A.G.Balakhnin aka Fizick, http://avisynth.org.ru\0"
             VALUE "FileDescription", "Global motion compensation plugin for Avisynth and Avisynth+\0"
-            VALUE "FileVersion", "2, 13, 1, 5\0"
+            VALUE "FileVersion", "2, 13, 1, 6\0"
             VALUE "InternalName", "DePan\0"
             VALUE "LegalCopyright", "© 2004-2016 A.G.Balakhnin,  bag@hotmail.ru\0"
             VALUE "LegalTrademarks", "\0"
             VALUE "OriginalFilename", "DePan.dll\0"
             VALUE "PrivateBuild", "\0"
             VALUE "ProductName", "DePan\0"
-            VALUE "ProductVersion", "2, 13, 1, 5\0"
+            VALUE "ProductVersion", "2, 13, 1, 6\0"
             VALUE "SpecialBuild", "\0"
         END
     END
