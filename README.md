@@ -12,6 +12,7 @@ Credits:
 Change log
 - 2.7.42 (20200522)
   - MDegrain family: limit and limitc to float, allowing more granurality for 10+ bit depth
+  - Update Avisynth headers, use V8 interface frame property copy if available
 
 - 2.7.41 (20190502)
   - Fix: regression since 2.7.35: MSuper chroma for non-planar YUY2 (Thanks to mkauf)

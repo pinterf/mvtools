@@ -18,6 +18,11 @@ Modification base:
 http://avisynth.org.ru/depan/depan.html
 
 Change log
+- (20200522)
+  Depan 2.13.1.6 
+  DepanEstimate 2.10.0.4
+  - Update Avisynth headers, use V8 interface frame property copy if available
+
 - (20200430)
   Depan 2.13.1.5: 
   fix regression: DepanInterleave colorspace check allowed no planar, only YUY2
