@@ -488,7 +488,7 @@ template <typename pixel_t, int blockWidth, int blockHeight>
 // winPitch knows short *
 void Overlaps_sse4(uint16_t *pDst0, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch)
 {
-  // pWin from 0 to 2048
+  // pWin from 0 to 2048, 11 bit integer arithmetic
   // when pixel_t == uint16_t, dst should be int*
   typedef typename std::conditional < sizeof(pixel_t) == 1, short, int>::type target_t;
   target_t *pDst = reinterpret_cast<target_t *>(pDst0);
@@ -511,7 +511,7 @@ void Overlaps_sse4(uint16_t *pDst0, int nDstPitch, const unsigned char *pSrc, in
         win = _mm_loadl_epi64(reinterpret_cast<__m128i *>(pWin)); // 4x16 short: Window
         src = _mm_loadl_epi64(reinterpret_cast<const __m128i *>(pSrc)); // 4x16 uint16_t: source pixels
 
-        __m128i reslo = _mm_mullo_epi32(_mm_unpacklo_epi16(src, zero), _mm_unpacklo_epi16(win, zero));
+        __m128i reslo = _mm_mullo_epi32(_mm_cvtepu16_epi32(src), _mm_cvtepu16_epi32(win)); // sse4 unpacklo
         dst = _mm_loadu_si128(reinterpret_cast<__m128i *>(pDst)); // 4x32 int: destination pixels
         dst = _mm_add_epi32(dst, reslo);
         _mm_storeu_si128(reinterpret_cast<__m128i *>(pDst), dst);
@@ -522,7 +522,7 @@ void Overlaps_sse4(uint16_t *pDst0, int nDstPitch, const unsigned char *pSrc, in
         win = _mm_loadu_si128(reinterpret_cast<__m128i *>(pWin)); // 8x16 short: Window
         src = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pSrc)); // 8x16 uint16_t: source pixels
 
-        __m128i reslo = _mm_mullo_epi32(_mm_unpacklo_epi16(src, zero), _mm_unpacklo_epi16(win, zero));
+        __m128i reslo = _mm_mullo_epi32(_mm_cvtepu16_epi32(src), _mm_cvtepu16_epi32(win)); // sse4 unpacklo
         dst = _mm_loadu_si128(reinterpret_cast<__m128i *>(pDst)); // 4x32 int: destination pixels
         dst = _mm_add_epi32(dst, reslo);
         _mm_storeu_si128(reinterpret_cast<__m128i *>(pDst), dst);
@@ -537,7 +537,7 @@ void Overlaps_sse4(uint16_t *pDst0, int nDstPitch, const unsigned char *pSrc, in
         win = _mm_loadu_si128(reinterpret_cast<__m128i *>(pWin)); // 8x16 short: Window
         src = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pSrc)); // 8x16 uint16_t: source pixels
 
-        __m128i reslo = _mm_mullo_epi32(_mm_unpacklo_epi16(src, zero), _mm_unpacklo_epi16(win, zero));
+        __m128i reslo = _mm_mullo_epi32(_mm_cvtepu16_epi32(src), _mm_cvtepu16_epi32(win)); // sse4 unpacklo
         dst = _mm_loadu_si128(reinterpret_cast<__m128i *>(pDst)); // 4x32 int: destination pixels
         dst = _mm_add_epi32(dst, reslo);
         _mm_storeu_si128(reinterpret_cast<__m128i *>(pDst), dst);
@@ -551,7 +551,7 @@ void Overlaps_sse4(uint16_t *pDst0, int nDstPitch, const unsigned char *pSrc, in
         src = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pSrc + 16)); // next 8x16 uint16_t: source pixels
 
         // once again
-        reslo = _mm_mullo_epi32(_mm_unpacklo_epi16(src, zero), _mm_unpacklo_epi16(win, zero));
+        reslo = _mm_mullo_epi32(_mm_cvtepu16_epi32(src), _mm_cvtepu16_epi32(win)); // sse4 unpacklo
         dst = _mm_loadu_si128(reinterpret_cast<__m128i *>(pDst + 8)); // 4x32 int: destination pixels
         dst = _mm_add_epi32(dst, reslo);
         _mm_storeu_si128(reinterpret_cast<__m128i *>(pDst + 8), dst);
@@ -562,11 +562,12 @@ void Overlaps_sse4(uint16_t *pDst0, int nDstPitch, const unsigned char *pSrc, in
         _mm_storeu_si128(reinterpret_cast<__m128i *>(pDst + 8 + 4), dst);
       }
       else if constexpr((blockWidth % (16 / sizeof(pixel_t))) == 0) {
+        // mod8 block width for uint16
         for (int x = 0; x < blockWidth; x += 16 / sizeof(pixel_t)) {
           win = _mm_loadu_si128(reinterpret_cast<__m128i *>(pWin + x)); // 8x16 short: Window
           src = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pSrc + x * 2)); // 8x16 uint16_t: source pixels
 
-          __m128i reslo = _mm_mullo_epi32(_mm_unpacklo_epi16(src, zero), _mm_unpacklo_epi16(win, zero));
+          __m128i reslo = _mm_mullo_epi32(_mm_cvtepu16_epi32(src), _mm_cvtepu16_epi32(win)); // sse4 unpacklo
           dst = _mm_loadu_si128(reinterpret_cast<__m128i *>(pDst + x)); // 4x32 int: destination pixels
           dst = _mm_add_epi32(dst, reslo);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(pDst + x), dst);
@@ -578,11 +579,12 @@ void Overlaps_sse4(uint16_t *pDst0, int nDstPitch, const unsigned char *pSrc, in
         }
       }
       else if constexpr((blockWidth % (8 / sizeof(pixel_t))) == 0) {
+        // mod4 block width for uint16. Exact 4 was handled specially, this covers only 12 from valid set
         for (int x = 0; x < blockWidth; x += 8 / sizeof(pixel_t)) {
           win = _mm_loadl_epi64(reinterpret_cast<__m128i *>(pWin + x)); // 4x16 short: Window
           src = _mm_loadl_epi64(reinterpret_cast<const __m128i *>(pSrc + x * 2)); // 4x16 uint16_t: source pixels
 
-          __m128i reslo = _mm_mullo_epi32(_mm_unpacklo_epi16(src, zero), _mm_unpacklo_epi16(win, zero));
+          __m128i reslo = _mm_mullo_epi32(_mm_cvtepu16_epi32(src), _mm_cvtepu16_epi32(win)); // sse4 unpacklo
           dst = _mm_loadu_si128(reinterpret_cast<__m128i *>(pDst+x)); // 4x32 int: destination pixels
           dst = _mm_add_epi32(dst, reslo);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(pDst+x), dst);
