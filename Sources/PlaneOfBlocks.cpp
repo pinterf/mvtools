@@ -355,7 +355,10 @@ void PlaneOfBlocks::SearchMVs(
 
   // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
 
-  Slicer			slicer(_mt_flag);
+  penaltyNew = _pnew; // penalty for new vector
+  LSAD = _lsad;    // SAD limit for lambda using
+
+  Slicer			slicer(_mt_flag); // fixme: mt bug
   if(bits_per_pixel == 8)
     slicer.start(nBlkY, *this, &PlaneOfBlocks::search_mv_slice<uint8_t>, 4);
   else
@@ -463,7 +466,7 @@ void PlaneOfBlocks::RecalculateMVs(
   _thSAD = thSAD;
 
   // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-
+  // fixme: consider disabling mt, it's giving inconsistent results when used
   Slicer			slicer(_mt_flag);
   if(pixelsize==1)
     slicer.start(nBlkY, *this, &PlaneOfBlocks::recalculate_mv_slice<uint8_t>, 4);
@@ -681,8 +684,16 @@ void PlaneOfBlocks::FetchPredictors(WorkingArea &workarea)
     workarea.predictors[1] = ClipMV(workarea, zeroMVfieldShifted); // v1.11.1 - values instead of pointer
   }
 
-  // Up predictor
-  if (workarea.blky > workarea.blky_beg)
+  // fixme note:
+  // MAnalyze mt-inconsistency reason #1
+  // this is _not_ internal mt friendly, since here up or bottom predictors
+  // are omitted for top/bottom data. Not non-mt case this happens only for
+  // the most top and bottom blocks.
+  // In vertically sliced multithreaded case it happens an _each_ top/bottom of the sliced block
+  const bool isTop = workarea.blky == workarea.blky_beg;
+  const bool isBottom = workarea.blky == workarea.blky_end - 1;
+    // Up predictor
+  if (!isTop)
   {
     workarea.predictors[2] = ClipMV(workarea, vectors[workarea.blkIdx - nBlkX]);
   }
@@ -692,12 +703,12 @@ void PlaneOfBlocks::FetchPredictors(WorkingArea &workarea)
   }
 
   // bottom-right pridictor (from coarse level)
-  if ((workarea.blky < workarea.blky_end - 1) && ((workarea.blkScanDir == 1 && workarea.blkx < nBlkX - 1) || (workarea.blkScanDir == -1 && workarea.blkx > 0)))
+  if (!isBottom && ((workarea.blkScanDir == 1 && workarea.blkx < nBlkX - 1) || (workarea.blkScanDir == -1 && workarea.blkx > 0)))
   {
     workarea.predictors[3] = ClipMV(workarea, vectors[workarea.blkIdx + nBlkX + workarea.blkScanDir]);
   }
   // Up-right predictor
-  else if ((workarea.blky > workarea.blky_beg) && ((workarea.blkScanDir == 1 && workarea.blkx < nBlkX - 1) || (workarea.blkScanDir == -1 && workarea.blkx > 0)))
+  else if (!isTop && ((workarea.blkScanDir == 1 && workarea.blkx < nBlkX - 1) || (workarea.blkScanDir == -1 && workarea.blkx > 0)))
   {
     workarea.predictors[3] = ClipMV(workarea, vectors[workarea.blkIdx - nBlkX + workarea.blkScanDir]);
   }
@@ -707,7 +718,7 @@ void PlaneOfBlocks::FetchPredictors(WorkingArea &workarea)
   }
 
   // Median predictor
-  if (workarea.blky > workarea.blky_beg) // replaced 1 by 0 - Fizick
+  if (!isTop) // replaced 1 by 0 - Fizick
   {
     workarea.predictors[0].x = Median(workarea.predictors[1].x, workarea.predictors[2].x, workarea.predictors[3].x);
     workarea.predictors[0].y = Median(workarea.predictors[1].y, workarea.predictors[2].y, workarea.predictors[3].y);
@@ -761,7 +772,7 @@ void PlaneOfBlocks::FetchPredictors(WorkingArea &workarea)
   workarea.nLambda = (int)(workarea.nLambda
                      *(safe_sad_t)LSAD
                      / divisor
-                     *LSAD 
+                     * LSAD
                      / divisor);
   // replaced hard threshold by soft in v1.10.2 by Fizick (a liitle complex expression to avoid overflow)
   //	int a = LSAD/(LSAD + (workarea.predictor.sad>>1));
@@ -980,6 +991,13 @@ void PlaneOfBlocks::PseudoEPZSearch(WorkingArea &workarea)
 
   const int		BADCOUNT_LIMIT = 16;
 
+  // fixme note:
+  // MAnalyze mt-inconsistency reason #2
+  // 'badcount' can be increased in different order when multithreaded
+  // (processing vertically sliced vector data parallel)
+  // so the expression in the condition below can be different for each run
+  // depending on the order the parallel tasks increase badcount
+
   // bad vector, try wide search
   if (workarea.blkIdx > 1 + workarea.blky_beg * nBlkX
     && foundSAD > (badSAD + badSAD*badcount / BADCOUNT_LIMIT))
@@ -1066,7 +1084,7 @@ void PlaneOfBlocks::PseudoEPZSearch(WorkingArea &workarea)
   vectors[workarea.blkIdx].y = workarea.bestMV.y;
   vectors[workarea.blkIdx].sad = workarea.bestMV.sad;
 
-  workarea.planeSAD += workarea.bestMV.sad; // todo PF check int overflow. Done: bigsad_t
+  workarea.planeSAD += workarea.bestMV.sad; // for debug, plus fixme outer planeSAD is not used
 }
 
 
@@ -2301,9 +2319,12 @@ void PlaneOfBlocks::EstimateGlobalMVDoubled(VECTOR *globalMVec, Slicer &slicer)
   assert(globalMVec != 0);
   assert(&slicer != 0);
 
+  // compute of x and y part parallelly
   _gvect_result_count = 2;
+  // when x and y is ready, they decrease it by 1, if reaches zero, both are ready
   _gvect_estim_ptr = globalMVec;
-
+  // 'height' == 2 but here it means the number of compute tasks
+  // Two tasks internally: y=0 for finding maxx, y=1 is for finding maxy
   slicer.start(2, *this, &PlaneOfBlocks::estimate_global_mv_doubled_slice);
 }
 
@@ -2312,7 +2333,7 @@ void PlaneOfBlocks::EstimateGlobalMVDoubled(VECTOR *globalMVec, Slicer &slicer)
 void	PlaneOfBlocks::estimate_global_mv_doubled_slice(Slicer::TaskData &td)
 {
   bool				both_done_flag = false;
-  for (int y = td._y_beg; y < td._y_end; ++y)
+  for (int y = td._y_beg; y < td._y_end; ++y) // 0..0, 1..1 or 0..1 (no mt)
   {
     std::vector <int> &	freq_arr = freqArray[y];
 
@@ -2376,13 +2397,18 @@ void	PlaneOfBlocks::estimate_global_mv_doubled_slice(Slicer::TaskData &td)
     }
 
     // most frequent value
-    _gvect_estim_ptr->coord[y] = index - (freqSize >> 1);
+    // y is either 0 or 1, their computation can be parallelized
+    if(y == 0)
+      _gvect_estim_ptr->x = index - (freqSize >> 1);
+    else
+      _gvect_estim_ptr->y = index - (freqSize >> 1);
 
-    conc::AioSub <int>   dec_ftor(1);
-    const int            new_count =
-      conc::AtomicIntOp::exec_new(_gvect_result_count, dec_ftor);
-    both_done_flag = (new_count <= 0);
+    const int new_count = --_gvect_result_count;
+    both_done_flag = (new_count == 0);
   }
+
+  if (!both_done_flag)
+    return;
 
   // iteration to increase precision
   if (both_done_flag)
@@ -2870,7 +2896,7 @@ void	PlaneOfBlocks::search_mv_slice(Slicer::TaskData &td)
 {
   assert(&td != 0);
 
-  short *			outfilebuf = _outfilebuf;
+  short *outfilebuf = _outfilebuf;
 
   WorkingArea &	workarea = *(_workarea_pool.take_obj());
   assert(&workarea != 0);
@@ -2895,6 +2921,7 @@ void	PlaneOfBlocks::search_mv_slice(Slicer::TaskData &td)
   workarea.y[0] = pSrcFrame->GetPlane(YPLANE)->GetVPadding();
   workarea.y[0] += workarea.blky_beg * (nBlkSizeY - nOverlapY);
 
+  // fixme: use if(chroma) like in recalculate
   if (pSrcFrame->GetMode() & UPLANE)
   {
     workarea.y[1] = pSrcFrame->GetPlane(UPLANE)->GetVPadding();
@@ -2906,10 +2933,8 @@ void	PlaneOfBlocks::search_mv_slice(Slicer::TaskData &td)
     workarea.y[2] += workarea.blky_beg * ((nBlkSizeY - nOverlapY) >> nLogyRatioUV);
   }
 
-  workarea.planeSAD = 0;
+  workarea.planeSAD = 0; // for debug, plus fixme outer planeSAD is not used
   workarea.sumLumaChange = 0;
-
-  // Functions using float must not be used here
 
   int nBlkSizeX_Ovr[3] = { (nBlkSizeX - nOverlapX), (nBlkSizeX - nOverlapX) >> nLogxRatioUV, (nBlkSizeX - nOverlapX) >> nLogxRatioUV };
   int nBlkSizeY_Ovr[3] = { (nBlkSizeY - nOverlapY), (nBlkSizeY - nOverlapY) >> nLogyRatioUV, (nBlkSizeY - nOverlapY) >> nLogyRatioUV };
@@ -2948,6 +2973,8 @@ void	PlaneOfBlocks::search_mv_slice(Slicer::TaskData &td)
 
       // Resets the global predictor (it may have been clipped during the
       // previous block scan)
+
+      // fixme: why recalc is resetting only outside, why, maybe recalc is not using that at all?
       workarea.globalMVPredictor = _glob_mv_pred_def;
 
 #if (ALIGN_SOURCEBLOCK > 1)
@@ -2975,6 +3002,13 @@ void	PlaneOfBlocks::search_mv_slice(Slicer::TaskData &td)
       }
 #endif	// ALIGN_SOURCEBLOCK
 
+      // fixme note:
+      // MAnalyze mt-inconsistency reason #3
+      // this is _not_ internal mt friendly
+      // because workarea.nLambda is set to 0 differently:
+      // In vertically sliced multithreaded case it happens an _each_ top of the sliced block
+      // In non-mt: only for the most top blocks
+
       if (workarea.blky == workarea.blky_beg)
       {
         workarea.nLambda = 0;
@@ -2984,6 +3018,9 @@ void	PlaneOfBlocks::search_mv_slice(Slicer::TaskData &td)
         workarea.nLambda = _lambda_level;
       }
 
+      // fixme:
+      // not exacly nice, but works
+      // different threads are writing, but the are the same always and come from parameters _pnew, _lsad
       penaltyNew = _pnew; // penalty for new vector
       LSAD = _lsad;    // SAD limit for lambda using
       // may be they must be scaled by nPel ?
@@ -3071,7 +3108,7 @@ void	PlaneOfBlocks::search_mv_slice(Slicer::TaskData &td)
     workarea.y[2] += nBlkSizeY_Ovr[2];
   }	// for workarea.blky
 
-  planeSAD += workarea.planeSAD; // PF todo check int overflow done, bigsad_t
+  planeSAD += workarea.planeSAD; // for debug, plus fixme outer planeSAD is not used
   sumLumaChange += workarea.sumLumaChange;
 
   if (isse)
@@ -3090,7 +3127,7 @@ void	PlaneOfBlocks::search_mv_slice(Slicer::TaskData &td)
 #endif
 
   _workarea_pool.return_obj(workarea);
-}
+} // search_mv_slice
 
 
 
@@ -3099,7 +3136,7 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
 {
   assert(&td != 0);
 
-  short *			outfilebuf = _outfilebuf;
+  short *outfilebuf = _outfilebuf;
 
   WorkingArea &	workarea = *(_workarea_pool.take_obj());
   assert(&workarea != 0);
@@ -3114,6 +3151,8 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
     workarea.DCT = _dct_pool_ptr->take_obj();
   }
 #endif	// ALLOW_DCT
+  // fixme: why here? search_mv is resetting it for inside each block scan
+  // inside for (int iblkx = 0; iblkx < nBlkX; iblkx++)
   workarea.globalMVPredictor = _glob_mv_pred_def;
 
   int *pBlkData = _out + 1 + workarea.blky_beg * nBlkX*N_PER_BLOCK;
@@ -3124,15 +3163,16 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
 
   workarea.y[0] = pSrcFrame->GetPlane(YPLANE)->GetVPadding();
   workarea.y[0] += workarea.blky_beg * (nBlkSizeY - nOverlapY);
+
   if (chroma)
   {
-    workarea.y[1] = pSrcFrame->GetPlane(UPLANE)->GetVPadding();
-    workarea.y[2] = pSrcFrame->GetPlane(VPLANE)->GetVPadding();
-    workarea.y[1] += workarea.blky_beg * ((nBlkSizeY - nOverlapY) >> nLogyRatioUV);
-    workarea.y[2] += workarea.blky_beg * ((nBlkSizeY - nOverlapY) >> nLogyRatioUV);
+      workarea.y[1] = pSrcFrame->GetPlane(UPLANE)->GetVPadding();
+      workarea.y[2] = pSrcFrame->GetPlane(VPLANE)->GetVPadding();
+      workarea.y[1] += workarea.blky_beg * ((nBlkSizeY - nOverlapY) >> nLogyRatioUV);
+      workarea.y[2] += workarea.blky_beg * ((nBlkSizeY - nOverlapY) >> nLogyRatioUV);
   }
 
-  workarea.planeSAD = 0;
+  workarea.planeSAD = 0; // for debug, plus fixme outer planeSAD is not used
   workarea.sumLumaChange = 0;
 
   // get old vectors plane
@@ -3225,6 +3265,9 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
         workarea.nLambda = _lambda_level;
       }
 
+      // fixme:
+      // not exacly nice, but works
+      // different threads are writing, but the are the same always and come from parameters _pnew, _lsad
       penaltyNew = _pnew; // penalty for new vector
       LSAD = _lsad;    // SAD limit for lambda using
       // may be they must be scaled by nPel ?
@@ -3415,7 +3458,6 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
       {
         outfilebuf[workarea.blkx * 4 + 0] = workarea.bestMV.x;
         outfilebuf[workarea.blkx * 4 + 1] = workarea.bestMV.y;
-        // todo: SAD as int when it is float
         outfilebuf[workarea.blkx * 4 + 2] = (workarea.bestMV.sad & 0x0000ffff); // low word
         outfilebuf[workarea.blkx * 4 + 3] = (workarea.bestMV.sad >> 16);     // high word, usually null
       }
@@ -3454,7 +3496,7 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
     workarea.y[2] += nBlkSizeY_Ovr[2];
   }	// for workarea.blky
 
-  planeSAD += workarea.planeSAD;
+  planeSAD += workarea.planeSAD; // for debug, plus fixme outer planeSAD is not used
   sumLumaChange += workarea.sumLumaChange;
 
   if (isse)
@@ -3473,7 +3515,7 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
 #endif
 
   _workarea_pool.return_obj(workarea);
-}
+} // recalculate_mv_slice
 
 
 

@@ -142,6 +142,7 @@ private:
   conc::ObjPool <DCTClass> *		// Set to 0 if not used
     _dct_pool_ptr;
 
+  // fixme: probably no need fot conc::Array
   conc::Array <std::vector <int>, 2>
     freqArray; // temporary array for global motion estimaton [x|y][value]
 
@@ -286,9 +287,8 @@ private:
   WorkingAreaPool
     _workarea_pool;
 
-  VECTOR *       _gvect_estim_ptr;	// Points on the global motion vector estimation result. 0 when not used.
-  conc::AtomicInt <int>
-    _gvect_result_count;
+  VECTOR *_gvect_estim_ptr;	// Points on the global motion vector estimation result. 0 when not used.
+  std::atomic<int> _gvect_result_count;
 
   /* mv search related functions */
 

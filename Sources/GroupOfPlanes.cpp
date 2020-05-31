@@ -207,7 +207,7 @@ void	GroupOfPlanes::SearchMVs(
     else
       planes[i]->InterpolatePrediction<bigsad_t, bigsad_t>(*(planes[i + 1])); // always use 64bit temporary inside
 
-    if (global)
+    if (global) // can be moved after Interpolate, since it does not use the global mv results
     {
       slicer_glob.wait();
     }
