@@ -12,7 +12,7 @@
     <h2>Abstract</h2>
     <table class="n">
         <tr><td class="n"><b>Authors:      </b></td><td class="n">&nbsp;</td><td class="n">Manao, Tsp, TSchniede, SEt, Fizick (Alexander Balakhnin), Vit, Firesledge, pinterf</td></tr>
-        <tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.42</td></tr>
+        <tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.43</td></tr>
         <tr><td class="n"><b>git:          </b></td><td class="n">&nbsp;</td><td class="n"><a href="https://github.com/pinterf/mvtools/tree/mvtools-pfmod">https://github.com/pinterf/mvtools/tree/mvtools-pfmod</a></td></tr>
         <tr><td class="n"><b>Forum:        </b></td><td class="n">&nbsp;</td><td class="n"><a href="https://forum.doom9.org/showthread.php?t=173356">https://forum.doom9.org/showthread.php?t=173356</a></td></tr>
         <tr><td class="n"><b>Base versions:</b></td><td class="n">&nbsp;</td><td class="n">2.6.0.5 + 2.5.11.22</td></tr>
@@ -688,32 +688,7 @@
         internal dividing.
     </p>
     <p class="var">sadx264</p>
-    <p>Use SAD functions from x264 codec if available for the blocksize</p>
     <p>the parameter is ineffective in 2.7.x branch</p>
-    <table>
-        <tr><td><b>0</b></td><td>Autodetect CPU and select best function</td></tr>
-        <tr><td><b>1</b></td><td>use MMX 16x16, 16x8, 8x8, 8x4, 4x4 (8x16, 4x8 used on chroma only)</td></tr>
-        <tr><td><b>2</b></td><td>use MMX 16x16, 16x8, 8x8, 8x4 (8x16, used on chroma only) aligned to 32 Byte blocks</td></tr>
-        <tr><td><b>3</b></td><td>use MMX 16x16, 16x8, 8x8, 8x4 (8x16, used on chroma only) aligned to 64 Byte blocks, best for Pentium M</td></tr>
-        <tr><td><b>4</b></td><td>use SSE2 16x16, 16x8 (no special alignment)</td></tr>
-        <tr><td><b>5</b></td><td>use SSE2 16x16, 16x8, aligned to 64 Byte blocks (good option on Core)</td></tr>
-        <tr><td><b>6</b></td><td>use SSE3 16x16, 16x8 (seems only to work faster on Pentium 4E & Core1)</td></tr>
-        <tr><td><b>7</b></td><td>use SSSES3 16x16, 16x8, aligned to 64 Byte blocks (good option on Core2)</td></tr>
-        <tr><td><b>8</b></td><td>use SSD mmx, works on any mode as 1</td></tr>
-        <tr><td><b>9</b></td><td>use SATD mmx, works on any mode as 1</td></tr>
-        <tr><td><b>10</b></td><td>use SATD SSE2, works ony any mode like 2</td></tr>
-        <tr><td><b>11</b></td><td>use SATD SSSE3, works ony any mode like 2</td></tr>
-        <tr><td><b>12</b></td><td>use SATD SSSE3 with PHADD on 8xY, works ony any mode like 2</td></tr>
-    </table>
-    <p>
-        Modes 8-12 are meant for debug testing only, use
-        <var>dct&nbsp;&gt; 4</var> instead.
-        Using sadx264&nbsp;&gt; 7 means: use selected instead of SAD for any luma and
-        chroma SAD where possible!
-        For SAD and SATD mix and luma only use <var>dct</var>.
-        Use -1 or &ge; 13 to use old v1.9.4 SAD algo and completely deactivate the
-        x264 SAD functions.
-    </p>
     <p class="var">badSAD</p>
     <p>
         SAD threshold to make more wide second search for bad vectors.
@@ -753,7 +728,21 @@
         <code>SelectEvery(delta*2, n)</code>.
     </p>
     <p class="var">mt</p>
-    <p>Enables internal multi-threading (through avstp.dll).</p>
+    <p>Enables internal multi-threading (through avstp.dll). default is true</p>
+    <p>Important note!<br>
+       mt=true is giving a bit worse and not 100% similar result than mt=false.
+       This is _not_ Avisynth's multithreading, this is the filter's internal one.<br>
+       For speedup you can always use Avisynth's mt support (see Prefetch) and 
+       delete avstp.dll or set mt=false if you still need avstp.dll for other tasks.<br>
+       When mt = true and avstp.dll is found then internal multithreading is active.
+       Internal mt is processing the X*Y sized motion block matrix in "slices", where 
+       slices are matrixes with a smaller vertical size. The original matrix is divided vertically to 2, 3, ... 
+       (depends on processor count) units (e.g. for two threads one thread is processing
+       blocks with y coordinates from 0 to height/2-1, and the other thread from height/2 to height-1.
+       Unfortunately - for algorithmical reasons - this speedup results in different output as
+       the single-thread case due to the fact that the unit boundaries are handled specially,
+       and a non-sliced processing has only 2 (top and bottom) boundary, while the N-thread version
+       has N*2 boundary.
     <p class="var">scaleCSAD</p>
     <p>
         Fine tune chroma part weight in SAD calculation (since 2.7.18.22)<br />
@@ -2213,6 +2202,12 @@ Planar2Interleaved() # convert back to normal interleave YUY2
     </ul>
 
     <h2><a name="revisions"></a>VI) Revisions</h2>
+    
+    <p>2.7.43 (20200602)</p>
+    <ul>
+        <li>MCompensate: fix crash for GreyScale formats when overlap is used</li>
+    </ul>
+
     <p>2.7.42 (20200522)</p>
     <ul>
         <li>MDegrain family: limit and limitc parameters to float - allowing more granurality for 10+ bits. Range is still 0-255 but floating point</li>

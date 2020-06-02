@@ -10,6 +10,9 @@ Credits:
 - Manao, Fizick, Tsp, TSchniede, SEt, Vit, Firesledge, cretindesalpes 
 
 Change log
+- 2.7.43 (20200602)
+  - MCompensate: fix crash for GreyScale formats when overlap is used
+
 - 2.7.42 (20200522)
   - MDegrain family: limit and limitc to float, allowing more granurality for 10+ bit depth
   - Update Avisynth headers, use V8 interface frame property copy if available
