@@ -243,10 +243,12 @@ MVCompensate::MVCompensate(
     else
     {
       nLoopPitches[0] = AlignNumber(nSuperWidth*pixelsize_super, 32);
-      nLoopPitches[1] = nLoopPitches[2] = AlignNumber((nSuperWidth >> nLogxRatioUVs[1])*pixelsize_super, 32);
-      pLoop[0] = (unsigned char *)_aligned_malloc(nLoopPitches[0] * nSuperHeight, 32);
-      pLoop[1] = (unsigned char *)_aligned_malloc(nLoopPitches[1] * nSuperHeight, 32);
-      pLoop[2] = (unsigned char *)_aligned_malloc(nLoopPitches[2] * nSuperHeight, 32);
+      pLoop[0] = (unsigned char*)_aligned_malloc(nLoopPitches[0] * nSuperHeight, 32);
+      if (!vi.IsY()) {
+        nLoopPitches[1] = nLoopPitches[2] = AlignNumber((nSuperWidth >> nLogxRatioUVs[1]) * pixelsize_super, 32);
+        pLoop[1] = (unsigned char*)_aligned_malloc(nLoopPitches[1] * nSuperHeight, 32);
+        pLoop[2] = (unsigned char*)_aligned_malloc(nLoopPitches[2] * nSuperHeight, 32);
+      }
     }
   }
 
@@ -261,10 +263,13 @@ MVCompensate::~MVCompensate()
   if (nOverlapX > 0 || nOverlapY > 0)
   {
     delete OverWins;
-    delete OverWinsUV;
+    if (!vi.IsY())
+      delete OverWinsUV;
     _aligned_free(DstShort);
-    _aligned_free(DstShortU);
-    _aligned_free(DstShortV);
+    if (!vi.IsY()) {
+      _aligned_free(DstShortU);
+      _aligned_free(DstShortV);
+    }
   }
   delete pRefGOF; // v2.0
   delete pSrcGOF;
@@ -272,7 +277,7 @@ MVCompensate::~MVCompensate()
   if (recursion > 0)
   {
     _aligned_free(pLoop[0]);
-    if ((pixelType & VideoInfo::CS_YUY2) != VideoInfo::CS_YUY2)
+    if ((pixelType & VideoInfo::CS_YUY2) != VideoInfo::CS_YUY2 && !vi.IsY())
     {
       _aligned_free(pLoop[1]);
       _aligned_free(pLoop[2]);
@@ -412,6 +417,10 @@ PVideoFrame __stdcall MVCompensate::GetFrame(int n, IScriptEnvironment* env_ptr)
 
       pSrcPlanes[1] = pSrcGOF->GetFrame(0)->GetPlane(UPLANE);
       pSrcPlanes[2] = pSrcGOF->GetFrame(0)->GetPlane(VPLANE);
+    }
+    else {
+      pPlanes[1] = pPlanes[2] = nullptr;
+      pSrcPlanes[1] = pSrcPlanes[2] = nullptr;
     }
 
     /*
@@ -700,12 +709,10 @@ void	MVCompensate::compensate_slice_normal(Slicer::TaskData &td)
       xx += nBlkSizeX << pixelsize_super_shift;
     } // for bx
 
-    pDstCur[0] += DstCurPitches[0];
-    pDstCur[1] += DstCurPitches[1];
-    pDstCur[2] += DstCurPitches[2];
-    pSrcCur[0] += SrcCurPitches[0];
-    pSrcCur[1] += SrcCurPitches[1];
-    pSrcCur[2] += SrcCurPitches[2];
+    for (int i = 0; i < planecount; i++) {
+      pDstCur[i] += DstCurPitches[i];
+      pSrcCur[i] += SrcCurPitches[i];
+    }
   } // for by
 }
 
@@ -798,8 +805,6 @@ void	MVCompensate::compensate_slice_overlap(int y_beg, int y_end)
       // select window
       // indexing overlap windows weighting table: left=+0 middle=+1 rightmost=+2
       int wbx = (bx == 0) ? 0 : (bx == nBlkX - 1) ? 2 : 1; // 0 for very first, 2 for very last, 1 for all others in the middle
-      short *winOver = OverWins->GetWindow(wby + wbx);
-      short *winOverUV = OverWinsUV->GetWindow(wby + wbx);
 
       const int index = by * nBlkX + bx;
       const FakeBlockData & block = _mv_clip_ptr->GetBlock(0, index);
@@ -810,6 +815,11 @@ void	MVCompensate::compensate_slice_overlap(int y_beg, int y_end)
      */
       const int blx = block.GetX() * nPel + block.GetMV().x * time256 / 256; // 2.5.11.22
       const int bly = block.GetY() * nPel + block.GetMV().y * time256 / 256 + fieldShift; // 2.5.11.22
+
+      short* winOver = OverWins->GetWindow(wby + wbx);
+      short* winOverUV;
+      if (planecount > 1)
+        winOverUV = OverWinsUV->GetWindow(wby + wbx);
 
       if (block.GetSAD() < _thsad)
       {
