@@ -47,8 +47,8 @@ unsigned int Luma8_sse2(const unsigned char *pSrc, int nSrcPitch)
   //      or  4x2 uint16_t
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128(); // 2x or 4x int is probably enough for 32x32
-  const int simd_step = (nBlkWidth % 16) == 0 ? 16 : 8;
-  const bool two_rows = simd_step == 8;
+  constexpr int simd_step = (nBlkWidth % 16) == 0 ? 16 : 8;
+  constexpr bool two_rows = simd_step == 8;
 
   for (int y = 0; y < nBlkHeight; y += (two_rows ? 2 : 1))
   {
@@ -100,15 +100,15 @@ unsigned int Luma16_sse2(const unsigned char *pSrc, int nSrcPitch)
   */
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128(); // 2x or 4x int is probably enough for 32x32
-  const int simd_step = (nBlkWidth % 8) == 0 ? 16 : 8;
-  const bool two_rows = simd_step == 8;
+  constexpr int simd_step = (nBlkWidth % 8) == 0 ? 16 : 8;
+  constexpr bool two_rows = simd_step == 8;
   // blksize 4, 8, 12, 16,...
   for ( int y = 0; y < nBlkHeight; y+= (two_rows ? 2 : 1))
   {
     for ( int x = 0; x < nBlkWidth * sizeof(uint16_t); x+=simd_step )
     {
       __m128i src1;
-      if (two_rows) {
+      if constexpr(two_rows) {
         // (8 bytes or 4 words) * 2 rows
         src1 = _mm_or_si128(_mm_loadl_epi64((__m128i *) (pSrc + x)),_mm_slli_si128(_mm_loadl_epi64((__m128i *) (pSrc + x + nSrcPitch)),8));
       } else {
@@ -118,7 +118,7 @@ unsigned int Luma16_sse2(const unsigned char *pSrc, int nSrcPitch)
       sum = _mm_add_epi32(sum, _mm_unpackhi_epi16(src1, zero));
       // result in four 32 bit sum1_32, sum2_32, sum3_32, sum4_32
     }
-    if (two_rows) {
+    if constexpr(two_rows) {
       pSrc += nSrcPitch*2;
     } else {
       pSrc += nSrcPitch;
