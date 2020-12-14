@@ -34,6 +34,12 @@
 #include <cmath>
 #include <cstdio>
 
+#ifdef RANDOM_DIFF_CHASE
+#include <string>
+#include <thread>
+#include <sstream>
+#include <iomanip>
+#endif
 
 
 MVAnalyse::MVAnalyse(
@@ -580,6 +586,10 @@ PVideoFrame __stdcall MVAnalyse::GetFrame(int n, IScriptEnvironment* env)
   }
   pDst += headerSize;
 
+#ifdef RANDOM_DIFF_CHASE
+  auto outfilebuf = new short[srd._analysis_data.nBlkX * srd._analysis_data.nBlkY * 4];
+#endif
+
   if (nsrc < minframe || nsrc >= maxframe)
   {
     // fill all vectors with invalid data
@@ -592,7 +602,16 @@ PVideoFrame __stdcall MVAnalyse::GetFrame(int n, IScriptEnvironment* env)
     _RPT3(0, "MAnalyze GetFrame, frame_nsrc=%d nref=%d id=%d\n", nsrc, nref, _instance_id);
     
     PVideoFrame	src = child->GetFrame(nsrc, env); // v2.0
-    if(has_at_least_v8) env->copyFrameProps(src, dst); // frame property support
+    // if(has_at_least_v8) env->copyFrameProps(src, dst); // frame property support
+    // The result clip is a special MV clip. It does not need to inherit the frame props of source
+
+    // debug
+#ifdef RANDOM_DIFF_CHASE
+    AVSMap* avsmap = env->getFramePropsRW(dst);
+    env->propSetInt(avsmap, "instance_id", _instance_id, AVSPropAppendMode::paReplace);
+    env->propSetInt(avsmap, "blkX", srd._analysis_data.nBlkX, AVSPropAppendMode::paReplace);
+    env->propSetInt(avsmap, "blkY", srd._analysis_data.nBlkY, AVSPropAppendMode::paReplace);
+#endif
 
     load_src_frame(*pSrcGOF, src, srd._analysis_data);
 
@@ -620,6 +639,27 @@ PVideoFrame __stdcall MVAnalyse::GetFrame(int n, IScriptEnvironment* env)
     {
       pVecPrevOrNull = &srd._vec_prev[0];
     }
+
+#ifdef RANDOM_DIFF_CHASE
+    /* inconsistent analysis results debug, set them at fixed values
+    *  answer: no effect, still random differences
+    searchType = UMHSEARCH;
+    nSearchParam = 2;
+    nPelSearch = 1;
+    nLambda = 4000;
+    lsad = 4800;
+    pnew = 50;
+    plevel = 1;
+    global = true;
+    //fieldShift = 0;
+    pzero = 50;
+    badSAD = 40000;
+    badrange = 24;
+    meander = true;
+    tryMany = false;
+    pVecPrevOrNull = nullptr;
+    */
+#endif
 
     _vectorfields_aptr->SearchMVs(
       pSrcGOF, pRefGOF,
@@ -662,6 +702,44 @@ PVideoFrame __stdcall MVAnalyse::GetFrame(int n, IScriptEnvironment* env)
     );
     srd._vec_prev_frame = nsrc;
   }
+
+#ifdef RANDOM_DIFF_CHASE
+  // debug!!!!
+  // inconsistent behaviour test
+  // sometimes the generated motion vectors are different
+  
+  if (true && n==148)
+  {
+
+    std::thread::id this_id = std::this_thread::get_id();
+    std::stringstream outfilename;
+
+    outfilename << "c:\\x\\mvtools_threadtest_" << n;
+
+    auto time_point = std::chrono::high_resolution_clock().now;
+    auto now = std::chrono::system_clock::now();
+    auto t_c = std::chrono::system_clock::to_time_t(now);
+    outfilename << "_" << std::setfill('0') << std::setw(2) << this_id << "_" << std::put_time(std::localtime(&t_c), "%F %H%M%S") << ".txt";
+    FILE *outfile = fopen(outfilename.str().c_str(), "wb");
+    if (outfile == NULL)
+    {
+      env->ThrowError("MAnalyse: PF debug out file can not be created! %s", outfilename.str().c_str());
+    }
+    // short vx, short vy, int SAD = 4 words = 8 bytes per block
+    fwrite(
+      outfilebuf,
+      sizeof(short) * 4 * srd._analysis_data.nBlkX
+      * srd._analysis_data.nBlkY,
+      1,
+      outfile
+    );
+    fclose(outfile);
+    outfile = 0;
+    delete[] outfilebuf;
+    outfilebuf = 0;
+  }
+#endif
+
   _RPT3(0, "MAnalyze GetFrame END, frame_nsrc=%d nref=%d id=%d\n", nsrc, nref, _instance_id);
   return dst;
 }

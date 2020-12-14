@@ -132,7 +132,7 @@ private:
     vectors;           /* before the search, contains the hierachal predictor */
                        /* after the search, contains the best motion vector */
 
-  bool           smallestPlane;     /* say whether vectors can used predictors from a smaller plane */
+  bool           smallestPlane;     /* say whether vectors can use predictors from a smaller plane */
 //	bool           mmx;               /* can we use mmx asm code */
   bool           isse;              /* can we use isse asm code */
   bool           chroma;            /* do we do chroma me */
@@ -195,8 +195,7 @@ private:
   MVClip *	_mv_clip_ptr;
   int _smooth;
   sad_t _thSAD;
-
-//  const VECTOR zeroMV = {0,0,(sad_t)-1};
+  //  const VECTOR zeroMV = {0,0,(sad_t)-1};
 
 
   // Working area
