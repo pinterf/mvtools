@@ -40,11 +40,6 @@
 #include <stdexcept>
 #include <stdint.h>
 
-#ifdef RANDOM_DIFF_CHASE
-#include <sstream>
-#include <iomanip>
-#include <chrono>
-#endif
 
 static unsigned int SadDummy(const uint8_t *, int , const uint8_t *, int )
 {
@@ -707,16 +702,14 @@ void PlaneOfBlocks::FetchPredictors(WorkingArea &workarea)
     workarea.predictors[2] = ClipMV(workarea, zeroMVfieldShifted);
   }
 
-#ifdef RANDOM_DIFF_CHASE
     // Original problem: random, small, rare, mostly irreproducible differences between multiple encodings.
     // In all, I spent at least a week on the problem during a half year, losing hope
     // and restarting again four times. Nasty bug it was.
-#endif
     // !smallestPlane: use bottom right only if a coarser level exists or else we get random
     // crap from a previous frame.
   // bottom-right predictor (from coarse level)
   if (!isBottom && 
-    !smallestPlane &&
+    !smallestPlane && // v2.7.44
     ((workarea.blkScanDir == 1 && workarea.blkx < nBlkX - 1) || (workarea.blkScanDir == -1 && workarea.blkx > 0)))
   {
     workarea.predictors[3] = ClipMV(workarea, vectors[workarea.blkIdx + nBlkX + workarea.blkScanDir]);
@@ -866,57 +859,8 @@ void PlaneOfBlocks::Refine(WorkingArea &workarea)
 template<typename pixel_t>
 void PlaneOfBlocks::PseudoEPZSearch(WorkingArea& workarea)
 {
-#ifdef RANDOM_DIFF_CHASE
-  bool dbg = false;
-  if (workarea.blkIdx == 1) {
-    // és 148. frame
-    int previdx = 0;
-    if (vectors[previdx].x == (short)0xFFF8 &&
-      vectors[previdx].y == (short)0xFFF8 &&
-      vectors[previdx].sad == 0x01F9)
-    {
-      int i = 1;
-      // ennek a végén a release FFF6 FFF9 000001E5
-      // a debug meg             FFF4 FFFA 000001EE
-      dbg = true;
-    }
-  }
-
-  FILE* outfile;
-  if (dbg) {
-    std::stringstream outfilename;
-    outfilename << "c:\\x\\mvtools_PseudoEPZSearch_";
-
-    auto time_point = std::chrono::high_resolution_clock().now;
-    auto now = std::chrono::system_clock::now();
-    auto t_c = std::chrono::system_clock::to_time_t(now);
-    outfilename << "_" << std::put_time(std::localtime(&t_c), "%F %H%M%S") << ".txt";
-    outfile = fopen(outfilename.str().c_str(), "wb");
-    if (outfile == NULL)
-    {
-      dbg = false;
-    }
-  }
-#endif
-
   typedef typename std::conditional < sizeof(pixel_t) == 1, sad_t, bigsad_t >::type safe_sad_t;
   FetchPredictors<pixel_t>(workarea);
-
-#ifdef RANDOM_DIFF_CHASE
-  if (dbg) {
-    const bool isTop = workarea.blky == workarea.blky_beg;
-    const bool isBottom = workarea.blky == workarea.blky_end - 1;
-    char buf[200];
-    sprintf(buf, "istop=%s isbottom=%s\r\n", isTop ? "yes" : "no", isBottom ? "yes": "no");
-    fwrite(buf, strlen(buf) + 1, 1, outfile);
-    for (int i = 0; i < 4; i++) {
-      sprintf(buf, "workarea.predictors[%d] x=%d, y=%d, sad=%x\r\n", i, workarea.predictors[i].x, workarea.predictors[i].y, workarea.predictors[i].sad);
-      fwrite(buf, strlen(buf) + 1, 1, outfile);
-    }
-    sprintf(buf, "workarea.predictor x=%d, y=%d, sad=%x\r\n", workarea.predictor.x, workarea.predictor.y, workarea.predictor.sad);
-    fwrite(buf, strlen(buf) + 1, 1, outfile);
-  }
-#endif
 
   sad_t sad;
   sad_t saduv;
@@ -962,14 +906,6 @@ void PlaneOfBlocks::PseudoEPZSearch(WorkingArea& workarea)
   // Global MV predictor  - added by Fizick
   workarea.globalMVPredictor = ClipMV(workarea, workarea.globalMVPredictor);
 
-#ifdef RANDOM_DIFF_CHASE
-  if (dbg) {
-    char buf[200];
-    sprintf(buf, "globalMVPredictor=%d, %d, %x\r\n", workarea.globalMVPredictor.x, workarea.globalMVPredictor.y, workarea.globalMVPredictor.sad);
-    fwrite( buf, strlen(buf) + 1, 1, outfile);
-  }
-#endif
-
   //	if ( workarea.IsVectorOK(workarea.globalMVPredictor.x, workarea.globalMVPredictor.y ) )
   {
     saduv = (chroma) ? 
@@ -979,29 +915,12 @@ void PlaneOfBlocks::PseudoEPZSearch(WorkingArea& workarea)
     sad += saduv;
     sad_t cost = sad + ((pglobal*(safe_sad_t)sad) >> 8);
 
-#ifdef RANDOM_DIFF_CHASE
-    if (dbg) {
-      char buf[200];
-      sprintf(buf, "#1 sad=%x, cost=%d, mincost=%d\r\n", sad, cost, workarea.nMinCost);
-      fwrite(buf, strlen(buf) + 1, 1, outfile);
-      sprintf(buf, "#1 bestMV.x=%d, y=%d, sad=%x, mincost=%d\r\n", workarea.bestMV.x, workarea.bestMV.y, workarea.bestMV.sad, workarea.nMinCost);
-      fwrite(buf, strlen(buf) + 1, 1, outfile);
-    }
-#endif
-
     if (cost < workarea.nMinCost || tryMany)
     {
       workarea.bestMV.x = workarea.globalMVPredictor.x;
       workarea.bestMV.y = workarea.globalMVPredictor.y;
       workarea.bestMV.sad = sad;
       workarea.nMinCost = cost;
-#ifdef RANDOM_DIFF_CHASE
-      if (dbg) {
-        char buf[200];
-        sprintf(buf, "#2 bestMV.x=%d, y=%d, sad=%x, mincost=%d\r\n", workarea.bestMV.x, workarea.bestMV.y, workarea.bestMV.sad, workarea.nMinCost);
-        fwrite(buf, strlen(buf) + 1, 1, outfile);
-      }
-#endif
     }
     if (tryMany)
     {
@@ -1021,28 +940,12 @@ void PlaneOfBlocks::PseudoEPZSearch(WorkingArea& workarea)
     sad += saduv;
     cost = sad;
 
-#ifdef RANDOM_DIFF_CHASE
-    if (dbg) {
-      char buf[200];
-      sprintf(buf, "#3 sad=%x, cost=%d, mincost=%d pred.x=%d pred.y=%d\r\n", sad, cost, workarea.nMinCost, workarea.predictor.x, workarea.predictor.y);
-      fwrite(buf, strlen(buf) + 1, 1, outfile);
-      sprintf(buf, "#3 bestMV.x=%d, y=%d, sad=%x, mincost=%d\r\n", workarea.bestMV.x, workarea.bestMV.y, workarea.bestMV.sad, workarea.nMinCost);
-      fwrite(buf, strlen(buf) + 1, 1, outfile);
-    }
-#endif
     if (cost < workarea.nMinCost || tryMany)
     {
       workarea.bestMV.x = workarea.predictor.x;
       workarea.bestMV.y = workarea.predictor.y;
       workarea.bestMV.sad = sad;
       workarea.nMinCost = cost;
-#ifdef RANDOM_DIFF_CHASE
-      if (dbg) {
-        char buf[200];
-        sprintf(buf, "#4 bestMV.x=%d, y=%d, sad=%x, mincost=%d\r\n", workarea.bestMV.x, workarea.bestMV.y, workarea.bestMV.sad, workarea.nMinCost);
-        fwrite(buf, strlen(buf) + 1, 1, outfile);
-      }
-#endif
     }
   }
 
@@ -1071,13 +974,6 @@ void PlaneOfBlocks::PseudoEPZSearch(WorkingArea& workarea)
       bestMVMany[i + 3] = workarea.bestMV;    // save bestMV
       nMinCostMany[i + 3] = workarea.nMinCost;
     }
-#ifdef RANDOM_DIFF_CHASE
-    if (dbg) {
-      char buf[200];
-      sprintf(buf, "#5 npred=%d bestMV.x=%d, y=%d, sad=%x, mincost=%d\r\n", i, workarea.bestMV.x, workarea.bestMV.y, workarea.bestMV.sad, workarea.nMinCost);
-      fwrite(buf, strlen(buf) + 1, 1, outfile);
-    }
-#endif
   }	// for i
 
   if (tryMany)
@@ -1098,13 +994,6 @@ void PlaneOfBlocks::PseudoEPZSearch(WorkingArea& workarea)
     // then, we refine, according to the search type
     Refine<pixel_t>(workarea);
   }
-#ifdef RANDOM_DIFF_CHASE
-  if (dbg) {
-    char buf[200];
-    sprintf(buf, "#6 bestMV.x=%d, y=%d, sad=%x, mincost=%d\r\n", workarea.bestMV.x, workarea.bestMV.y, workarea.bestMV.sad, workarea.nMinCost);
-    fwrite(buf, strlen(buf) + 1, 1, outfile);
-  }
-#endif
   sad_t foundSAD = workarea.bestMV.sad;
 
   const int		BADCOUNT_LIMIT = 16;
@@ -1203,12 +1092,6 @@ void PlaneOfBlocks::PseudoEPZSearch(WorkingArea& workarea)
   vectors[workarea.blkIdx].sad = workarea.bestMV.sad;
 
   workarea.planeSAD += workarea.bestMV.sad; // for debug, plus fixme outer planeSAD is not used
-
-#ifdef RANDOM_DIFF_CHASE
-  if (dbg) {
-    fclose(outfile);
-  }
-#endif
 }
 
 
@@ -3127,50 +3010,6 @@ void	PlaneOfBlocks::search_mv_slice(Slicer::TaskData &td)
       }
 #endif	// ALIGN_SOURCEBLOCK
 
-#ifdef RANDOM_DIFF_CHASE
-      // debug
-      if (outfilebuf != NULL) // write vector to outfile
-      {
-        if (workarea.blky == 0 && workarea.blkx == 1)
-        {
-          int prevx = workarea.blkx - 1;
-          // trigger
-          short expected_vx = 0xFFF8;
-          short expected_vy = 0xFFF8;
-          uint32_t expectedsad = 0x000001F9;
-          if (outfilebuf[prevx * 4 + 0] == expected_vx && // kmm, FFF4, FFFA 0x000001EE a debug jó eredmény!
-            outfilebuf[prevx * 4 + 1] == expected_vy &&
-            outfilebuf[prevx * 4 + 2] == (*(uint32_t*)(&expectedsad) & 0x0000ffff) && // low word
-            outfilebuf[prevx * 4 + 3] == (*(uint32_t*)(&expectedsad) >> 16))
-          {
-
-            //itt tartok.a release és a debug más eredményt ad a x = 1 y = 0 vectorra.
-            // expected 0,1 on debug
-
-            short good_vx = 0xFFF4;
-            short good_vy = 0xFFFA;
-            uint32_t goodsad = 0x000001EE;
-
-            /*
-            // expected 0,1 on release
-            short good_vx = 0xFFF6;
-            short good_vy = 0xFFF7;
-            uint32_t goodsad = 0x000001E5;
-            */
-            // debug
-            if (workarea.bestMV.x != good_vx ||
-              workarea.bestMV.y != good_vy ||
-              workarea.bestMV.sad != goodsad)
-            {
-              int x = 1;
-            }
-            else {
-              int x = 1; // good!
-            }
-          }
-        }
-      }
-#endif
       // fixme note:
       // MAnalyze mt-inconsistency reason #3
       // this is _not_ internal mt friendly
