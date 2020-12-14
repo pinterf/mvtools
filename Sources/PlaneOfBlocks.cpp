@@ -708,10 +708,15 @@ void PlaneOfBlocks::FetchPredictors(WorkingArea &workarea)
   }
 
 #ifdef RANDOM_DIFF_CHASE
-    // Original problem: random, rare, mostly irreproducible differences between multiple encodings.
+    // Original problem: random, small, rare, mostly irreproducible differences between multiple encodings.
+    // In all, I spent at least a week on the problem during a half year, losing hope
+    // and restarting again four times. Nasty bug it was.
 #endif
+    // !smallestPlane: use bottom right only if a coarser level exists or else we get random
+    // crap from a previous frame.
   // bottom-right predictor (from coarse level)
   if (!isBottom && 
+    !smallestPlane &&
     ((workarea.blkScanDir == 1 && workarea.blkx < nBlkX - 1) || (workarea.blkScanDir == -1 && workarea.blkx > 0)))
   {
     workarea.predictors[3] = ClipMV(workarea, vectors[workarea.blkIdx + nBlkX + workarea.blkScanDir]);
