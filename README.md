@@ -10,6 +10,10 @@ Credits:
 - Manao, Fizick, Tsp, TSchniede, SEt, Vit, Firesledge, cretindesalpes 
 
 Change log
+- 2.7.44 (20201214)
+  - MAnalyze: fix motion vector generation inconsistencies across multiple runs.
+    Note: when internal multithreading is used (avstp + mt=true), inconsistencies will still occur by design.
+
 - 2.7.43 (20200602)
   - MCompensate: fix crash for GreyScale formats when overlap is used
 

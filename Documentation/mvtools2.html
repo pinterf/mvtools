@@ -12,7 +12,7 @@
     <h2>Abstract</h2>
     <table class="n">
         <tr><td class="n"><b>Authors:      </b></td><td class="n">&nbsp;</td><td class="n">Manao, Tsp, TSchniede, SEt, Fizick (Alexander Balakhnin), Vit, Firesledge, pinterf</td></tr>
-        <tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.43</td></tr>
+        <tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.44</td></tr>
         <tr><td class="n"><b>git:          </b></td><td class="n">&nbsp;</td><td class="n"><a href="https://github.com/pinterf/mvtools/tree/mvtools-pfmod">https://github.com/pinterf/mvtools/tree/mvtools-pfmod</a></td></tr>
         <tr><td class="n"><b>Forum:        </b></td><td class="n">&nbsp;</td><td class="n"><a href="https://forum.doom9.org/showthread.php?t=173356">https://forum.doom9.org/showthread.php?t=173356</a></td></tr>
         <tr><td class="n"><b>Base versions:</b></td><td class="n">&nbsp;</td><td class="n">2.6.0.5 + 2.5.11.22</td></tr>
@@ -728,21 +728,25 @@
         <code>SelectEvery(delta*2, n)</code>.
     </p>
     <p class="var">mt</p>
-    <p>Enables internal multi-threading (through avstp.dll). default is true</p>
+    <p>Enables internal multi-threading (through avstp.dll). default is true
+       When avstp.dll is not present, parameter is ineffective. 
+    </p>
     <p>Important note!<br>
-       mt=true is giving a bit worse and not 100% similar result than mt=false.
+       Parameter mt=true is giving a bit worse and not 100% similar result as mt=false.
        This is _not_ Avisynth's multithreading, this is the filter's internal one.<br>
        For speedup you can always use Avisynth's mt support (see Prefetch) and 
        delete avstp.dll or set mt=false if you still need avstp.dll for other tasks.<br>
        When mt = true and avstp.dll is found then internal multithreading is active.
        Internal mt is processing the X*Y sized motion block matrix in "slices", where 
-       slices are matrixes with a smaller vertical size. The original matrix is divided vertically to 2, 3, ... 
-       (depends on processor count) units (e.g. for two threads one thread is processing
-       blocks with y coordinates from 0 to height/2-1, and the other thread from height/2 to height-1.
+       slices are still matrixes with with a smaller vertical size. The original matrix 
+       is divided vertically to 2, 3, ... (depends on processor count) units.
+       As and example: let's suppose we have two threads. One thread is processing
+       blocks with y coordinates from 0 to height/2-1 (=top half), and the other thread from 
+       height/2 to height-1 (bottom half).
        Unfortunately - for algorithmical reasons - this speedup results in different output as
-       the single-thread case due to the fact that the unit boundaries are handled specially,
-       and a non-sliced processing has only 2 (top and bottom) boundary, while the N-thread version
-       has N*2 boundary.
+       the single-thread case due to the fact that the unit boundaries are handled specially.
+       A non-multithreaded approach is processing the whole frame in a single run, in one thread, having 
+       only 2 (namely the top and bottom lines) boundary, while the N-thread version has N*2 boundary.
     <p class="var">scaleCSAD</p>
     <p>
         Fine tune chroma part weight in SAD calculation (since 2.7.18.22)<br />
@@ -2203,6 +2207,12 @@ Planar2Interleaved() # convert back to normal interleave YUY2
 
     <h2><a name="revisions"></a>VI) Revisions</h2>
     
+    <p>2.7.44 (20201214)</p>
+    <ul>
+        <li>MAnalyze: fix motion vector generation inconsistencies across multiple runs.<br />
+            Note: when internal multithreading is used (avstp + mt=true), inconsistencies will still occur by design.</li>
+    </ul>
+
     <p>2.7.43 (20200602)</p>
     <ul>
         <li>MCompensate: fix crash for GreyScale formats when overlap is used</li>
