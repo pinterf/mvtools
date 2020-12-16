@@ -2100,6 +2100,110 @@ void VerticalBicubic(unsigned char *pDst8, const unsigned char *pSrc8, int nDstP
     pDst[i] = pSrc[i];
 }
 
+template<typename pixel_t, bool hasSSE41>
+void VerticalBicubic_sse2(unsigned char* pDst8, const unsigned char* pSrc8, int nDstPitch,
+  int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel)
+{
+  pixel_t* pDst = reinterpret_cast<pixel_t*>(pDst8);
+  const pixel_t* pSrc = reinterpret_cast<const pixel_t*>(pSrc8);
+
+  nSrcPitch /= sizeof(pixel_t);
+  nDstPitch /= sizeof(pixel_t);
+
+  const int _max_pixel_value = sizeof(pixel_t) == 1 ? 255 : ((1 << bits_per_pixel) - 1);
+  const __m128i max_pixel_value = _mm_set1_epi16(_max_pixel_value);
+
+  auto zeroes = _mm_setzero_si128();
+
+  for (int y = 0; y < 1; y++) {
+    for (int x = 0; x < nWidth * sizeof(pixel_t); x += 16 / sizeof(pixel_t)) {
+      __m128i m0 = _mm_loadu_si128((const __m128i*) & pSrc[x]);
+      __m128i m1 = _mm_loadu_si128((const __m128i*) & pSrc[x + nSrcPitch]);
+
+      if constexpr (sizeof(pixel_t) == 1)
+        m0 = _mm_avg_epu8(m0, m1);
+      else
+        m0 = _mm_avg_epu16(m0, m1);
+      _mm_storeu_si128((__m128i*) & pDst[x], m0);
+    }
+
+    pSrc += nSrcPitch;
+    pDst += nDstPitch;
+  }
+
+  for (int y = 1; y < nHeight - 3; y++) {
+    for (int x = 0; x < nWidth; x += 8 / sizeof(pixel_t)) {
+      // (-pSrc[i - nSrcPitch] - pSrc[i + nSrcPitch * 2] + (pSrc[i] + pSrc[i + nSrcPitch]) * 9 + 8) >> 4));
+      // (-m1 -m4 + (m2+m3)*9 + 8) >> 4
+      __m128i m1 = _mm_loadl_epi64((const __m128i*) & pSrc[x - nSrcPitch]);
+      __m128i m2 = _mm_loadl_epi64((const __m128i*) & pSrc[x]);
+      __m128i m3 = _mm_loadl_epi64((const __m128i*) & pSrc[x + nSrcPitch]);
+      __m128i m4 = _mm_loadl_epi64((const __m128i*) & pSrc[x + nSrcPitch * 2]);
+      __m128i res;
+
+      if constexpr (sizeof(pixel_t) == 1)
+      {
+        const auto rounder_eight = _mm_set1_epi16(8);
+
+        m1 = _mm_unpacklo_epi8(m1, zeroes);
+        m2 = _mm_unpacklo_epi8(m2, zeroes);
+        m3 = _mm_unpacklo_epi8(m3, zeroes);
+        m4 = _mm_unpacklo_epi8(m4, zeroes);
+
+        auto tmp1 = _mm_add_epi16(m2, m3);
+        auto tmp2 = _mm_add_epi16(_mm_slli_epi16(tmp1, 3), tmp1); // *9
+        auto tmp3 = _mm_sub_epi16(_mm_sub_epi16(tmp2, m1), m4);
+        res = _mm_srai_epi16(_mm_add_epi16(tmp3, rounder_eight), 4);
+        res = _mm_packus_epi16(res, res);
+      }
+      else {
+        const auto rounder_eight = _mm_set1_epi32(8);
+        m1 = _mm_unpacklo_epi16(m1, zeroes);
+        m2 = _mm_unpacklo_epi16(m2, zeroes);
+        m3 = _mm_unpacklo_epi16(m3, zeroes);
+        m4 = _mm_unpacklo_epi16(m4, zeroes);
+
+        auto tmp1 = _mm_add_epi32(m2, m3);
+        auto tmp2 = _mm_add_epi32(_mm_slli_epi32(tmp1, 3), tmp1); // *9
+        auto tmp3 = _mm_sub_epi32(_mm_sub_epi32(tmp2, m1), m4);
+        res = _mm_srai_epi32(_mm_add_epi32(tmp3, rounder_eight), 4);
+
+        if (hasSSE41) {
+          res = _mm_packus_epi32(res, res);
+          res = _mm_min_epu16(res, max_pixel_value);
+        }
+        else {
+          res = _MM_PACKUS_EPI32(res, res);
+          res = _MM_MIN_EPU16(res, max_pixel_value);
+        }
+      }
+      _mm_storel_epi64((__m128i*) & pDst[x], res);
+    }
+
+    pSrc += nSrcPitch;
+    pDst += nDstPitch;
+  }
+
+  for (int y = nHeight - 3; y < nHeight - 1; y++) {
+    for (int x = 0; x < nWidth * sizeof(pixel_t); x += 16 / sizeof(pixel_t)) {
+      __m128i m0 = _mm_loadu_si128((const __m128i*) & pSrc[x]);
+      __m128i m1 = _mm_loadu_si128((const __m128i*) & pSrc[x + nSrcPitch]);
+
+      if constexpr (sizeof(pixel_t) == 1)
+        m0 = _mm_avg_epu8(m0, m1);
+      else
+        m0 = _mm_avg_epu16(m0, m1);
+      _mm_storeu_si128((__m128i*) & pDst[x], m0);
+    }
+
+    pSrc += nSrcPitch;
+    pDst += nDstPitch;
+  }
+
+  for (int x = 0; x < nWidth; x++)
+    pDst[x] = pSrc[x];
+}
+
 // 8-32bits
 template<typename pixel_t>
 void HorizontalBicubic(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch,
@@ -2135,6 +2239,88 @@ void HorizontalBicubic(unsigned char *pDst8, const unsigned char *pSrc8, int nDs
         pDst[i] = (pSrc[i] + pSrc[i + 1]) * 0.5f; // float
 
     pDst[nWidth - 1] = pSrc[nWidth - 1];
+    pDst += nDstPitch;
+    pSrc += nSrcPitch;
+  }
+}
+
+template<typename pixel_t, bool hasSSE41>
+void HorizontalBicubic_sse2(unsigned char* pDst8, const unsigned char* pSrc8, int nDstPitch,
+  int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel) {
+
+  pixel_t* pDst = reinterpret_cast<pixel_t*>(pDst8);
+  const pixel_t* pSrc = reinterpret_cast<const pixel_t*>(pSrc8);
+
+  nSrcPitch /= sizeof(pixel_t);
+  nDstPitch /= sizeof(pixel_t);
+
+  const int _max_pixel_value = sizeof(pixel_t) == 1 ? 255 : ((1 << bits_per_pixel) - 1);
+  const __m128i max_pixel_value = _mm_set1_epi16(_max_pixel_value);
+
+  auto zeroes = _mm_setzero_si128();
+
+  for (int y = 0; y < nHeight; y++) {
+    pDst[0] = (pSrc[0] + pSrc[1] + 1) >> 1;
+    // 1 to nWidth - 3 (wiener: 2 to nWidth - 4)
+    for (int x = 1; x < nWidth - 7; x += 8 / sizeof(pixel_t)) {
+      // (-m1 -m4 + (m2+m3)*9 + 8) >> 4
+      // safe till < nWidth - 7
+      __m128i m1 = _mm_loadl_epi64((const __m128i*) & pSrc[x - 1]);
+      __m128i m2 = _mm_loadl_epi64((const __m128i*) & pSrc[x]);
+      __m128i m3 = _mm_loadl_epi64((const __m128i*) & pSrc[x + 1]);
+      __m128i m4 = _mm_loadl_epi64((const __m128i*) & pSrc[x + 2]);
+      __m128i res;
+
+      if constexpr (sizeof(pixel_t) == 1)
+      {
+        const auto rounder_eight = _mm_set1_epi16(8);
+
+        m1 = _mm_unpacklo_epi8(m1, zeroes);
+        m2 = _mm_unpacklo_epi8(m2, zeroes);
+        m3 = _mm_unpacklo_epi8(m3, zeroes);
+        m4 = _mm_unpacklo_epi8(m4, zeroes);
+
+        auto tmp1 = _mm_add_epi16(m2, m3);
+        auto tmp2 = _mm_add_epi16(_mm_slli_epi16(tmp1, 3), tmp1); // *9
+        auto tmp3 = _mm_sub_epi16(_mm_sub_epi16(tmp2, m1), m4);
+        res = _mm_srai_epi16(_mm_add_epi16(tmp3, rounder_eight), 4);
+        res = _mm_packus_epi16(res, res);
+      }
+      else {
+        const auto rounder_eight = _mm_set1_epi32(8);
+        m1 = _mm_unpacklo_epi16(m1, zeroes);
+        m2 = _mm_unpacklo_epi16(m2, zeroes);
+        m3 = _mm_unpacklo_epi16(m3, zeroes);
+        m4 = _mm_unpacklo_epi16(m4, zeroes);
+
+        auto tmp1 = _mm_add_epi32(m2, m3);
+        auto tmp2 = _mm_add_epi32(_mm_slli_epi32(tmp1, 3), tmp1); // *9
+        auto tmp3 = _mm_sub_epi32(_mm_sub_epi32(tmp2, m1), m4);
+        res = _mm_srai_epi32(_mm_add_epi32(tmp3, rounder_eight), 4);
+
+        if (hasSSE41) {
+          res = _mm_packus_epi32(res, res);
+          res = _mm_min_epu16(res, max_pixel_value);
+        }
+        else {
+          res = _MM_PACKUS_EPI32(res, res);
+          res = _MM_MIN_EPU16(res, max_pixel_value);
+        }
+      }
+      _mm_storel_epi64((__m128i*) & pDst[x], res);
+    }
+
+    for (int i = nWidth - 7; i < nWidth - 3; i++)
+    {
+      pDst[i] = std::min(_max_pixel_value, std::max(0,
+        (-(pSrc[i - 1] + pSrc[i + 2]) + (pSrc[i] + pSrc[i + 1]) * 9 + 8) >> 4));
+    }
+
+    for (int x = nWidth - 3; x < nWidth - 1; x++)
+      pDst[x] = (pSrc[x] + pSrc[x + 1] + 1) >> 1;
+
+    pDst[nWidth - 1] = pSrc[nWidth - 1];
+
     pDst += nDstPitch;
     pSrc += nSrcPitch;
   }
@@ -2313,19 +2499,17 @@ template void VerticalBicubic<uint8_t>(unsigned char *pDst, const unsigned char 
 template void VerticalBicubic<uint16_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 template void VerticalBicubic<float>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
-/* todo, not ported by VS yet
-template void VerticalBicubic_sse2<uint8_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
-template void VerticalBicubic_sse2<uint16_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
-*/
+template void VerticalBicubic_sse2<uint8_t, false>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+template void VerticalBicubic_sse2<uint16_t, false>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+template void VerticalBicubic_sse2<uint16_t, true>(unsigned char* pDst, const unsigned char* pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
 template void HorizontalBicubic<uint8_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 template void HorizontalBicubic<uint16_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 template void HorizontalBicubic<float>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
-/* todo, not ported by VS yet
-template void HorizontalBicubic_sse2<uint8_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
-template void HorizontalBicubic_sse2<uint16_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
-*/
+template void HorizontalBicubic_sse2<uint8_t, false>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+template void HorizontalBicubic_sse2<uint16_t, false>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+template void HorizontalBicubic_sse2<uint16_t, true>(unsigned char* pDst, const unsigned char* pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
 #if 0 // not used
 template void DiagonalBicubic<uint8_t>(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);

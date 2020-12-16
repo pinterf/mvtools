@@ -69,8 +69,8 @@ void RB2Cubic(           unsigned char *pDst, const unsigned char *pSrc, int nDs
 //extern "C" void __cdecl DiagonalBilin_iSSE(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
 /* dubhater's comment from mvtools-vs: TODO: port these
-extern "C" void  VerticalBicubic_iSSE(uint8_t *pDst, const uint8_t *pSrc, intptr_t nDstPitch, intptr_t nWidth, intptr_t nHeight);
-extern "C" void  HorizontalBicubic_iSSE(uint8_t *pDst, const uint8_t *pSrc, intptr_t nDstPitch, intptr_t nWidth, intptr_t nHeight);
+done [pinterf] extern "C" void  VerticalBicubic_iSSE(uint8_t *pDst, const uint8_t *pSrc, intptr_t nDstPitch, intptr_t nWidth, intptr_t nHeight);
+done [pinterf] extern "C" void  HorizontalBicubic_iSSE(uint8_t *pDst, const uint8_t *pSrc, intptr_t nDstPitch, intptr_t nWidth, intptr_t nHeight);
 extern "C" void  RB2F_iSSE(uint8_t *pDst, const uint8_t *pSrc, intptr_t nDstPitch, intptr_t nSrcPitch, intptr_t nWidth, intptr_t nHeight);
 extern "C" void  RB2FilteredVerticalLine_SSE(uint8_t *pDst, const uint8_t *pSrc, intptr_t nSrcPitch, intptr_t nWidthMMX);
 extern "C" void  RB2FilteredHorizontalInplaceLine_SSE(uint8_t *pSrc, intptr_t nWidthMMX);
@@ -107,25 +107,22 @@ void DiagonalWiener(  unsigned char *pDst, const unsigned char *pSrc, int nDstPi
 
 template<typename pixel_t>
 void VerticalBicubic(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
-/* todo, not ported yet
-template<typename pixel_t>
+template<typename pixel_t, bool hasSSE41>
 void VerticalBicubic_sse2(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
-*/
 
 template<typename pixel_t>
 void HorizontalBicubic(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
-/* todo, not ported yet
-template<typename pixel_t>
+template<typename pixel_t, bool hasSSE41>
 void HorizontalBicubic_sse2(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
-*/
 
 #if 0 // not used
 template<typename pixel_t>
 void DiagonalBicubic(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 #endif
 
-extern "C" void __cdecl VerticalBicubic_iSSE(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
-extern "C" void __cdecl HorizontalBicubic_iSSE(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+//commented out: SIMD intrinsics sse2 by pinterf
+//extern "C" void __cdecl VerticalBicubic_iSSE(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+//extern "C" void __cdecl HorizontalBicubic_iSSE(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
 template<typename pixel_t>
 void Average2(     unsigned char *pDst, const unsigned char *pSrc1, const unsigned char *pSrc2, int nPitch, int nWidth, int nHeight);

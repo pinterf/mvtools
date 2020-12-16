@@ -73,22 +73,22 @@ MVPlane::MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, i
   if (pixelsize == 1) {
     _bilin_hor_ptr = _isse ? HorizontalBilin_sse2<uint8_t> : HorizontalBilin<uint8_t>;
     _bilin_ver_ptr = _isse ? VerticalBilin_sse2<uint8_t> : VerticalBilin<uint8_t>;
-    _bilin_dia_ptr = _isse ? DiagonalBilin_sse2<uint8_t, 0> : DiagonalBilin<uint8_t>;
-    _bicubic_hor_ptr = _isse ? HorizontalBicubic_iSSE : HorizontalBicubic<uint8_t>;
-    _bicubic_ver_ptr = _isse ? VerticalBicubic_iSSE : VerticalBicubic<uint8_t>;
-    _wiener_hor_ptr = _isse ? HorizontalWiener_sse2<uint8_t, 0> : HorizontalWiener<uint8_t>;
-    _wiener_ver_ptr = _isse ? VerticalWiener_sse2<uint8_t, 0> : VerticalWiener<uint8_t>;
+    _bilin_dia_ptr = _isse ? DiagonalBilin_sse2<uint8_t, false> : DiagonalBilin<uint8_t>;
+    _bicubic_hor_ptr = _isse ? HorizontalBicubic_sse2<uint8_t, false> : HorizontalBicubic<uint8_t>;
+    _bicubic_ver_ptr = _isse ? VerticalBicubic_sse2<uint8_t, false> : VerticalBicubic<uint8_t>;
+    _wiener_hor_ptr = _isse ? HorizontalWiener_sse2<uint8_t, false> : HorizontalWiener<uint8_t>;
+    _wiener_ver_ptr = _isse ? VerticalWiener_sse2<uint8_t, false> : VerticalWiener<uint8_t>;
     _average_ptr = _isse ? Average2_sse2<uint8_t> : Average2<uint8_t>;
     _reduce_ptr = &RB2BilinearFiltered<uint8_t>;
   }
   else if (pixelsize == 2) {
     _bilin_hor_ptr = _isse ? HorizontalBilin_sse2<uint16_t> : HorizontalBilin<uint16_t>;
     _bilin_ver_ptr = _isse ? VerticalBilin_sse2<uint16_t> : VerticalBilin<uint16_t>;
-    _bilin_dia_ptr = _isse ? (hasSSE41 ? DiagonalBilin_sse2<uint16_t, 1> : DiagonalBilin_sse2<uint16_t, 0>) : DiagonalBilin<uint16_t>;
-    _bicubic_hor_ptr = HorizontalBicubic<uint16_t>;
-    _bicubic_ver_ptr = VerticalBicubic<uint16_t>;
-    _wiener_hor_ptr = _isse ? (hasSSE41 ? HorizontalWiener_sse2<uint16_t, 1> : HorizontalWiener_sse2<uint16_t, 0>) : HorizontalWiener<uint16_t>;
-    _wiener_ver_ptr = _isse ? (hasSSE41 ? VerticalWiener_sse2<uint16_t, 1> : VerticalWiener_sse2<uint16_t, 0>) : VerticalWiener<uint16_t>;
+    _bilin_dia_ptr = _isse ? (hasSSE41 ? DiagonalBilin_sse2<uint16_t, true> : DiagonalBilin_sse2<uint16_t, false>) : DiagonalBilin<uint16_t>;
+    _bicubic_hor_ptr = _isse ? (hasSSE41 ? HorizontalBicubic_sse2<uint16_t, true> : HorizontalBicubic_sse2<uint16_t, false>) : HorizontalBicubic<uint16_t>;
+    _bicubic_ver_ptr = _isse ? (hasSSE41 ? VerticalBicubic_sse2<uint16_t, true> : VerticalBicubic_sse2<uint16_t, false>) :VerticalBicubic<uint16_t>;
+    _wiener_hor_ptr = _isse ? (hasSSE41 ? HorizontalWiener_sse2<uint16_t, true> : HorizontalWiener_sse2<uint16_t, false>) : HorizontalWiener<uint16_t>;
+    _wiener_ver_ptr = _isse ? (hasSSE41 ? VerticalWiener_sse2<uint16_t, 1> : VerticalWiener_sse2<uint16_t, false>) : VerticalWiener<uint16_t>;
     _average_ptr = _isse ? Average2_sse2<uint16_t> : Average2<uint16_t>;
     _reduce_ptr = &RB2BilinearFiltered<uint16_t>;
   }
