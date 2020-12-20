@@ -26,8 +26,21 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
+#include "avs/config.h" // WIN/POSIX/ETC defines
 #include "types.h"
 
+#ifdef _WIN32
+#define NOGDI
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#include "windows.h"
+#endif
+
+#if defined(GCC)
+#include <stdlib.h>
+#define _aligned_malloc(size, alignment) aligned_alloc(alignment, size)
+#define _aligned_free(ptr) free(ptr)
+#endif
 
 
 // Checks a constant expression to make the compiler fail if false.
@@ -40,12 +53,61 @@ const long double	PI  = 3.1415926535897932384626433832795L;
 const long double	LN2 = 0.69314718055994530941723212145818L;
 
 #ifndef MV_FORCEINLINE
-#define MV_FORCEINLINE __forceinline
+#if defined(__clang__)
+// Check clang first. clang-cl also defines __MSC_VER
+// We set MSVC because they are mostly compatible
+#   define CLANG
+#if defined(_MSC_VER)
+#   define MSVC
+#   define MV_FORCEINLINE __attribute__((always_inline)) inline
+#else
+#   define MV_FORCEINLINE __attribute__((always_inline)) inline
 #endif
+#elif   defined(_MSC_VER)
+#   define MSVC
+#   define MSVC_PURE
+#   define MV_FORCEINLINE __forceinline
+#elif defined(__GNUC__)
+#   define GCC
+#   define MV_FORCEINLINE __attribute__((always_inline)) inline
+#else
+#   error Unsupported compiler.
+#   define MV_FORCEINLINE inline
+#   undef __forceinline
+#   define __forceinline inline
+#endif 
+
+#endif
+
+#if UINTPTR_MAX == 0xffffffffffffffff || defined (_M_IA64) || defined (_WIN64) || defined (__64BIT__) || defined (__x86_64__)
+#define MV_64BIT
+#else
+#define MV_32BIT
+#endif
+
 
 #define MAX_BLOCK_SIZE 64
 
-MV_FORCEINLINE sad_t ScaleSadChroma(sad_t sad, int effective_scale) {
+// external asm related defines, disable them for non-windows
+#ifdef _WIN32
+#define USE_COPYCODE_ASM
+#define USE_OVERLAPS_ASM
+#define USE_SAD_ASM
+#define USE_SATD_ASM
+#define USE_LUMA_ASM
+#define USE_FDCT88INT_ASM
+#define USE_AVSTP
+#else
+//#define USE_COPYCODE_ASM
+//#define USE_OVERLAPS_ASM
+//#define USE_SAD_ASM
+//#define USE_SATD_ASM
+//#define USE_LUMA_ASM
+//#define USE_FDCT88INT_ASM
+//#define USE_AVSTP
+#endif
+
+static MV_FORCEINLINE sad_t ScaleSadChroma(sad_t sad, int effective_scale) {
   // effective scale: 1 -> div 2
   //                  2 -> div 4 (YV24 default)
   //                 -2 -> *4
