@@ -22,12 +22,15 @@
 // Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA, or visit
 // http://www.gnu.org/copyleft/gpl.html .
 
+#include "def.h"
 #include "DCTINT.h"
 #include "types.h"
 
 #include "malloc.h"
 #include <emmintrin.h>
 #include <stdint.h>
+
+#ifdef USE_FDCT88INT_ASM
 
 #define DCTSHIFT 2 // 2 is 4x decreasing,
 // only DC component need in shift 4 (i.e. 16x) for real images
@@ -50,6 +53,7 @@ DCTINT::DCTINT(int _sizex, int _sizey, int _dctmode)
 
 
 // 64 words working buffer followed by a 64 word internal temp buffer (multithreading)
+
   pWorkArea = (short * const)_aligned_malloc(2 * (8 * 8 * sizeof(short)), 128);
 
 
@@ -194,8 +198,8 @@ a
     pSrc += 8 * src_pit;
     pDest += 8 * dst_pit;
   }
-#ifndef _M_X64 
+#ifndef MV_64BIT 
   _mm_empty();
 #endif
 }
-
+#endif // USE_FDCT88INT_ASM

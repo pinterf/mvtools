@@ -23,7 +23,7 @@
 
 
 #include "DCTClass.h"
-
+#include "def.h"
 
 
 class DCTINT
@@ -40,8 +40,10 @@ public:
 
 };
 
+#ifdef USE_FDCT88INT_ASM
 extern "C" void fdct_mmx(short * const block);
 extern "C" void fdct_sse2(short * const block);
+#endif
 
 /*
 extern "C" {
