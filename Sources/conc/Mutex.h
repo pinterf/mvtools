@@ -24,14 +24,20 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 #endif
 
 
+// use std::mutex instead
+#ifdef _WIN32
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
-
+#ifdef _WIN32
 #define	NOMINMAX
 #define	NOGDI
 #define	WIN32_LEAN_AND_MEAN
 #include	<windows.h>
+#endif
 
+#ifndef _WIN32
+#include <mutex>
+#endif
 
 
 namespace conc
@@ -63,9 +69,11 @@ protected:
 /*\\\ PRIVATE \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
 private:
-
-	::CRITICAL_SECTION
-						_crit_sec;
+#ifdef _WIN32
+	::CRITICAL_SECTION _crit_sec;
+#else
+  std::mutex _crit_sec;
+#endif
 
 
 
@@ -88,7 +96,7 @@ private:
 
 #include	"conc/Mutex.hpp"
 
-
+#endif
 
 #endif	// conc_Mutex_HEADER_INCLUDED
 

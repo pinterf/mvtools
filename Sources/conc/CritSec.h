@@ -18,6 +18,9 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 #if ! defined (conc_CritSec_HEADER_INCLUDED)
 #define	conc_CritSec_HEADER_INCLUDED
 
+// use std::mutex instead
+#ifdef _WIN32
+
 #if defined (_MSC_VER)
 	#pragma once
 	#pragma warning (4 : 4250)
@@ -81,7 +84,7 @@ private:
 
 #include	"conc/CritSec.hpp"
 
-
+#endif
 
 #endif	// conc_CritSec_HEADER_INCLUDED
 

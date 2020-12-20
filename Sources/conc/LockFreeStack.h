@@ -61,7 +61,7 @@ class LockFreeStack
 public:
 
   using ValueType = T;
-  using CellType = typename LockFreeCell <T>;
+  using CellType = LockFreeCell <T>;
 
 						LockFreeStack ();
 	virtual			~LockFreeStack () {}

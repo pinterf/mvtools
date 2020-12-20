@@ -90,19 +90,20 @@ ptrdiff_t	AtomicPtrIntPair <T>::get_val () const
 }
 
 
-
+#if 0
 template <class T>
 bool	AtomicPtrIntPair <T>::cas (T *new_ptr, T *comp_ptr)
 {
-	T *				old_ptr = Interlocked::cas_ptr (
-		_data._content._ptr,
+	 T *				old_ptr = Interlocked::cas_ptr (
+  //  T * old_ptr = Interlocked::cas(
+      _data._content._ptr,
 		new_ptr,
 		comp_ptr
 	);
 
 	return (old_ptr == comp_ptr);
 }
-
+#endif
 
 
 template <class T>

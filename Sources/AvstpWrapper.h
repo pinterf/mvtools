@@ -22,6 +22,7 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 *Tab=3***********************************************************************/
 
 
+#include "def.h" // get USE_AVSTP
 
 #if ! defined (AvstpWrapper_HEADER_INCLUDED)
 #define	AvstpWrapper_HEADER_INCLUDED
@@ -76,10 +77,11 @@ protected:
 
 private:
 
-	template <class T>
+#ifdef USE_AVSTP
+  template <class T>
 	void				resolve_name (T &fnc_ptr, const char *name_0);
-
 	void				assign_normal ();
+#endif
 	void				assign_fallback ();
 
 	static int		fallback_get_interface_version_ptr ();
@@ -98,7 +100,9 @@ private:
 	int				(*_avstp_enqueue_task_ptr) (avstp_TaskDispatcher *td_ptr, avstp_TaskPtr task_ptr, void *user_data_ptr);
 	int				(*_avstp_wait_completion_ptr) (avstp_TaskDispatcher *td_ptr);
 
-	void *			_dll_hnd;	// Avoids loading windows.h just for HMODULE
+#ifdef USE_AVSTP
+  void *			_dll_hnd;	// Avoids loading windows.h just for HMODULE
+#endif
 
 	static std::unique_ptr <AvstpWrapper>
                   _singleton_aptr;

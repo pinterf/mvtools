@@ -13,7 +13,9 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 *Tab=3***********************************************************************/
 
+#include "def.h"
 
+#ifdef USE_AVSTP
 
 #if defined (_MSC_VER)
 	#pragma warning (1 : 4130 4223 4705 4706)
@@ -24,9 +26,11 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
-#define	NOMINMAX
-#define	NOGDI
-#define	WIN32_LEAN_AND_MEAN
+#ifdef _WIN32
+#define NOGDI
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#endif
 
 #include	"AvstpFinder.h"
 
@@ -302,6 +306,6 @@ void	AvstpFinder::compose_mapped_filename (wchar_t mf_name_0 [], wchar_t mu_name
 	return (this_hnd);
 }
 
-
+#endif // #ifdef USE_AVSTP
 
 /*\\\ EOF \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/

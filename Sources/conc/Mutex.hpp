@@ -36,28 +36,42 @@ namespace conc
 Mutex::Mutex ()
 :	_crit_sec ()
 {
+#ifdef _WIN32
 	::InitializeCriticalSection (&_crit_sec);
+#endif
 }
 
 
 
 Mutex::~Mutex ()
 {
-	::DeleteCriticalSection (&_crit_sec);
+#ifdef _WIN32
+  ::DeleteCriticalSection (&_crit_sec);
+#else
+  unlock();
+#endif
 }
 
 
 
 void	Mutex::lock ()
 {
+#ifdef _WIN32
 	::EnterCriticalSection (&_crit_sec);
+#else
+  _crit_sec.lock();
+#endif
 }
 
 
 
 void	Mutex::unlock ()
 {
+#ifdef _WIN32
 	::LeaveCriticalSection (&_crit_sec);
+#else
+_crit_sec.unlock();
+#endif
 }
 
 

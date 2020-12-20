@@ -24,16 +24,27 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
+#include "def.h"
+
+#ifdef _WIN32
 #define	NOGDI
 #define	NOMINMAX
 #define	WIN32_LEAN_AND_MEAN
+#include	"Windows.h"
+#endif
 
+// use std::mutex instead
+#ifdef _WIN32
 #include	"conc/CritSec.h"
 #include	"conc/Mutex.h"
-#include	"AvstpFinder.h"
-#include	"AvstpWrapper.h"
+#endif
 
-#include	"Windows.h"
+#include <mutex>
+
+#ifdef USE_AVSTP
+#include	"AvstpFinder.h"
+#endif
+#include	"AvstpWrapper.h"
 
 #include	<stdexcept>
 
@@ -55,8 +66,10 @@ Name: dtor
 
 AvstpWrapper::~AvstpWrapper ()
 {
-	::FreeLibrary (reinterpret_cast < ::HMODULE> (_dll_hnd));
+#ifdef USE_AVSTP
+  ::FreeLibrary (reinterpret_cast < ::HMODULE> (_dll_hnd));
 	_dll_hnd = 0;
+#endif
 }
 
 
@@ -78,25 +91,30 @@ Throws:
 
 AvstpWrapper &	AvstpWrapper::use_instance ()
 {
-	// First check
+  // First check
 	if (! _singleton_init_flag)
 	{
 		// Ensure serialization (guard constructor acquires mutex_new).
-		static conc::Mutex	mutex_new;
-		conc::CritSec	guard (mutex_new);
+#ifdef _WIN32
+    static conc::Mutex	mutex_new;
+    conc::CritSec	guard(mutex_new);
+#else
+    static std::mutex mutex_new;
+    std::lock_guard<std::mutex> lock(mutex_new);
+#endif
 
 		// Double check.
 		if (! _singleton_init_flag)
 		{
 			assert (! _singleton_init_flag && _singleton_aptr.get () == 0);
-			_singleton_aptr = std::unique_ptr <AvstpWrapper> (new AvstpWrapper);
-			_singleton_init_flag = true;
+      _singleton_aptr = std::unique_ptr <AvstpWrapper> (new AvstpWrapper);
+      _singleton_init_flag = true;
 		}
 
 		// guard destructor releases mutex_new.
 	}
 
-	return (*_singleton_aptr);
+  return (*_singleton_aptr);
 }
 
 
@@ -152,16 +170,19 @@ int	AvstpWrapper::wait_completion (avstp_TaskDispatcher *td_ptr)
 
 
 
-AvstpWrapper::AvstpWrapper ()
-:	_dll_hnd (AvstpFinder::find_lib ())
-,	_avstp_get_interface_version_ptr (0)
+AvstpWrapper::AvstpWrapper ():
+#ifdef USE_AVSTP
+  _dll_hnd (AvstpFinder::find_lib ()),
+#endif
+ 	_avstp_get_interface_version_ptr (0)
 ,	_avstp_create_dispatcher_ptr (0)
 ,	_avstp_destroy_dispatcher_ptr (0)
 ,	_avstp_get_nbr_threads_ptr (0)
 ,	_avstp_enqueue_task_ptr (0)
 ,	_avstp_wait_completion_ptr (0)
 {
-	if (_dll_hnd == 0)
+#ifdef USE_AVSTP
+  if (_dll_hnd == 0)
 	{
 		::OutputDebugStringW (
 			L"AvstpWrapper: cannot find avstp.dll."
@@ -176,6 +197,9 @@ AvstpWrapper::AvstpWrapper ()
 		// Now resolves the function names
 		assign_normal ();
 	}
+#else
+  assign_fallback(); // no avstp support
+#endif
 }
 
 
@@ -184,6 +208,7 @@ AvstpWrapper::AvstpWrapper ()
 
 
 
+#ifdef USE_AVSTP
 template <class T>
 void	AvstpWrapper::resolve_name (T &fnc_ptr, const char *name_0)
 {
@@ -201,9 +226,10 @@ void	AvstpWrapper::resolve_name (T &fnc_ptr, const char *name_0)
 		throw std::runtime_error ("Function missing in avstp.dll.");
 	}
 }
+#endif
 
 
-
+#ifdef USE_AVSTP
 void	AvstpWrapper::assign_normal ()
 {
 	resolve_name (_avstp_get_interface_version_ptr, "avstp_get_interface_version");
@@ -213,6 +239,7 @@ void	AvstpWrapper::assign_normal ()
 	resolve_name (_avstp_enqueue_task_ptr,          "avstp_enqueue_task");
 	resolve_name (_avstp_wait_completion_ptr,       "avstp_wait_completion");
 }
+#endif
 
 
 
@@ -293,7 +320,6 @@ std::unique_ptr <AvstpWrapper>	AvstpWrapper::_singleton_aptr;
 volatile bool	AvstpWrapper::_singleton_init_flag = false;
 
 int	AvstpWrapper::_dummy_dispatcher;
-
 
 
 /*\\\ EOF \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/

@@ -26,13 +26,18 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
+#ifdef _WIN32
+#include	"conc/AtomicInt.h"
+#include	"conc/Mutex.h"
+#else
+#include <atomic>
+#include <mutex>
+#endif
 
 #include	"conc/Array.h"
 #include	"conc/AtomicPtr.h"
-#include	"conc/AtomicInt.h"
 #include	"conc/LockFreeCell.h"
 #include	"conc/LockFreeStack.h"
-#include	"conc/Mutex.h"
 
 #include	<cstddef>
 
@@ -82,8 +87,13 @@ private:
 	enum {			BASE_SIZE		= 64	};		// Number of cells for the first zone
 
 	typedef	LockFreeStack <T>	CellStack;
-	typedef	AtomicInt <size_t>	CountCells;
+#ifdef _WIN32
+	typedef	 AtomicInt <size_t>	CountCells;
 	typedef	AtomicInt <int>		CountZones;
+#else
+  typedef	 std::atomic<size_t>	CountCells;
+  typedef	std::atomic<int>		CountZones;
+#endif
 	typedef	Array <AtomicPtr <CellType>, MAX_NBR_ZONES>	ZoneList;
 
 	void				allocate_zone (int zone_index, size_t cur_size, AtomicPtr <CellType> & zone_ptr_ref);
@@ -97,7 +107,11 @@ private:
 	ZoneList			_zone_list;
 	CountCells		_nbr_avail_cells;
 	CountZones		_nbr_zones;
+#ifdef _WIN32
 	Mutex				_alloc_mutex;
+#else
+  std::mutex _alloc_mutex;
+#endif
 
 
 

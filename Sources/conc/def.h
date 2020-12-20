@@ -35,10 +35,10 @@ namespace conc
 
 
 // Native word size, in power of 2 bits
-#if defined (_M_IA64) || defined (_WIN64) || defined (__64BIT__) || defined (__x86_64__)
+#if UINTPTR_MAX == 0xffffffffffffffff || defined (_M_IA64) || defined (_WIN64) || defined (__64BIT__) || defined (__x86_64__)
 	#define	conc_WORD_SIZE_L2	6
 	#define	conc_WORD_SIZE		64
-	#define	conc_WORD_SIZE_BYTE	8
+	#define	conc_WORD_SIZE_BYTE 8
 #else
 	#define	conc_WORD_SIZE_L2	5
 	#define	conc_WORD_SIZE		32
@@ -52,15 +52,33 @@ namespace conc
 	#define	conc_HAS_CAS_128	1
 #endif
 
-
-
-#if defined (_MSC_VER)
-	#define	conc_FORCEINLINE	__forceinline
-#elif defined (__GNUC__)
-	#define	conc_FORCEINLINE	inline __attribute__((always_inline))
+#ifndef conc_FORCEINLINE
+#if defined(__clang__)
+// Check clang first. clang-cl also defines __MSC_VER
+// We set MSVC because they are mostly compatible
+#   define CLANG
+#if defined(_MSC_VER)
+#   define MSVC
+#   define conc_FORCEINLINE __attribute__((always_inline)) inline
 #else
-	#define	conc_FORCEINLINE	inline
+#   define conc_FORCEINLINE __attribute__((always_inline)) inline
 #endif
+#elif   defined(_MSC_VER)
+#   define MSVC
+#   define MSVC_PURE
+#   define conc_FORCEINLINE __forceinline
+#elif defined(__GNUC__)
+#   define GCC
+#   define conc_FORCEINLINE __attribute__((always_inline)) inline
+#else
+#   error Unsupported compiler.
+#   define conc_FORCEINLINE inline
+#   undef __forceinline
+#   define __forceinline inline
+#endif 
+
+#endif
+
 
 
 
@@ -73,7 +91,9 @@ namespace conc
 	#define	conc_TYPEDEF_ALIGN( alignsize, srctype, dsttype)	\
 		typedef __declspec (align (alignsize)) srctype dsttype
 #else
-	#error Undefined for this compiler
+  // gcc syntax allows no __declspec
+#define	conc_TYPEDEF_ALIGN( alignsize, srctype, dsttype)	\
+		typedef __attribute__((aligned (alignsize))) srctype dsttype
 #endif
 
 

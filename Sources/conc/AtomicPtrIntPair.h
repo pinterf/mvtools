@@ -93,11 +93,21 @@ private:
 							_val;
 	};
 
-	union Combi
+  // PF.20201219
+  // in GCC (Linux) a union is aligned only if typedef'd it to align!
+  // It's not enought to have its internal member aligned!
+	union Combi_unalign
 	{
 		DataTypeAlign	_storage;
 		RealContent		_content;
 	};
+
+#if conc_WORD_SIZE == 64
+  conc_TYPEDEF_ALIGN(16, Combi_unalign, Combi);
+#else		// conc_WORD_SIZE
+  conc_TYPEDEF_ALIGN(8, Combi_unalign, Combi);
+#endif	// conc_WORD_SIZE
+  // yeah, not Combi is now really aligned
 
 	static void		cas_combi (Combi &old, Combi &dest, const Combi &excg, const Combi &comp);
 

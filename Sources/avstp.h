@@ -49,7 +49,12 @@ extern "C"
 	typedef	struct avstp_TaskDispatcher	avstp_TaskDispatcher;
 #endif // __cplusplus
 
-typedef	void (__cdecl *avstp_TaskPtr) (avstp_TaskDispatcher *td_ptr, void *user_data_ptr);
+#ifdef __GNUC__
+  // GCC syntax does not allow __cdecl here
+  typedef void(*avstp_TaskPtr) (avstp_TaskDispatcher* td_ptr, void* user_data_ptr);
+#else
+  typedef void(__cdecl* avstp_TaskPtr) (avstp_TaskDispatcher* td_ptr, void* user_data_ptr);
+#endif
 
 enum
 {
@@ -61,8 +66,9 @@ enum
 
 enum {	avstp_INTERFACE_VERSION = 1	};
 
+#include "def.h"
 
-
+#ifdef USE_AVSTP
 __declspec (dllexport) int __cdecl	avstp_get_interface_version ();
 __declspec (dllexport) avstp_TaskDispatcher * __cdecl	avstp_create_dispatcher ();
 __declspec (dllexport) void __cdecl	avstp_destroy_dispatcher (avstp_TaskDispatcher *td_ptr);
@@ -70,7 +76,7 @@ __declspec (dllexport) void __cdecl	avstp_destroy_dispatcher (avstp_TaskDispatch
 __declspec (dllexport) int __cdecl	avstp_get_nbr_threads ();
 __declspec (dllexport) int __cdecl	avstp_enqueue_task (avstp_TaskDispatcher *td_ptr, avstp_TaskPtr task_ptr, void *user_data_ptr);
 __declspec (dllexport) int __cdecl	avstp_wait_completion (avstp_TaskDispatcher *td_ptr);
-
+#endif
 
 
 #ifdef __cplusplus

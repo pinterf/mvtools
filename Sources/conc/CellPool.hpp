@@ -22,9 +22,14 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
+// use std::mutex instead
+#ifdef _WIN32
+#include "conc/CritSec.h"
 #include "conc/AioMax.h"
 #include "conc/AtomicIntOp.h"
-#include "conc/CritSec.h"
+#endif
+
+#include <mutex>
 
 #include	<cassert>
 
@@ -95,33 +100,46 @@ void	CellPool <T>::clear_all ()
 	_nbr_avail_cells = 0;
 }
 
-
+#ifndef _WIN32
+template<typename T>
+void update_maximum_atomic(std::atomic<T>& maximum_value, T const& value) noexcept
+{
+  T prev_value = maximum_value;
+  while (prev_value < value &&
+    !maximum_value.compare_exchange_weak(prev_value, value))
+  {
+  }
+}
+#endif
 
 // Thread-safe but locks
 template <class T>
 void	CellPool <T>::expand_to (size_t nbr_cells)
 {
 	assert (nbr_cells > 0);
-
 	size_t			cur_size = BASE_SIZE;
 	size_t			total_size = 0;
 	int				zone_index = 0;
 	while (total_size < nbr_cells && zone_index < MAX_NBR_ZONES)
 	{
-		AtomicPtr <CellType> &	zone_ptr_ref = _zone_list [zone_index];
-		CellType *		zone_ptr = zone_ptr_ref;
+    AtomicPtr <CellType> &	zone_ptr_ref = _zone_list [zone_index];
+    CellType *		zone_ptr = zone_ptr_ref;
 		if (zone_ptr == 0)
 		{
-			allocate_zone (zone_index, cur_size, zone_ptr_ref);
-		}
+      allocate_zone (zone_index, cur_size, zone_ptr_ref);
+    }
 
 		total_size += cur_size;
 		cur_size = compute_grown_size (cur_size);
-		++ zone_index;
-	}
+    ++ zone_index;
+  }
 
-	AioMax <int>	ftor (zone_index);
-	AtomicIntOp::exec (_nbr_zones, ftor);
+#ifdef _WIN32
+  AioMax <int>	ftor (zone_index);
+  AtomicIntOp::exec (_nbr_zones, ftor);
+#else
+  update_maximum_atomic(_nbr_zones, zone_index); // std::mutex based (gcc)
+#endif
 }
 
 
@@ -133,20 +151,19 @@ typename CellPool <T>::CellType *	CellPool <T>::take_cell (bool autogrow_flag)
 	CellType *		cell_ptr = 0;
 	
 	const int		nbr_zones = _nbr_zones;
-
-	do
+  do
 	{
-		cell_ptr = _cell_stack.pop ();
+    cell_ptr = _cell_stack.pop ();
 
 		if ((cell_ptr == 0) && autogrow_flag && (nbr_zones < MAX_NBR_ZONES))
 		{
 			const size_t	new_size = compute_total_size_for_zones (nbr_zones + 1);
-			expand_to (new_size);
-		}
+      expand_to (new_size);
+    }
 	}
 	while ((cell_ptr == 0) && autogrow_flag && (nbr_zones < MAX_NBR_ZONES));
 
-	if (cell_ptr != 0)
+  if (cell_ptr != 0)
 	{
 		-- _nbr_avail_cells;
 	}
@@ -183,7 +200,11 @@ void	CellPool <T>::allocate_zone (int zone_index, size_t cur_size, AtomicPtr <Ce
 	assert (zone_index >= 0);
 	assert (zone_index < MAX_NBR_ZONES);
 
+#ifdef _WIN32
 	CritSec			lock (_alloc_mutex);
+#else
+  std::lock_guard lock(_alloc_mutex); // mutex based (gcc)
+#endif
 
 	CellType *		zone_ptr = new CellType [cur_size];
 

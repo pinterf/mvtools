@@ -32,7 +32,7 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 #include	"conc/def.h"
 #include	"types.h"
 #include <stdint.h>
-#include	<intrin.h>
+#include	<emmintrin.h>
 
 
 namespace conc
