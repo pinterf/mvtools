@@ -17,7 +17,12 @@
 // Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA, or visit
 // http://www.gnu.org/copyleft/gpl.html .
 
-
+#ifdef _WIN32
+#define NOGDI
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#include "windows.h"
+#endif
 
 #include "DCTFFTW.h"
 
@@ -35,25 +40,26 @@
 #include <mutex>
 #include <cassert>
 
-std::mutex DCTFFTW::_fftw_mutex; // defined as static
+std::mutex DCTFFTW::_fftw_mutex; // defined as static inside
 
-DCTFFTW::DCTFFTW(int _sizex, int _sizey, HINSTANCE hinstFFTW3, int _dctmode, int _pixelsize, int _bits_per_pixel, int cpu)
+DCTFFTW::DCTFFTW(int _sizex, int _sizey, FFTFunctionPointers &fftfp_preloaded, int _dctmode, int _pixelsize, int _bits_per_pixel, int cpu)
 {
-  fftwf_free_addr = (fftwf_free_proc)GetProcAddress(hinstFFTW3, "fftwf_free");
-  if (!fftwf_free_addr) fftwf_free_addr = (fftwf_free_proc)GetProcAddress(hinstFFTW3, "fftw_free"); // ffw3 v3.5!!!
+  if (fft_threads < 1) // fixme: from parameter
+    fft_threads = 1;
 
-  fftwf_malloc_addr = (fftwf_malloc_proc)GetProcAddress(hinstFFTW3, "fftwf_malloc");
-  if (!fftwf_malloc_addr) fftwf_malloc_addr = (fftwf_malloc_proc)GetProcAddress(hinstFFTW3, "fftw_malloc");
-
-  fftwf_destroy_plan_addr = (fftwf_destroy_plan_proc)GetProcAddress(hinstFFTW3, "fftwf_destroy_plan");
-  if (!fftwf_destroy_plan_addr) fftwf_destroy_plan_addr = (fftwf_destroy_plan_proc)GetProcAddress(hinstFFTW3, "fftw_destroy_plan");
-
-  fftwf_plan_r2r_2d_addr = (fftwf_plan_r2r_2d_proc)GetProcAddress(hinstFFTW3, "fftwf_plan_r2r_2d");
-  if (!fftwf_plan_r2r_2d_addr) fftwf_plan_r2r_2d_addr = (fftwf_plan_r2r_2d_proc)GetProcAddress(hinstFFTW3, "fftw_plan_r2r_2d");
-
-  fftwf_execute_r2r_addr = (fftwf_execute_r2r_proc)GetProcAddress(hinstFFTW3, "fftwf_execute_r2r");
-  if (!fftwf_execute_r2r_addr) fftwf_execute_r2r_addr = (fftwf_execute_r2r_proc)GetProcAddress(hinstFFTW3, "fftw_execute_r2r");
-
+  try {
+    fftfp.load(fftfp_preloaded.library); // use existing
+  }
+  catch(const std::exception& e)
+  {
+    throw AvisynthError(e.what());
+  }
+  // from neo_fft3dfilter. Only for refere
+  if (fft_threads > 1 && fftfp.has_threading()) {
+    std::lock_guard<std::mutex> lock(_fftw_mutex); // mutex!
+    fftfp.fftwf_init_threads();
+    fftfp.fftwf_plan_with_nthreads(fft_threads);
+  }
   // members of the DCTClass
   sizex = _sizex;
   sizey = _sizey;
@@ -102,10 +108,17 @@ DCTFFTW::DCTFFTW(int _sizex, int _sizey, HINSTANCE hinstFFTW3, int _dctmode, int
   // http://www.fftw.org/fftw3_doc/Thread-safety.html#Thread-safety
   std::lock_guard<std::mutex> lock(_fftw_mutex);
 
-  fSrc = (float *)fftwf_malloc_addr(sizeof(float) * size2d);
-  fSrcDCT = (float *)fftwf_malloc_addr(sizeof(float) * size2d);
+  fSrc = (float *)fftfp.fftwf_malloc(sizeof(float) * size2d);
+  fSrcDCT = (float *)fftfp.fftwf_malloc(sizeof(float) * size2d);
 
-  dctplan = fftwf_plan_r2r_2d_addr(sizey, sizex, fSrc, fSrcDCT, FFTW_REDFT10, FFTW_REDFT10, FFTW_ESTIMATE); // direct fft 
+  int planFlags;
+  // use FFTW_ESTIMATE or FFTW_MEASURE (more optimal plan, but with time calculation at load stage)
+  if (false)
+    planFlags = FFTW_MEASURE;
+  else
+    planFlags = FFTW_ESTIMATE; // original mvtools: estimate
+
+  dctplan = fftfp.fftwf_plan_r2r_2d(sizey, sizex, fSrc, fSrcDCT, FFTW_REDFT10, FFTW_REDFT10, planFlags); // direct fft 
 }
 
 
@@ -114,9 +127,9 @@ DCTFFTW::~DCTFFTW()
 {
   std::lock_guard lock(_fftw_mutex);
 
-  fftwf_destroy_plan_addr(dctplan);
-  fftwf_free_addr(fSrc);
-  fftwf_free_addr(fSrcDCT);
+  fftfp.fftwf_destroy_plan(dctplan);
+  fftfp.fftwf_free(fSrc);
+  fftfp.fftwf_free(fSrcDCT);
 }
 
 // put source data to real array for FFT
@@ -148,7 +161,7 @@ void DCTFFTW::Bytes2Float_SSE2(const unsigned char * srcp8, int src_pitch, float
   const int floatpitch = nBlkSizeX;
   for (int y = 0; y < sizey; y++)
   {
-    if (nBlkSizeX == 4) {
+    if constexpr(nBlkSizeX == 4) {
       // 4 pixels, no cycle
       if constexpr(sizeof(pixel_t) == 1)
       {
@@ -169,7 +182,7 @@ void DCTFFTW::Bytes2Float_SSE2(const unsigned char * srcp8, int src_pitch, float
         // realdata[i] = reinterpret_cast<const pixel_t *>(srcp)[i];
       }
     }
-    else if (nBlkSizeX % 8 == 0) {
+    else if constexpr(nBlkSizeX % 8 == 0) {
       // 8 pixels at a time
       for (int x = 0; x < nBlkSizeX; x += 8)
       {
@@ -199,7 +212,7 @@ void DCTFFTW::Bytes2Float_SSE2(const unsigned char * srcp8, int src_pitch, float
         }
       }
     }
-    else if (nBlkSizeX % 4 == 0) {
+    else if constexpr(nBlkSizeX % 4 == 0) {
       // 4 pixels at a time
       for (int x = 0; x < nBlkSizeX; x += 4)
       {
@@ -297,7 +310,7 @@ void DCTFFTW::Float2Bytes_SSE2(unsigned char * dstp0, int dst_pitch, float * rea
     __m128 src, mulres;
     __m128i intres, intres_lo, intres_hi;
     __m128i res07;
-    if (nBlkSizeX % 8 == 0) {
+    if constexpr(nBlkSizeX % 8 == 0) {
       for (int x = 0; x < nBlkSizeX; x += 8) // 8 pixels at a time
       {
         // 0-3
@@ -317,7 +330,7 @@ void DCTFFTW::Float2Bytes_SSE2(unsigned char * dstp0, int dst_pitch, float * rea
         _mm_storel_epi64(reinterpret_cast<__m128i *>(dstp + x), res07);
       }
     }
-    else if (nBlkSizeX % 4 == 0) {
+    else if constexpr(nBlkSizeX % 4 == 0) {
       for (int x = 0; x < nBlkSizeX; x += 4) // 4 pixels at a time
       {
         // 0-3
@@ -380,7 +393,7 @@ void DCTFFTW::Float2Bytes_uint16_t_SSE4(unsigned char* dstp0, int dst_pitch, flo
     __m128 src, mulres;
     __m128i intres, intres_lo, intres_hi;
     __m128i res07;
-    if (nBlkSizeX % 8 == 0) {
+    if constexpr(nBlkSizeX % 8 == 0) {
       for (int x = 0; x < nBlkSizeX; x += 8) // 8 pixels at a time
       {
         // 0-3
@@ -406,7 +419,7 @@ void DCTFFTW::Float2Bytes_uint16_t_SSE4(unsigned char* dstp0, int dst_pitch, flo
         }
       }
     }
-    else if (nBlkSizeX % 4 == 0) {
+    else if constexpr(nBlkSizeX % 4 == 0) {
       for (int x = 0; x < nBlkSizeX; x += 4) // 4 pixels at a time
       {
         // 0-3
@@ -452,12 +465,12 @@ void DCTFFTW::Float2Bytes_C(unsigned char * dstp0, int dst_pitch, float * realda
   const int middlePixelValue = 1 << (bits_per_pixel - 1);   // 128..32768 
 
   // normalization: to be compatible with integer DCTINT8
-  dstp[0] = std::min(maxPixelValue, std::max(0, int(realdata[0] * dctNormalize_DC) + middlePixelValue)); // DC;
+  dstp[0] = (pixel_t)std::min(maxPixelValue, std::max(0, int(realdata[0] * dctNormalize_DC) + middlePixelValue)); // DC;
 
   for (int i = 1; i < sizex; i += 1)
   {
     const float f = realdata[i] * dctNormalize_AC; // to be compatible with integer DCTINT8
-    dstp[i] = std::min(maxPixelValue, std::max(0, int(f) + middlePixelValue));
+    dstp[i] = (pixel_t)std::min(maxPixelValue, std::max(0, int(f) + middlePixelValue));
   }
 
   dstp += dst_pitch;
@@ -468,7 +481,7 @@ void DCTFFTW::Float2Bytes_C(unsigned char * dstp0, int dst_pitch, float * realda
     for (int i = 0; i < sizex; i += 1)
     {
       const float f = realdata[i] * dctNormalize_AC; // to be compatible with integer DCTINT8
-      dstp[i] = std::min(maxPixelValue, std::max(0, int(f) + middlePixelValue));
+      dstp[i] = (pixel_t)std::min(maxPixelValue, std::max(0, int(f) + middlePixelValue));
     }
     dstp += dst_pitch;
     realdata += floatpitch;
@@ -526,7 +539,6 @@ DCTFFTW::Float2BytesFunction DCTFFTW::get_floatToBytesPROC_function(int BlockX, 
   return result;
 }
 
-
 DCTFFTW::Bytes2FloatFunction DCTFFTW::get_bytesToFloatPROC_function(int BlockX, int BlockY, int pixelsize, arch_t arch)
 {
   // BlkSizeX, NO:BlkSizeY, pixelsize, arch_t
@@ -569,7 +581,6 @@ DCTFFTW::Bytes2FloatFunction DCTFFTW::get_bytesToFloatPROC_function(int BlockX, 
   return result;
 }
 
-
 void DCTFFTW::DCTBytes2D(const unsigned char *srcp, int src_pitch, unsigned char *dctp, int dct_pitch)
 {
 #if 0
@@ -588,14 +599,14 @@ void DCTFFTW::DCTBytes2D(const unsigned char *srcp, int src_pitch, unsigned char
     Float2Bytes_C<uint16_t>(dctp, dct_pitch, fSrcDCT);
   }
 #else
-#ifndef _M_X64 
+#ifndef MV_64BIT 
   _mm_empty(); // this one still have to be here. dct slowdown between 2.7.5-2.7.17
 #endif
   // calling member function pointer
   (this->*bytesToFloatPROC)(srcp, src_pitch, fSrc); // selected variable function
-  fftwf_execute_r2r_addr(dctplan, fSrc, fSrcDCT);
+  fftfp.fftwf_execute_r2r(dctplan, fSrc, fSrcDCT);
   (this->*floatToBytesPROC)(dctp, dct_pitch, fSrcDCT); // selected variable function
-#ifndef _M_X64 
+#ifndef MV_64BIT 
   _mm_empty(); // paranoia
 #endif
 #endif

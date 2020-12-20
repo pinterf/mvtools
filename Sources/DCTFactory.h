@@ -23,18 +23,20 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 #pragma warning (4 : 4250)
 #endif
 
+#ifdef _WIN32
+#define NOGDI
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#include "windows.h"
+#endif
 
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
-#define	NOMINMAX
-#define	NOGDI
-#define	WIN32_LEAN_AND_MEAN
-
 #include	"conc/ObjFactoryInterface.h"
 #include	"DCTClass.h"
+#include "fftwlite.h"
 
-#include	<windows.h>
 
 
 
@@ -70,7 +72,7 @@ protected:
 
 private:
 
-  ::HINSTANCE _fftw_hnd;
+  FFTFunctionPointers fftfp;
   const int _dctmode;
   const int _blksizex;
   const int _blksizey;

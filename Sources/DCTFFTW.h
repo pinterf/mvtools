@@ -24,12 +24,14 @@
 #include "DCTClass.h"
 #include "fftwlite.h"
 #include "types.h"
+#include "def.h"
 
-#define	NOGDI
-#define	NOMINMAX
-#define	WIN32_LEAN_AND_MEAN
+#ifdef _WIN32
+#define NOGDI
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
 #include "windows.h"
-
+#endif
 
 
 class DCTFFTW
@@ -38,12 +40,8 @@ class DCTFFTW
   typedef void (DCTFFTW::*Float2BytesFunction)(unsigned char * srcp0, int _pitch, float * realdata);
   typedef void (DCTFFTW::*Bytes2FloatFunction)(const unsigned char * srcp8, int src_pitch, float * realdata);
 
-  HINSTANCE hinstFFTW3;
-  fftwf_malloc_proc fftwf_malloc_addr;
-  fftwf_free_proc fftwf_free_addr;
-  fftwf_plan_r2r_2d_proc fftwf_plan_r2r_2d_addr;
-  fftwf_destroy_plan_proc fftwf_destroy_plan_addr;
-  fftwf_execute_r2r_proc fftwf_execute_r2r_addr;
+  FFTFunctionPointers fftfp;
+  int fft_threads{ 1 };
 
   float * fSrc;
   fftwf_plan dctplan;
@@ -55,7 +53,7 @@ class DCTFFTW
 //  int dctmode;
 //  int pixelsize
 //  int bits_per_pixel;
-#if OLD_FFTW_DCT_DEBUG
+#ifdef OLD_FFTW_DCT_DEBUG
   int dctshift; //  was:log2(size2d), only usable for pow2 block sizes
   int dctshift0;
 #endif
@@ -82,16 +80,13 @@ class DCTFFTW
 
   DCTFFTW::Bytes2FloatFunction get_bytesToFloatPROC_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
   DCTFFTW::Bytes2FloatFunction bytesToFloatPROC;
-
   static std::mutex _fftw_mutex;
 
 public:
-
-  DCTFFTW(int _sizex, int _sizey, ::HINSTANCE _hFFTW3, int _dctmode, int _pixelsize, int _bits_per_pixel, int cpu);
+  DCTFFTW(int _sizex, int _sizey, FFTFunctionPointers &fftfp_preloaded, int _dctmode, int _pixelsize, int _bits_per_pixel, int cpu);
   ~DCTFFTW();
-    // works internally by pixelsize:
+  // works internally by pixelsize:
   void DCTBytes2D(const unsigned char *srcp0, int _src_pitch, unsigned char *dctp, int _dct_pitch);
-
 };
 
 #endif

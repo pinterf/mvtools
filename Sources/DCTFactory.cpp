@@ -23,12 +23,7 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
-
-#define	NOMINMAX
-#define	NOGDI
-#define	WIN32_LEAN_AND_MEAN
-
-#include	<windows.h>
+#include "def.h"
 #include	"avisynth.h"
 
 #include	"DCTFactory.h"
@@ -41,29 +36,30 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 /*\\\ PUBLIC \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
-DCTFactory::DCTFactory(int dctmode, bool isse, int blksizex, int blksizey, int pixelsize, int bits_per_pixel, ::IScriptEnvironment &env)
-  : _fftw_hnd(0)
-  , _dctmode(dctmode)
+DCTFactory::DCTFactory(int dctmode, bool isse, int blksizex, int blksizey, int pixelsize, int bits_per_pixel, ::IScriptEnvironment &env):
+  _dctmode(dctmode)
   , _isse(isse)
   , _blksizex(blksizex)
   , _blksizey(blksizey)
+#ifdef USE_FDCT88INT_ASM
   , _fftw_flag(!(_isse && _blksizex == 8 && _blksizey == 8 && pixelsize == 1)) // only 8x8 is implemented as an int FFT
+#else
+  , _fftw_flag(false)
+#endif
   , _pixelsize(pixelsize)
   , _bits_per_pixel(bits_per_pixel)
 
 {
   assert(dctmode != 0);
-
-  if (_fftw_flag)
-  {
-    _fftw_hnd = ::LoadLibrary("libfftw3f-3.dll"); // delayed loading, original name
-    if (_fftw_hnd == NULL)
-      _fftw_hnd = ::LoadLibrary("fftw3.dll"); // delayed loading
-    if (_fftw_hnd == NULL)
-    {
-      env.ThrowError("MAnalyse: Can not load libfftw3f-3.dll or fftw3.DLL!");
-    }
+  
+  try {
+    fftfp.load(0); // no existing, load library
   }
+  catch (const std::exception& e)
+  {
+    throw AvisynthError(e.what());
+  }
+
   cpuflags = env.GetCPUFlags();
 }
 
@@ -71,11 +67,13 @@ DCTFactory::DCTFactory(int dctmode, bool isse, int blksizex, int blksizey, int p
 
 DCTFactory::~DCTFactory()
 {
+#ifdef OLD_FFTWDLL
   if (_fftw_hnd != 0)
   {
     ::FreeLibrary(_fftw_hnd);
     _fftw_hnd = 0;
   }
+#endif
 }
 
 
@@ -100,11 +98,16 @@ bool	DCTFactory::use_fftw() const
 
 DCTClass *	DCTFactory::do_create()
 {
+#ifdef USE_FDCT88INT_ASM
   if (_fftw_flag)
   {
-    return (new DCTFFTW(_blksizex, _blksizey, _fftw_hnd, _dctmode, _pixelsize, _bits_per_pixel, cpuflags));
+    return (new DCTFFTW(_blksizex, _blksizey, fftfp,  _dctmode, _pixelsize, _bits_per_pixel, cpuflags));
   }
   return (new DCTINT(_blksizex, _blksizey, _dctmode));
+#else
+  // no integer asm 8x8 DCT
+  return (new DCTFFTW(_blksizex, _blksizey, fftfp, _dctmode, _pixelsize, _bits_per_pixel, cpuflags));
+#endif
 }
 
 
