@@ -22,7 +22,7 @@
 #include <cmath>
 #include <tuple>
 #include <map>
-#include "avs\minmax.h"
+#include "avs/minmax.h"
 #include <cassert>
 #include <emmintrin.h>
 #include <smmintrin.h>
@@ -364,27 +364,27 @@ void Short2Bytes_FloatInInt32ArrayToFloat(float *pDst, int nDstPitch, float *pDs
   }
 }
 
-__forceinline __m128i _MM_CMPLE_EPU16(__m128i x, __m128i y)
+MV_FORCEINLINE __m128i _MM_CMPLE_EPU16(__m128i x, __m128i y)
 {
   // Returns 0xFFFF where x <= y:
   return _mm_cmpeq_epi16(_mm_subs_epu16(x, y), _mm_setzero_si128());
 }
 
-__forceinline __m128i _MM_BLENDV_SI128(__m128i x, __m128i y, __m128i mask)
+MV_FORCEINLINE __m128i _MM_BLENDV_SI128(__m128i x, __m128i y, __m128i mask)
 {
   // Replace bit in x with bit in y when matching bit in mask is set:
   return _mm_or_si128(_mm_andnot_si128(mask, x), _mm_and_si128(mask, y));
 }
 
 // sse2 simulation of SSE4's _mm_min_epu16
-__forceinline __m128i _MM_MIN_EPU16(__m128i x, __m128i y)
+MV_FORCEINLINE __m128i _MM_MIN_EPU16(__m128i x, __m128i y)
 {
   // Returns x where x <= y, else y:
   return _MM_BLENDV_SI128(y, x, _MM_CMPLE_EPU16(x, y));
 }
 
 // sse2 simulation of SSE4's _mm_max_epu16
-__forceinline __m128i _MM_MAX_EPU16(__m128i x, __m128i y)
+MV_FORCEINLINE __m128i _MM_MAX_EPU16(__m128i x, __m128i y)
 {
   // Returns x where x >= y, else y:
   return _MM_BLENDV_SI128(x, y, _MM_CMPLE_EPU16(x, y));
@@ -480,122 +480,249 @@ template void LimitChanges_sse2_new<uint8_t,0>(unsigned char *pDst, int nDstPitc
 template void LimitChanges_sse2_new<uint16_t,0>(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, float nLimit);
 template void LimitChanges_sse2_new<uint16_t,1>(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, float nLimit);
 
-template <typename pixel_t, int blockWidth, int blockHeight>
+template <int blockWidth, int blockHeight>
 // pDst is short* for 8 bit, int * for 16 bit
 // works for blockWidth >= 4 && uint16_t
 // only src_pitch is byte-level
 // dstPitch knows int* or short* 
 // winPitch knows short *
-void Overlaps_sse4(uint16_t *pDst0, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch)
+void Overlaps_uint16_t_sse4(uint16_t *pDst0, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch)
 {
   // pWin from 0 to 2048, 11 bit integer arithmetic
   // when pixel_t == uint16_t, dst should be int*
-  typedef typename std::conditional < sizeof(pixel_t) == 1, short, int>::type target_t;
-  target_t *pDst = reinterpret_cast<target_t *>(pDst0);
+  int *pDst = reinterpret_cast<int *>(pDst0);
   __m128i zero = _mm_setzero_si128();
-  //const int stride = BlockWidth * sizeof(pixel_t); // back to byte size
-  assert(sizeof(pixel_t) != 1);
 
   for (int j = 0; j < blockHeight; j++)
   {
     __m128i dst;
     __m128i win, src;
 
-    if constexpr(sizeof(pixel_t) == 1) {
-      assert(0); // not implemented
-    }
-    else 
+    if constexpr (blockWidth == 4) // half of 1x16 byte
     {
-      if constexpr(blockWidth == 4) // half of 1x16 byte
-      {
-        win = _mm_loadl_epi64(reinterpret_cast<__m128i *>(pWin)); // 4x16 short: Window
-        src = _mm_loadl_epi64(reinterpret_cast<const __m128i *>(pSrc)); // 4x16 uint16_t: source pixels
+      win = _mm_loadl_epi64(reinterpret_cast<__m128i*>(pWin)); // 4x16 short: Window
+      src = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(pSrc)); // 4x16 uint16_t: source pixels
+
+      __m128i reslo = _mm_mullo_epi32(_mm_cvtepu16_epi32(src), _mm_cvtepu16_epi32(win)); // sse4 unpacklo
+      dst = _mm_loadu_si128(reinterpret_cast<__m128i*>(pDst)); // 4x32 int: destination pixels
+      dst = _mm_add_epi32(dst, reslo);
+      _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst), dst);
+
+    }
+    else if constexpr (blockWidth == 8) // exact 1x16 byte
+    {
+      win = _mm_loadu_si128(reinterpret_cast<__m128i*>(pWin)); // 8x16 short: Window
+      src = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pSrc)); // 8x16 uint16_t: source pixels
+
+      __m128i reslo = _mm_mullo_epi32(_mm_cvtepu16_epi32(src), _mm_cvtepu16_epi32(win)); // sse4 unpacklo
+      dst = _mm_loadu_si128(reinterpret_cast<__m128i*>(pDst)); // 4x32 int: destination pixels
+      dst = _mm_add_epi32(dst, reslo);
+      _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst), dst);
+
+      __m128i reshi = _mm_mullo_epi32(_mm_unpackhi_epi16(src, zero), _mm_unpackhi_epi16(win, zero));
+      dst = _mm_loadu_si128(reinterpret_cast<__m128i*>(pDst + 4)); // next 4x32 int: destination pixels
+      dst = _mm_add_epi32(dst, reshi);
+      _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst + 4), dst);
+    }
+    else if constexpr (blockWidth == 16) // 2x16 byte: 2x8 pixels
+    {
+      win = _mm_loadu_si128(reinterpret_cast<__m128i*>(pWin)); // 8x16 short: Window
+      src = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pSrc)); // 8x16 uint16_t: source pixels
+
+      __m128i reslo = _mm_mullo_epi32(_mm_cvtepu16_epi32(src), _mm_cvtepu16_epi32(win)); // sse4 unpacklo
+      dst = _mm_loadu_si128(reinterpret_cast<__m128i*>(pDst)); // 4x32 int: destination pixels
+      dst = _mm_add_epi32(dst, reslo);
+      _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst), dst);
+
+      __m128i reshi = _mm_mullo_epi32(_mm_unpackhi_epi16(src, zero), _mm_unpackhi_epi16(win, zero));
+      dst = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pDst + 4)); // next 4x32 int: destination pixels
+      dst = _mm_add_epi32(dst, reshi);
+      _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst + 4), dst);
+
+      win = _mm_loadu_si128(reinterpret_cast<__m128i*>(pWin + 8)); // next 8x16 short: Window
+      src = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pSrc + 16)); // next 8x16 uint16_t: source pixels
+
+      // once again
+      reslo = _mm_mullo_epi32(_mm_cvtepu16_epi32(src), _mm_cvtepu16_epi32(win)); // sse4 unpacklo
+      dst = _mm_loadu_si128(reinterpret_cast<__m128i*>(pDst + 8)); // 4x32 int: destination pixels
+      dst = _mm_add_epi32(dst, reslo);
+      _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst + 8), dst);
+
+      reshi = _mm_mullo_epi32(_mm_unpackhi_epi16(src, zero), _mm_unpackhi_epi16(win, zero));
+      dst = _mm_loadu_si128(reinterpret_cast<__m128i*>(pDst + 8 + 4)); // next 4x32 int: destination pixels
+      dst = _mm_add_epi32(dst, reshi);
+      _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst + 8 + 4), dst);
+    }
+    else if constexpr (blockWidth % 8 == 0) {
+      // mod8 block width for uint16
+      for (int x = 0; x < blockWidth; x += 8) {
+        win = _mm_loadu_si128(reinterpret_cast<__m128i*>(pWin + x)); // 8x16 short: Window
+        src = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pSrc + x * 2)); // 8x16 uint16_t: source pixels
 
         __m128i reslo = _mm_mullo_epi32(_mm_cvtepu16_epi32(src), _mm_cvtepu16_epi32(win)); // sse4 unpacklo
-        dst = _mm_loadu_si128(reinterpret_cast<__m128i *>(pDst)); // 4x32 int: destination pixels
+        dst = _mm_loadu_si128(reinterpret_cast<__m128i*>(pDst + x)); // 4x32 int: destination pixels
         dst = _mm_add_epi32(dst, reslo);
-        _mm_storeu_si128(reinterpret_cast<__m128i *>(pDst), dst);
-
-      }
-      else if constexpr(blockWidth == 8) // exact 1x16 byte
-      {
-        win = _mm_loadu_si128(reinterpret_cast<__m128i *>(pWin)); // 8x16 short: Window
-        src = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pSrc)); // 8x16 uint16_t: source pixels
-
-        __m128i reslo = _mm_mullo_epi32(_mm_cvtepu16_epi32(src), _mm_cvtepu16_epi32(win)); // sse4 unpacklo
-        dst = _mm_loadu_si128(reinterpret_cast<__m128i *>(pDst)); // 4x32 int: destination pixels
-        dst = _mm_add_epi32(dst, reslo);
-        _mm_storeu_si128(reinterpret_cast<__m128i *>(pDst), dst);
+        _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst + x), dst);
 
         __m128i reshi = _mm_mullo_epi32(_mm_unpackhi_epi16(src, zero), _mm_unpackhi_epi16(win, zero));
-        dst = _mm_loadu_si128(reinterpret_cast<__m128i *>(pDst + 4)); // next 4x32 int: destination pixels
+        dst = _mm_loadu_si128(reinterpret_cast<__m128i*>(pDst + x + 4)); // next 4x32 int: destination pixels
         dst = _mm_add_epi32(dst, reshi);
-        _mm_storeu_si128(reinterpret_cast<__m128i *>(pDst + 4), dst);
+        _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst + x + 4), dst);
       }
-      else if constexpr(blockWidth == 16) // 2x16 byte: 2x8 pixels
-      {
-        win = _mm_loadu_si128(reinterpret_cast<__m128i *>(pWin)); // 8x16 short: Window
-        src = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pSrc)); // 8x16 uint16_t: source pixels
+    }
+    else if constexpr (blockWidth % 4 == 0) {
+      // mod4 block width for uint16. Exact 4 was handled specially, this covers only 12 from valid set
+      for (int x = 0; x < blockWidth; x += 4) {
+        win = _mm_loadl_epi64(reinterpret_cast<__m128i*>(pWin + x)); // 4x16 short: Window
+        src = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(pSrc + x * 2)); // 4x16 uint16_t: source pixels
 
         __m128i reslo = _mm_mullo_epi32(_mm_cvtepu16_epi32(src), _mm_cvtepu16_epi32(win)); // sse4 unpacklo
-        dst = _mm_loadu_si128(reinterpret_cast<__m128i *>(pDst)); // 4x32 int: destination pixels
+        dst = _mm_loadu_si128(reinterpret_cast<__m128i*>(pDst + x)); // 4x32 int: destination pixels
         dst = _mm_add_epi32(dst, reslo);
-        _mm_storeu_si128(reinterpret_cast<__m128i *>(pDst), dst);
+        _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst + x), dst);
+      }
+    }
+    else if constexpr (blockWidth % 2 == 0) {
+      // mod2 block width for uint16. 2, (4), 6
+      for (int x = 0; x < blockWidth; x += 2) {
+        win = _mm_cvtsi32_si128(*reinterpret_cast<const uint32_t*>(pWin + x)); // 2x16 short: Window
+        src = _mm_cvtsi32_si128(*reinterpret_cast<const uint32_t*>(pSrc + x * 2)); // 2x16 uint16_t: source pixels
 
-        __m128i reshi = _mm_mullo_epi32(_mm_unpackhi_epi16(src, zero), _mm_unpackhi_epi16(win, zero));
-        dst = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pDst + 4)); // next 4x32 int: destination pixels
-        dst = _mm_add_epi32(dst, reshi);
-        _mm_storeu_si128(reinterpret_cast<__m128i *>(pDst + 4), dst);
-
-        win = _mm_loadu_si128(reinterpret_cast<__m128i *>(pWin + 8)); // next 8x16 short: Window
-        src = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pSrc + 16)); // next 8x16 uint16_t: source pixels
-
-        // once again
-        reslo = _mm_mullo_epi32(_mm_cvtepu16_epi32(src), _mm_cvtepu16_epi32(win)); // sse4 unpacklo
-        dst = _mm_loadu_si128(reinterpret_cast<__m128i *>(pDst + 8)); // 4x32 int: destination pixels
+        __m128i reslo = _mm_mullo_epi32(_mm_cvtepu16_epi32(src), _mm_cvtepu16_epi32(win)); // sse4 unpacklo
+        dst = _mm_loadl_epi64(reinterpret_cast<__m128i*>(pDst + x)); // 2x32 int: destination pixels
         dst = _mm_add_epi32(dst, reslo);
-        _mm_storeu_si128(reinterpret_cast<__m128i *>(pDst + 8), dst);
-
-        reshi = _mm_mullo_epi32(_mm_unpackhi_epi16(src, zero), _mm_unpackhi_epi16(win, zero));
-        dst = _mm_loadu_si128(reinterpret_cast<__m128i *>(pDst + 8 + 4)); // next 4x32 int: destination pixels
-        dst = _mm_add_epi32(dst, reshi);
-        _mm_storeu_si128(reinterpret_cast<__m128i *>(pDst + 8 + 4), dst);
+        _mm_storel_epi64(reinterpret_cast<__m128i*>(pDst + x), dst);
       }
-      else if constexpr((blockWidth % (16 / sizeof(pixel_t))) == 0) {
-        // mod8 block width for uint16
-        for (int x = 0; x < blockWidth; x += 16 / sizeof(pixel_t)) {
-          win = _mm_loadu_si128(reinterpret_cast<__m128i *>(pWin + x)); // 8x16 short: Window
-          src = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pSrc + x * 2)); // 8x16 uint16_t: source pixels
-
-          __m128i reslo = _mm_mullo_epi32(_mm_cvtepu16_epi32(src), _mm_cvtepu16_epi32(win)); // sse4 unpacklo
-          dst = _mm_loadu_si128(reinterpret_cast<__m128i *>(pDst + x)); // 4x32 int: destination pixels
-          dst = _mm_add_epi32(dst, reslo);
-          _mm_storeu_si128(reinterpret_cast<__m128i *>(pDst + x), dst);
-
-          __m128i reshi = _mm_mullo_epi32(_mm_unpackhi_epi16(src, zero), _mm_unpackhi_epi16(win, zero));
-          dst = _mm_loadu_si128(reinterpret_cast<__m128i *>(pDst + x + 4)); // next 4x32 int: destination pixels
-          dst = _mm_add_epi32(dst, reshi);
-          _mm_storeu_si128(reinterpret_cast<__m128i *>(pDst + x + 4), dst);
-        }
-      }
-      else if constexpr((blockWidth % (8 / sizeof(pixel_t))) == 0) {
-        // mod4 block width for uint16. Exact 4 was handled specially, this covers only 12 from valid set
-        for (int x = 0; x < blockWidth; x += 8 / sizeof(pixel_t)) {
-          win = _mm_loadl_epi64(reinterpret_cast<__m128i *>(pWin + x)); // 4x16 short: Window
-          src = _mm_loadl_epi64(reinterpret_cast<const __m128i *>(pSrc + x * 2)); // 4x16 uint16_t: source pixels
-
-          __m128i reslo = _mm_mullo_epi32(_mm_cvtepu16_epi32(src), _mm_cvtepu16_epi32(win)); // sse4 unpacklo
-          dst = _mm_loadu_si128(reinterpret_cast<__m128i *>(pDst+x)); // 4x32 int: destination pixels
-          dst = _mm_add_epi32(dst, reslo);
-          _mm_storeu_si128(reinterpret_cast<__m128i *>(pDst+x), dst);
-        }
-      }
-      else {
-        assert(0);
-      }
-    } // pixel_t == 2
+    }
+    else {
+      assert(0);
+    }
 
     // pDst[i] = ( pDst[i] + ((reinterpret_cast<const pixel_t *>(pSrc)[i]*pWin[i])));
+
+    pDst += nDstPitch;
+    pSrc += nSrcPitch;
+    pWin += nWinPitch;
+  }
+}
+
+template <int blockWidth, int blockHeight>
+// pDst is short* for 8 bit, int * for 16 bit
+// works for blockWidth >= 4 && uint16_t
+// only src_pitch is byte-level
+// dstPitch knows int* or short* 
+// winPitch knows short *
+void Overlaps_uint8_t_sse4(uint16_t* pDst0, int nDstPitch, const unsigned char* pSrc, int nSrcPitch, short* pWin, int nWinPitch)
+{
+  // pWin from 0 to 2048, 11 bit integer arithmetic
+  // when pixel_t == uint16_t, dst should be int*
+  uint16_t* pDst = pDst0;
+  __m128i zero = _mm_setzero_si128();
+
+  __m128i rounder_32 = _mm_set1_epi32(32); // 1 << 5 rounder
+
+  for (int j = 0; j < blockHeight; j++)
+  {
+    __m128i dst;
+    __m128i win, src;
+
+    // pDst[i] = pDst[i] + ((val * win + (1 << 5)) >> 6);
+
+    if constexpr (blockWidth % 8 == 0) {
+      // 16, 24, 32, 48, 64
+      for (int x = 0; x < blockWidth; x += 8) {
+        // 2nd 8
+        win = _mm_loadu_si128(reinterpret_cast<__m128i*>(pWin + x)); // 8x short: Window - always positives
+        src = _mm_cvtepu8_epi16(_mm_loadl_epi64(reinterpret_cast<const __m128i*>(pSrc + x))); // 8x uint8_t: source pixels
+#if 0
+        auto res32lo = _mm_mullo_epi32(_mm_cvtepu16_epi32(src), _mm_cvtepu16_epi32(win));
+        auto res32hi = _mm_mullo_epi32(_mm_cvtepu16_epi32(_mm_srli_si128(src, 8)), _mm_cvtepu16_epi32(_mm_srli_si128(win, 8)));
+#else
+        auto reslo = _mm_mullo_epi16(src, win); // lower 16 bit of result
+        auto reshi = _mm_mulhi_epi16(src, win); // upper 32 bit of result
+        auto res32lo = _mm_unpacklo_epi16(reslo, reshi);
+        auto res32hi = _mm_unpackhi_epi16(reslo, reshi);
+#endif
+        res32lo = _mm_srli_epi32(_mm_add_epi32(res32lo, rounder_32), 6);
+        res32hi = _mm_srli_epi32(_mm_add_epi32(res32hi, rounder_32), 6);
+        auto res = _mm_packs_epi32(res32lo, res32hi);
+        dst = _mm_loadu_si128(reinterpret_cast<__m128i*>(pDst + x)); // 8x short: destination pixels
+        dst = _mm_add_epi16(dst, res);
+        _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst + x), dst);
+      }
+    }
+    else if constexpr (blockWidth % 4 == 0) {
+      // width==4,(8),12
+      for (int x = 0; x < blockWidth; x += 4) {
+        win = _mm_loadl_epi64(reinterpret_cast<__m128i*>(pWin + x)); // 4x short: Window
+        src = _mm_cvtepu8_epi16(_mm_cvtsi32_si128(*reinterpret_cast<const uint32_t*>(pSrc + x))); // 4x uint8_t: source pixels
+#if 0
+        auto  res32lo = _mm_mullo_epi32(_mm_cvtepu16_epi32(src), _mm_cvtepu16_epi32(win));
+#else
+        auto reslo = _mm_mullo_epi16(src, win); // lower 16 bit of result
+        auto reshi = _mm_mulhi_epi16(src, win); // upper 32 bit of result
+        auto res32lo = _mm_unpacklo_epi16(reslo, reshi);
+#endif
+        res32lo = _mm_srli_epi32(_mm_add_epi32(res32lo, rounder_32), 6);
+        auto res = _mm_packs_epi32(res32lo, res32lo);
+        dst = _mm_loadl_epi64(reinterpret_cast<__m128i*>(pDst + x)); // 4x short: destination pixels
+        dst = _mm_add_epi16(dst, res);
+        _mm_storel_epi64(reinterpret_cast<__m128i*>(pDst + x), dst);
+      }
+    }
+    else if constexpr (blockWidth == 6) {
+      // 1st 4
+      win = _mm_loadl_epi64(reinterpret_cast<__m128i*>(pWin)); // 4x short: Window
+      src = _mm_cvtepu8_epi16(_mm_cvtsi32_si128(*reinterpret_cast<const uint32_t*>(pSrc))); // 4x uint8_t: source pixels
+#if 0
+      auto  res32lo = _mm_mullo_epi32(_mm_cvtepu16_epi32(src), _mm_cvtepu16_epi32(win));
+#else
+      auto reslo = _mm_mullo_epi16(src, win); // lower 16 bit of result
+      auto reshi = _mm_mulhi_epi16(src, win); // upper 32 bit of result
+      auto res32lo = _mm_unpacklo_epi16(reslo, reshi);
+#endif
+      res32lo = _mm_srli_epi32(_mm_add_epi32(res32lo, rounder_32), 6);
+      auto res = _mm_packs_epi32(res32lo, res32lo);
+      dst = _mm_loadl_epi64(reinterpret_cast<__m128i*>(pDst)); // 4x short: destination pixels
+      dst = _mm_add_epi16(dst, res);
+      _mm_storel_epi64(reinterpret_cast<__m128i*>(pDst), dst);
+
+      // last 2 pixels
+      win = _mm_cvtsi32_si128(*reinterpret_cast<const uint32_t*>(pWin + 4)); // 2x short: Window
+      src = _mm_cvtepu8_epi16(_mm_cvtsi32_si128(*reinterpret_cast<const uint16_t*>(pSrc + 4))); // 2x uint8_t: source pixels
+#if 0
+      res32lo = _mm_mullo_epi32(_mm_cvtepu16_epi32(src), _mm_cvtepu16_epi32(win));
+#else
+      reslo = _mm_mullo_epi16(src, win); // lower 16 bit of result
+      reshi = _mm_mulhi_epi16(src, win); // upper 32 bit of result
+      res32lo = _mm_unpacklo_epi16(reslo, reshi);
+#endif
+      res32lo = _mm_srli_epi32(_mm_add_epi32(res32lo, rounder_32), 6);
+      res = _mm_packs_epi32(res32lo, res32lo);
+      dst = _mm_cvtsi32_si128(*reinterpret_cast<uint32_t*>(pDst + 4)); // 2x short: destination pixels
+      dst = _mm_add_epi16(dst, res);
+      *reinterpret_cast<uint32_t*>(pDst+4) = _mm_cvtsi128_si32(dst);
+    }
+    else if constexpr (blockWidth == 2) {
+      // 2 pixels
+      win = _mm_cvtsi32_si128(*reinterpret_cast<const uint32_t*>(pWin)); // 2x short: Window
+      src = _mm_cvtepu8_epi16(_mm_cvtsi32_si128(*reinterpret_cast<const uint16_t*>(pSrc))); // 2x uint8_t: source pixels
+#if 0
+      auto  res32lo = _mm_mullo_epi32(_mm_cvtepu16_epi32(src), _mm_cvtepu16_epi32(win));
+#else
+      auto reslo = _mm_mullo_epi16(src, win); // lower 16 bit of result
+      auto reshi = _mm_mulhi_epi16(src, win); // upper 32 bit of result
+      auto res32lo = _mm_unpacklo_epi16(reslo, reshi);
+#endif
+      res32lo = _mm_srli_epi32(_mm_add_epi32(res32lo, rounder_32), 6);
+      auto res = _mm_packs_epi32(res32lo, res32lo);
+      dst = _mm_cvtsi32_si128(*reinterpret_cast<uint32_t*>(pDst)); // 2x short: destination pixels
+      dst = _mm_add_epi16(dst, res);
+      *reinterpret_cast<uint32_t*>(pDst) = _mm_cvtsi128_si32(dst);
+    }
+    else {
+      assert(0);
+    }
 
     pDst += nDstPitch;
     pSrc += nSrcPitch;
@@ -607,15 +734,14 @@ void Overlaps_sse4(uint16_t *pDst0, int nDstPitch, const unsigned char *pSrc, in
 OverlapsFunction *get_overlaps_function(int BlockX, int BlockY, int pixelsize, arch_t arch)
 {
     //---------- OVERLAPS
-    // 8 bit only (pixelsize==1)
     // BlkSizeX, BlkSizeY, pixelsize, arch_t
     std::map<std::tuple<int, int, int, arch_t>, OverlapsFunction*> func_overlaps;
     using std::make_tuple;
-    // define C for 8/16 bits
+    // define C for 8/16/32 bits
 #define MAKE_OVR_FN(x, y) func_overlaps[make_tuple(x, y, 1, NO_SIMD)] = Overlaps_C<uint8_t, x, y>; \
 func_overlaps[make_tuple(x, y, 2, NO_SIMD)] = Overlaps_C<uint16_t, x, y>; \
 func_overlaps[make_tuple(x, y, 4, NO_SIMD)] = Overlaps_float_C<x, y>;
-    // sad, copy, overlap, luma, should be the same list
+    // sad, copy, overlap, luma, should support the blocksize list
     MAKE_OVR_FN(64, 64)
       MAKE_OVR_FN(64, 48)
       MAKE_OVR_FN(64, 32)
@@ -669,7 +795,9 @@ func_overlaps[make_tuple(x, y, 4, NO_SIMD)] = Overlaps_float_C<x, y>;
       MAKE_OVR_FN(2, 1)
 #undef MAKE_OVR_FN
 
-    func_overlaps[make_tuple(64, 64, 1, USE_SSE2)] = Overlaps64x64_sse2; // in overlap-a.asm
+#ifdef USE_OVERLAPS_ASM
+    // in overlap-a.asm
+    func_overlaps[make_tuple(64, 64, 1, USE_SSE2)] = Overlaps64x64_sse2;
     func_overlaps[make_tuple(64, 48, 1, USE_SSE2)] = Overlaps64x48_sse2;
     func_overlaps[make_tuple(64, 32, 1, USE_SSE2)] = Overlaps64x32_sse2;
     func_overlaps[make_tuple(64, 16, 1, USE_SSE2)] = Overlaps64x16_sse2;
@@ -712,9 +840,15 @@ func_overlaps[make_tuple(x, y, 4, NO_SIMD)] = Overlaps_float_C<x, y>;
     func_overlaps[make_tuple(4 , 2 , 1, USE_SSE2)] = Overlaps4x2_sse2;
     func_overlaps[make_tuple(2 , 4 , 1, USE_SSE2)] = Overlaps2x4_sse2;
     func_overlaps[make_tuple(2 , 2 , 1, USE_SSE2)] = Overlaps2x2_sse2;
-
+#endif
     // define sse4 for 16 bits
-#define MAKE_OVR_FN(x, y) func_overlaps[make_tuple(x, y, 2, USE_SSE41)] = Overlaps_sse4<uint16_t, x, y>;
+#ifdef USE_OVERLAPS_ASM
+#define MAKE_OVR_FN(x, y) func_overlaps[make_tuple(x, y, 2, USE_SSE41)] = Overlaps_uint16_t_sse4<x, y>;
+#else
+    // everybody has at least sse4
+#define MAKE_OVR_FN(x, y) func_overlaps[make_tuple(x, y, 2, USE_SSE41)] = Overlaps_uint16_t_sse4<x, y>; \
+func_overlaps[make_tuple(x, y, 1, USE_SSE41)] = Overlaps_uint8_t_sse4<x, y>;
+#endif
     MAKE_OVR_FN(64, 64)
       MAKE_OVR_FN(64, 48)
       MAKE_OVR_FN(64, 32)
@@ -753,18 +887,17 @@ func_overlaps[make_tuple(x, y, 4, NO_SIMD)] = Overlaps_float_C<x, y>;
       MAKE_OVR_FN(8, 4)
       MAKE_OVR_FN(8, 2)
       MAKE_OVR_FN(8, 1)
-      //MAKE_OVR_FN(6, 24)
-      //MAKE_OVR_FN(6, 12)
-      //MAKE_OVR_FN(6, 6)
-      //MAKE_OVR_FN(6, 3)  // todo
+      MAKE_OVR_FN(6, 24)
+      MAKE_OVR_FN(6, 12)
+      MAKE_OVR_FN(6, 6)
+      MAKE_OVR_FN(6, 3)
       MAKE_OVR_FN(4, 8)
       MAKE_OVR_FN(4, 4)
       MAKE_OVR_FN(4, 2)
-      // not supported:
-      //MAKE_OVR_FN(4, 1)
-      //MAKE_OVR_FN(2, 4)
-      //MAKE_OVR_FN(2, 2)
-      //MAKE_OVR_FN(2, 1)
+      MAKE_OVR_FN(4, 1)
+      MAKE_OVR_FN(2, 4)
+      MAKE_OVR_FN(2, 2)
+      MAKE_OVR_FN(2, 1)
 #undef MAKE_OVR_FN
 
     OverlapsFunction *result = nullptr;
@@ -781,13 +914,14 @@ func_overlaps[make_tuple(x, y, 4, NO_SIMD)] = Overlaps_float_C<x, y>;
     return result;
 }
 
+// lsb: old stacked16 heritage
 OverlapsLsbFunction *get_overlaps_lsb_function(int BlockX, int BlockY, int pixelsize, arch_t arch)
 {
     // 8 bit only (pixelsize==1)
     // BlkSizeX, BlkSizeY, pixelsize, arch_t
     std::map<std::tuple<int, int, int, arch_t>, OverlapsLsbFunction*> func_overlaps_lsb;
     using std::make_tuple;
-    // define C for 8/16 bits
+    // define C for 8 bits
 #define MAKE_OVR_FN(x, y) func_overlaps_lsb[make_tuple(x, y, 1, NO_SIMD)] = OverlapsLsb_C<x, y>;
     // sad, copy, overlap, luma, should be the same list
     MAKE_OVR_FN(64, 64)
