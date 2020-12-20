@@ -228,9 +228,17 @@ func_luma[make_tuple(x, y, 2, NO_SIMD)] = Luma_C<x, y, uint16_t>;
     func_luma[make_tuple(48, 48, 1, USE_SSE2)] = Luma8_sse2<48, 24>;
     func_luma[make_tuple(48, 48, 1, USE_SSE2)] = Luma8_sse2<48, 12>;
     func_luma[make_tuple(32, 64, 1, USE_SSE2)] = Luma8_sse2<32, 64>;
+#ifdef USE_LUMA_ASM
     func_luma[make_tuple(32, 32, 1, USE_SSE2)] = Luma32x32_sse2;
+#else
+    func_luma[make_tuple(32, 32, 1, USE_SSE2)] = Luma8_sse2<32, 32>;
+#endif
     func_luma[make_tuple(32, 24, 1, USE_SSE2)] = Luma8_sse2<32, 24>;
+#ifdef USE_LUMA_ASM
     func_luma[make_tuple(32, 16, 1, USE_SSE2)] = Luma32x16_sse2;
+#else
+    func_luma[make_tuple(32, 16, 1, USE_SSE2)] = Luma8_sse2<32, 16>;
+#endif
     func_luma[make_tuple(32, 8, 1, USE_SSE2)] = Luma8_sse2<32, 8>;
     func_luma[make_tuple(24, 48, 1, USE_SSE2)] = Luma8_sse2<24, 48>;
     func_luma[make_tuple(24, 32, 1, USE_SSE2)] = Luma8_sse2<24, 32>;
@@ -238,20 +246,41 @@ func_luma[make_tuple(x, y, 2, NO_SIMD)] = Luma_C<x, y, uint16_t>;
     func_luma[make_tuple(24, 12, 1, USE_SSE2)] = Luma8_sse2<24, 12>;
     func_luma[make_tuple(24, 6, 1, USE_SSE2)] = Luma8_sse2<24, 6>;
     func_luma[make_tuple(16, 64, 1, USE_SSE2)] = Luma8_sse2<16, 64>;
+#ifdef USE_LUMA_ASM
     func_luma[make_tuple(16, 32, 1, USE_SSE2)] = Luma16x32_sse2;
     func_luma[make_tuple(16, 16, 1, USE_SSE2)] = Luma16x16_sse2;
+#else
+    func_luma[make_tuple(16, 32, 1, USE_SSE2)] = Luma8_sse2<16, 32>;
+    func_luma[make_tuple(16, 16, 1, USE_SSE2)] = Luma8_sse2<16, 16>;
+#endif
     func_luma[make_tuple(16, 12, 1, USE_SSE2)] = Luma8_sse2<16, 12>;
+#ifdef USE_LUMA_ASM
     func_luma[make_tuple(16, 8 , 1, USE_SSE2)] = Luma16x8_sse2;
+#else
+    func_luma[make_tuple(16, 8, 1, USE_SSE2)] = Luma8_sse2<16, 8>;
+#endif
     func_luma[make_tuple(16, 4, 1, USE_SSE2)] = Luma8_sse2<16, 4>;
+#ifdef USE_LUMA_ASM
     func_luma[make_tuple(16, 2 , 1, USE_SSE2)] = Luma16x2_sse2;
+#else
+    func_luma[make_tuple(16, 2, 1, USE_SSE2)] = Luma8_sse2<16, 2>;
+#endif
     func_luma[make_tuple(16, 1, 1, USE_SSE2)] = Luma8_sse2<16, 1>;
     func_luma[make_tuple(8, 32, 1, USE_SSE2)] = Luma8_sse2<8, 32>;
     func_luma[make_tuple(8, 16, 1, USE_SSE2)] = Luma8_sse2<8, 16>;
+#ifdef USE_LUMA_ASM
     func_luma[make_tuple(8 , 8 , 1, USE_SSE2)] = Luma8x8_sse2;
     func_luma[make_tuple(8 , 4 , 1, USE_SSE2)] = Luma8x4_sse2;
+#else
+    func_luma[make_tuple(8, 8, 1, USE_SSE2)] = Luma8_sse2<8, 8>;
+    func_luma[make_tuple(8, 4, 1, USE_SSE2)] = Luma8_sse2<8, 4>;
+#endif
     func_luma[make_tuple(8, 2, 1, USE_SSE2)] = Luma8_sse2<8, 2>;
+#ifdef USE_LUMA_ASM
     func_luma[make_tuple(4 , 4 , 1, USE_SSE2)] = Luma4x4_sse2;
-
+#else
+    func_luma[make_tuple(4, 4, 1, USE_SSE2)] = Luma8_sse2<4, 4>;;
+#endif
     // no 4,1 or 2,x,x for uint16_t
     // nor 12*
 #define MAKE_LUMA_FN(x, y) func_luma[make_tuple(x, y, 2, USE_SSE2)] = Luma16_sse2<x, y>;

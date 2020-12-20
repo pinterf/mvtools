@@ -22,6 +22,7 @@
 #include <CopyCode.h> // arch_t
 #include "def.h"
 
+#if 0
 MV_FORCEINLINE unsigned int VARABS(int x) { return x < 0 ? -x : x; }
 
 typedef unsigned int (VARFunction)(const unsigned char *pSrc, int nSrcPitch, int *pLuma);
@@ -55,7 +56,9 @@ unsigned int Var_C(const unsigned char *pSrc, int nSrcPitch, int *pLuma)
 {
    return Var_C<nBlkSize, nBlkSize, pixel_t>(pSrc, nSrcPitch, pLuma);
 }
+#endif
 
+#if 0
 extern "C" unsigned int __cdecl Var32x32_sse2(const unsigned char *pSrc, int nSrcPitch, int *pLuma);
 extern "C" unsigned int __cdecl Var16x32_sse2(const unsigned char *pSrc, int nSrcPitch, int *pLuma);
 extern "C" unsigned int __cdecl Var32x16_sse2(const unsigned char *pSrc, int nSrcPitch, int *pLuma);
@@ -65,20 +68,20 @@ extern "C" unsigned int __cdecl Var4x4_sse2(const unsigned char *pSrc, int nSrcP
 extern "C" unsigned int __cdecl Var8x4_sse2(const unsigned char *pSrc, int nSrcPitch, int *pLuma);
 extern "C" unsigned int __cdecl Var16x8_sse2(const unsigned char *pSrc, int nSrcPitch, int *pLuma);
 extern "C" unsigned int __cdecl Var16x2_sse2(const unsigned char *pSrc, int nSrcPitch, int *pLuma);
+#endif
 
-// todo sad_t (float) and here sad_t is unsigned int, and at all other places in code: int
+// todo here sad_t is unsigned int, and at all other places in code: int
 //using LUMAFunction = sad_t (*)(const unsigned char *pSrc, int nSrcPitch);
 typedef unsigned int (LUMAFunction)(const unsigned char *pSrc, int nSrcPitch);
 LUMAFunction* get_luma_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
 
-// todo sad_t float
 template<int nBlkWidth, int nBlkHeight, typename pixel_t>
 unsigned int Luma_C(const unsigned char *pSrc, int nSrcPitch);
 
-// todo sad_t float
 template<int nBlkSize, typename pixel_t>
 unsigned int Luma_C(const unsigned char *pSrc, int nSrcPitch);
 
+#ifdef USE_LUMA_ASM
 extern "C" unsigned int __cdecl Luma32x32_sse2(const unsigned char *pSrc, int nSrcPitch);
 extern "C" unsigned int __cdecl Luma16x32_sse2(const unsigned char *pSrc, int nSrcPitch);
 extern "C" unsigned int __cdecl Luma32x16_sse2(const unsigned char *pSrc, int nSrcPitch);
@@ -88,5 +91,6 @@ extern "C" unsigned int __cdecl Luma4x4_sse2(const unsigned char *pSrc, int nSrc
 extern "C" unsigned int __cdecl Luma8x4_sse2(const unsigned char *pSrc, int nSrcPitch);
 extern "C" unsigned int __cdecl Luma16x8_sse2(const unsigned char *pSrc, int nSrcPitch);
 extern "C" unsigned int __cdecl Luma16x2_sse2(const unsigned char *pSrc, int nSrcPitch);
+#endif
 
 #endif
