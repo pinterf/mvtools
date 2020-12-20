@@ -3,6 +3,7 @@ Motion estimation and compensation plugin for Avisynth+ and Avisynth v2.6 family
 Supporting YUY2, 4:2:0, 4:2:2, 4:4:4 at native 8, 10, 12, 14 and 16 bit depths, 32bit float in selected filters.\
 Still supporting Windows XP.
 x86 and x64 versions
+From December 20, 2020: Linux port
 
 File: mvtools2.dll
 
@@ -10,6 +11,41 @@ Credits:
 - Manao, Fizick, Tsp, TSchniede, SEt, Vit, Firesledge, cretindesalpes 
 
 Change log
+- 2.7.45 (WIP)
+  - MSuper: rfilter=0 and 1
+    8 bit: drop old SSE code, port to SIMD intrinsics. Add SIMD to 16 bit case. Quicker, much quicker.
+    (rfilter: Hierarchical levels smoothing and reducing (halving) filter)
+  - MSuper: sharp=1 for pel=2 or 4
+    Bicubic resizer drop old SSE code, port to SIMD intrinsics, implement SIMD intrinsics to 16 bit case.
+    No need for Bilinear.asm and Bilinear-x64.asm any more.
+  - SATD: add 8 bit C versions (geee, there wasn't one) (as an alternative to the external asm)
+  - SAD: add internal SIMD for 8 bit SAD (SSE4.1) (as an alternative to the external asm)
+  - Overlaps: Add internal SIMD for 8 bit. (as an alternative to the external asm)
+  - In def.h any existing external assembler file can be disabled. 
+    The primary reason for this was to quickly test the linux port, for me this was easier than bothering with asm compilation and linking.
+    For non-Windows cases all of these are disabled now.
+    - USE_COPYCODE_ASM (CopyCode-a.asm). Has internal alternative. Same speed.
+    - USE_OVERLAPS_ASM (Overlap-a.asm). asm implements 8 bit only. Has internal SIMD alternative. About the same speed.
+    - USE_SAD_ASM (sad-a.asm) asm implements 8 bit only. Note: Internal 8 bit SIMD SAD is a bit slower that these handcrafted ones.
+    - USE_SATD_ASM (Pixel-a.asm) asm implements 8 bit only. Note: SATD 8 bit has no SIMD replacement yet. 
+    - USE_LUMA_ASM (Variance-a.asm) asm implements 8 bit only. Has internal alternative. 
+    - USE_FDCT88INT_ASM (fdct_mmx.asm, fdct_mmx_x64.asm) 
+                        Only used for 8x8 block sizes. Quick integer version instead of fftw3.
+                        No internal alternative, fftw3 is used instead.
+    - USE_AVSTP (do find search for avstp.dll on Windows)
+  - Minor and not so minor cosmetics, mainly for GCC.
+  - Add Cmake build system.
+  - Linux/GCC port (needs sse4.1), Dewindowsification.
+    fftw3: MAnalyze dct modes that require fftw3 library will search for libfftw3f_threads.so.3
+    Install either libfftw3-single3 (deb) or fftw-devel (rpm) package");
+    e.g. sudo apt-get update
+         sudo apt-get install libfftw3-dev
+  - Not done (will be done in a second phase):
+    Add back some external asms. For 8 bit SAD and SATD mainly.
+    Linux port is still Intel-only, though every part has C alternative by now.
+    Separate the 3 projects (mvtools2, depan, depan_estimate).
+    Depan and Depan_estimate Linux port
+
 - 2.7.44 (20201214)
   - MAnalyze: fix motion vector generation inconsistencies across multiple runs.
     Note: when internal multithreading is used (avstp + mt=true), inconsistencies will still occur by design.
