@@ -21,29 +21,6 @@
 #include <tuple>
 #include <stdint.h>
 
-#if !defined(_M_X64)
-#define rax	eax
-#define rbx	ebx
-#define rcx	ecx
-#define rdx	edx
-#define rsi	esi
-#define rdi	edi
-#define rbp	ebp
-#define rsp	esp
-#define movzx_int mov
-#define movsx_int mov
-#else
-#define rax	rax
-#define rbx	rbx
-#define rcx	rcx
-#define rdx	rdx
-#define rsi	rsi
-#define rdi	rdi
-#define rbp	rbp
-#define rsp	r15
-#define movzx_int movzxd
-#define movsx_int movsxd
-#endif
 
 template <typename pixel_t>
 void fill_chroma(BYTE* dstp_u, BYTE* dstp_v, int height, int pitch, pixel_t val)
@@ -125,8 +102,6 @@ void Copy_C (uint8_t *pDst, int nDstPitch, const uint8_t *pSrc, int nSrcPitch)
 
 COPYFunction* get_copy_function(int BlockX, int BlockY, int pixelsize, arch_t arch)
 {
-    // 8 bit only (pixelsize==1)
-    //---------- DENOISE/DEGRAIN
     // BlkSizeX, BlkSizeY, pixelsize, arch_t
     std::map<std::tuple<int, int, int, arch_t>, COPYFunction*> func_copy;
     using std::make_tuple;
@@ -187,8 +162,10 @@ func_copy[make_tuple(x, y, 4, NO_SIMD)] = Copy_C<x, y, float>;
       MAKE_COPY_FN(2, 1)
 #undef MAKE_COPY_FN
 
+#ifdef USE_COPYCODE_ASM
     // we could even ignore copy sse2 assemblers, compilers are smart nowadays
     // no mmx copy for block sizes over 32
+    // CopyCode-a.asm
     func_copy[make_tuple(32, 32, 1, USE_SSE2)] = Copy32x32_sse2;
     func_copy[make_tuple(32, 16, 1, USE_SSE2)] = Copy32x16_sse2;
     func_copy[make_tuple(32, 8 , 1, USE_SSE2)] = Copy32x8_sse2;
@@ -208,7 +185,7 @@ func_copy[make_tuple(x, y, 4, NO_SIMD)] = Copy_C<x, y, float>;
     func_copy[make_tuple(2 , 4 , 1, USE_SSE2)] = Copy2x4_sse2;
     func_copy[make_tuple(2 , 2 , 1, USE_SSE2)] = Copy2x2_sse2;
     //func_copy[make_tuple(2 , 1 , 1, USE_SSE2)] = Copy2x1_sse2; no such
-
+#endif
     COPYFunction *result = nullptr;
     arch_t archlist[] = { USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
     int index = 0;
