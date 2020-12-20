@@ -28,19 +28,153 @@
 #ifndef __SAD_FUNC__
 #define __SAD_FUNC__
 
+#include "def.h"
 #include "types.h"
 #include <stdint.h>
 #include <cassert>
 #include "emmintrin.h"
 
- // SAD routined are same for SADFunctions.h and SADFunctions_avx.cpp
+#ifndef USE_SAD_ASM
+// alternative to the external asm sad function. is slower a bit
+template<int nBlkWidth, int nBlkHeight>
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse2")))
+#endif 
+unsigned int Sad_sse2(const uint8_t* pSrc, int nSrcPitch8, const uint8_t* pRef, int nRefPitch8)
+{
+  __m128i zero = _mm_setzero_si128();
+
+  const int nSrcPitch = nSrcPitch8;
+  const int nRefPitch = nRefPitch8;
+
+  constexpr int vert_inc = ((nBlkWidth % 16 != 0 && nBlkWidth % 8 == 0)) && (nBlkHeight % 8) == 0 ? 8 : nBlkHeight % 4 == 0 ? 4 : nBlkHeight % 2 == 0 ? 2 : 1;
+  // unrolled 8, 4, 2 option; 8 implemented only for wmod8
+
+  __m128i acc = _mm_setzero_si128();
+  for (int y = 0; y < nBlkHeight; y += vert_inc)
+  {
+    for (int x = 0; x < nBlkWidth / 16 * 16; x += 16) {
+      auto dst1 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pRef + x));
+      auto src1 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pSrc + x));
+      auto sad1 = _mm_sad_epu8(dst1, src1);
+      acc = _mm_add_epi32(acc, sad1);
+      if constexpr (vert_inc >= 2) {
+        dst1 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pRef + x + nRefPitch));
+        src1 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pSrc + x + nSrcPitch));
+        sad1 = _mm_sad_epu8(dst1, src1);
+        acc = _mm_add_epi32(acc, sad1);
+      }
+      if constexpr (vert_inc >= 4) {
+        dst1 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pRef + x + nRefPitch * 2));
+        src1 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pSrc + x + nSrcPitch * 2));
+        sad1 = _mm_sad_epu8(dst1, src1);
+        acc = _mm_add_epi32(acc, sad1);
+        dst1 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pRef + x + nRefPitch * 3));
+        src1 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pSrc + x + nSrcPitch * 3));
+        sad1 = _mm_sad_epu8(dst1, src1);
+        acc = _mm_add_epi32(acc, sad1);
+      }
+    }
+    if constexpr (nBlkWidth % 16 != 0 && nBlkWidth % 8 == 0) {
+      for (int x = nBlkWidth / 16 * 16; x < nBlkWidth / 8 * 8; x += 8) {
+        auto dst1 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(pRef + x));
+        auto src1 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(pSrc + x));
+        if constexpr (vert_inc >= 2) {
+          dst1 = _mm_unpacklo_epi8(dst1, _mm_loadl_epi64(reinterpret_cast<const __m128i*>(pRef + x + nRefPitch)));
+          src1 = _mm_unpacklo_epi8(src1, _mm_loadl_epi64(reinterpret_cast<const __m128i*>(pSrc + x + nSrcPitch)));
+        }
+        auto sad1 = _mm_sad_epu8(dst1, src1);
+        acc = _mm_add_epi32(acc, sad1);
+
+        if constexpr (vert_inc >= 4) {
+          // unroll 4
+          dst1 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(pRef + x + nRefPitch * 2));
+          src1 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(pSrc + x + nSrcPitch * 2));
+          dst1 = _mm_unpacklo_epi8(dst1, _mm_loadl_epi64(reinterpret_cast<const __m128i*>(pRef + x + nRefPitch * 3)));
+          src1 = _mm_unpacklo_epi8(src1, _mm_loadl_epi64(reinterpret_cast<const __m128i*>(pSrc + x + nSrcPitch * 3)));
+          sad1 = _mm_sad_epu8(dst1, src1);
+          acc = _mm_add_epi32(acc, sad1);
+        }
+
+        if constexpr (vert_inc >= 8) {
+          // unroll 8
+          dst1 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(pRef + x + nRefPitch * 4));
+          src1 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(pSrc + x + nSrcPitch * 4));
+          dst1 = _mm_unpacklo_epi8(dst1, _mm_loadl_epi64(reinterpret_cast<const __m128i*>(pRef + x + nRefPitch * 5)));
+          src1 = _mm_unpacklo_epi8(src1, _mm_loadl_epi64(reinterpret_cast<const __m128i*>(pSrc + x + nSrcPitch * 5)));
+          sad1 = _mm_sad_epu8(dst1, src1);
+          acc = _mm_add_epi32(acc, sad1);
+
+          dst1 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(pRef + x + nRefPitch * 6));
+          src1 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(pSrc + x + nSrcPitch * 6));
+          dst1 = _mm_unpacklo_epi8(dst1, _mm_loadl_epi64(reinterpret_cast<const __m128i*>(pRef + x + nRefPitch * 7)));
+          src1 = _mm_unpacklo_epi8(src1, _mm_loadl_epi64(reinterpret_cast<const __m128i*>(pSrc + x + nSrcPitch * 7)));
+          sad1 = _mm_sad_epu8(dst1, src1);
+          acc = _mm_add_epi32(acc, sad1);
+        }
+      }
+    }
+    if constexpr (nBlkWidth % 8 != 0 && nBlkWidth % 4 == 0) {
+      for (int x = nBlkWidth / 8 * 8; x < nBlkWidth / 4 * 4; x += 4) {
+        auto dst1 = _mm_cvtsi32_si128(*reinterpret_cast<const uint32_t*>(pRef + x));
+        auto src1 = _mm_cvtsi32_si128(*reinterpret_cast<const uint32_t*>(pSrc + x));
+        if constexpr (vert_inc >= 2) {
+          dst1 = _mm_unpacklo_epi8(dst1, _mm_cvtsi32_si128(*reinterpret_cast<const uint32_t*>(pRef + x + nRefPitch)));
+          src1 = _mm_unpacklo_epi8(src1, _mm_cvtsi32_si128(*reinterpret_cast<const uint32_t*>(pSrc + x + nSrcPitch)));
+        }
+        auto sad1 = _mm_sad_epu8(dst1, src1);
+        acc = _mm_add_epi32(acc, sad1);
+
+        if constexpr (vert_inc >= 4) {
+          dst1 = _mm_cvtsi32_si128(*reinterpret_cast<const uint32_t*>(pRef + x + nRefPitch * 2));
+          src1 = _mm_cvtsi32_si128(*reinterpret_cast<const uint32_t*>(pSrc + x + nSrcPitch * 2));
+          dst1 = _mm_unpacklo_epi8(dst1, _mm_cvtsi32_si128(*reinterpret_cast<const uint32_t*>(pRef + x + nRefPitch * 3)));
+          src1 = _mm_unpacklo_epi8(src1, _mm_cvtsi32_si128(*reinterpret_cast<const uint32_t*>(pSrc + x + nSrcPitch * 3)));
+          sad1 = _mm_sad_epu8(dst1, src1);
+          acc = _mm_add_epi32(acc, sad1);
+        }
+      }
+    }
+    if constexpr (nBlkWidth % 4 != 0 && nBlkWidth % 2 == 0) {
+      for (int x = nBlkWidth / 4 * 4; x < nBlkWidth / 2 * 2; x += 2) {
+        auto dst1 = _mm_cvtsi32_si128(*reinterpret_cast<const uint16_t*>(pRef + x));
+        auto src1 = _mm_cvtsi32_si128(*reinterpret_cast<const uint16_t*>(pSrc + x));
+        auto sad1 = _mm_sad_epu8(dst1, src1);
+        acc = _mm_add_epi32(acc, sad1);
+        if constexpr (vert_inc >= 2) {
+          dst1 = _mm_cvtsi32_si128(*reinterpret_cast<const uint16_t*>(pRef + x + nRefPitch));
+          src1 = _mm_cvtsi32_si128(*reinterpret_cast<const uint16_t*>(pSrc + x + nSrcPitch));
+          sad1 = _mm_sad_epu8(dst1, src1);
+          acc = _mm_add_epi32(acc, sad1);
+        }
+        if constexpr (vert_inc >= 4) {
+          dst1 = _mm_cvtsi32_si128(*reinterpret_cast<const uint16_t*>(pRef + x + nRefPitch * 2));
+          src1 = _mm_cvtsi32_si128(*reinterpret_cast<const uint16_t*>(pSrc + x + nSrcPitch * 2));
+          sad1 = _mm_sad_epu8(dst1, src1);
+          acc = _mm_add_epi32(acc, sad1);
+          dst1 = _mm_cvtsi32_si128(*reinterpret_cast<const uint16_t*>(pRef + x + nRefPitch * 3));
+          src1 = _mm_cvtsi32_si128(*reinterpret_cast<const uint16_t*>(pSrc + x + nSrcPitch * 3));
+          sad1 = _mm_sad_epu8(dst1, src1);
+          acc = _mm_add_epi32(acc, sad1);
+        }
+      }
+    }
+    pRef += nRefPitch * vert_inc;
+    pSrc += nSrcPitch * vert_inc;
+  }
+  __m128i upper = _mm_castps_si128(_mm_movehl_ps(_mm_setzero_ps(), _mm_castsi128_ps(acc)));
+  acc = _mm_add_epi32(acc, upper);
+  auto result = _mm_cvtsi128_si32(acc);
+  return result;
+}
+#endif
+
+ // SAD routines are same for SADFunctions.h and SADFunctions_avx.cpp
  // put it into a common h
 #include "SADFunctions16.h"
 
 SADFunction* get_sad_function(int BlockX, int BlockY, int bits_per_pixel, arch_t arch);
 SADFunction* get_satd_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
-
-#define MK_CFUNC(functionname) extern "C" unsigned int __cdecl functionname (const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 
 #if 0
 // test-test-test-failed
@@ -62,6 +196,7 @@ SAD10_x264(4, 4, sse2);
 #endif
 #endif
 
+#ifdef USE_SAD_ASM
 /* included from x264/x265 */
 // now the prefix is still x264 (see project properties preprocessor directives for sad-a.asm)
 // to be changed
@@ -163,11 +298,12 @@ SAD_x264(4, 8, mmx2);
 SAD_x264(4, 4, sse2); // 20181125
 SAD_x264(4, 4, mmx2);
 #undef SAD_x264
-
+#endif
 // 1.9.5.3: added ssd & SATD (TSchniede)
 // alternative to SAD - SSD: squared sum of differences, VERY sensitive to noise
 // ssd did not go live. sample: x264_pixel_ssd_16x16_mmx
 
+#ifdef USE_SAD_ASM
 /* SATD: Sum of Absolute Transformed Differences, more sensitive to noise, frequency domain based - replacement to dct/SAD */
 #define SATD_SSE(blsizex, blsizey, type) extern "C" unsigned int __cdecl x264_pixel_satd_##blsizex##x##blsizey##_##type(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 // Make extern functions from the satd pixel-a.asm
@@ -310,8 +446,7 @@ SATD_SSE( 8, 16, avx2);
 SATD_SSE( 8,  8, avx2);
 
 #undef SATD_SSE
-
-#undef MK_CFUNC
+#endif
 
 
 #endif

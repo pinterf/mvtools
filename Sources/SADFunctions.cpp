@@ -396,17 +396,6 @@ static int32_t compute_satd16_16x16_sse2(const unsigned char *src, int systride,
 
 // -- End of SATD16 intrinsics
 
-// SATD C from x264 project common/pixel.c
-#define BIT_DEPTH 16 // any >8
-
-#if BIT_DEPTH > 8
-typedef uint32_t sum_t;
-typedef uint64_t sum2_t;
-#else
-typedef uint16_t sum_t;
-typedef uint32_t sum2_t;
-#endif
-#define BITS_PER_SUM (8 * sizeof(sum_t))
 /*
 void HADAMARD4_sse2(__m128i &d10, __m128i &d32, __m128i &s10, __m128i &s32) {
   // d0 = s0 + s1 + (s2 + s3)
@@ -461,8 +450,10 @@ todo why this differs from the ADD and SUB version?
 // return: abs(x)+(abs(y)<<16)
 // or <<32 for 16 bit pixels
 // todo check is it OK?
+template<typename sum_t, typename sum2_t>
 static MV_FORCEINLINE sum2_t abs2( sum2_t a )
 {
+  constexpr int BITS_PER_SUM = (8 * sizeof(sum_t));
   sum2_t s = ((a>>(BITS_PER_SUM-1))&(((sum2_t)1<<BITS_PER_SUM)+1))*((sum_t)-1);
   return (a+s)^s;
 }
@@ -472,18 +463,23 @@ static MV_FORCEINLINE sum2_t abs2( sum2_t a )
 ****************************************************************************/
 // uint8_t * instead of uint16_t * and
 // int       instead of intptr_t  for keeping parameter list compatible with 8 bit functions
-static unsigned int mvtools_satd_uint16_4x4_c(const uint8_t *pix1, /*intptr_t*/ int i_pix1, const uint8_t *pix2, /*intptr_t*/ int i_pix2 )
+template<typename pixel_t>
+static unsigned int mvtools_satd_4x4_c(const uint8_t *pix1, /*intptr_t*/ int i_pix1, const uint8_t *pix2, /*intptr_t*/ int i_pix2 )
 {
+  typedef typename std::conditional < sizeof(pixel_t) == 1, uint16_t, uint32_t>::type sum_t;
+  typedef typename std::conditional < sizeof(pixel_t) == 1, uint32_t, uint64_t>::type sum2_t;
+  constexpr int BITS_PER_SUM = (8 * sizeof(sum_t));
+
   sum2_t tmp[4][2];
   sum2_t a0, a1, a2, a3, b0, b1;
   sum2_t sum = 0;
   for( int i = 0; i < 4; i++, pix1 += i_pix1, pix2 += i_pix2 )
   {
-    a0 = reinterpret_cast<const uint16_t *>(pix1)[0] - reinterpret_cast<const uint16_t *>(pix2)[0];
-    a1 = reinterpret_cast<const uint16_t *>(pix1)[1] - reinterpret_cast<const uint16_t *>(pix2)[1];
+    a0 = reinterpret_cast<const pixel_t *>(pix1)[0] - reinterpret_cast<const pixel_t*>(pix2)[0];
+    a1 = reinterpret_cast<const pixel_t*>(pix1)[1] - reinterpret_cast<const pixel_t*>(pix2)[1];
     b0 = (a0+a1) + ((a0-a1)<<BITS_PER_SUM);
-    a2 = reinterpret_cast<const uint16_t *>(pix1)[2] - reinterpret_cast<const uint16_t *>(pix2)[2];
-    a3 = reinterpret_cast<const uint16_t *>(pix1)[3] - reinterpret_cast<const uint16_t *>(pix2)[3];
+    a2 = reinterpret_cast<const pixel_t*>(pix1)[2] - reinterpret_cast<const pixel_t*>(pix2)[2];
+    a3 = reinterpret_cast<const pixel_t*>(pix1)[3] - reinterpret_cast<const pixel_t*>(pix2)[3];
     b1 = (a2+a3) + ((a2-a3)<<BITS_PER_SUM);
     tmp[i][0] = b0 + b1;
     tmp[i][1] = b0 - b1;
@@ -491,240 +487,232 @@ static unsigned int mvtools_satd_uint16_4x4_c(const uint8_t *pix1, /*intptr_t*/ 
   for( int i = 0; i < 2; i++ )
   {
     HADAMARD4( a0, a1, a2, a3, tmp[0][i], tmp[1][i], tmp[2][i], tmp[3][i] );
-    a0 = abs2(a0) + abs2(a1) + abs2(a2) + abs2(a3);
+    a0 = abs2<sum_t, sum2_t>(a0) + abs2<sum_t, sum2_t>(a1) + abs2<sum_t, sum2_t>(a2) + abs2<sum_t, sum2_t>(a3);
     sum += ((sum_t)a0) + (a0>>BITS_PER_SUM);
   }
   return (unsigned int)(sum >> 1);
 }
 
-static unsigned int mvtools_satd_uint16_8x4_c(const uint8_t *pix1, /*intptr_t*/int i_pix1, const uint8_t *pix2, /*intptr_t*/ int i_pix2 )
+template<typename pixel_t>
+static unsigned int mvtools_satd_8x4_c(const uint8_t *pix1, /*intptr_t*/int i_pix1, const uint8_t *pix2, /*intptr_t*/ int i_pix2 )
 {
+  typedef typename std::conditional < sizeof(pixel_t) == 1, uint16_t, uint32_t>::type sum_t;
+  typedef typename std::conditional < sizeof(pixel_t) == 1, uint32_t, uint64_t>::type sum2_t;
+  constexpr int BITS_PER_SUM = (8 * sizeof(sum_t));
+
   sum2_t tmp[4][4];
   sum2_t a0, a1, a2, a3;
   sum2_t sum = 0;
   for( int i = 0; i < 4; i++, pix1 += i_pix1, pix2 += i_pix2 )
   {
-    a0 = (reinterpret_cast<const uint16_t *>(pix1)[0] - reinterpret_cast<const uint16_t *>(pix2)[0]) + ((sum2_t)(reinterpret_cast<const uint16_t *>(pix1)[4] - reinterpret_cast<const uint16_t *>(pix2)[4]) << BITS_PER_SUM);
-    a1 = (reinterpret_cast<const uint16_t *>(pix1)[1] - reinterpret_cast<const uint16_t *>(pix2)[1]) + ((sum2_t)(reinterpret_cast<const uint16_t *>(pix1)[5] - reinterpret_cast<const uint16_t *>(pix2)[5]) << BITS_PER_SUM);
-    a2 = (reinterpret_cast<const uint16_t *>(pix1)[2] - reinterpret_cast<const uint16_t *>(pix2)[2]) + ((sum2_t)(reinterpret_cast<const uint16_t *>(pix1)[6] - reinterpret_cast<const uint16_t *>(pix2)[6]) << BITS_PER_SUM);
-    a3 = (reinterpret_cast<const uint16_t *>(pix1)[3] - reinterpret_cast<const uint16_t *>(pix2)[3]) + ((sum2_t)(reinterpret_cast<const uint16_t *>(pix1)[7] - reinterpret_cast<const uint16_t *>(pix2)[7]) << BITS_PER_SUM);
+    a0 = (reinterpret_cast<const pixel_t*>(pix1)[0] - reinterpret_cast<const pixel_t*>(pix2)[0]) + ((sum2_t)(reinterpret_cast<const pixel_t*>(pix1)[4] - reinterpret_cast<const pixel_t*>(pix2)[4]) << BITS_PER_SUM);
+    a1 = (reinterpret_cast<const pixel_t*>(pix1)[1] - reinterpret_cast<const pixel_t*>(pix2)[1]) + ((sum2_t)(reinterpret_cast<const pixel_t*>(pix1)[5] - reinterpret_cast<const pixel_t*>(pix2)[5]) << BITS_PER_SUM);
+    a2 = (reinterpret_cast<const pixel_t*>(pix1)[2] - reinterpret_cast<const pixel_t*>(pix2)[2]) + ((sum2_t)(reinterpret_cast<const pixel_t*>(pix1)[6] - reinterpret_cast<const pixel_t*>(pix2)[6]) << BITS_PER_SUM);
+    a3 = (reinterpret_cast<const pixel_t*>(pix1)[3] - reinterpret_cast<const pixel_t*>(pix2)[3]) + ((sum2_t)(reinterpret_cast<const pixel_t*>(pix1)[7] - reinterpret_cast<const pixel_t*>(pix2)[7]) << BITS_PER_SUM);
     HADAMARD4( tmp[i][0], tmp[i][1], tmp[i][2], tmp[i][3], a0,a1,a2,a3 );
   }
   for( int i = 0; i < 4; i++ )
   {
     HADAMARD4( a0, a1, a2, a3, tmp[0][i], tmp[1][i], tmp[2][i], tmp[3][i] );
-    sum += abs2(a0) + abs2(a1) + abs2(a2) + abs2(a3);
+    sum += abs2<sum_t, sum2_t>(a0) + abs2<sum_t, sum2_t>(a1) + abs2<sum_t, sum2_t>(a2) + abs2<sum_t, sum2_t>(a3);
   }
   return (((sum_t)sum) + (sum>>BITS_PER_SUM)) >> 1; // (low_32 + high_32)/2 (8 bit: (low_16 + high_16)/2)
 }
 
-/*
-#define PIXEL_SATD_UINT16_C(w,h,sub)\
-static unsigned int mvtools_satd_uint16_##w##x##h##_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2 )\
-{\
-    unsigned int sum = sub( pix1, i_pix1, pix2, i_pix2 )\
-            + sub( pix1+4*i_pix1, i_pix1, pix2+4*i_pix2, i_pix2 );\
-    if( w==16 )\
-        sum+= sub( pix1+sizeof(uint16_t)*8, i_pix1, pix2+sizeof(uint16_t)*8, i_pix2 )\
-            + sub( pix1+sizeof(uint16_t)*8+4*i_pix1, i_pix1, pix2+sizeof(uint16_t)*8+4*i_pix2, i_pix2 );\
-    if( h==16 )\
-        sum+= sub( pix1+8*i_pix1, i_pix1, pix2+8*i_pix2, i_pix2 )\
-            + sub( pix1+12*i_pix1, i_pix1, pix2+12*i_pix2, i_pix2 );\
-    if( w==16 && h==16 )\
-        sum+= sub( pix1+sizeof(uint16_t)*8+8*i_pix1, i_pix1, pix2+sizeof(uint16_t)*8+8*i_pix2, i_pix2 )\
-            + sub( pix1+sizeof(uint16_t)*8+12*i_pix1, i_pix1, pix2+sizeof(uint16_t)*8+12*i_pix2, i_pix2 );\
-    return sum;\
-}
-*/
-
 // test for the 8 bit x264 satd C version
-template<int w, int h>
-static unsigned int mvtools_satd_uint16_NxN_by_8x4_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2)
+template<typename pixel_t, int w, int h>
+static unsigned int mvtools_satd_NxN_by_8x4_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2)
 {
   unsigned int sum = 0;
   for (int i = 0; i < h; i += 4) {
     for (int j = 0; j < w; j += 8) {
-      sum += mvtools_satd_uint16_8x4_c(pix1 + sizeof(uint16_t) * j + i * i_pix1, i_pix1, pix2 + sizeof(uint16_t) * j + i * i_pix2, i_pix2);
+      sum += mvtools_satd_8x4_c<pixel_t>(pix1 + sizeof(pixel_t) * j + i * i_pix1, i_pix1, pix2 + sizeof(pixel_t) * j + i * i_pix2, i_pix2);
     }
   }
   return sum;
 }
 
 // test for the 8 bit x264 satd C version
-template<int w, int h>
-static unsigned int mvtools_satd_uint16_NxN_by_4x4_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2)
+template<typename pixel_t, int w, int h>
+static unsigned int mvtools_satd_NxN_by_4x4_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2)
 {
   unsigned int sum = 0;
   for (int i = 0; i < h; i += 4) {
     for (int j = 0; j < w; j += 4) {
-      sum += mvtools_satd_uint16_4x4_c(pix1 + sizeof(uint16_t) * j + i * i_pix1, i_pix1, pix2 + sizeof(uint16_t) * j + i * i_pix2, i_pix2);
+      sum += mvtools_satd_4x4_c<pixel_t>(pix1 + sizeof(pixel_t) * j + i * i_pix1, i_pix1, pix2 + sizeof(pixel_t) * j + i * i_pix2, i_pix2);
     }
   }
   return sum;
 }
 
-static unsigned int mvtools_satd_uint16_64x64_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_8x4_c<64, 64>(pix1, i_pix1, pix2, i_pix2);
+template<typename pixel_t>
+static unsigned int mvtools_satd_64x64_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_8x4_c<pixel_t, 64, 64>(pix1, i_pix1, pix2, i_pix2);
 }
-static unsigned int mvtools_satd_uint16_64x48_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_8x4_c<64, 48>(pix1, i_pix1, pix2, i_pix2);
+template<typename pixel_t>
+static unsigned int mvtools_satd_64x48_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_8x4_c<pixel_t, 64, 48>(pix1, i_pix1, pix2, i_pix2);
 }
-static unsigned int mvtools_satd_uint16_64x32_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_8x4_c<64, 32>(pix1, i_pix1, pix2, i_pix2);
+template<typename pixel_t>
+static unsigned int mvtools_satd_64x32_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_8x4_c<pixel_t, 64, 32>(pix1, i_pix1, pix2, i_pix2);
 }
-static unsigned int mvtools_satd_uint16_64x16_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_8x4_c<64, 16>(pix1, i_pix1, pix2, i_pix2);
+template<typename pixel_t>
+static unsigned int mvtools_satd_64x16_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_8x4_c<pixel_t, 64, 16>(pix1, i_pix1, pix2, i_pix2);
 }
-static unsigned int mvtools_satd_uint16_48x64_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_8x4_c<48, 64>(pix1, i_pix1, pix2, i_pix2);
+template<typename pixel_t>
+static unsigned int mvtools_satd_48x64_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_8x4_c<pixel_t, 48, 64>(pix1, i_pix1, pix2, i_pix2);
 }
-static unsigned int mvtools_satd_uint16_48x48_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_8x4_c<48, 48>(pix1, i_pix1, pix2, i_pix2);
+template<typename pixel_t>
+static unsigned int mvtools_satd_48x48_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_8x4_c<pixel_t, 48, 48>(pix1, i_pix1, pix2, i_pix2);
 }
-static unsigned int mvtools_satd_uint16_48x24_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_8x4_c<48, 24>(pix1, i_pix1, pix2, i_pix2);
+template<typename pixel_t>
+static unsigned int mvtools_satd_48x24_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_8x4_c<pixel_t, 48, 24>(pix1, i_pix1, pix2, i_pix2);
 }
-static unsigned int mvtools_satd_uint16_48x12_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_8x4_c<48, 12>(pix1, i_pix1, pix2, i_pix2);
+template<typename pixel_t>
+static unsigned int mvtools_satd_48x12_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_8x4_c<pixel_t, 48, 12>(pix1, i_pix1, pix2, i_pix2);
 }
-static unsigned int mvtools_satd_uint16_32x64_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_8x4_c<32, 64>(pix1, i_pix1, pix2, i_pix2);
+template<typename pixel_t>
+static unsigned int mvtools_satd_32x64_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_8x4_c<pixel_t, 32, 64>(pix1, i_pix1, pix2, i_pix2);
 }
-static unsigned int mvtools_satd_uint16_32x32_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_8x4_c<32, 32>(pix1, i_pix1, pix2, i_pix2); 
+template<typename pixel_t>
+static unsigned int mvtools_satd_32x32_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_8x4_c<pixel_t, 32, 32>(pix1, i_pix1, pix2, i_pix2);
 }
-static unsigned int mvtools_satd_uint16_32x24_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_8x4_c<32, 24>(pix1, i_pix1, pix2, i_pix2);
+template<typename pixel_t>
+static unsigned int mvtools_satd_32x24_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_8x4_c<pixel_t, 32, 24>(pix1, i_pix1, pix2, i_pix2);
 }
-static unsigned int mvtools_satd_uint16_32x16_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_8x4_c<32, 16>(pix1, i_pix1, pix2, i_pix2); 
+template<typename pixel_t>
+static unsigned int mvtools_satd_32x16_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_8x4_c<pixel_t, 32, 16>(pix1, i_pix1, pix2, i_pix2);
 }
-static unsigned int mvtools_satd_uint16_32x8_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_8x4_c<32, 8>(pix1, i_pix1, pix2, i_pix2); 
+template<typename pixel_t>
+static unsigned int mvtools_satd_32x8_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_8x4_c<pixel_t, 32, 8>(pix1, i_pix1, pix2, i_pix2);
 }
-static unsigned int mvtools_satd_uint16_32x4_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_8x4_c<32, 4>(pix1, i_pix1, pix2, i_pix2);
+template<typename pixel_t>
+static unsigned int mvtools_satd_32x4_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_8x4_c<pixel_t, 32, 4>(pix1, i_pix1, pix2, i_pix2);
 }
-static unsigned int mvtools_satd_uint16_24x48_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_8x4_c<24, 48>(pix1, i_pix1, pix2, i_pix2);
+template<typename pixel_t>
+static unsigned int mvtools_satd_24x48_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_8x4_c<pixel_t, 24, 48>(pix1, i_pix1, pix2, i_pix2);
 }
-static unsigned int mvtools_satd_uint16_24x32_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_8x4_c<24, 32>(pix1, i_pix1, pix2, i_pix2);
+template<typename pixel_t>
+static unsigned int mvtools_satd_24x32_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_8x4_c<pixel_t, 24, 32>(pix1, i_pix1, pix2, i_pix2);
 }
-static unsigned int mvtools_satd_uint16_24x24_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_8x4_c<24, 24>(pix1, i_pix1, pix2, i_pix2);
+template<typename pixel_t>
+static unsigned int mvtools_satd_24x24_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_8x4_c<pixel_t, 24, 24>(pix1, i_pix1, pix2, i_pix2);
 }
-static unsigned int mvtools_satd_uint16_24x12_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_8x4_c<24, 12>(pix1, i_pix1, pix2, i_pix2);
+template<typename pixel_t>
+static unsigned int mvtools_satd_24x12_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_8x4_c<pixel_t, 24, 12>(pix1, i_pix1, pix2, i_pix2);
 }
-static unsigned int mvtools_satd_uint16_16x64_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_8x4_c<16, 64>(pix1, i_pix1, pix2, i_pix2);
+template<typename pixel_t>
+static unsigned int mvtools_satd_16x64_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_8x4_c<pixel_t, 16, 64>(pix1, i_pix1, pix2, i_pix2);
 }
-static unsigned int mvtools_satd_uint16_16x32_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_8x4_c<16, 32>(pix1, i_pix1, pix2, i_pix2); 
+template<typename pixel_t>
+static unsigned int mvtools_satd_16x32_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_8x4_c<pixel_t, 16, 32>(pix1, i_pix1, pix2, i_pix2);
 }
-static unsigned int mvtools_satd_uint16_16x16_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_8x4_c<16, 16>(pix1, i_pix1, pix2, i_pix2); 
+template<typename pixel_t>
+static unsigned int mvtools_satd_16x16_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_8x4_c<pixel_t, 16, 16>(pix1, i_pix1, pix2, i_pix2);
 }
-static unsigned int mvtools_satd_uint16_16x12_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_8x4_c<16, 12>(pix1, i_pix1, pix2, i_pix2); 
+template<typename pixel_t>
+static unsigned int mvtools_satd_16x12_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_8x4_c<pixel_t, 16, 12>(pix1, i_pix1, pix2, i_pix2);
 }
-static unsigned int mvtools_satd_uint16_16x8_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_8x4_c<16, 8>(pix1, i_pix1, pix2, i_pix2);
+template<typename pixel_t>
+static unsigned int mvtools_satd_16x8_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_8x4_c<pixel_t, 16, 8>(pix1, i_pix1, pix2, i_pix2);
 }
-static unsigned int mvtools_satd_uint16_16x4_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_8x4_c<16, 4>(pix1, i_pix1, pix2, i_pix2); 
+template<typename pixel_t>
+static unsigned int mvtools_satd_16x4_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_8x4_c<pixel_t, 16, 4>(pix1, i_pix1, pix2, i_pix2);
 }
-static unsigned int mvtools_satd_uint16_12x48_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_4x4_c<12, 48>(pix1, i_pix1, pix2, i_pix2);
+template<typename pixel_t>
+static unsigned int mvtools_satd_12x48_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_4x4_c<pixel_t, 12, 48>(pix1, i_pix1, pix2, i_pix2);
 }
-static unsigned int mvtools_satd_uint16_12x24_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_4x4_c<12, 24>(pix1, i_pix1, pix2, i_pix2);
+template<typename pixel_t>
+static unsigned int mvtools_satd_12x24_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_4x4_c<pixel_t, 12, 24>(pix1, i_pix1, pix2, i_pix2);
 }
-static unsigned int mvtools_satd_uint16_12x16_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_4x4_c<12, 16>(pix1, i_pix1, pix2, i_pix2);
+template<typename pixel_t>
+static unsigned int mvtools_satd_12x16_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_4x4_c<pixel_t, 12, 16>(pix1, i_pix1, pix2, i_pix2);
 }
-static unsigned int mvtools_satd_uint16_12x12_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_4x4_c<12, 12>(pix1, i_pix1, pix2, i_pix2);
+template<typename pixel_t>
+static unsigned int mvtools_satd_12x12_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_4x4_c<pixel_t, 12, 12>(pix1, i_pix1, pix2, i_pix2);
 }
-static unsigned int mvtools_satd_uint16_8x32_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_8x4_c<8, 32>(pix1, i_pix1, pix2, i_pix2);
+template<typename pixel_t>
+static unsigned int mvtools_satd_8x32_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_8x4_c<pixel_t, 8, 32>(pix1, i_pix1, pix2, i_pix2);
 }
-static unsigned int mvtools_satd_uint16_8x16_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_8x4_c<8, 16>(pix1, i_pix1, pix2, i_pix2); 
+template<typename pixel_t>
+static unsigned int mvtools_satd_8x16_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_8x4_c<pixel_t, 8, 16>(pix1, i_pix1, pix2, i_pix2);
 }
-static unsigned int mvtools_satd_uint16_8x8_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_8x4_c<8, 8>(pix1, i_pix1, pix2, i_pix2); 
+template<typename pixel_t>
+static unsigned int mvtools_satd_8x8_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_8x4_c<pixel_t, 8, 8>(pix1, i_pix1, pix2, i_pix2);
 }
 /* basic function
-static unsigned int mvtools_satd_uint16_8x4_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_8x4_c<8, 4>(pix1, i_pix1, pix2, i_pix2); 
+template<typename pixel_t>
+static unsigned int mvtools_satd_8x4_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_8x4_c<pixel_t, 8, 4>(pix1, i_pix1, pix2, i_pix2); 
 }
 */
-static unsigned int mvtools_satd_uint16_4x32_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_4x4_c<4, 32>(pix1, i_pix1, pix2, i_pix2);
+template<typename pixel_t>
+static unsigned int mvtools_satd_4x32_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_4x4_c<pixel_t, 4, 32>(pix1, i_pix1, pix2, i_pix2);
 }
-static unsigned int mvtools_satd_uint16_4x16_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_4x4_c<4, 16>(pix1, i_pix1, pix2, i_pix2);
+template<typename pixel_t>
+static unsigned int mvtools_satd_4x16_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_4x4_c<pixel_t, 4, 16>(pix1, i_pix1, pix2, i_pix2);
 }
-static unsigned int mvtools_satd_uint16_4x8_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_4x4_c<4, 8>(pix1, i_pix1, pix2, i_pix2); 
+template<typename pixel_t>
+static unsigned int mvtools_satd_4x8_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_4x4_c<pixel_t, 4, 8>(pix1, i_pix1, pix2, i_pix2);
 }
 /* basic function
-static unsigned int mvtools_satd_uint16_4x4_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
-  return mvtools_satd_uint16_NxN_by_4x4_c<4, 4>(pix1, i_pix1, pix2, i_pix2); 
+template<typename pixel_t>
+static unsigned int mvtools_satd_4x4_c(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2) {
+  return mvtools_satd_NxN_by_4x4_c<pixel_t, 4, 4>(pix1, i_pix1, pix2, i_pix2); 
 }
 */
 /*
 // another approach, not quicker
-static unsigned int mvtools_satd_uint16_16x16_c_2(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2)
+template<typename pixel_t>
+static unsigned int mvtools_satd_16x16_c_2(const uint8_t *pix1, int i_pix1, const uint8_t *pix2, int i_pix2)
 {
-  unsigned int satd = mvtools_satd_uint16_NxN_by_4x4_c<16, 16>(pix1, i_pix1, pix2, i_pix2);
+  unsigned int satd = mvtools_satd_NxN_by_4x4_c<pixel_t, 16, 16>(pix1, i_pix1, pix2, i_pix2);
   return satd;
 }
 */
-#undef PIXEL_SATD_UINT16_C
 
 // SATD functions for blocks over 16x16 are not defined in pixel-a.asm,
 // so as a poor man's substitute, we use a sum of smaller SATD functions.
-// 8 bit only
-#define SATD_REC_FUNC_UINT16(blsizex, blsizey, sblx, sbly, type) extern "C" unsigned int __cdecl	mvtools_satd_uint16_##blsizex##x##blsizey##_##type (const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch) \
-{	\
-	const int sum = \
-		  mvtools_satd_uint16_##sblx##x##sbly##_##type (pSrc,                                      nSrcPitch, pRef,                                      nRefPitch) \
-		+ mvtools_satd_uint16_##sblx##x##sbly##_##type (pSrc+sblx*sizeof(uint16_t),                nSrcPitch, pRef+sblx*sizeof(uint16_t),                nRefPitch) \
-		+ mvtools_satd_uint16_##sblx##x##sbly##_##type (pSrc                      +sbly*nSrcPitch, nSrcPitch, pRef                      +sbly*nRefPitch, nRefPitch) \
-		+ mvtools_satd_uint16_##sblx##x##sbly##_##type (pSrc+sblx*sizeof(uint16_t)+sbly*nSrcPitch, nSrcPitch, pRef+sblx*sizeof(uint16_t)+sbly*nRefPitch, nRefPitch); \
-	return (sum); \
-}
 
-
-// mvtools_satd_uint16_32x32_c
-// mvtools_satd_uint16_32x16_c
-//SATD_REC_FUNC_UINT16 (32, 32, 16, 16, c)
-//SATD_REC_FUNC_UINT16 (32, 16, 16,  8, c)
-
+#ifdef USE_SATD_ASM
 unsigned int __cdecl x264_pixel_satd_16x16_sse2_debug(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
   unsigned int satd = x264_pixel_satd_16x16_sse2(pSrc, nSrcPitch, pRef, nRefPitch);
   return satd;
 }
-/* test
-unsigned int __cdecl satd_uint16_16x16_sse2(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
-{
-//  unsigned int val1 = compute_satd16_16x16_sse2(pSrc, nSrcPitch, pRef, nRefPitch);
-  unsigned int val1 = compute_sum_8x8_satd16_32bit_inside(4, pSrc, nSrcPitch, pRef, nRefPitch); // 2^4 == 16
-//  unsigned int val2 = mvtools_satd_uint16_16x16_c(pSrc, nSrcPitch, pRef, nRefPitch);
-//  unsigned int val3 = mvtools_satd_uint16_16x16_c_2(pSrc, nSrcPitch, pRef, nRefPitch);
-
-  if (val1 != val2)
-    val1 = val2;
-  return val1;
-}
-*/
-
-
-#undef SATD_REC_FUNC_UINT16
+#endif
 
 //------------------
 
@@ -836,8 +824,16 @@ MAKE_SAD_FN(4, 1)
 
 // PF SAD 16 SIMD intrinsic functions
 // only for >=8 bytes widths
+#ifdef USE_SAD_ASM
+// define external asm routines for 8 bit later
 #define MAKE_SAD_FN(x, y) \
 func_sad[make_tuple(x, y, 16, USE_SSE2)] = Sad16_sse2_##x##xN<y>;
+#else
+// no external asm for 8 bit, sse2 implemented as intrinsics
+#define MAKE_SAD_FN(x, y) \
+func_sad[make_tuple(x, y, 16, USE_SSE2)] = Sad16_sse2_##x##xN<y>;\
+func_sad[make_tuple(x, y, 8, USE_SSE2)] = Sad_sse2<x,y>;
+#endif
 
       MAKE_SAD_FN(64, 64)
       MAKE_SAD_FN(64, 48)
@@ -890,6 +886,7 @@ func_sad[make_tuple(x, y, 16, USE_SSE2)] = Sad16_sse2_##x##xN<y>;
       //MAKE_SAD_FN(2, 1)
 #undef MAKE_SAD_FN
 
+#ifdef USE_SAD_ASM
     // 8 bit SAD function from x265 asm
 
     // Block Size: 64*x
@@ -1000,7 +997,7 @@ func_sad[make_tuple(x, y, 16, USE_SSE2)] = Sad16_sse2_##x##xN<y>;
     // Supported: 2x4, 2x2
     //func_sad[make_tuple(2 , 4 , 8, USE_SSE2)] = Sad2x4_iSSE;
     //func_sad[make_tuple(2, 2, 8, USE_SSE2)] = Sad2x2_iSSE;
-
+#endif // USE_SAD_ASM
 
     //---------------- AVX2
     // PF SAD 16 SIMD intrinsic functions
@@ -1083,6 +1080,7 @@ func_sad[make_tuple(x, y, 16, USE_SSE2)] = Sad16_sse2_##x##xN<y>;
     return result;
 }
 
+#ifdef USE_SATD_ASM
 // SATD functions for blocks over 16x16 are not defined in pixel-a.asm,
 // so as a poor man's substitute, we use a sum of smaller SATD functions.
 // 8 bit only
@@ -1233,9 +1231,9 @@ SATD_REC_FUNC_HORIZ_ONLY(32, 4, 16, 4, avx)
 // make 4x32 from 2x 4x16
 SATD_REC_FUNC_VERT_ONLY(4, 32, 4, 16, sse2)
 #endif
-
 #undef SATD_REC_FUNC
 
+#endif // USE_SATD_ASM
 
 
 SADFunction* get_satd_function(int BlockX, int BlockY, int pixelsize, arch_t arch)
@@ -1248,7 +1246,8 @@ SADFunction* get_satd_function(int BlockX, int BlockY, int pixelsize, arch_t arc
     //made C callable function prototypes in SadFunction.h
     //some not implemented asm macros are in separate functions (e.g. 32x32 = 16x16 + 16x16 + 16x16 + 16x16) 
     //x264_pixel_satd_##blksizex##x##blksizey##_sse2/sse4/ssse3/avx/avx2   in pixel-a.asm
-    
+
+#ifdef USE_SATD_ASM
 #ifdef _M_X64
     func_satd[make_tuple(64, 64, 1, USE_AVX2)] = x264_pixel_satd_64x64_avx2;
     func_satd[make_tuple(64, 48, 1, USE_AVX2)] = x264_pixel_satd_64x48_avx2;
@@ -1376,13 +1375,24 @@ SADFunction* get_satd_function(int BlockX, int BlockY, int pixelsize, arch_t arc
     func_satd[make_tuple(4 , 16, 1, USE_SSE2)] = x264_pixel_satd_4x16_sse2;
     func_satd[make_tuple(4 , 8 , 1, USE_SSE2)] = x264_pixel_satd_4x8_sse2;
     func_satd[make_tuple(4 , 4 , 1, USE_SSE2)] = x264_pixel_satd_4x4_mmx2;
-
-    // 16 bit C, SSE4/SSE2 SADT functions
+#endif // USE_SATD_ASM
+    // 8 and 16 bit C; 16 bit SSE4/SSE2 SADT functions
     // e.g.. satd16_64x64_sse2<false>;
+#ifdef USE_SATD_ASM
 #define MAKE_FN(w,h) \
-    func_satd[make_tuple(w, h, 2, NO_SIMD)] = mvtools_satd_uint16_##w##x##h##_c; \
+    func_satd[make_tuple(w, h, 2, NO_SIMD)] = mvtools_satd_##w##x##h##_c<uint16_t>; \
+    func_satd[make_tuple(w, h, 1, NO_SIMD)] = mvtools_satd_##w##x##h##_c<uint8_t>; \
     func_satd[make_tuple(w, h, 2, USE_SSE41)] = satd16_##w##x##h##_sse2<true>; \
     func_satd[make_tuple(w, h, 2, USE_SSE2)] = satd16_##w##x##h##_sse2<false>;
+#else
+    // additional: 8 bit C from 2.7.46 (gcc)
+    // FIXME: implement 8 bit sse2 in case of external asm-less compilation
+#define MAKE_FN(w,h) \
+    func_satd[make_tuple(w, h, 2, NO_SIMD)] = mvtools_satd_##w##x##h##_c<uint16_t>; \
+    func_satd[make_tuple(w, h, 1, NO_SIMD)] = mvtools_satd_##w##x##h##_c<uint8_t>; \
+    func_satd[make_tuple(w, h, 2, USE_SSE41)] = satd16_##w##x##h##_sse2<true>; \
+    func_satd[make_tuple(w, h, 2, USE_SSE2)] = satd16_##w##x##h##_sse2<false>;
+#endif
       MAKE_FN(64, 64)
       MAKE_FN(64, 48)
       MAKE_FN(64, 32)
