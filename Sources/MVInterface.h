@@ -25,11 +25,13 @@
 
 //#define _STLP_USE_STATIC_LIB
 
+#if 0
 #pragma pack(16)
+// in vector.h it is defined properly
 #pragma warning(disable:4103) // disable pack to change alignment warning ( stlport related )
 #pragma warning(disable:4800) // disable warning about bool to int unefficient conversion
 #pragma warning(disable:4996) // disable warning about insecure deprecated string functions
-
+#endif
 // all luma/chroma planes of all frames will have the effective frame area */
 // aligned to this (source plane can be accessed with aligned loads, 64 required for effective use of x264 sad on Core2) 1.9.5
 #define ALIGN_PLANES (64)
@@ -62,7 +64,7 @@
 
 //#define MV_BUFFER_FRAMES 10
 
-static const VECTOR zeroMV = { 0, 0, -1 };
+constexpr VECTOR zeroMV = { {{ 0, 0} }, -1  };
 
 
 

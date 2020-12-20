@@ -19,10 +19,12 @@
 #ifndef __MV_PADDING_H__
 #define __MV_PADDING_H__
 
-#define	NOGDI
-#define	NOMINMAX
-#define	WIN32_LEAN_AND_MEAN
+#ifdef _WIN32
+#define NOGDI
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
 #include "windows.h"
+#endif
 #include "avisynth.h"
 #include "yuy2planes.h"
 

@@ -64,7 +64,7 @@ MStoreVect::MStoreVect(std::vector <::PClip> clip_arr, const char *vccs_0, IScri
     {
       env->ThrowError("MStoreVect: invalid vector stream.");
     }
-#if !defined(_WIN64)
+#if !defined(MV_64BIT)
     const MVAnalysisData &	mad =
       *reinterpret_cast <MVAnalysisData *> (vd_vi.nchannels);
 #else

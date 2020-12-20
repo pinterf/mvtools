@@ -21,7 +21,7 @@
 
 #include "MVSCDetection.h"
 #include "CopyCode.h"
-#include "avs\minmax.h"
+#include "avs/minmax.h"
 #include <vector>
 
 

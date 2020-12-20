@@ -21,12 +21,12 @@
 /*! \brief debug printing information */
 #ifdef MOTION_DEBUG
 
-
-
-#define	NOGDI
-#define	NOMINMAX
-#define	WIN32_LEAN_AND_MEAN
-#include "Windows.h"
+#ifdef _WIN32
+#define NOGDI
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#include "windows.h"
+#endif
 
 #include <cstdarg>
 #include <cstdio>	//required for Debug output and outfile, fixed in 1.9.5
@@ -49,7 +49,9 @@ static inline void DebugPrintf(char *fmt, ...)
 
 static inline void DebugPrintf(const char *fmt, ...)
 {
+#ifdef _WIN32
   __noop(fmt); 	// Nothing
+#endif
 }
 
 

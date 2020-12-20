@@ -24,10 +24,12 @@
 #include "MVFilter.h"
 #include "yuy2planes.h"
 
-#define	NOGDI
-#define	NOMINMAX
-#define	WIN32_LEAN_AND_MEAN
-#include "Windows.h"
+#ifdef _WIN32
+#define NOGDI
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#include "windows.h"
+#endif
 #include	"avisynth.h"
 
 /*! \brief Filter which show the motion vectors

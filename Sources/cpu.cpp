@@ -26,14 +26,9 @@
 #include "cpu.h"
 #include "debugprintf.h"
 #include "string.h"
-#include <intrin.h>
 #include <avisynth.h>
 
 #define uint32_t unsigned int
-
-
-extern "C" unsigned int __cdecl x264_cpu_cpuid_test( void );
-extern "C" unsigned int __cdecl x264_cpu_cpuid( uint32_t op, uint32_t *eax, uint32_t *ebx, uint32_t *ecx, uint32_t *edx );
 
 int conv_cpuf_flags_to_cpu(int avscpu)
 {

@@ -19,7 +19,7 @@ MScaleVect::MScaleVect( PClip Child, double ScaleX, double ScaleY, ScaleMode Mod
 	// Get vector data
 	if (vi.nchannels >= 0 &&  vi.nchannels < 9) 
 		Env->ThrowError("MScaleVect: Clip does not contain motion vectors");
-#if !defined(_WIN64)
+#if !defined(MV_64BIT)
     mVectorsInfo = *reinterpret_cast<MVAnalysisData *>(vi.nchannels);
 #else
     uintptr_t p = (((uintptr_t)(unsigned int)vi.nchannels ^ 0x80000000) << 32) | (uintptr_t)(unsigned int)vi.sample_type;
@@ -27,7 +27,7 @@ MScaleVect::MScaleVect( PClip Child, double ScaleX, double ScaleY, ScaleMode Mod
 #endif
 	if (mVectorsInfo.nMagicKey != MVAnalysisData::MOTION_MAGIC_KEY || mVectorsInfo.nVersion != MVAnalysisData::VERSION) 
 		Env->ThrowError("MScaleVect: Clip does not contain motion vectors");
-#if !defined(_WIN64)
+#if !defined(MV_64BIT)
 	vi.nchannels = reinterpret_cast <uintptr_t> (&mVectorsInfo);
 #else
 	p = reinterpret_cast <uintptr_t> (&mVectorsInfo);

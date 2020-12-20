@@ -21,16 +21,17 @@
 
 
 
-#define	NOGDI
-#define	NOMINMAX
-#define	WIN32_LEAN_AND_MEAN
+#ifdef _WIN32
+#define NOGDI
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#include "windows.h"
+#endif
 
 #include	"MTFlowGraphSimple.h"
 #include	"MTFlowGraphSched.h"
 #include	"MTSlicer.h"
 #include	"types.h"
-
-#include	"Windows.h"
 
 #include	<cstdio>
 #include <stdint.h>
@@ -59,46 +60,10 @@ public:
 	void reduce_wait ();
    void WritePlane(FILE *pFile);
 
-	template <int NPELL2>
-  MV_FORCEINLINE const uint8_t *GetAbsolutePointerPel(int nX, int nY) const
-   {
-		enum {	MASK = (1 << NPELL2) - 1	};
+  template <int NPELL2>
+  MV_FORCEINLINE const uint8_t* GetAbsolutePointerPel(int nX, int nY) const;
 
-      int idx = (nX & MASK) | ((nY & MASK) << NPELL2);
-
-      nX >>= NPELL2;
-      nY >>= NPELL2;
-
-      return pPlane[idx] + (nX << pixelsize_shift) + nY * nPitch;
-   }
-
-	template <>
-  MV_FORCEINLINE const uint8_t *GetAbsolutePointerPel <0> (int nX, int nY) const
-   {
-         return pPlane[0] + (nX << pixelsize_shift) + nY * nPitch;
-   }
-
-  MV_FORCEINLINE const uint8_t *GetAbsolutePointer(int nX, int nY) const
-   {
-      if (nPel == 1)
-		{
-         return GetAbsolutePointerPel <0> (nX, nY);
-		}
-      else if (nPel == 2)
-		{
-         return GetAbsolutePointerPel <1> (nX, nY);
-		}
-      else // nPel == 4
-      {
-         return GetAbsolutePointerPel <2> (nX, nY);
-      }
-   }
-
-	template <int NPELL2>
-  MV_FORCEINLINE const uint8_t *GetPointerPel (int nX, int nY) const
-   {
-      return GetAbsolutePointerPel <NPELL2> (nX + nHPaddingPel, nY + nVPaddingPel);
-   }
+  MV_FORCEINLINE const uint8_t* GetAbsolutePointer(int nX, int nY) const;
 
   MV_FORCEINLINE const uint8_t *GetPointer(int nX, int nY) const
    {
@@ -109,6 +74,13 @@ public:
    {
 		return pPlane[0] + (nX << pixelsize_shift) + nY * nPitch;
 	}
+
+  template <int NPELL2>
+  MV_FORCEINLINE const uint8_t* GetPointerPel(int nX, int nY) const
+  {
+    return GetAbsolutePointerPel <NPELL2>(nX + nHPaddingPel, nY + nVPaddingPel);
+  }
+
 
   MV_FORCEINLINE int GetPitch() const { return nPitch; }
   MV_FORCEINLINE int GetWidth() const { return nWidth; }
@@ -184,6 +156,41 @@ private:
 	SlicerReduce	_slicer_reduce;
 	MVPlane *		_redp_ptr;			// The plane where the reduction is rendered.
 };
+
+template <int NPELL2>
+MV_FORCEINLINE const uint8_t* MVPlane::GetAbsolutePointerPel(int nX, int nY) const
+{
+  enum { MASK = (1 << NPELL2) - 1 };
+
+  int idx = (nX & MASK) | ((nY & MASK) << NPELL2);
+
+  nX >>= NPELL2;
+  nY >>= NPELL2;
+
+  return pPlane[idx] + (nX << pixelsize_shift) + nY * nPitch;
+}
+
+template <>
+MV_FORCEINLINE const uint8_t* MVPlane::GetAbsolutePointerPel <0>(int nX, int nY) const
+{
+  return pPlane[0] + (nX << pixelsize_shift) + nY * nPitch;
+}
+
+MV_FORCEINLINE const uint8_t* MVPlane::GetAbsolutePointer(int nX, int nY) const
+{
+  if (nPel == 1)
+  {
+    return GetAbsolutePointerPel <0>(nX, nY);
+  }
+  else if (nPel == 2)
+  {
+    return GetAbsolutePointerPel <1>(nX, nY);
+  }
+  else // nPel == 4
+  {
+    return GetAbsolutePointerPel <2>(nX, nY);
+  }
+}
 
 
 

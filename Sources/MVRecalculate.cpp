@@ -19,6 +19,7 @@
 // Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA, or visit
 // http://www.gnu.org/copyleft/gpl.html .
 
+#include "def.h"
 #include "AnaFlags.h"
 #include "ClipFnc.h"
 #include "cpu.h"
@@ -108,7 +109,7 @@ MVRecalculate::MVRecalculate(
     );
   }
 
-#if !defined(_WIN64)
+#if !defined(MV_64BIT)
   MVAnalysisData *	pAnalyseFilter =
     reinterpret_cast <MVAnalysisData *> (_vectors->GetVideoInfo().nchannels);
 #else
@@ -373,7 +374,7 @@ MVRecalculate::MVRecalculate(
     analysisDataDivided.nOverlapX = analysisData.nOverlapX / 2;
     analysisDataDivided.nOverlapY = analysisData.nOverlapY / 2;
     analysisDataDivided.nLvCount = analysisData.nLvCount + 1;
-#if !defined(_WIN64)
+#if !defined(MV_64BIT)
     vi.nchannels = reinterpret_cast <uintptr_t> (&analysisDataDivided);
 #else
     uintptr_t p = reinterpret_cast <uintptr_t> (&analysisDataDivided);
@@ -386,7 +387,7 @@ MVRecalculate::MVRecalculate(
     // we'll transmit to the processing filters a handle
     // on the analyzing filter itself ( it's own pointer ), in order
     // to activate the right parameters.
-#if !defined(_WIN64)
+#if !defined(MV_64BIT)
     vi.nchannels = reinterpret_cast <uintptr_t> (&analysisData);
 #else
     uintptr_t p = reinterpret_cast <uintptr_t> (&analysisData);

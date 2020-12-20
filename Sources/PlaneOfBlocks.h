@@ -63,9 +63,9 @@ public:
 
   /* search the vectors for the whole plane */
   void SearchMVs(MVFrame *_pSrcFrame, MVFrame *_pRefFrame, SearchType st,
-    int stp, int _lambda, sad_t _lSAD, int _pennew, int _plevel,
-    int flags, sad_t *out, const VECTOR *globalMVec, short * outfilebuf, int _fieldShiftCur,
-    int * _meanLumaChange, int _divideExtra,
+    int stp, int lambda, sad_t lsad, int pnew, int plevel,
+    int flags, sad_t *out, const VECTOR *globalMVec, short * outfilebuf, int fieldShiftCur,
+    int * meanLumaChange, int divideExtra,
     int _pzero, int _pglobal, sad_t _badSAD, int _badrange, bool meander, int *vecPrev, bool _tryMany);
 
 

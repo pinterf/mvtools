@@ -1,6 +1,7 @@
 #ifndef __COMMON_F__
 #define __COMMON_F__
 
+#include <stddef.h>
 #include <stdint.h>
 
 #define MV_UNUSED(x) (void)(x)

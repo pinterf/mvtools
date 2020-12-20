@@ -29,6 +29,7 @@
 #include "avisynth.h"
 #include <stdint.h>
 #include <cmath>
+#include <algorithm>
 
 #include "depan.h"
 
@@ -111,7 +112,7 @@ void compensate_plane_nearest2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, i
           }
           else if (rowleft < 0 && mleft) {
             if (blurmax > 0) {
-              blurlen = min(blurmax, -rowleft);
+              blurlen = std::min(blurmax, -rowleft);
               smoothed = 0;
               for (i = -rowleft - blurlen + 1; i <= -rowleft; i++)
                 smoothed += srcp[w0 + i];
@@ -123,7 +124,7 @@ void compensate_plane_nearest2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, i
           }
           else if (rowleft >= row_size && mright) {
             if (blurmax > 0) {
-              blurlen = min(blurmax, rowleft - row_size + 1);
+              blurlen = std::min(blurmax, rowleft - row_size + 1);
               smoothed = 0;
               for (i = row_size + row_size - rowleft - 2; i < row_size + row_size - rowleft - 2 + blurlen; i++)
                 smoothed += srcp[w0 + i];
@@ -185,7 +186,7 @@ void compensate_plane_nearest2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, i
           }
           else if (rowleft < 0 && mleft) {
             if (blurmax > 0) {
-              blurlen = min(blurmax, -rowleft);
+              blurlen = std::min(blurmax, -rowleft);
               smoothed = 0;
               for (i = -rowleft - blurlen + 1; i <= -rowleft; i++)
                 smoothed += srcp[w0 + i];
@@ -197,7 +198,7 @@ void compensate_plane_nearest2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, i
           }
           else if (rowleft >= row_size && mright) {
             if (blurmax > 0) {
-              blurlen = min(blurmax, rowleft - row_size + 1);
+              blurlen = std::min(blurmax, rowleft - row_size + 1);
               smoothed = 0;
               for (i = row_size + row_size - rowleft - 2; i < row_size + row_size - rowleft - 2 + blurlen; i++)
                 smoothed += srcp[w0 + i];
@@ -409,7 +410,7 @@ void compensate_plane_bilinear2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, 
 
           if (rowleft < 0 && mleft) {
             if (blurmax > 0) {
-              blurlen = min(blurmax, -rowleft);
+              blurlen = std::min(blurmax, -rowleft);
               smoothed = 0;
               for (i = -rowleft - blurlen + 1; i <= -rowleft; i++)
                 smoothed += srcp[w0 + i];
@@ -421,7 +422,7 @@ void compensate_plane_bilinear2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, 
           }
           else if (rowleft >= row_size - 1 && mright) {
             if (blurmax > 0) {
-              blurlen = min(blurmax, rowleft - row_size + 2); // v.1.10.1
+              blurlen = std::min(blurmax, rowleft - row_size + 2); // v.1.10.1
               smoothed = 0;
               for (i = row_size + row_size - rowleft - 2; i < row_size + row_size - rowleft - 2 + blurlen; i++)
                 smoothed += srcp[w0 + i];
@@ -519,12 +520,12 @@ void compensate_plane_bilinear2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, 
             pixel = (intcoef2dzoom[ix2] * srcp[w] + intcoef2dzoom[ix2 + 1] * srcp[w + 1] + \
               intcoef2dzoom[ix2 + 66] * srcp[w + src_pitch] + intcoef2dzoom[ix2 + 67] * srcp[w + src_pitch + 1] + (1 << 9)) >> 10; // v1.6
 
-            // dstp[row] = max(min(pixel,255),0);
+            // dstp[row] = std::max(std::min(pixel,255),0);
             dstp[row] = pixel;   // maxmin disabled in v1.6
           }
           else if (rowleft < 0 && mleft) {
             if (blurmax > 0) { // 1.13 fix
-              blurlen = min(blurmax, -rowleft);
+              blurlen = std::min(blurmax, -rowleft);
               smoothed = 0;
               for (i = -rowleft - blurlen + 1; i <= -rowleft; i++)
                 smoothed += srcp[w0 + i];
@@ -536,7 +537,7 @@ void compensate_plane_bilinear2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, 
           }
           else if (rowleft >= row_size - 1 && mright) {
             if (blurmax > 0) {
-              blurlen = min(blurmax, rowleft - row_size + 2); // v1.10.1
+              blurlen = std::min(blurmax, rowleft - row_size + 2); // v1.10.1
               smoothed = 0;
               for (i = row_size + row_size - rowleft - 2; i < row_size + row_size - rowleft - 2 + blurlen; i++)
                 smoothed += srcp[w0 + i];
@@ -608,7 +609,7 @@ void compensate_plane_bilinear2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, 
           pixel = ((intcoef[ix2] * srcp[w0] + intcoef[ix2 + 1] * srcp[w0 + 1])*intcoef[iy2] + \
             (intcoef[ix2] * srcp[w0 + src_pitch] + intcoef[ix2 + 1] * srcp[w0 + src_pitch + 1])*intcoef[iy2 + 1] + (1 << 9)) >> 10;
 
-          //					dstp[row] = max(min(pixel,255),0);
+          //					dstp[row] = std::max(std::min(pixel,255),0);
           dstp[row] = pixel;       //maxmin disabled in v1.6
         }
         else {
@@ -762,12 +763,12 @@ void compensate_plane_bicubic2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, i
                 // +1024 rounding: fix in 1.13.1
                 1024) >> 11;  // i.e. /2048
 
-            dstp[row] = max(min(pixel, pixel_max), 0); // limit
+            dstp[row] = std::max(std::min(pixel, pixel_max), 0); // limit
 
           }
           else if (rowleft < 0 && mleft) {
             if (blurmax > 0) {
-              blurlen = min(blurmax, -rowleft);
+              blurlen = std::min(blurmax, -rowleft);
               smoothed = 0;
               for (int i = -rowleft - blurlen + 1; i <= -rowleft; i++)
                 smoothed += srcp[w0 + i];
@@ -779,7 +780,7 @@ void compensate_plane_bicubic2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, i
           }
           else if (rowleft >= row_size && mright) {
             if (blurmax > 0) {
-              blurlen = min(blurmax, rowleft - row_size + 1);
+              blurlen = std::min(blurmax, rowleft - row_size + 1);
               smoothed = 0;
               for (int i = row_size + row_size - rowleft - 2; i < row_size + row_size - rowleft - 2 + blurlen; i++)
                 smoothed += srcp[w0 + i];
@@ -903,11 +904,11 @@ void compensate_plane_bicubic2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, i
 
             pixel = (int)((intcoef[iy4] * ts[0] + intcoef[iy4 + 1] * ts[1] + intcoef[iy4 + 2] * ts[2] + intcoef[iy4 + 3] * ts[3] + (1 << 21)) >> 22); // 22=2*11 bit (2*2048) scale factor
 
-            dstp[row] = max(min(pixel, pixel_max), 0); // limit
+            dstp[row] = std::max(std::min(pixel, pixel_max), 0); // limit
           }
           else if (rowleft < 0 && mleft) {
             if (blurmax > 0) {
-              blurlen = min(blurmax, -rowleft);
+              blurlen = std::min(blurmax, -rowleft);
               smoothed = 0;
               for (int i = -rowleft - blurlen + 1; i <= -rowleft; i++)
                 smoothed += srcp[w0 + i];
@@ -919,7 +920,7 @@ void compensate_plane_bicubic2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, i
           }
           else if (rowleft >= row_size && mright) {
             if (blurmax > 0) {
-              blurlen = min(blurmax, rowleft - row_size + 1);
+              blurlen = std::min(blurmax, rowleft - row_size + 1);
               smoothed = 0;
               for (int i = row_size + row_size - rowleft - 2; i < row_size + row_size - rowleft - 2 + blurlen; i++)
                 smoothed += srcp[w0 + i];
@@ -946,7 +947,7 @@ void compensate_plane_bicubic2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, i
             w = w0 + rowleft;
             pixel = (int)((1.0f - sy)*((1.0f - sx)*srcp[w] + sx*srcp[w + 1]) + \
               sy*((1.0f - sx)*srcp[w + src_pitch] + sx*srcp[w + src_pitch + 1]) + 0.5f); // bilinear
-            dstp[row] = max(min(pixel, pixel_max), 0);
+            dstp[row] = std::max(std::min(pixel, pixel_max), 0);
           }
           else if (rowleft == row_size - 1) { // added in v.1.1.1
             dstp[row] = srcp[rowleft + w0];
@@ -1032,7 +1033,7 @@ void compensate_plane_bicubic2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, i
 
           // 16 bit samples: 32 bit overflow. ts[] is int64_t for word sized pixels
           pixel = (int)((intcoef[iy4] * ts[0] + intcoef[iy4 + 1] * ts[1] + intcoef[iy4 + 2] * ts[2] + intcoef[iy4 + 3] * ts[3] + (1 << 21)) >> 22); // 22=2*11 scale factor 
-          dstp[row] = max(min(pixel, pixel_max), 0); // limit
+          dstp[row] = std::max(std::min(pixel, pixel_max), 0); // limit
         }
         else {
           if (hlow < 0 && mtop) hlow = -hlow;  // mirror borders

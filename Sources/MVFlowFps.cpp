@@ -359,7 +359,7 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
     if (optDebug != 0) {
       env->MakeWritable(&dst);
       char buf[2048];
-      sprintf_s(buf, "FRAME %d time256=%d off=%d, nleft=%d, nright=%d, fa=%d, fb=%d, using left!", n, time256, off, nleft, nright, (int)fa, (int)fb);
+      snprintf(buf, sizeof(buf), "FRAME %d time256=%d off=%d, nleft=%d, nright=%d, fa=%d, fb=%d, using left!", n, time256, off, nleft, nright, (int)fa, (int)fb);
       DrawString(dst, vi, 0, 0, buf);
     }
     reentrancy_check = false;
@@ -370,7 +370,7 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
     if (optDebug != 0) {
       env->MakeWritable(&dst);
       char buf[2048];
-      sprintf_s(buf, "FRAME %d time256=%d off=%d, nleft=%d, nright=%d, fa=%d, fb=%d, using left!", n, time256, off, nleft, nright, (int)fa, (int)fb);
+      snprintf(buf, sizeof(buf), "FRAME %d time256=%d off=%d, nleft=%d, nright=%d, fa=%d, fb=%d, using left!", n, time256, off, nleft, nright, (int)fa, (int)fb);
       DrawString(dst, vi, 0, 0, buf);
     }
     reentrancy_check = false;
@@ -680,8 +680,8 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
       }
       PROFILE_STOP(MOTION_PROFILE_FLOWINTER);
       if (optDebug > 0) {
-        char buf[2048];
-        sprintf_s(buf, "FlowInter mode=2");
+        char buf[100];
+        snprintf(buf, sizeof(buf), "FlowInter mode=2");
         DrawString(dst, vi, 0, 6, buf);
       }
     }
@@ -761,7 +761,7 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
       }
       if (optDebug > 0) {
         char buf[2048];
-        sprintf_s(buf, "FlowInter mode=1");
+        snprintf(buf, sizeof(buf), "FlowInter mode=1");
         DrawString(dst, vi, 0, 6, buf);
       }
       PROFILE_STOP(MOTION_PROFILE_FLOWINTER);
@@ -873,32 +873,32 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
               sum_MaskSmallFP += MaskSmallB[nBlkXP*y + x];
             }
           char buf[2048];
-          sprintf_s(buf, "FlowInterSimple mode=0 or mode=2 not usable");
+          snprintf(buf, sizeof(buf), "FlowInterSimple mode=0 or mode=2 not usable");
           DrawString(dst, vi, 0, 6, buf);
-          sprintf_s(buf, "sum_VXFullYB=%d sum_VXFullYF=%d", sum_VXFullYB, sum_VXFullYF);
+          snprintf(buf, sizeof(buf), "sum_VXFullYB=%d sum_VXFullYF=%d", sum_VXFullYB, sum_VXFullYF);
           DrawString(dst, vi, 0, 7, buf);
-          sprintf_s(buf, "sum_VYFullYB=%d sum_VYFullYF=%d", sum_VYFullYB, sum_VYFullYF);
+          snprintf(buf, sizeof(buf), "sum_VYFullYB=%d sum_VYFullYF=%d", sum_VYFullYB, sum_VYFullYF);
           DrawString(dst, vi, 0, 8, buf);
-          sprintf_s(buf, "sum_MaskFullYB=%d sum_MaskFullYF=%d", sum_MaskFullYB, sum_MaskFullYF);
+          snprintf(buf, sizeof(buf), "sum_MaskFullYB=%d sum_MaskFullYF=%d", sum_MaskFullYB, sum_MaskFullYF);
           DrawString(dst, vi, 0, 9, buf);
-          sprintf_s(buf, "sum_MaskSmallBP=%d sum_MaskSmallFP=%d", sum_MaskSmallBP, sum_MaskSmallFP);
+          snprintf(buf, sizeof(buf), "sum_MaskSmallBP=%d sum_MaskSmallFP=%d", sum_MaskSmallBP, sum_MaskSmallFP);
           DrawString(dst, vi, 0, 10, buf);
-          sprintf_s(buf, "sum_MaskSmallB=%d sum_MaskSmallF=%d", sum_MaskSmallB, sum_MaskSmallF);
+          snprintf(buf, sizeof(buf), "sum_MaskSmallB=%d sum_MaskSmallF=%d", sum_MaskSmallB, sum_MaskSmallF);
           DrawString(dst, vi, 0, 11, buf);
         }
         PROFILE_STOP(MOTION_PROFILE_FLOWINTER);
       }
       if (optDebug > 0) {
         char buf[2048];
-        sprintf_s(buf, "FRAME %d time256=%d IsUsableB=%d IsUsableF=%d", n, time256, isUsableB ? 1 : 0, isUsableF ? 1 : 0);
+        snprintf(buf, sizeof(buf), "FRAME %d time256=%d IsUsableB=%d IsUsableF=%d", n, time256, isUsableB ? 1 : 0, isUsableF ? 1 : 0);
         DrawString(dst, vi, 0, 0, buf);
-        sprintf_s(buf, "B: BlkCount=%d OVx=%d OVy=%d thSCD1=%d thSCD2=%d", mvClipB.GetBlkCount(), mvClipB.GetOverlapX(), mvClipB.GetOverlapY(), mvClipB.GetThSCD1(), mvClipB.GetThSCD2());
+        snprintf(buf, sizeof(buf), "B: BlkCount=%d OVx=%d OVy=%d thSCD1=%d thSCD2=%d", mvClipB.GetBlkCount(), mvClipB.GetOverlapX(), mvClipB.GetOverlapY(), mvClipB.GetThSCD1(), mvClipB.GetThSCD2());
         DrawString(dst, vi, 0, 1, buf);
-        sprintf_s(buf, "F: BlkCount=%d OVx=%d OVy=%d thSCD1=%d thSCD2=%d", mvClipF.GetBlkCount(), mvClipF.GetOverlapX(), mvClipF.GetOverlapY(), mvClipF.GetThSCD1(), mvClipF.GetThSCD2());
+        snprintf(buf, sizeof(buf), "F: BlkCount=%d OVx=%d OVy=%d thSCD1=%d thSCD2=%d", mvClipF.GetBlkCount(), mvClipF.GetOverlapX(), mvClipF.GetOverlapY(), mvClipF.GetThSCD1(), mvClipF.GetThSCD2());
         DrawString(dst, vi, 0, 2, buf);
-        sprintf_s(buf, "nBlkX=%d nBlkY=%d nBlkXP=%d nBlkY=%d", nBlkX, nBlkY, nBlkXP, nBlkYP);
+        snprintf(buf, sizeof(buf), "nBlkX=%d nBlkY=%d nBlkXP=%d nBlkY=%d", nBlkX, nBlkY, nBlkXP, nBlkYP);
         DrawString(dst, vi, 0, 3, buf);
-        sprintf_s(buf, "nright=%d nleft=%d", nright, nleft);
+        snprintf(buf, sizeof(buf), "nright=%d nleft=%d", nright, nleft);
         DrawString(dst, vi, 0, 4, buf);
       }
     }
@@ -996,7 +996,7 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
       PROFILE_STOP(MOTION_PROFILE_FLOWINTER);
       if (optDebug > 0) {
         char buf[2048];
-        sprintf_s(buf, "BLEND %d time256=%d off=%d, nleft=%d, nright=%d, fa=%d, fb=%d, using left!", n, time256, off, nleft, nright, (int)fa, (int)fb);
+        snprintf(buf, sizeof(buf), "BLEND %d time256=%d off=%d, nleft=%d, nright=%d, fa=%d, fb=%d, using left!", n, time256, off, nleft, nright, (int)fa, (int)fb);
         DrawString(dst, vi, 0, 0, buf);
         _RPT2(0, "MVFlowFPS GetFrame END BLEND, frame=%d id=%d\n", n, _instance_id);
       }
@@ -1009,13 +1009,13 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
       if (optDebug > 0) {
         env->MakeWritable(&src);
         char buf[2048];
-        sprintf_s(buf, "POORNOBLEND %d time256=%d IsUsableB=%d IsUsableF=%d", n, time256, isUsableB ? 1 : 0, isUsableF ? 1 : 0);
+        snprintf(buf, sizeof(buf), "POORNOBLEND %d time256=%d IsUsableB=%d IsUsableF=%d", n, time256, isUsableB ? 1 : 0, isUsableF ? 1 : 0);
         DrawString(src, vi, 0, 0, buf);
-        sprintf_s(buf, "B: BlkCount=%d OVx=%d OVy=%d thSCD1=%d thSCD2=%d", mvClipB.GetBlkCount(), mvClipB.GetOverlapX(), mvClipB.GetOverlapY(), mvClipB.GetThSCD1(), mvClipB.GetThSCD2());
+        snprintf(buf, sizeof(buf), "B: BlkCount=%d OVx=%d OVy=%d thSCD1=%d thSCD2=%d", mvClipB.GetBlkCount(), mvClipB.GetOverlapX(), mvClipB.GetOverlapY(), mvClipB.GetThSCD1(), mvClipB.GetThSCD2());
         DrawString(src, vi, 0, 1, buf);
-        sprintf_s(buf, "F: BlkCount=%d OVx=%d OVy=%d thSCD1=%d thSCD2=%d", mvClipF.GetBlkCount(), mvClipF.GetOverlapX(), mvClipF.GetOverlapY(), mvClipF.GetThSCD1(), mvClipF.GetThSCD2());
+        snprintf(buf, sizeof(buf), "F: BlkCount=%d OVx=%d OVy=%d thSCD1=%d thSCD2=%d", mvClipF.GetBlkCount(), mvClipF.GetOverlapX(), mvClipF.GetOverlapY(), mvClipF.GetThSCD1(), mvClipF.GetThSCD2());
         DrawString(src, vi, 0, 2, buf);
-        sprintf_s(buf, "nright=%d nleft=%d", nright, nleft);
+        snprintf(buf, sizeof(buf), "nright=%d nleft=%d", nright, nleft);
         DrawString(src, vi, 0, 4, buf);
         _RPT2(0, "MVFlowFPS GetFrame END POORNOBLEND, frame=%d id=%d\n", n, _instance_id);
       }

@@ -25,9 +25,14 @@
  *  There are two versions, one in plain C, one in iSSE assembler.
  */
 
-#include "intrin.h"
+#include <emmintrin.h> // SSE2
+#include <pmmintrin.h> // SSE3
+#include <tmmintrin.h> // SSSE3
+#include <smmintrin.h> // SSE4
+
 #include <stdint.h>
 #include "include/avs/config.h"
+
 
 template<int nBlkHeight>
 #if defined(GCC) || defined(CLANG)
@@ -37,7 +42,7 @@ unsigned int Sad10_ssse3_4xN(const uint8_t *pSrc, int nSrcPitch, const uint8_t *
 {
   // 10 bit version
   // a uint16 can hold maximum sum of 64 differences. We are good till 4x128 (but max is 64 atm)
-  assert(nBlkHeight > 128);
+  assert(nBlkHeight <= 128);
   __m128i zero = _mm_setzero_si128();
   __m128i sumw = _mm_setzero_si128(); // word sized sums
 
@@ -131,7 +136,7 @@ unsigned int Sad10_ssse3_6xN(const uint8_t *pSrc, int nSrcPitch, const uint8_t *
 {
   // 10 bit version
   // a uint16 can hold maximum sum of 64 differences. We are good till 6x64
-  assert(nBlkHeight > 64);
+  assert(nBlkHeight <= 64);
   __m128i zero = _mm_setzero_si128();
   __m128i sumw = _mm_setzero_si128(); // word sized sums
   __m128i mask6_16bit = _mm_set_epi16(0, 0, -1, -1, -1, -1, -1, -1); // -1: 0xFFFF
@@ -157,7 +162,7 @@ unsigned int Sad10_ssse3_6xN(const uint8_t *pSrc, int nSrcPitch, const uint8_t *
       src1 = _mm_and_si128(src1, mask6_16bit);
 
       src2 = _mm_loadl_epi64((__m128i *) (pRef + nRefPitch * 1));
-      auto srcRest32 = _mm_load_ss(reinterpret_cast<const float *>(pRef + nRefPitch * 1 + 8));
+      srcRest32 = _mm_load_ss(reinterpret_cast<const float *>(pRef + nRefPitch * 1 + 8));
       src2 = _mm_castps_si128(_mm_movelh_ps(_mm_castsi128_ps(src2), srcRest32)); // lower 64 bits from src2 low 64 bits, high 64 bits from src4b low 64 bits
 
       absdiff = _mm_abs_epi16(_mm_sub_epi16(src1, src2));
@@ -229,7 +234,7 @@ unsigned int Sad10_ssse3_8xN(const uint8_t *pSrc, int nSrcPitch, const uint8_t *
 {
   // 10 bit version
   // a uint16 can hold maximum sum of 64 differences. We are good till 8x64
-  assert(nBlkHeight > 64);
+  assert(nBlkHeight <= 64);
   __m128i zero = _mm_setzero_si128();
   __m128i sumw = _mm_setzero_si128(); // word sized sums
 
@@ -324,7 +329,7 @@ unsigned int Sad10_ssse3_12xN(const uint8_t *pSrc, int nSrcPitch, const uint8_t 
 {
   // 10 bit version
   // a uint16 can hold maximum sum of 64 differences. We are good till 16x32
-  assert(nBlkHeight > 64);
+  assert(nBlkHeight <= 64);
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128(); // outer sum
 
@@ -437,7 +442,7 @@ unsigned int Sad10_ssse3_16xN(const uint8_t *pSrc, int nSrcPitch, const uint8_t 
 {
   // 10 bit version
   // a uint16 can hold maximum sum of 64 differences. We are good till 16x32
-  assert(nBlkHeight > 64);
+  assert(nBlkHeight <= 64);
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128(); // outer sum
 
@@ -528,10 +533,10 @@ unsigned int Sad16_sse2_16xN(const uint8_t *pSrc, int nSrcPitch, const uint8_t *
     if constexpr(vert_inc >= 2) {
       // 16 pixels: 2x8 pixels = 2x16 bytes
       // 2nd 8 pixels
-      auto src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch*1));
-      auto src2 = _mm_loadu_si128((__m128i *) (pRef + nRefPitch * 1));
-      __m128i greater_t = _mm_subs_epu16(src1, src2); // unsigned sub with saturation
-      __m128i smaller_t = _mm_subs_epu16(src2, src1);
+      src1 = _mm_load_si128((__m128i *) (pSrc + nSrcPitch*1));
+      src2 = _mm_loadu_si128((__m128i *) (pRef + nRefPitch * 1));
+      greater_t = _mm_subs_epu16(src1, src2); // unsigned sub with saturation
+      smaller_t = _mm_subs_epu16(src2, src1);
       absdiff = _mm_or_si128(greater_t, smaller_t); //abs(s1-s2)  == (satsub(s1,s2) | satsub(s2,s1))
                                                             // 8 x uint16 absolute differences
       sum = _mm_add_epi32(sum, _mm_unpacklo_epi16(absdiff, zero));
@@ -572,7 +577,7 @@ unsigned int Sad10_ssse3_24xN(const uint8_t *pSrc, int nSrcPitch, const uint8_t 
 {
   // 10 bit version
   // a uint16 can hold maximum sum of 64 differences. We are good till approx 24x21 (3 lanes add together, 64/3 = 21)
-  assert(nBlkHeight > 64);
+  assert(nBlkHeight <= 64);
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128(); // outer sum
 
@@ -702,7 +707,7 @@ unsigned int Sad10_ssse3_32xN(const uint8_t *pSrc, int nSrcPitch, const uint8_t 
 {
   // 10 bit version
   // a uint16 can hold maximum sum of 64 differences.
-  assert(nBlkHeight > 64);
+  assert(nBlkHeight <= 64);
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128(); // outer sum
 
@@ -847,7 +852,7 @@ unsigned int Sad10_ssse3_48xN(const uint8_t *pSrc, int nSrcPitch, const uint8_t 
 {
   // 10 bit version
   // a uint16 can hold maximum sum of 64 differences.
-  assert(nBlkHeight > 64);
+  assert(nBlkHeight <= 64);
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128(); // outer sum
 
@@ -964,7 +969,7 @@ unsigned int Sad10_ssse3_64xN(const uint8_t *pSrc, int nSrcPitch, const uint8_t 
 {
   // 10 bit version
   // a uint16 can hold maximum sum of 64 differences.
-  assert(nBlkHeight > 64);
+  assert(nBlkHeight <= 64);
   __m128i zero = _mm_setzero_si128();
   __m128i sum = _mm_setzero_si128(); // outer sum
 

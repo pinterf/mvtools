@@ -21,9 +21,12 @@
 // Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA, or visit
 // http://www.gnu.org/copyleft/gpl.html .
 
-#define	NOGDI
-#define	NOMINMAX
-#define	WIN32_LEAN_AND_MEAN
+#ifdef _WIN32
+#define NOGDI
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#include "windows.h"
+#endif
 
 // Use MVClip / MVFilter helpers
 #include "MVMask.h"
@@ -705,7 +708,7 @@ AvisynthPluginInit3(IScriptEnvironment* env, const AVS_Linkage* const vectors) {
 }
 
 
-
+#ifdef _WIN32
 static void	Interface_dll_load(::HINSTANCE hinst)
 {
 #if defined (_MSC_VER) && ! defined (NDEBUG) && defined (_DEBUG)
@@ -745,7 +748,6 @@ static void	Interface_dll_unload(::HINSTANCE hinst)
 }
 
 
-
 BOOL WINAPI DllMain(::HINSTANCE hinst, ::DWORD reason, ::LPVOID reserved_ptr)
 {
   switch (reason)
@@ -761,4 +763,5 @@ BOOL WINAPI DllMain(::HINSTANCE hinst, ::DWORD reason, ::LPVOID reserved_ptr)
 
   return (TRUE);
 }
+#endif // _WIN32
 

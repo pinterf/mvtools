@@ -63,7 +63,13 @@
 
 */
 
+#ifdef _WIN32
+#define NOGDI
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
 #include "windows.h"
+#endif
+
 #include "avisynth.h"
 #include "avs/alignment.h"
 #include "math.h"
@@ -578,11 +584,11 @@ PVideoFrame __stdcall DePan::GetFrame(int ndest, IScriptEnvironment* env) {
     if (info) { // show text info on frame image
       const int BUFSIZE = 1024;
       char messagebuf[BUFSIZE+1];
-      sprintf_s(messagebuf, BUFSIZE, " DePan");
+      snprintf(messagebuf, BUFSIZE, " DePan");
       DrawStringYUY2(dst, xmsg, 1, messagebuf);
-      sprintf_s(messagebuf, BUFSIZE, " offset= %5.2f", offset);
+      snprintf(messagebuf, BUFSIZE, " offset= %5.2f", offset);
       DrawStringYUY2(dst, xmsg, 2, messagebuf);
-      sprintf_s(messagebuf, BUFSIZE, " %d to %d", ndest - intoffset, ndest);
+      snprintf(messagebuf, BUFSIZE, " %d to %d", ndest - intoffset, ndest);
     }
   }
   else {
@@ -694,19 +700,19 @@ PVideoFrame __stdcall DePan::GetFrame(int ndest, IScriptEnvironment* env) {
     int xmsg = (fieldbased != 0) ? (ndest % 2) * 15 : 0; // x-position of odd fields message
     if (info) { // show text info on frame image
       char messagebuf[32];
-      sprintf_s(messagebuf, " DePan");
+      snprintf(messagebuf, sizeof(messagebuf), " DePan");
       DrawString(dst, vi, xmsg, 1, messagebuf);
-      sprintf_s(messagebuf, " offset= %5.2f", offset);
+      snprintf(messagebuf, sizeof(messagebuf), " offset= %5.2f", offset);
       DrawString(dst, vi, xmsg, 2, messagebuf);
-      sprintf_s(messagebuf, " %d to %d", ndest - intoffset, ndest);
+      snprintf(messagebuf, sizeof(messagebuf), " %d to %d", ndest - intoffset, ndest);
       DrawString(dst, vi, xmsg, 3, messagebuf);
-      sprintf_s(messagebuf, " dx  = %7.2f", dxsum);
+      snprintf(messagebuf, sizeof(messagebuf), " dx  = %7.2f", dxsum);
       DrawString(dst, vi, xmsg, 4, messagebuf);
-      sprintf_s(messagebuf, " dy  = %7.2f", dysum);
+      snprintf(messagebuf, sizeof(messagebuf), " dy  = %7.2f", dysum);
       DrawString(dst, vi, xmsg, 5, messagebuf);
-      sprintf_s(messagebuf, " zoom= %7.5f", zoomsum);
+      snprintf(messagebuf, sizeof(messagebuf), " zoom= %7.5f", zoomsum);
       DrawString(dst, vi, xmsg, 6, messagebuf);
-      sprintf_s(messagebuf, " rot= %7.3f", rotsum);
+      snprintf(messagebuf, sizeof(messagebuf), " rot= %7.3f", rotsum);
       DrawString(dst, vi, xmsg, 7, messagebuf);
     }
   } // end YUV planar
@@ -796,19 +802,19 @@ PVideoFrame __stdcall DePan::GetFrame(int ndest, IScriptEnvironment* env) {
     int xmsg = (fieldbased != 0) ? (ndest % 2) * 15 : 0; // x-position of odd fields message
     if (info) { // show text info on frame image
       char messagebuf[32];
-      sprintf_s(messagebuf, " DePan");
+      snprintf(messagebuf, sizeof(messagebuf), " DePan");
       DrawString(dst, xmsg, 1, messagebuf, isYUY2);
-      sprintf_s(messagebuf, " offset= %5.2f", offset);
+      snprintf(messagebuf, sizeof(messagebuf), " offset= %5.2f", offset);
       DrawString(dst, xmsg, 2, messagebuf, isYUY2);
-      sprintf_s(messagebuf, " %d to %d", ndest - intoffset, ndest);
+      snprintf(messagebuf, sizeof(messagebuf), " %d to %d", ndest - intoffset, ndest);
       DrawString(dst, xmsg, 3, messagebuf, isYUY2);
-      sprintf_s(messagebuf, " dx  = %7.2f", dxsum);
+      snprintf(messagebuf, sizeof(messagebuf), " dx  = %7.2f", dxsum);
       DrawString(dst, xmsg, 4, messagebuf, isYUY2);
-      sprintf_s(messagebuf, " dy  = %7.2f", dysum);
+      snprintf(messagebuf, sizeof(messagebuf), " dy  = %7.2f", dysum);
       DrawString(dst, xmsg, 5, messagebuf, isYUY2);
-      sprintf_s(messagebuf, " zoom= %7.5f", zoomsum);
+      snprintf(messagebuf, sizeof(messagebuf), " zoom= %7.5f", zoomsum);
       DrawString(dst, xmsg, 6, messagebuf, isYUY2);
-      sprintf_s(messagebuf, " rot= %7.3f", rotsum);
+      snprintf(messagebuf, sizeof(messagebuf), " rot= %7.3f", rotsum);
       DrawString(dst, xmsg, 7, messagebuf, isYUY2);
 
     }
@@ -835,19 +841,19 @@ PVideoFrame __stdcall DePan::GetFrame(int ndest, IScriptEnvironment* env) {
     int xmsg = (fieldbased != 0) ? (ndest % 2) * 15 : 0; // x-position of odd fields message
     if (info) { // show text info on frame image
       char messagebuf[32];
-      sprintf_s(messagebuf, " DePan");
+      snprintf(messagebuf, " DePan");
       DrawString(dst, xmsg, 1, messagebuf, isYUY2);
-      sprintf_s(messagebuf, " offset= %5.2f", offset);
+      snprintf(messagebuf, " offset= %5.2f", offset);
       DrawString(dst, xmsg, 2, messagebuf, isYUY2);
-      sprintf_s(messagebuf, " %d to %d", ndest - intoffset, ndest);
+      snprintf(messagebuf, " %d to %d", ndest - intoffset, ndest);
       DrawString(dst, xmsg, 3, messagebuf, isYUY2);
-      sprintf_s(messagebuf, " dx  = %7.2f", dxsum);
+      snprintf(messagebuf, " dx  = %7.2f", dxsum);
       DrawString(dst, xmsg, 4, messagebuf, isYUY2);
-      sprintf_s(messagebuf, " dy  = %7.2f", dysum);
+      snprintf(messagebuf, " dy  = %7.2f", dysum);
       DrawString(dst, xmsg, 5, messagebuf, isYUY2);
-      sprintf_s(messagebuf, " zoom= %7.5f", zoomsum);
+      snprintf(messagebuf, " zoom= %7.5f", zoomsum);
       DrawString(dst, xmsg, 6, messagebuf, isYUY2);
-      sprintf_s(messagebuf, " rot= %7.3f", rotsum);
+      snprintf(messagebuf, " rot= %7.3f", rotsum);
       DrawString(dst, xmsg, 7, messagebuf, isYUY2);
     }
 

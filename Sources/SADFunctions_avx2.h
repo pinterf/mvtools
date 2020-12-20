@@ -30,7 +30,6 @@
 
 #include "types.h"
 #include <stdint.h>
-#include <immintrin.h>
 #include <cassert>
 
 template<int nBlkWidth, int nBlkHeight, typename pixel_t>

@@ -23,10 +23,12 @@
 #include "MVAnalysisData.h"
 #include	"types.h"
 
-#define	NOGDI
-#define	NOMINMAX
-#define	WIN32_LEAN_AND_MEAN
-#include "Windows.h"
+#ifdef _WIN32
+#define NOGDI
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#include "windows.h"
+#endif
 #include	"avisynth.h"
 #include <stdint.h>
 

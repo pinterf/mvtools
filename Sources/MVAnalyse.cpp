@@ -20,6 +20,7 @@
 // Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA, or visit
 // http://www.gnu.org/copyleft/gpl.html .
 
+#include "def.h"
 #include	"ClipFnc.h"
 #include "commonfunctions.h"
 #include "cpu.h"
@@ -33,6 +34,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <algorithm>
 
 MVAnalyse::MVAnalyse(
   PClip _child, int _blksizex, int _blksizey, int lv, int st, int stp,
@@ -52,7 +54,7 @@ MVAnalyse::MVAnalyse(
   , _dct_factory_ptr()
   , _dct_pool()
   , _delta_max(0)
-  
+
 {
   has_at_least_v8 = true;
   try { env->CheckVersion(8); }
@@ -478,7 +480,7 @@ MVAnalyse::MVAnalyse(
   // to activate the right parameters.
   if (divideExtra)	//v1.8.1
   {
-#if !defined(_WIN64)
+#if !defined(MV_64BIT)
     vi.nchannels = reinterpret_cast <uintptr_t> (&_srd_arr[0]._analysis_data_divided);
 #else
     uintptr_t p = reinterpret_cast <uintptr_t> (&_srd_arr[0]._analysis_data_divided);
@@ -488,7 +490,7 @@ MVAnalyse::MVAnalyse(
   }
   else
   {
-#if !defined(_WIN64)
+#if !defined(MV_64BIT)
     vi.nchannels = reinterpret_cast <uintptr_t> (&_srd_arr[0]._analysis_data);
 #else
     uintptr_t p = reinterpret_cast <uintptr_t> (&_srd_arr[0]._analysis_data);
@@ -588,7 +590,7 @@ PVideoFrame __stdcall MVAnalyse::GetFrame(int n, IScriptEnvironment* env)
   {
 //		DebugPrintf ("MVAnalyse: Get src frame %d",nsrc);
     _RPT3(0, "MAnalyze GetFrame, frame_nsrc=%d nref=%d id=%d\n", nsrc, nref, _instance_id);
-    
+
     PVideoFrame	src = child->GetFrame(nsrc, env); // v2.0
     // if(has_at_least_v8) env->copyFrameProps(src, dst); // frame property support
     // The result clip is a special MV clip. It does not need to inherit the frame props of source

@@ -187,7 +187,7 @@ PVideoFrame __stdcall MVShow::GetFrame(int n, IScriptEnvironment* env)
 		 if (sad > ThSCD1)
             nsc += 1;
 	  }
-		sprintf_s(buf, "%d %d", int(mean / nBlkCount)*8/nBlkSizeX*8/nBlkSizeY, nsc*256/nBlkCount);
+		snprintf(buf, sizeof(buf), "%d %d", int(mean / nBlkCount)*8/nBlkSizeX*8/nBlkSizeY, nsc*256/nBlkCount);
 		if ( (pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
 			DrawStringYUY2(dst, 0, 0, buf);
 		else
@@ -199,7 +199,7 @@ PVideoFrame __stdcall MVShow::GetFrame(int n, IScriptEnvironment* env)
 		FakeBlockData block = mvClip.GetBlock(0, number);
          int x = block.GetX();
          int y = block.GetY();
-		sprintf_s(buf, "n=%d x=%d y=%d vx=%d vy=%d sad=%d",number, x, y, block.GetMV().x, block.GetMV().y, block.GetSAD());
+		snprintf(buf, sizeof(buf), "n=%d x=%d y=%d vx=%d vy=%d sad=%d",number, x, y, block.GetMV().x, block.GetMV().y, block.GetSAD());
 		if ( (pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
 			DrawStringYUY2(dst, 0, 0, buf);
 		else

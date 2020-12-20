@@ -54,7 +54,7 @@ void FakeGroupOfPlanes::Create(int nBlkSizeX, int nBlkSizeY, int nLevelCount, in
 
 FakeGroupOfPlanes::FakeGroupOfPlanes()
 {
-	InitializeCriticalSection(&cs); // 16.03.08 moved here from ::Create
+	//InitializeCriticalSection(&cs); // 16.03.08 moved here from ::Create
 	planes = 0;
 }
 
@@ -67,14 +67,15 @@ FakeGroupOfPlanes::~FakeGroupOfPlanes()
 	   delete[] planes;
 	   planes = 0; //v1.2.1
    }
-   DeleteCriticalSection(&cs); 
+   //DeleteCriticalSection(&cs); 
 }
 
 // data_size = available data, in 32-bit words
 // Returns false on error.
 bool FakeGroupOfPlanes::Update(const int *array, int data_size)
 {
-	::EnterCriticalSection (&cs);
+	//::EnterCriticalSection (&cs);
+  std::lock_guard<std::mutex> lock(cs);
 
 	bool				ok_flag = true;
 
@@ -118,7 +119,7 @@ bool FakeGroupOfPlanes::Update(const int *array, int data_size)
 		}
 	}
 
-	::LeaveCriticalSection (&cs);
+	//::LeaveCriticalSection (&cs);
 
 	return (ok_flag);
 }

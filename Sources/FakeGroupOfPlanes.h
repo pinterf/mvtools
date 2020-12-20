@@ -18,16 +18,9 @@
 #ifndef	__MV_FakeGroupOfPlanes__
 #define	__MV_FakeGroupOfPlanes__
 
-
-
-#define	NOGDI
-#define	NOMINMAX
-#define	WIN32_LEAN_AND_MEAN
-#include	"Windows.h"
-
-
-#include "types.h"
 #include "def.h"
+#include "types.h"
+#include <mutex>
 
 class FakePlaneOfBlocks;
 
@@ -45,7 +38,7 @@ class FakeGroupOfPlanes
 //   const unsigned char *compensatedPlaneU;
 //   const unsigned char *compensatedPlaneV;
   MV_FORCEINLINE static bool GetValidity(const int *array) { return (array[1] == 1); }
-   CRITICAL_SECTION cs;
+  std::mutex cs;
 
 public :
    FakeGroupOfPlanes();

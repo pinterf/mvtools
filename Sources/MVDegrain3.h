@@ -8,7 +8,8 @@
 #include "yuy2planes.h"
 #include <stdint.h>
 #include "def.h"
-#include "intrin.h"
+#include	<emmintrin.h>
+#include	<smmintrin.h> // SSE4.1
 
 class MVGroupOfFrames;
 class MVPlane;

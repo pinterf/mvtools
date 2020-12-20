@@ -684,18 +684,18 @@ PVideoFrame __stdcall MVDepan::GetFrame(int ndest, IScriptEnvironment* env)
       int xmsg = 0;
       int ymsg = 1;
 
-      sprintf_s(messagebuf, "MVDepan data");
+      snprintf(messagebuf, sizeof(messagebuf), "MVDepan data");
       DrawString(dst, vi, xmsg, ymsg, messagebuf);
 
-      sprintf_s(messagebuf, "fn=%5d iter=%3d error=%7.3f", nframe, iter, errorcur);
+      snprintf(messagebuf, sizeof(messagebuf), "fn=%5d iter=%3d error=%7.3f", nframe, iter, errorcur);
       ymsg++;
       DrawString(dst, vi, xmsg, ymsg, messagebuf);
 
-      sprintf_s(messagebuf, "     dx      dy     rot    zoom");
+      snprintf(messagebuf, sizeof(messagebuf), "     dx      dy     rot    zoom");
       ymsg++;
       DrawString(dst, vi, xmsg, ymsg, messagebuf);
 
-      sprintf_s(messagebuf, "%7.2f %7.2f %7.3f %7.5f", motionx[nframe], motiony[nframe], motionrot[nframe], motionzoom[nframe]);
+      snprintf(messagebuf, sizeof(messagebuf), "%7.2f %7.2f %7.3f %7.5f", motionx[nframe], motiony[nframe], motionrot[nframe], motionzoom[nframe]);
       ymsg++;
       DrawString(dst, vi, xmsg, ymsg, messagebuf);
     }

@@ -436,7 +436,7 @@ static void FlowInterSimple_Pel1(
   else // general case
   {
     // avoid "uint16*uint16 can't get into int32" overflows
-    typedef std::conditional < sizeof(pixel_t) == 1, int, typename std::conditional < sizeof(pixel_t) == 2, int64_t, float>::type >::type result_t;
+    typedef typename std::conditional < sizeof(pixel_t) == 1, int, typename std::conditional < sizeof(pixel_t) == 2, int64_t, float>::type >::type result_t;
 
     for (int h = 0; h < height; h++)
     {

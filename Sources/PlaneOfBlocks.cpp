@@ -33,7 +33,10 @@
 #include "Padding.h"
 #include "profile.h"
 
-#include <intrin.h>
+#include <emmintrin.h> // SSE2
+#include <pmmintrin.h> // SSE3
+#include <tmmintrin.h> // SSSE3
+#include <smmintrin.h> // SSE4
 
 #include <algorithm>
 #include <cmath>
@@ -249,7 +252,6 @@ PlaneOfBlocks::~PlaneOfBlocks()
 {
   // Nothing
 }
-
 
 
 void PlaneOfBlocks::SearchMVs(

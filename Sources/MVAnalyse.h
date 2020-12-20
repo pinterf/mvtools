@@ -20,9 +20,12 @@
 #ifndef __MV_ANALYSE__
 #define __MV_ANALYSE__
 
+#ifdef _WIN32
 #define NOGDI
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
+#include "windows.h"
+#endif
 
 #include "conc/ObjPool.h"
 #include "DCTFactory.h"
@@ -30,7 +33,6 @@
 #include "MVAnalysisData.h"
 #include "yuy2planes.h"
 
-#include "Windows.h"
 #include "avisynth.h"
 
 #include <memory>

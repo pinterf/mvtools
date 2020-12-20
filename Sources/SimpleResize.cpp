@@ -34,10 +34,12 @@
 
 #include "SimpleResize.h"
 
-#define	NOGDI
-#define	NOMINMAX
-#define	WIN32_LEAN_AND_MEAN
-#include "Windows.h"
+#ifdef _WIN32
+#define NOGDI
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#include "windows.h"
+#endif
 #include	"avisynth.h"
 #include	"malloc.h"
 #include <emmintrin.h>
@@ -112,7 +114,7 @@ SimpleResize::~SimpleResize()
 
 template<int cpuflags>
 static MV_FORCEINLINE __m128i simd_blend_epi8(__m128i const &selector, __m128i const &a, __m128i const &b) {
-  if (cpuflags >= CPUF_SSE4_1) {
+  if constexpr(cpuflags >= CPUF_SSE4_1) {
     return _mm_blendv_epi8(b, a, selector);
   }
   else {
@@ -242,7 +244,7 @@ void SimpleResize::SimpleResizeDo_New(uint8_t *dstp8, int row_size, int height, 
       // top of 2 lines to interpolate
       // load or loadu?
       __m128i src1, src2, result;
-      if (sizeof(src_type) == 1 && sizeof(workY_type) == 2) {
+      if constexpr(sizeof(src_type) == 1 && sizeof(workY_type) == 2) {
         src1 = _mm_loadl_epi64(reinterpret_cast<const __m128i *>((src_type *)srcp1 + x));
         src2 = _mm_loadl_epi64(reinterpret_cast<const __m128i *>((src_type *)srcp2 + x)); // 2nd of 2 lines
         src1 = _mm_unpacklo_epi8(src1, zero); // make words
@@ -254,7 +256,7 @@ void SimpleResize::SimpleResizeDo_New(uint8_t *dstp8, int row_size, int height, 
         src1 = _mm_loadu_si128(reinterpret_cast<const __m128i *>((src_type *)srcp1 + x));
         src2 = _mm_loadu_si128(reinterpret_cast<const __m128i *>((src_type *)srcp2 + x)); // 2nd of 2 lines
       }
-      if (sizeof(src_type) == 1 && sizeof(workY_type) == 1) {
+      if constexpr(sizeof(src_type) == 1 && sizeof(workY_type) == 1) {
         __m128i src1_lo = _mm_unpacklo_epi8(src1, zero); // make words
         __m128i src1_hi = _mm_unpackhi_epi8(src1, zero);
         __m128i src2_lo = _mm_unpacklo_epi8(src2, zero);
@@ -317,7 +319,7 @@ void SimpleResize::SimpleResizeDo_New(uint8_t *dstp8, int row_size, int height, 
                                              // (uint32_t)pair2odds = (uint32_t *)((short *)(vWorkYW)[offsodds])  // vWorkYW[offsodds] and vWorkYW[offsodds+1]
       __m128i a_pair3210;
       uint32_t pair0, pair1, pair2, pair3;
-      if (sizeof(workY_type) == 1) { // vWorkYW uchars
+      if constexpr(sizeof(workY_type) == 1) { // vWorkYW uchars
         uint16_t pair0_2x8 = *(uint16_t *)(&vWorkYW[offs0]);      // vWorkYW[offs] and vWorkYW[offs+1]
         uint16_t pair1_2x8 = *(uint16_t *)(&vWorkYW[offs1]);      // vWorkYW[offs] and vWorkYW[offs+1]
         uint16_t pair2_2x8 = *(uint16_t *)(&vWorkYW[offs2]);      // vWorkYW[offs] and vWorkYW[offs+1]
@@ -399,18 +401,18 @@ void SimpleResize::SimpleResizeDo_New(uint8_t *dstp8, int row_size, int height, 
       __m128i rounder = _mm_set1_epi32(0x0080);
       result = _mm_add_epi32(result, rounder);
 
-      if (sizeof(src_type) == 1)
+      if constexpr(sizeof(src_type) == 1)
         result = _mm_srli_epi32(result, 8);
       else
         result = _mm_srai_epi32(result, 8);  // 16 bit: arithmetic shift as in orig asm
       result = _mm_packs_epi32(result, result); // 4xqword ->4xword
-      if (sizeof(src_type) == 1 && sizeof(dst_type) == 1) {
+      if constexpr(sizeof(src_type) == 1 && sizeof(dst_type) == 1) {
         // 8 bit version
         result = _mm_packus_epi16(result, result); // 4xword ->4xbyte
         uint32_t final4x8bitpixels = _mm_cvtsi128_si32(result);
         *(uint32_t *)(&dstp[x]) = final4x8bitpixels;
       }
-      else if (sizeof(src_type) == 1 && sizeof(dst_type) == 2) {
+      else if constexpr(sizeof(src_type) == 1 && sizeof(dst_type) == 2) {
         // 8 bit mask to 16 bit clip (MMask)
         // We have 4 words here, but range is 0..255
         // difference from 8bits->8bits: data should be converted to bits_per_pixel uint16_size
@@ -455,7 +457,7 @@ void SimpleResize::SimpleResizeDo_New(uint8_t *dstp8, int row_size, int height, 
       }
       unsigned int wY1 = pc & 0x0000ffff; //low
       unsigned int wY2 = pc >> 16; //high
-      if (sizeof(src_type) == 1 && sizeof(dst_type) == 2) {
+      if constexpr(sizeof(src_type) == 1 && sizeof(dst_type) == 2) {
         // 8 to 16 bits
         int val = ((vWorkYW[offs] * wY1 + vWorkYW[offs + 1] * wY2 + 128) >> 8);
         if (val >= 255)

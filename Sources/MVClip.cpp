@@ -31,7 +31,7 @@ MVClip::MVClip(const PClip &vectors, sad_t _nSCD1, int _nSCD2, IScriptEnvironmen
 	vi.num_frames = (vi.num_frames - group_ofs + group_len - 1) / group_len;
 	vi.MulDivFPS (1, group_len);
 /* Memo: filled up with hack:
-#if !defined(_WIN64)
+#if !defined(MV_64BIT)
 	vi.nchannels = reinterpret_cast <uintptr_t> (&_mad);
 #else
 	uintptr_t p = reinterpret_cast <uintptr_t> (&_mad);
@@ -42,7 +42,7 @@ MVClip::MVClip(const PClip &vectors, sad_t _nSCD1, int _nSCD2, IScriptEnvironmen
    // we fetch the handle on the analyze filter
    // hacked into vi.nchannels and vi.sample_type
 
-#if !defined(_WIN64)
+#if !defined(MV_64BIT)
     MVAnalysisData *pAnalyseFilter = reinterpret_cast<MVAnalysisData *>(vi.nchannels);
 #else
     uintptr_t p = (((uintptr_t)(unsigned int)vi.nchannels ^ 0x80000000) << 32) | (uintptr_t)(unsigned int)vi.sample_type;

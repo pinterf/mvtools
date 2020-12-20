@@ -73,7 +73,7 @@ MRestoreVect::MRestoreVect (::PClip src, int clip_index, IScriptEnvironment *env
 		vi, true, _mad.nBlkX, 0, data_len, "MRestoreVect", env
 	);
 	CHECK_COMPILE_TIME (SizeOfIntPtr, (sizeof (int) <= sizeof (void *)));
-#if !defined(_WIN64)
+#if !defined(MV_64BIT)
 	vi.nchannels = reinterpret_cast <uintptr_t> (&_mad);
 #else
 	// hack!
