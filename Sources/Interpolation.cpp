@@ -108,26 +108,82 @@ static MV_FORCEINLINE __m128i _MM_PACKUS_EPI32(__m128i a, __m128i b)
 template<typename pixel_t>
 void RB2F_C(
   pixel_t *pDst, const pixel_t *pSrc, int nDstPitch, int nSrcPitch,
-  int nWidth, int nHeight, int y_beg, int y_end)
+  int nWidth, int nHeight)
 {
-  assert(y_beg >= 0);
-  assert(y_end <= nHeight);
+  // pitches still in bytes
+  nDstPitch /= sizeof(pixel_t);
+  nSrcPitch /= sizeof(pixel_t);
 
-  int				y = 0;
-  RB2_jump(y_beg, y, pDst, pSrc, nDstPitch, nSrcPitch);
-  for (; y < y_end; ++y)
+  for (int y = 0; y < nHeight; ++y)
   {
     for (int x = 0; x < nWidth; x++)
     {
       if constexpr(sizeof(pixel_t) <= 2)
         pDst[x] = (pSrc[x * 2] + pSrc[x * 2 + 1]
-          + pSrc[x * 2 + nSrcPitch / sizeof(pixel_t)] + pSrc[x * 2 + nSrcPitch / sizeof(pixel_t) + 1] + 2) / 4; // int
+          + pSrc[x * 2 + nSrcPitch] + pSrc[x * 2 + nSrcPitch + 1] + 2) / 4; // int
       else
         pDst[x] = (pSrc[x * 2] + pSrc[x * 2 + 1]
-          + pSrc[x * 2 + nSrcPitch / sizeof(pixel_t)] + pSrc[x * 2 + nSrcPitch / sizeof(pixel_t) + 1]) * (1.0f / 4.0f); // float
+          + pSrc[x * 2 + nSrcPitch] + pSrc[x * 2 + nSrcPitch + 1]) * (1.0f / 4.0f); // float
     }
-    pDst += nDstPitch / sizeof(pixel_t);
-    pSrc += nSrcPitch / sizeof(pixel_t) * 2;
+    pDst += nDstPitch;
+    pSrc += nSrcPitch * 2;
+  }
+}
+
+template<typename pixel_t, bool hasSSE41>
+void RB2F_sse2(
+  pixel_t* pDst, const pixel_t* pSrc, int nDstPitch, int nSrcPitch,
+  int nWidth, int nHeight)
+{
+  // pitch is byte-level here
+  nDstPitch /= sizeof(pixel_t);
+  nSrcPitch /= sizeof(pixel_t);
+
+  constexpr int pixels_at_a_time = 8 / sizeof(pixel_t);
+  int nWidthMMX = (nWidth / pixels_at_a_time) * pixels_at_a_time;
+
+  __m128i everySecondMask;
+  if constexpr (sizeof(pixel_t) == 1)
+    everySecondMask = _mm_set1_epi16(0x00FF);
+  else
+    everySecondMask = _mm_set1_epi32(0x0000FFFF);
+
+  for (int y = 0; y < nHeight; ++y)
+  {
+    for (int x = 0; x < nWidthMMX; x += pixels_at_a_time)
+    {
+      __m128i m2 = _mm_loadu_si128((const __m128i*) & pSrc[x * 2]);
+      __m128i m3 = _mm_loadu_si128((const __m128i*) & pSrc[x * 2 + 1]);
+      __m128i m4 = _mm_loadu_si128((const __m128i*) & pSrc[x * 2 + nSrcPitch]);
+      __m128i m5 = _mm_loadu_si128((const __m128i*) & pSrc[x * 2 + nSrcPitch + 1]);
+      m2 = _mm_and_si128(m2, everySecondMask);
+      m3 = _mm_and_si128(m3, everySecondMask);
+      m4 = _mm_and_si128(m4, everySecondMask);
+      m5 = _mm_and_si128(m5, everySecondMask);
+      __m128i res;
+      if constexpr (sizeof(pixel_t) == 1) {
+        auto sum = _mm_add_epi16(_mm_add_epi16(m2, m3), _mm_add_epi16(m4, m5));
+        sum = _mm_add_epi16(sum, _mm_set1_epi16(2));
+        res = _mm_srli_epi16(sum, 2);
+        res = _mm_packus_epi16(res, res);
+      }
+      else {
+        auto sum = _mm_add_epi32(_mm_add_epi32(m2, m3), _mm_add_epi32(m4, m5));
+        sum = _mm_add_epi32(sum, _mm_set1_epi32(2));
+        res = _mm_srli_epi32(sum, 2);
+        if constexpr (hasSSE41)
+          res = _mm_packus_epi32(res, res);
+        else
+          m2 = _MM_PACKUS_EPI32(res, res);
+      }
+      _mm_storel_epi64((__m128i*) & pDst[x], res);
+    }
+    for (int x = nWidthMMX; x < nWidth; x++)
+    {
+      pDst[x] = (pSrc[x * 2] + pSrc[x * 2 + 1] + pSrc[x * 2 + nSrcPitch] + pSrc[x * 2 + nSrcPitch + 1] + 2) >> 2;
+    }
+    pDst += nDstPitch;
+    pSrc += nSrcPitch * 2;
   }
 }
 
@@ -144,17 +200,19 @@ void RB2F(
   const pixel_t *pSrc = reinterpret_cast<const pixel_t *>(pSrc8);
 
   bool isse2 = !!(cpuFlags & CPUF_SSE2);
+  bool isse4 = !!(cpuFlags & CPUF_SSE4_1);
 
-  if (isse2 && (sizeof(pixel_t) == 1))
-  {
-    int y = 0;
-
-    RB2_jump(y_beg, y, pDst, pSrc, nDstPitch, nSrcPitch);
-    RB2F_iSSE((uint8_t *)pDst, (uint8_t *)pSrc, nDstPitch, nSrcPitch, nWidth, y_end - y_beg);
-  }
-  else
-  {
-    RB2F_C<pixel_t>(pDst, pSrc, nDstPitch, nSrcPitch, nWidth, nHeight, y_beg, y_end);
+  int y = 0;
+  RB2_jump(y_beg, y, pDst, pSrc, nDstPitch, nSrcPitch);
+  if constexpr(sizeof(pixel_t) == 4)
+    RB2F_C<pixel_t>(pDst, pSrc, nDstPitch, nSrcPitch, nWidth, y_end - y_beg);
+  else {
+    if (isse4 && sizeof(pixel_t) == 2)
+      RB2F_sse2<pixel_t, true>(pDst, pSrc, nDstPitch, nSrcPitch, nWidth, y_end - y_beg);
+    else if (isse2)
+      RB2F_sse2<pixel_t, false>(pDst, pSrc, nDstPitch, nSrcPitch, nWidth, y_end - y_beg);
+    else
+      RB2F_C<pixel_t>(pDst, pSrc, nDstPitch, nSrcPitch, nWidth, y_end - y_beg);
   }
 }
 
@@ -685,6 +743,43 @@ static void RB2BilinearFilteredHorizontalInplaceLine_sse2(pixel_t *pSrc, int nWi
   }
 }
 
+template<typename pixel_t, bool hasSSE41>
+static void RB2FilteredVerticalLine_sse2(pixel_t* pDst, const pixel_t* pSrc, int nSrcPitch, int nWidthMMX) {
+  // srcPitch is pixel_t level
+  for (int x = 0; x < nWidthMMX; x += 8 / sizeof(pixel_t)) {
+    // pDst[x] = (pSrc[x - nSrcPitch / sizeof(pixel_t)] + pSrc[x] * 2 + pSrc[x + nSrcPitch / sizeof(pixel_t)] + 2) / 4;
+    auto zero = _mm_setzero_si128();
+    __m128i m0;
+
+    if constexpr (sizeof(pixel_t) == 1) {
+      m0 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*) & pSrc[x - nSrcPitch]), zero);
+      auto m1 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*) & pSrc[x]), zero);
+      auto m2 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*) & pSrc[x + nSrcPitch]), zero);
+      m0 = _mm_add_epi16(m0, m2);
+      m0 = _mm_add_epi16(m0, _mm_slli_epi16(m1, 1));
+      m0 = _mm_add_epi16(m0, _mm_set1_epi16(2));
+      m0 = _mm_srli_epi16(m0, 2);
+      m0 = _mm_packus_epi16(m0, m0);
+    }
+    else {
+      m0 = _mm_unpacklo_epi16(_mm_loadl_epi64((const __m128i*) & pSrc[x - nSrcPitch]), zero);
+      auto m1 = _mm_unpacklo_epi16(_mm_loadl_epi64((const __m128i*) & pSrc[x]), zero);
+      auto m2 = _mm_unpacklo_epi16(_mm_loadl_epi64((const __m128i*) & pSrc[x + nSrcPitch]), zero);
+      m0 = _mm_add_epi32(m0, m2);
+      m0 = _mm_add_epi32(m0, _mm_slli_epi32(m1, 1));
+      m0 = _mm_add_epi32(m0, _mm_set1_epi32(2));
+      m0 = _mm_srli_epi32(m0, 2);
+
+      if constexpr (hasSSE41)
+        m0 = _mm_packus_epi32(m0, m0);
+      else
+        m0 = _MM_PACKUS_EPI32(m0, m0);
+    }
+    _mm_storel_epi64((__m128i*) & pDst[x], m0);
+  }
+}
+
+
 //8-32 bits
 // Filtered with 1/4, 1/2, 1/4 filter for smoothing and anti-aliasing - Fizick
 // nHeight is dst height which is reduced by 2 source height
@@ -695,20 +790,22 @@ void RB2FilteredVertical(
 {
 
   bool isse2 = !!(cpuFlags & CPUF_SSE2);
+  bool isse4 = !!(cpuFlags & CPUF_SSE4_1);
 
   pixel_t *pDst = reinterpret_cast<pixel_t *>(pDst8);
   const pixel_t *pSrc = reinterpret_cast<const pixel_t *>(pSrc8);
 
-  int				nWidthMMX = (nWidth / 4) * 4;
-  const int		y_loop_b = std::max(y_beg, 1);
-  int				y = 0;
+  const int pixels_at_a_time = 8 / sizeof(pixel_t);
+  int nWidthMMX = (nWidth / pixels_at_a_time) * pixels_at_a_time;
+  const int y_loop_b = std::max(y_beg, 1);
+  int y = 0;
 
   if (y_beg < y_loop_b)
   {
     for (int x = 0; x < nWidth; x++)
     {
       if constexpr(sizeof(pixel_t) <= 2)
-        pDst[x] = (pSrc[x] + pSrc[x + nSrcPitch / sizeof(pixel_t)] + 1) / 2;
+        pDst[x] = (pSrc[x] + pSrc[x + nSrcPitch / sizeof(pixel_t)] + 1) >> 1;
       else
         pDst[x] = (pSrc[x] + pSrc[x + nSrcPitch / sizeof(pixel_t)]) * 0.5f;
     }
@@ -716,88 +813,181 @@ void RB2FilteredVertical(
 
   RB2_jump(y_loop_b, y, pDst, pSrc, nDstPitch, nSrcPitch);
 
-  if ((sizeof(pixel_t) == 1) && isse2 && nWidthMMX >= 4)
+  nSrcPitch /= sizeof(pixel_t);
+  nDstPitch /= sizeof(pixel_t);
+
+  if constexpr (sizeof(pixel_t) == 4) {
+    for (; y < y_end; ++y)
+    {
+      for (int x = 0; x < nWidth; x++)
+      {
+        if constexpr (sizeof(pixel_t) <= 2)
+          pDst[x] = (pSrc[x - nSrcPitch] + pSrc[x] * 2 + pSrc[x + nSrcPitch] + 2) >> 2;
+        else
+          pDst[x] = (pSrc[x - nSrcPitch] + pSrc[x] * 2 + pSrc[x + nSrcPitch]) * (1.0f / 4.0f);
+      }
+
+      pDst += nDstPitch;
+      pSrc += nSrcPitch * 2;
+    }
+  }
+  else if ((sizeof(pixel_t) == 2) && isse4 && nWidthMMX >= pixels_at_a_time) {
+    for (; y < y_end; ++y)
+    {
+      RB2FilteredVerticalLine_sse2<pixel_t, true>(pDst, pSrc, nSrcPitch, nWidthMMX);
+      for (int x = nWidthMMX; x < nWidth; x++)
+      {
+        pDst[x] = (pSrc[x - nSrcPitch] + pSrc[x] * 2 + pSrc[x + nSrcPitch] + 2) >> 2;
+      }
+
+      pDst += nDstPitch;
+      pSrc += nSrcPitch * 2;
+    }
+  }
+  else if (isse2 && nWidthMMX >= pixels_at_a_time)
   {
     for (; y < y_end; ++y)
     {
-      RB2FilteredVerticalLine_SSE((uint8_t *)pDst, (uint8_t *)pSrc, nSrcPitch, nWidthMMX);
-#ifndef _M_X64
-      _mm_empty();
-#endif
-
+      RB2FilteredVerticalLine_sse2<pixel_t, false>(pDst, pSrc, nSrcPitch, nWidthMMX);
       for (int x = nWidthMMX; x < nWidth; x++)
       {
-        pDst[x] = (pSrc[x - nSrcPitch / sizeof(pixel_t)] + pSrc[x] * 2 + pSrc[x + nSrcPitch / sizeof(pixel_t)] + 2) / 4;
+        pDst[x] = (pSrc[x - nSrcPitch] + pSrc[x] * 2 + pSrc[x + nSrcPitch] + 2) >> 2;
       }
 
-      pDst += nDstPitch / sizeof(pixel_t);
-      pSrc += nSrcPitch / sizeof(pixel_t) * 2;
+      pDst += nDstPitch;
+      pSrc += nSrcPitch * 2;
     }
   }
   else
   {
+    // pure C 
     for (; y < y_end; ++y)
     {
       for (int x = 0; x < nWidth; x++)
       {
         if constexpr(sizeof(pixel_t) <= 2)
-          pDst[x] = (pSrc[x - nSrcPitch / sizeof(pixel_t)] + pSrc[x] * 2 + pSrc[x + nSrcPitch / sizeof(pixel_t)] + 2) / 4;
+          pDst[x] = (pSrc[x - nSrcPitch] + pSrc[x] * 2 + pSrc[x + nSrcPitch] + 2) >> 2;
         else
-          pDst[x] = (pSrc[x - nSrcPitch / sizeof(pixel_t)] + pSrc[x] * 2 + pSrc[x + nSrcPitch / sizeof(pixel_t)]) * (1.0f / 4.0f);
+          pDst[x] = (pSrc[x - nSrcPitch] + pSrc[x] * 2 + pSrc[x + nSrcPitch]) * (1.0f / 4.0f);
       }
 
-      pDst += nDstPitch / sizeof(pixel_t);
-      pSrc += nSrcPitch / sizeof(pixel_t) * 2;
+      pDst += nDstPitch;
+      pSrc += nSrcPitch * 2;
     }
   }
 }
+
+template<typename pixel_t, bool hasSSE41>
+static void RB2FilteredHorizontalInplaceLine_sse2(pixel_t* pSrc, int nWidthMMX) {
+  __m128i everySecondMask;
+  if constexpr (sizeof(pixel_t) == 1)
+    everySecondMask = _mm_set1_epi16(0x00FF);
+  else
+    everySecondMask = _mm_set1_epi32(0x0000FFFF);
+
+  for (int x = 1; x < nWidthMMX; x += 8 / sizeof(pixel_t)) {
+    // pSrc[x] = (pSrc[x * 2 - 1] + pSrc[x * 2] * 2 + pSrc[x * 2 + 1] + 2) >> 2;
+    __m128i m0 = _mm_loadu_si128((const __m128i*) & pSrc[x * 2 - 1]);
+    __m128i m1 = _mm_loadu_si128((const __m128i*) & pSrc[x * 2]);
+    __m128i m2 = _mm_loadu_si128((const __m128i*) & pSrc[x * 2 + 1]);
+
+    m0 = _mm_and_si128(m0, everySecondMask);
+    m1 = _mm_and_si128(m1, everySecondMask);
+    m2 = _mm_and_si128(m2, everySecondMask);
+
+    if constexpr (sizeof(pixel_t) == 1) {
+      m0 = _mm_add_epi16(m0, m2);
+      m1 = _mm_slli_epi16(m1, 1);
+      m0 = _mm_add_epi16(m0, m1);
+
+      m0 = _mm_add_epi16(m0, _mm_set1_epi16(2));
+      m0 = _mm_srli_epi16(m0, 2);
+
+      m0 = _mm_packus_epi16(m0, m0);
+    }
+    else {
+      m0 = _mm_add_epi32(m0, m2);
+      m1 = _mm_slli_epi32(m1, 1);
+      m0 = _mm_add_epi32(m0, m1);
+
+      m0 = _mm_add_epi32(m0, _mm_set1_epi32(2));
+      m0 = _mm_srli_epi32(m0, 2);
+      if constexpr (hasSSE41)
+        m0 = _mm_packus_epi32(m0, m0);
+      else
+        m0 = _MM_PACKUS_EPI32(m0, m0);
+    }
+    _mm_storel_epi64((__m128i*) & pSrc[x], m0);
+  }
+}
+
 
 //8-32bits
 // Filtered with 1/4, 1/2, 1/4 filter for smoothing and anti-aliasing - Fizick
 // nWidth is dst height which is reduced by 2 source width
 template<typename pixel_t>
 void RB2FilteredHorizontalInplace(
-  unsigned char *pSrc8, int nSrcPitch,
+  unsigned char* pSrc8, int nSrcPitch,
   int nWidth, int nHeight, int y_beg, int y_end, int cpuFlags)
 {
 
-  bool isse2 = !!(cpuFlags & CPUF_SSE2);
+  // 8 pixels at 8 bit, 4 pixels at 16 bit
+  const int pixels_per_cycle = 8 / sizeof(pixel_t);
+  int nWidthMMX = 1 + ((nWidth - 2) / pixels_per_cycle) * pixels_per_cycle;
+  int y = 0;
 
-  int				nWidthMMX = 1 + ((nWidth - 2) / 4) * 4;
-  int				y = 0;
-
-  pixel_t *pSrc = reinterpret_cast<pixel_t *>(pSrc8);
+  pixel_t* pSrc = reinterpret_cast<pixel_t*>(pSrc8);
 
   RB2_jump_1(y_beg, y, pSrc, nSrcPitch);
 
+  bool isse2 = !!(cpuFlags & CPUF_SSE2) && nWidthMMX > 1 + pixels_per_cycle;
+  bool isse4 = !!(cpuFlags & CPUF_SSE4_1) && nWidthMMX > 1 + pixels_per_cycle;
   for (; y < y_end; ++y)
   {
     const int x = 0;
     pixel_t pSrc0;
-    if constexpr(sizeof(pixel_t) <= 2)
-      pSrc0 = (pSrc[x * 2] + pSrc[x * 2 + 1] + 1) / 2;
+    if constexpr (sizeof(pixel_t) <= 2)
+      pSrc0 = (pSrc[x * 2] + pSrc[x * 2 + 1] + 1) >> 1;
     else
       pSrc0 = (pSrc[x * 2] + pSrc[x * 2 + 1]) * 0.5f;
 
-    if (sizeof(pixel_t) == 1 && isse2)
-    {
-      RB2FilteredHorizontalInplaceLine_SSE((uint8_t *)pSrc, nWidthMMX); // very first is skipped
-#ifndef _M_X64
-      _mm_empty();
-#endif
-      for (int x = nWidthMMX; x < nWidth; x++)
-      {
-        pSrc[x] = (pSrc[x * 2 - 1] + pSrc[x * 2] * 2 + pSrc[x * 2 + 1] + 2) / 4;
-      }
-    }
-    else
-    {
+    if constexpr (sizeof(pixel_t) == 4) {
+      // float, pure C
       for (int x = 1; x < nWidth; x++)
       {
-        if constexpr(sizeof(pixel_t) <= 2)
-          pSrc[x] = (pSrc[x * 2 - 1] + pSrc[x * 2] * 2 + pSrc[x * 2 + 1] + 2) / 4;
+        if constexpr (sizeof(pixel_t) <= 2)
+          pSrc[x] = (pSrc[x * 2 - 1] + pSrc[x * 2] * 2 + pSrc[x * 2 + 1] + 2) >> 2;
         else
           pSrc[x] = (pSrc[x * 2 - 1] + pSrc[x * 2] * 2 + pSrc[x * 2 + 1]) * (1.0f / 4.0f);
+      }
+    }
+    else {
+      if (sizeof(pixel_t) == 2 && isse4)
+      {
+        RB2FilteredHorizontalInplaceLine_sse2<uint16_t, true>((uint16_t*)pSrc, nWidthMMX); // very first is skipped
+        for (int x = nWidthMMX; x < nWidth; x++)
+        {
+          pSrc[x] = (pSrc[x * 2 - 1] + pSrc[x * 2] * 2 + pSrc[x * 2 + 1] + 2) >> 2;
+        }
+      }
+      else if (sizeof(pixel_t) == 1 && isse2)
+      {
+        RB2FilteredHorizontalInplaceLine_sse2<uint8_t, false>((uint8_t *)pSrc, nWidthMMX); // very first is skipped
+        for (int x = nWidthMMX; x < nWidth; x++)
+        {
+          pSrc[x] = (pSrc[x * 2 - 1] + pSrc[x * 2] * 2 + pSrc[x * 2 + 1] + 2) >> 2;
+        }
+      }
+      else
+      {
+        // pure C
+        for (int x = 1; x < nWidth; x++)
+        {
+          if constexpr (sizeof(pixel_t) <= 2)
+            pSrc[x] = (pSrc[x * 2 - 1] + pSrc[x * 2] * 2 + pSrc[x * 2 + 1] + 2) >> 2;
+          else
+            pSrc[x] = (pSrc[x * 2 - 1] + pSrc[x * 2] * 2 + pSrc[x * 2 + 1]) * (1.0f / 4.0f);
+        }
       }
     }
     pSrc[0] = pSrc0;
@@ -832,12 +1022,8 @@ void RB2BilinearFilteredVertical(
   bool isse2 = (cpuFlags & CPUF_SSE2) != 0;
   bool isse41 = (cpuFlags & CPUF_SSE4_1) != 0;
 
-#ifdef OLD_MMX
-  const int pixels_per_cycle = 4;
-#else
   // 8 pixels at 8 bit, 4 pixels at 16 bit
   const int pixels_per_cycle = 8 / sizeof(pixel_t);
-#endif
 
   int nWidthMMX = (nWidth / pixels_per_cycle) * pixels_per_cycle;
 
@@ -865,12 +1051,6 @@ void RB2BilinearFilteredVertical(
   {
     int startx = 0;
     if (sizeof(pixel_t) <= 2 && isse2 && nWidthMMX >= pixels_per_cycle) {
-#ifdef OLD_MMX
-      RB2BilinearFilteredVerticalLine_SSE((uint8_t *)pDst, (uint8_t *)pSrc, nSrcPitch, nWidthMMX);
-#ifndef _M_X64
-      _mm_empty();
-#endif
-#else
       if constexpr(sizeof(pixel_t) == 1)
         RB2BilinearFilteredVerticalLine_sse2<uint8_t, false>((uint8_t *)pDst, (uint8_t *)pSrc, nSrcPitch, nWidthMMX);
       else  {
@@ -879,7 +1059,6 @@ void RB2BilinearFilteredVertical(
         else
           RB2BilinearFilteredVerticalLine_sse2<uint16_t, false>((uint8_t *)pDst, (uint8_t *)pSrc, nSrcPitch, nWidthMMX);
       }
-#endif
       startx = nWidthMMX;
     }
 
@@ -928,12 +1107,8 @@ void RB2BilinearFilteredHorizontalInplace(
   bool isse2 = (cpuFlags & CPUF_SSE2) != 0;
   bool isse41 = (cpuFlags & CPUF_SSE4_1) != 0;
 
-#ifdef OLD_MMX
-  const int pixels_per_cycle = 4;
-#else
   // 8 pixels at 8 bit, 4 pixels at 16 bit
   const int pixels_per_cycle = 8 / sizeof(pixel_t);
-#endif
   int nWidthMMX = 1 + ((nWidth - 2) / pixels_per_cycle) * pixels_per_cycle;
 
   int y = 0;
@@ -957,12 +1132,6 @@ void RB2BilinearFilteredHorizontalInplace(
       if constexpr(sizeof(pixel_t) <= 2)
       {
         if constexpr (sizeof(pixel_t) == 1) {
-#ifdef OLD_MMX
-          RB2BilinearFilteredHorizontalInplaceLine_SSE((uint8_t*)pSrc, nWidthMMX); // very first is skipped
-#ifndef _M_X64
-          _mm_empty();
-#endif
-#else
           RB2BilinearFilteredHorizontalInplaceLine_sse2<uint8_t, false>(pSrc, nWidthMMX); // very first is skipped
         }
         else {
@@ -971,7 +1140,6 @@ void RB2BilinearFilteredHorizontalInplace(
           else
             RB2BilinearFilteredHorizontalInplaceLine_sse2<uint16_t, false>(pSrc, nWidthMMX);
         }
-#endif
         xstart = nWidthMMX;
       }
     }
@@ -989,7 +1157,7 @@ void RB2BilinearFilteredHorizontalInplace(
     for (int x = std::max(nWidth - 1, 1); x < nWidth; x++)
     {
       if constexpr(sizeof(pixel_t) <= 2)
-        pSrc[x] = (pSrc[x * 2] + pSrc[x * 2 + 1] + 1) / 2;
+        pSrc[x] = (pSrc[x * 2] + pSrc[x * 2 + 1] + 1) >> 1;
       else
         pSrc[x] = (pSrc[x * 2] + pSrc[x * 2 + 1]) * 0.5f;
     }
@@ -1022,12 +1190,8 @@ void RB2QuadraticVertical(
   bool isse2 = (cpuFlags & CPUF_SSE2) != 0;
   bool isse41 = (cpuFlags & CPUF_SSE4_1) != 0;
 
-#ifdef OLD_MMX
-  const int pixels_per_cycle = 4;
-#else
   // 8 pixels at 8 bit, 4 pixels at 16 bit
   const int pixels_per_cycle = 8 / sizeof(pixel_t);
-#endif
 
   int nWidthMMX = (nWidth / pixels_per_cycle) * pixels_per_cycle;
 
@@ -1055,12 +1219,6 @@ void RB2QuadraticVertical(
   {
     int xstart = 0;
     if (sizeof(pixel_t) <= 2 && isse2 && nWidthMMX >= pixels_per_cycle) {
-#ifdef OLD_MMX
-      RB2QuadraticVerticalLine_SSE((uint8_t *)pDst, (uint8_t *)pSrc, nSrcPitch, nWidthMMX);
-#ifndef _M_X64
-      _mm_empty();
-#endif
-#else
       if constexpr(sizeof(pixel_t) == 1)
         RB2QuadraticVerticalLine_sse2<uint8_t, false>((uint8_t *)pDst, (uint8_t *)pSrc, nSrcPitch, nWidthMMX);
       else  {
@@ -1069,7 +1227,6 @@ void RB2QuadraticVertical(
         else
           RB2QuadraticVerticalLine_sse2<uint16_t, false>((uint8_t *)pDst, (uint8_t *)pSrc, nSrcPitch, nWidthMMX);
       }
-#endif
       xstart = nWidthMMX;
     }
 
@@ -1122,12 +1279,8 @@ void RB2QuadraticHorizontalInplace(
   bool isse2 = (cpuFlags & CPUF_SSE2) != 0;
   bool isse41 = (cpuFlags & CPUF_SSE4_1) != 0;
 
-#ifdef OLD_MMX
-  const int pixels_per_cycle = 4;
-#else
   // 8 pixels at 8 bit, 4 pixels at 16 bit
   const int pixels_per_cycle = 8 / sizeof(pixel_t);
-#endif
   int nWidthMMX = 1 + ((nWidth - 2) / pixels_per_cycle) * pixels_per_cycle;
 
   int y = 0;
@@ -1150,12 +1303,6 @@ void RB2QuadraticHorizontalInplace(
     if (isse2) {
       if constexpr(sizeof(pixel_t) <= 2)
       {
-#ifdef OLD_MMX
-        RB2QuadraticHorizontalInplaceLine_SSE((uint8_t*)pSrc, nWidthMMX);
-#ifndef _M_X64
-        _mm_empty();
-#endif
-#else
         if constexpr (sizeof(pixel_t) == 1)
           RB2QuadraticHorizontalInplaceLine_sse2<uint8_t, false>(pSrc, nWidthMMX);
         else {
@@ -1164,8 +1311,6 @@ void RB2QuadraticHorizontalInplace(
           else
             RB2QuadraticHorizontalInplaceLine_sse2<uint16_t, false>(pSrc, nWidthMMX);
         }
-
-#endif
         xstart = nWidthMMX;
       }
     }
@@ -1219,12 +1364,8 @@ void RB2CubicVertical(
   bool isse2 = (cpuFlags & CPUF_SSE2) != 0;
   bool isse41 = (cpuFlags & CPUF_SSE4_1) != 0;
 
-#ifdef OLD_MMX
-  const int pixels_per_cycle = 4;
-#else
   // 8 pixels at 8 bit, 4 pixels at 16 bit
   const int pixels_per_cycle = 8 / sizeof(pixel_t);
-#endif
 
   int nWidthMMX = (nWidth / pixels_per_cycle) * pixels_per_cycle;
   const int y_loop_b = std::max(y_beg, 1);
@@ -1253,12 +1394,6 @@ void RB2CubicVertical(
 
     if constexpr(sizeof(pixel_t) <= 2) {
       if (isse2 && nWidthMMX >= pixels_per_cycle) {
-#ifdef OLD_MMX
-        RB2CubicVerticalLine_SSE((uint8_t *)pDst, (uint8_t *)pSrc, nSrcPitch, nWidthMMX);
-#ifndef _M_X64
-        _mm_empty();
-#endif
-#else
         if constexpr(sizeof(pixel_t) == 1)
           RB2CubicVerticalLine_sse2<uint8_t, false>((uint8_t *)pDst, (uint8_t *)pSrc, nSrcPitch, nWidthMMX);
         else  {
@@ -1267,7 +1402,6 @@ void RB2CubicVertical(
           else
             RB2CubicVerticalLine_sse2<uint16_t, true>((uint8_t *)pDst, (uint8_t *)pSrc, nSrcPitch, nWidthMMX); // 16 bit sse41
         }
-#endif
         xstart = nWidthMMX;
       }
     }
@@ -1321,12 +1455,8 @@ void RB2CubicHorizontalInplace(
   bool isse2 = (cpuFlags & CPUF_SSE2) != 0;
   bool isse41 = (cpuFlags & CPUF_SSE4_1) != 0;
 
-#ifdef OLD_MMX
-  const int pixels_per_cycle = 4;
-#else
   // 8 pixels at 8 bit, 4 pixels at 16 bit
   const int pixels_per_cycle = 8 / sizeof(pixel_t); 
-#endif
   // Read pixels safely from:
   // 16 bit sse2: [(nWidthMMX - 1) * 2 + 3 + (8 - 1)]th position
   // 8 bit sse2: [(nWidthMMX - 1) * 2 + 3 + (15 - 1)]th position
@@ -1370,14 +1500,7 @@ void RB2CubicHorizontalInplace(
       {
         if constexpr(sizeof(pixel_t) == 1)
         {
-#ifdef OLD_MMX
-          RB2CubicHorizontalInplaceLine_SSE((uint8_t *)pSrc, nWidthMMX);
-#ifndef _M_X64
-          _mm_empty();
-#endif
-#else
           RB2CubicHorizontalInplaceLine_sse2<uint8_t, false>((uint8_t *)pSrc, nWidthMMX);
-#endif
         }
         else  {
           if (isse41)
@@ -1413,14 +1536,6 @@ void RB2CubicHorizontalInplace(
     pSrc += nSrcPitch / sizeof(pixel_t);
   }
 
-#ifdef OLD_MMX
-  if (isse2)
-  {
-#ifndef _M_X64
-    _mm_empty();
-#endif
-  }
-#endif
 }
 
 // 8-32bits

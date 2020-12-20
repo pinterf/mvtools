@@ -71,20 +71,20 @@ void RB2Cubic(           unsigned char *pDst, const unsigned char *pSrc, int nDs
 /* dubhater's comment from mvtools-vs: TODO: port these
 done [pinterf] extern "C" void  VerticalBicubic_iSSE(uint8_t *pDst, const uint8_t *pSrc, intptr_t nDstPitch, intptr_t nWidth, intptr_t nHeight);
 done [pinterf] extern "C" void  HorizontalBicubic_iSSE(uint8_t *pDst, const uint8_t *pSrc, intptr_t nDstPitch, intptr_t nWidth, intptr_t nHeight);
-extern "C" void  RB2F_iSSE(uint8_t *pDst, const uint8_t *pSrc, intptr_t nDstPitch, intptr_t nSrcPitch, intptr_t nWidth, intptr_t nHeight);
-extern "C" void  RB2FilteredVerticalLine_SSE(uint8_t *pDst, const uint8_t *pSrc, intptr_t nSrcPitch, intptr_t nWidthMMX);
-extern "C" void  RB2FilteredHorizontalInplaceLine_SSE(uint8_t *pSrc, intptr_t nWidthMMX);
+done [pinterf] extern "C" void  RB2F_iSSE(uint8_t *pDst, const uint8_t *pSrc, intptr_t nDstPitch, intptr_t nSrcPitch, intptr_t nWidth, intptr_t nHeight);
+done [pinterf] extern "C" void  RB2FilteredVerticalLine_SSE(uint8_t *pDst, const uint8_t *pSrc, intptr_t nSrcPitch, intptr_t nWidthMMX);
+done [pinterf] extern "C" void  RB2FilteredHorizontalInplaceLine_SSE(uint8_t *pSrc, intptr_t nWidthMMX);
 */
 
-extern "C" void __cdecl RB2F_iSSE(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight);
+//extern "C" void __cdecl RB2F_iSSE(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight);
+//extern "C" void __cdecl RB2FilteredVerticalLine_SSE(unsigned char *pDst, const unsigned char *pSrc, int nSrcPitch, int nWidthMMX);
+//extern "C" void __cdecl RB2FilteredHorizontalInplaceLine_SSE(unsigned char *pSrc, int nWidthMMX);
 
 //commented out: sse2 8 bit conversion backported from mvtools-vs
 //extern "C" void __cdecl RB2CubicHorizontalInplaceLine_SSE(unsigned char *pSrc, int nWidthMMX);
 //extern "C" void __cdecl RB2CubicVerticalLine_SSE(unsigned char *pDst, const unsigned char *pSrc, int nSrcPitch, int nWidthMMX);
 //extern "C" void __cdecl RB2QuadraticHorizontalInplaceLine_SSE(unsigned char *pSrc, int nWidthMMX);
 //extern "C" void __cdecl RB2QuadraticVerticalLine_SSE(unsigned char *pDst, const unsigned char *pSrc, int nSrcPitch, int nWidthMMX);
-extern "C" void __cdecl RB2FilteredVerticalLine_SSE(unsigned char *pDst, const unsigned char *pSrc, int nSrcPitch, int nWidthMMX);
-extern "C" void __cdecl RB2FilteredHorizontalInplaceLine_SSE(unsigned char *pSrc, int nWidthMMX);
 //extern "C" void __cdecl RB2BilinearFilteredVerticalLine_SSE(unsigned char *pDst, const unsigned char *pSrc, int nSrcPitch, int nWidthMMX);
 //extern "C" void __cdecl RB2BilinearFilteredHorizontalInplaceLine_SSE(unsigned char *pSrc, int nWidthMMX);
 
