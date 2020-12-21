@@ -56,6 +56,9 @@ struct FFTFunctionPointers {
   fftwf_execute_r2r_proc fftwf_execute_r2r{ nullptr };
   fftwf_init_threads_proc fftwf_init_threads{ nullptr };
   fftwf_plan_with_nthreads_proc fftwf_plan_with_nthreads{ nullptr };
+  fftwf_plan_dft_r2c_2d_proc fftwf_plan_dft_r2c_2d{ nullptr };
+  fftwf_plan_dft_c2r_2d_proc fftwf_plan_dft_c2r_2d{ nullptr };
+
 #ifdef _WIN32
   void fftw3_open() {
     library = LoadLibraryW(L"libfftw3f-3");
@@ -96,6 +99,8 @@ struct FFTFunctionPointers {
       LOAD_FFT_FUNC(fftwf_execute_r2r);
       LOAD_FFT_FUNC_OPT(fftwf_init_threads);
       LOAD_FFT_FUNC_OPT(fftwf_plan_with_nthreads);
+      LOAD_FFT_FUNC_OPT(fftwf_plan_dft_r2c_2d);
+      LOAD_FFT_FUNC_OPT(fftwf_plan_dft_c2r_2d);
     }
   }
 
