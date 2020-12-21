@@ -201,6 +201,8 @@ ENDIF()
 
 #add_subdirectory("MvTools2")
 add_subdirectory("Sources")
+add_subdirectory("DePan")
+add_subdirectory("DePanEstimate")
 
 # uninstall target
 configure_file(
