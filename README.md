@@ -11,7 +11,7 @@ Credits:
 - Manao, Fizick, Tsp, TSchniede, SEt, Vit, Firesledge, cretindesalpes 
 
 Change log
-- 2.7.45 (WIP)
+- 2.7.45 (20201221 WIP)
   - MSuper: rfilter=0 and 1
     8 bit: drop old SSE code, port to SIMD intrinsics. Add SIMD to 16 bit case. Quicker, much quicker.
     (rfilter: Hierarchical levels smoothing and reducing (halving) filter)
@@ -35,7 +35,7 @@ Change log
     - USE_AVSTP (do find search for avstp.dll on Windows)
   - Minor and not so minor cosmetics, mainly for GCC.
   - Add Cmake build system.
-  - Linux/GCC port (needs sse4.1), Dewindowsification.
+  - MvTools2: Linux/GCC port (needs sse4.1), Dewindowsification.
     fftw3: MAnalyze dct modes that require fftw3 library will search for libfftw3f_threads.so.3
     Install either libfftw3-single3 (deb) or fftw-devel (rpm) package");
     e.g. sudo apt-get update
@@ -43,8 +43,10 @@ Change log
   - Not done (will be done in a second phase):
     Add back some external asms. For 8 bit SAD and SATD mainly.
     Linux port is still Intel-only, though every part has C alternative by now.
-    Separate the 3 projects (mvtools2, depan, depan_estimate).
-    Depan and Depan_estimate Linux port
+  - Separate the 3 projects (mvtools2, depan, depan_estimate).
+  - DePan and DePanEstimate: Linux port
+  - DePanEstimate: add fft_threads variable (default 1) for fftw3 mode (experimental)
+  - DepanEstimate: add MT guard around sensible fft3w functions
 
 - 2.7.44 (20201214)
   - MAnalyze: fix motion vector generation inconsistencies across multiple runs.
