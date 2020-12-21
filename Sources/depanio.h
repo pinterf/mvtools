@@ -24,7 +24,9 @@
 #ifndef __DEPANIO_H__
 #define __DEPANIO_H__
 
+#ifdef _WIN32
 #include "windows.h"
+#endif
 #include "stdio.h"
 
 //#define MAX(x,y) ((x) > (y) ? (x) : (y))

@@ -62,7 +62,7 @@ int depan_data_bytes(int framenumbers)
 //****************************************************************************
 // write coded motion data to start of special clip frame buffer
 //
-void write_depan_data(BYTE *dstp, int framefirst, int framelast, float motionx[], float motiony[], float motionzoom[])
+void write_depan_data(uint8_t *dstp, int framefirst, int framelast, float motionx[], float motiony[], float motionzoom[])
 {
   char signaturegood[8] = DEPANSIGNATURE;
   depanheader header;
@@ -99,7 +99,7 @@ void write_depan_data(BYTE *dstp, int framefirst, int framelast, float motionx[]
 //****************************************************************************
 // read coded motion data from start of special data clip frame
 //
-int read_depan_data(const BYTE *data, float motionx[], float motiony[], float motionzoom[], float motionrot[], int neededframe)
+int read_depan_data(const uint8_t *data, float motionx[], float motiony[], float motionzoom[], float motionrot[], int neededframe)
 {
   char signaturegood[8] = DEPANSIGNATURE;
   depanheader header;
@@ -174,7 +174,7 @@ int read_deshakerlog(const char *inputlog, int num_frames, float motionx[], floa
     fgets(line, 40, logfile);
     if ((line[6] == 'A') || (line[6] == 'a') || (line[6] == 'B') || (line[6] == 'b')) {
       i = 0;
-      if (sscanf(line, "%6ld%1x %f %f %f %f", &i, &field, &dx, &dy, &rot, &zoom) >= 5) {      // Interlaced
+      if (sscanf(line, "%6d%1x %f %f %f %f", &i, &field, &dx, &dy, &rot, &zoom) >= 5) {      // Interlaced
         //   decode frame (or field) number
         switch (field) {
         case 10:            // 0xa=10, field A of frame (first in time)
@@ -203,7 +203,7 @@ int read_deshakerlog(const char *inputlog, int num_frames, float motionx[], floa
     }
     else {             // check as progressive
       i = 0;
-      if (sscanf(line, "%7ld %f %f %f %f", &i, &dx, &dy, &rot, &zoom) >= 5) {
+      if (sscanf(line, "%7d %f %f %f %f", &i, &dx, &dy, &rot, &zoom) >= 5) {
         if (i >= num_frames) {
           fclose(logfile);
           return -3;  // Too many frames in log file

@@ -30,7 +30,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include "windows.h"
 #endif
-
+#include <stdint.h>
 #include <type_traits>
 //#include "stdio.h"
 
@@ -61,23 +61,23 @@ void transform2motion (transform, int forward, float xcenter, float ycenter, flo
 void inversetransform(transform ta, transform *tinv);
 
 /*
-void compensate_plane_bicubic (BYTE *dstp,  int dst_pitch, const BYTE * srcp,  int src_pitch,  int src_width, int src_height, transform tr, int mirror, int border, int * work2width1030, int blurmax);
-void compensate_plane_bilinear (BYTE *dstp,  int dst_pitch, const BYTE * srcp,  int src_pitch,  int src_width, int src_height, transform tr, int mirror, int border, int * work2width, int blurmax);
-void compensate_plane_nearest (BYTE *dstp,  int dst_pitch, const BYTE * srcp,  int src_pitch,  int src_width, int src_height, transform tr, int mirror, int border, int * work1width, int blurmax);
+void compensate_plane_bicubic (uint8_t *dstp,  int dst_pitch, const uint8_t * srcp,  int src_pitch,  int src_width, int src_height, transform tr, int mirror, int border, int * work2width1030, int blurmax);
+void compensate_plane_bilinear (uint8_t *dstp,  int dst_pitch, const uint8_t * srcp,  int src_pitch,  int src_width, int src_height, transform tr, int mirror, int border, int * work2width, int blurmax);
+void compensate_plane_nearest (uint8_t *dstp,  int dst_pitch, const uint8_t * srcp,  int src_pitch,  int src_width, int src_height, transform tr, int mirror, int border, int * work1width, int blurmax);
 */
 template <typename pixel_t>
-void compensate_plane_nearest2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, int src_pitch, int src_width, int src_height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel);
+void compensate_plane_nearest2(uint8_t *dstp8, int dst_pitch, const uint8_t * srcp8, int src_pitch, int src_width, int src_height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel);
 
 template <typename pixel_t>
-void compensate_plane_bilinear2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, int src_pitch, int row_size, int height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel);
+void compensate_plane_bilinear2(uint8_t *dstp8, int dst_pitch, const uint8_t * srcp8, int src_pitch, int row_size, int height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel);
 
 template <typename pixel_t>
-void compensate_plane_bicubic2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, int src_pitch, int row_size, int height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel);
+void compensate_plane_bicubic2(uint8_t *dstp8, int dst_pitch, const uint8_t * srcp8, int src_pitch, int row_size, int height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel);
 
-//void compensate_plane_nearest_stacked(BYTE *dstp, int dst_pitch, const BYTE * srcp, int src_pitch, int src_width, int src_height, transform tr, int mirror, int border, int * work1width, int blurmax);
+//void compensate_plane_nearest_stacked(uint8_t *dstp, int dst_pitch, const uint8_t * srcp, int src_pitch, int src_width, int src_height, transform tr, int mirror, int border, int * work1width, int blurmax);
 
-//int read_depan_data(const BYTE *data, float motionx[], float motiony[], float motionzoom[], float motionrot[],int neededframe);
-//void write_depan_data(BYTE *dstp, int framefirst,int framelast, float motionx[], float motiony[], float motionzoom[]);
+//int read_depan_data(const uint8_t *data, float motionx[], float motiony[], float motionzoom[], float motionrot[],int neededframe);
+//void write_depan_data(uint8_t *dstp, int framefirst,int framelast, float motionx[], float motiony[], float motionzoom[]);
 //int depan_data_bytes(int framenumbers);
 //int read_deshakerlog(const char *inputlog, int num_frames, float motionx[], float motiony[], float motionrotd[], float motionzoom[] , int *loginterlaced);
 //void write_deshakerlog(FILE *logfile, int IsFieldBased, int IsTFF, int ndest, float motionx[], float motiony[], float motionzoom[]);

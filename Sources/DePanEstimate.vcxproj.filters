@@ -27,6 +27,9 @@
     <ClInclude Include="fftwlite.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="def.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Doc">

@@ -58,8 +58,8 @@
 #endif
 #include "avisynth.h"
 #include "stdio.h"
-//#include "fftw\fftw3.h"
 #include "fftwlite.h" // v.1.2
+#include <mutex>
 
 //****************************************************************************
 class DePanEstimate_fftw : public GenericVideoFilter {
@@ -68,7 +68,6 @@ class DePanEstimate_fftw : public GenericVideoFilter {
   // This filter extends GenericVideoFilter, which incorporates basic functionality.
   // All functions present in the filter must also be present here.
   bool has_at_least_v8;
-
 // filter parameters
   int range;  // radius of frame series for motion calculation
   float trust_limit;  // scene change threshold, percent of correlation variation
@@ -144,6 +143,10 @@ class DePanEstimate_fftw : public GenericVideoFilter {
 //	int * work2width1030;  // work array for interpolation
   char debugbuf[96]; // buffer for debugview utility
 
+  int fft_threads; // rfu
+  static std::mutex _fftw_mutex;
+  FFTFunctionPointers fftfp;
+  /*
   // added in v.1.2 for delayed loading
   HINSTANCE hinstFFTW3;
   fftwf_malloc_proc fftwf_malloc_addr;
@@ -153,6 +156,7 @@ class DePanEstimate_fftw : public GenericVideoFilter {
   fftwf_destroy_plan_proc fftwf_destroy_plan_addr;
   fftwf_execute_dft_r2c_proc fftwf_execute_dft_r2c_addr;
   fftwf_execute_dft_c2r_proc fftwf_execute_dft_c2r_addr;
+  */
 
 
 
@@ -178,7 +182,11 @@ public:
   // Since the functions are "public" they are accessible to other classes.
   // Otherwise they can only be called from functions within the class itself.
 
-  DePanEstimate_fftw(PClip _child, int _range, float _trust, int _winx, int _winy, int _wleft, int _wtop, int _dxmax, int _dymax, float _zoommax, float _stab, float _pixaspect, int _info, const char * _logfilename, int _debug, int _show, const char * _extlogfilename, IScriptEnvironment* env);
+  DePanEstimate_fftw(PClip _child, int _range, float _trust, int _winx, int _winy, int _wleft, int _wtop,
+    int _dxmax, int _dymax, float _zoommax, float _stab, float _pixaspect,
+    int _info, const char * _logfilename, int _debug, int _show, const char * _extlogfilename,
+    int _fft_threads,
+    IScriptEnvironment* env);
   // This is the constructor. It does not return any value, and is always used,
   //  when an instance of the class is created.
   // Since there is no code in this, this is the definition.

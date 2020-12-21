@@ -84,6 +84,7 @@ AVSValue __cdecl Create_DePanEstimate(AVSValue args, void* user_data, IScriptEnv
     args[14].AsBool(false),	//  parameter - debug.
     args[15].AsBool(false),	//  parameter - show.
     args[16].AsString(""),	//  parameter - extlog.
+    args[17].AsInt(1), // parameter fft_threads 20201221
     env);
 }
 
@@ -104,7 +105,7 @@ AvisynthPluginInit3(IScriptEnvironment* env, const AVS_Linkage* const vectors) {
   // Save the server pointers.
   AVS_linkage = vectors;
 
-  env->AddFunction("DePanEstimate", "c[range]i[trust]f[winx]i[winy]i[wleft]i[wtop]i[dxmax]i[dymax]i[zoommax]f[stab]f[pixaspect]f[info]b[log]s[debug]b[show]b[extlog]s[fftw]b", Create_DePanEstimate, 0);
+  env->AddFunction("DePanEstimate", "c[range]i[trust]f[winx]i[winy]i[wleft]i[wtop]i[dxmax]i[dymax]i[zoommax]f[stab]f[pixaspect]f[info]b[log]s[debug]b[show]b[extlog]s[fftw]b[fft_threads]i", Create_DePanEstimate, 0);
 
   return "`DePanEstimate' DePanEstimate plugin";
 }

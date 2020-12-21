@@ -83,8 +83,8 @@
 #if 0
 // moved, common with mvtools yuy2planes
 //------------------------------------------------------------------
-void YUY2ToPlanes(const BYTE* srcp, int src_height, int src_width, int src_pitch,
-  BYTE * srcplaneY, int planeYpitch, BYTE *srcplaneU, int planeUpitch, BYTE *srcplaneV, int planeVpitch)
+void YUY2ToPlanes(const uint8_t* srcp, int src_height, int src_width, int src_pitch,
+  uint8_t * srcplaneY, int planeYpitch, uint8_t *srcplaneU, int planeUpitch, uint8_t *srcplaneV, int planeVpitch)
 {
   int h, w;
   for (h = 0; h < src_height; h++)
@@ -103,8 +103,8 @@ void YUY2ToPlanes(const BYTE* srcp, int src_height, int src_width, int src_pitch
   }
 }
 //------------------------------------------------------------------
-void PlanesToYUY2(BYTE* dstp, int src_height, int src_width, int dst_pitch,
-  BYTE * srcplaneY, int planeYpitch, BYTE *srcplaneU, int planeUpitch, BYTE *srcplaneV, int planeVpitch)
+void PlanesToYUY2(uint8_t* dstp, int src_height, int src_width, int dst_pitch,
+  uint8_t * srcplaneY, int planeYpitch, uint8_t *srcplaneU, int planeUpitch, uint8_t *srcplaneV, int planeVpitch)
 {
   int h, w;
   for (h = 0; h < src_height; h++)
@@ -169,12 +169,12 @@ class DePan : public GenericVideoFilter {
 
   struct {
   // planes from YUY2 - v1.6
-    BYTE * srcplaneY;
-    BYTE * srcplaneU;
-    BYTE * srcplaneV;
-    BYTE * dstplaneY;
-    BYTE * dstplaneU;
-    BYTE * dstplaneV;
+    uint8_t * srcplaneY;
+    uint8_t * srcplaneU;
+    uint8_t * srcplaneV;
+    uint8_t * dstplaneY;
+    uint8_t * dstplaneU;
+    uint8_t * dstplaneV;
     int planeYpitch;
     int planeUVpitch;
     int planeYwidth, planeUVwidth;
@@ -286,12 +286,12 @@ DePan::DePan(PClip _child, PClip _DePanData, float _offset, int _subpixel, float
     YUY2data.planeUVwidth=vi.width/2;
     YUY2data.planeYpitch = AlignNumber(vi.width, 16);
     YUY2data.planeUVpitch = AlignNumber(vi.width / 2, 16);
-    YUY2data.srcplaneY = (BYTE*) malloc(YUY2data.planeYpitch*vi.height);
-    YUY2data.srcplaneU = (BYTE*) malloc(YUY2data.planeUVpitch*vi.height);
-    YUY2data.srcplaneV = (BYTE*) malloc(YUY2data.planeUVpitch*vi.height);
-    YUY2data.dstplaneY = (BYTE*) malloc(YUY2data.planeYpitch*vi.height);
-    YUY2data.dstplaneU = (BYTE*) malloc(YUY2data.planeUVpitch*vi.height);
-    YUY2data.dstplaneV = (BYTE*) malloc(YUY2data.planeUVpitch*vi.height);
+    YUY2data.srcplaneY = (uint8_t*) malloc(YUY2data.planeYpitch*vi.height);
+    YUY2data.srcplaneU = (uint8_t*) malloc(YUY2data.planeUVpitch*vi.height);
+    YUY2data.srcplaneV = (uint8_t*) malloc(YUY2data.planeUVpitch*vi.height);
+    YUY2data.dstplaneY = (uint8_t*) malloc(YUY2data.planeYpitch*vi.height);
+    YUY2data.dstplaneU = (uint8_t*) malloc(YUY2data.planeUVpitch*vi.height);
+    YUY2data.dstplaneV = (uint8_t*) malloc(YUY2data.planeUVpitch*vi.height);
   }
   
 
@@ -333,9 +333,9 @@ PVideoFrame __stdcall DePan::GetFrame(int ndest, IScriptEnvironment* env) {
   // This is the implementation of the GetFrame function.
   // See the header definition for further info.
   PVideoFrame src, dst, dataframe;
-  BYTE *dstp, *dstpU, *dstpV;
-  const BYTE *datap;
-  const BYTE * srcp;
+  uint8_t *dstp, *dstpU, *dstpV;
+  const uint8_t *datap;
+  const uint8_t * srcp;
   int src_pitch, dst_pitch;
   int dst_pitchUV;
   int motgood;
@@ -635,7 +635,7 @@ PVideoFrame __stdcall DePan::GetFrame(int ndest, IScriptEnvironment* env) {
       src_height = src->GetHeight(plane);
       srcp = src->GetReadPtr(plane);
 
-      BYTE *dstp_current;
+      uint8_t *dstp_current;
       int dst_pitch_current;
 
       switch (plane)

@@ -41,7 +41,7 @@
 */
 
 template <typename pixel_t>
-void compensate_plane_nearest2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, int src_pitch, int row_size, int height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel)
+void compensate_plane_nearest2(uint8_t *dstp8, int dst_pitch, const uint8_t * srcp8, int src_pitch, int row_size, int height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel)
 {
   dst_pitch /= sizeof(pixel_t);
   src_pitch /= sizeof(pixel_t);  // src_pitch = src->GetRowSize(plane) in bytes
@@ -280,7 +280,7 @@ void compensate_plane_nearest2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, i
 //   t[0] = dxc, t[1] = dxx, t[2] = dxy, t[3] = dyc, t[4] = dyx, t[5] = dyy
 //
 template <typename pixel_t>
-void compensate_plane_bilinear2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, int src_pitch, int row_size, int height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel)
+void compensate_plane_bilinear2(uint8_t *dstp8, int dst_pitch, const uint8_t * srcp8, int src_pitch, int row_size, int height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel)
 {
   // work2row_size is work array, it must have size >= 2*row_size
   dst_pitch /= sizeof(pixel_t);
@@ -644,7 +644,7 @@ void compensate_plane_bilinear2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, 
 //   t[0] = dxc, t[1] = dxx, t[2] = dxy, t[3] = dyc, t[4] = dyx, t[5] = dyy
 //
 template <typename pixel_t>
-void compensate_plane_bicubic2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, int src_pitch, int row_size, int height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel)
+void compensate_plane_bicubic2(uint8_t *dstp8, int dst_pitch, const uint8_t * srcp8, int src_pitch, int row_size, int height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel)
 {
   dst_pitch /= sizeof(pixel_t);
   src_pitch /= sizeof(pixel_t);  // src_pitch = src->GetRowSize(plane) in bytes
@@ -668,7 +668,7 @@ void compensate_plane_bicubic2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, i
 
   //     int for pixel_size uint8_t
   // int64_t for pixel_size uint16_t, otherwise int overflow in intermediate calculations
-  std::conditional < sizeof(pixel_t) == 1, int, int64_t >::type ts[4];
+  typename std::conditional < sizeof(pixel_t) == 1, int, int64_t >::type ts[4];
   int intcoef2d[16];
 
   int w;
@@ -1061,14 +1061,14 @@ void compensate_plane_bicubic2(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, i
 }
 
 // instantiate
-template void compensate_plane_nearest2<uint8_t>(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, int src_pitch, int src_width, int src_height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel);
-template void compensate_plane_nearest2<uint16_t>(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, int src_pitch, int src_width, int src_height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel);
+template void compensate_plane_nearest2<uint8_t>(uint8_t *dstp8, int dst_pitch, const uint8_t * srcp8, int src_pitch, int src_width, int src_height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel);
+template void compensate_plane_nearest2<uint16_t>(uint8_t *dstp8, int dst_pitch, const uint8_t * srcp8, int src_pitch, int src_width, int src_height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel);
 
-template void compensate_plane_bilinear2<uint8_t>(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, int src_pitch, int row_size, int height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel);
-template void compensate_plane_bilinear2<uint16_t>(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, int src_pitch, int row_size, int height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel);
+template void compensate_plane_bilinear2<uint8_t>(uint8_t *dstp8, int dst_pitch, const uint8_t * srcp8, int src_pitch, int row_size, int height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel);
+template void compensate_plane_bilinear2<uint16_t>(uint8_t *dstp8, int dst_pitch, const uint8_t * srcp8, int src_pitch, int row_size, int height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel);
 
-template void compensate_plane_bicubic2<uint8_t>(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, int src_pitch, int row_size, int height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel);
-template void compensate_plane_bicubic2<uint16_t>(BYTE *dstp8, int dst_pitch, const BYTE * srcp8, int src_pitch, int row_size, int height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel);
+template void compensate_plane_bicubic2<uint8_t>(uint8_t *dstp8, int dst_pitch, const uint8_t * srcp8, int src_pitch, int row_size, int height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel);
+template void compensate_plane_bicubic2<uint16_t>(uint8_t *dstp8, int dst_pitch, const uint8_t * srcp8, int src_pitch, int row_size, int height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel);
 
 
 //****************************************************************************

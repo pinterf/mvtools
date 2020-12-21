@@ -39,7 +39,9 @@
   - 
 */
 
+#ifdef _WIN32
 #include "windows.h"
+#endif
 #include <avisynth.h>
 #include "stdio.h"
 #include <stdint.h>
@@ -182,8 +184,8 @@ PVideoFrame __stdcall DePanScenes::GetFrame(int ndest, IScriptEnvironment* env) 
   // This is the implementation of the GetFrame function.
 
   int h, w;
-  const BYTE * srcp;
-  BYTE * dstp;
+  const uint8_t * srcp;
+  uint8_t * dstp;
   int src_width, src_height, src_pitch;
   int dst_pitch;
 

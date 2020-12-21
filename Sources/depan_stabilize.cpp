@@ -63,7 +63,9 @@
 
 */
 
+#define NOMINMAX
 #include <avisynth.h>
+#include <avs/types.h>
 #include "commonfunctions.h"
 
 #include "info.h"
@@ -72,6 +74,9 @@
 
 #include <chrono>
 #include <cassert>
+#include <algorithm>
+#include <math.h>
+#include <cmath>
 
 #define ADD_SAFETY
 //****************************************************************************
@@ -140,12 +145,12 @@ class DePanStabilize : public GenericVideoFilter {
 
   // planes from YUY2 - v1.6
   struct {
-    BYTE * srcplaneY;
-    BYTE * srcplaneU;
-    BYTE * srcplaneV;
-    BYTE * dstplaneY;
-    BYTE * dstplaneU;
-    BYTE * dstplaneV;
+    uint8_t * srcplaneY;
+    uint8_t * srcplaneU;
+    uint8_t * srcplaneV;
+    uint8_t * dstplaneY;
+    uint8_t * dstplaneU;
+    uint8_t * dstplaneV;
     int planeYpitch;
     int planeUVpitch;
     int planeYwidth, planeUVwidth;
@@ -245,8 +250,8 @@ DePanStabilize::DePanStabilize(PClip _child, PClip _DePanData, float _cutoff,
 
   //	matchfields =1;
 
-  //	zoommax = max(zoommax, initzoom); // v1.7 to prevent user error
-  zoommax = zoommax > 0 ? max(zoommax, initzoom) : -max(-zoommax, initzoom); // v1.8.2
+  //	zoommax = std::max(zoommax, initzoom); // v1.7 to prevent user error
+  zoommax = zoommax > 0 ? std::max(zoommax, initzoom) : -std::max(-zoommax, initzoom); // v1.8.2
 
   int fieldbased = (vi.IsFieldBased()) ? 1 : 0;
   TFF = (vi.IsTFF()) ? 1 : 0;
@@ -382,12 +387,12 @@ DePanStabilize::DePanStabilize(PClip _child, PClip _DePanData, float _cutoff,
     YUY2data.planeUVwidth = vi.width / 2;
     YUY2data.planeYpitch = AlignNumber(vi.width, 16);
     YUY2data.planeUVpitch = AlignNumber(vi.width / 2, 16);
-    YUY2data.srcplaneY = (BYTE*)malloc(YUY2data.planeYpitch*vi.height);
-    YUY2data.srcplaneU = (BYTE*)malloc(YUY2data.planeUVpitch*vi.height);
-    YUY2data.srcplaneV = (BYTE*)malloc(YUY2data.planeUVpitch*vi.height);
-    YUY2data.dstplaneY = (BYTE*)malloc(YUY2data.planeYpitch*vi.height);
-    YUY2data.dstplaneU = (BYTE*)malloc(YUY2data.planeUVpitch*vi.height);
-    YUY2data.dstplaneV = (BYTE*)malloc(YUY2data.planeUVpitch*vi.height);
+    YUY2data.srcplaneY = (uint8_t*)malloc(YUY2data.planeYpitch*vi.height);
+    YUY2data.srcplaneU = (uint8_t*)malloc(YUY2data.planeUVpitch*vi.height);
+    YUY2data.srcplaneV = (uint8_t*)malloc(YUY2data.planeUVpitch*vi.height);
+    YUY2data.dstplaneY = (uint8_t*)malloc(YUY2data.planeYpitch*vi.height);
+    YUY2data.dstplaneU = (uint8_t*)malloc(YUY2data.planeUVpitch*vi.height);
+    YUY2data.dstplaneV = (uint8_t*)malloc(YUY2data.planeUVpitch*vi.height);
   }
 
 
@@ -404,9 +409,9 @@ DePanStabilize::DePanStabilize(PClip _child, PClip _DePanData, float _cutoff,
 
   winrz = new float[wintsize + 1]; // (float *)malloc((wintsize + 1) * sizeof(float));
   winfz = new float[wintsize + 1]; // (float *)malloc((wintsize + 1) * sizeof(float));
-  winrzsize = min(wintsize, int(fps*tzoom / 4));
-  //	winfzsize = min(wintsize,int(fps*tzoom*1.5/4));
-  winfzsize = min(wintsize, int(fps*tzoom / 4));
+  winrzsize = std::min(wintsize, int(fps*tzoom / 4));
+  //	winfzsize = std::min(wintsize,int(fps*tzoom*1.5/4));
+  winfzsize = std::min(wintsize, int(fps*tzoom / 4));
   for (int i = 0; i < winrzsize; i++)
     winrz[i] = cosf(i*0.5f*PI / winrzsize);
   for (int i = winrzsize; i <= wintsize; i++)
@@ -762,11 +767,11 @@ void DePanStabilize::Average(int nbase, int ndest, int nmax, transform * ptrdif)
   trsmoothed[ndest].dyx = -trsmoothed[ndest].dxy*(pixaspect / nfields)*(pixaspect / nfields); // must be consistent
   norm = 0;
   trsmoothed[ndest].dxx = 0;
-  for (n = max(nbase, ndest - 1); n < ndest; n++) { // very short interval
+  for (n = std::max(nbase, ndest - 1); n < ndest; n++) { // very short interval
     trsmoothed[ndest].dxx += trcumul[n].dxx*wint[ndest - n];
     norm += wint[ndest - n];
   }
-  for (n = ndest; n <= min(nmax, ndest + 1); n++) {
+  for (n = ndest; n <= std::min(nmax, ndest + 1); n++) {
     trsmoothed[ndest].dxx += trcumul[n].dxx*wint[n - ndest];
     norm += wint[n - ndest];
   }
@@ -778,11 +783,11 @@ void DePanStabilize::Average(int nbase, int ndest, int nmax, transform * ptrdif)
 
   if (addzoom) { // calculate and add adaptive zoom factor to fill borders (for all frames from base to ndest)
 
-    int nbasez = max(nbase, ndest - winfzsize);
-    int nmaxz = min(nmax, ndest + winrzsize);
+    int nbasez = std::max(nbase, ndest - winfzsize);
+    int nmaxz = std::min(nmax, ndest + winrzsize);
     // symmetrical
-//               nmaxz = ndest + min(nmaxz-ndest, ndest-nbasez);
-//               nbasez = ndest - min(nmaxz-ndest, ndest-nbasez);
+//               nmaxz = ndest + std::min(nmaxz-ndest, ndest-nbasez);
+//               nbasez = ndest - std::min(nmaxz-ndest, ndest-nbasez);
 
     azoom[nbasez] = initzoom;
     for (n = nbasez + 1; n <= nmaxz; n++) {
@@ -856,7 +861,7 @@ void DePanStabilize::Average(int nbase, int ndest, int nmax, transform * ptrdif)
 void DePanStabilize::InertialLimit(float *dxdif, float *dydif, float *zoomdif, float *rotdif, int ndest, int *nbase)
 {
     // limit max motion corrections
-  if (!(_finite(*dxdif))) // check added in v.1.1.3
+  if (!(std::isfinite(*dxdif))) // check added in v.1.1.3
   {// infinite or NAN
     *dxdif = 0;
     *dydif = 0;
@@ -886,7 +891,7 @@ void DePanStabilize::InertialLimit(float *dxdif, float *dydif, float *zoomdif, f
     }
   }
 
-  if (!(_finite(*dydif)))
+  if (!(std::isfinite(*dydif)))
   {// infinite or NAN
     *dxdif = 0;
     *dydif = 0;
@@ -916,7 +921,7 @@ void DePanStabilize::InertialLimit(float *dxdif, float *dydif, float *zoomdif, f
     }
   }
 
-  if (!(_finite(*zoomdif)))
+  if (!(std::isfinite(*zoomdif)))
   {// infinite or NAN
     *dxdif = 0;
     *dydif = 0;
@@ -940,7 +945,7 @@ void DePanStabilize::InertialLimit(float *dxdif, float *dydif, float *zoomdif, f
     }
   }
 
-  if (!(_finite(*rotdif)))
+  if (!(std::isfinite(*rotdif)))
   {// infinite or NAN
     *dxdif = 0;
     *dydif = 0;
@@ -973,9 +978,9 @@ float DePanStabilize::Averagefraction(float dxdif, float dydif, float zoomdif, f
   float fractionz = fabsf(zoomdif - 1) / fabsf((fabsf(zoommax) - 1));
   float fractionr = fabsf(rotdif) / fabsf(rotmax);
 
-  float fraction = max(fractionx, fractiony);
-  fraction = max(fraction, fractionz);
-  fraction = max(fraction, fractionr);
+  float fraction = std::max(fractionx, fractiony);
+  fraction = std::max(fraction, fractionz);
+  fraction = std::max(fraction, fractionr);
   return fraction;
 
 }
@@ -986,7 +991,7 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
   // This is the implementation of the GetFrame function.
   // See the header definition for further info.
   PVideoFrame src, dst, dataframe;
-  const BYTE *datap;
+  const uint8_t *datap;
   float dxdif, dydif, zoomdif, rotdif;
   int border;
   //borderUV;
@@ -1045,7 +1050,7 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
 
   int nmax;
   if (method == 1)
-    nmax = min(ndest + radius, vi.num_frames - 1); // max n to take into account
+    nmax = std::min(ndest + radius, vi.num_frames - 1); // max n to take into account
   else
     nmax = ndest;
 
@@ -1085,8 +1090,8 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
 #endif
 
 #ifdef DETECT_TOO_BIG_SHIFTS
-      float max_valid_x_motion = max(dxmax * 3, xcenter / 2);
-      float max_valid_y_motion = max(dymax * 3, ycenter / 2);
+      float max_valid_x_motion = std::max(dxmax * 3, xcenter / 2);
+      float max_valid_y_motion = std::max(dymax * 3, ycenter / 2);
 
       float mx = motionx[n];
       float my = motiony[n];
@@ -1176,13 +1181,13 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
   //		OutputDebugString(debugbuf);
     // limit frame search range
   if (n < nmax) {
-    nmax = max(n - 1, ndest);  // set max frame to new scene start-1 if found
+    nmax = std::max(n - 1, ndest);  // set max frame to new scene start-1 if found
   }
 
   if (method == 1)
   {	// symmetrical
-    nmax = ndest + min(nmax - ndest, ndest - nbase);
-    nbase = ndest - min(nmax - ndest, ndest - nbase);
+    nmax = ndest + std::min(nmax - ndest, ndest - nbase);
+    nbase = ndest - std::min(nmax - ndest, ndest - nbase);
   }
 
   //		sprintf(debugbuf,"DePanStabilize: nbase=%d ndest=%d nmax=%d\n", nbase, ndest, nmax);
@@ -1443,7 +1448,7 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
     const int planes_r[4] = { PLANAR_G, PLANAR_B, PLANAR_R, PLANAR_A };
     const int *planes = (vi.IsYUV() || vi.IsYUVA()) ? planes_y : planes_r;
 
-    const int planecount = min(vi.NumComponents(), 3);
+    const int planecount = std::min(vi.NumComponents(), 3);
 
     for (int p = 0; p < planecount; p++)
     {
@@ -1470,10 +1475,10 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
       int src_width = src->GetRowSize(plane);
       int src_height = src->GetHeight(plane);
 
-      BYTE *dstp_current = dst->GetWritePtr(plane);
+      uint8_t *dstp_current = dst->GetWritePtr(plane);
       int dst_pitch_current = dst->GetPitch(plane);
 
-      const BYTE *srcp = src->GetReadPtr(plane);
+      const uint8_t *srcp = src->GetReadPtr(plane);
       int src_pitch = src->GetPitch(plane);
 
       // memo: 
@@ -1535,21 +1540,22 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
 
   if (info) { // show text info on frame image
     xmsg = (nfields != 1) ? (ndest % 2) * 15 : 0; // x-position of odd fields message
-    char messagebuf[32];
-    sprintf_s(messagebuf, " DePanStabilize");
+    constexpr auto BUFSIZE = 32;
+    char messagebuf[BUFSIZE];
+    snprintf(messagebuf, BUFSIZE, " DePanStabilize");
     DrawString(dst, vi, xmsg, 1, messagebuf);
-    sprintf_s(messagebuf, " frame=%7d", ndest);
+    snprintf(messagebuf, BUFSIZE, " frame=%7d", ndest);
     DrawString(dst, vi, xmsg, 2, messagebuf);
-    if (nbase == ndest) sprintf_s(messagebuf, " BASE!=%7d", nbase); // CAPITAL letters
-    else sprintf_s(messagebuf, " base =%7d", nbase);
+    if (nbase == ndest) snprintf(messagebuf, BUFSIZE, " BASE!=%7d", nbase); // CAPITAL letters
+    else snprintf(messagebuf, BUFSIZE, " base =%7d", nbase);
     DrawString(dst, vi, xmsg, 3, messagebuf);
-    sprintf_s(messagebuf, " dx  =%7.2f", dxdif);
+    snprintf(messagebuf, BUFSIZE, " dx  =%7.2f", dxdif);
     DrawString(dst, vi, xmsg, 4, messagebuf);
-    sprintf_s(messagebuf, " dy  =%7.2f", dydif);
+    snprintf(messagebuf, BUFSIZE, " dy  =%7.2f", dydif);
     DrawString(dst, vi, xmsg, 5, messagebuf);
-    sprintf_s(messagebuf, " zoom=%7.5f", zoomdif);
+    snprintf(messagebuf, BUFSIZE, " zoom=%7.5f", zoomdif);
     DrawString(dst, vi, xmsg, 6, messagebuf);
-    sprintf_s(messagebuf, " rot= %7.3f", rotdif);
+    snprintf(messagebuf, BUFSIZE, " rot= %7.3f", rotdif);
     DrawString(dst, vi, xmsg, 7, messagebuf);
   }
 

@@ -57,7 +57,8 @@
 
 */
 
-//#include "windows.h"
+#define NOMINMAX
+#include "def.h"
 #include <avisynth.h>
 #include "math.h"
 #include <stdio.h>
@@ -66,11 +67,21 @@
 #include "depanio.h"
 #include "info.h"
 #include "estimate_fftw.h"
+#include <mutex>
 
+std::mutex DePanEstimate_fftw::_fftw_mutex; // defined as static inside
 
 // constructor
-DePanEstimate_fftw::DePanEstimate_fftw(PClip _child, int _range, float _trust, int _winx, int _winy, int _wleft, int _wtop, int _dxmax, int _dymax, float _zoommax, float _stab, float _pixaspect, int _info, const char * _logfilename, int _debug, int _show, const char * _extlogfilename, IScriptEnvironment* env) :
-  GenericVideoFilter(_child), range(_range), trust_limit(_trust), winx(_winx), winy(_winy), wleft(_wleft), wtop(_wtop), dxmax(_dxmax), dymax(_dymax), zoommax(_zoommax), stab(_stab), pixaspect(_pixaspect), info(_info), logfilename(_logfilename), debug(_debug), show(_show), extlogfilename(_extlogfilename) {
+DePanEstimate_fftw::DePanEstimate_fftw(PClip _child, int _range, float _trust, int _winx, int _winy, int _wleft, int _wtop,
+  int _dxmax, int _dymax, float _zoommax, float _stab, float _pixaspect,
+  int _info, const char* _logfilename, int _debug, int _show, const char* _extlogfilename,
+  int _fft_threads,
+  IScriptEnvironment* env) :
+  GenericVideoFilter(_child), range(_range), trust_limit(_trust), winx(_winx), winy(_winy),
+  wleft(_wleft), wtop(_wtop), dxmax(_dxmax), dymax(_dymax), zoommax(_zoommax), stab(_stab),
+  pixaspect(_pixaspect), info(_info), logfilename(_logfilename), debug(_debug), show(_show),
+  extlogfilename(_extlogfilename), fft_threads(_fft_threads)
+{
 
   has_at_least_v8 = true;
   try { env->CheckVersion(8); }
@@ -155,23 +166,22 @@ DePanEstimate_fftw::DePanEstimate_fftw(PClip _child, int _range, float _trust, i
   if (dxmax >= winx / 2) env->ThrowError("DePanEstimate: DXMAX must be less WINX/2 !");
   if (dymax >= winy / 2) env->ThrowError("DePanEstimate: DYMAX must be less WINY/2 !");
 
-  // specify exact version, maybe the existing fftw3.dll in c:\windows\system32 (c:\windows\sysWOW64 if 32 bit dll version under x64 windows) is not the "f" version in the path
-  hinstFFTW3 = LoadLibrary("libfftw3f-3.dll"); // PF full original name
-  if (hinstFFTW3 == NULL)
-    hinstFFTW3 = LoadLibrary("fftw3.dll"); // added in v 1.2 for delayed loading
-  if (hinstFFTW3 != NULL)
-  {
-    fftwf_free_addr = (fftwf_free_proc) GetProcAddress(hinstFFTW3, "fftwf_free"); 
-    fftwf_malloc_addr = (fftwf_malloc_proc)GetProcAddress(hinstFFTW3, "fftwf_malloc"); 
-    fftwf_destroy_plan_addr = (fftwf_destroy_plan_proc) GetProcAddress(hinstFFTW3, "fftwf_destroy_plan");
-    fftwf_plan_dft_r2c_2d_addr = (fftwf_plan_dft_r2c_2d_proc)GetProcAddress(hinstFFTW3, "fftwf_plan_dft_r2c_2d");
-    fftwf_plan_dft_c2r_2d_addr = (fftwf_plan_dft_c2r_2d_proc)GetProcAddress(hinstFFTW3, "fftwf_plan_dft_c2r_2d");
-    fftwf_execute_dft_r2c_addr = (fftwf_execute_dft_r2c_proc)GetProcAddress(hinstFFTW3, "fftwf_execute_dft_r2c");
-    fftwf_execute_dft_c2r_addr = (fftwf_execute_dft_c2r_proc)GetProcAddress(hinstFFTW3, "fftwf_execute_dft_c2r");
+  if (fft_threads < 1) // fixme: from parameter
+    fft_threads = 1;
+
+  try {
+    fftfp.load(0);
   }
-  if (hinstFFTW3 == NULL || fftwf_free_addr == NULL || fftwf_malloc_addr == NULL || fftwf_plan_dft_r2c_2d_addr == NULL ||
-    fftwf_plan_dft_c2r_2d_addr == NULL || fftwf_destroy_plan_addr == NULL || fftwf_execute_dft_r2c_addr == NULL || fftwf_execute_dft_c2r_addr == NULL)
-    env->ThrowError("DePanEstimate: Can not load fftw3.dll or libfftw3f-3.dll !");
+  catch (const std::exception& e)
+  {
+    throw AvisynthError(e.what());
+  }
+  // from neo_fft3dfilter. Only for refere
+  if (fft_threads > 1 && fftfp.has_threading()) {
+    std::lock_guard<std::mutex> lock(_fftw_mutex); // mutex!
+    fftfp.fftwf_init_threads();
+    fftfp.fftwf_plan_with_nthreads(fft_threads);
+  }
 
   // set frames capacity of fft cache
   fftcachecapacity = range * 2 + 4;// modified in version 0.6e to correct for range=0
@@ -200,36 +210,51 @@ DePanEstimate_fftw::DePanEstimate_fftw(PClip _child, int _range, float _trust, i
 
   // memory for cached fft
   // fftw version
-  fftcache = (fftwf_complex **)fftwf_malloc_addr(fftcachecapacity * sizeof(uintptr_t)); // array of pointers x64: int->uintptr_t
-  if (fftcache == NULL) env->ThrowError("DepanEstimate: FFTW Allocation Failure!\n");
-  fftcache2 = (fftwf_complex **)fftwf_malloc_addr(fftcachecapacity * sizeof(uintptr_t));
-  fftcachecomp = (fftwf_complex **)fftwf_malloc_addr(fftcachecapacity * sizeof(uintptr_t));
-  fftcachecomp2 = (fftwf_complex **)fftwf_malloc_addr(fftcachecapacity * sizeof(uintptr_t));
-  for (i = 0; i < fftcachecapacity; i++) {
-    fftcache[i] = (fftwf_complex *)fftwf_malloc_addr(sizeof(fftwf_complex) * fftsize);
-    fftcachecomp[i] = (fftwf_complex *)fftwf_malloc_addr(sizeof(fftwf_complex) * fftsize);
-    if (zoommax != 1) {
-      fftcache2[i] = (fftwf_complex *)fftwf_malloc_addr(sizeof(fftwf_complex) * fftsize);  // right window if zoom
-      fftcachecomp2[i] = (fftwf_complex *)fftwf_malloc_addr(sizeof(fftwf_complex) * fftsize); // right window if zoom
+  {
+    std::lock_guard<std::mutex> lock(_fftw_mutex); // !only exec is thread safe
+
+    fftcache = (fftwf_complex**)fftfp.fftwf_malloc(fftcachecapacity * sizeof(uintptr_t)); // array of pointers x64: int->uintptr_t
+    if (fftcache == NULL) env->ThrowError("DepanEstimate: FFTW Allocation Failure!\n");
+    fftcache2 = (fftwf_complex**)fftfp.fftwf_malloc(fftcachecapacity * sizeof(uintptr_t));
+    fftcachecomp = (fftwf_complex**)fftfp.fftwf_malloc(fftcachecapacity * sizeof(uintptr_t));
+    fftcachecomp2 = (fftwf_complex**)fftfp.fftwf_malloc(fftcachecapacity * sizeof(uintptr_t));
+    for (i = 0; i < fftcachecapacity; i++) {
+      fftcache[i] = (fftwf_complex*)fftfp.fftwf_malloc(sizeof(fftwf_complex) * fftsize);
+      fftcachecomp[i] = (fftwf_complex*)fftfp.fftwf_malloc(sizeof(fftwf_complex) * fftsize);
+      if (zoommax != 1) {
+        fftcache2[i] = (fftwf_complex*)fftfp.fftwf_malloc(sizeof(fftwf_complex) * fftsize);  // right window if zoom
+        fftcachecomp2[i] = (fftwf_complex*)fftfp.fftwf_malloc(sizeof(fftwf_complex) * fftsize); // right window if zoom
+      }
     }
-  }
 
 
-  // memory for correlation matrice
-  correl = (fftwf_complex *)fftwf_malloc_addr(sizeof(fftwf_complex) * fftsize);//alloc_2d_float(winy, winx, env);
-  if (zoommax != 1) {
-    correl2 = (fftwf_complex *)fftwf_malloc_addr(sizeof(fftwf_complex) * fftsize);
-  }
+    // memory for correlation matrice
+    correl = (fftwf_complex*)fftfp.fftwf_malloc(sizeof(fftwf_complex) * fftsize);//alloc_2d_float(winy, winx, env);
+    if (zoommax != 1) {
+      correl2 = (fftwf_complex*)fftfp.fftwf_malloc(sizeof(fftwf_complex) * fftsize);
+    }
 
-  realcorrel = (float *)correl; // for inplace transform
-  if (zoommax != 1) {
-    realcorrel2 = (float *)correl2; // for inplace transform
-  }
-  // create FFTW plan
-  // change from FFTW_MEASURE to FFTW_ESTIMATE for more short init, without speed change (for  power-2 windows) in v 1.1.1
-  plan = fftwf_plan_dft_r2c_2d_addr(winy, winx, realcorrel, correl, FFTW_ESTIMATE); // direct fft
-  planinv = fftwf_plan_dft_c2r_2d_addr(winy, winx, correl, realcorrel, FFTW_ESTIMATE); // inverse fft
+    realcorrel = (float*)correl; // for inplace transform
+    if (zoommax != 1) {
+      realcorrel2 = (float*)correl2; // for inplace transform
+    }
+    // create FFTW plan
+    // change from FFTW_MEASURE to FFTW_ESTIMATE for more short init, without speed change (for  power-2 windows) in v 1.1.1
+    plan = fftfp.fftwf_plan_dft_r2c_2d(winy, winx, realcorrel, correl, FFTW_ESTIMATE); // direct fft
+    planinv = fftfp.fftwf_plan_dft_c2r_2d(winy, winx, correl, realcorrel, FFTW_ESTIMATE); // inverse fft
+  } // fftw3 mutex
 
+
+/*
+*     fftwf_free_addr = (fftwf_free_proc) GetProcAddress(hinstFFTW3, "fftwf_free"); 
+    fftwf_malloc_addr = (fftwf_malloc_proc)GetProcAddress(hinstFFTW3, "fftwf_malloc"); 
+    fftwf_destroy_plan_addr = (fftwf_destroy_plan_proc) GetProcAddress(hinstFFTW3, "fftwf_destroy_plan");
+    fftwf_plan_dft_r2c_2d_addr = (fftwf_plan_dft_r2c_2d_proc)GetProcAddress(hinstFFTW3, "fftwf_plan_dft_r2c_2d");
+    fftwf_plan_dft_c2r_2d_addr = (fftwf_plan_dft_c2r_2d_proc)GetProcAddress(hinstFFTW3, "fftwf_plan_dft_c2r_2d");
+    fftwf_execute_dft_r2c_addr = (fftwf_execute_dft_r2c_proc)GetProcAddress(hinstFFTW3, "fftwf_execute_dft_r2c");
+    fftwf_execute_dft_c2r_addr = (fftwf_execute_dft_c2r_proc)GetProcAddress(hinstFFTW3, "fftwf_execute_dft_c2r");
+
+*/
   motionx = new float[vi.num_frames]; // (float *)malloc(vi.num_frames * sizeof(float));
   if (motionx == NULL) env->ThrowError("DepanEstimate: Allocation Failure!\n");
   motiony = new float[vi.num_frames]; // (float *)malloc(vi.num_frames * sizeof(float));
@@ -293,32 +318,33 @@ DePanEstimate_fftw::~DePanEstimate_fftw() {
   delete[] fftcachelistcomp; // free(fftcachelistcomp);
   delete[] fftcachelistcomp2; // free(fftcachelistcomp2);
 
-  fftwf_destroy_plan_addr(plan);
-  fftwf_destroy_plan_addr(planinv);
+  std::lock_guard<std::mutex> lock(_fftw_mutex);
+
+  fftfp.fftwf_destroy_plan(plan);
+  fftfp.fftwf_destroy_plan(planinv);
 
   for (int i = 0; i < fftcachecapacity; i++) {
-    fftwf_free_addr(fftcache[i]);
-    fftwf_free_addr(fftcachecomp[i]);
+    fftfp.fftwf_free(fftcache[i]);
+    fftfp.fftwf_free(fftcachecomp[i]);
     if (zoommax != 1) {
-      fftwf_free_addr(fftcache2[i]);
-      fftwf_free_addr(fftcachecomp2[i]);
+      fftfp.fftwf_free(fftcache2[i]);
+      fftfp.fftwf_free(fftcachecomp2[i]);
     }
   }
-  fftwf_free_addr(fftcache);
-  fftwf_free_addr(fftcachecomp);
-  fftwf_free_addr(correl);
+  fftfp.fftwf_free(fftcache);
+  fftfp.fftwf_free(fftcachecomp);
+  fftfp.fftwf_free(correl);
   if (zoommax != 1) {
-    fftwf_free_addr(fftcache2);
-    fftwf_free_addr(fftcachecomp2);
-    fftwf_free_addr(correl2);
+    fftfp.fftwf_free(fftcache2);
+    fftfp.fftwf_free(fftcachecomp2);
+    fftfp.fftwf_free(correl2);
   }
   delete[] motionx; // free(motionx);
   delete[] motiony; // free(motiony);
   delete[] motionzoom; // free(motionzoom);
   delete[] trust; // free(trust);
 
-  if (hinstFFTW3 != NULL)
-    FreeLibrary(hinstFFTW3);
+  fftfp.freelib();
 }
 
 
@@ -406,7 +432,7 @@ void DePanEstimate_fftw::mult_conj_data2d(fftwf_complex *fftnext, fftwf_complex 
 //	int jw =0;
   int totalbytes = winy*nx * 8; // even
   // PF todo intrinsics
-#ifndef _M_X64
+#if !defined(MV_64BIT) && defined(_WIN32)
   _asm
   {
     mov esi, fftsrc;
@@ -719,7 +745,7 @@ fftwf_complex *  DePanEstimate_fftw::get_plane_fft(const BYTE * srcp, int src_he
     frame_data2d<pixel_t>(srcp, src_height, src_width, src_pitch, realdata, winx, winy, winleft, wintop);
     // make forward fft of data
     //		rdft2d(winy, winx, 1, fftsrc, NULL, fftip, fftwork);
-    fftwf_execute_dft_r2c_addr(plan, realdata, fftsrc);
+    fftfp.fftwf_execute_dft_r2c(plan, realdata, fftsrc);
     // now data is fft
     // reserve cache with this number
     fftcachelist[ncs] = nsrc;
@@ -899,11 +925,13 @@ PVideoFrame __stdcall DePanEstimate_fftw::GetFrame(int ndest, IScriptEnvironment
               fftcur = get_plane_fft<uint8_t>(curp, src_height, src_width, cur_pitch, ncur, fftcachelist, fftcachecapacity, fftcache, winx, winy, winleft, wtop, plan);
             else // 16 bit P.F.
               fftcur = get_plane_fft<uint16_t>(curp, src_height, src_width, cur_pitch, ncur, fftcachelist, fftcachecapacity, fftcache, winx, winy, winleft, wtop, plan);
+#ifdef _WIN32
             if (debug != 0) { // debug mode
               // output data for debugview utility
-              sprintf_s(debugbuf, "DePanEstimate: process ncur=%d fftcur\n", ncur);
+              snprintf(debugbuf, sizeof(debugbuf), "DePanEstimate: process ncur=%d fftcur\n", ncur);
               OutputDebugString(debugbuf);
             }
+#endif
           }
 
           // check if fft of prev frame is in cache
@@ -923,17 +951,19 @@ PVideoFrame __stdcall DePanEstimate_fftw::GetFrame(int ndest, IScriptEnvironment
               fftprev = get_plane_fft<uint8_t>(prevp, src_height, src_width, prev_pitch, ncur - 1, fftcachelist, fftcachecapacity, fftcache, winx, winy, winleft, wtop, plan); //v1.6
             else // 16 bit P.F.
               fftprev = get_plane_fft<uint16_t>(prevp, src_height, src_width, prev_pitch, ncur - 1, fftcachelist, fftcachecapacity, fftcache, winx, winy, winleft, wtop, plan); //v1.6
+#ifdef _WIN32
             if (debug != 0) { // debug mode
               // output data for debugview utility
-              sprintf_s(debugbuf, "DePanEstimate: process ncur-1=%d fftprev\n", ncur - 1);
+              snprintf(debugbuf, sizeof(debugbuf), "DePanEstimate: process ncur-1=%d fftprev\n", ncur - 1);
               OutputDebugString(debugbuf);
             }
+#endif
           }
 
           // prepare correlation data = mult fftsrc* by fftprev
           mult_conj_data2d(fftcur, fftprev, correl, winx, winy);
           // make inverse fft of prepared correl data
-          fftwf_execute_dft_c2r_addr(planinv, correl, realcorrel); // added in v.1.0
+          fftfp.fftwf_execute_dft_c2r(planinv, correl, realcorrel); // added in v.1.0
           // now correl is is true correlation surface
           // find global motion vector as maximum on correlation sufrace
           // save vector to motion table
@@ -1011,7 +1041,7 @@ PVideoFrame __stdcall DePanEstimate_fftw::GetFrame(int ndest, IScriptEnvironment
           mult_conj_data2d(fftcur, fftprev, correl, winx, winy);
           // make inverse fft of prepared correl data
 //					rdft2d(winy, winx, -1, correl, NULL, fftip, fftwork);
-          fftwf_execute_dft_c2r_addr(planinv, correl, realcorrel); // added in v.1.0
+          fftfp.fftwf_execute_dft_c2r(planinv, correl, realcorrel); // added in v.1.0
           // now correl is is true correlation surface
           // find global motion vector as maximum on correlation sufrace
           // save vector to motion table
@@ -1024,7 +1054,7 @@ PVideoFrame __stdcall DePanEstimate_fftw::GetFrame(int ndest, IScriptEnvironment
           mult_conj_data2d(fftcur2, fftprev2, correl2, winx, winy);
           // make inverse fft of prepared correl data
 //					rdft2d(winy, winx, -1, correl2, NULL, fftip, fftwork);
-          fftwf_execute_dft_c2r_addr(planinv, correl2, realcorrel2); // added in v.1.0
+          fftfp.fftwf_execute_dft_c2r(planinv, correl2, realcorrel2); // added in v.1.0
           // now correl is is true correlation surface
           // find global motion vector as maximum on correlation sufrace
           // save vector to motion table
@@ -1034,22 +1064,24 @@ PVideoFrame __stdcall DePanEstimate_fftw::GetFrame(int ndest, IScriptEnvironment
           // now we have 2 motion data sets for left and right windows
           // estimate zoom factor
           zoom = 1 + (dx2 - dx1) / (winleft2 - winleft);
+#ifdef _WIN32
           if (debug != 0) { // debug mode
             // output data for debugview utility
-            sprintf_s(debugbuf, "DePanEstimate: n=%d dx=%7.2f %7.2f dy=%7.2f %7.2f trust=%5.1f %5.1f zoom=%7.5f\n", ncur, dx1, dx2, dy1, dy2, trust1, trust2, zoom);
+            snprintf(debugbuf, sizeof(debugbuf), "DePanEstimate: n=%d dx=%7.2f %7.2f dy=%7.2f %7.2f trust=%5.1f %5.1f zoom=%7.5f\n", ncur, dx1, dx2, dy1, dy2, trust1, trust2, zoom);
             OutputDebugString(debugbuf);
           }
+#endif
           if ((dx1 != 0) && (dx2 != 0) && (fabs(zoom - 1) < (zoommax - 1))) { // if motion data and zoom good
             motionx[ncur] = (dx1 + dx2) / 2;
             motiony[ncur] = (dy1 + dy2) / 2;
             motionzoom[ncur] = zoom;
-            trust[ncur] = min(trust1, trust2);
+            trust[ncur] = std::min(trust1, trust2);
           }
           else { // bad zoom,
             motionx[ncur] = 0;
             motiony[ncur] = 0;
             motionzoom[ncur] = 1;
-            trust[ncur] = min(trust1, trust2);
+            trust[ncur] = std::min(trust1, trust2);
           }
 
           //					if (improve != 0) / did not never really work, disabled in v1.6
@@ -1095,11 +1127,13 @@ PVideoFrame __stdcall DePanEstimate_fftw::GetFrame(int ndest, IScriptEnvironment
     }
   }
 
+#ifdef _WIN32
   if (debug != 0) { // debug mode
     // output summary data for debugview utility
-    sprintf_s(debugbuf, "DePanEst.result: %d dx=%7.2f dy=%7.2f zoom=%7.5f trust=%7.2f\n", ncur, motionx[ndest], motiony[ndest], motionzoom[ndest], trust[ndest]);
+    snprintf(debugbuf, sizeof(debugbuf), "DePanEst.result: %d dx=%7.2f dy=%7.2f zoom=%7.5f trust=%7.2f\n", ncur, motionx[ndest], motiony[ndest], motionzoom[ndest], trust[ndest]);
     OutputDebugString(debugbuf);
   }
+#endif
 
   // So, now we got all needed global motion info
 
@@ -1109,21 +1143,21 @@ PVideoFrame __stdcall DePanEstimate_fftw::GetFrame(int ndest, IScriptEnvironment
     if (show == 0) {  // luma plane was not copied by show, then copy it now
       env->BitBlt(dstp, dst_pitch, srcp, src_pitch, dst_rowsize, dst_height);
     }
-    sprintf_s(messagebuf, " DePanEstimate");
+    snprintf(messagebuf, sizeof(messagebuf), " DePanEstimate");
     DrawString(dst, vi, xmsg, ymsg, messagebuf);//v1.6
     if (motionx[ndest] == 0) {
-      sprintf_s(messagebuf, " SCENE CHANGE!");
+      snprintf(messagebuf, sizeof(messagebuf), " SCENE CHANGE!");
       DrawString(dst, vi, xmsg, ymsg + 1, messagebuf);
     }
-    sprintf_s(messagebuf, " frame=%7d", ndest);
+    snprintf(messagebuf, sizeof(messagebuf), " frame=%7d", ndest);
     DrawString(dst, vi, xmsg, ymsg + 2, messagebuf);
-    sprintf_s(messagebuf, " dx   =%7.2f", motionx[ndest]);
+    snprintf(messagebuf, sizeof(messagebuf), " dx   =%7.2f", motionx[ndest]);
     DrawString(dst, vi, xmsg, ymsg + 3, messagebuf);
-    sprintf_s(messagebuf, " dy   =%7.2f", motiony[ndest]);
+    snprintf(messagebuf, sizeof(messagebuf), " dy   =%7.2f", motiony[ndest]);
     DrawString(dst, vi, xmsg, ymsg + 4, messagebuf);
-    sprintf_s(messagebuf, " zoom =%7.5f", motionzoom[ndest]);
+    snprintf(messagebuf, sizeof(messagebuf), " zoom =%7.5f", motionzoom[ndest]);
     DrawString(dst, vi, xmsg, ymsg + 5, messagebuf);
-    sprintf_s(messagebuf, " trust=%7.2f", trust[ndest]);
+    snprintf(messagebuf, sizeof(messagebuf), " trust=%7.2f", trust[ndest]);
     DrawString(dst, vi, xmsg, ymsg + 6, messagebuf);
   }
 
