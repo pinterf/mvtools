@@ -46,6 +46,14 @@ endforeach()
 
 if (MSVC_IDE)
   IF(CLANG_IN_VS STREQUAL "1")
+      # special SSSE3 option for source files with *_ssse3.cpp pattern
+      file(GLOB_RECURSE SRCS_SSSE3 "*_ssse3.cpp")
+      set_source_files_properties(${SRCS_SSSE3} PROPERTIES COMPILE_FLAGS " -mssse3 ")
+
+      # special SSE4.1 option for source files with *_sse41.cpp pattern
+      file(GLOB_RECURSE SRCS_SSE41 "*_sse41.cpp")
+      set_source_files_properties(${SRCS_SSE41} PROPERTIES COMPILE_FLAGS " -msse4.1 ")
+
       # special AVX option for source files with *_avx.cpp pattern
       file(GLOB_RECURSE SRCS_AVX "*_avx.cpp")
       set_source_files_properties(${SRCS_AVX} PROPERTIES COMPILE_FLAGS " -mavx ")
@@ -71,6 +79,14 @@ if (MSVC_IDE)
       set_source_files_properties(${SRCS_AVX512} PROPERTIES COMPILE_FLAGS " /arch:AVX512 ")
   ENDIF()
 else()
+  # special SSSE3 option for source files with *_ssse3.cpp pattern
+  file(GLOB_RECURSE SRCS_SSSE3 "*_ssse3.cpp")
+  set_source_files_properties(${SRCS_SSSE3} PROPERTIES COMPILE_FLAGS " -mssse3 ")
+
+  # special SSE4.1 option for source files with *_sse41.cpp pattern
+  file(GLOB_RECURSE SRCS_SSE41 "*_sse41.cpp")
+  set_source_files_properties(${SRCS_SSE41} PROPERTIES COMPILE_FLAGS " -msse4.1 ")
+
   # special AVX option for source files with *_avx.cpp pattern
   file(GLOB_RECURSE SRCS_AVX "*_avx.cpp")
   set_source_files_properties(${SRCS_AVX} PROPERTIES COMPILE_FLAGS " -mavx ")
@@ -86,14 +102,16 @@ endif()
 
 
 # Specify include directories
-target_link_libraries(${ProjectName})
 target_include_directories(${ProjectName} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 #dedicated include dir for avisynth.h
 target_include_directories(${ProjectName} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # Windows DLL dependencies 
 if (MSVC OR MINGW)
-  target_link_libraries("DePan" "uuid" "winmm" "vfw32" "msacm32" "gdi32" "user32" "advapi32" "ole32" "imagehlp")
+  target_link_libraries(${ProjectName} "uuid" "winmm" "vfw32" "msacm32" "gdi32" "user32" "advapi32" "ole32" "imagehlp")
+else()
+  target_link_libraries(${ProjectName})
+  # "pthread"  "dl"
 endif()
 
 include(GNUInstallDirs)
