@@ -251,8 +251,8 @@ void DCTFFTW::Bytes2Float_SSE2(const unsigned char * srcp8, int src_pitch, float
 // fake _mm_packus_epi32 (orig is SSE4.1 only)
 MV_FORCEINLINE __m128i _MM_PACKUS_EPI32(__m128i a, __m128i b)
 {
-  const static __m128i val_32 = _mm_set1_epi32(0x8000);
-  const static __m128i val_16 = _mm_set1_epi16(0x8000);
+  const __m128i val_32 = _mm_set1_epi32(0x8000);
+  const __m128i val_16 = _mm_set1_epi16(0x8000);
 
   a = _mm_sub_epi32(a, val_32);
   b = _mm_sub_epi32(b, val_32);
