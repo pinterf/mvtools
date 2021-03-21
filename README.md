@@ -11,7 +11,7 @@ Credits:
 - Manao, Fizick, Tsp, TSchniede, SEt, Vit, Firesledge, cretindesalpes 
 
 Change log
-- 2.7.45 (20201221 WIP)
+- 2.7.45 (20201221-20210321 WIP)
   - MSuper: rfilter=0 and 1
     8 bit: drop old SSE code, port to SIMD intrinsics. Add SIMD to 16 bit case. Quicker, much quicker.
     (rfilter: Hierarchical levels smoothing and reducing (halving) filter)
@@ -47,6 +47,12 @@ Change log
   - DePan and DePanEstimate: Linux port
   - DePanEstimate: add fft_threads variable (default 1) for fftw3 mode (experimental)
   - DepanEstimate: add MT guard around sensible fft3w functions
+  - mingw build fixes
+  - Add build instructions to README.md
+  - experimental avx2 for MDegrain1..6 (was not worth speedwise - memory transfer is bottleneck)
+  - experimental 32-bit float internal Overlaps result buffer for MDegrain1..6
+    whether it is any quicker/more exact than the integer-scaled arithmetic version
+    (when out32=true, do not use, only for dev, maybe will be removed in the future)
 
 - 2.7.44 (20201214)
   - MAnalyze: fix motion vector generation inconsistencies across multiple runs.
@@ -420,3 +426,45 @@ http://avisynth.nl/index.php/AviSynth%2B#AviSynth.2B_x64_plugins
 Source code:
 https://github.com/pinterf/mvtools
 under mvtools-pfmod branch
+
+## Windows MSVC
+
+* build from IDE
+
+## Windows GCC
+  (mingw installed by msys2):
+  From the 'build' folder under project root:
+
+        del ..\CMakeCache.txt
+        cmake .. -G "MinGW Makefiles" -DENABLE_INTEL_SIMD:bool=on
+        @rem test: cmake .. -G "MinGW Makefiles" -DENABLE_INTEL_SIMD:bool=off
+        cmake --build . --config Release  
+
+## Linux build instructions
+
+* Clone repo
+
+        git clone https://github.com/pinterf/mvtools
+        cd mvtools
+        cmake -B build -S .
+        cmake --build build
+
+  Useful hints:        
+  build after clean:
+
+        cmake --build build --clean-first
+
+  delete cmake cache
+
+        rm build/CMakeCache.txt
+
+* Find binaries at
+
+        build/mvtools/libmvtools2.so
+        build/depan/libdepan.so
+        build/depanestimate/libdepanestimate.so
+
+* Install binaries
+
+        cd build
+        sudo make install
