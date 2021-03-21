@@ -134,6 +134,7 @@
       <Filter>Filters</Filter>
     </ClCompile>
     <ClCompile Include="SADFunctions_avx2.cpp" />
+    <ClCompile Include="MVDegrain3_avx2.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MDegrainN.h">
@@ -411,6 +412,7 @@
     </ClInclude>
     <ClInclude Include="SADFunctions_avx2.h" />
     <ClInclude Include="SADFunctions16.h" />
+    <ClInclude Include="MVDegrain3_avx2.h" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="cpu.h" />
