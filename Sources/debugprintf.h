@@ -49,7 +49,7 @@ static inline void DebugPrintf(char *fmt, ...)
 
 static inline void DebugPrintf(const char *fmt, ...)
 {
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__GNUC__)
   __noop(fmt); 	// Nothing
 #endif
 }

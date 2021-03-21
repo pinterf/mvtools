@@ -24,15 +24,8 @@
 #ifndef __DEPAN_H__
 #define __DEPAN_H__
 
-#ifdef _WIN32
-#define NOGDI
-#define NOMINMAX
-#define WIN32_LEAN_AND_MEAN
-#include "windows.h"
-#endif
 #include <stdint.h>
 #include <type_traits>
-//#include "stdio.h"
 
 //#define MAX(x,y) ((x) > (y) ? (x) : (y))
 //#define MIN(x,y) ((x) < (y) ? (x) : (y))

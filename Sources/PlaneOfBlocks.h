@@ -203,7 +203,7 @@ private:
   {
   public:
 #if (ALIGN_SOURCEBLOCK > 1)
-    typedef	std::vector <uint8_t, AllocAlign <uint8_t, ALIGN_SOURCEBLOCK> >	TmpDataArray;
+    typedef	std::vector <uint8_t, aligned_allocator <uint8_t, ALIGN_SOURCEBLOCK> >	TmpDataArray;
 #else	// ALIGN_SOURCEBLOCK
     typedef	std::vector <uint8_t>	TmpDataArray;
 #endif	// ALIGN_SOURCEBLOCK

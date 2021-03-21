@@ -19,9 +19,9 @@
 // Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA, or visit
 // http://www.gnu.org/copyleft/gpl.html .
 
-#define NOGDI
-#define NOMINMAX
-#define WIN32_LEAN_AND_MEAN
+#ifdef _WIN32
+#include "avs/win.h"
+#endif
 
 #include "Interpolation.h"
 
@@ -439,7 +439,7 @@ template<typename pixel_t, bool hasSSE41>
 static void RB2CubicVerticalLine_sse2(uint8_t *pDst, const uint8_t *pSrc, int nSrcPitch, int nWidthMMX) {
   const __m128i zeroes = _mm_setzero_si128();
   // pitch is byte-level here
-  for (int x = 0; x < nWidthMMX * sizeof(pixel_t); x += 8) {
+  for (int x = 0; x < nWidthMMX * (int)sizeof(pixel_t); x += 8) {
     __m128i m0 = _mm_loadl_epi64((const __m128i *)&pSrc[x - nSrcPitch * 2]);
     __m128i m1 = _mm_loadl_epi64((const __m128i *)&pSrc[x - nSrcPitch]);
     __m128i m2 = _mm_loadl_epi64((const __m128i *)&pSrc[x]);
@@ -577,7 +577,7 @@ static void RB2QuadraticVerticalLine_sse2(uint8_t *pDst, const uint8_t *pSrc, in
 
   const __m128i zeroes = _mm_setzero_si128();
 
-  for (int x = 0; x < nWidthMMX * sizeof(pixel_t); x += 8) {
+  for (int x = 0; x < nWidthMMX * (int)sizeof(pixel_t); x += 8) {
     __m128i m0 = _mm_loadl_epi64((const __m128i *)&pSrc[x - nSrcPitch * 2]);
     __m128i m1 = _mm_loadl_epi64((const __m128i *)&pSrc[x - nSrcPitch]);
     __m128i m2 = _mm_loadl_epi64((const __m128i *)&pSrc[x]);
@@ -646,7 +646,7 @@ template<typename pixel_t, bool hasSSE41>
 static void RB2BilinearFilteredVerticalLine_sse2(uint8_t *pDst, const uint8_t *pSrc, intptr_t nSrcPitch, intptr_t nWidthMMX) {
   const __m128i zeroes = _mm_setzero_si128();
 
-  for (int x = 0; x < nWidthMMX * sizeof(pixel_t); x += 8) {
+  for (int x = 0; x < nWidthMMX * (int)sizeof(pixel_t); x += 8) {
     __m128i m0 = _mm_loadl_epi64((const __m128i *)&pSrc[x - nSrcPitch]);
     __m128i m1 = _mm_loadl_epi64((const __m128i *)&pSrc[x]);
     __m128i m2 = _mm_loadl_epi64((const __m128i *)&pSrc[x + nSrcPitch]);
@@ -1588,7 +1588,7 @@ void VerticalBilin_sse2(unsigned char *pDst8, const unsigned char *pSrc8, int nD
   (void)bits_per_pixel; // not used
 
   for (int y = 0; y < nHeight - 1; y++) {
-    for (int x = 0; x < nWidth * sizeof(pixel_t); x += 16) {
+    for (int x = 0; x < nWidth * (int)sizeof(pixel_t); x += 16) {
       __m128i m0 = _mm_loadu_si128((const __m128i *)&pSrc8[x]);
       __m128i m1 = _mm_loadu_si128((const __m128i *)&pSrc8[x + nSrcPitch]);
 
@@ -1640,7 +1640,7 @@ void HorizontalBilin_sse2(unsigned char *pDst8, const unsigned char *pSrc8, int 
   (void)bits_per_pixel; // not used
 
   for (int y = 0; y < nHeight; y++) {
-    for (int x = 0; x < nWidth * sizeof(pixel_t); x += 16) {
+    for (int x = 0; x < nWidth * (int)sizeof(pixel_t); x += 16) {
       __m128i m0 = _mm_loadu_si128((const __m128i *)&pSrc8[x]);
       __m128i m1 = _mm_loadu_si128((const __m128i *)&pSrc8[x + sizeof(pixel_t)]);
 
@@ -1704,7 +1704,7 @@ void DiagonalBilin_sse2(unsigned char *pDst8, const unsigned char *pSrc8, int nD
   auto zeroes = _mm_setzero_si128();
 
   for (int y = 0; y < nHeight - 1; y++) {
-    for (int x = 0; x < nWidth * sizeof(pixel_t); x += 8) {
+    for (int x = 0; x < nWidth * (int)sizeof(pixel_t); x += 8) {
       __m128i m0 = _mm_loadl_epi64((const __m128i *)&pSrc8[x]);
       __m128i m1 = _mm_loadl_epi64((const __m128i *)&pSrc8[x + sizeof(pixel_t)]);
       __m128i m2 = _mm_loadl_epi64((const __m128i *)&pSrc8[x + nSrcPitch]);
@@ -1751,7 +1751,7 @@ void DiagonalBilin_sse2(unsigned char *pDst8, const unsigned char *pSrc8, int nD
     pDst8 += nDstPitch;
   }
 
-  for (int x = 0; x < nWidth * sizeof(pixel_t); x += 8) {
+  for (int x = 0; x < nWidth * (int)sizeof(pixel_t); x += 8) {
     __m128i m0 = _mm_loadl_epi64((const __m128i *)&pSrc8[x]);
     __m128i m1 = _mm_loadl_epi64((const __m128i *)&pSrc8[x + sizeof(pixel_t)]);
 
@@ -1845,7 +1845,7 @@ void VerticalWiener_sse2(unsigned char *pDst8, const unsigned char *pSrc8, int n
   auto zeroes = _mm_setzero_si128();
 
   for (int y = 0; y < 2; y++) {
-    for (int x = 0; x < nWidth * sizeof(pixel_t); x += 16 / sizeof(pixel_t)) {
+    for (int x = 0; x < nWidth * (int)sizeof(pixel_t); x += 16 / sizeof(pixel_t)) {
       __m128i m0 = _mm_loadu_si128((const __m128i *)&pSrc[x]);
       __m128i m1 = _mm_loadu_si128((const __m128i *)&pSrc[x + nSrcPitch]);
 
@@ -1934,7 +1934,7 @@ void VerticalWiener_sse2(unsigned char *pDst8, const unsigned char *pSrc8, int n
   }
 
   for (int y = nHeight - 4; y < nHeight - 1; y++) {
-    for (int x = 0; x < nWidth * sizeof(pixel_t); x += 16 / sizeof(pixel_t)) {
+    for (int x = 0; x < nWidth * (int)sizeof(pixel_t); x += 16 / sizeof(pixel_t)) {
       __m128i m0 = _mm_loadu_si128((const __m128i *)&pSrc[x]);
       __m128i m1 = _mm_loadu_si128((const __m128i *)&pSrc[x + nSrcPitch]);
 
@@ -2231,7 +2231,7 @@ void VerticalBicubic_sse2(unsigned char* pDst8, const unsigned char* pSrc8, int 
   auto zeroes = _mm_setzero_si128();
 
   for (int y = 0; y < 1; y++) {
-    for (int x = 0; x < nWidth * sizeof(pixel_t); x += 16 / sizeof(pixel_t)) {
+    for (int x = 0; x < nWidth * (int)sizeof(pixel_t); x += 16 / sizeof(pixel_t)) {
       __m128i m0 = _mm_loadu_si128((const __m128i*) & pSrc[x]);
       __m128i m1 = _mm_loadu_si128((const __m128i*) & pSrc[x + nSrcPitch]);
 
@@ -2300,7 +2300,7 @@ void VerticalBicubic_sse2(unsigned char* pDst8, const unsigned char* pSrc8, int 
   }
 
   for (int y = nHeight - 3; y < nHeight - 1; y++) {
-    for (int x = 0; x < nWidth * sizeof(pixel_t); x += 16 / sizeof(pixel_t)) {
+    for (int x = 0; x < nWidth * (int)sizeof(pixel_t); x += 16 / sizeof(pixel_t)) {
       __m128i m0 = _mm_loadu_si128((const __m128i*) & pSrc[x]);
       __m128i m1 = _mm_loadu_si128((const __m128i*) & pSrc[x + nSrcPitch]);
 
@@ -2502,7 +2502,7 @@ template<typename pixel_t>
 void Average2_sse2(unsigned char *pDst8, const unsigned char *pSrc1_8, const unsigned char *pSrc2_8,
   int nPitch, int nWidth, int nHeight) {
   for (int y = 0; y < nHeight; y++) {
-    for (int x = 0; x < nWidth * sizeof(pixel_t); x += 16) {
+    for (int x = 0; x < nWidth * (int)sizeof(pixel_t); x += 16) {
       __m128i m0 = _mm_loadu_si128((const __m128i *)&pSrc1_8[x]);
       __m128i m1 = _mm_loadu_si128((const __m128i *)&pSrc2_8[x]);
 

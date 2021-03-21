@@ -19,13 +19,6 @@
   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 */
-
-#ifdef _WIN32
-#define NOGDI
-#define NOMINMAX
-#define WIN32_LEAN_AND_MEAN
-#include "windows.h"
-#endif
 #include <avisynth.h>
 #include "stdio.h"
 

@@ -57,7 +57,9 @@
 
 */
 
-#define NOMINMAX
+#ifdef _WIN32
+#include "avs/win.h"
+#endif
 #include "def.h"
 #include <avisynth.h>
 #include "math.h"

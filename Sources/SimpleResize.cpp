@@ -34,48 +34,12 @@
 
 #include "SimpleResize.h"
 
-#ifdef _WIN32
-#define NOGDI
-#define NOMINMAX
-#define WIN32_LEAN_AND_MEAN
-#include "windows.h"
-#endif
 #include	"avisynth.h"
 #include	"malloc.h"
 #include <emmintrin.h>
 #include <smmintrin.h>
 #include "def.h"
-#include <algorithm>    // std::max
-
-#if !(defined(_M_X64))
-//#define OLD_ASM // for testing similarity with old code P.F. 161204
-#endif
-
-#ifdef OLD_ASM
-#if !defined(_M_X64)
-#define rax	eax
-#define rbx	ebx
-#define rcx	ecx
-#define rdx	edx
-#define rsi	esi
-#define rdi	edi
-#define rbp	ebp
-#define rsp	esp
-#define movzx_int mov
-#define movsx_int mov
-#else
-#define rax	rax
-#define rbx	rbx
-#define rcx	rcx
-#define rdx	rdx
-#define rsi	rsi
-#define rdi	rdi
-#define rbp	rbp
-#define rsp	r15
-#define movzx_int movzxd
-#define movsx_int movsxd
-#endif
-#endif
+#include <algorithm>
 
 
 SimpleResize::SimpleResize(int _newwidth, int _newheight, int _oldwidth, int _oldheight, long CPUFlags)

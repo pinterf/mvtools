@@ -23,22 +23,10 @@
 
 #include "commonfunctions.h"
 #include "yuy2planes.h"
-
-#ifdef _WIN32
-#define NOGDI
-#define NOMINMAX
-#define WIN32_LEAN_AND_MEAN
-#include "windows.h"
-#endif
-
 #include	"avisynth.h"
 #include "stdint.h"
 
 
-
-// vi.num_audio_samples = nHeight + (nHPad<<16) + (nVPad<<24) + ((_int64)(nPel)<<32) + ((_int64)nModeYUV<<40) + ((_int64)nLevels<<48);
-
-// PF: OK
 MV_FORCEINLINE int PlaneHeightLuma(int src_height, int level, int yRatioUV, int vpad)
 {
   int height = src_height;
@@ -51,7 +39,6 @@ MV_FORCEINLINE int PlaneHeightLuma(int src_height, int level, int yRatioUV, int 
   return height;
 }
 
-// PF: OK
 MV_FORCEINLINE int PlaneWidthLuma(int src_width, int level, int xRatioUV, int hpad)
 {
   int width = src_width;

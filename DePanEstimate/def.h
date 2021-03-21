@@ -22,16 +22,27 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 #include "avs/config.h" // WIN/POSIX/ETC defines
 
 #ifdef _WIN32
-#define NOGDI
-#define NOMINMAX
-#define WIN32_LEAN_AND_MEAN
-#include "windows.h"
+#include "avs/win.h"
 #endif
 
-#if defined(GCC)
+#ifndef _WIN32
+#define OutputDebugString(x)
+#endif
+
+#if (defined(GCC) || defined(CLANG)) && !defined(_WIN32)
 #include <stdlib.h>
 #define _aligned_malloc(size, alignment) aligned_alloc(alignment, size)
 #define _aligned_free(ptr) free(ptr)
+#endif
+
+#ifndef _WIN32
+#include <stdio.h>
+#ifdef AVS_POSIX
+#ifndef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 1
+#endif
+#include <limits.h>
+#endif
 #endif
 
 #ifndef MV_FORCEINLINE

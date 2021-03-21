@@ -19,18 +19,10 @@
 #ifndef __MV_PADDING_H__
 #define __MV_PADDING_H__
 
-#ifdef _WIN32
-#define NOGDI
-#define NOMINMAX
-#define WIN32_LEAN_AND_MEAN
-#include "windows.h"
-#endif
 #include "avisynth.h"
 #include "yuy2planes.h"
 
 #include <cstdio>
-
-
 
 class Padding
   : public GenericVideoFilter

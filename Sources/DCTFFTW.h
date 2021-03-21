@@ -26,14 +26,6 @@
 #include "types.h"
 #include "def.h"
 
-#ifdef _WIN32
-#define NOGDI
-#define NOMINMAX
-#define WIN32_LEAN_AND_MEAN
-#include "windows.h"
-#endif
-
-
 class DCTFFTW
   : public DCTClass
 {

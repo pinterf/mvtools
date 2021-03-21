@@ -82,7 +82,7 @@ inline void* InterlockedCompareExchangePointer(void** ptr, void* newvalue, void*
 }
 #endif // if #0
 
-#if defined(_WIN32) && !defined(__clang__)
+#if defined(_WIN32) && !defined(__clang__) && !defined(__GNUC__)
 #include <intrin.h>
 inline static int32_t interlockedIncrement(volatile int32_t* a) { return _InterlockedIncrement((long*)a); }
 inline static int32_t interlockedDecrement(volatile int32_t* a) { return _InterlockedDecrement((long*)a); }

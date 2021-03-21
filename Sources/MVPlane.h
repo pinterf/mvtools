@@ -19,15 +19,6 @@
 #ifndef __MV_MVPlanes__
 #define __MV_MVPlanes__
 
-
-
-#ifdef _WIN32
-#define NOGDI
-#define NOMINMAX
-#define WIN32_LEAN_AND_MEAN
-#include "windows.h"
-#endif
-
 #include	"MTFlowGraphSimple.h"
 #include	"MTFlowGraphSched.h"
 #include	"MTSlicer.h"

@@ -63,7 +63,11 @@
 
 */
 
+#ifdef _WIN32
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
+#endif
 #include <avisynth.h>
 #include <avs/types.h>
 #include "commonfunctions.h"

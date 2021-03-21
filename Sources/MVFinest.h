@@ -2,16 +2,7 @@
 #define __MV_FINEST__
 
 #include "yuy2planes.h"
-
-#ifdef _WIN32
-#define NOGDI
-#define NOMINMAX
-#define WIN32_LEAN_AND_MEAN
-#include "windows.h"
-#endif
-#include	"avisynth.h"
-
-
+#include "avisynth.h"
 
 class MVGroupOfFrames;
 

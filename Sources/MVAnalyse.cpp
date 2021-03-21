@@ -166,7 +166,7 @@ MVAnalyse::MVAnalyse(
     { 2,4 },{ 2,2 }
   };
   bool found = false;
-  for (int i = 0; i < allowed_blksizes.size(); i++) {
+  for (int i = 0; i < (int)allowed_blksizes.size(); i++) {
     if (analysisData.nBlkSizeX == allowed_blksizes[i].first && analysisData.nBlkSizeY == allowed_blksizes[i].second) {
       found = true;
       break;

@@ -116,11 +116,7 @@ bool	is_pow_2 (T x)
 #ifdef __cplusplus
 
 #include <cassert>
-/*#include <cassert>
-#include <cstdlib>
-#include <cstdint>
-#include <avs/config.h>
-*/
+
 #if defined(MSVC)
 // needed for VS2013, otherwise C++11 'alignas' works
 #define avs_alignas(x) __declspec(align(x))

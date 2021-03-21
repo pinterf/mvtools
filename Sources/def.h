@@ -30,18 +30,31 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 #include "types.h"
 
 #ifdef _WIN32
-#define NOGDI
-#define NOMINMAX
-#define WIN32_LEAN_AND_MEAN
-#include "windows.h"
+#include "avs/win.h"
 #endif
 
-#if defined(GCC)
+
+
+
+#ifndef _WIN32
+#define OutputDebugString(x)
+#endif
+
+#if (defined(GCC) || defined(CLANG)) && !defined(_WIN32)
 #include <stdlib.h>
 #define _aligned_malloc(size, alignment) aligned_alloc(alignment, size)
 #define _aligned_free(ptr) free(ptr)
 #endif
 
+#ifndef _WIN32
+#include <stdio.h>
+#ifdef AVS_POSIX
+#ifndef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 1
+#endif
+#include <limits.h>
+#endif
+#endif
 
 // Checks a constant expression to make the compiler fail if false.
 // Name is a string containing only alpha+num+underscore, free of double quotes.
@@ -89,7 +102,7 @@ const long double	LN2 = 0.69314718055994530941723212145818L;
 #define MAX_BLOCK_SIZE 64
 
 // external asm related defines, disable them for non-windows
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__GNUC__)
 #define USE_COPYCODE_ASM
 #define USE_OVERLAPS_ASM
 #define USE_SAD_ASM
@@ -116,16 +129,6 @@ static MV_FORCEINLINE sad_t ScaleSadChroma(sad_t sad, int effective_scale) {
   if (effective_scale > 0) return sad >> effective_scale;
   return sad << (-effective_scale);
 }
-
-/*
-C++ does not allow macroizing reserved words like inline
-#ifdef FORCE_INLINE // set compiler variable for Release with fastest run speed, but slow compile!
-#define inline __forceinline
-#else
-#define inline inline
-#endif
-*/
-
 
 #endif	// def_HEADER_INCLUDED
 

@@ -19,20 +19,11 @@
 #ifndef	__MV_MVClip__
 #define	__MV_MVClip__
 
+#include "avisynth.h"
 
-
-#ifdef _WIN32
-#define NOGDI
-#define NOMINMAX
-#define WIN32_LEAN_AND_MEAN
-#include "windows.h"
-#endif
-
-#include	"avisynth.h"
-
-#include	"FakeGroupOfPlanes.h"
-#include	"FakePlaneOfBlocks.h"
-#include	"MVAnalysisData.h"
+#include "FakeGroupOfPlanes.h"
+#include "FakePlaneOfBlocks.h"
+#include "MVAnalysisData.h"
 
 
 

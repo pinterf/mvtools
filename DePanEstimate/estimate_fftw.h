@@ -50,15 +50,9 @@
 #ifndef __ESTIMATE_FFTW_H__
 #define __ESTIMATE_FFTW_H__
 
-#ifdef _WIN32
-#define NOGDI
-#define NOMINMAX
-#define WIN32_LEAN_AND_MEAN
-#include "windows.h"
-#endif
 #include "avisynth.h"
 #include "stdio.h"
-#include "fftwlite.h" // v.1.2
+#include "fftwlite.h"
 #include <mutex>
 
 //****************************************************************************
