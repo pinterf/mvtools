@@ -21,13 +21,6 @@
 // Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA, or visit
 // http://www.gnu.org/copyleft/gpl.html .
 
-#ifdef _WIN32
-#define NOGDI
-#define NOMINMAX
-#define WIN32_LEAN_AND_MEAN
-#include "windows.h"
-#endif
-
 // Use MVClip / MVFilter helpers
 #include "MVMask.h"
 #include "MVShow.h"
@@ -127,7 +120,7 @@ AVSValue __cdecl Create_MVSCDetection(AVSValue args, void* user_data, IScriptEnv
   return new MVSCDetection(
     args[0].AsClip(),
     args[1].AsClip(),
-    args[2].AsFloat(-9999.0f),
+    args[2].AsFloatf(-9999.0f),
     args[3].AsInt(MV_DEFAULT_SCD1),
     args[4].AsInt(MV_DEFAULT_SCD2),
     args[5].AsBool(true),
@@ -352,7 +345,7 @@ AVSValue __cdecl Create_MVFlowBlur(AVSValue args, void*, IScriptEnvironment* env
 
 AVSValue __cdecl Create_MVDegrainX(AVSValue args, void* user_data, IScriptEnvironment* env)
 {
-  auto level = (intptr_t)user_data;
+  int level = (int)(intptr_t)user_data;
 
   int plane_param_index = 6; // base: MDegrain1
   int thsad_param_index = 4;
@@ -420,6 +413,7 @@ AVSValue __cdecl Create_MVDegrainX(AVSValue args, void* user_data, IScriptEnviro
     args[13 + param_index_shift].AsBool(false), // lsb
     args[14 + param_index_shift].AsBool(true),  // mt
     args[15 + param_index_shift].AsBool(false),  // out16
+    args[16 + param_index_shift].AsBool(false),  // out32
     level,
     env
   );
@@ -491,6 +485,7 @@ AVSValue __cdecl Create_MDegrainN(AVSValue args, void*, IScriptEnvironment* env)
         args[13].AsBool(false),  // lsb
         args[16].AsBool(true),   // mt
         args[17].AsBool(false),  // out16
+        args[18].AsBool(false),  // out32
         tr, // PF: level
         env
       );
@@ -516,6 +511,7 @@ AVSValue __cdecl Create_MDegrainN(AVSValue args, void*, IScriptEnvironment* env)
     thSADC2,                   // thSADC2
     args[16].AsBool(true),   // mt
     args[17].AsBool(false),   // out16
+    // fixme: out32
     env
   );
 }
@@ -690,12 +686,12 @@ AvisynthPluginInit3(IScriptEnvironment* env, const AVS_Linkage* const vectors) {
   env->AddFunction("MFlowInter", "cccc[time]f[ml]f[blend]b[thSCD1]i[thSCD2]i[isse]b[planar]b[tclip]c", Create_MVFlowInter, 0);
   env->AddFunction("MFlowFps", "cccc[num]i[den]i[mask]i[ml]f[blend]b[thSCD1]i[thSCD2]i[isse]b[planar]b[optDebug]i", Create_MVFlowFps, 0);
   env->AddFunction("MFlowBlur", "cccc[blur]f[prec]i[thSCD1]i[thSCD2]i[isse]b[planar]b", Create_MVFlowBlur, 0);
-  env->AddFunction("MDegrain1", "cccc[thSAD]i[thSADC]i[plane]i[limit]f[limitC]f[thSCD1]i[thSCD2]i[isse]b[planar]b[lsb]b[mt]b[out16]b", Create_MVDegrainX, (void *)1);
-  env->AddFunction("MDegrain2", "cccccc[thSAD]i[thSADC]i[plane]i[limit]f[limitC]f[thSCD1]i[thSCD2]i[isse]b[planar]b[lsb]b[mt]b[out16]b", Create_MVDegrainX, (void *)2);
-  env->AddFunction("MDegrain3", "cccccccc[thSAD]i[thSADC]i[plane]i[limit]f[limitC]f[thSCD1]i[thSCD2]i[isse]b[planar]b[lsb]b[mt]b[out16]b", Create_MVDegrainX, (void *)3);
-  env->AddFunction("MDegrain4", "cccccccccc[thSAD]i[thSADC]i[plane]i[limit]f[limitC]f[thSCD1]i[thSCD2]i[isse]b[planar]b[lsb]b[mt]b[out16]b", Create_MVDegrainX, (void *)4);
-  env->AddFunction("MDegrain5", "cccccccccccc[thSAD]i[thSADC]i[plane]i[limit]f[limitC]f[thSCD1]i[thSCD2]i[isse]b[planar]b[lsb]b[mt]b[out16]b", Create_MVDegrainX, (void *)5);
-  env->AddFunction("MDegrain6", "cccccccccccccc[thSAD]i[thSADC]i[plane]i[limit]f[limitC]f[thSCD1]i[thSCD2]i[isse]b[planar]b[lsb]b[mt]b[out16]b", Create_MVDegrainX, (void *)6);
+  env->AddFunction("MDegrain1", "cccc[thSAD]i[thSADC]i[plane]i[limit]f[limitC]f[thSCD1]i[thSCD2]i[isse]b[planar]b[lsb]b[mt]b[out16]b[out32]b", Create_MVDegrainX, (void *)1);
+  env->AddFunction("MDegrain2", "cccccc[thSAD]i[thSADC]i[plane]i[limit]f[limitC]f[thSCD1]i[thSCD2]i[isse]b[planar]b[lsb]b[mt]b[out16]b[out32]b", Create_MVDegrainX, (void *)2);
+  env->AddFunction("MDegrain3", "cccccccc[thSAD]i[thSADC]i[plane]i[limit]f[limitC]f[thSCD1]i[thSCD2]i[isse]b[planar]b[lsb]b[mt]b[out16]b[out32]b", Create_MVDegrainX, (void *)3);
+  env->AddFunction("MDegrain4", "cccccccccc[thSAD]i[thSADC]i[plane]i[limit]f[limitC]f[thSCD1]i[thSCD2]i[isse]b[planar]b[lsb]b[mt]b[out16]b[out32]b", Create_MVDegrainX, (void *)4);
+  env->AddFunction("MDegrain5", "cccccccccccc[thSAD]i[thSADC]i[plane]i[limit]f[limitC]f[thSCD1]i[thSCD2]i[isse]b[planar]b[lsb]b[mt]b[out16]b[out32]b", Create_MVDegrainX, (void *)5);
+  env->AddFunction("MDegrain6", "cccccccccccccc[thSAD]i[thSADC]i[plane]i[limit]f[limitC]f[thSCD1]i[thSCD2]i[isse]b[planar]b[lsb]b[mt]b[out16]b[out32]b", Create_MVDegrainX, (void *)6);
   env->AddFunction("MDegrainN", "ccci[thSAD]i[thSADC]i[plane]i[limit]f[limitC]f[thSCD1]i[thSCD2]i[isse]b[planar]b[lsb]b[thsad2]i[thsadc2]i[mt]b[out16]b", Create_MDegrainN, 0);
   env->AddFunction("MRecalculate", "cc[thsad]i[smooth]i[blksize]i[blksizeV]i[search]i[searchparam]i[lambda]i[chroma]b[truemotion]b[pnew]i[overlap]i[overlapV]i[outfile]s[dct]i[divide]i[sadx264]i[isse]b[meander]b[tr]i[mt]b[scaleCSAD]i", Create_MVRecalculate, 0);
   env->AddFunction("MBlockFps", "cccc[num]i[den]i[mode]i[ml]i[blend]b[thSCD1]i[thSCD2]i[isse]b[planar]b[mt]b", Create_MVBlockFps, 0);

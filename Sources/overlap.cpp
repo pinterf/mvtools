@@ -163,59 +163,116 @@ OverlapWindows::OverlapWindows(int _nx, int _ny, int _ox, int _oy)
 
 
 		Overlap9Windows = new short[size*9];
+    Overlap9WindowsF = new float[size * 9];
 
-	   short *winOverUVTL = Overlap9Windows;
-	   short *winOverUVTM = Overlap9Windows + size;
-	   short *winOverUVTR = Overlap9Windows + size*2;
-	   short *winOverUVML = Overlap9Windows + size*3;
-	   short *winOverUVMM = Overlap9Windows + size*4;
-	   short *winOverUVMR = Overlap9Windows + size*5;
-	   short *winOverUVBL = Overlap9Windows + size*6;
-	   short *winOverUVBM = Overlap9Windows + size*7;
-	   short *winOverUVBR = Overlap9Windows + size*8;
+    // short
+    {
+      short* winOverUVTL = Overlap9Windows;
+      short* winOverUVTM = Overlap9Windows + size;
+      short* winOverUVTR = Overlap9Windows + size * 2;
+      short* winOverUVML = Overlap9Windows + size * 3;
+      short* winOverUVMM = Overlap9Windows + size * 4;
+      short* winOverUVMR = Overlap9Windows + size * 5;
+      short* winOverUVBL = Overlap9Windows + size * 6;
+      short* winOverUVBM = Overlap9Windows + size * 7;
+      short* winOverUVBR = Overlap9Windows + size * 8;
 
-     // Cos^2 based weigthing factors with 11 bits precision. (0-2048)
-     // SourceBlocks overlap sample for Blocksize=4 Overlaps=2:
-     // a1     a1   | a1+b1         a1+b1       | b1      b1    | b1+c1         b1+c1       | c1       c1   
-     // a1     a1   | a1+b1         a1+b1       | b1      b1    | b1+c1         b1+c1       | c1      c1   
-     // ------------+---------------------------+---------------+---------------------------+--------------
-     // a1+a2  a1+a2| a1+a2+b1+b2   a1+a2+b1+b2 | b1+b2   b1+b2 | b1+b2+c1+c2   b1+b2+c1+c2 | c1+c2   c1+c2
-     // a1+a2  a1+a2| a1+a2+b1+b2   a1+a2+b1+b2 | b1+b2   b1+b2 | b1+b2+c1+c2   b1+b2+c1+c2 | c1+c2   c1+c2
-     // ------------+---------------------------+---------------+---------------------------+--------------
-     // a2+a3  a2+a3| a2+a3+b2+b3   a2+a3+b2+b3 | b2+b3   b2+b3 | b2+b3+c2+c3   b2+b3+c2+c3 | c2+c3   c2+c3
-     // a2+a3  a2+a3| a2+a3+b2+b3   a2+a3+b2+b3 | b2+b3   b2+b3 | b2+b3+c2+c3   b2+b3+c2+c3 | c2+c3   c2+c3
-     // ...
+      // Cos^2 based weigthing factors with 11 bits precision. (0-2048)
+      // SourceBlocks overlap sample for Blocksize=4 Overlaps=2:
+      // a1     a1   | a1+b1         a1+b1       | b1      b1    | b1+c1         b1+c1       | c1       c1   
+      // a1     a1   | a1+b1         a1+b1       | b1      b1    | b1+c1         b1+c1       | c1      c1   
+      // ------------+---------------------------+---------------+---------------------------+--------------
+      // a1+a2  a1+a2| a1+a2+b1+b2   a1+a2+b1+b2 | b1+b2   b1+b2 | b1+b2+c1+c2   b1+b2+c1+c2 | c1+c2   c1+c2
+      // a1+a2  a1+a2| a1+a2+b1+b2   a1+a2+b1+b2 | b1+b2   b1+b2 | b1+b2+c1+c2   b1+b2+c1+c2 | c1+c2   c1+c2
+      // ------------+---------------------------+---------------+---------------------------+--------------
+      // a2+a3  a2+a3| a2+a3+b2+b3   a2+a3+b2+b3 | b2+b3   b2+b3 | b2+b3+c2+c3   b2+b3+c2+c3 | c2+c3   c2+c3
+      // a2+a3  a2+a3| a2+a3+b2+b3   a2+a3+b2+b3 | b2+b3   b2+b3 | b2+b3+c2+c3   b2+b3+c2+c3 | c2+c3   c2+c3
+      // ...
 
-     // Combine precomputed horizontal and vertical weights for 3x3 special areas
-	   for (int j=0; j<ny; j++)
-	   {
-		   for (int i=0; i<nx; i++)
-		   {
-         winOverUVTL[i] = (int)(fWin1UVyfirst[j]*fWin1UVxfirst[i]*2048 + 0.5f); // Top Left
-			   winOverUVTM[i] = (int)(fWin1UVyfirst[j]*fWin1UVx[i]*2048 + 0.5f);      // Top Middle
-			   winOverUVTR[i] = (int)(fWin1UVyfirst[j]*fWin1UVxlast[i]*2048 + 0.5f);  // Top Right
-			   winOverUVML[i] = (int)(fWin1UVy[j]*fWin1UVxfirst[i]*2048 + 0.5f);      // Middle Left
-			   winOverUVMM[i] = (int)(fWin1UVy[j]*fWin1UVx[i]*2048 + 0.5f);           // Middle Middle
-			   winOverUVMR[i] = (int)(fWin1UVy[j]*fWin1UVxlast[i]*2048 + 0.5f);       // Middle Right
-			   winOverUVBL[i] = (int)(fWin1UVylast[j]*fWin1UVxfirst[i]*2048 + 0.5f);  // Bottom Left
-			   winOverUVBM[i] = (int)(fWin1UVylast[j]*fWin1UVx[i]*2048 + 0.5f);       // Bottom Middle
-			   winOverUVBR[i] = (int)(fWin1UVylast[j]*fWin1UVxlast[i]*2048 + 0.5f);   // Bottom Right
-		   }
-		   winOverUVTL += nx;
-		   winOverUVTM += nx;
-		   winOverUVTR += nx;
-		   winOverUVML += nx;
-		   winOverUVMM += nx;
-		   winOverUVMR += nx;
-		   winOverUVBL += nx;
-		   winOverUVBM += nx;
-		   winOverUVBR += nx;
-	   }
+      // Combine precomputed horizontal and vertical weights for 3x3 special areas
+      for (int j = 0; j < ny; j++)
+      {
+        for (int i = 0; i < nx; i++)
+        {
+          winOverUVTL[i] = (int)(fWin1UVyfirst[j] * fWin1UVxfirst[i] * 2048 + 0.5f); // Top Left
+          winOverUVTM[i] = (int)(fWin1UVyfirst[j] * fWin1UVx[i] * 2048 + 0.5f);      // Top Middle
+          winOverUVTR[i] = (int)(fWin1UVyfirst[j] * fWin1UVxlast[i] * 2048 + 0.5f);  // Top Right
+          winOverUVML[i] = (int)(fWin1UVy[j] * fWin1UVxfirst[i] * 2048 + 0.5f);      // Middle Left
+          winOverUVMM[i] = (int)(fWin1UVy[j] * fWin1UVx[i] * 2048 + 0.5f);           // Middle Middle
+          winOverUVMR[i] = (int)(fWin1UVy[j] * fWin1UVxlast[i] * 2048 + 0.5f);       // Middle Right
+          winOverUVBL[i] = (int)(fWin1UVylast[j] * fWin1UVxfirst[i] * 2048 + 0.5f);  // Bottom Left
+          winOverUVBM[i] = (int)(fWin1UVylast[j] * fWin1UVx[i] * 2048 + 0.5f);       // Bottom Middle
+          winOverUVBR[i] = (int)(fWin1UVylast[j] * fWin1UVxlast[i] * 2048 + 0.5f);   // Bottom Right
+        }
+        winOverUVTL += nx;
+        winOverUVTM += nx;
+        winOverUVTR += nx;
+        winOverUVML += nx;
+        winOverUVMM += nx;
+        winOverUVMR += nx;
+        winOverUVBL += nx;
+        winOverUVBM += nx;
+        winOverUVBR += nx;
+      }
+    } // end of short coeffs
+
+     {
+       // float *
+       auto winOverUVTL = Overlap9WindowsF;
+       auto winOverUVTM = Overlap9WindowsF + size;
+       auto winOverUVTR = Overlap9WindowsF + size * 2;
+       auto winOverUVML = Overlap9WindowsF + size * 3;
+       auto winOverUVMM = Overlap9WindowsF + size * 4;
+       auto winOverUVMR = Overlap9WindowsF + size * 5;
+       auto winOverUVBL = Overlap9WindowsF + size * 6;
+       auto winOverUVBM = Overlap9WindowsF + size * 7;
+       auto winOverUVBR = Overlap9WindowsF + size * 8;
+
+       // Cos^2 based weigthing factors with 11 bits precision. (0-2048)
+       // SourceBlocks overlap sample for Blocksize=4 Overlaps=2:
+       // a1     a1   | a1+b1         a1+b1       | b1      b1    | b1+c1         b1+c1       | c1       c1   
+       // a1     a1   | a1+b1         a1+b1       | b1      b1    | b1+c1         b1+c1       | c1      c1   
+       // ------------+---------------------------+---------------+---------------------------+--------------
+       // a1+a2  a1+a2| a1+a2+b1+b2   a1+a2+b1+b2 | b1+b2   b1+b2 | b1+b2+c1+c2   b1+b2+c1+c2 | c1+c2   c1+c2
+       // a1+a2  a1+a2| a1+a2+b1+b2   a1+a2+b1+b2 | b1+b2   b1+b2 | b1+b2+c1+c2   b1+b2+c1+c2 | c1+c2   c1+c2
+       // ------------+---------------------------+---------------+---------------------------+--------------
+       // a2+a3  a2+a3| a2+a3+b2+b3   a2+a3+b2+b3 | b2+b3   b2+b3 | b2+b3+c2+c3   b2+b3+c2+c3 | c2+c3   c2+c3
+       // a2+a3  a2+a3| a2+a3+b2+b3   a2+a3+b2+b3 | b2+b3   b2+b3 | b2+b3+c2+c3   b2+b3+c2+c3 | c2+c3   c2+c3
+       // ...
+
+       // Combine precomputed horizontal and vertical weights for 3x3 special areas
+       for (int j = 0; j < ny; j++)
+       {
+         for (int i = 0; i < nx; i++)
+         {
+           winOverUVTL[i] = fWin1UVyfirst[j] * fWin1UVxfirst[i]; // Top Left
+           winOverUVTM[i] = fWin1UVyfirst[j] * fWin1UVx[i];      // Top Middle
+           winOverUVTR[i] = fWin1UVyfirst[j] * fWin1UVxlast[i];  // Top Right
+           winOverUVML[i] = fWin1UVy[j] * fWin1UVxfirst[i];      // Middle Left
+           winOverUVMM[i] = fWin1UVy[j] * fWin1UVx[i];           // Middle Middle
+           winOverUVMR[i] = fWin1UVy[j] * fWin1UVxlast[i];       // Middle Right
+           winOverUVBL[i] = fWin1UVylast[j] * fWin1UVxfirst[i];  // Bottom Left
+           winOverUVBM[i] = fWin1UVylast[j] * fWin1UVx[i];       // Bottom Middle
+           winOverUVBR[i] = fWin1UVylast[j] * fWin1UVxlast[i];   // Bottom Right
+         }
+         winOverUVTL += nx;
+         winOverUVTM += nx;
+         winOverUVTR += nx;
+         winOverUVML += nx;
+         winOverUVMM += nx;
+         winOverUVMR += nx;
+         winOverUVBL += nx;
+         winOverUVBM += nx;
+         winOverUVBR += nx;
+       }
+     }
+
 }
 
 OverlapWindows::~OverlapWindows()
 {
-	delete [] Overlap9Windows;
+  delete[] Overlap9Windows;
+  delete [] Overlap9WindowsF;
 	delete [] fWin1UVx;
 	delete [] fWin1UVxfirst;
 	delete [] fWin1UVxlast;
@@ -281,6 +338,94 @@ void Short2Bytes(unsigned char *pDst, int nDstPitch, uint16_t *pDstShort, int ds
 		pDstShort += dstShortPitch;
 	}
 }
+
+template<typename pixel_t>
+void OverlapsBuf_Float2Bytes_sse4(unsigned char* pDst0, int nDstPitch, float* pTmpFloat, int tmpPitch, int nWidth, int nHeight, int bits_per_pixel)
+{
+  // our temporary Overlaps buffer is float. For integer targets we convert it back
+  // for float output: simple copy, this function is not called
+  auto pDst = reinterpret_cast<pixel_t*>(pDst0);
+  const auto max_pixel_value = _mm_set1_epi16((short)((1 << bits_per_pixel) - 1));
+  for (int y = 0; y < nHeight; y++)
+  {
+    // aligned to 32, safe.
+    for (int x = 0; x < nWidth; x += 8) { // 32 source bytes = 8 float sized pixels
+      auto src07 = _mm_load_ps((float*)(pTmpFloat + x)); // 8 float pixels
+      auto src8f = _mm_load_ps((float*)(pTmpFloat + x + 4)); // 8 float pixels
+      const auto scaleback = _mm_set1_ps(1.0f / 256 /* (1 << DEGRAIN_WEIGHT_BITS)*/);
+      src07 = _mm_mul_ps(src07, scaleback);
+      src8f = _mm_mul_ps(src8f, scaleback);
+
+      auto src07_32 = _mm_cvtps_epi32(src07); // round
+      auto src8f_32 = _mm_cvtps_epi32(src8f); // round
+      auto res_16 = _mm_packus_epi32(src07_32, src8f_32);
+
+      if constexpr (sizeof(pixel_t) == 1) {
+        // fixme: bitdepth aware max value check for 10-14 bits/float  pDst[i] = min(255, a);
+        auto res_8 = _mm_packus_epi16(res_16, res_16);
+        _mm_storel_epi64((__m128i*)(pDst + x), res_8);
+      }
+      else if constexpr (sizeof(pixel_t) == 2) {
+        // fixme: bitdepth aware max value check _ONLY_ for 10-14 bits/float  pDst[i] = min(255, a);
+        res_16 = _mm_min_epu16(res_16, max_pixel_value);
+        _mm_storeu_si128((__m128i*)(pDst + x), res_16);
+      }
+    }
+    pDst += nDstPitch;
+    pTmpFloat += tmpPitch;
+  }
+}
+
+// instantiate
+template void OverlapsBuf_Float2Bytes_sse4<uint8_t>(unsigned char* pDst0, int nDstPitch, float* pTmpFloat, int tmpPitch, int nWidth, int nHeight, int bits_per_pixel);
+template void OverlapsBuf_Float2Bytes_sse4<uint16_t>(unsigned char* pDst0, int nDstPitch, float* pTmpFloat, int tmpPitch, int nWidth, int nHeight, int bits_per_pixel);
+
+// generic 32 bit float overlaps temporary buffer -> back to integer
+template<typename pixel_t>
+void OverlapsBuf_Float2Bytes(unsigned char* pDst0, int nDstPitch, float* pTmpFloat, int tmpPitch, int nWidth, int nHeight, int bits_per_pixel)
+{
+  // fixme: specialize for float bitblt
+  auto pDst = reinterpret_cast<pixel_t*>(pDst0);
+  for (int h = 0; h < nHeight; h++)
+  {
+    for (int i = 0; i < nWidth; i++)
+    {
+      // fixme: int or float
+      int a = (int)(pTmpFloat[i] +0.5f); // no scaling!
+      if constexpr (sizeof(pixel_t) == 2) {
+        // fixme: only for 10-14 bits
+        const auto max_pixel_value = (1 << bits_per_pixel) - 1;
+        a = min(a, max_pixel_value);
+      }
+      pDst[i] = a;
+    }
+    pDst += nDstPitch;
+    pTmpFloat += tmpPitch;
+  }
+}
+
+// specialize for float
+template<>
+void OverlapsBuf_Float2Bytes<float>(unsigned char* pDst0, int nDstPitch, float* pTmpFloat, int tmpPitch, int nWidth, int nHeight, int bits_per_pixel)
+{
+  // fixme: specialize for float bitblt
+  auto pDst = reinterpret_cast<float*>(pDst0);
+  for (int h = 0; h < nHeight; h++)
+  {
+    for (int i = 0; i < nWidth; i++)
+    {
+      pDst[i] = pTmpFloat[i];
+    }
+    pDst += nDstPitch;
+    pTmpFloat += tmpPitch;
+  }
+}
+
+
+// instantiate
+template void OverlapsBuf_Float2Bytes<uint8_t>(unsigned char* pDst0, int nDstPitch, float* pTmpFloat, int tmpPitch, int nWidth, int nHeight, int bits_per_pixel);
+template void OverlapsBuf_Float2Bytes<uint16_t>(unsigned char* pDst0, int nDstPitch, float* pTmpFloat, int tmpPitch, int nWidth, int nHeight, int bits_per_pixel);
+
 
 void Short2BytesLsb(unsigned char *pDst, unsigned char *pDstLsb, int nDstPitch, int *pDstInt, int dstIntPitch, int nWidth, int nHeight)
 {
@@ -353,6 +498,7 @@ void Short2Bytes_Int32toWord16_sse4(uint16_t *pDst, int nDstPitch, int *pDstInt,
 
 void Short2Bytes_FloatInInt32ArrayToFloat(float *pDst, int nDstPitch, float *pDstInt, int dstIntPitch, int nWidth, int nHeight)
 {
+  // fixme: this is simple BitBlt
   for (int h=0; h<nHeight; h++)
   {
     for (int i=0; i<nWidth; i++)
@@ -607,7 +753,7 @@ void Overlaps_uint16_t_sse4(uint16_t *pDst0, int nDstPitch, const unsigned char 
 }
 
 template <int blockWidth, int blockHeight>
-// pDst is short* for 8 bit, int * for 16 bit
+// pDst is short* for 8 bit, int * for 16 bit, float * for out32
 // works for blockWidth >= 4 && uint16_t
 // only src_pitch is byte-level
 // dstPitch knows int* or short* 
@@ -730,17 +876,119 @@ void Overlaps_uint8_t_sse4(uint16_t* pDst0, int nDstPitch, const unsigned char* 
   }
 }
 
-
-OverlapsFunction *get_overlaps_function(int BlockX, int BlockY, int pixelsize, arch_t arch)
+// see Overlaps_float_new_C
+template <int blockWidth, int blockHeight>
+// pDst is short* for 8 bit, int * for 16 bit, float * for out32
+// works for blockWidth >= 4 && uint16_t
+// only src_pitch is byte-level
+// dstPitch knows int* or short* 
+// winPitch knows short *
+void Overlaps_float_new_sse2(uint16_t* pDst0, int nDstPitch, const unsigned char* pSrc0, int nSrcPitch, short* pWin0, int nWinPitch)
 {
+  // pWin from 0 to 2048, 11 bit integer arithmetic
+  // when pixel_t == uint16_t, dst should be int*
+
+  // src is tmpBlock, for this new method it is always float
+  auto pWin = reinterpret_cast<float*>(pWin0); // overlap windows constants are now float
+
+  // in integer 8-16 bit format originally pWin from 0 to 2048 total shift 11
+  // for float internal working formats no scaling occurs in overlaps constants
+
+  float* pDst = reinterpret_cast<float*>(pDst0);
+  __m128 zero = _mm_setzero_ps();
+
+  for (int j = 0; j < blockHeight; j++)
+  {
+    __m128 dst;
+    __m128 win, src;
+
+    // pDst[i] = pDst[i] + (val * win);
+    const float* pSrc = reinterpret_cast<const float*>(pSrc0);
+
+    if constexpr (blockWidth % 8 == 0) {
+      for (int x = 0; x < blockWidth; x += 8) {
+        win = _mm_loadu_ps(reinterpret_cast<float*>(pWin + x));
+        src = _mm_loadu_ps(reinterpret_cast<const float*>(pSrc + x));
+        auto res = _mm_mul_ps(src, win);
+        dst = _mm_loadu_ps(reinterpret_cast<float*>(pDst + x));
+        dst = _mm_add_ps(dst, res);
+        _mm_storeu_ps(reinterpret_cast<float*>(pDst + x), dst);
+
+        win = _mm_loadu_ps(reinterpret_cast<float*>(pWin + x + 4));
+        src = _mm_loadu_ps(reinterpret_cast<const float*>(pSrc + x + 4));
+        res = _mm_mul_ps(src, win);
+        dst = _mm_loadu_ps(reinterpret_cast<float*>(pDst + x + 4));
+        dst = _mm_add_ps(dst, res);
+        _mm_storeu_ps(reinterpret_cast<float*>(pDst + x + 4), dst);
+      }
+    }
+    else if constexpr (blockWidth % 4 == 0) {
+      for (int x = 0; x < blockWidth; x +=4) {
+        win = _mm_loadu_ps(reinterpret_cast<float*>(pWin + x));
+        src = _mm_loadu_ps(reinterpret_cast<const float*>(pSrc + x));
+        auto res = _mm_mul_ps(src,win);
+        dst = _mm_loadu_ps(reinterpret_cast<float*>(pDst + x));
+        dst = _mm_add_ps(dst, res);
+        _mm_storeu_ps(reinterpret_cast<float*>(pDst + x), dst);
+      }
+    }
+    else if constexpr (blockWidth == 6) {
+      // 4+2
+      // 1st 4
+      win = _mm_loadu_ps(reinterpret_cast<float*>(pWin));
+      src = _mm_loadu_ps(reinterpret_cast<const float*>(pSrc));
+      auto res = _mm_mul_ps(src, win);
+      dst = _mm_loadu_ps(reinterpret_cast<float*>(pDst));
+      dst = _mm_add_ps(dst, res);
+      _mm_storeu_ps(reinterpret_cast<float*>(pDst), dst);
+
+      // last 2 pixels
+      win = _mm_castsi128_ps(_mm_loadl_epi64(reinterpret_cast<const __m128i*>(pWin + 4))); // 2x float
+      src = _mm_castsi128_ps(_mm_loadl_epi64(reinterpret_cast<const __m128i*>(pSrc + 4))); // 2x float
+      res = _mm_mul_ps(src, win);
+      dst = _mm_castsi128_ps(_mm_loadl_epi64(reinterpret_cast<__m128i*>(pDst + 4)));
+      dst = _mm_add_ps(dst, res);
+      _mm_storel_epi64(reinterpret_cast<__m128i*>(pDst + 4), _mm_castps_si128(dst));
+    }
+    else if constexpr (blockWidth % 2 == 0) {
+      // width==2,(4),6,(8)
+      for (int x = 0; x < blockWidth; x += 2) {
+        win = _mm_castsi128_ps(_mm_loadl_epi64(reinterpret_cast<__m128i*>(pWin + x))); // 2x float
+        src = _mm_castsi128_ps(_mm_loadl_epi64(reinterpret_cast<const __m128i*>(pSrc + x))); // 2x float
+        auto res = _mm_mul_ps(src, win);
+        dst = _mm_castsi128_ps(_mm_loadl_epi64(reinterpret_cast<__m128i*>(pDst + x))); // 4x short: destination pixels
+        dst = _mm_add_ps(dst, res);
+        _mm_storel_epi64(reinterpret_cast<__m128i*>(pDst + x), _mm_castps_si128(dst));
+      }
+    }
+    else {
+      assert(0);
+    }
+
+    pDst += nDstPitch;
+    pSrc0 += nSrcPitch;
+    pWin += nWinPitch;
+  }
+}
+
+
+OverlapsFunction *get_overlaps_function(int BlockX, int BlockY, int pixelsize, bool out32_flag, arch_t arch)
+{
+  constexpr int OUT32_MARKER = 16;
+  if (out32_flag)
+    pixelsize += OUT32_MARKER;
     //---------- OVERLAPS
     // BlkSizeX, BlkSizeY, pixelsize, arch_t
     std::map<std::tuple<int, int, int, arch_t>, OverlapsFunction*> func_overlaps;
     using std::make_tuple;
     // define C for 8/16/32 bits
-#define MAKE_OVR_FN(x, y) func_overlaps[make_tuple(x, y, 1, NO_SIMD)] = Overlaps_C<uint8_t, x, y>; \
+#define MAKE_OVR_FN(x, y) \
+func_overlaps[make_tuple(x, y, 1, NO_SIMD)] = Overlaps_C<uint8_t, x, y>; \
+func_overlaps[make_tuple(x, y, 1+ OUT32_MARKER, NO_SIMD)] = Overlaps_float_new_C<x, y>; \
 func_overlaps[make_tuple(x, y, 2, NO_SIMD)] = Overlaps_C<uint16_t, x, y>; \
-func_overlaps[make_tuple(x, y, 4, NO_SIMD)] = Overlaps_float_C<x, y>;
+func_overlaps[make_tuple(x, y, 2+ OUT32_MARKER, NO_SIMD)] = Overlaps_float_new_C<x, y>; \
+func_overlaps[make_tuple(x, y, 4, NO_SIMD)] = Overlaps_float_C<x, y>; \
+func_overlaps[make_tuple(x, y, 4+ OUT32_MARKER, NO_SIMD)] = Overlaps_float_new_C<x, y>; \
     // sad, copy, overlap, luma, should support the blocksize list
     MAKE_OVR_FN(64, 64)
       MAKE_OVR_FN(64, 48)
@@ -843,11 +1091,17 @@ func_overlaps[make_tuple(x, y, 4, NO_SIMD)] = Overlaps_float_C<x, y>;
 #endif
     // define sse4 for 16 bits
 #ifdef USE_OVERLAPS_ASM
-#define MAKE_OVR_FN(x, y) func_overlaps[make_tuple(x, y, 2, USE_SSE41)] = Overlaps_uint16_t_sse4<x, y>;
+#define MAKE_OVR_FN(x, y) \
+func_overlaps[make_tuple(x, y, 2, USE_SSE41)] = Overlaps_uint16_t_sse4<x, y>; \
+func_overlaps[make_tuple(x, y, 1 + OUT32_MARKER, USE_SSE2)] = Overlaps_float_new_sse2<x, y>; \
+func_overlaps[make_tuple(x, y, 2 + OUT32_MARKER, USE_SSE2)] = Overlaps_float_new_sse2<x, y>; \
+func_overlaps[make_tuple(x, y, 4 + OUT32_MARKER, USE_SSE2)] = Overlaps_float_new_sse2<x, y>;
 #else
-    // everybody has at least sse4
-#define MAKE_OVR_FN(x, y) func_overlaps[make_tuple(x, y, 2, USE_SSE41)] = Overlaps_uint16_t_sse4<x, y>; \
-func_overlaps[make_tuple(x, y, 1, USE_SSE41)] = Overlaps_uint8_t_sse4<x, y>;
+    // plus: 8 bit SSE internally everybody has at least sse4
+#define MAKE_OVR_FN(x, y) \
+func_overlaps[make_tuple(x, y, 2, USE_SSE41)] = Overlaps_uint16_t_sse4<x, y>; \
+func_overlaps[make_tuple(x, y, 1, USE_SSE41)] = Overlaps_uint8_t_sse4<x, y>; \
+func_overlaps[make_tuple(x, y, 1 + OUT32_MARKER, USE_SSE2)] = Overlaps_float_new_sse2<x, y>;
 #endif
     MAKE_OVR_FN(64, 64)
       MAKE_OVR_FN(64, 48)

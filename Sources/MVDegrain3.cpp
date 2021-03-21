@@ -20,6 +20,7 @@
 #include "ClipFnc.h"
 #include "Interpolation.h"
 #include "MVDegrain3.h"
+#include "MVDegrain3_avx2.h"
 #include "MVFrame.h"
 #include "MVGroupOfFrames.h"
 #include "MVPlane.h"
@@ -38,7 +39,7 @@
 // 170105: MDegrain6
 
 //
-Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY, int _bits_per_pixel, bool _lsb_flag, bool _out16_flag, int _level, arch_t arch)
+Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY, int _bits_per_pixel, bool _lsb_flag, bool _out16_flag, bool _out32_flag, int _level, arch_t arch)
 {
   //---------- DENOISE/DEGRAIN
   const int DEGRAIN_TYPE_8BIT = 1;
@@ -47,6 +48,8 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   const int DEGRAIN_TYPE_10to14BIT = 8;
   const int DEGRAIN_TYPE_16BIT = 16;
   const int DEGRAIN_TYPE_32BIT = 32;
+
+  constexpr int OUT32_MARKER = 128;
   // BlkSizeX, BlkSizeY, degrain_type, level_of_MDegrain, arch_t
   std::map<std::tuple<int, int, int, int, arch_t>, Denoise1to6Function*> func_degrain;
   using std::make_tuple;
@@ -69,14 +72,18 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   else
     return nullptr;
 
-
+  if (out32_flag)
+    type_to_search |= OUT32_MARKER;
   // level 1-6, 8bit C, 8bit lsb C, 16 bit C (same for all, no blocksize templates)
 #define MAKE_FN_LEVEL(x, y, level) \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT, level, NO_SIMD)] = Degrain1to6_C<uint8_t, 0, level>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_STACKED, level, NO_SIMD)] = Degrain1to6_C<uint8_t, 1, level>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_OUT16, level, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, level>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT + OUT32_MARKER, level, NO_SIMD)] = Degrain1to6_C<uint8_t, 3, level>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_10to14BIT, level, NO_SIMD)] = Degrain1to6_C<uint16_t, 0, level>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_10to14BIT + OUT32_MARKER, level, NO_SIMD)] = Degrain1to6_C<uint16_t, 3, level>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_16BIT, level, NO_SIMD)] = Degrain1to6_C<uint16_t, 0, level>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_16BIT + OUT32_MARKER, level, NO_SIMD)] = Degrain1to6_C<uint16_t, 3, level>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_32BIT, level, NO_SIMD)] = Degrain1to6_float_C<level>;
 #define MAKE_FN(x, y) \
 MAKE_FN_LEVEL(x,y,1) \
@@ -142,21 +149,16 @@ MAKE_FN(2, 1)
 // 8 bit sse2 degrain function (mmx is replaced with sse2 for x86 width 4)
 // and 16 bit SSE4 function
 // for no_template_by_y: special height==0 -> internally nHeight comes from variable (for C: both width and height is variable)
-//#define OLD_DEGRAIN16BIT
-#ifdef OLD_DEGRAIN16BIT
-#define MAKE_FN_LEVEL(x, y, level, yy) \
-func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT, level, USE_SSE2)] = Degrain1to6_sse2<x, yy, false, level>; \
-func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_STACKED, level, USE_SSE2)] = Degrain1to6_sse2<x, yy, true, level>; \
-func_degrain[make_tuple(x, y, DEGRAIN_TYPE_10to14BIT, level, USE_SSE41)] = Degrain1to6_16_sse41_old<x, yy, level>;\
-func_degrain[make_tuple(x, y, DEGRAIN_TYPE_16BIT, level, USE_SSE41)] = Degrain1to6_16_sse41_old<x, yy, level>;
-#else
+// Degrain1to6_avx2: not worth, probably the excessive ymm register saving prolog and epilog overhead?
 #define MAKE_FN_LEVEL(x, y, level, yy) \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT, level, USE_SSE2)] = Degrain1to6_sse2<x, yy, 0, level>; \
+/*func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT, level, USE_AVX2)] = Degrain1to6_avx2<x, yy, 0, level>;*/ \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_STACKED, level, USE_SSE2)] = Degrain1to6_sse2<x, yy, 1, level>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_OUT16, level, USE_SSE2)] = Degrain1to6_sse2<x, yy, 2, level>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT + OUT32_MARKER, level, USE_SSE2)] = Degrain1to6_sse2<x, yy, 3, level>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT + OUT32_MARKER, level, USE_AVX2)] = Degrain1to6_avx2<x, yy, 3, level>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_10to14BIT, level, USE_SSE41)] = Degrain1to6_16_sse41<x, yy, level, true>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_16BIT, level, USE_SSE41)] = Degrain1to6_16_sse41<x, yy, level, false>;
-#endif
 
 #define MAKE_FN(x, y, yy) \
 MAKE_FN_LEVEL(x,y,1, yy) \
@@ -165,6 +167,7 @@ MAKE_FN_LEVEL(x,y,3, yy) \
 MAKE_FN_LEVEL(x,y,4, yy) \
 MAKE_FN_LEVEL(x,y,5, yy) \
 MAKE_FN_LEVEL(x,y,6, yy)
+
 MAKE_FN(64, 64, 0)
 MAKE_FN(64, 48, 0)
 MAKE_FN(64, 32, 0)
@@ -241,7 +244,7 @@ MVDegrainX::MVDegrainX(
   PClip _mvbw, PClip _mvfw, PClip _mvbw2, PClip _mvfw2, PClip _mvbw3, PClip _mvfw3, PClip _mvbw4, PClip _mvfw4, PClip _mvbw5, PClip _mvfw5, PClip _mvbw6, PClip _mvfw6,
   sad_t _thSAD, sad_t _thSADC, int _YUVplanes, float _nLimit, float _nLimitC,
   sad_t _nSCD1, int _nSCD2, bool _isse2, bool _planar, bool _lsb_flag,
-  bool _mt_flag, bool _out16_flag,
+  bool _mt_flag, bool _out16_flag, bool _out32_flag,
   int _level, 
   IScriptEnvironment* env_ptr
 ) : GenericVideoFilter(_child)
@@ -256,7 +259,8 @@ MVDegrainX::MVDegrainX(
   , super(_super)
   , lsb_flag(_lsb_flag)
   , out16_flag(_out16_flag)
-  , height_lsb_or_out16_mul((_lsb_flag || _out16_flag) ? 2 : 1)
+  , out32_flag(_out32_flag)
+  , height_lsb_or_out16_mul(_out32_flag ? 1 : (_lsb_flag || _out16_flag) ? 2 : 1)
   , level( _level )
   , DstPlanes(0)
   , SrcPlanes(0)
@@ -428,7 +432,10 @@ MVDegrainX::MVDegrainX(
   {
     OverWins = new OverlapWindows(nBlkSizeX, nBlkSizeY, nOverlapX, nOverlapY);
     OverWinsUV = new OverlapWindows(nBlkSizeX >> nLogxRatioUV_super, nBlkSizeY >> nLogyRatioUV_super, nOverlapX >> nLogxRatioUV_super, nOverlapY >> nLogyRatioUV_super);
-    if (lsb_flag || pixelsize_output > 1)
+    if (out32_flag) {
+      DstInt = (int*)_aligned_malloc(dstIntPitch * nHeight * sizeof(float), 32); // also for float sizeof(int)==sizeof(float)
+    }
+    else if (lsb_flag || pixelsize_output > 1)
     {
       DstInt = (int *)_aligned_malloc(dstIntPitch * nHeight * sizeof(int), 32); // also for float sizeof(int)==sizeof(float)
     }
@@ -459,17 +466,17 @@ MVDegrainX::MVDegrainX(
   OVERSLUMALSB = get_overlaps_lsb_function(nBlkSizeX, nBlkSizeY, sizeof(uint8_t), NO_SIMD);
   OVERSCHROMALSB = get_overlaps_lsb_function(nBlkSizeX >> nLogxRatioUV_super, nBlkSizeY >> nLogyRatioUV_super, sizeof(uint8_t), NO_SIMD);
 
-  OVERSLUMA = get_overlaps_function(nBlkSizeX, nBlkSizeY, sizeof(uint8_t), arch);
-  OVERSCHROMA = get_overlaps_function(nBlkSizeX >> nLogxRatioUV_super, nBlkSizeY >> nLogyRatioUV_super, sizeof(uint8_t), arch);
+  OVERSLUMA = get_overlaps_function(nBlkSizeX, nBlkSizeY, sizeof(uint8_t), out32_flag, arch);
+  OVERSCHROMA = get_overlaps_function(nBlkSizeX >> nLogxRatioUV_super, nBlkSizeY >> nLogyRatioUV_super, sizeof(uint8_t), out32_flag, arch);
 
-  OVERSLUMA16 = get_overlaps_function(nBlkSizeX, nBlkSizeY, sizeof(uint16_t), arch);
-  OVERSCHROMA16 = get_overlaps_function(nBlkSizeX >> nLogxRatioUV_super, nBlkSizeY >> nLogyRatioUV_super, sizeof(uint16_t), arch);
+  OVERSLUMA16 = get_overlaps_function(nBlkSizeX, nBlkSizeY, sizeof(uint16_t), out32_flag, arch);
+  OVERSCHROMA16 = get_overlaps_function(nBlkSizeX >> nLogxRatioUV_super, nBlkSizeY >> nLogyRatioUV_super, sizeof(uint16_t), out32_flag, arch);
 
-  OVERSLUMA32 = get_overlaps_function(nBlkSizeX, nBlkSizeY, sizeof(float), arch);
-  OVERSCHROMA32 = get_overlaps_function(nBlkSizeX >> nLogxRatioUV_super, nBlkSizeY >> nLogyRatioUV_super, sizeof(float), arch);
+  OVERSLUMA32 = get_overlaps_function(nBlkSizeX, nBlkSizeY, sizeof(float), out32_flag, arch);
+  OVERSCHROMA32 = get_overlaps_function(nBlkSizeX >> nLogxRatioUV_super, nBlkSizeY >> nLogyRatioUV_super, sizeof(float), out32_flag, arch);
 
-  DEGRAINLUMA = get_denoise123_function(nBlkSizeX, nBlkSizeY, bits_per_pixel_super, lsb_flag, out16_flag, level, arch);
-  DEGRAINCHROMA = get_denoise123_function(nBlkSizeX >> nLogxRatioUV_super, nBlkSizeY >> nLogyRatioUV_super, bits_per_pixel_super, lsb_flag, out16_flag, level, arch);
+  DEGRAINLUMA = get_denoise123_function(nBlkSizeX, nBlkSizeY, bits_per_pixel_super, lsb_flag, out16_flag, out32_flag, level, arch);
+  DEGRAINCHROMA = get_denoise123_function(nBlkSizeX >> nLogxRatioUV_super, nBlkSizeY >> nLogyRatioUV_super, bits_per_pixel_super, lsb_flag, out16_flag, out32_flag, level, arch);
   if (!OVERSLUMA)
     env_ptr->ThrowError("MDegrain%d : no valid OVERSLUMA function for %dx%d, bitsperpixel=%d, lsb_flag=%d, level=%d", level, nBlkSizeX, nBlkSizeY, bits_per_pixel_super, (int)lsb_flag, level);
   if (!OVERSCHROMA)
@@ -489,7 +496,7 @@ MVDegrainX::MVDegrainX(
   }
 
   // max blocksize = 32, 170507: 64 (moved to const)
-  const int		tmp_size = MAX_BLOCK_SIZE * MAX_BLOCK_SIZE * pixelsize_super;
+  const int		tmp_size = MAX_BLOCK_SIZE * MAX_BLOCK_SIZE * (out32_flag ? sizeof(float) : pixelsize_super);
   tmpBlock = (uint8_t *)_aligned_malloc(tmp_size * height_lsb_or_out16_mul, 64); // new BYTE[tmp_size * height_lsb_or_out16_mul]; PF. 16.10.26
   tmpBlockLsb = (lsb_flag) ? (tmpBlock + tmp_size) : 0;
 
@@ -874,88 +881,167 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
 
       // -----------------------------------------------------------------
 
-    else // overlap
+    else 
     {
-      uint16_t *pDstShort = DstShort;
-      int *pDstInt = DstInt;
-      const int tmpPitch = nBlkSizeX;
-
-      if (lsb_flag || pixelsize_output >= 2) // also for 32 bit float
+      if (!out32_flag) // overlap not out32
       {
-        MemZoneSet(reinterpret_cast<unsigned char*>(pDstInt), 0,
-          nWidth_B * sizeof(int), nHeight_B, 0, 0, dstIntPitch * sizeof(int));
-      }
-      else
-      {
-        MemZoneSet(reinterpret_cast<unsigned char*>(pDstShort), 0,
-          nWidth_B * sizeof(short), nHeight_B, 0, 0, dstShortPitch * sizeof(short));
-      }
+        uint16_t* pDstShort = DstShort;
+        int* pDstInt = DstInt;
+        const int tmpPitch = nBlkSizeX;
 
-      for (int by = 0; by < nBlkY; by++)
-      {
-        // indexing overlap windows weighting table: top=0 middle=3 bottom=6
-        /*
-        0 = Top Left    1 = Top Middle    2 = Top Right
-        3 = Middle Left 4 = Middle Middle 5 = Middle Right
-        6 = Bottom Left 7 = Bottom Middle 8 = Bottom Right
-        */
-
-        int wby = (by == 0) ? 0 * 3 : (by == nBlkY - 1) ? 2 * 3 : 1 * 3; // 0 for very first, 2*3 for very last, 1*3 for all others in the middle
-        int xx = 0; // logical offset. Mul by 2 for pixelsize_super==2. Don't mul for indexing int* array
-        for (int bx = 0; bx < nBlkX; ++bx)
+        if (lsb_flag || pixelsize_output >= 2) // also for 32 bit float
         {
-          // select window
-          // indexing overlap windows weighting table: left=+0 middle=+1 rightmost=+2
-          int wbx = (bx == 0) ? 0 : (bx == nBlkX - 1) ? 2 : 1; // 0 for very first, 2 for very last, 1 for all others in the middle
-          short *winOver = OverWins->GetWindow(wby + wbx);
+          MemZoneSet(reinterpret_cast<unsigned char*>(pDstInt), 0,
+            nWidth_B * sizeof(int), nHeight_B, 0, 0, dstIntPitch * sizeof(int));
+        }
+        else
+        {
+          MemZoneSet(reinterpret_cast<unsigned char*>(pDstShort), 0,
+            nWidth_B * sizeof(short), nHeight_B, 0, 0, dstShortPitch * sizeof(short));
+        }
 
-          int i = by*nBlkX + bx;
+        for (int by = 0; by < nBlkY; by++)
+        {
+          // indexing overlap windows weighting table: top=0 middle=3 bottom=6
+          /*
+          0 = Top Left    1 = Top Middle    2 = Top Right
+          3 = Middle Left 4 = Middle Middle 5 = Middle Right
+          6 = Bottom Left 7 = Bottom Middle 8 = Bottom Right
+          */
 
-          const BYTE * pB[MAX_DEGRAIN], *pF[MAX_DEGRAIN];
-          int npB[MAX_DEGRAIN], npF[MAX_DEGRAIN];
-          int WSrc;
-          int WRefB[MAX_DEGRAIN], WRefF[MAX_DEGRAIN];
-
-          for (int j = 0; j < level; j++) {
-            use_block_y(pB[j], npB[j], WRefB[j], isUsableB[j], *mvClipB[j], i, pPlanesB[0][j], pSrcCur[0], xx << pixelsize_super_shift, nSrcPitches[0]);
-            use_block_y(pF[j], npF[j], WRefF[j], isUsableF[j], *mvClipF[j], i, pPlanesF[0][j], pSrcCur[0], xx << pixelsize_super_shift, nSrcPitches[0]);
-          }
-          NORMWEIGHTS(WSrc, WRefB, WRefF);
-          // luma
-          DEGRAINLUMA(tmpBlock, tmpBlockLsb, WidthHeightForC, tmpPitch << pixelsize_output_shift, pSrcCur[0] + (xx << pixelsize_super_shift), nSrcPitches[0],
-            pB, npB, pF, npF,
-            WSrc,
-            WRefB, WRefF
-          );
-          if (lsb_flag)
+          int wby = (by == 0) ? 0 * 3 : (by == nBlkY - 1) ? 2 * 3 : 1 * 3; // 0 for very first, 2*3 for very last, 1*3 for all others in the middle
+          int xx = 0; // logical offset. Mul by 2 for pixelsize_super==2. Don't mul for indexing int* array
+          for (int bx = 0; bx < nBlkX; ++bx)
           {
-            OVERSLUMALSB(pDstInt + xx, dstIntPitch, tmpBlock, tmpBlockLsb, tmpPitch, winOver, nBlkSizeX);
-          }
-          else if (out16_flag)
-          {
-            // cast to match the prototype
-            OVERSLUMA16((uint16_t *)(pDstInt + xx), dstIntPitch, tmpBlock, tmpPitch << pixelsize_output_shift, winOver, nBlkSizeX);
-          }
-          else if (pixelsize_super == 1)
-          {
-            OVERSLUMA(pDstShort + xx, dstShortPitch, tmpBlock, tmpPitch, winOver, nBlkSizeX);
-          }
-          else if (pixelsize_super == 2) {
-            // cast to match the prototype
-            OVERSLUMA16((uint16_t *)(pDstInt + xx), dstIntPitch, tmpBlock, tmpPitch << pixelsize_super_shift, winOver, nBlkSizeX);
-          }
-          else if (pixelsize_super == 4) {
-            // cast to match the prototype
-            OVERSLUMA32((uint16_t *)((float *)pDstInt + xx), dstIntPitch, tmpBlock, tmpPitch << pixelsize_super_shift, winOver, nBlkSizeX);
-          }
+            // select window
+            // indexing overlap windows weighting table: left=+0 middle=+1 rightmost=+2
+            int wbx = (bx == 0) ? 0 : (bx == nBlkX - 1) ? 2 : 1; // 0 for very first, 2 for very last, 1 for all others in the middle
+            short* winOver = OverWins->GetWindow(wby + wbx);
 
-          xx += (nBlkSizeX - nOverlapX);
-        }	// for bx
+            int i = by * nBlkX + bx;
 
-        pSrcCur[0] += (nBlkSizeY - nOverlapY) * (nSrcPitches[0]); // byte pointer
-        pDstShort += (nBlkSizeY - nOverlapY) * dstShortPitch; // short pointer
-        pDstInt += (nBlkSizeY - nOverlapY) * dstIntPitch; // int pointer
-      }	// for by
+            const BYTE* pB[MAX_DEGRAIN], * pF[MAX_DEGRAIN];
+            int npB[MAX_DEGRAIN], npF[MAX_DEGRAIN];
+            int WSrc;
+            int WRefB[MAX_DEGRAIN], WRefF[MAX_DEGRAIN];
+
+            for (int j = 0; j < level; j++) {
+              use_block_y(pB[j], npB[j], WRefB[j], isUsableB[j], *mvClipB[j], i, pPlanesB[0][j], pSrcCur[0], xx << pixelsize_super_shift, nSrcPitches[0]);
+              use_block_y(pF[j], npF[j], WRefF[j], isUsableF[j], *mvClipF[j], i, pPlanesF[0][j], pSrcCur[0], xx << pixelsize_super_shift, nSrcPitches[0]);
+            }
+            NORMWEIGHTS(WSrc, WRefB, WRefF);
+            // luma
+            DEGRAINLUMA(tmpBlock, tmpBlockLsb, WidthHeightForC, tmpPitch << pixelsize_output_shift, pSrcCur[0] + (xx << pixelsize_super_shift), nSrcPitches[0],
+              pB, npB, pF, npF,
+              WSrc,
+              WRefB, WRefF
+            );
+            if (lsb_flag)
+            {
+              OVERSLUMALSB(pDstInt + xx, dstIntPitch, tmpBlock, tmpBlockLsb, tmpPitch, winOver, nBlkSizeX);
+            }
+            else if (out16_flag)
+            {
+              // cast to match the prototype
+              OVERSLUMA16((uint16_t*)(pDstInt + xx), dstIntPitch, tmpBlock, tmpPitch << pixelsize_output_shift, winOver, nBlkSizeX);
+            }
+            else if (pixelsize_super == 1)
+            {
+                OVERSLUMA(pDstShort + xx, dstShortPitch, tmpBlock, tmpPitch, winOver, nBlkSizeX);
+
+            }
+            else if (pixelsize_super == 2) {
+              // cast to match the prototype
+              OVERSLUMA16((uint16_t*)(pDstInt + xx), dstIntPitch, tmpBlock, tmpPitch << pixelsize_super_shift, winOver, nBlkSizeX);
+            }
+            else if (pixelsize_super == 4) {
+              // cast to match the prototype
+              OVERSLUMA32((uint16_t*)((float*)pDstInt + xx), dstIntPitch, tmpBlock, tmpPitch << pixelsize_super_shift, winOver, nBlkSizeX);
+            }
+
+            xx += (nBlkSizeX - nOverlapX);
+          }	// for bx
+
+          pSrcCur[0] += (nBlkSizeY - nOverlapY) * (nSrcPitches[0]); // byte pointer
+          pDstShort += (nBlkSizeY - nOverlapY) * dstShortPitch; // short pointer
+          pDstInt += (nBlkSizeY - nOverlapY) * dstIntPitch; // int pointer
+        }	// for by
+      } else {
+       // out32: overlaps buffer and coefficients are full float 
+        float* pDstFloat = reinterpret_cast<float*>(DstInt);
+        const int tmpPitch = nBlkSizeX;
+
+        MemZoneSet(reinterpret_cast<unsigned char*>(pDstFloat), 0,
+            nWidth_B * sizeof(float), nHeight_B, 0, 0, dstIntPitch * sizeof(float));
+
+        for (int by = 0; by < nBlkY; by++)
+        {
+          // indexing overlap windows weighting table: top=0 middle=3 bottom=6
+          /*
+          0 = Top Left    1 = Top Middle    2 = Top Right
+          3 = Middle Left 4 = Middle Middle 5 = Middle Right
+          6 = Bottom Left 7 = Bottom Middle 8 = Bottom Right
+          */
+
+          int wby = (by == 0) ? 0 * 3 : (by == nBlkY - 1) ? 2 * 3 : 1 * 3; // 0 for very first, 2*3 for very last, 1*3 for all others in the middle
+          int xx = 0; // logical offset. Mul by 2 for pixelsize_super==2. Don't mul for indexing int* array
+          for (int bx = 0; bx < nBlkX; ++bx)
+          {
+            // select window
+            // indexing overlap windows weighting table: left=+0 middle=+1 rightmost=+2
+            int wbx = (bx == 0) ? 0 : (bx == nBlkX - 1) ? 2 : 1; // 0 for very first, 2 for very last, 1 for all others in the middle
+            float* winOver = OverWins->GetWindowF(wby + wbx);
+
+            int i = by * nBlkX + bx;
+
+            const BYTE* pB[MAX_DEGRAIN], * pF[MAX_DEGRAIN];
+            int npB[MAX_DEGRAIN], npF[MAX_DEGRAIN];
+            int WSrc;
+            int WRefB[MAX_DEGRAIN], WRefF[MAX_DEGRAIN];
+
+            for (int j = 0; j < level; j++) {
+              use_block_y(pB[j], npB[j], WRefB[j], isUsableB[j], *mvClipB[j], i, pPlanesB[0][j], pSrcCur[0], xx << pixelsize_super_shift, nSrcPitches[0]);
+              use_block_y(pF[j], npF[j], WRefF[j], isUsableF[j], *mvClipF[j], i, pPlanesF[0][j], pSrcCur[0], xx << pixelsize_super_shift, nSrcPitches[0]);
+            }
+            NORMWEIGHTS(WSrc, WRefB, WRefF);
+            // luma
+            DEGRAINLUMA(tmpBlock, tmpBlockLsb, WidthHeightForC, tmpPitch * sizeof(float) /*always float!*/, pSrcCur[0] + (xx << pixelsize_super_shift), nSrcPitches[0],
+              pB, npB, pF, npF,
+              WSrc,
+              WRefB, WRefF
+            );
+            if (lsb_flag)
+            {
+              OVERSLUMALSB((int*)(pDstFloat + xx), dstIntPitch, tmpBlock, tmpBlockLsb, tmpPitch, (short *)winOver, nBlkSizeX);
+            }
+            else if (out16_flag)
+            {
+              // cast to match the prototype
+              OVERSLUMA16((uint16_t*)(pDstFloat + xx), dstIntPitch, tmpBlock, tmpPitch << pixelsize_output_shift, (short*)winOver, nBlkSizeX);
+            }
+            else if (pixelsize_super == 1)
+            {
+              // out32 spec
+              OVERSLUMA((uint16_t*)(pDstFloat + xx), dstIntPitch, tmpBlock, tmpPitch << 2 /* in bytes. for float*/, (short*)winOver, nBlkSizeX);
+
+            }
+            else if (pixelsize_super == 2) {
+              // cast to match the prototype
+              OVERSLUMA16((uint16_t*)(pDstFloat + xx), dstIntPitch, tmpBlock, tmpPitch << pixelsize_super_shift, (short*)winOver, nBlkSizeX);
+            }
+            else if (pixelsize_super == 4) {
+              // cast to match the prototype
+              OVERSLUMA32((uint16_t*)((float*)pDstFloat + xx), dstIntPitch, tmpBlock, tmpPitch << pixelsize_super_shift, (short*)winOver, nBlkSizeX);
+            }
+
+            xx += (nBlkSizeX - nOverlapX);
+          }	// for bx
+
+          pSrcCur[0] += (nBlkSizeY - nOverlapY) * (nSrcPitches[0]); // byte pointer
+          pDstFloat += (nBlkSizeY - nOverlapY) * dstIntPitch; // float/int pointer
+        }	// for by
+      }
+      // copy overlaps buffer to destination
       if (lsb_flag)
       {
         Short2BytesLsb(pDst[0], pDst[0] + lsb_offset_y, nDstPitches[0], DstInt, dstIntPitch, nWidth_B, nHeight_B);
@@ -969,10 +1055,18 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
       }
       else if (pixelsize_super == 1)
       { 
-        if((cpuFlags & CPUF_SSE2) != 0)
-          Short2Bytes_sse2(pDst[0], nDstPitches[0], DstShort, dstShortPitch, nWidth_B, nHeight_B);
-        else
-          Short2Bytes(pDst[0], nDstPitches[0], DstShort, dstShortPitch, nWidth_B, nHeight_B);
+        if (out32_flag) {
+          if ((cpuFlags & CPUF_SSE2) != 0)
+            OverlapsBuf_Float2Bytes_sse4<uint8_t>(pDst[0], nDstPitches[0], (float*)DstInt, dstIntPitch, nWidth_B, nHeight_B, bits_per_pixel_output);
+          else
+            OverlapsBuf_Float2Bytes<uint8_t>(pDst[0], nDstPitches[0], (float*)DstInt, dstIntPitch, nWidth_B, nHeight_B, bits_per_pixel_output);
+        }
+        else {
+          if ((cpuFlags & CPUF_SSE2) != 0)
+            Short2Bytes_sse2(pDst[0], nDstPitches[0], DstShort, dstShortPitch, nWidth_B, nHeight_B);
+          else
+            Short2Bytes(pDst[0], nDstPitches[0], DstShort, dstShortPitch, nWidth_B, nHeight_B);
+        }
       }
       else if (pixelsize_super == 2)
       {
@@ -985,7 +1079,8 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
       {
         Short2Bytes_FloatInInt32ArrayToFloat((float *)(pDst[0]), nDstPitches[0], (float *)DstInt, dstIntPitch, nWidth_B, nHeight_B);
       }
-      if (nWidth_B < nWidth)
+
+      if (nWidth_B < nWidth) // right side non-covered region
       {
         if (out16_flag) {
           // copy 8 bit source to 16bit target
@@ -1013,7 +1108,7 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
             nWidth << pixelsize_super_shift, nHeight - nHeight_B);
         }
       }
-    }	// overlap - end
+    }	// overlap end
 
     if (nLimit < 255)
     {
@@ -1156,90 +1251,169 @@ void MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
 
     else // overlap
     {
-      uint16_t *pDstShort = DstShort;
-      int *pDstInt = DstInt;
-      const int tmpPitch = nBlkSizeX;
+      if (!out32_flag) {
+        uint16_t* pDstShort = DstShort;
+        int* pDstInt = DstInt;
+        const int tmpPitch = nBlkSizeX;
 
-      if (lsb_flag || pixelsize_output > 1)
-      {
-        MemZoneSet(reinterpret_cast<unsigned char*>(pDstInt), 0,
-          nWidth_B * sizeof(int) >> nLogxRatioUV_super, nHeight_B >> nLogyRatioUV_super, 0, 0, dstIntPitch * sizeof(int));
-      }
-      else
-      {
-        MemZoneSet(reinterpret_cast<unsigned char*>(pDstShort), 0,
-          nWidth_B * sizeof(short) >> nLogxRatioUV_super, nHeight_B >> nLogyRatioUV_super, 0, 0, dstShortPitch * sizeof(short));
-      }
-
-      int effective_nSrcPitch = ((nBlkSizeY - nOverlapY) >> nLogyRatioUV_super) * nSrcPitch; // pitch is byte granularity
-      int effective_dstShortPitch = ((nBlkSizeY - nOverlapY) >> nLogyRatioUV_super) * dstShortPitch; // pitch is short granularity
-      int effective_dstIntPitch = ((nBlkSizeY - nOverlapY) >> nLogyRatioUV_super) * dstIntPitch; // pitch is int granularity
-
-      for (int by = 0; by < nBlkY; by++)
-      {
-        // indexing overlap windows weighting table: top=0 middle=3 bottom=6
-        /*
-        0 = Top Left    1 = Top Middle    2 = Top Right
-        3 = Middle Left 4 = Middle Middle 5 = Middle Right
-        6 = Bottom Left 7 = Bottom Middle 8 = Bottom Right
-        */
-
-        int wby = (by == 0) ? 0 * 3 : (by == nBlkY - 1) ? 2 * 3 : 1 * 3; // 0 for very first, 2*3 for very last, 1*3 for all others in the middle
-        int xx = 0; // logical offset. Mul by 2 for pixelsize_super==2. Don't mul for indexing int* array
-        for (int bx = 0; bx < nBlkX; ++bx)
+        if (lsb_flag || pixelsize_output > 1)
         {
-          // select window
-          // indexing overlap windows weighting table: left=+0 middle=+1 rightmost=+2
-          int wbx = (bx == 0) ? 0 : (bx == nBlkX - 1) ? 2 : 1; // 0 for very first, 2 for very last, 1 for all others in the middle
-          short *winOverUV = OverWinsUV->GetWindow(wby + wbx);
+          MemZoneSet(reinterpret_cast<unsigned char*>(pDstInt), 0,
+            nWidth_B * sizeof(int) >> nLogxRatioUV_super, nHeight_B >> nLogyRatioUV_super, 0, 0, dstIntPitch * sizeof(int));
+        }
+        else
+        {
+          MemZoneSet(reinterpret_cast<unsigned char*>(pDstShort), 0,
+            nWidth_B * sizeof(short) >> nLogxRatioUV_super, nHeight_B >> nLogyRatioUV_super, 0, 0, dstShortPitch * sizeof(short));
+        }
 
-          int i = by*nBlkX + bx;
-          const BYTE * pBV[MAX_DEGRAIN], *pFV[MAX_DEGRAIN];
-          int npBV[MAX_DEGRAIN], npFV[MAX_DEGRAIN];
-          int WSrc, WRefB[MAX_DEGRAIN], WRefF[MAX_DEGRAIN];
+        int effective_nSrcPitch = ((nBlkSizeY - nOverlapY) >> nLogyRatioUV_super) * nSrcPitch; // pitch is byte granularity
+        int effective_dstShortPitch = ((nBlkSizeY - nOverlapY) >> nLogyRatioUV_super) * dstShortPitch; // pitch is short granularity
+        int effective_dstIntPitch = ((nBlkSizeY - nOverlapY) >> nLogyRatioUV_super) * dstIntPitch; // pitch is int granularity
 
-          for (int j = 0; j < level; j++) {
-            use_block_uv(pBV[j], npBV[j], WRefB[j], isUsableB[j], *mvClipB[j], i, pPlanesB[j], pSrcCur, xx << pixelsize_super_shift, nSrcPitch);
-            use_block_uv(pFV[j], npFV[j], WRefF[j], isUsableF[j], *mvClipF[j], i, pPlanesF[j], pSrcCur, xx << pixelsize_super_shift, nSrcPitch);
-          }
-          NORMWEIGHTS(WSrc, WRefB, WRefF);
-          // chroma
-          DEGRAINCHROMA(tmpBlock, tmpBlockLsb, WidthHeightForC_UV, tmpPitch << pixelsize_output_shift, pSrcCur + (xx << pixelsize_super_shift), nSrcPitch,
-            pBV, npBV, pFV, npFV,
-            WSrc, WRefB, WRefF
-          );
-          if (lsb_flag)
-          { // no pixelsize here pointers Int or short
-            OVERSCHROMALSB(pDstInt + xx, dstIntPitch, tmpBlock, tmpBlockLsb, tmpPitch, winOverUV, nBlkSizeX >> nLogxRatioUV_super);
-          }
-          else if (out16_flag)
+        for (int by = 0; by < nBlkY; by++)
+        {
+          // indexing overlap windows weighting table: top=0 middle=3 bottom=6
+          /*
+          0 = Top Left    1 = Top Middle    2 = Top Right
+          3 = Middle Left 4 = Middle Middle 5 = Middle Right
+          6 = Bottom Left 7 = Bottom Middle 8 = Bottom Right
+          */
+
+          int wby = (by == 0) ? 0 * 3 : (by == nBlkY - 1) ? 2 * 3 : 1 * 3; // 0 for very first, 2*3 for very last, 1*3 for all others in the middle
+          int xx = 0; // logical offset. Mul by 2 for pixelsize_super==2. Don't mul for indexing int* array
+          for (int bx = 0; bx < nBlkX; ++bx)
           {
-            // cast to match the prototype
-            OVERSCHROMA16((uint16_t*)(pDstInt + xx), dstIntPitch, tmpBlock, tmpPitch << pixelsize_output_shift, winOverUV, nBlkSizeX >> nLogxRatioUV_super);
-          }
-          else if (pixelsize_super == 1)
-          {
-            OVERSCHROMA(pDstShort + xx, dstShortPitch, tmpBlock, tmpPitch, winOverUV, nBlkSizeX >> nLogxRatioUV_super);
-          }
-          else if (pixelsize_super == 2)
-          {
-            // cast to match the prototype
-            OVERSCHROMA16((uint16_t*)(pDstInt + xx), dstIntPitch, tmpBlock, tmpPitch << pixelsize_super_shift, winOverUV, nBlkSizeX >> nLogxRatioUV_super);
-          }
-          else //if (pixelsize_super == 4)
-          {
-            // cast to match the prototype
-            OVERSCHROMA32((uint16_t*)((float *)pDstInt + xx), dstIntPitch, tmpBlock, tmpPitch << pixelsize_super_shift, winOverUV, nBlkSizeX >> nLogxRatioUV_super);
-          }
+            // select window
+            // indexing overlap windows weighting table: left=+0 middle=+1 rightmost=+2
+            int wbx = (bx == 0) ? 0 : (bx == nBlkX - 1) ? 2 : 1; // 0 for very first, 2 for very last, 1 for all others in the middle
+            short* winOverUV = OverWinsUV->GetWindow(wby + wbx);
 
-          xx += ((nBlkSizeX - nOverlapX) >> nLogxRatioUV_super); // no pixelsize here
+            int i = by * nBlkX + bx;
+            const BYTE* pBV[MAX_DEGRAIN], * pFV[MAX_DEGRAIN];
+            int npBV[MAX_DEGRAIN], npFV[MAX_DEGRAIN];
+            int WSrc, WRefB[MAX_DEGRAIN], WRefF[MAX_DEGRAIN];
 
-        }	// for bx
+            for (int j = 0; j < level; j++) {
+              use_block_uv(pBV[j], npBV[j], WRefB[j], isUsableB[j], *mvClipB[j], i, pPlanesB[j], pSrcCur, xx << pixelsize_super_shift, nSrcPitch);
+              use_block_uv(pFV[j], npFV[j], WRefF[j], isUsableF[j], *mvClipF[j], i, pPlanesF[j], pSrcCur, xx << pixelsize_super_shift, nSrcPitch);
+            }
+            NORMWEIGHTS(WSrc, WRefB, WRefF);
+            // chroma
+            DEGRAINCHROMA(tmpBlock, tmpBlockLsb, WidthHeightForC_UV, tmpPitch << pixelsize_output_shift, pSrcCur + (xx << pixelsize_super_shift), nSrcPitch,
+              pBV, npBV, pFV, npFV,
+              WSrc, WRefB, WRefF
+            );
+            if (lsb_flag)
+            { // no pixelsize here pointers Int or short
+              OVERSCHROMALSB(pDstInt + xx, dstIntPitch, tmpBlock, tmpBlockLsb, tmpPitch, winOverUV, nBlkSizeX >> nLogxRatioUV_super);
+            }
+            else if (out16_flag)
+            {
+              // cast to match the prototype
+              OVERSCHROMA16((uint16_t*)(pDstInt + xx), dstIntPitch, tmpBlock, tmpPitch << pixelsize_output_shift, winOverUV, nBlkSizeX >> nLogxRatioUV_super);
+            }
+            else if (pixelsize_super == 1)
+            {
+              OVERSCHROMA(pDstShort + xx, dstShortPitch, tmpBlock, tmpPitch, winOverUV, nBlkSizeX >> nLogxRatioUV_super);
+            }
+            else if (pixelsize_super == 2)
+            {
+              // cast to match the prototype
+              OVERSCHROMA16((uint16_t*)(pDstInt + xx), dstIntPitch, tmpBlock, tmpPitch << pixelsize_super_shift, winOverUV, nBlkSizeX >> nLogxRatioUV_super);
+            }
+            else //if (pixelsize_super == 4)
+            {
+              // cast to match the prototype
+              OVERSCHROMA32((uint16_t*)((float*)pDstInt + xx), dstIntPitch, tmpBlock, tmpPitch << pixelsize_super_shift, winOverUV, nBlkSizeX >> nLogxRatioUV_super);
+            }
 
-        pSrcCur += effective_nSrcPitch; // pitch is byte granularity
-        pDstShort += effective_dstShortPitch; // pitch is short granularity
-        pDstInt += effective_dstIntPitch; // pitch is int granularity
-      }	// for by
+            xx += ((nBlkSizeX - nOverlapX) >> nLogxRatioUV_super); // no pixelsize here
+
+          }	// for bx
+
+          pSrcCur += effective_nSrcPitch; // pitch is byte granularity
+          pDstShort += effective_dstShortPitch; // pitch is short granularity
+          pDstInt += effective_dstIntPitch; // pitch is int granularity
+        }	// for by
+      }
+      else {
+        // out32
+        auto pDstFloat = reinterpret_cast<float *>(DstInt);
+        const int tmpPitch = nBlkSizeX;
+
+
+        MemZoneSet(reinterpret_cast<unsigned char*>(pDstFloat), 0,
+          nWidth_B * sizeof(float) >> nLogxRatioUV_super, nHeight_B >> nLogyRatioUV_super, 0, 0, dstIntPitch * sizeof(float));
+
+        int effective_nSrcPitch = ((nBlkSizeY - nOverlapY) >> nLogyRatioUV_super) * nSrcPitch; // pitch is byte granularity
+        int effective_dstFloatPitch = ((nBlkSizeY - nOverlapY) >> nLogyRatioUV_super) * dstIntPitch; // pitch is int/float granularity
+
+        for (int by = 0; by < nBlkY; by++)
+        {
+          // indexing overlap windows weighting table: top=0 middle=3 bottom=6
+          /*
+          0 = Top Left    1 = Top Middle    2 = Top Right
+          3 = Middle Left 4 = Middle Middle 5 = Middle Right
+          6 = Bottom Left 7 = Bottom Middle 8 = Bottom Right
+          */
+
+          int wby = (by == 0) ? 0 * 3 : (by == nBlkY - 1) ? 2 * 3 : 1 * 3; // 0 for very first, 2*3 for very last, 1*3 for all others in the middle
+          int xx = 0; // logical offset. Mul by 2 for pixelsize_super==2. Don't mul for indexing int* array
+          for (int bx = 0; bx < nBlkX; ++bx)
+          {
+            // select window
+            // indexing overlap windows weighting table: left=+0 middle=+1 rightmost=+2
+            int wbx = (bx == 0) ? 0 : (bx == nBlkX - 1) ? 2 : 1; // 0 for very first, 2 for very last, 1 for all others in the middle
+            float* winOverUV = OverWinsUV->GetWindowF(wby + wbx);
+
+            int i = by * nBlkX + bx;
+            const BYTE* pBV[MAX_DEGRAIN], * pFV[MAX_DEGRAIN];
+            int npBV[MAX_DEGRAIN], npFV[MAX_DEGRAIN];
+            int WSrc, WRefB[MAX_DEGRAIN], WRefF[MAX_DEGRAIN];
+
+            for (int j = 0; j < level; j++) {
+              use_block_uv(pBV[j], npBV[j], WRefB[j], isUsableB[j], *mvClipB[j], i, pPlanesB[j], pSrcCur, xx << pixelsize_super_shift, nSrcPitch);
+              use_block_uv(pFV[j], npFV[j], WRefF[j], isUsableF[j], *mvClipF[j], i, pPlanesF[j], pSrcCur, xx << pixelsize_super_shift, nSrcPitch);
+            }
+            NORMWEIGHTS(WSrc, WRefB, WRefF);
+            // chroma
+            DEGRAINCHROMA(tmpBlock, tmpBlockLsb, WidthHeightForC_UV, tmpPitch << pixelsize_output_shift, pSrcCur + (xx << pixelsize_super_shift), nSrcPitch,
+              pBV, npBV, pFV, npFV,
+              WSrc, WRefB, WRefF
+            );
+            if (lsb_flag)
+            { // no pixelsize here pointers Int or short
+              OVERSCHROMALSB((int *)(pDstFloat + xx), dstIntPitch, tmpBlock, tmpBlockLsb, tmpPitch, (short *)winOverUV, nBlkSizeX >> nLogxRatioUV_super);
+            }
+            else if (out16_flag)
+            {
+              // cast to match the prototype
+              OVERSCHROMA16((uint16_t*)(pDstFloat + xx), dstIntPitch, tmpBlock, tmpPitch << pixelsize_output_shift, (short*)winOverUV, nBlkSizeX >> nLogxRatioUV_super);
+            }
+            else if (pixelsize_super == 1)
+            {
+              OVERSCHROMA((uint16_t*)(pDstFloat + xx), dstShortPitch, tmpBlock, tmpPitch, (short*)winOverUV, nBlkSizeX >> nLogxRatioUV_super);
+            }
+            else if (pixelsize_super == 2)
+            {
+              // cast to match the prototype
+              OVERSCHROMA16((uint16_t*)(pDstFloat + xx), dstIntPitch, tmpBlock, tmpPitch << pixelsize_super_shift, (short*)winOverUV, nBlkSizeX >> nLogxRatioUV_super);
+            }
+            else //if (pixelsize_super == 4)
+            {
+              // cast to match the prototype
+              OVERSCHROMA32((uint16_t*)((float*)pDstFloat + xx), dstIntPitch, tmpBlock, tmpPitch << pixelsize_super_shift, (short*)winOverUV, nBlkSizeX >> nLogxRatioUV_super);
+            }
+
+            xx += ((nBlkSizeX - nOverlapX) >> nLogxRatioUV_super); // no pixelsize here
+
+          }	// for bx
+
+          pSrcCur += effective_nSrcPitch; // pitch is byte granularity
+          pDstFloat += effective_dstFloatPitch; // pitch is int/float granularity
+        }	// for by
+      }
 
       if (lsb_flag)
       {
@@ -1254,10 +1428,19 @@ void MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
       }
       else if (pixelsize_super == 1)
       { // pixelsize
-        if ((cpuFlags & CPUF_SSE2) != 0)
-          Short2Bytes_sse2(pDst, nDstPitch, DstShort, dstShortPitch, nWidth_B >> nLogxRatioUV_super, nHeight_B >> nLogyRatioUV_super);
-        else
-          Short2Bytes(pDst, nDstPitch, DstShort, dstShortPitch, nWidth_B >> nLogxRatioUV_super, nHeight_B >> nLogyRatioUV_super);
+        if (out32_flag) {
+          // here: always
+          if ((cpuFlags & CPUF_SSE2) != 0)
+            OverlapsBuf_Float2Bytes_sse4<uint8_t>(pDst, nDstPitch, (float*)DstInt, dstIntPitch, nWidth_B >> nLogxRatioUV_super, nHeight_B >> nLogyRatioUV_super, bits_per_pixel_output);
+          else
+            OverlapsBuf_Float2Bytes<uint8_t>(pDst, nDstPitch, (float*)DstInt, dstIntPitch, nWidth_B >> nLogxRatioUV_super, nHeight_B >> nLogyRatioUV_super, bits_per_pixel_output);
+        }
+        else {
+          if ((cpuFlags & CPUF_SSE2) != 0)
+            Short2Bytes_sse2(pDst, nDstPitch, DstShort, dstShortPitch, nWidth_B >> nLogxRatioUV_super, nHeight_B >> nLogyRatioUV_super);
+          else
+            Short2Bytes(pDst, nDstPitch, DstShort, dstShortPitch, nWidth_B >> nLogxRatioUV_super, nHeight_B >> nLogyRatioUV_super);
+        }
       }
       else if (pixelsize_super == 2)
       { 

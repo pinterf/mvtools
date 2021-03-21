@@ -44,6 +44,7 @@ class OverlapWindows
 	int size; // full window size= nx*ny
 
 	short * Overlap9Windows;
+  float * Overlap9WindowsF;
 
 	float *fWin1UVx;
 	float *fWin1UVxfirst;
@@ -60,6 +61,7 @@ public :
    MV_FORCEINLINE int Getny() const { return ny; }
    MV_FORCEINLINE int GetSize() const { return size; }
    MV_FORCEINLINE short *GetWindow(int i) const { return Overlap9Windows + size*i; }
+   MV_FORCEINLINE float* GetWindowF(int i) const { return Overlap9WindowsF + size * i; }
 };
 
 typedef void (OverlapsFunction)(uint16_t *pDst, int nDstPitch,
@@ -67,7 +69,7 @@ typedef void (OverlapsFunction)(uint16_t *pDst, int nDstPitch,
 							short *pWin, int nWinPitch);
 typedef void (OverlapsLsbFunction)(int *pDst, int nDstPitch, const unsigned char *pSrc, const unsigned char *pSrcLsb, int nSrcPitch, short *pWin, int nWinPitch);
 
-OverlapsFunction* get_overlaps_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
+OverlapsFunction* get_overlaps_function(int BlockX, int BlockY, int pixelsize, bool out32, arch_t arch);
 OverlapsLsbFunction* get_overlaps_lsb_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
 
 //=============================================================
@@ -140,11 +142,42 @@ void Overlaps_C(uint16_t *pDst0, int nDstPitch, const unsigned char *pSrc, int n
 	}
 }
 
+/* 8 bit source, 32 bit temporary target */
 template <int blockWidth, int blockHeight>
 // pDst is short* for 8 bit, int * for 16 bit sources, float * from 32 bit sources
-void Overlaps_float_C(uint16_t *pDst0, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch)
+// out32: internally everything is float
+void Overlaps_float_new_C(uint16_t* pDst0, int nDstPitch, const unsigned char* pSrc, int nSrcPitch, short* _pWin, int nWinPitch)
 {
-  // pWin from 0 to 2048 total shift 11
+  // src is tmpBlock, for this new method it is always float
+  auto pWin = reinterpret_cast<float*>(_pWin); // overlap windows constants are now float
+
+  // in integer 8-16 bit format originally pWin from 0 to 2048 total shift 11
+  // for float internal working formats no scaling occurs in overlaps constants
+
+  float* pDst = reinterpret_cast<float*>(pDst0);
+
+  for (int j = 0; j < blockHeight; j++)
+  {
+    for (int i = 0; i < blockWidth; i++)
+    {
+      float val = reinterpret_cast<const float*>(pSrc)[i];
+      float win = pWin[i] /** (1.0f / 2048.0f)*/;
+      pDst[i] = pDst[i] + val * win;
+    }
+    pDst += nDstPitch;
+    pSrc += nSrcPitch;
+    pWin += nWinPitch;
+  }
+}
+
+template <int blockWidth, int blockHeight>
+// pDst is short* for 8 bit, int * for 16 bit sources, float * from 32 bit sources
+void Overlaps_float_C(uint16_t *pDst0, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *_pWin, int nWinPitch)
+{
+  auto pWin = reinterpret_cast<float*>(_pWin);
+  // in integer 8-16 bit format originally pWin from 0 to 2048 total shift 11
+  // for float internal working formats no scaling occurs in overlaps constants
+
   // when pixel_t == uint16_t, dst should be int*
   float *pDst = reinterpret_cast<float *>(pDst0);
 
@@ -237,6 +270,11 @@ void Short2BytesLsb(unsigned char *pDst, unsigned char *pDstLsb, int nDstPitch, 
 void Short2Bytes_Int32toWord16(uint16_t *pDst, int nDstPitch, int *pDstInt, int dstIntPitch, int nWidth, int nHeight, int bits_per_pixel);
 void Short2Bytes_Int32toWord16_sse4(uint16_t *pDst, int nDstPitch, int *pDstInt, int dstIntPitch, int nWidth, int nHeight, int bits_per_pixel);
 void Short2Bytes_FloatInInt32ArrayToFloat(float *pDst, int nDstPitch, float *pDstInt, int dstIntPitch, int nWidth, int nHeight);
+
+template<typename pixel_t>
+void OverlapsBuf_Float2Bytes_sse4(unsigned char* pDst0, int nDstPitch, float* pTmpFloat, int tmpPitch, int nWidth, int nHeight, int bits_per_pixel);
+template<typename pixel_t>
+void OverlapsBuf_Float2Bytes(unsigned char* pDst0, int nDstPitch, float* pTmpFloat, int tmpPitch, int nWidth, int nHeight, int bits_per_pixel);
 
 template<typename pixel_t>
 void LimitChanges_c(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, float nLimit_f);

@@ -163,17 +163,17 @@ MVCompensate::MVCompensate(
     arch = NO_SIMD;
 
 
-  OVERSLUMA = get_overlaps_function(nBlkSizeX, nBlkSizeY, sizeof(uint8_t), arch);
-  OVERSCHROMA = get_overlaps_function(nBlkSizeX >> nLogxRatioUVs[1], nBlkSizeY >> nLogyRatioUVs[1], sizeof(uint8_t), arch);
+  OVERSLUMA = get_overlaps_function(nBlkSizeX, nBlkSizeY, sizeof(uint8_t), false, arch);
+  OVERSCHROMA = get_overlaps_function(nBlkSizeX >> nLogxRatioUVs[1], nBlkSizeY >> nLogyRatioUVs[1], sizeof(uint8_t), false, arch);
 
   BLITLUMA = get_copy_function(nBlkSizeX, nBlkSizeY, pixelsize_super, arch);
   BLITCHROMA = get_copy_function(nBlkSizeX >> nLogxRatioUVs[1], nBlkSizeY >> nLogyRatioUVs[1], pixelsize_super, arch);
 
-  OVERSLUMA16 = get_overlaps_function(nBlkSizeX, nBlkSizeY, sizeof(uint16_t), arch);
-  OVERSCHROMA16 = get_overlaps_function(nBlkSizeX >> nLogxRatioUVs[1], nBlkSizeY >> nLogyRatioUVs[1], sizeof(uint16_t), arch);
+  OVERSLUMA16 = get_overlaps_function(nBlkSizeX, nBlkSizeY, sizeof(uint16_t), false, arch);
+  OVERSCHROMA16 = get_overlaps_function(nBlkSizeX >> nLogxRatioUVs[1], nBlkSizeY >> nLogyRatioUVs[1], sizeof(uint16_t), false, arch);
 
-  OVERSLUMA32 = get_overlaps_function(nBlkSizeX, nBlkSizeY, sizeof(float), arch);
-  OVERSCHROMA32 = get_overlaps_function(nBlkSizeX >> nLogxRatioUVs[1], nBlkSizeY >> nLogyRatioUVs[1], sizeof(float), arch);
+  OVERSLUMA32 = get_overlaps_function(nBlkSizeX, nBlkSizeY, sizeof(float), false, arch);
+  OVERSCHROMA32 = get_overlaps_function(nBlkSizeX >> nLogxRatioUVs[1], nBlkSizeY >> nLogyRatioUVs[1], sizeof(float), false, arch);
 
 
   // get parameters of prepared super clip - v2.0

@@ -163,16 +163,16 @@ MVBlockFps::MVBlockFps(
   else
     arch = NO_SIMD;
 
-  OVERSLUMA = get_overlaps_function(nBlkSizeX, nBlkSizeY, pixelsize_super, arch);
-  OVERSCHROMA = get_overlaps_function(nBlkSizeX / xRatioUVs[1], nBlkSizeY / yRatioUVs[1], pixelsize_super, arch);
+  OVERSLUMA = get_overlaps_function(nBlkSizeX, nBlkSizeY, pixelsize_super, false, arch);
+  OVERSCHROMA = get_overlaps_function(nBlkSizeX / xRatioUVs[1], nBlkSizeY / yRatioUVs[1], pixelsize_super, false, arch);
   BLITLUMA = get_copy_function(nBlkSizeX, nBlkSizeY, pixelsize_super, arch);
   BLITCHROMA = get_copy_function(nBlkSizeX / xRatioUVs[1], nBlkSizeY / yRatioUVs[1], pixelsize_super, arch);
   // 161115
-  OVERSLUMA16 = get_overlaps_function(nBlkSizeX, nBlkSizeY, sizeof(uint16_t), arch);
-  OVERSCHROMA16 = get_overlaps_function(nBlkSizeX >> nLogxRatioUVs[1], nBlkSizeY >> nLogyRatioUVs[1], sizeof(uint16_t), arch);
+  OVERSLUMA16 = get_overlaps_function(nBlkSizeX, nBlkSizeY, sizeof(uint16_t), false, arch);
+  OVERSCHROMA16 = get_overlaps_function(nBlkSizeX >> nLogxRatioUVs[1], nBlkSizeY >> nLogyRatioUVs[1], sizeof(uint16_t), false, arch);
 
-  OVERSLUMA32 = get_overlaps_function(nBlkSizeX, nBlkSizeY, sizeof(float), arch);
-  OVERSCHROMA32 = get_overlaps_function(nBlkSizeX >> nLogxRatioUVs[1], nBlkSizeY >> nLogyRatioUVs[1], sizeof(float), arch);
+  OVERSLUMA32 = get_overlaps_function(nBlkSizeX, nBlkSizeY, sizeof(float), false, arch);
+  OVERSCHROMA32 = get_overlaps_function(nBlkSizeX >> nLogxRatioUVs[1], nBlkSizeY >> nLogyRatioUVs[1], sizeof(float), false, arch);
 
   // may be padded for full frame cover
   /*

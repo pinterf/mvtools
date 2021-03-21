@@ -51,6 +51,7 @@ private:
   bool planar;
   bool lsb_flag;
   bool out16_flag; // native 16 bit out instead of fake lsb
+  bool out32_flag; // 32 bit temporary overlaps block
   int height_lsb_or_out16_mul;
   //int pixelsize, bits_per_pixel; // in MVFilter
   //int xRatioUV, yRatioUV; // in MVFilter
@@ -105,7 +106,7 @@ public:
     PClip _mvbw, PClip _mvfw, PClip _mvbw2, PClip _mvfw2, PClip _mvbw3, PClip _mvfw3, PClip _mvbw4, PClip _mvfw4, PClip _mvbw5, PClip _mvfw5, PClip _mvbw6, PClip _mvfw6,
     sad_t _thSAD, sad_t _thSADC, int _YUVplanes, float _nLimit, float _nLimitC,
     sad_t _nSCD1, int _nSCD2, bool _isse2, bool _planar, bool _lsb_flag,
-    bool _mt_flag, bool _out16_flag,
+    bool _mt_flag, bool _out16_flag, bool _out32_flag,
     int _level, 
     IScriptEnvironment* env_ptr);
   ~MVDegrainX();
@@ -122,7 +123,7 @@ private:
   // MV_FORCEINLINE void process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int nDstPitch, const BYTE *pSrc, const BYTE *pSrcCur, int nSrcPitch, bool isUsableB, bool isUsableF, bool isUsableB2, bool isUsableF2, bool isUsableB3, bool isUsableF3, MVPlane *pPlanesB, MVPlane *pPlanesF, MVPlane *pPlanesB2, MVPlane *pPlanesF2, MVPlane *pPlanesB3, MVPlane *pPlanesF3, int lsb_offset_uv, int nWidth_B, int nHeight_B);
   MV_FORCEINLINE void use_block_y(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch);
   MV_FORCEINLINE void use_block_uv(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch);
-  Denoise1to6Function *get_denoise123_function(int BlockX, int BlockY, int _bits_per_pixel, bool _lsb_flag, bool _out16_flag, int _level, arch_t _arch);
+  Denoise1to6Function *get_denoise123_function(int BlockX, int BlockY, int _bits_per_pixel, bool _lsb_flag, bool _out16_flag, bool _out32_flag, int _level, arch_t _arch);
 };
 
 #pragma warning( push )
@@ -131,6 +132,7 @@ private:
   //   0: native 8 or 16
   //   1: 8bit in, lsb (stacked)
   //   2: 8bit in, native16 out
+  //   3: 8bit in, float out
 template<typename pixel_t, int out16_type, int level >
 void Degrain1to6_C(uint8_t *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPitch, const uint8_t *pSrc, int nSrcPitch,
   const uint8_t *pRefB[MAX_DEGRAIN], int BPitch[MAX_DEGRAIN], const uint8_t *pRefF[MAX_DEGRAIN], int FPitch[MAX_DEGRAIN],
@@ -145,6 +147,7 @@ void Degrain1to6_C(uint8_t *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
 
   constexpr bool lsb_flag = (out16_type == 1);
   constexpr bool out16 = (out16_type == 2);
+  constexpr bool out32 = (out16_type == 3);
 
   constexpr int SHIFTBACK = (lsb_flag || out16) ? (DEGRAIN_WEIGHT_BITS - 8) : DEGRAIN_WEIGHT_BITS;
   constexpr int rounder = (1 << SHIFTBACK) / 2; // zero when 8 bit in 16 bit out
@@ -154,7 +157,10 @@ void Degrain1to6_C(uint8_t *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
   {
     for (int x = 0; x < blockWidth; x++)
     {
-      int val = reinterpret_cast<const pixel_t*>(pSrc)[x] * WSrc;
+      // type for sum of pixel_t pixels
+      typedef typename std::conditional < (sizeof(pixel_t) == 4) || out32, float, int>::type accum_t;
+
+      accum_t val = (accum_t)reinterpret_cast<const pixel_t*>(pSrc)[x] * WSrc;
 
       if constexpr (level >= 1)
         val += reinterpret_cast<const pixel_t*>(pRefF[0])[x] * WRefF[0] + reinterpret_cast<const pixel_t*>(pRefB[0])[x] * WRefB[0];
@@ -169,13 +175,26 @@ void Degrain1to6_C(uint8_t *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPi
       if constexpr (level >= 6)
         val += reinterpret_cast<const pixel_t*>(pRefF[5])[x] * WRefF[5] + reinterpret_cast<const pixel_t*>(pRefB[5])[x] * WRefB[5];
 
-      val = (val + rounder) >> SHIFTBACK;
+      if constexpr (out32) {
+        /*
+        constexpr float scaleback = 1.0f / (1 << DEGRAIN_WEIGHT_BITS);
+        val = val * scaleback; // fixme: no Scaleback will be needed here, can be done either by defining the overlaps float constants.
+        no change. conversion in OverlapsBuf_FloatToBytes
+        */
+        // or when resolving the back_conversion: floatToBytes instead of ShortToBytes), but integrating this 1/256 correction in overlaps
+        // overlaps windows constants is free
+      }
+      else
+        val = (val + rounder) >> SHIFTBACK;
       if constexpr (lsb_flag) {
         reinterpret_cast<uint8_t*>(pDst)[x] = val >> 8;
         pDstLsb[x] = val & 255;
       }
       else if constexpr (out16) {
         reinterpret_cast<uint16_t*>(pDst)[x] = val;
+      }
+      else if constexpr (out32) {
+        reinterpret_cast<float*>(pDst)[x] = val;
       }
       else {
         reinterpret_cast<pixel_t*>(pDst)[x] = val;
@@ -283,6 +302,7 @@ void Degrain1to6_float_C(uint8_t *pDst, BYTE *pDstLsb, int WidthHeightForC, int 
 //   0: native 8 or 16
 //   1: 8bit in, lsb
 //   2: 8bit in, native16 out
+//   3: 8 bit in: float out
 template<int blockWidth, int blockHeight, int out16_type, int level>
 void Degrain1to6_sse2(BYTE* pDst, BYTE* pDstLsb, int WidthHeightForC, int nDstPitch, const BYTE* pSrc, int nSrcPitch,
   const BYTE* pRefB[MAX_DEGRAIN], int BPitch[MAX_DEGRAIN], const BYTE* pRefF[MAX_DEGRAIN], int FPitch[MAX_DEGRAIN],
@@ -295,6 +315,7 @@ void Degrain1to6_sse2(BYTE* pDst, BYTE* pDstLsb, int WidthHeightForC, int nDstPi
 
   constexpr bool lsb_flag = (out16_type == 1);
   constexpr bool out16 = (out16_type == 2);
+  constexpr bool out32 = (out16_type == 3);
 
   __m128i zero = _mm_setzero_si128();
   __m128i ws = _mm_set1_epi16(WSrc);
@@ -327,7 +348,7 @@ void Degrain1to6_sse2(BYTE* pDst, BYTE* pDstLsb, int WidthHeightForC, int nDstPi
     }
   }
 
-  if constexpr (lsb_flag || out16)
+  if constexpr (lsb_flag || out16 || out32)
   {
     // 8 bit in 16 bits out
     __m128i lsb_mask = _mm_set1_epi16(255);
@@ -496,7 +517,69 @@ void Degrain1to6_sse2(BYTE* pDst, BYTE* pDstLsb, int WidthHeightForC, int nDstPi
             uint32_t reslo = _mm_cvtsi128_si32(val);
             *(uint32_t*)(pDst + x * 2) = reslo;
           }
-        }
+        } // out16 end
+        else if constexpr (out32) {
+          // fixme: eliminate in the future like in C version
+          //const auto scaleback = _mm_set1_ps(1.0f / (1 << DEGRAIN_WEIGHT_BITS));
+          // 16 bit result converted to float
+          if constexpr (blockWidth == 12) {
+            // 8 pixels from the first, 4 from the second cycle
+            // 4 pixels common for both cycles
+            __m128 valf_lo = _mm_cvtepi32_ps(_mm_cvtepu16_epi32(val));
+            //valf_lo = _mm_mul_ps(valf_lo, scaleback);
+            _mm_store_ps((float*)(pDst + x * sizeof(float)), valf_lo);
+            if (x == 0) { // 1st 4 pixels 16 bytes
+              // 4 more pixels from the first cycle
+              __m128 valf_hi = _mm_cvtepi32_ps(_mm_cvtepu16_epi32(_mm_srli_si128(val, 8)));
+              //valf_hi = _mm_mul_ps(valf_hi, scaleback);
+              _mm_store_ps((float*)(pDst + x * sizeof(float) + 16), valf_hi);
+            }
+          }
+          else if constexpr (blockWidth >= 8) {
+            // 8, 16, 24, ....
+            __m128 valf_lo = _mm_cvtepi32_ps(_mm_cvtepu16_epi32(val));
+            //valf_lo = _mm_mul_ps(valf_lo, scaleback);
+            _mm_store_ps((float*)(pDst + x * sizeof(float)), valf_lo);
+            __m128 valf_hi = _mm_cvtepi32_ps(_mm_cvtepu16_epi32(_mm_srli_si128(val, 8)));
+            //valf_hi = _mm_mul_ps(valf_hi, scaleback);
+            _mm_store_ps((float*)(pDst + x * sizeof(float) + 16), valf_hi);
+          }
+          else if constexpr (blockWidth == 6) {
+            // x is always 0
+            // 4+2 pixels: 8 + 4 bytes
+            // 4 pixels
+            __m128 valf_lo = _mm_cvtepi32_ps(_mm_cvtepu16_epi32(val));
+            //valf_lo = _mm_mul_ps(valf_lo, scaleback);
+            _mm_store_ps((float*)(pDst), valf_lo);
+            // 2nd 4 pixels, only 2 of them used
+            __m128 valf_hi = _mm_cvtepi32_ps(_mm_cvtepu16_epi32(_mm_srli_si128(val, 8)));
+            //valf_hi = _mm_mul_ps(valf_hi, scaleback);
+            _mm_storel_epi64((__m128i*)(pDst + 4 * sizeof(float)), _mm_castps_si128(valf_hi));
+          }
+          else if constexpr (blockWidth == 4) {
+            // x is always 0. 4 pixels, 16 bytes
+            __m128 valf_lo = _mm_cvtepi32_ps(_mm_cvtepu16_epi32(val));
+            //valf_lo = _mm_mul_ps(valf_lo, scaleback);
+            _mm_store_ps((float*)(pDst), valf_lo);
+          }
+          else if constexpr (blockWidth == 3) {
+            // x is always 0
+            // 2+1 pixels: 8 + 4 bytes
+            __m128 valf_lo = _mm_cvtepi32_ps(_mm_cvtepu16_epi32(val));
+            //valf_lo = _mm_mul_ps(valf_lo, scaleback);
+            _mm_storel_epi64((__m128i*)(pDst), _mm_castps_si128(valf_lo));
+            float resf = _mm_cvtss_f32(_mm_castsi128_ps(_mm_srli_si128(_mm_castps_si128(valf_lo), 4)));
+            *(float*)(pDst + 2 * sizeof(float)) = resf;
+          }
+          else if constexpr (blockWidth == 2) {
+            // x is always 0
+            // 2 pixels: 8 bytes
+            __m128 valf_lo = _mm_cvtepi32_ps(_mm_cvtepu16_epi32(val));
+            //valf_lo = _mm_mul_ps(valf_lo, scaleback);
+            _mm_storel_epi64((__m128i*)(pDst), _mm_castps_si128(valf_lo));
+          }
+        } // out32 end
+
       }
       pDst += nDstPitch;
       if constexpr (lsb_flag)
@@ -611,7 +694,6 @@ void Degrain1to6_sse2(BYTE* pDst, BYTE* pDstLsb, int WidthHeightForC, int nDstPi
                   rounder))), 8), zero);
           // pDst[x] = (pRefF[x]*WRefF + pSrc[x]*WSrc + pRefB[x]*WRefB + 128)>>8;// weighted (by SAD) average
         }
-
         if constexpr (blockWidth == 12) {
           // 8 from the first, 4 from the second cycle
           if (x == 0) { // 1st 8 bytes
