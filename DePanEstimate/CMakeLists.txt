@@ -3,7 +3,7 @@
 # "MinGW Makefiles": MSYS2/Mingw32 GCC 8.3 build
 # "Visual Studio 16 2019" optional platform generator Win32 and x64
 # "Visual Studio 16 2019" + LLVM 8.0 (clang) optional platform generator Win32 and x64
-CMAKE_MINIMUM_REQUIRED( VERSION 2.8.11 )
+CMAKE_MINIMUM_REQUIRED( VERSION 3.8.2 )
 
 set(PluginName "DePanEstimate")
 
@@ -110,7 +110,7 @@ target_include_directories(${ProjectName} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/inc
 if (MSVC OR MINGW)
   target_link_libraries(${ProjectName} "uuid" "winmm" "vfw32" "msacm32" "gdi32" "user32" "advapi32" "ole32" "imagehlp")
 else()
-  target_link_libraries(${ProjectName})
+  target_link_libraries(${ProjectName} "dl")
   # "pthread"  "dl"
 endif()
 

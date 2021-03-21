@@ -3,7 +3,7 @@
 # "MinGW Makefiles": MSYS2/Mingw32 GCC 8.3 build
 # "Visual Studio 16 2019" optional platform generator Win32 and x64
 # "Visual Studio 16 2019" + LLVM 8.0 (clang) optional platform generator Win32 and x64
-CMAKE_MINIMUM_REQUIRED( VERSION 2.8.11 )
+CMAKE_MINIMUM_REQUIRED( VERSION 3.8.2 )
 
 set(PluginName "DePan")
 
