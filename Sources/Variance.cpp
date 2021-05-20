@@ -58,7 +58,7 @@ unsigned int Luma8_sse2(const unsigned char *pSrc, int nSrcPitch)
         __m128i src1 = _mm_loadu_si128((__m128i *) (pSrc + x));
         sum = _mm_add_epi32(sum, _mm_sad_epu8(src1, zero));
         // sum1_32, 0, sum2_32, 0
-          // result in two 32 bit areas at the upper and lower 64 bytes
+          // result in two 32 bit areas at the upper and lower 64 bits
       }
       pSrc += nSrcPitch;
     }
@@ -69,6 +69,16 @@ unsigned int Luma8_sse2(const unsigned char *pSrc, int nSrcPitch)
         sum = _mm_add_epi32(sum, _mm_sad_epu8(src1, zero));
         // sum1_32, 0, sum2_32, 0
         // result in two 32 bit areas at the upper and lower 64 bytes
+      }
+      pSrc += nSrcPitch * 2;
+    }
+    else if constexpr (nBlkWidth % 4 == 0) {
+      for (int x = 0; x < nBlkWidth; x += 4)
+      {
+        __m128i src1 = _mm_or_si128(_mm_cvtsi32_si128(*(uint32_t*) (pSrc + x)), _mm_slli_si128(_mm_cvtsi32_si128(*(uint32_t*) (pSrc + x + nSrcPitch)), 4));
+        sum = _mm_add_epi32(sum, _mm_sad_epu8(src1, zero));
+        // sum1_32, 0, sum2_32, 0
+        // result only in lower 64 bits
       }
       pSrc += nSrcPitch * 2;
     }
