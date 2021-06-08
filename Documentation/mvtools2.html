@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+﻿gf<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html lang='en' xml:lang='en' xmlns="http://www.w3.org/1999/xhtml">
 
 <head>
@@ -12,7 +12,7 @@
     <h2>Abstract</h2>
     <table class="n">
         <tr><td class="n"><b>Authors:      </b></td><td class="n">&nbsp;</td><td class="n">Manao, Tsp, TSchniede, SEt, Fizick (Alexander Balakhnin), Vit, Firesledge, pinterf</td></tr>
-        <tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.44</td></tr>
+        <tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.45</td></tr>
         <tr><td class="n"><b>git:          </b></td><td class="n">&nbsp;</td><td class="n"><a href="https://github.com/pinterf/mvtools/tree/mvtools-pfmod">https://github.com/pinterf/mvtools/tree/mvtools-pfmod</a></td></tr>
         <tr><td class="n"><b>Forum:        </b></td><td class="n">&nbsp;</td><td class="n"><a href="https://forum.doom9.org/showthread.php?t=173356">https://forum.doom9.org/showthread.php?t=173356</a></td></tr>
         <tr><td class="n"><b>Base versions:</b></td><td class="n">&nbsp;</td><td class="n">2.6.0.5 + 2.5.11.22</td></tr>
@@ -1377,7 +1377,7 @@
 	int   num (25),
 	int   den (1),
 	int   mode (0),
-	float thres (0),
+	float ml (100.0),
 	bool  blend (true),
 	int   thSCD1,
 	int   thSCD2,
@@ -1429,11 +1429,16 @@
         <tr><td><b>3</b></td><td>Time weigthed combination of fetched forward blocks masked by shifted backward and fetched backward masked by shifted forward.</td></tr>
         <tr><td><b>4</b></td><td>Mode 3 mixed with simple static time average by occlusion mask of shifted blocks.</td></tr>
         <tr><td><b>5</b></td><td>Occlusion mask (for debug).</td></tr>
+        <tr><td><b>6</b></td><td>like 3 but using MakeSADMaskTime instead of MakeVectorOcclusionMaskTime</td></tr>
+        <tr><td><b>7</b></td><td>like 4 but using MakeSADMaskTime instead of MakeVectorOcclusionMaskTime</td></tr>
+        <tr><td><b>8</b></td><td>like 5 but using MakeSADMaskTime instead of MakeVectorOcclusionMaskTime</td></tr>
     </table>
-    <p class="var">thres</p>
+    <p class="var">ml</p>
     <p>
-        Threshold for count of occlusions per block for mask binarization.
-        A value of 0 is internally <var>blksize</var>*<var>blksizeV</var>/4.
+        Mask scale parameter.
+        Modes 3-5 are using it in MakeVectorOcclusionMaskTime, modes 6-8 in MakeSADMaskTime.
+        The greater values are corresponded to more weak occlusion mask (as in
+        <code>MMask</code> function, use it to tune and debug).
     </p>
     <p class="var">blend</var></p>
     <p>
@@ -2206,7 +2211,58 @@ Planar2Interleaved() # convert back to normal interleave YUY2
     </ul>
 
     <h2><a name="revisions"></a>VI) Revisions</h2>
-    
+
+    <p>2.7.45 (20210608)</p>
+    <ul>
+        <li>Fix: change parameter 'ml' from int to float in MBlockFPS.<br />
+            (Other filters with 'ml' are O.K.: MMask, MFlowInter, MFlowFPS are using float.)</li>
+        <li>Fix MBlockFPS html doc as well, which mentions 'thres' instead of 'ml'<br />
+            Add mode 5-8 to MBlockFPS docs</li>
+        <li>move change log from readme to CHANGELOG.md</li>
+        <li>Code change/speedup: MSuper: rfilter=0 and 1<br />
+          8 bit: drop old SSE code, port to SIMD intrinsics. Add SIMD to 16 bit case. Quicker, much quicker.<br />
+          (rfilter: Hierarchical levels smoothing and reducing (halving) filter)</li>
+        <li>Code change/speedup: MSuper: sharp=1 for pel=2 or 4</li>
+          Bicubic resizer drop old SSE code, port to SIMD intrinsics, implement SIMD intrinsics to 16 bit case.<br />
+          No need for Bilinear.asm and Bilinear-x64.asm any more.</li>
+        <li>SATD: add 8 bit C versions (geee, there wasn't one) (as an alternative to the external asm)</li>
+        <li>SAD: add internal SIMD for 8 bit SAD (SSE4.1) (as an alternative to the external asm)</li>
+        <li>Overlaps: Add internal SIMD for 8 bit. (as an alternative to the external asm)</li>
+        <li>Source code:<br />
+          In def.h any existing external assembler file can be disabled. <br />
+          The primary reason for this was to quickly test the linux port, for me this was easier than bothering with asm compilation and linking.<br />
+          For non-Windows cases all of these are disabled now.<br />
+          - USE_COPYCODE_ASM (CopyCode-a.asm). Has internal alternative. Same speed.<br />
+          - USE_OVERLAPS_ASM (Overlap-a.asm). asm implements 8 bit only. Has internal SIMD alternative. About the same speed.<br />
+          - USE_SAD_ASM (sad-a.asm) asm implements 8 bit only. Note: Internal 8 bit SIMD SAD is a bit slower that these handcrafted ones.<br />
+          - USE_SATD_ASM (Pixel-a.asm) asm implements 8 bit only. Note: SATD 8 bit has no SIMD replacement yet. <br />
+          - USE_LUMA_ASM (Variance-a.asm) asm implements 8 bit only. Has internal alternative.<br />
+          - USE_FDCT88INT_ASM (fdct_mmx.asm, fdct_mmx_x64.asm) <br />
+                              Only used for 8x8 block sizes. Quick integer version instead of fftw3.<br />
+                              No internal alternative, fftw3 is used instead.<br />
+          - USE_AVSTP (do find search for avstp.dll on Windows)</li>
+        <li>Minor and not so minor cosmetics, mainly for GCC.</li>
+        <li>Add Cmake build system.</li>
+        <li>MvTools2: Linux/GCC port (needs sse4.1), Dewindowsification.<br />
+          fftw3: MAnalyze dct modes that require fftw3 library will search for libfftw3f_threads.so.3<br />
+          Install either libfftw3-single3 (deb) or fftw-devel (rpm) package");<br />
+          e.g. sudo apt-get update<br />
+               sudo apt-get install libfftw3-dev</li>
+        <li>Not done (will be done in a second phase):<br />
+          Add back some external asms for linux build. For 8 bit SAD and SATD mainly.<br />
+          Linux port is still Intel-only, though every part has C alternative by now.</li>
+        <li>Separate the 3 projects (mvtools2, depan, depan_estimate).</li>
+        <li>DePan and DePanEstimate: Linux port</li>
+        <li>DePanEstimate: add fft_threads variable (default 1) for fftw3 mode (experimental)</li>
+        <li>DepanEstimate: add MT guard around sensible fft3w functions</li>
+        <li>mingw build fixes</li>
+        <li>Add build instructions to README.md</li>
+        <li>experimental avx2 for MDegrain1..6 (was not worth speedwise on my i7700 - memory transfer is bottleneck)</li>
+        <li>experimental 32-bit float internal Overlaps result buffer for MDegrain1..6<br />
+            whether if it is any quicker/more exact than the integer-scaled arithmetic version<br />
+            (when out32=true, do not use, it is only for development/test, maybe will be removed in the future)</li>
+    </ul>
+
     <p>2.7.44 (20201214)</p>
     <ul>
         <li>MAnalyze: fix motion vector generation inconsistencies across multiple runs.<br />
