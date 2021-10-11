@@ -258,6 +258,8 @@ MVAnalyse::MVAnalyse(
     ++nLevelsMax;
   }
 
+  nLevelsMax = 2;
+
   analysisData.nLvCount = (lv > 0) ? lv : nLevelsMax + lv;
   if (analysisData.nLvCount > nSuperLevels)
   {

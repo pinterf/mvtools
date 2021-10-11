@@ -15,6 +15,14 @@
 // Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA, or visit
 // http://www.gnu.org/copyleft/gpl.html .
 
+#if defined (__GNUC__) && ! defined (__INTEL_COMPILER)
+#include <x86intrin.h>
+// x86intrin.h includes header files for whatever instruction
+// sets are specified on the compiler command line, such as: xopintrin.h, fma4intrin.h
+#else
+#include <immintrin.h> // MS version of immintrin.h covers AVX, AVX2 and FMA3
+#endif // __GNUC__
+
 #ifndef __POBLOCKS__
 #define __POBLOCKS__
 
@@ -322,6 +330,13 @@ private:
   /* performs an exhaustive search */
   template<typename pixel_t>
   void ExpandingSearch(WorkingArea &workarea, int radius, int step, int mvx, int mvy); // diameter = 2*radius + 1
+  
+  template<typename pixel_t>
+  void ExhaustiveSearch8x8_sp4_avx2(WorkingArea& workarea); // 8x8 esa search AVX2 radius 4 intrinsincs based
+
+  template<typename pixel_t>
+  void ExhaustiveSearch8x8_sp2_avx2(WorkingArea& workarea); // 8x8 esa search AVX2 radius 2 intrinsincs based
+
 
   template<typename pixel_t>
   void Hex2Search(WorkingArea &workarea, int i_me_range);
