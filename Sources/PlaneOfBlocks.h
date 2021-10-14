@@ -145,6 +145,11 @@ private:
   bool           isse;              /* can we use isse asm code */
   bool           chroma;            /* do we do chroma me */
 
+  bool sse2; // make members now to use in SADs
+  bool sse41;
+  bool avx;
+  bool avx2;
+
 
   int dctpitch;
   conc::ObjPool <DCTClass> *		// Set to 0 if not used
@@ -332,10 +337,10 @@ private:
   void ExpandingSearch(WorkingArea &workarea, int radius, int step, int mvx, int mvy); // diameter = 2*radius + 1
   
   template<typename pixel_t>
-  void ExhaustiveSearch8x8_sp4_avx2(WorkingArea& workarea); // 8x8 esa search AVX2 radius 4 intrinsincs based
+  void ExhaustiveSearch8x8_sp4_avx2(WorkingArea& workarea, int mvx, int mvy); // 8x8 esa search AVX2 radius 4 intrinsincs based
 
   template<typename pixel_t>
-  void ExhaustiveSearch8x8_sp2_avx2(WorkingArea& workarea); // 8x8 esa search AVX2 radius 2 intrinsincs based
+  void ExhaustiveSearch8x8_sp2_avx2(WorkingArea& workarea, int mvx, int mvy); // 8x8 esa search AVX2 radius 2 intrinsincs based
 
 
   template<typename pixel_t>

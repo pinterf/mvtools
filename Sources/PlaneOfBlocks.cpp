@@ -103,10 +103,10 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
   freqArray[0].resize(8192 * _nPel * 2);
   freqArray[1].resize(8192 * _nPel * 2);
   // for nFlags, we use CPU_xxxx constants instead of Avisynth's CPUF_xxx values, because there are extra bits here
-  bool sse2 = (bool)(nFlags & CPU_SSE2); // no tricks for really old processors. If SSE2 is reported, use it
-  bool sse41 = (bool)(nFlags & CPU_SSE4);
-  bool avx = (bool)(nFlags & CPU_AVX);
-  bool avx2 = (bool)(nFlags & CPU_AVX2);
+  sse2 = (bool)(nFlags & CPU_SSE2); // no tricks for really old processors. If SSE2 is reported, use it
+  sse41 = (bool)(nFlags & CPU_SSE4);
+  avx = (bool)(nFlags & CPU_AVX);
+  avx2 = (bool)(nFlags & CPU_AVX2);
 //  bool ssd = (bool)(nFlags & MOTION_USE_SSD);
 //  bool satd = (bool)(nFlags & MOTION_USE_SATD);
 
@@ -811,22 +811,23 @@ void PlaneOfBlocks::Refine(WorkingArea &workarea)
     }
     break;
   case EXHAUSTIVE: {
-      if (nSearchParam == 4 && nBlkSizeX == 8 && nBlkSizeY == 8)
-      {
-          ExhaustiveSearch8x8_sp4_avx2<pixel_t>(workarea);
-          break;
-      }
-      if (nSearchParam == 2 && nBlkSizeX == 8 && nBlkSizeY == 8)
-      {
-          ExhaustiveSearch8x8_sp2_avx2<pixel_t>(workarea);
-          break;
-      }
+
     //		ExhaustiveSearch(nSearchParam);
     int mvx = workarea.bestMV.x;
     int mvy = workarea.bestMV.y;
+	if (nSearchParam == 2 && nBlkSizeX == 8 && nBlkSizeY == 8 && avx2)
+	{
+		ExhaustiveSearch8x8_sp2_avx2<pixel_t>(workarea, mvx, mvy);
+		break;
+	}
+	if (nSearchParam == 4 && nBlkSizeX == 8 && nBlkSizeY == 8 && avx2)
+	{
+		ExhaustiveSearch8x8_sp4_avx2<pixel_t>(workarea, mvx, mvy);
+		break;
+	}
     for (int i = 1; i <= nSearchParam; i++)// region is same as exhaustive, but ordered by radius (from near to far)
     {
-//      ExpandingSearch<pixel_t>(workarea, i, 1, mvx, mvy);
+       ExpandingSearch<pixel_t>(workarea, i, 1, mvx, mvy);
     }
   }
                    break;
@@ -1333,9 +1334,8 @@ void PlaneOfBlocks::OneTimeSearch(WorkingArea &workarea, int length)
 template<typename pixel_t>
 void PlaneOfBlocks::ExpandingSearch(WorkingArea &workarea, int r, int s, int mvx, int mvy) // diameter = 2*r + 1, step=s
 { // part of true enhaustive search (thin expanding square) around mvx, mvy
-  int i, j;
-  //	VECTOR mv = workarea.bestMV; // bug: it was pointer assignent, not values, so iterative! - v2.1
-  
+	int i, j;
+	//	VECTOR mv = workarea.bestMV; // bug: it was pointer assignent, not values, so iterative! - v2.1
     // sides of square without corners
   for (i = -r + s; i < r; i += s) // without corners! - v2.1
   {
@@ -3652,22 +3652,345 @@ PlaneOfBlocks::WorkingArea *PlaneOfBlocks::WorkingAreaFactory::do_create()
 
 
 template<typename pixel_t>
-void PlaneOfBlocks::ExhaustiveSearch8x8_sp4_avx2(WorkingArea& workarea)
+void PlaneOfBlocks::ExhaustiveSearch8x8_sp4_avx2(WorkingArea& workarea, int mvx, int mvy)
 {
-    return;
-    workarea.bestMV.x = 0;
-    workarea.bestMV.y = 0;
-    workarea.nMinCost = 0;
-    workarea.bestMV.sad = 0;
+	// debug check !
+	if (!workarea.IsVectorOK(mvx - 4, mvy - 4))
+	{
+		int dbr01 = 0;
+		return;
+	}
+	if (!workarea.IsVectorOK(mvx + 3, mvy + 3))
+	{
+		int dbr01 = 0;
+		return;
+	}
+	if (!workarea.IsVectorOK(mvx - 4, mvy + 3))
+	{
+		int dbr01 = 0;
+		return;
+	}
+	if (!workarea.IsVectorOK(mvx + 3, mvy - 4))
+	{
+		int dbr01 = 0;
+		return;
+	}
+
+	// array of sads 8x8
+	// due to 256bit registers limit is actually -4..+3 H search around zero, but full -4 +4 V search
+	unsigned short ArrSADs[8][9];
+	const uint8_t* pucRef = GetRefBlock(workarea, mvx - 4, mvy - 4); // upper left corner
+	const uint8_t* pucCurr = workarea.pSrc[0];
+
+	__m128i xmm10_Src_01, xmm11_Src_23, xmm12_Src_45, xmm13_Src_67;
+
+	__m256i ymm0_Ref_01, ymm1_Ref_23, ymm2_Ref_45, ymm3_Ref_67; // 2x16bytes store, require buf padding to allow 16bytes reads to xmm
+	__m256i ymm10_Src_01, ymm11_Src_23, ymm12_Src_45, ymm13_Src_67;
+
+	__m256i ymm4_tmp, ymm5_tmp, ymm6_tmp, ymm7_tmp;
+
+
+	//        __m256i 	my_ymm_test = _mm256_set_epi8(31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);// -debug values for check how permutes work
+	//        __m256i 	my_ymm_test = _mm256_set_epi8(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);// -debug values for check how permutes work
+
+	xmm10_Src_01 = _mm_loadu_si64((__m128i*)pucCurr);
+	xmm10_Src_01 = _mm_unpacklo_epi64(xmm10_Src_01, _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0])));
+	ymm10_Src_01 = _mm256_permute4x64_epi64(_mm256_castsi128_si256(xmm10_Src_01), 220);
+
+	xmm11_Src_23 = _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 2));
+	xmm11_Src_23 = _mm_unpacklo_epi64(xmm11_Src_23, _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 3)));
+	ymm11_Src_23 = _mm256_permute4x64_epi64(_mm256_castsi128_si256(xmm11_Src_23), 220);
+
+	xmm12_Src_45 = _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 4));
+	xmm12_Src_45 = _mm_unpacklo_epi64(xmm12_Src_45, _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 5)));
+	ymm12_Src_45 = _mm256_permute4x64_epi64(_mm256_castsi128_si256(xmm12_Src_45), 220);
+
+	xmm13_Src_67 = _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 6));
+	xmm13_Src_67 = _mm_unpacklo_epi64(xmm13_Src_67, _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 7)));
+	ymm13_Src_67 = _mm256_permute4x64_epi64(_mm256_castsi128_si256(xmm13_Src_67), 220);
+	// loaded 8 rows of 8x8 Src block, now in low and high 128bits of ymms
+
+	for (int i = 0; i < 9; i++)
+	{
+		ymm0_Ref_01 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 1)), (__m128i*)(pucRef + nRefPitch[0] * (i + 0)));
+		ymm1_Ref_23 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 3)), (__m128i*)(pucRef + nRefPitch[0] * (i + 2)));
+		ymm2_Ref_45 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 5)), (__m128i*)(pucRef + nRefPitch[0] * (i + 4)));
+		ymm3_Ref_67 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 7)), (__m128i*)(pucRef + nRefPitch[0] * (i + 6)));
+		// loaded 8 rows of Ref plane 16samples wide into ymm0..ymm3
+
+		// process sad[-4,i-4]
+		ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
+		ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
+		ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
+		ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
+
+		ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
+		ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
+		ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
+		ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
+
+		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
+		ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
+
+		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
+
+		ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
+
+		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
+		// sad -4,i-4 ready in low of mm4
+		_mm_storeu_si16(&ArrSADs[0][i], _mm256_castsi256_si128(ymm4_tmp));
+
+		// rotate Ref to 1 samples
+		ymm0_Ref_01 = _mm256_alignr_epi8(ymm0_Ref_01, ymm0_Ref_01, 1);
+		ymm1_Ref_23 = _mm256_alignr_epi8(ymm1_Ref_23, ymm1_Ref_23, 1);
+		ymm2_Ref_45 = _mm256_alignr_epi8(ymm2_Ref_45, ymm2_Ref_45, 1);
+		ymm3_Ref_67 = _mm256_alignr_epi8(ymm3_Ref_67, ymm3_Ref_67, 1);
+
+		// process sad[-3,i-4]
+		ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
+		ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
+		ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
+		ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
+
+		ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
+		ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
+		ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
+		ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
+
+		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
+		ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
+
+		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
+
+		ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
+
+		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
+		// sad -3,i-4 ready in low of mm4
+		_mm_storeu_si16(&ArrSADs[1][i], _mm256_castsi256_si128(ymm4_tmp));
+
+		// rotate Ref to 1 samples
+		ymm0_Ref_01 = _mm256_alignr_epi8(ymm0_Ref_01, ymm0_Ref_01, 1);
+		ymm1_Ref_23 = _mm256_alignr_epi8(ymm1_Ref_23, ymm1_Ref_23, 1);
+		ymm2_Ref_45 = _mm256_alignr_epi8(ymm2_Ref_45, ymm2_Ref_45, 1);
+		ymm3_Ref_67 = _mm256_alignr_epi8(ymm3_Ref_67, ymm3_Ref_67, 1);
+
+		// process sad[-2,i-4]
+		ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
+		ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
+		ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
+		ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
+
+		ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
+		ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
+		ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
+		ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
+
+		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
+		ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
+
+		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
+
+		ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
+
+		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
+		// sad -2,i-2 ready in low of mm4
+		_mm_storeu_si16(&ArrSADs[2][i], _mm256_castsi256_si128(ymm4_tmp));
+
+		// rotate Ref to 1 samples
+		ymm0_Ref_01 = _mm256_alignr_epi8(ymm0_Ref_01, ymm0_Ref_01, 1);
+		ymm1_Ref_23 = _mm256_alignr_epi8(ymm1_Ref_23, ymm1_Ref_23, 1);
+		ymm2_Ref_45 = _mm256_alignr_epi8(ymm2_Ref_45, ymm2_Ref_45, 1);
+		ymm3_Ref_67 = _mm256_alignr_epi8(ymm3_Ref_67, ymm3_Ref_67, 1);
+
+		// process sad[-1,i-4]
+		ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
+		ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
+		ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
+		ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
+
+		ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
+		ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
+		ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
+		ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
+
+		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
+		ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
+
+		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
+
+		ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
+
+		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
+		// sad -1,i-4 ready in low of mm4
+		_mm_storeu_si16(&ArrSADs[3][i], _mm256_castsi256_si128(ymm4_tmp));
+
+		// rotate Ref to 1 samples
+		ymm0_Ref_01 = _mm256_alignr_epi8(ymm0_Ref_01, ymm0_Ref_01, 1);
+		ymm1_Ref_23 = _mm256_alignr_epi8(ymm1_Ref_23, ymm1_Ref_23, 1);
+		ymm2_Ref_45 = _mm256_alignr_epi8(ymm2_Ref_45, ymm2_Ref_45, 1);
+		ymm3_Ref_67 = _mm256_alignr_epi8(ymm3_Ref_67, ymm3_Ref_67, 1);
+
+		// process sad[0,i-4]
+		ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
+		ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
+		ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
+		ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
+
+		ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
+		ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
+		ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
+		ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
+
+		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
+		ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
+
+		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
+
+		ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
+
+		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
+		// sad 0,i-4 ready in low of mm4
+		_mm_storeu_si16(&ArrSADs[4][i], _mm256_castsi256_si128(ymm4_tmp));
+
+		// rotate Ref to 1 samples
+		ymm0_Ref_01 = _mm256_alignr_epi8(ymm0_Ref_01, ymm0_Ref_01, 1);
+		ymm1_Ref_23 = _mm256_alignr_epi8(ymm1_Ref_23, ymm1_Ref_23, 1);
+		ymm2_Ref_45 = _mm256_alignr_epi8(ymm2_Ref_45, ymm2_Ref_45, 1);
+		ymm3_Ref_67 = _mm256_alignr_epi8(ymm3_Ref_67, ymm3_Ref_67, 1);
+
+		// process sad[1,i-4]
+		ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
+		ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
+		ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
+		ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
+
+		ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
+		ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
+		ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
+		ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
+
+		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
+		ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
+
+		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
+
+		ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
+
+		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
+		// sad 1,i-4 ready in low of mm4
+		_mm_storeu_si16(&ArrSADs[5][i], _mm256_castsi256_si128(ymm4_tmp));
+
+		// rotate Ref to 1 samples
+		ymm0_Ref_01 = _mm256_alignr_epi8(ymm0_Ref_01, ymm0_Ref_01, 1);
+		ymm1_Ref_23 = _mm256_alignr_epi8(ymm1_Ref_23, ymm1_Ref_23, 1);
+		ymm2_Ref_45 = _mm256_alignr_epi8(ymm2_Ref_45, ymm2_Ref_45, 1);
+		ymm3_Ref_67 = _mm256_alignr_epi8(ymm3_Ref_67, ymm3_Ref_67, 1);
+
+		// process sad[2,i-4]
+		ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
+		ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
+		ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
+		ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
+
+		ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
+		ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
+		ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
+		ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
+
+		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
+		ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
+
+		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
+
+		ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
+
+		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
+		// sad 2,i-4 ready in low of mm4
+		_mm_storeu_si16(&ArrSADs[6][i], _mm256_castsi256_si128(ymm4_tmp));
+
+		// rotate Ref to 1 samples
+		ymm0_Ref_01 = _mm256_alignr_epi8(ymm0_Ref_01, ymm0_Ref_01, 1);
+		ymm1_Ref_23 = _mm256_alignr_epi8(ymm1_Ref_23, ymm1_Ref_23, 1);
+		ymm2_Ref_45 = _mm256_alignr_epi8(ymm2_Ref_45, ymm2_Ref_45, 1);
+		ymm3_Ref_67 = _mm256_alignr_epi8(ymm3_Ref_67, ymm3_Ref_67, 1);
+
+		// process sad[3,i-4]
+		ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
+		ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
+		ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
+		ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
+
+		ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
+		ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
+		ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
+		ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
+
+		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
+		ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
+
+		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
+
+		ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
+
+		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
+		// sad 3,i-4 ready in low of mm4
+		_mm_storeu_si16(&ArrSADs[7][i], _mm256_castsi256_si128(ymm4_tmp));
+	}
+
+	unsigned short minsad = 65535;
+	int x_minsad = 0;
+	int y_minsad = 0;
+	for (int x = -4; x < 4; x++)
+	{
+		for (int y = -4; y < 5; y++)
+		{
+			if (ArrSADs[x+4][y+4] < minsad)
+			{
+				minsad = ArrSADs[x+4][y+4];
+				x_minsad = x;
+				y_minsad = y;
+			}
+		}
+	}
+
+	unsigned short cost = minsad + ((penaltyNew*minsad) >> 8);
+	if (cost >= workarea.nMinCost) return;
+
+	workarea.bestMV.x = mvx + x_minsad;
+	workarea.bestMV.y = mvy + y_minsad;
+	workarea.nMinCost = cost;
+	workarea.bestMV.sad = minsad;
+   
 }
 
 template<typename pixel_t>
-void PlaneOfBlocks::ExhaustiveSearch8x8_sp2_avx2(WorkingArea& workarea)
+void PlaneOfBlocks::ExhaustiveSearch8x8_sp2_avx2(WorkingArea& workarea, int mvx, int mvy)
 {
+	// debug check !! need to fix caller to now allow illegal vectors 
+	if (!workarea.IsVectorOK(mvx - 2, mvy - 2))
+	{
+		int dbr01 = 0;
+		return;
+	}
+	if (!workarea.IsVectorOK(mvx + 2, mvy + 2))
+	{
+		int dbr01 = 0;
+		return;
+	}
+	if (!workarea.IsVectorOK(mvx - 2, mvy + 2))
+	{
+		int dbr01 = 0;
+		return;
+	}
+	if (!workarea.IsVectorOK(mvx + 2, mvy - 2))
+	{
+		int dbr01 = 0;
+		return;
+	}
     // array of sads 5x5 
     unsigned short ArrSADs[5][5];
-    const uint8_t* puiRef = GetRefBlock(workarea, -2, -2); // upper left corner
-    const uint8_t* puiCurr = workarea.pSrc[0];
+    const uint8_t* pucRef = GetRefBlock(workarea, mvx - 2, mvy - 2); // upper left corner
+    const uint8_t* pucCurr = workarea.pSrc[0];
 
     __m128i xmm10_Src_01, xmm11_Src_23, xmm12_Src_45, xmm13_Src_67;
 
@@ -3681,29 +4004,29 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_sp2_avx2(WorkingArea& workarea)
 //        __m256i 	my_ymm_test = _mm256_set_epi8(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);// -debug values for check how permutes work
 //        my_ymm_test = _mm256_alignr_epi8(my_ymm_test, my_ymm_test, 2); // rotate each half of ymm by number of bytes
 
-    xmm10_Src_01 = _mm_loadu_si64((__m128i*)puiCurr);
-    xmm10_Src_01 = _mm_unpacklo_epi64(xmm10_Src_01, _mm_loadu_si64((__m128i*)(puiCurr + nSrcPitch[0])));
+    xmm10_Src_01 = _mm_loadu_si64((__m128i*)pucCurr);
+    xmm10_Src_01 = _mm_unpacklo_epi64(xmm10_Src_01, _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0])));
     ymm10_Src_01 = _mm256_permute4x64_epi64(_mm256_castsi128_si256(xmm10_Src_01), 220);
 
-    xmm11_Src_23 = _mm_loadu_si64((__m128i*)(puiCurr + nSrcPitch[0] * 2));
-    xmm11_Src_23 = _mm_unpacklo_epi64(xmm11_Src_23, _mm_loadu_si64((__m128i*)(puiCurr + nSrcPitch[0] * 3)));
+    xmm11_Src_23 = _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 2));
+    xmm11_Src_23 = _mm_unpacklo_epi64(xmm11_Src_23, _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 3)));
     ymm11_Src_23 = _mm256_permute4x64_epi64(_mm256_castsi128_si256(xmm11_Src_23), 220);
 
-    xmm12_Src_45 = _mm_loadu_si64((__m128i*)(puiCurr + nSrcPitch[0] * 4));
-    xmm12_Src_45 = _mm_unpacklo_epi64(xmm12_Src_45, _mm_loadu_si64((__m128i*)(puiCurr + nSrcPitch[0] * 5)));
+    xmm12_Src_45 = _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 4));
+    xmm12_Src_45 = _mm_unpacklo_epi64(xmm12_Src_45, _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 5)));
     ymm12_Src_45 = _mm256_permute4x64_epi64(_mm256_castsi128_si256(xmm12_Src_45), 220);
 
-    xmm13_Src_67 = _mm_loadu_si64((__m128i*)(puiCurr + nSrcPitch[0] * 6));
-    xmm13_Src_67 = _mm_unpacklo_epi64(xmm13_Src_67, _mm_loadu_si64((__m128i*)(puiCurr + nSrcPitch[0] * 7)));
+    xmm13_Src_67 = _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 6));
+    xmm13_Src_67 = _mm_unpacklo_epi64(xmm13_Src_67, _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 7)));
     ymm13_Src_67 = _mm256_permute4x64_epi64(_mm256_castsi128_si256(xmm13_Src_67), 220);
     // loaded 8 rows of 8x8 Src block, now in low and high 128bits of ymms
 
     for (int i = 0; i < 5; i++)
     {
-        ymm0_Ref_01 = _mm256_loadu2_m128i((__m128i*)(puiRef + nRefPitch[0] * (i+1)), (__m128i*)puiRef + i*nRefPitch[0]);
-        ymm1_Ref_23 = _mm256_loadu2_m128i((__m128i*)(puiRef + nRefPitch[0] * (i+3)), (__m128i*)(puiRef + nRefPitch[0] * (i+2)));
-        ymm2_Ref_45 = _mm256_loadu2_m128i((__m128i*)(puiRef + nRefPitch[0] * (i+5)), (__m128i*)(puiRef + nRefPitch[0] * (i+4)));
-        ymm3_Ref_67 = _mm256_loadu2_m128i((__m128i*)(puiRef + nRefPitch[0] * (i+7)), (__m128i*)(puiRef + nRefPitch[0] * (i+6)));
+		ymm0_Ref_01 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 1)), (__m128i*)(pucRef + nRefPitch[0] * (i + 0)));
+        ymm1_Ref_23 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 3)), (__m128i*)(pucRef + nRefPitch[0] * (i + 2)));
+        ymm2_Ref_45 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 5)), (__m128i*)(pucRef + nRefPitch[0] * (i + 4)));
+        ymm3_Ref_67 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 7)), (__m128i*)(pucRef + nRefPitch[0] * (i + 6)));
         // loaded 8 rows of Ref plane 16samples wide into ymm0..ymm3
 
         // process sad[-2,i-2]
@@ -3725,7 +4048,7 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_sp2_avx2(WorkingArea& workarea)
         ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
 
         ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-        // first sad -2,i-2 ready in low of mm4
+        // sad -2,i-2 ready in low of mm4
         _mm_storeu_si16(&ArrSADs[0][i], _mm256_castsi256_si128(ymm4_tmp));
 
         // rotate Ref to 1 samples
@@ -3753,7 +4076,7 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_sp2_avx2(WorkingArea& workarea)
         ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
 
         ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-        // first sad -1,i-2 ready in low of mm4
+        // sad -1,i-2 ready in low of mm4
         _mm_storeu_si16(&ArrSADs[1][i], _mm256_castsi256_si128(ymm4_tmp));
 
         // rotate Ref to 1 samples
@@ -3781,7 +4104,7 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_sp2_avx2(WorkingArea& workarea)
         ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
 
         ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-        // first sad 0,i-2 ready in low of mm4
+        // sad 0,i-2 ready in low of mm4
         _mm_storeu_si16(&ArrSADs[2][i], _mm256_castsi256_si128(ymm4_tmp));
 
         // rotate Ref to 1 samples
@@ -3809,7 +4132,7 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_sp2_avx2(WorkingArea& workarea)
         ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
 
         ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-        // first sad 1,i-2 ready in low of mm4
+        // sad 1,i-2 ready in low of mm4
         _mm_storeu_si16(&ArrSADs[3][i], _mm256_castsi256_si128(ymm4_tmp));
 
         // rotate Ref to 1 samples
@@ -3837,7 +4160,7 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_sp2_avx2(WorkingArea& workarea)
         ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
 
         ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-        // first sad 2,i-2 ready in low of mm4
+        // sad 2,i-2 ready in low of mm4
         _mm_storeu_si16(&ArrSADs[4][i], _mm256_castsi256_si128(ymm4_tmp));
     }
 
@@ -3848,17 +4171,20 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_sp2_avx2(WorkingArea& workarea)
     {
         for (int y = -2; y < 2; y++)
         {
-            if (ArrSADs[x][y] < minsad)
+            if (ArrSADs[x+2][y+2] < minsad)
             {
-                minsad = ArrSADs[x][y];
+                minsad = ArrSADs[x+2][y+2];
                 x_minsad = x;
                 y_minsad = y;
             }
         }
     }
 
-    workarea.bestMV.x = x_minsad;
-    workarea.bestMV.y = y_minsad;
-    workarea.nMinCost = 0;
+	unsigned short cost = minsad + ((penaltyNew*minsad) >> 8);
+	if (cost >= workarea.nMinCost) return;
+
+    workarea.bestMV.x = mvx + x_minsad;
+    workarea.bestMV.y = mvy + y_minsad;
+    workarea.nMinCost = cost;
     workarea.bestMV.sad = minsad;
 }
