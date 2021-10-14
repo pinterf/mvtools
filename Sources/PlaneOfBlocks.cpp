@@ -815,12 +815,12 @@ void PlaneOfBlocks::Refine(WorkingArea &workarea)
     //		ExhaustiveSearch(nSearchParam);
     int mvx = workarea.bestMV.x;
     int mvy = workarea.bestMV.y;
-	if (nSearchParam == 2 && nBlkSizeX == 8 && nBlkSizeY == 8 && avx2)
+	if (nSearchParam == 2 && nBlkSizeX == 8 && nBlkSizeY == 8 && avx2 && !chroma)
 	{
 		ExhaustiveSearch8x8_sp2_avx2<pixel_t>(workarea, mvx, mvy);
 		break;
 	}
-	if (nSearchParam == 4 && nBlkSizeX == 8 && nBlkSizeY == 8 && avx2)
+	if (nSearchParam == 4 && nBlkSizeX == 8 && nBlkSizeY == 8 && avx2 && !chroma)
 	{
 		ExhaustiveSearch8x8_sp4_avx2<pixel_t>(workarea, mvx, mvy);
 		break;
