@@ -75,7 +75,7 @@ MVPlane::MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, i
     _bilin_ver_ptr = _isse ? VerticalBilin_sse2<uint8_t> : VerticalBilin<uint8_t>;
     _bilin_dia_ptr = _isse ? DiagonalBilin_sse2<uint8_t, false> : DiagonalBilin<uint8_t>;
     _bicubic_hor_ptr = _isse ? HorizontalBicubic_sse2<uint8_t, false> : HorizontalBicubic<uint8_t>;
-    _bicubic_ver_ptr = _isse ? VerticalBicubic_sse2<uint8_t, false> : VerticalBicubic<uint8_t>;
+    _bicubic_ver_ptr = _isse ? (hasSSE41 ? VerticalBicubic_sse2<uint8_t, true> : VerticalBicubic_sse2<uint8_t, false>) : VerticalBicubic<uint8_t>;
     _wiener_hor_ptr = _isse ? HorizontalWiener_sse2<uint8_t, false> : HorizontalWiener<uint8_t>;
     _wiener_ver_ptr = _isse ? VerticalWiener_sse2<uint8_t, false> : VerticalWiener<uint8_t>;
     _average_ptr = _isse ? Average2_sse2<uint8_t> : Average2<uint8_t>;
