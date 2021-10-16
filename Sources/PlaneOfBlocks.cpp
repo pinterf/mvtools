@@ -685,7 +685,6 @@ void PlaneOfBlocks::FetchPredictors(WorkingArea &workarea)
   {
     workarea.predictors[1] = ClipMV(workarea, zeroMVfieldShifted); // v1.11.1 - values instead of pointer
   }
-
   // fixme note:
   // MAnalyze mt-inconsistency reason #1
   // this is _not_ internal mt friendly, since here up or bottom predictors
@@ -703,7 +702,6 @@ void PlaneOfBlocks::FetchPredictors(WorkingArea &workarea)
   {
     workarea.predictors[2] = ClipMV(workarea, zeroMVfieldShifted);
   }
-
     // Original problem: random, small, rare, mostly irreproducible differences between multiple encodings.
     // In all, I spent at least a week on the problem during a half year, losing hope
     // and restarting again four times. Nasty bug it was.
@@ -747,7 +745,7 @@ void PlaneOfBlocks::FetchPredictors(WorkingArea &workarea)
     workarea.predictors[0].sad = workarea.predictors[1].sad;
   }
 
-  // if there are no other planes, predictor is the median
+   // if there are no other planes, predictor is the median
   if (smallestPlane)
   {
     workarea.predictor = workarea.predictors[0];
@@ -1108,6 +1106,113 @@ void PlaneOfBlocks::PseudoEPZSearch(WorkingArea& workarea)
 }
 
 
+template<typename pixel_t>
+void PlaneOfBlocks::PseudoEPZSearch_no_pred(WorkingArea& workarea)
+{
+    typedef typename std::conditional < sizeof(pixel_t) == 1, sad_t, bigsad_t >::type safe_sad_t;
+ //   FetchPredictors<pixel_t>(workarea);
+
+    sad_t sad;
+    sad_t saduv;
+
+
+    // We treat zero alone
+    // Do we bias zero with not taking into account distorsion ?
+    workarea.bestMV.x = zeroMVfieldShifted.x;
+    workarea.bestMV.y = zeroMVfieldShifted.y;
+    saduv = (chroma) ?
+        ScaleSadChroma(SADCHROMA(workarea.pSrc[1], nSrcPitch[1], GetRefBlockU(workarea, 0, 0), nRefPitch[1])
+            + SADCHROMA(workarea.pSrc[2], nSrcPitch[2], GetRefBlockV(workarea, 0, 0), nRefPitch[2]), effective_chromaSADscale) : 0;
+    sad = LumaSAD<pixel_t>(workarea, GetRefBlock(workarea, 0, zeroMVfieldShifted.y));
+    sad += saduv;
+    workarea.bestMV.sad = sad;
+    workarea.nMinCost = sad + ((penaltyZero * (safe_sad_t)sad) >> 8); // v.1.11.0.2
+
+    // then, we refine, according to the search type
+    Refine<pixel_t>(workarea);
+
+    // we store the result
+    vectors[workarea.blkIdx].x = workarea.bestMV.x;
+    vectors[workarea.blkIdx].y = workarea.bestMV.y;
+    vectors[workarea.blkIdx].sad = workarea.bestMV.sad;
+
+    workarea.planeSAD += workarea.bestMV.sad; // for debug, plus fixme outer planeSAD is not used
+}
+
+template<typename pixel_t>
+void PlaneOfBlocks::PseudoEPZSearch_glob_med_pred(WorkingArea& workarea)
+{
+    typedef typename std::conditional < sizeof(pixel_t) == 1, sad_t, bigsad_t >::type safe_sad_t;
+    FetchPredictors<pixel_t>(workarea);
+
+    sad_t sad;
+    sad_t saduv;
+
+
+    // We treat zero alone
+    // Do we bias zero with not taking into account distorsion ?
+    workarea.bestMV.x = zeroMVfieldShifted.x;
+    workarea.bestMV.y = zeroMVfieldShifted.y;
+    saduv = (chroma) ?
+        ScaleSadChroma(SADCHROMA(workarea.pSrc[1], nSrcPitch[1], GetRefBlockU(workarea, 0, 0), nRefPitch[1])
+            + SADCHROMA(workarea.pSrc[2], nSrcPitch[2], GetRefBlockV(workarea, 0, 0), nRefPitch[2]), effective_chromaSADscale) : 0;
+    sad = LumaSAD<pixel_t>(workarea, GetRefBlock(workarea, 0, zeroMVfieldShifted.y));
+    sad += saduv;
+    workarea.bestMV.sad = sad;
+    workarea.nMinCost = sad + ((penaltyZero * (safe_sad_t)sad) >> 8); // v.1.11.0.2
+
+
+   // Global MV predictor  - added by Fizick
+    workarea.globalMVPredictor = ClipMV(workarea, workarea.globalMVPredictor);
+
+    //	if ( workarea.IsVectorOK(workarea.globalMVPredictor.x, workarea.globalMVPredictor.y ) )
+    {
+        saduv = (chroma) ?
+            ScaleSadChroma(SADCHROMA(workarea.pSrc[1], nSrcPitch[1], GetRefBlockU(workarea, workarea.globalMVPredictor.x, workarea.globalMVPredictor.y), nRefPitch[1])
+                + SADCHROMA(workarea.pSrc[2], nSrcPitch[2], GetRefBlockV(workarea, workarea.globalMVPredictor.x, workarea.globalMVPredictor.y), nRefPitch[2]), effective_chromaSADscale) : 0;
+        sad = LumaSAD<pixel_t>(workarea, GetRefBlock(workarea, workarea.globalMVPredictor.x, workarea.globalMVPredictor.y));
+        sad += saduv;
+        sad_t cost = sad + ((pglobal * (safe_sad_t)sad) >> 8);
+
+        if (cost < workarea.nMinCost || tryMany)
+        {
+            workarea.bestMV.x = workarea.globalMVPredictor.x;
+            workarea.bestMV.y = workarea.globalMVPredictor.y;
+            workarea.bestMV.sad = sad;
+            workarea.nMinCost = cost;
+        }
+
+        //	}
+        //	Then, the predictor :
+        //	if (   (( workarea.predictor.x != zeroMVfieldShifted.x ) || ( workarea.predictor.y != zeroMVfieldShifted.y ))
+        //	    && (( workarea.predictor.x != workarea.globalMVPredictor.x ) || ( workarea.predictor.y != workarea.globalMVPredictor.y )))
+        //	{
+        saduv = (chroma) ? ScaleSadChroma(SADCHROMA(workarea.pSrc[1], nSrcPitch[1], GetRefBlockU(workarea, workarea.predictor.x, workarea.predictor.y), nRefPitch[1])
+            + SADCHROMA(workarea.pSrc[2], nSrcPitch[2], GetRefBlockV(workarea, workarea.predictor.x, workarea.predictor.y), nRefPitch[2]), effective_chromaSADscale) : 0;
+        sad = LumaSAD<pixel_t>(workarea, GetRefBlock(workarea, workarea.predictor.x, workarea.predictor.y));
+        sad += saduv;
+
+        cost = sad;
+        if (cost < workarea.nMinCost || tryMany)
+        {
+            workarea.bestMV.x = workarea.predictor.x;
+            workarea.bestMV.y = workarea.predictor.y;
+            workarea.bestMV.sad = sad;
+            workarea.nMinCost = cost;
+        }
+        
+    }
+    
+    // then, we refine, according to the search type
+    Refine<pixel_t>(workarea);
+
+    // we store the result
+    vectors[workarea.blkIdx].x = workarea.bestMV.x;
+    vectors[workarea.blkIdx].y = workarea.bestMV.y;
+    vectors[workarea.blkIdx].sad = workarea.bestMV.sad;
+
+    workarea.planeSAD += workarea.bestMV.sad; // for debug, plus fixme outer planeSAD is not used
+}
 
 template<typename pixel_t>
 void PlaneOfBlocks::DiamondSearch(WorkingArea &workarea, int length)
@@ -3066,6 +3171,8 @@ void	PlaneOfBlocks::search_mv_slice(Slicer::TaskData &td)
       }
 
       PseudoEPZSearch<pixel_t>(workarea);
+//      PseudoEPZSearch_glob_med_pred<pixel_t>(workarea);
+//      PseudoEPZSearch_no_pred<pixel_t>(workarea);
       //			workarea.bestMV = zeroMV; // debug
 
       if (outfilebuf != NULL) // write vector to outfile

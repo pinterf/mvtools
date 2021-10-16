@@ -328,7 +328,15 @@ private:
 
   /* performs an epz search */
   template<typename pixel_t>
-  void PseudoEPZSearch(WorkingArea &workarea);
+  void PseudoEPZSearch(WorkingArea &workarea); // full predictors, slowest, max quality
+
+  /* performs an epz search */
+  template<typename pixel_t>
+  void PseudoEPZSearch_no_pred(WorkingArea& workarea); // planes = 1 recommended
+
+  /* performs an epz search */
+  template<typename pixel_t>
+  void PseudoEPZSearch_glob_med_pred(WorkingArea& workarea); // planes >=2 recommended
 
   //	void PhaseShiftSearch(int vx, int vy);
 
