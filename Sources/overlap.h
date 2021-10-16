@@ -23,6 +23,7 @@
 #include "CopyCode.h"
 #include <cstdio>
 #include "def.h"
+#include "emmintrin.h"
 
 // top, middle, bottom and left, middle, right windows
 #define OW_TL 0

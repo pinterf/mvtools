@@ -568,7 +568,7 @@ void Degrain1to6_sse2(BYTE* pDst, BYTE* pDstLsb, int WidthHeightForC, int nDstPi
             __m128 valf_lo = _mm_cvtepi32_ps(_mm_cvtepu16_epi32(val));
             //valf_lo = _mm_mul_ps(valf_lo, scaleback);
             _mm_storel_epi64((__m128i*)(pDst), _mm_castps_si128(valf_lo));
-            float resf = _mm_cvtss_f32(_mm_castsi128_ps(_mm_srli_si128(_mm_castps_si128(valf_lo), 4)));
+            float resf = _mm_cvtss_f32(_mm_castsi128_ps(_mm_srli_si128(_mm_castps_si128(valf_lo), 2*4)));
             *(float*)(pDst + 2 * sizeof(float)) = resf;
           }
           else if constexpr (blockWidth == 2) {
@@ -765,7 +765,7 @@ void Degrain1to6_sse2(BYTE* pDst, BYTE* pDstLsb, int WidthHeightForC, int nDstPi
 #pragma warning( disable : 4101)
 // for blockwidth >=2 (4 bytes for blockwidth==2, 8 bytes for blockwidth==4)
 // for special height==0 -> internally nHeight comes from variable (for C: both width and height is variable)
-template<int blockWidth, int blockHeight, int level, bool lessThan16bits>
+template<int blockWidth, int blockHeight, int level, bool lessThan16bits, bool out32>
 void Degrain1to6_16_sse41(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
   const BYTE *pRefB[MAX_DEGRAIN], int BPitch[MAX_DEGRAIN], const BYTE *pRefF[MAX_DEGRAIN], int FPitch[MAX_DEGRAIN],
   int WSrc,
@@ -780,6 +780,11 @@ void Degrain1to6_16_sse41(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nD
 
   // able to do madd for real 16 bit uint16_t data
   const auto signed16_shifter = _mm_set1_epi16(-32768);
+  const auto signed16_shifter_si32 = _mm_set1_epi32(32768 << DEGRAIN_WEIGHT_BITS);
+
+  constexpr int SHIFTBACK = DEGRAIN_WEIGHT_BITS;
+  constexpr int rounder_i = (1 << SHIFTBACK) / 2;
+  // note: DEGRAIN_WEIGHT_BITS is fixed 8 bits, so no rounding occurs on 8 bit in 16 bit out
 
   // Interleave Forward and Backward 16 bit weights for madd
   __m128i ws = _mm_set1_epi32((0 << 16) + WSrc);
@@ -800,10 +805,10 @@ void Degrain1to6_16_sse41(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nD
     }
   }
 
-  __m128i rounder = _mm_set1_epi32(1 << (DEGRAIN_WEIGHT_BITS - 1)); // rounding: 128 (mul by 8 bit wref scale back)
+  __m128i rounder = _mm_set1_epi32(rounder_i); // rounding: 128 (mul by 8 bit wref scale back)
   for (int h = 0; h < realBlockHeight; h++)
   {
-    for (int x = 0; x < blockWidth; x += 8 / sizeof(uint16_t))
+    for (int x = 0; x < blockWidth; x += 8 / sizeof(uint16_t)) // up to 4 pixels per cycle
     {
       __m128i res;
       auto src = _mm_loadl_epi64((__m128i*)(pSrc + x * sizeof(uint16_t)));
@@ -847,32 +852,75 @@ void Degrain1to6_16_sse41(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nD
           src = _mm_add_epi16(src, signed16_shifter);
         res = _mm_add_epi32(res, _mm_madd_epi16(src, wbf6));
       }
-      res = _mm_add_epi32(res, rounder); // round
-      res = _mm_packs_epi32(_mm_srai_epi32(res, DEGRAIN_WEIGHT_BITS), z);
-      // make unsigned when unsigned 16 bit mode
-      if constexpr(!lessThan16bits) 
-        res = _mm_add_epi16(res, signed16_shifter);
+
+      if constexpr (out32) {
+        // make unsigned when unsigned 16 bit mode
+        if constexpr (!lessThan16bits)
+          res = _mm_add_epi32(res, signed16_shifter_si32);
+      }
+      else {
+        res = _mm_add_epi32(res, rounder); // round
+        res = _mm_packs_epi32(_mm_srai_epi32(res, SHIFTBACK), z);
+        // make unsigned when unsigned 16 bit mode
+        if constexpr (!lessThan16bits)
+          res = _mm_add_epi16(res, signed16_shifter);
+      }
 
       // store back
-      if constexpr(blockWidth == 6) {
-        // special, 4+2
-        if (x == 0)
+      if constexpr (out32) {
+        const auto val = res; // fixme rename
+        __m128 valf = _mm_cvtepi32_ps(val);
+
+        if constexpr (blockWidth == 6) {
+          // 4 pixels from the first, 2 from the second cycle
+          if (x == 0) { // 1st 4 pixels 16 bytes
+            // 4 pixels to offset float[0]
+            _mm_storeu_ps((float*)(pDst + 0 * sizeof(float)), valf);
+          }
+          else {
+            // 2 pixels to offset float[4]
+            _mm_storel_epi64((__m128i*)(pDst + 4 * sizeof(float)), _mm_castps_si128(valf));
+          }
+        }
+        else if constexpr (blockWidth >= 4) {
+          // 4, 8, 12
+          _mm_storeu_ps((float*)(pDst + x * sizeof(float)), valf);
+        }
+        else if constexpr (blockWidth == 3) {
+          // x is always 0
+          // 2+1 pixels: 8 + 4 bytes
+          _mm_storel_epi64((__m128i*)(pDst), _mm_castps_si128(valf));
+          float resf = _mm_cvtss_f32(_mm_movehl_ps(valf, valf));
+          *(float*)(pDst + 2 * sizeof(float)) = resf;
+        }
+        else if constexpr (blockWidth == 2) {
+          // x is always 0
+          // 2 pixels: 8 bytes
+          _mm_storel_epi64((__m128i*)(pDst), _mm_castps_si128(valf));
+        }
+      } // out32 end
+      else {
+        // not out32 float intermediate
+        if constexpr (blockWidth == 6) {
+          // special, 4+2
+          if (x == 0)
+            _mm_storel_epi64((__m128i*)(pDst + x * sizeof(uint16_t)), res);
+          else
+            *(uint32_t*)(pDst + x * sizeof(uint16_t)) = _mm_cvtsi128_si32(res);
+        }
+        else if constexpr (blockWidth >= 8 / sizeof(uint16_t)) { // block 4 is already 8 bytes
+          // 4, 8, 12, ...
           _mm_storel_epi64((__m128i*)(pDst + x * sizeof(uint16_t)), res);
-        else
-          *(uint32_t *)(pDst + x * sizeof(uint16_t)) = _mm_cvtsi128_si32(res);
-      }
-      else if constexpr(blockWidth >= 8 / sizeof(uint16_t)) { // block 4 is already 8 bytes
-        // 4, 8, 12, ...
-        _mm_storel_epi64((__m128i*)(pDst + x * sizeof(uint16_t)), res);
-      }
-      else if constexpr(blockWidth == 3) { // blockwidth 3 is 6 bytes
-        // x == 0 always
-        *(uint32_t *)(pDst) = _mm_cvtsi128_si32(res); // 1-4 bytes
-        uint32_t res32 = _mm_cvtsi128_si32(_mm_srli_si128(res, 4)); // 5-8 byte
-        *(uint16_t *)(pDst + sizeof(uint32_t)) = (uint16_t)res32; // 2 bytes needed
-      }
-      else { // blockwidth 2 is 4 bytes
-        *(uint32_t *)(pDst + x * sizeof(uint16_t)) = _mm_cvtsi128_si32(res);
+        }
+        else if constexpr (blockWidth == 3) { // blockwidth 3 is 6 bytes
+          // x == 0 always
+          *(uint32_t*)(pDst) = _mm_cvtsi128_si32(res); // 1-4 bytes
+          uint32_t res32 = _mm_cvtsi128_si32(_mm_srli_si128(res, 4)); // 5-8 byte
+          *(uint16_t*)(pDst + sizeof(uint32_t)) = (uint16_t)res32; // 2 bytes needed
+        }
+        else { // blockwidth 2 is 4 bytes
+          *(uint32_t*)(pDst + x * sizeof(uint16_t)) = _mm_cvtsi128_si32(res);
+        }
       }
     }
     pDst += nDstPitch;

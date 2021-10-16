@@ -345,6 +345,7 @@ void OverlapsBuf_Float2Bytes_sse4(unsigned char* pDst0, int nDstPitch, float* pT
   // our temporary Overlaps buffer is float. For integer targets we convert it back
   // for float output: simple copy, this function is not called
   auto pDst = reinterpret_cast<pixel_t*>(pDst0);
+  nDstPitch /= sizeof(pixel_t);
   const auto max_pixel_value = _mm_set1_epi16((short)((1 << bits_per_pixel) - 1));
   for (int y = 0; y < nHeight; y++)
   {

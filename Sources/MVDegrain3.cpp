@@ -157,8 +157,10 @@ func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_STACKED, level, USE_SSE2)] = Deg
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_OUT16, level, USE_SSE2)] = Degrain1to6_sse2<x, yy, 2, level>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT + OUT32_MARKER, level, USE_SSE2)] = Degrain1to6_sse2<x, yy, 3, level>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT + OUT32_MARKER, level, USE_AVX2)] = Degrain1to6_avx2<x, yy, 3, level>; \
-func_degrain[make_tuple(x, y, DEGRAIN_TYPE_10to14BIT, level, USE_SSE41)] = Degrain1to6_16_sse41<x, yy, level, true>; \
-func_degrain[make_tuple(x, y, DEGRAIN_TYPE_16BIT, level, USE_SSE41)] = Degrain1to6_16_sse41<x, yy, level, false>;
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_10to14BIT + OUT32_MARKER, level, USE_SSE41)] = Degrain1to6_16_sse41<x, yy, level, true, true>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_16BIT + OUT32_MARKER, level, USE_SSE41)] = Degrain1to6_16_sse41<x, yy, level, false, true>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_10to14BIT, level, USE_SSE41)] = Degrain1to6_16_sse41<x, yy, level, true, false>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_16BIT, level, USE_SSE41)] = Degrain1to6_16_sse41<x, yy, level, false, false>;
 
 #define MAKE_FN(x, y, yy) \
 MAKE_FN_LEVEL(x,y,1, yy) \
@@ -1027,11 +1029,11 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
             }
             else if (pixelsize_super == 2) {
               // cast to match the prototype
-              OVERSLUMA16((uint16_t*)(pDstFloat + xx), dstIntPitch, tmpBlock, tmpPitch << pixelsize_super_shift, (short*)winOver, nBlkSizeX);
+              OVERSLUMA16((uint16_t*)(pDstFloat + xx), dstIntPitch, tmpBlock, tmpPitch << 2 /* in bytes. for float*/, (short*)winOver, nBlkSizeX);
             }
             else if (pixelsize_super == 4) {
               // cast to match the prototype
-              OVERSLUMA32((uint16_t*)((float*)pDstFloat + xx), dstIntPitch, tmpBlock, tmpPitch << pixelsize_super_shift, (short*)winOver, nBlkSizeX);
+              OVERSLUMA32((uint16_t*)((float*)pDstFloat + xx), dstIntPitch, tmpBlock, tmpPitch << 2 /* in bytes. for float*/, (short*)winOver, nBlkSizeX);
             }
 
             xx += (nBlkSizeX - nOverlapX);
@@ -1056,7 +1058,7 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
       else if (pixelsize_super == 1)
       { 
         if (out32_flag) {
-          if ((cpuFlags & CPUF_SSE2) != 0)
+          if ((cpuFlags & CPUF_SSE4_1) != 0)
             OverlapsBuf_Float2Bytes_sse4<uint8_t>(pDst[0], nDstPitches[0], (float*)DstInt, dstIntPitch, nWidth_B, nHeight_B, bits_per_pixel_output);
           else
             OverlapsBuf_Float2Bytes<uint8_t>(pDst[0], nDstPitches[0], (float*)DstInt, dstIntPitch, nWidth_B, nHeight_B, bits_per_pixel_output);
@@ -1070,10 +1072,18 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
       }
       else if (pixelsize_super == 2)
       {
-        if ((cpuFlags & CPUF_SSE4_1) != 0)
-          Short2Bytes_Int32toWord16_sse4((uint16_t *)(pDst[0]), nDstPitches[0], DstInt, dstIntPitch, nWidth_B, nHeight_B, bits_per_pixel_super);
-        else
-          Short2Bytes_Int32toWord16((uint16_t *)(pDst[0]), nDstPitches[0], DstInt, dstIntPitch, nWidth_B, nHeight_B, bits_per_pixel_super);
+        if (out32_flag) {
+          if ((cpuFlags & CPUF_SSE4_1) != 0)
+            OverlapsBuf_Float2Bytes_sse4<uint16_t>(pDst[0], nDstPitches[0], (float*)DstInt, dstIntPitch, nWidth_B, nHeight_B, bits_per_pixel_output);
+          else
+            OverlapsBuf_Float2Bytes<uint16_t>(pDst[0], nDstPitches[0], (float*)DstInt, dstIntPitch, nWidth_B, nHeight_B, bits_per_pixel_output);
+        }
+        else {
+          if ((cpuFlags & CPUF_SSE4_1) != 0)
+            Short2Bytes_Int32toWord16_sse4((uint16_t*)(pDst[0]), nDstPitches[0], DstInt, dstIntPitch, nWidth_B, nHeight_B, bits_per_pixel_super);
+          else
+            Short2Bytes_Int32toWord16((uint16_t*)(pDst[0]), nDstPitches[0], DstInt, dstIntPitch, nWidth_B, nHeight_B, bits_per_pixel_super);
+        }
       }
       else if (pixelsize_super == 4)
       {
@@ -1342,7 +1352,6 @@ void MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
         auto pDstFloat = reinterpret_cast<float *>(DstInt);
         const int tmpPitch = nBlkSizeX;
 
-
         MemZoneSet(reinterpret_cast<unsigned char*>(pDstFloat), 0,
           nWidth_B * sizeof(float) >> nLogxRatioUV_super, nHeight_B >> nLogyRatioUV_super, 0, 0, dstIntPitch * sizeof(float));
 
@@ -1378,7 +1387,7 @@ void MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
             }
             NORMWEIGHTS(WSrc, WRefB, WRefF);
             // chroma
-            DEGRAINCHROMA(tmpBlock, tmpBlockLsb, WidthHeightForC_UV, tmpPitch << pixelsize_output_shift, pSrcCur + (xx << pixelsize_super_shift), nSrcPitch,
+            DEGRAINCHROMA(tmpBlock, tmpBlockLsb, WidthHeightForC_UV, tmpPitch * sizeof(float) /*always float!*/, pSrcCur + (xx << pixelsize_super_shift), nSrcPitch,
               pBV, npBV, pFV, npFV,
               WSrc, WRefB, WRefF
             );
@@ -1393,17 +1402,18 @@ void MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
             }
             else if (pixelsize_super == 1)
             {
-              OVERSCHROMA((uint16_t*)(pDstFloat + xx), dstShortPitch, tmpBlock, tmpPitch, (short*)winOverUV, nBlkSizeX >> nLogxRatioUV_super);
+              // out32 spec
+              OVERSCHROMA((uint16_t*)(pDstFloat + xx), dstIntPitch, tmpBlock, tmpPitch << 2 /* in bytes. for float*/, (short*)winOverUV, nBlkSizeX >> nLogxRatioUV_super);
             }
             else if (pixelsize_super == 2)
             {
               // cast to match the prototype
-              OVERSCHROMA16((uint16_t*)(pDstFloat + xx), dstIntPitch, tmpBlock, tmpPitch << pixelsize_super_shift, (short*)winOverUV, nBlkSizeX >> nLogxRatioUV_super);
+              OVERSCHROMA16((uint16_t*)(pDstFloat + xx), dstIntPitch, tmpBlock, tmpPitch << 2 /* in bytes. for float*/, (short*)winOverUV, nBlkSizeX >> nLogxRatioUV_super);
             }
             else //if (pixelsize_super == 4)
             {
               // cast to match the prototype
-              OVERSCHROMA32((uint16_t*)((float*)pDstFloat + xx), dstIntPitch, tmpBlock, tmpPitch << pixelsize_super_shift, (short*)winOverUV, nBlkSizeX >> nLogxRatioUV_super);
+              OVERSCHROMA32((uint16_t*)((float*)pDstFloat + xx), dstIntPitch, tmpBlock, tmpPitch << 2 /* in bytes. for float*/, (short*)winOverUV, nBlkSizeX >> nLogxRatioUV_super);
             }
 
             xx += ((nBlkSizeX - nOverlapX) >> nLogxRatioUV_super); // no pixelsize here
@@ -1430,7 +1440,7 @@ void MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
       { // pixelsize
         if (out32_flag) {
           // here: always
-          if ((cpuFlags & CPUF_SSE2) != 0)
+          if ((cpuFlags & CPUF_SSE4_1) != 0)
             OverlapsBuf_Float2Bytes_sse4<uint8_t>(pDst, nDstPitch, (float*)DstInt, dstIntPitch, nWidth_B >> nLogxRatioUV_super, nHeight_B >> nLogyRatioUV_super, bits_per_pixel_output);
           else
             OverlapsBuf_Float2Bytes<uint8_t>(pDst, nDstPitch, (float*)DstInt, dstIntPitch, nWidth_B >> nLogxRatioUV_super, nHeight_B >> nLogyRatioUV_super, bits_per_pixel_output);
@@ -1444,10 +1454,18 @@ void MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
       }
       else if (pixelsize_super == 2)
       { 
-        if ((cpuFlags & CPUF_SSE4_1) != 0)
-          Short2Bytes_Int32toWord16_sse4((uint16_t *)(pDst), nDstPitch, DstInt, dstIntPitch, nWidth_B >> nLogxRatioUV_super, nHeight_B >> nLogyRatioUV_super, bits_per_pixel_super);
-        else
-          Short2Bytes_Int32toWord16((uint16_t *)(pDst), nDstPitch, DstInt, dstIntPitch, nWidth_B >> nLogxRatioUV_super, nHeight_B >> nLogyRatioUV_super, bits_per_pixel_super);
+        if (out32_flag) {
+          // here: always
+          if ((cpuFlags & CPUF_SSE4_1) != 0)
+            OverlapsBuf_Float2Bytes_sse4<uint16_t>(pDst, nDstPitch, (float*)DstInt, dstIntPitch, nWidth_B >> nLogxRatioUV_super, nHeight_B >> nLogyRatioUV_super, bits_per_pixel_output);
+          else
+            OverlapsBuf_Float2Bytes<uint16_t>(pDst, nDstPitch, (float*)DstInt, dstIntPitch, nWidth_B >> nLogxRatioUV_super, nHeight_B >> nLogyRatioUV_super, bits_per_pixel_output);
+        } else {
+          if ((cpuFlags & CPUF_SSE4_1) != 0)
+            Short2Bytes_Int32toWord16_sse4((uint16_t*)(pDst), nDstPitch, DstInt, dstIntPitch, nWidth_B >> nLogxRatioUV_super, nHeight_B >> nLogyRatioUV_super, bits_per_pixel_super);
+          else
+            Short2Bytes_Int32toWord16((uint16_t*)(pDst), nDstPitch, DstInt, dstIntPitch, nWidth_B >> nLogxRatioUV_super, nHeight_B >> nLogyRatioUV_super, bits_per_pixel_super);
+        }
       }
       else if (pixelsize_super == 4)
       {
