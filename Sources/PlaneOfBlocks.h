@@ -348,7 +348,13 @@ private:
   void ExhaustiveSearch8x8_sp4_avx2(WorkingArea& workarea, int mvx, int mvy); // 8x8 esa search AVX2 radius 4 intrinsincs based
 
   template<typename pixel_t>
+  void ExhaustiveSearch8x8_sp4_avx2_2(WorkingArea& workarea, int mvx, int mvy); // 8x8 esa search AVX2 radius 4 intrinsincs based
+
+  template<typename pixel_t>
   void ExhaustiveSearch8x8_sp2_avx2(WorkingArea& workarea, int mvx, int mvy); // 8x8 esa search AVX2 radius 2 intrinsincs based
+
+  template<typename pixel_t>
+  void ExhaustiveSearch8x8_sp2_avx2_2(WorkingArea& workarea, int mvx, int mvy); // 8x8 esa search AVX2 radius 2 intrinsincs based
 
 
   template<typename pixel_t>
