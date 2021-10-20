@@ -43,7 +43,7 @@ MVAnalyse::MVAnalyse(
   int _overlapx, int _overlapy, const char* _outfilename, int _dctmode,
   int _divide, int _sadx264, sad_t _badSAD, int _badrange, bool _isse,
   bool _meander, bool temporal_flag, bool _tryMany, bool multi_flag,
-  bool mt_flag, int _chromaSADScale, IScriptEnvironment* env
+  bool mt_flag, int _chromaSADScale, int _optSearchOption, IScriptEnvironment* env
 )
   : ::GenericVideoFilter(_child)
   , _srd_arr(1)
@@ -54,6 +54,7 @@ MVAnalyse::MVAnalyse(
   , _dct_factory_ptr()
   , _dct_pool()
   , _delta_max(0)
+  , optSearchOption(_optSearchOption)
 
 {
   has_at_least_v8 = true;
@@ -383,6 +384,7 @@ MVAnalyse::MVAnalyse(
     (_dct_factory_ptr.get() != 0) ? &_dct_pool : 0,
     _mt_flag,
     analysisData.chromaSADScale,
+    optSearchOption,
     env
   ));
 

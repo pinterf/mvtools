@@ -42,6 +42,8 @@
 #include <cmath>
 #include <stdexcept>
 #include <stdint.h>
+#include <map>
+#include <tuple>
 
 
 static unsigned int SadDummy(const uint8_t *, int , const uint8_t *, int )
@@ -49,8 +51,11 @@ static unsigned int SadDummy(const uint8_t *, int , const uint8_t *, int )
   return 0;
 }
 
-
-PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSizeY, int _nPel, int _nLevel, int _nFlags, int _nOverlapX, int _nOverlapY, int _xRatioUV, int _yRatioUV, int _pixelsize, int _bits_per_pixel, conc::ObjPool <DCTClass> *dct_pool_ptr, bool mt_flag, int _chromaSADscale, IScriptEnvironment* env)
+PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSizeY, int _nPel, int _nLevel, int _nFlags, int _nOverlapX, int _nOverlapY,
+  int _xRatioUV, int _yRatioUV, int _pixelsize, int _bits_per_pixel,
+  conc::ObjPool <DCTClass> *dct_pool_ptr,
+  bool mt_flag, int _chromaSADscale, int _optSearchOption,
+  IScriptEnvironment* env)
   : nBlkX(_nBlkX)
   , nBlkY(_nBlkY)
   , nBlkSizeX(_nBlkSizeX)
@@ -72,6 +77,8 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
   , pixelsize_shift(ilog2(pixelsize)) // 161201
   , bits_per_pixel(_bits_per_pixel) // PF
   , _mt_flag(mt_flag)
+  , chromaSADscale(_chromaSADscale)
+  , optSearchOption(_optSearchOption)
   , SAD(0)
   , LUMA(0)
 //  , VAR(0)
@@ -81,7 +88,6 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
   , SATD(0)
   , vectors(nBlkCount)
   , smallestPlane((_nFlags & MOTION_SMALLEST_PLANE) != 0)
-  //,	mmx ((_nFlags & MOTION_USE_MMX) != 0)
   , isse((_nFlags & MOTION_USE_ISSE) != 0)
   , chroma((_nFlags & MOTION_USE_CHROMA_MOTION) != 0)
   , dctpitch(AlignNumber(_nBlkSizeX, 16) * _pixelsize)
@@ -93,9 +99,6 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
   , _workarea_pool()
   , _gvect_estim_ptr(0)
   , _gvect_result_count(0)
-  , chromaSADscale(
-    _chromaSADscale
-  )
 {
   _workarea_pool.set_factory(_workarea_fact);
 
@@ -187,6 +190,23 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
   if (!chroma)
   {
     SADCHROMA = SadDummy;
+  }
+
+  // DTL's new test 2.7.46
+  for (auto &fn : ExhaustiveSearchFunctions)
+    fn = nullptr;
+  // Get additional test functions only when optSearchOption is not 0.
+  // MAnalyze and MRecalculate has now an optsearchoption parameter.
+  if (optSearchOption != 0) {
+
+    // fill function array multiple functions, because nSearchParam can change during search
+    // block sizes and chroma remain the same
+
+    // not implemented ones are nullptr
+    if (nBlkSizeX == 8 && nBlkSizeY == 8 and pixelsize == 1 && !chroma) {
+      for (int iSearchParam = 0; iSearchParam <= MAX_SUPPORTED_EXH_SEARCHPARAM; iSearchParam++)
+        ExhaustiveSearchFunctions[iSearchParam] = get_ExhaustiveSearchFunction(nBlkSizeX, nBlkSizeY, iSearchParam, bits_per_pixel, arch);
+    }
   }
 
   // for debug:
@@ -813,21 +833,25 @@ void PlaneOfBlocks::Refine(WorkingArea &workarea)
     //		ExhaustiveSearch(nSearchParam);
     int mvx = workarea.bestMV.x;
     int mvy = workarea.bestMV.y;
-	if (nSearchParam == 2 && nBlkSizeX == 8 && nBlkSizeY == 8 && avx2 && !chroma)
-	{
-//		ExhaustiveSearch8x8_sp2_avx2<pixel_t>(workarea, mvx, mvy); // old version with Arr of SADs for second pass
-		ExhaustiveSearch8x8_sp2_avx2_2<pixel_t>(workarea, mvx, mvy); // test of new fully-AVX2 one-pass Exa search
-		break;
-	}
-	if (nSearchParam == 4 && nBlkSizeX == 8 && nBlkSizeY == 8 && avx2 && !chroma)
-	{
-//		ExhaustiveSearch8x8_sp4_avx2<pixel_t>(workarea, mvx, mvy);
-		ExhaustiveSearch8x8_sp4_avx2_2<pixel_t>(workarea, mvx, mvy); // test of new fully-AVX2 one-pass Exa search
-		break;
-	}
+
+    // DTL TEST
+    // one-pass Exa search by DTL
+    // only for 8 bit, nSearchParam == 2 and 4 && nBlkSizeX == 8 && nBlkSizeY == 8 && !chroma
+    // c or avx2. See function dispatcher
+    if (0 != optSearchOption) { // keep compatibility
+      if (nSearchParam <= MAX_SUPPORTED_EXH_SEARCHPARAM) {
+        // nSearchParam can change during the algorithm so we are choosing from prefilled function pointer table
+        auto ExhaustiveSearchFunction = ExhaustiveSearchFunctions[nSearchParam];
+        if (nullptr != ExhaustiveSearchFunction) {
+          (this->*ExhaustiveSearchFunction)(workarea, mvx, mvy);
+          break;
+        }
+      }
+    }
+
     for (int i = 1; i <= nSearchParam; i++)// region is same as exhaustive, but ordered by radius (from near to far)
     {
-       ExpandingSearch<pixel_t>(workarea, i, 1, mvx, mvy);
+      ExpandingSearch<pixel_t>(workarea, i, 1, mvx, mvy);
     }
   }
                    break;
@@ -3761,1198 +3785,46 @@ PlaneOfBlocks::WorkingArea *PlaneOfBlocks::WorkingAreaFactory::do_create()
 }
 
 
-template<typename pixel_t>
-void PlaneOfBlocks::ExhaustiveSearch8x8_sp4_avx2(WorkingArea& workarea, int mvx, int mvy)
+PlaneOfBlocks::ExhaustiveSearchFunction_t PlaneOfBlocks::get_ExhaustiveSearchFunction(int BlockX, int BlockY, int SearchParam, int _bits_per_pixel, arch_t arch)
 {
-	// debug check !
-    // idea - may be not 4 checks are required - only upper left corner (starting addresses of buffer) and lower right (to not over-run atfer end of buffer - need check/test)
-	if (!workarea.IsVectorOK(mvx - 4, mvy - 4))
-	{
-		int dbr01 = 0;
-		return;
-	}
-	if (!workarea.IsVectorOK(mvx + 3, mvy + 3))
-	{
-		int dbr01 = 0;
-		return;
-	}
-	if (!workarea.IsVectorOK(mvx - 4, mvy + 3))
-	{
-		int dbr01 = 0;
-		return;
-	}
-	if (!workarea.IsVectorOK(mvx + 3, mvy - 4))
-	{
-		int dbr01 = 0;
-		return;
-	}
 
-	// array of sads 8x8
-	// due to 256bit registers limit is actually -4..+3 H search around zero, but full -4 +4 V search
-	unsigned short ArrSADs[8][9];
-	const uint8_t* pucRef = GetRefBlock(workarea, mvx - 4, mvy - 4); // upper left corner
-	const uint8_t* pucCurr = workarea.pSrc[0];
-
-	__m128i xmm10_Src_01, xmm11_Src_23, xmm12_Src_45, xmm13_Src_67;
-
-	__m256i ymm0_Ref_01, ymm1_Ref_23, ymm2_Ref_45, ymm3_Ref_67; // 2x16bytes store, require buf padding to allow 16bytes reads to xmm
-	__m256i ymm10_Src_01, ymm11_Src_23, ymm12_Src_45, ymm13_Src_67;
-
-	__m256i ymm4_tmp, ymm5_tmp, ymm6_tmp, ymm7_tmp;
-
-
-	//        __m256i 	my_ymm_test = _mm256_set_epi8(31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);// -debug values for check how permutes work
-	//        __m256i 	my_ymm_test = _mm256_set_epi8(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);// -debug values for check how permutes work
-
-	xmm10_Src_01 = _mm_loadu_si64((__m128i*)pucCurr);
-	xmm10_Src_01 = _mm_unpacklo_epi64(xmm10_Src_01, _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0])));
-	ymm10_Src_01 = _mm256_permute4x64_epi64(_mm256_castsi128_si256(xmm10_Src_01), 220);
-
-	xmm11_Src_23 = _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 2));
-	xmm11_Src_23 = _mm_unpacklo_epi64(xmm11_Src_23, _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 3)));
-	ymm11_Src_23 = _mm256_permute4x64_epi64(_mm256_castsi128_si256(xmm11_Src_23), 220);
-
-	xmm12_Src_45 = _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 4));
-	xmm12_Src_45 = _mm_unpacklo_epi64(xmm12_Src_45, _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 5)));
-	ymm12_Src_45 = _mm256_permute4x64_epi64(_mm256_castsi128_si256(xmm12_Src_45), 220);
-
-	xmm13_Src_67 = _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 6));
-	xmm13_Src_67 = _mm_unpacklo_epi64(xmm13_Src_67, _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 7)));
-	ymm13_Src_67 = _mm256_permute4x64_epi64(_mm256_castsi128_si256(xmm13_Src_67), 220);
-	// loaded 8 rows of 8x8 Src block, now in low and high 128bits of ymms
-
-	for (int i = 0; i < 9; i++)
-	{
-		ymm0_Ref_01 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 1)), (__m128i*)(pucRef + nRefPitch[0] * (i + 0)));
-		ymm1_Ref_23 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 3)), (__m128i*)(pucRef + nRefPitch[0] * (i + 2)));
-		ymm2_Ref_45 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 5)), (__m128i*)(pucRef + nRefPitch[0] * (i + 4)));
-		ymm3_Ref_67 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 7)), (__m128i*)(pucRef + nRefPitch[0] * (i + 6)));
-		// loaded 8 rows of Ref plane 16samples wide into ymm0..ymm3
-
-		// process sad[-4,i-4]
-		ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
-		ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
-		ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
-		ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
-
-		ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
-		ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
-		ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
-		ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
-
-		ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		// sad -4,i-4 ready in low of mm4
-		_mm_storeu_si16(&ArrSADs[0][i], _mm256_castsi256_si128(ymm4_tmp));
-
-		// rotate Ref to 1 samples
-		ymm0_Ref_01 = _mm256_alignr_epi8(ymm0_Ref_01, ymm0_Ref_01, 1);
-		ymm1_Ref_23 = _mm256_alignr_epi8(ymm1_Ref_23, ymm1_Ref_23, 1);
-		ymm2_Ref_45 = _mm256_alignr_epi8(ymm2_Ref_45, ymm2_Ref_45, 1);
-		ymm3_Ref_67 = _mm256_alignr_epi8(ymm3_Ref_67, ymm3_Ref_67, 1);
-
-		// process sad[-3,i-4]
-		ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
-		ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
-		ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
-		ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
-
-		ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
-		ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
-		ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
-		ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
-
-		ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		// sad -3,i-4 ready in low of mm4
-		_mm_storeu_si16(&ArrSADs[1][i], _mm256_castsi256_si128(ymm4_tmp));
-
-		// rotate Ref to 1 samples
-		ymm0_Ref_01 = _mm256_alignr_epi8(ymm0_Ref_01, ymm0_Ref_01, 1);
-		ymm1_Ref_23 = _mm256_alignr_epi8(ymm1_Ref_23, ymm1_Ref_23, 1);
-		ymm2_Ref_45 = _mm256_alignr_epi8(ymm2_Ref_45, ymm2_Ref_45, 1);
-		ymm3_Ref_67 = _mm256_alignr_epi8(ymm3_Ref_67, ymm3_Ref_67, 1);
-
-		// process sad[-2,i-4]
-		ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
-		ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
-		ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
-		ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
-
-		ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
-		ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
-		ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
-		ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
-
-		ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		// sad -2,i-2 ready in low of mm4
-		_mm_storeu_si16(&ArrSADs[2][i], _mm256_castsi256_si128(ymm4_tmp));
-
-		// rotate Ref to 1 samples
-		ymm0_Ref_01 = _mm256_alignr_epi8(ymm0_Ref_01, ymm0_Ref_01, 1);
-		ymm1_Ref_23 = _mm256_alignr_epi8(ymm1_Ref_23, ymm1_Ref_23, 1);
-		ymm2_Ref_45 = _mm256_alignr_epi8(ymm2_Ref_45, ymm2_Ref_45, 1);
-		ymm3_Ref_67 = _mm256_alignr_epi8(ymm3_Ref_67, ymm3_Ref_67, 1);
-
-		// process sad[-1,i-4]
-		ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
-		ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
-		ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
-		ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
-
-		ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
-		ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
-		ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
-		ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
-
-		ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		// sad -1,i-4 ready in low of mm4
-		_mm_storeu_si16(&ArrSADs[3][i], _mm256_castsi256_si128(ymm4_tmp));
-
-		// rotate Ref to 1 samples
-		ymm0_Ref_01 = _mm256_alignr_epi8(ymm0_Ref_01, ymm0_Ref_01, 1);
-		ymm1_Ref_23 = _mm256_alignr_epi8(ymm1_Ref_23, ymm1_Ref_23, 1);
-		ymm2_Ref_45 = _mm256_alignr_epi8(ymm2_Ref_45, ymm2_Ref_45, 1);
-		ymm3_Ref_67 = _mm256_alignr_epi8(ymm3_Ref_67, ymm3_Ref_67, 1);
-
-		// process sad[0,i-4]
-		ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
-		ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
-		ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
-		ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
-
-		ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
-		ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
-		ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
-		ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
-
-		ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		// sad 0,i-4 ready in low of mm4
-		_mm_storeu_si16(&ArrSADs[4][i], _mm256_castsi256_si128(ymm4_tmp));
-
-		// rotate Ref to 1 samples
-		ymm0_Ref_01 = _mm256_alignr_epi8(ymm0_Ref_01, ymm0_Ref_01, 1);
-		ymm1_Ref_23 = _mm256_alignr_epi8(ymm1_Ref_23, ymm1_Ref_23, 1);
-		ymm2_Ref_45 = _mm256_alignr_epi8(ymm2_Ref_45, ymm2_Ref_45, 1);
-		ymm3_Ref_67 = _mm256_alignr_epi8(ymm3_Ref_67, ymm3_Ref_67, 1);
-
-		// process sad[1,i-4]
-		ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
-		ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
-		ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
-		ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
-
-		ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
-		ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
-		ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
-		ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
-
-		ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		// sad 1,i-4 ready in low of mm4
-		_mm_storeu_si16(&ArrSADs[5][i], _mm256_castsi256_si128(ymm4_tmp));
-
-		// rotate Ref to 1 samples
-		ymm0_Ref_01 = _mm256_alignr_epi8(ymm0_Ref_01, ymm0_Ref_01, 1);
-		ymm1_Ref_23 = _mm256_alignr_epi8(ymm1_Ref_23, ymm1_Ref_23, 1);
-		ymm2_Ref_45 = _mm256_alignr_epi8(ymm2_Ref_45, ymm2_Ref_45, 1);
-		ymm3_Ref_67 = _mm256_alignr_epi8(ymm3_Ref_67, ymm3_Ref_67, 1);
-
-		// process sad[2,i-4]
-		ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
-		ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
-		ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
-		ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
-
-		ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
-		ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
-		ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
-		ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
-
-		ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		// sad 2,i-4 ready in low of mm4
-		_mm_storeu_si16(&ArrSADs[6][i], _mm256_castsi256_si128(ymm4_tmp));
-
-		// rotate Ref to 1 samples
-		ymm0_Ref_01 = _mm256_alignr_epi8(ymm0_Ref_01, ymm0_Ref_01, 1);
-		ymm1_Ref_23 = _mm256_alignr_epi8(ymm1_Ref_23, ymm1_Ref_23, 1);
-		ymm2_Ref_45 = _mm256_alignr_epi8(ymm2_Ref_45, ymm2_Ref_45, 1);
-		ymm3_Ref_67 = _mm256_alignr_epi8(ymm3_Ref_67, ymm3_Ref_67, 1);
-
-		// process sad[3,i-4]
-		ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
-		ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
-		ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
-		ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
-
-		ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
-		ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
-		ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
-		ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
-
-		ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		// sad 3,i-4 ready in low of mm4
-		_mm_storeu_si16(&ArrSADs[7][i], _mm256_castsi256_si128(ymm4_tmp));
-	}
-
-    _mm256_zeroupper();
-
-	unsigned short minsad = 65535;
-	int x_minsad = 0;
-	int y_minsad = 0;
-	for (int x = -4; x < 4; x++)
-	{
-		for (int y = -4; y < 5; y++)
-		{
-			if (ArrSADs[x+4][y+4] < minsad)
-			{
-				minsad = ArrSADs[x+4][y+4];
-				x_minsad = x;
-				y_minsad = y;
-			}
-		}
-	}
-
-	unsigned short cost = minsad + ((penaltyNew*minsad) >> 8);
-	if (cost >= workarea.nMinCost) return;
-
-	workarea.bestMV.x = mvx + x_minsad;
-	workarea.bestMV.y = mvy + y_minsad;
-	workarea.nMinCost = cost;
-	workarea.bestMV.sad = minsad;
-   
-}
-
-template<typename pixel_t>
-void PlaneOfBlocks::ExhaustiveSearch8x8_sp4_avx2_2(WorkingArea& workarea, int mvx, int mvy)
-{
-	// debug check !
-	// idea - may be not 4 checks are required - only upper left corner (starting addresses of buffer) and lower right (to not over-run atfer end of buffer - need check/test)
-	if (!workarea.IsVectorOK(mvx - 4, mvy - 4))
-	{
-		int dbr01 = 0;
-		return;
-	}
-	if (!workarea.IsVectorOK(mvx + 3, mvy + 3))
-	{
-		int dbr01 = 0;
-		return;
-	}
-/*	if (!workarea.IsVectorOK(mvx - 4, mvy + 3))
-	{
-		int dbr01 = 0;
-		return;
-	}
-	if (!workarea.IsVectorOK(mvx + 3, mvy - 4))
-	{
-		int dbr01 = 0;
-		return;
-	}
-	*/ // need to check if it is non needed cheks
-
-	// due to 256bit registers limit is actually -4..+3 H search around zero, but full -4 +4 V search
-	alignas(256) unsigned short SIMD256Res[16];
-
-	const uint8_t* pucRef = GetRefBlock(workarea, mvx - 4, mvy - 4); // upper left corner
-	const uint8_t* pucCurr = workarea.pSrc[0];
-
-	__m128i xmm10_Src_01, xmm11_Src_23, xmm12_Src_45, xmm13_Src_67;
-
-	__m256i ymm0_Ref_01, ymm1_Ref_23, ymm2_Ref_45, ymm3_Ref_67; // 2x12bytes store, require buf padding to allow 16bytes reads to xmm
-	__m256i ymm4_tmp, ymm5_tmp, ymm6_tmp, ymm7_tmp;
-	__m256i ymm8_x1 = _mm256_set_epi16(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0);
-	__m256i ymm9_y1 = _mm256_set_epi16(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0);
-	__m256i ymm10_Src_01, ymm11_Src_23, ymm12_Src_45, ymm13_Src_67;
-	__m256i ymm14_yx_minsad = _mm256_set_epi32(0, 0, 0, 0, 0, 0, 0, 1073741824); // 2^30 large signed 32bit
-	__m256i ymm15_yx_cnt = _mm256_setzero_si256(); // y,x coords of search count from 0
-
-	//        __m256i 	my_ymm_test = _mm256_set_epi8(31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);// -debug values for check how permutes work
-	//        __m256i 	my_ymm_test = _mm256_set_epi8(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);// -debug values for check how permutes work
-	//        my_ymm_test = _mm256_alignr_epi8(my_ymm_test, my_ymm_test, 2); // rotate each half of ymm by number of bytes
-
-	xmm10_Src_01 = _mm_loadu_si64((__m128i*)pucCurr);
-	xmm10_Src_01 = _mm_unpacklo_epi64(xmm10_Src_01, _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0])));
-	ymm10_Src_01 = _mm256_permute4x64_epi64(_mm256_castsi128_si256(xmm10_Src_01), 220);
-
-	xmm11_Src_23 = _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 2));
-	xmm11_Src_23 = _mm_unpacklo_epi64(xmm11_Src_23, _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 3)));
-	ymm11_Src_23 = _mm256_permute4x64_epi64(_mm256_castsi128_si256(xmm11_Src_23), 220);
-
-	xmm12_Src_45 = _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 4));
-	xmm12_Src_45 = _mm_unpacklo_epi64(xmm12_Src_45, _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 5)));
-	ymm12_Src_45 = _mm256_permute4x64_epi64(_mm256_castsi128_si256(xmm12_Src_45), 220);
-
-	xmm13_Src_67 = _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 6));
-	xmm13_Src_67 = _mm_unpacklo_epi64(xmm13_Src_67, _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 7)));
-	ymm13_Src_67 = _mm256_permute4x64_epi64(_mm256_castsi128_si256(xmm13_Src_67), 220);
-	// loaded 8 rows of 8x8 Src block, now in low and high 128bits of ymms
-
-	for (int i = 0; i < 9; i++)
-	{
-		ymm0_Ref_01 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 1)), (__m128i*)(pucRef + nRefPitch[0] * (i + 0)));
-		ymm1_Ref_23 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 3)), (__m128i*)(pucRef + nRefPitch[0] * (i + 2)));
-		ymm2_Ref_45 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 5)), (__m128i*)(pucRef + nRefPitch[0] * (i + 4)));
-		ymm3_Ref_67 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 7)), (__m128i*)(pucRef + nRefPitch[0] * (i + 6)));
-		// loaded 8 rows of Ref plane 16samples wide into ymm0..ymm3
-
-		// process sad[-4,i-4]
-		ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
-		ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
-		ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
-		ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
-
-		ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
-		ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
-		ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
-		ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
-
-		ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		// sad -4,i-4 ready in low of ymm4
-		//check if min and replace in ymm14_yx_minsad
-		ymm5_tmp = _mm256_cmpgt_epi32(ymm14_yx_minsad, ymm4_tmp); // mask in 0 16bit word for update minsad if needed
-		ymm5_tmp = _mm256_slli_epi64(ymm5_tmp, 32);// clear higher bits of mask - may be better method exist
-		ymm5_tmp = _mm256_srli_epi64(ymm5_tmp, 32);// clear higher bits of mask
-		ymm14_yx_minsad = _mm256_blendv_epi8(ymm14_yx_minsad, ymm4_tmp, ymm5_tmp); // blend minsad if not greater than
-		ymm5_tmp = _mm256_shufflelo_epi16(ymm5_tmp, 10); // move/broadcast mask from 0 to 2 and 3 16bit word for update y,x if needed
-		ymm14_yx_minsad = _mm256_blendv_epi8(ymm14_yx_minsad, ymm15_yx_cnt, ymm5_tmp); // blend y,x of minsad if not greater than
-
-		ymm15_yx_cnt = _mm256_add_epi16(ymm15_yx_cnt, ymm8_x1);//increment x coord
-
-		// rotate Ref to 1 samples
-		ymm0_Ref_01 = _mm256_alignr_epi8(ymm0_Ref_01, ymm0_Ref_01, 1);
-		ymm1_Ref_23 = _mm256_alignr_epi8(ymm1_Ref_23, ymm1_Ref_23, 1);
-		ymm2_Ref_45 = _mm256_alignr_epi8(ymm2_Ref_45, ymm2_Ref_45, 1);
-		ymm3_Ref_67 = _mm256_alignr_epi8(ymm3_Ref_67, ymm3_Ref_67, 1);
-
-		// process sad[-3,i-4]
-		ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
-		ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
-		ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
-		ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
-
-		ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
-		ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
-		ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
-		ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
-
-		ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		// sad -3,i-4 ready in low of ymm4
-		//check if min and replace in ymm14_yx_minsad
-		ymm5_tmp = _mm256_cmpgt_epi32(ymm14_yx_minsad, ymm4_tmp); // mask in 0 16bit word for update minsad if needed
-		ymm5_tmp = _mm256_slli_epi64(ymm5_tmp, 32);// clear higher bits of mask - may be better method exist
-		ymm5_tmp = _mm256_srli_epi64(ymm5_tmp, 32);// clear higher bits of mask
-		ymm14_yx_minsad = _mm256_blendv_epi8(ymm14_yx_minsad, ymm4_tmp, ymm5_tmp); // blend minsad if not greater than
-		ymm5_tmp = _mm256_shufflelo_epi16(ymm5_tmp, 10); // move/broadcast mask from 0 to 2 and 3 16bit word for update y,x if needed
-		ymm14_yx_minsad = _mm256_blendv_epi8(ymm14_yx_minsad, ymm15_yx_cnt, ymm5_tmp); // blend y,x of minsad if not greater than
-
-		ymm15_yx_cnt = _mm256_add_epi16(ymm15_yx_cnt, ymm8_x1);//increment x coord
-
-		// rotate Ref to 1 samples
-		ymm0_Ref_01 = _mm256_alignr_epi8(ymm0_Ref_01, ymm0_Ref_01, 1);
-		ymm1_Ref_23 = _mm256_alignr_epi8(ymm1_Ref_23, ymm1_Ref_23, 1);
-		ymm2_Ref_45 = _mm256_alignr_epi8(ymm2_Ref_45, ymm2_Ref_45, 1);
-		ymm3_Ref_67 = _mm256_alignr_epi8(ymm3_Ref_67, ymm3_Ref_67, 1);
-
-		// process sad[-2,i-4]
-		ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
-		ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
-		ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
-		ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
-
-		ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
-		ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
-		ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
-		ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
-
-		ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		// sad -2,i-4 ready in low of ymm4
-		//check if min and replace in ymm14_yx_minsad
-		ymm5_tmp = _mm256_cmpgt_epi32(ymm14_yx_minsad, ymm4_tmp); // mask in 0 16bit word for update minsad if needed
-		ymm5_tmp = _mm256_slli_epi64(ymm5_tmp, 32);// clear higher bits of mask - may be better method exist
-		ymm5_tmp = _mm256_srli_epi64(ymm5_tmp, 32);// clear higher bits of mask
-		ymm14_yx_minsad = _mm256_blendv_epi8(ymm14_yx_minsad, ymm4_tmp, ymm5_tmp); // blend minsad if not greater than
-		ymm5_tmp = _mm256_shufflelo_epi16(ymm5_tmp, 10); // move/broadcast mask from 0 to 2 and 3 16bit word for update y,x if needed
-		ymm14_yx_minsad = _mm256_blendv_epi8(ymm14_yx_minsad, ymm15_yx_cnt, ymm5_tmp); // blend y,x of minsad if not greater than
-
-		ymm15_yx_cnt = _mm256_add_epi16(ymm15_yx_cnt, ymm8_x1);//increment x coord
-
-		// rotate Ref to 1 samples
-		ymm0_Ref_01 = _mm256_alignr_epi8(ymm0_Ref_01, ymm0_Ref_01, 1);
-		ymm1_Ref_23 = _mm256_alignr_epi8(ymm1_Ref_23, ymm1_Ref_23, 1);
-		ymm2_Ref_45 = _mm256_alignr_epi8(ymm2_Ref_45, ymm2_Ref_45, 1);
-		ymm3_Ref_67 = _mm256_alignr_epi8(ymm3_Ref_67, ymm3_Ref_67, 1);
-
-		// process sad[-1,i-4]
-		ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
-		ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
-		ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
-		ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
-
-		ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
-		ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
-		ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
-		ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
-
-		ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		// sad -1,i-4 ready in low of mm4
-		//check if min and replace in ymm14_yx_minsad
-		ymm5_tmp = _mm256_cmpgt_epi32(ymm14_yx_minsad, ymm4_tmp); // mask in 0 16bit word for update minsad if needed
-		ymm5_tmp = _mm256_slli_epi64(ymm5_tmp, 32);// clear higher bits of mask - may be better method exist
-		ymm5_tmp = _mm256_srli_epi64(ymm5_tmp, 32);// clear higher bits of mask
-		ymm14_yx_minsad = _mm256_blendv_epi8(ymm14_yx_minsad, ymm4_tmp, ymm5_tmp); // blend minsad if not greater than
-		ymm5_tmp = _mm256_shufflelo_epi16(ymm5_tmp, 10); // move/broadcast mask from 0 to 2 and 3 16bit word for update y,x if needed
-		ymm14_yx_minsad = _mm256_blendv_epi8(ymm14_yx_minsad, ymm15_yx_cnt, ymm5_tmp); // blend y,x of minsad if not greater than
-
-		ymm15_yx_cnt = _mm256_add_epi16(ymm15_yx_cnt, ymm8_x1);//increment x coord
-
-		// rotate Ref to 1 samples
-		ymm0_Ref_01 = _mm256_alignr_epi8(ymm0_Ref_01, ymm0_Ref_01, 1);
-		ymm1_Ref_23 = _mm256_alignr_epi8(ymm1_Ref_23, ymm1_Ref_23, 1);
-		ymm2_Ref_45 = _mm256_alignr_epi8(ymm2_Ref_45, ymm2_Ref_45, 1);
-		ymm3_Ref_67 = _mm256_alignr_epi8(ymm3_Ref_67, ymm3_Ref_67, 1);
-
-		// process sad[0,i-4]
-		ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
-		ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
-		ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
-		ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
-
-		ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
-		ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
-		ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
-		ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
-
-		ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		// sad 0,i-4 ready in low of mm4
-		//check if min and replace in ymm14_yx_minsad
-		ymm5_tmp = _mm256_cmpgt_epi32(ymm14_yx_minsad, ymm4_tmp); // mask in 0 16bit word for update minsad if needed
-		ymm5_tmp = _mm256_slli_epi64(ymm5_tmp, 32);// clear higher bits of mask - may be better method exist
-		ymm5_tmp = _mm256_srli_epi64(ymm5_tmp, 32);// clear higher bits of mask
-		ymm14_yx_minsad = _mm256_blendv_epi8(ymm14_yx_minsad, ymm4_tmp, ymm5_tmp); // blend minsad if not greater than
-		ymm5_tmp = _mm256_shufflelo_epi16(ymm5_tmp, 10); // move/broadcast mask from 0 to 2 and 3 16bit word for update y,x if needed
-		ymm14_yx_minsad = _mm256_blendv_epi8(ymm14_yx_minsad, ymm15_yx_cnt, ymm5_tmp); // blend y,x of minsad if not greater than
-
-		ymm15_yx_cnt = _mm256_add_epi16(ymm15_yx_cnt, ymm8_x1);//increment x coord
-
-		// rotate Ref to 1 samples
-		ymm0_Ref_01 = _mm256_alignr_epi8(ymm0_Ref_01, ymm0_Ref_01, 1);
-		ymm1_Ref_23 = _mm256_alignr_epi8(ymm1_Ref_23, ymm1_Ref_23, 1);
-		ymm2_Ref_45 = _mm256_alignr_epi8(ymm2_Ref_45, ymm2_Ref_45, 1);
-		ymm3_Ref_67 = _mm256_alignr_epi8(ymm3_Ref_67, ymm3_Ref_67, 1);
-
-		// process sad[1,i-4]
-		ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
-		ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
-		ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
-		ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
-
-		ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
-		ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
-		ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
-		ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
-
-		ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		// sad 1,i-4 ready in low of mm4
-		//check if min and replace in ymm14_yx_minsad
-		ymm5_tmp = _mm256_cmpgt_epi32(ymm14_yx_minsad, ymm4_tmp); // mask in 0 16bit word for update minsad if needed
-		ymm5_tmp = _mm256_slli_epi64(ymm5_tmp, 32);// clear higher bits of mask - may be better method exist
-		ymm5_tmp = _mm256_srli_epi64(ymm5_tmp, 32);// clear higher bits of mask
-		ymm14_yx_minsad = _mm256_blendv_epi8(ymm14_yx_minsad, ymm4_tmp, ymm5_tmp); // blend minsad if not greater than
-		ymm5_tmp = _mm256_shufflelo_epi16(ymm5_tmp, 10); // move/broadcast mask from 0 to 2 and 3 16bit word for update y,x if needed
-		ymm14_yx_minsad = _mm256_blendv_epi8(ymm14_yx_minsad, ymm15_yx_cnt, ymm5_tmp); // blend y,x of minsad if not greater than
-
-
-		ymm15_yx_cnt = _mm256_add_epi16(ymm15_yx_cnt, ymm8_x1);//increment x coord
-
-		// rotate Ref to 1 samples
-		ymm0_Ref_01 = _mm256_alignr_epi8(ymm0_Ref_01, ymm0_Ref_01, 1);
-		ymm1_Ref_23 = _mm256_alignr_epi8(ymm1_Ref_23, ymm1_Ref_23, 1);
-		ymm2_Ref_45 = _mm256_alignr_epi8(ymm2_Ref_45, ymm2_Ref_45, 1);
-		ymm3_Ref_67 = _mm256_alignr_epi8(ymm3_Ref_67, ymm3_Ref_67, 1);
-
-		// process sad[2,i-4]
-		ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
-		ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
-		ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
-		ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
-
-		ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
-		ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
-		ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
-		ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
-
-		ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		// sad 2,i-4 ready in low of mm4
-		//check if min and replace in ymm14_yx_minsad
-		ymm5_tmp = _mm256_cmpgt_epi32(ymm14_yx_minsad, ymm4_tmp); // mask in 0 16bit word for update minsad if needed
-		ymm5_tmp = _mm256_slli_epi64(ymm5_tmp, 32);// clear higher bits of mask - may be better method exist
-		ymm5_tmp = _mm256_srli_epi64(ymm5_tmp, 32);// clear higher bits of mask
-		ymm14_yx_minsad = _mm256_blendv_epi8(ymm14_yx_minsad, ymm4_tmp, ymm5_tmp); // blend minsad if not greater than
-		ymm5_tmp = _mm256_shufflelo_epi16(ymm5_tmp, 10); // move/broadcast mask from 0 to 2 and 3 16bit word for update y,x if needed
-		ymm14_yx_minsad = _mm256_blendv_epi8(ymm14_yx_minsad, ymm15_yx_cnt, ymm5_tmp); // blend y,x of minsad if not greater than
-
-		ymm15_yx_cnt = _mm256_add_epi16(ymm15_yx_cnt, ymm8_x1);//increment x coord
-
-		// rotate Ref to 1 samples
-		ymm0_Ref_01 = _mm256_alignr_epi8(ymm0_Ref_01, ymm0_Ref_01, 1);
-		ymm1_Ref_23 = _mm256_alignr_epi8(ymm1_Ref_23, ymm1_Ref_23, 1);
-		ymm2_Ref_45 = _mm256_alignr_epi8(ymm2_Ref_45, ymm2_Ref_45, 1);
-		ymm3_Ref_67 = _mm256_alignr_epi8(ymm3_Ref_67, ymm3_Ref_67, 1);
-
-		// process sad[3,i-4]
-		ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
-		ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
-		ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
-		ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
-
-		ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
-		ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
-		ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
-		ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
-
-		ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		// sad 3,i-4 ready in low of mm4
-		//check if min and replace in ymm14_yx_minsad
-		ymm5_tmp = _mm256_cmpgt_epi32(ymm14_yx_minsad, ymm4_tmp); // mask in 0 16bit word for update minsad if needed
-		ymm5_tmp = _mm256_slli_epi64(ymm5_tmp, 32);// clear higher bits of mask - may be better method exist
-		ymm5_tmp = _mm256_srli_epi64(ymm5_tmp, 32);// clear higher bits of mask
-		ymm14_yx_minsad = _mm256_blendv_epi8(ymm14_yx_minsad, ymm4_tmp, ymm5_tmp); // blend minsad if not greater than
-		ymm5_tmp = _mm256_shufflelo_epi16(ymm5_tmp, 10); // move/broadcast mask from 0 to 2 and 3 16bit word for update y,x if needed
-		ymm14_yx_minsad = _mm256_blendv_epi8(ymm14_yx_minsad, ymm15_yx_cnt, ymm5_tmp); // blend y,x of minsad if not greater than
-
-		ymm15_yx_cnt = _mm256_add_epi16(ymm15_yx_cnt, ymm9_y1);//increment y coord
-
-		// clear x cord to 0
-		ymm15_yx_cnt = _mm256_srli_epi64(ymm15_yx_cnt, 48);
-		ymm15_yx_cnt = _mm256_slli_epi64(ymm15_yx_cnt, 48);
-
-	} // rows counter
-
-	// store result
-	_mm256_store_si256((__m256i*)&SIMD256Res[0], ymm14_yx_minsad);
-
-	_mm256_zeroupper(); // check if it may be done _after_ all searches ???
-/*
-	SIMD256Res[0]; // minsad;
-	SIMD256Res[2] - 2; // x of minsad vector
-	SIMD256Res[3] - 2; // y of minsad vector
-	)*/
-
-	unsigned short cost = SIMD256Res[0] + ((penaltyNew * SIMD256Res[0]) >> 8);
-	if (cost >= workarea.nMinCost) return;
-
-	workarea.bestMV.x = mvx + SIMD256Res[2] - 4;
-	workarea.bestMV.y = mvy + SIMD256Res[3] - 4;
-	workarea.nMinCost = cost;
-	workarea.bestMV.sad = SIMD256Res[0];
-
-}
-
-template<typename pixel_t>
-void PlaneOfBlocks::ExhaustiveSearch8x8_sp2_avx2(WorkingArea& workarea, int mvx, int mvy)
-{
-	// debug check !! need to fix caller to now allow illegal vectors 
-    // idea - may be not 4 checks are required - only upper left corner (starting addresses of buffer) and lower right (to not over-run atfer end of buffer - need check/test)
-	if (!workarea.IsVectorOK(mvx - 2, mvy - 2))
-	{
-		int dbr01 = 0;
-		return;
-	}
-	if (!workarea.IsVectorOK(mvx + 2, mvy + 2))
-	{
-		int dbr01 = 0;
-		return;
-	}
-	if (!workarea.IsVectorOK(mvx - 2, mvy + 2))
-	{
-		int dbr01 = 0;
-		return;
-	}
-	if (!workarea.IsVectorOK(mvx + 2, mvy - 2))
-	{
-		int dbr01 = 0;
-		return;
-	}
-
-    // array of sads 5x5 
-    unsigned short ArrSADs[5][5];
-    const uint8_t* pucRef = GetRefBlock(workarea, mvx - 2, mvy - 2); // upper left corner
-    const uint8_t* pucCurr = workarea.pSrc[0];
-
-    __m128i xmm10_Src_01, xmm11_Src_23, xmm12_Src_45, xmm13_Src_67;
-
-    __m256i ymm0_Ref_01, ymm1_Ref_23, ymm2_Ref_45, ymm3_Ref_67; // 2x12bytes store, require buf padding to allow 16bytes reads to xmm
-    __m256i ymm10_Src_01, ymm11_Src_23, ymm12_Src_45, ymm13_Src_67;
-
-    __m256i ymm4_tmp, ymm5_tmp, ymm6_tmp, ymm7_tmp;
-
-
-//        __m256i 	my_ymm_test = _mm256_set_epi8(31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);// -debug values for check how permutes work
-//        __m256i 	my_ymm_test = _mm256_set_epi8(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);// -debug values for check how permutes work
-//        my_ymm_test = _mm256_alignr_epi8(my_ymm_test, my_ymm_test, 2); // rotate each half of ymm by number of bytes
-
-    xmm10_Src_01 = _mm_loadu_si64((__m128i*)pucCurr);
-    xmm10_Src_01 = _mm_unpacklo_epi64(xmm10_Src_01, _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0])));
-    ymm10_Src_01 = _mm256_permute4x64_epi64(_mm256_castsi128_si256(xmm10_Src_01), 220);
-
-    xmm11_Src_23 = _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 2));
-    xmm11_Src_23 = _mm_unpacklo_epi64(xmm11_Src_23, _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 3)));
-    ymm11_Src_23 = _mm256_permute4x64_epi64(_mm256_castsi128_si256(xmm11_Src_23), 220);
-
-    xmm12_Src_45 = _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 4));
-    xmm12_Src_45 = _mm_unpacklo_epi64(xmm12_Src_45, _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 5)));
-    ymm12_Src_45 = _mm256_permute4x64_epi64(_mm256_castsi128_si256(xmm12_Src_45), 220);
-
-    xmm13_Src_67 = _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 6));
-    xmm13_Src_67 = _mm_unpacklo_epi64(xmm13_Src_67, _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 7)));
-    ymm13_Src_67 = _mm256_permute4x64_epi64(_mm256_castsi128_si256(xmm13_Src_67), 220);
-    // loaded 8 rows of 8x8 Src block, now in low and high 128bits of ymms
-
-    for (int i = 0; i < 5; i++)
-    {
-		ymm0_Ref_01 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 1)), (__m128i*)(pucRef + nRefPitch[0] * (i + 0)));
-        ymm1_Ref_23 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 3)), (__m128i*)(pucRef + nRefPitch[0] * (i + 2)));
-        ymm2_Ref_45 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 5)), (__m128i*)(pucRef + nRefPitch[0] * (i + 4)));
-        ymm3_Ref_67 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 7)), (__m128i*)(pucRef + nRefPitch[0] * (i + 6)));
-        // loaded 8 rows of Ref plane 16samples wide into ymm0..ymm3
-
-        // process sad[-2,i-2]
-        ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
-        ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
-        ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
-        ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
-
-        ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
-        ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
-        ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
-        ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
-
-        ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-        ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
-
-        ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
-
-        ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
-
-        ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-        // sad -2,i-2 ready in low of mm4
-        _mm_storeu_si16(&ArrSADs[0][i], _mm256_castsi256_si128(ymm4_tmp));
-
-        // rotate Ref to 1 samples
-        ymm0_Ref_01 = _mm256_alignr_epi8(ymm0_Ref_01, ymm0_Ref_01, 1);
-        ymm1_Ref_23 = _mm256_alignr_epi8(ymm1_Ref_23, ymm1_Ref_23, 1);
-        ymm2_Ref_45 = _mm256_alignr_epi8(ymm2_Ref_45, ymm2_Ref_45, 1);
-        ymm3_Ref_67 = _mm256_alignr_epi8(ymm3_Ref_67, ymm3_Ref_67, 1);
-
-        // process sad[-1,-2]
-        ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
-        ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
-        ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
-        ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
-
-        ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
-        ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
-        ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
-        ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
-
-        ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-        ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
-
-        ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
-
-        ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
-
-        ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-        // sad -1,i-2 ready in low of mm4
-        _mm_storeu_si16(&ArrSADs[1][i], _mm256_castsi256_si128(ymm4_tmp));
-
-        // rotate Ref to 1 samples
-        ymm0_Ref_01 = _mm256_alignr_epi8(ymm0_Ref_01, ymm0_Ref_01, 1);
-        ymm1_Ref_23 = _mm256_alignr_epi8(ymm1_Ref_23, ymm1_Ref_23, 1);
-        ymm2_Ref_45 = _mm256_alignr_epi8(ymm2_Ref_45, ymm2_Ref_45, 1);
-        ymm3_Ref_67 = _mm256_alignr_epi8(ymm3_Ref_67, ymm3_Ref_67, 1);
-
-        // process sad[-0,-2]
-        ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
-        ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
-        ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
-        ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
-
-        ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
-        ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
-        ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
-        ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
-
-        ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-        ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
-
-        ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
-
-        ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
-
-        ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-        // sad 0,i-2 ready in low of mm4
-        _mm_storeu_si16(&ArrSADs[2][i], _mm256_castsi256_si128(ymm4_tmp));
-
-        // rotate Ref to 1 samples
-        ymm0_Ref_01 = _mm256_alignr_epi8(ymm0_Ref_01, ymm0_Ref_01, 1);
-        ymm1_Ref_23 = _mm256_alignr_epi8(ymm1_Ref_23, ymm1_Ref_23, 1);
-        ymm2_Ref_45 = _mm256_alignr_epi8(ymm2_Ref_45, ymm2_Ref_45, 1);
-        ymm3_Ref_67 = _mm256_alignr_epi8(ymm3_Ref_67, ymm3_Ref_67, 1);
-
-        // process sad[1,-2]
-        ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
-        ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
-        ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
-        ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
-
-        ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
-        ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
-        ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
-        ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
-
-        ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-        ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
-
-        ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
-
-        ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
-
-        ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-        // sad 1,i-2 ready in low of mm4
-        _mm_storeu_si16(&ArrSADs[3][i], _mm256_castsi256_si128(ymm4_tmp));
-
-        // rotate Ref to 1 samples
-        ymm0_Ref_01 = _mm256_alignr_epi8(ymm0_Ref_01, ymm0_Ref_01, 1);
-        ymm1_Ref_23 = _mm256_alignr_epi8(ymm1_Ref_23, ymm1_Ref_23, 1);
-        ymm2_Ref_45 = _mm256_alignr_epi8(ymm2_Ref_45, ymm2_Ref_45, 1);
-        ymm3_Ref_67 = _mm256_alignr_epi8(ymm3_Ref_67, ymm3_Ref_67, 1);
-
-        // process sad[2,i-2]
-        ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
-        ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
-        ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
-        ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
-
-        ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
-        ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
-        ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
-        ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
-
-        ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-        ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
-
-        ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
-
-        ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
-
-        ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-        // sad 2,i-2 ready in low of mm4
-        _mm_storeu_si16(&ArrSADs[4][i], _mm256_castsi256_si128(ymm4_tmp));
+  // BlkSizeX, BlkSizeY, bits_per_pixel, arch_t
+  std::map<std::tuple<int, int, int, int, arch_t>, ExhaustiveSearchFunction_t> func_fn;
+
+  // SearchParam 2 or 4 is supported at the moment
+  func_fn[std::make_tuple(8, 8, 2, 8, USE_AVX2)] = &PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp2_avx2_2;
+  func_fn[std::make_tuple(8, 8, 2, 8, NO_SIMD)] = &PlaneOfBlocks::ExhaustiveSearch8x8_sp2_c<uint8_t>;
+  func_fn[std::make_tuple(8, 8, 4, 8, USE_AVX2)] = &PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp4_avx2_2;
+  func_fn[std::make_tuple(8, 8, 4, 8, NO_SIMD)] = &PlaneOfBlocks::ExhaustiveSearch8x8_sp4_c<uint8_t>;
+
+  ExhaustiveSearchFunction_t result = nullptr;
+  arch_t archlist[] = { USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
+  int index = 0;
+  while (result == nullptr) {
+    arch_t current_arch_try = archlist[index++];
+    if (current_arch_try > arch) continue;
+    result = func_fn[std::make_tuple(BlockX, BlockY, SearchParam, _bits_per_pixel, current_arch_try)];
+
+    if (result == nullptr && current_arch_try == NO_SIMD) {
+      break;
     }
+  }
 
-    _mm256_zeroupper();
-
-    unsigned short minsad = 65535;
-    int x_minsad = 0;
-    int y_minsad = 0;
-    for (int x = -2; x < 2; x++)
-    {
-        for (int y = -2; y < 2; y++)
-        {
-            if (ArrSADs[x+2][y+2] < minsad)
-            {
-                minsad = ArrSADs[x+2][y+2];
-                x_minsad = x;
-                y_minsad = y;
-            }
-        }
-    }
-
-	unsigned short cost = minsad + ((penaltyNew*minsad) >> 8);
-	if (cost >= workarea.nMinCost) return;
-
-    workarea.bestMV.x = mvx + x_minsad;
-    workarea.bestMV.y = mvy + y_minsad;
-    workarea.nMinCost = cost;
-    workarea.bestMV.sad = minsad;
+  return result;
 }
 
 
+
+
 template<typename pixel_t>
-void PlaneOfBlocks::ExhaustiveSearch8x8_sp2_avx2_2(WorkingArea& workarea, int mvx, int mvy)
+void PlaneOfBlocks::ExhaustiveSearch8x8_sp4_c(WorkingArea& workarea, int mvx, int mvy) // 8x8 esa search radius 4
 {
-	// debug check !! need to fix caller to now allow illegal vectors 
-	// idea - may be not 4 checks are required - only upper left corner (starting addresses of buffer) and lower right (to not over-run atfer end of buffer - need check/test)
-	if (!workarea.IsVectorOK(mvx - 2, mvy - 2))
-	{
-		int dbr01 = 0;
-		return;
-	}
-	if (!workarea.IsVectorOK(mvx + 2, mvy + 2))
-	{
-		int dbr01 = 0;
-		return;
-	}
-/*	if (!workarea.IsVectorOK(mvx - 2, mvy + 2))
-	{
-		int dbr01 = 0;
-		return;
-	}
-	if (!workarea.IsVectorOK(mvx + 2, mvy - 2))
-	{
-		int dbr01 = 0;
-		return;
-	}
-	*/ // - check if it is OK to skip these cheks
+  // FIXME: implement
+}
 
-	alignas(256) unsigned short SIMD256Res[16];
-	const uint8_t* pucRef = GetRefBlock(workarea, mvx - 2, mvy - 2); // upper left corner
-	const uint8_t* pucCurr = workarea.pSrc[0];
-
-	__m128i xmm10_Src_01, xmm11_Src_23, xmm12_Src_45, xmm13_Src_67;
-
-	__m256i ymm0_Ref_01, ymm1_Ref_23, ymm2_Ref_45, ymm3_Ref_67; // 2x12bytes store, require buf padding to allow 16bytes reads to xmm
-	__m256i ymm4_tmp, ymm5_tmp, ymm6_tmp, ymm7_tmp;
-	__m256i ymm8_x1 = _mm256_set_epi16(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0);
-	__m256i ymm9_y1 = _mm256_set_epi16(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0);
-	__m256i ymm10_Src_01, ymm11_Src_23, ymm12_Src_45, ymm13_Src_67;
-	__m256i ymm14_yx_minsad = _mm256_set_epi32(0, 0, 0, 0, 0, 0, 0, 1073741824); // 2^30 large signed 32bit
-	__m256i ymm15_yx_cnt = _mm256_setzero_si256(); // y,x coords of search count from 0
-
-	//        __m256i 	my_ymm_test = _mm256_set_epi8(31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);// -debug values for check how permutes work
-	//        __m256i 	my_ymm_test = _mm256_set_epi8(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);// -debug values for check how permutes work
-	//        my_ymm_test = _mm256_alignr_epi8(my_ymm_test, my_ymm_test, 2); // rotate each half of ymm by number of bytes
-
-	xmm10_Src_01 = _mm_loadu_si64((__m128i*)pucCurr);
-	xmm10_Src_01 = _mm_unpacklo_epi64(xmm10_Src_01, _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0])));
-	ymm10_Src_01 = _mm256_permute4x64_epi64(_mm256_castsi128_si256(xmm10_Src_01), 220);
-
-	xmm11_Src_23 = _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 2));
-	xmm11_Src_23 = _mm_unpacklo_epi64(xmm11_Src_23, _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 3)));
-	ymm11_Src_23 = _mm256_permute4x64_epi64(_mm256_castsi128_si256(xmm11_Src_23), 220);
-
-	xmm12_Src_45 = _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 4));
-	xmm12_Src_45 = _mm_unpacklo_epi64(xmm12_Src_45, _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 5)));
-	ymm12_Src_45 = _mm256_permute4x64_epi64(_mm256_castsi128_si256(xmm12_Src_45), 220);
-
-	xmm13_Src_67 = _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 6));
-	xmm13_Src_67 = _mm_unpacklo_epi64(xmm13_Src_67, _mm_loadu_si64((__m128i*)(pucCurr + nSrcPitch[0] * 7)));
-	ymm13_Src_67 = _mm256_permute4x64_epi64(_mm256_castsi128_si256(xmm13_Src_67), 220);
-	// loaded 8 rows of 8x8 Src block, now in low and high 128bits of ymms
-
-	for (int i = 0; i < 5; i++)
-	{
-		ymm0_Ref_01 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 1)), (__m128i*)(pucRef + nRefPitch[0] * (i + 0)));
-		ymm1_Ref_23 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 3)), (__m128i*)(pucRef + nRefPitch[0] * (i + 2)));
-		ymm2_Ref_45 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 5)), (__m128i*)(pucRef + nRefPitch[0] * (i + 4)));
-		ymm3_Ref_67 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 7)), (__m128i*)(pucRef + nRefPitch[0] * (i + 6)));
-		// loaded 8 rows of Ref plane 16samples wide into ymm0..ymm3
-
-		// process sad[-2,i-2]
-		ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
-		ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
-		ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
-		ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
-
-		ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
-		ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
-		ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
-		ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
-
-		ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		// sad -2,i-2 ready in low of ymm4
-		//check if min and replace in ymm14_yx_minsad
-		ymm5_tmp = _mm256_cmpgt_epi32(ymm14_yx_minsad, ymm4_tmp); // mask in 0 16bit word for update minsad if needed
-		ymm5_tmp = _mm256_slli_epi64(ymm5_tmp, 32);// clear higher bits of mask - may be better method exist
-		ymm5_tmp = _mm256_srli_epi64(ymm5_tmp, 32);// clear higher bits of mask
-		ymm14_yx_minsad = _mm256_blendv_epi8(ymm14_yx_minsad, ymm4_tmp, ymm5_tmp); // blend minsad if not greater than
-		ymm5_tmp = _mm256_shufflelo_epi16(ymm5_tmp, 10); // move/broadcast mask from 0 to 2 and 3 16bit word for update y,x if needed
-		ymm14_yx_minsad = _mm256_blendv_epi8(ymm14_yx_minsad, ymm15_yx_cnt, ymm5_tmp); // blend y,x of minsad if not greater than
-
-		ymm15_yx_cnt = _mm256_add_epi16(ymm15_yx_cnt, ymm8_x1);//increment x coord
-
-		// rotate Ref to 1 samples
-		ymm0_Ref_01 = _mm256_alignr_epi8(ymm0_Ref_01, ymm0_Ref_01, 1);
-		ymm1_Ref_23 = _mm256_alignr_epi8(ymm1_Ref_23, ymm1_Ref_23, 1);
-		ymm2_Ref_45 = _mm256_alignr_epi8(ymm2_Ref_45, ymm2_Ref_45, 1);
-		ymm3_Ref_67 = _mm256_alignr_epi8(ymm3_Ref_67, ymm3_Ref_67, 1);
-
-		// process sad[-1,-2]
-		ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
-		ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
-		ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
-		ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
-
-		ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
-		ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
-		ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
-		ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
-
-		ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		// sad -1,i-2 ready in low of ymm4
-		//check if min and replace in ymm14_yx_minsad
-		ymm5_tmp = _mm256_cmpgt_epi32(ymm14_yx_minsad, ymm4_tmp); // mask in 0 16bit word for update minsad if needed
-		ymm5_tmp = _mm256_slli_epi64(ymm5_tmp, 32);// clear higher bits of mask - may be better method exist
-		ymm5_tmp = _mm256_srli_epi64(ymm5_tmp, 32);// clear higher bits of mask
-		ymm14_yx_minsad = _mm256_blendv_epi8(ymm14_yx_minsad, ymm4_tmp, ymm5_tmp); // blend minsad if not greater than
-		ymm5_tmp = _mm256_shufflelo_epi16(ymm5_tmp, 10); // move/broadcast mask from 0 to 2 and 3 16bit word for update y,x if needed
-		ymm14_yx_minsad = _mm256_blendv_epi8(ymm14_yx_minsad, ymm15_yx_cnt, ymm5_tmp); // blend y,x of minsad if not greater than
-
-		ymm15_yx_cnt = _mm256_add_epi16(ymm15_yx_cnt, ymm8_x1);//increment x coord
-
-		// rotate Ref to 1 samples
-		ymm0_Ref_01 = _mm256_alignr_epi8(ymm0_Ref_01, ymm0_Ref_01, 1);
-		ymm1_Ref_23 = _mm256_alignr_epi8(ymm1_Ref_23, ymm1_Ref_23, 1);
-		ymm2_Ref_45 = _mm256_alignr_epi8(ymm2_Ref_45, ymm2_Ref_45, 1);
-		ymm3_Ref_67 = _mm256_alignr_epi8(ymm3_Ref_67, ymm3_Ref_67, 1);
-
-		// process sad[-0,-2]
-		ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
-		ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
-		ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
-		ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
-
-		ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
-		ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
-		ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
-		ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
-
-		ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		// sad 0,i-2 ready in low of ymm4
-		//check if min and replace in ymm14_yx_minsad
-		ymm5_tmp = _mm256_cmpgt_epi32(ymm14_yx_minsad, ymm4_tmp); // mask in 0 16bit word for update minsad if needed
-		ymm5_tmp = _mm256_slli_epi64(ymm5_tmp, 32);// clear higher bits of mask - may be better method exist
-		ymm5_tmp = _mm256_srli_epi64(ymm5_tmp, 32);// clear higher bits of mask
-		ymm14_yx_minsad = _mm256_blendv_epi8(ymm14_yx_minsad, ymm4_tmp, ymm5_tmp); // blend minsad if not greater than
-		ymm5_tmp = _mm256_shufflelo_epi16(ymm5_tmp, 10); // move/broadcast mask from 0 to 2 and 3 16bit word for update y,x if needed
-		ymm14_yx_minsad = _mm256_blendv_epi8(ymm14_yx_minsad, ymm15_yx_cnt, ymm5_tmp); // blend y,x of minsad if not greater than
-
-		ymm15_yx_cnt = _mm256_add_epi16(ymm15_yx_cnt, ymm8_x1);//increment x coord
-
-		// rotate Ref to 1 samples
-		ymm0_Ref_01 = _mm256_alignr_epi8(ymm0_Ref_01, ymm0_Ref_01, 1);
-		ymm1_Ref_23 = _mm256_alignr_epi8(ymm1_Ref_23, ymm1_Ref_23, 1);
-		ymm2_Ref_45 = _mm256_alignr_epi8(ymm2_Ref_45, ymm2_Ref_45, 1);
-		ymm3_Ref_67 = _mm256_alignr_epi8(ymm3_Ref_67, ymm3_Ref_67, 1);
-
-		// process sad[1,-2]
-		ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
-		ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
-		ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
-		ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
-
-		ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
-		ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
-		ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
-		ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
-
-		ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		// sad 1,i-2 ready in low of mm4
-		//check if min and replace in ymm14_yx_minsad
-		ymm5_tmp = _mm256_cmpgt_epi32(ymm14_yx_minsad, ymm4_tmp); // mask in 0 16bit word for update minsad if needed
-		ymm5_tmp = _mm256_slli_epi64(ymm5_tmp, 32);// clear higher bits of mask - may be better method exist
-		ymm5_tmp = _mm256_srli_epi64(ymm5_tmp, 32);// clear higher bits of mask
-		ymm14_yx_minsad = _mm256_blendv_epi8(ymm14_yx_minsad, ymm4_tmp, ymm5_tmp); // blend minsad if not greater than
-		ymm5_tmp = _mm256_shufflelo_epi16(ymm5_tmp, 10); // move/broadcast mask from 0 to 2 and 3 16bit word for update y,x if needed
-		ymm14_yx_minsad = _mm256_blendv_epi8(ymm14_yx_minsad, ymm15_yx_cnt, ymm5_tmp); // blend y,x of minsad if not greater than
-
-		ymm15_yx_cnt = _mm256_add_epi16(ymm15_yx_cnt, ymm8_x1);//increment x coord
-
-		// rotate Ref to 1 samples
-		ymm0_Ref_01 = _mm256_alignr_epi8(ymm0_Ref_01, ymm0_Ref_01, 1);
-		ymm1_Ref_23 = _mm256_alignr_epi8(ymm1_Ref_23, ymm1_Ref_23, 1);
-		ymm2_Ref_45 = _mm256_alignr_epi8(ymm2_Ref_45, ymm2_Ref_45, 1);
-		ymm3_Ref_67 = _mm256_alignr_epi8(ymm3_Ref_67, ymm3_Ref_67, 1);
-
-		// process sad[2,i-2]
-		ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
-		ymm5_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm1_Ref_23, 51);
-		ymm6_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm2_Ref_45, 51);
-		ymm7_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm3_Ref_67, 51);
-
-		ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_01);
-		ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_23);
-		ymm6_tmp = _mm256_sad_epu8(ymm6_tmp, ymm12_Src_45);
-		ymm7_tmp = _mm256_sad_epu8(ymm7_tmp, ymm13_Src_67);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		ymm6_tmp = _mm256_add_epi32(ymm6_tmp, ymm7_tmp);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm6_tmp);
-
-		ymm5_tmp = _mm256_permute2f128_si256(ymm4_tmp, ymm4_tmp, 65);
-
-		ymm4_tmp = _mm256_add_epi32(ymm4_tmp, ymm5_tmp);
-		// sad 2,i-2 ready in low of mm4
-		//check if min and replace in ymm14_yx_minsad
-		ymm5_tmp = _mm256_cmpgt_epi32(ymm14_yx_minsad, ymm4_tmp); // mask in 0 16bit word for update minsad if needed
-		ymm5_tmp = _mm256_slli_epi64(ymm5_tmp, 32);// clear higher bits of mask - may be better method exist
-		ymm5_tmp = _mm256_srli_epi64(ymm5_tmp, 32);// clear higher bits of mask
-		ymm14_yx_minsad = _mm256_blendv_epi8(ymm14_yx_minsad, ymm4_tmp, ymm5_tmp); // blend minsad if not greater than
-		ymm5_tmp = _mm256_shufflelo_epi16(ymm5_tmp, 10); // move/broadcast mask from 0 to 2 and 3 16bit word for update y,x if needed
-		ymm14_yx_minsad = _mm256_blendv_epi8(ymm14_yx_minsad, ymm15_yx_cnt, ymm5_tmp); // blend y,x of minsad if not greater than
-
-		ymm15_yx_cnt = _mm256_add_epi16(ymm15_yx_cnt, ymm9_y1);//increment y coord
-
-		// clear x cord to 0
-		ymm15_yx_cnt = _mm256_srli_epi64(ymm15_yx_cnt, 48);
-		ymm15_yx_cnt = _mm256_slli_epi64(ymm15_yx_cnt, 48);
-
-	} // rows counter
-
-	// store result
-	_mm256_store_si256((__m256i*)&SIMD256Res[0], ymm14_yx_minsad);
-
-	_mm256_zeroupper(); // check if it may be done _after_ all searches ???
-/*
-	SIMD256Res[0]; // minsad;
-	SIMD256Res[2] - 2; // x of minsad vector
-	SIMD256Res[3] - 2; // y of minsad vector
-	)*/
-
-	unsigned short cost = SIMD256Res[0] + ((penaltyNew * SIMD256Res[0]) >> 8);
-	if (cost >= workarea.nMinCost) return;
-
-	workarea.bestMV.x = mvx + SIMD256Res[2] - 2;
-	workarea.bestMV.y = mvy + SIMD256Res[3] - 2;
-	workarea.nMinCost = cost;
-	workarea.bestMV.sad = SIMD256Res[0]; 
+// Dispatcher for DTL tests
+template<typename pixel_t>
+void PlaneOfBlocks::ExhaustiveSearch8x8_sp2_c(WorkingArea& workarea, int mvx, int mvy) // 8x8 esa search radius 2
+{
+  // FIXME: implement
 }

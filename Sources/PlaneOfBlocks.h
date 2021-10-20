@@ -58,6 +58,9 @@ class MVFrame;
 // v2.5.13.1: This class is currently a bit messy,
 // it's being reorganised and reworked for further improvement.
 
+constexpr int MAX_SUPPORTED_EXH_SEARCHPARAM = 4;
+// DTL test for new exhaustive functions dispatchers. 4: up to SearchParam==4
+
 class PlaneOfBlocks
 {
 
@@ -65,7 +68,11 @@ public:
 
   typedef	MTSlicer <PlaneOfBlocks>	Slicer;
 
-  PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSizeY, int _nPel, int _nLevel, int _nFlags, int _nOverlapX, int _nOverlapY, int _xRatioUV, int _yRatioUV, int _pixelsize, int _bits_per_pixel, conc::ObjPool <DCTClass> *dct_pool_ptr, bool mt_flag, int _chromaSADscale, IScriptEnvironment* env);
+  PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSizeY, int _nPel, int _nLevel, int _nFlags, int _nOverlapX, int _nOverlapY,
+    int _xRatioUV, int _yRatioUV, int _pixelsize, int _bits_per_pixel,
+    conc::ObjPool <DCTClass> *dct_pool_ptr,
+    bool mt_flag, int _chromaSADscale, int _optSearchOption,
+  IScriptEnvironment* env);
 
   ~PlaneOfBlocks();
 
@@ -127,6 +134,7 @@ private:
   const bool     _mt_flag;         // Allows multithreading
   const int      chromaSADscale;   // PF experimental 2.7.18.22 allow e.g. YV24 chroma to have the same magnitude as for YV12
   int            effective_chromaSADscale;   // PF experimental 2.7.18.22 allow e.g. YV24 chroma to have the same magnitude as for YV12
+  const int      optSearchOption; // DTL test != 0: allow
 
   SADFunction *  SAD;              /* function which computes the sad */
   LUMAFunction * LUMA;             /* function which computes the mean luma */
@@ -136,12 +144,18 @@ private:
   SADFunction *  SADCHROMA;
   SADFunction *  SATD;              /* SATD function, (similar to SAD), used as replacement to dct */
 
+  // DTL test
+  class WorkingArea; // forward
+  using ExhaustiveSearchFunction_t = void(PlaneOfBlocks::*)(WorkingArea& workarea, int mvx, int mvy);
+
+  ExhaustiveSearchFunction_t get_ExhaustiveSearchFunction(int BlockX, int BlockY, int SearchParam, int bits_per_pixel, arch_t arch);
+  ExhaustiveSearchFunction_t ExhaustiveSearchFunctions[MAX_SUPPORTED_EXH_SEARCHPARAM + 1]; // the function pointer
+
   std::vector <VECTOR>              /* motion vectors of the blocks */
     vectors;           /* before the search, contains the hierachal predictor */
                        /* after the search, contains the best motion vector */
 
   bool           smallestPlane;     /* say whether vectors can use predictors from a smaller plane */
-//	bool           mmx;               /* can we use mmx asm code */
   bool           isse;              /* can we use isse asm code */
   bool           chroma;            /* do we do chroma me */
 
@@ -179,7 +193,7 @@ private:
 
   // Current plane
   SearchType searchType;      /* search type used */
-  int nSearchParam;           /* additionnal parameter for this search */
+  int nSearchParam;           /* additional parameter for this search */
   sad_t LSAD;                   // SAD limit for lambda using - Fizick.
   int penaltyNew;             // cost penalty factor for new candidates
   int penaltyZero;            // cost penalty factor for zero vector
@@ -343,19 +357,22 @@ private:
   /* performs an exhaustive search */
   template<typename pixel_t>
   void ExpandingSearch(WorkingArea &workarea, int radius, int step, int mvx, int mvy); // diameter = 2*radius + 1
-  
+
+// DTL test function
   template<typename pixel_t>
-  void ExhaustiveSearch8x8_sp4_avx2(WorkingArea& workarea, int mvx, int mvy); // 8x8 esa search AVX2 radius 4 intrinsincs based
+  void ExhaustiveSearch8x8_sp4_c(WorkingArea& workarea, int mvx, int mvy); // 8x8 esa search AVX2 radius 4 intrinsincs based
+
+  void ExhaustiveSearch8x8_uint8_sp4_avx2(WorkingArea& workarea, int mvx, int mvy); // 8x8 esa search AVX2 radius 4 intrinsincs based
+
+  void ExhaustiveSearch8x8_uint8_sp4_avx2_2(WorkingArea& workarea, int mvx, int mvy); // 8x8 esa search AVX2 radius 4 intrinsincs based
 
   template<typename pixel_t>
-  void ExhaustiveSearch8x8_sp4_avx2_2(WorkingArea& workarea, int mvx, int mvy); // 8x8 esa search AVX2 radius 4 intrinsincs based
+  void ExhaustiveSearch8x8_sp2_c(WorkingArea& workarea, int mvx, int mvy); // 8x8 esa search AVX2 radius 2 intrinsincs based
 
-  template<typename pixel_t>
-  void ExhaustiveSearch8x8_sp2_avx2(WorkingArea& workarea, int mvx, int mvy); // 8x8 esa search AVX2 radius 2 intrinsincs based
+  void ExhaustiveSearch8x8_uint8_sp2_avx2(WorkingArea& workarea, int mvx, int mvy); // 8x8 esa search AVX2 radius 2 intrinsincs based
 
-  template<typename pixel_t>
-  void ExhaustiveSearch8x8_sp2_avx2_2(WorkingArea& workarea, int mvx, int mvy); // 8x8 esa search AVX2 radius 2 intrinsincs based
-
+  void ExhaustiveSearch8x8_uint8_sp2_avx2_2(WorkingArea& workarea, int mvx, int mvy); // 8x8 esa search AVX2 radius 2 intrinsincs based
+// END OF DTL test function
 
   template<typename pixel_t>
   void Hex2Search(WorkingArea &workarea, int i_me_range);
