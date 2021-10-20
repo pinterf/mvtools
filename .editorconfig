@@ -1,0 +1,15 @@
+root = true
+
+# NOTE: editorconfig-core-c has a hardcoded limitation of 50 chars per .ini section name
+
+[*.{cpp,h,hpp,c,asm}]
+indent_style = space
+indent_size = 2
+trim_trailing_whitespace = true
+end_of_line = crlf
+insert_final_newline = true
+
+[*.md]
+indent_style = space
+trim_trailing_whitespace = false
+
