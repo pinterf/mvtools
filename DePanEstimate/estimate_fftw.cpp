@@ -71,7 +71,7 @@
 #include "estimate_fftw.h"
 #include <mutex>
 
-std::mutex DePanEstimate_fftw::_fftw_mutex; // defined as static inside
+static std::mutex _fftw_mutex; // defined as static inside
 
 // constructor
 DePanEstimate_fftw::DePanEstimate_fftw(PClip _child, int _range, float _trust, int _winx, int _winy, int _wleft, int _wtop,
@@ -172,13 +172,13 @@ DePanEstimate_fftw::DePanEstimate_fftw(PClip _child, int _range, float _trust, i
     fft_threads = 1;
 
   try {
-    fftfp.load(0);
+    fftfp.load();
   }
   catch (const std::exception& e)
   {
     throw AvisynthError(e.what());
   }
-  // from neo_fft3dfilter. Only for refere
+
   if (fft_threads > 1 && fftfp.has_threading()) {
     std::lock_guard<std::mutex> lock(_fftw_mutex); // mutex!
     fftfp.fftwf_init_threads();
@@ -209,6 +209,9 @@ DePanEstimate_fftw::DePanEstimate_fftw(PClip _child, int _range, float _trust, i
   //	winsize = winx*winy;
   int winxpadded = (winx / 2 + 1) * 2;
   int fftsize = winy*winxpadded / 2; //complex
+
+  plan = nullptr;
+  planinv = nullptr;
 
   // memory for cached fft
   // fftw version
@@ -247,16 +250,6 @@ DePanEstimate_fftw::DePanEstimate_fftw(PClip _child, int _range, float _trust, i
   } // fftw3 mutex
 
 
-/*
-*     fftwf_free_addr = (fftwf_free_proc) GetProcAddress(hinstFFTW3, "fftwf_free"); 
-    fftwf_malloc_addr = (fftwf_malloc_proc)GetProcAddress(hinstFFTW3, "fftwf_malloc"); 
-    fftwf_destroy_plan_addr = (fftwf_destroy_plan_proc) GetProcAddress(hinstFFTW3, "fftwf_destroy_plan");
-    fftwf_plan_dft_r2c_2d_addr = (fftwf_plan_dft_r2c_2d_proc)GetProcAddress(hinstFFTW3, "fftwf_plan_dft_r2c_2d");
-    fftwf_plan_dft_c2r_2d_addr = (fftwf_plan_dft_c2r_2d_proc)GetProcAddress(hinstFFTW3, "fftwf_plan_dft_c2r_2d");
-    fftwf_execute_dft_r2c_addr = (fftwf_execute_dft_r2c_proc)GetProcAddress(hinstFFTW3, "fftwf_execute_dft_r2c");
-    fftwf_execute_dft_c2r_addr = (fftwf_execute_dft_c2r_proc)GetProcAddress(hinstFFTW3, "fftwf_execute_dft_c2r");
-
-*/
   motionx = new float[vi.num_frames]; // (float *)malloc(vi.num_frames * sizeof(float));
   if (motionx == NULL) env->ThrowError("DepanEstimate: Allocation Failure!\n");
   motiony = new float[vi.num_frames]; // (float *)malloc(vi.num_frames * sizeof(float));

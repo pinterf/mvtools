@@ -138,7 +138,6 @@ class DePanEstimate_fftw : public GenericVideoFilter {
   char debugbuf[96]; // buffer for debugview utility
 
   int fft_threads; // rfu
-  static std::mutex _fftw_mutex;
   FFTFunctionPointers fftfp;
   /*
   // added in v.1.2 for delayed loading

@@ -81,12 +81,9 @@ struct FFTFunctionPointers {
   void fftw3_close() { dlclose(library); library = nullptr; }
   func_t fftw3_address(const char* func) { return dlsym(library, func); }
 #endif
-  void load(lib_t existing_handle) {
-    if (existing_handle)
-      preloaded = true;
-    library = existing_handle;
-    if (!preloaded)
-      fftw3_open();
+  void load() {
+    library = nullptr;
+    fftw3_open();
     if (library != nullptr) {
       LOAD_FFT_FUNC(fftwf_malloc);
       LOAD_FFT_FUNC(fftwf_free);
@@ -105,7 +102,7 @@ struct FFTFunctionPointers {
   }
 
   void freelib() {
-    if (library != nullptr && !preloaded) {
+    if (library != nullptr) {
       fftw3_close();
     }
   }
