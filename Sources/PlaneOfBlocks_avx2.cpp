@@ -801,6 +801,7 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp2_avx2(WorkingArea& workarea, in
     ymm2_Ref_45 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 5)), (__m128i*)(pucRef + nRefPitch[0] * (i + 4)));
     ymm3_Ref_67 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 7)), (__m128i*)(pucRef + nRefPitch[0] * (i + 6)));
     // loaded 8 rows of Ref plane 16samples wide into ymm0..ymm3
+    _mm_prefetch(const_cast<const CHAR*>(reinterpret_cast<const CHAR*>(pucRef + nRefPitch[0] * (i + 8))), _MM_HINT_NTA); // prefetch next Ref row
 
     // process sad[-2,i-2]
     ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
