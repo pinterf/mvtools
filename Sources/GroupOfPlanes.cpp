@@ -113,7 +113,8 @@ void	GroupOfPlanes::SearchMVs(
   int    badrange,
   bool   meander,
   int *  vecPrev,
-  bool   tryMany)
+  bool   tryMany,
+  int    optPredictorType)
 {
   nFlags |= flags;
 
@@ -176,7 +177,8 @@ void	GroupOfPlanes::SearchMVs(
     badrange,
     meander,
     vecPrev,
-    tryManyLevel
+    tryManyLevel,
+    optPredictorType
   );
 
   out += planes[nLevelCount - 1]->GetArraySize(divideExtra);
@@ -244,7 +246,8 @@ void	GroupOfPlanes::SearchMVs(
       badrange,
       meander,
       vecPrev,
-      tryManyLevel
+      tryManyLevel,
+      optPredictorType
     );
 
     out += planes[i]->GetArraySize(divideExtra);
@@ -272,7 +275,8 @@ void	GroupOfPlanes::RecalculateMVs(
   int    fieldShift,
   sad_t    thSAD,
   int    smooth,
-  bool meander)
+  bool meander,
+  int optPredictorType)
 {
   nFlags |= flags;
 
@@ -305,7 +309,8 @@ void	GroupOfPlanes::RecalculateMVs(
     thSAD,
     divideExtra,
     smooth,
-    meander
+    meander,
+    optPredictorType
   );
 
   out += planes[0]->GetArraySize(divideExtra);

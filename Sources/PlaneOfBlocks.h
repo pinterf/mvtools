@@ -81,7 +81,8 @@ public:
     int stp, int lambda, sad_t lsad, int pnew, int plevel,
     int flags, sad_t *out, const VECTOR *globalMVec, short * outfilebuf, int fieldShiftCur,
     int * meanLumaChange, int divideExtra,
-    int _pzero, int _pglobal, sad_t _badSAD, int _badrange, bool meander, int *vecPrev, bool _tryMany);
+    int _pzero, int _pglobal, sad_t _badSAD, int _badrange, bool meander, int *vecPrev, bool _tryMany,
+    int optPredictorType);
 
 
   /* plane initialisation */
@@ -104,7 +105,8 @@ public:
   void RecalculateMVs(MVClip & mvClip, MVFrame *_pSrcFrame, MVFrame *_pRefFrame, SearchType st,
     int stp, int _lambda, sad_t _lSAD, int _pennew,
     int flags, int *out, short * outfilebuf, int fieldShift, sad_t thSAD,
-    int _divideExtra, int smooth, bool meander);
+    int _divideExtra, int smooth, bool meander,
+    int optPredictorType);
 
 
 private:
@@ -223,6 +225,7 @@ private:
   int _smooth;
   sad_t _thSAD;
   //  const VECTOR zeroMV = {0,0,(sad_t)-1};
+  int _predictorType; // 2.7.46
 
 
   // Working area

@@ -62,7 +62,7 @@ public :
 		SearchType searchType, int nSearchParam, int _PelSearch, int _nLambda,
 		sad_t _lsad, int _pnew, int _plevel, bool _global, int flags, int *out,
 		short * outfilebuf, int fieldShift, int _pzero, int _pglobal, sad_t badSAD,
-		int badrange, bool meander, int *vecPrev, bool tryMany);
+		int badrange, bool meander, int *vecPrev, bool tryMany, int optPredictorType);
 	void           WriteDefaultToArray (int *array);
 	int            GetArraySize ();
 	void           ExtraDivide (int *out, int flags);
@@ -70,7 +70,7 @@ public :
 		MVClip &mvClip, MVGroupOfFrames *pSrcGOF, MVGroupOfFrames *pRefGOF,
 		SearchType _searchType, int _nSearchParam, int _nLambda, sad_t _lsad,
 		int _pnew, int flags, int *out, short * outfilebuf, int fieldShift,
-		sad_t thSAD, int smooth, bool meander);
+		sad_t thSAD, int smooth, bool meander, int optPredictorType);
 };
 
 #endif

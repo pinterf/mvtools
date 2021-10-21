@@ -41,7 +41,7 @@ MVRecalculate::MVRecalculate(
   int _blksizex, int _blksizey, int st, int stp, int lambda, bool chroma,
   int _pnew, int _overlapx, int _overlapy, const char* _outfilename,
   int _dctmode, int _divide, int _sadx264, bool _isse, bool _meander,
-  int trad, bool mt_flag, int _chromaSADScale, int _optSearchOption, IScriptEnvironment* env
+  int trad, bool mt_flag, int _chromaSADScale, int _optSearchOption, int _optPredictorType, IScriptEnvironment* env
 )
   : GenericVideoFilter(_super)
   , _srd_arr()
@@ -51,6 +51,7 @@ MVRecalculate::MVRecalculate(
   , _nbr_srd((trad > 0) ? trad * 2 : 1)
   , _mt_flag(mt_flag)
   , optSearchOption(_optSearchOption)
+  , optPredictorType(_optPredictorType)
 {
   has_at_least_v8 = true;
   try { env->CheckVersion(8); }
@@ -83,6 +84,11 @@ MVRecalculate::MVRecalculate(
   if (!vi.IsYUV() && !vi.IsYUY2()) // YUY2 is also YUV but let's see what is supported
   {
     env->ThrowError("MRecalculate: Clip must be YUV or YUY2");
+  }
+
+  if (_optPredictorType != 0 && _optPredictorType != 1 && _optPredictorType != 2)
+  {
+    env->ThrowError("MRecalculate: parameter 'optPredictorType' must be 0, 1 or 2");
   }
 
   vi.num_frames *= _nbr_srd;
@@ -556,7 +562,7 @@ PVideoFrame __stdcall MVRecalculate::GetFrame(int n, IScriptEnvironment* env)
       *(srd._clip_sptr), pSrcGOF, pRefGOF,
       searchType, nSearchParam, nLambda, lsad, pnew,
       srd._analysis_data.nFlags, reinterpret_cast <int *> (pDst),
-      outfilebuf, fieldShift, thSAD, smooth, meander
+      outfilebuf, fieldShift, thSAD, smooth, meander, optPredictorType
     );
 
     if (divideExtra)

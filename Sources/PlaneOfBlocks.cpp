@@ -279,7 +279,8 @@ void PlaneOfBlocks::SearchMVs(
   SearchType st, int stp, int lambda, sad_t lsad, int pnew,
   int plevel, int flags, sad_t *out, const VECTOR * globalMVec,
   short *outfilebuf, int fieldShift, sad_t * pmeanLumaChange,
-  int divideExtra, int _pzero, int _pglobal, sad_t _badSAD, int _badrange, bool meander, int *vecPrev, bool _tryMany
+  int divideExtra, int _pzero, int _pglobal, sad_t _badSAD, int _badrange, bool meander, int *vecPrev, bool _tryMany,
+  int optPredictorType
 )
 {
   // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
@@ -374,6 +375,7 @@ void PlaneOfBlocks::SearchMVs(
   _meander_flag = meander;
   _pnew = pnew;
   _lsad = lsad;
+  _predictorType = optPredictorType; // v2.7.46
 
   // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
 
@@ -402,7 +404,8 @@ void PlaneOfBlocks::RecalculateMVs(
   MVClip & mvClip, MVFrame *_pSrcFrame, MVFrame *_pRefFrame,
   SearchType st, int stp, int lambda, sad_t lsad, int pnew,
   int flags, int *out,
-  short *outfilebuf, int fieldShift, sad_t thSAD, int divideExtra, int smooth, bool meander
+  short *outfilebuf, int fieldShift, sad_t thSAD, int divideExtra, int smooth, bool meander,
+  int optPredictorType
 )
 {
   // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
@@ -481,6 +484,7 @@ void PlaneOfBlocks::RecalculateMVs(
   _out = out;
   _outfilebuf = outfilebuf;
   _meander_flag = meander;
+  _predictorType = optPredictorType; // 2.7.46
   _pnew = pnew;
   _lsad = lsad;
   _mv_clip_ptr = &mvClip;
@@ -1165,7 +1169,7 @@ void PlaneOfBlocks::PseudoEPZSearch_no_pred(WorkingArea& workarea)
     workarea.planeSAD += workarea.bestMV.sad; // for debug, plus fixme outer planeSAD is not used
 }
 
-// DTS test
+// DTL test
 template<typename pixel_t>
 void PlaneOfBlocks::PseudoEPZSearch_glob_med_pred(WorkingArea& workarea)
 {
@@ -3198,10 +3202,13 @@ void	PlaneOfBlocks::search_mv_slice(Slicer::TaskData &td)
       }
 
       // Possible point of placement selection of 'predictors control'
-      PseudoEPZSearch<pixel_t>(workarea); // all predictors (original)
-      // DTL additions
-//      PseudoEPZSearch_glob_med_pred<pixel_t>(workarea); // partial predictors
-//      PseudoEPZSearch_no_pred<pixel_t>(workarea); // no predictiors
+      if (_predictorType == 0)
+        PseudoEPZSearch<pixel_t>(workarea); // all predictors (original)
+      else if (_predictorType == 1) // DTL: partial predictors
+        PseudoEPZSearch_glob_med_pred<pixel_t>(workarea);
+      else // if (_predictorType == 2) // DTL: no predictiors
+        PseudoEPZSearch_no_pred<pixel_t>(workarea);
+
       // workarea.bestMV = zeroMV; // debug
 
       if (outfilebuf != NULL) // write vector to outfile
