@@ -54,25 +54,22 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp4_avx2(WorkingArea& workarea, in
     // idea - may be not 4 checks are required - only upper left corner (starting addresses of buffer) and lower right (to not over-run atfer end of buffer - need check/test)
   if (!workarea.IsVectorOK(mvx - 4, mvy - 4))
   {
-    int dbr01 = 0;
     return;
   }
   if (!workarea.IsVectorOK(mvx + 3, mvy + 3))
   {
-    int dbr01 = 0;
     return;
   }
+  /*
   if (!workarea.IsVectorOK(mvx - 4, mvy + 3))
   {
-    int dbr01 = 0;
     return;
   }
   if (!workarea.IsVectorOK(mvx + 3, mvy - 4))
   {
-    int dbr01 = 0;
     return;
   }
-
+  */
   // array of sads 8x8
   // due to 256bit registers limit is actually -4..+3 H search around zero, but full -4 +4 V search
   unsigned short ArrSADs[8][9];
@@ -114,6 +111,7 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp4_avx2(WorkingArea& workarea, in
     ymm2_Ref_45 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 5)), (__m128i*)(pucRef + nRefPitch[0] * (i + 4)));
     ymm3_Ref_67 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 7)), (__m128i*)(pucRef + nRefPitch[0] * (i + 6)));
     // loaded 8 rows of Ref plane 16samples wide into ymm0..ymm3
+    _mm_prefetch(const_cast<const CHAR*>(reinterpret_cast<const CHAR*>(pucRef + nRefPitch[0] * (i + 8))), _MM_HINT_NTA); // prefetch next Ref row
 
     // process sad[-4,i-4]
     ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
@@ -361,28 +359,26 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp4_avx2(WorkingArea& workarea, in
   _mm256_zeroupper();
 }
 
+#if 0
+// DTL: wrong way (speedwise)
 void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp4_avx2_2(WorkingArea& workarea, int mvx, int mvy)
 {
   // debug check !
   // idea - may be not 4 checks are required - only upper left corner (starting addresses of buffer) and lower right (to not over-run atfer end of buffer - need check/test)
   if (!workarea.IsVectorOK(mvx - 4, mvy - 4))
   {
-    int dbr01 = 0;
     return;
   }
   if (!workarea.IsVectorOK(mvx + 3, mvy + 3))
   {
-    int dbr01 = 0;
     return;
   }
   /*	if (!workarea.IsVectorOK(mvx - 4, mvy + 3))
     {
-      int dbr01 = 0;
       return;
     }
     if (!workarea.IsVectorOK(mvx + 3, mvy - 4))
     {
-      int dbr01 = 0;
       return;
     }
     */ // need to check if it is non needed cheks
@@ -740,6 +736,7 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp4_avx2_2(WorkingArea& workarea, 
 
   _mm256_zeroupper();
 }
+#endif
 
 void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp2_avx2(WorkingArea& workarea, int mvx, int mvy)
 {
@@ -747,25 +744,22 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp2_avx2(WorkingArea& workarea, in
     // idea - may be not 4 checks are required - only upper left corner (starting addresses of buffer) and lower right (to not over-run atfer end of buffer - need check/test)
   if (!workarea.IsVectorOK(mvx - 2, mvy - 2))
   {
-    int dbr01 = 0;
     return;
   }
   if (!workarea.IsVectorOK(mvx + 2, mvy + 2))
   {
-    int dbr01 = 0;
     return;
   }
+  /*
   if (!workarea.IsVectorOK(mvx - 2, mvy + 2))
   {
-    int dbr01 = 0;
     return;
   }
   if (!workarea.IsVectorOK(mvx + 2, mvy - 2))
   {
-    int dbr01 = 0;
     return;
   }
-
+  */
   // array of sads 5x5 
   unsigned short ArrSADs[5][5];
   const uint8_t* pucRef = GetRefBlock(workarea, mvx - 2, mvy - 2); // upper left corner
@@ -946,9 +940,9 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp2_avx2(WorkingArea& workarea, in
   unsigned short minsad = 65535;
   int x_minsad = 0;
   int y_minsad = 0;
-  for (int x = -2; x < 2; x++)
+  for (int x = -2; x < 3; x++)
   {
-    for (int y = -2; y < 2; y++)
+    for (int y = -2; y < 3; y++)
     {
       if (ArrSADs[x + 2][y + 2] < minsad)
       {
@@ -971,28 +965,26 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp2_avx2(WorkingArea& workarea, in
 }
 
 
+#if 0
+// DTL: wrong way (speedwise)
 void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp2_avx2_2(WorkingArea& workarea, int mvx, int mvy)
 {
   // debug check !! need to fix caller to now allow illegal vectors 
   // idea - may be not 4 checks are required - only upper left corner (starting addresses of buffer) and lower right (to not over-run atfer end of buffer - need check/test)
   if (!workarea.IsVectorOK(mvx - 2, mvy - 2))
   {
-    int dbr01 = 0;
     return;
   }
   if (!workarea.IsVectorOK(mvx + 2, mvy + 2))
   {
-    int dbr01 = 0;
     return;
   }
   /*	if (!workarea.IsVectorOK(mvx - 2, mvy + 2))
     {
-      int dbr01 = 0;
       return;
     }
     if (!workarea.IsVectorOK(mvx + 2, mvy - 2))
     {
-      int dbr01 = 0;
       return;
     }
     */ // - check if it is OK to skip these cheks
@@ -1039,6 +1031,7 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp2_avx2_2(WorkingArea& workarea, 
     ymm2_Ref_45 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 5)), (__m128i*)(pucRef + nRefPitch[0] * (i + 4)));
     ymm3_Ref_67 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 7)), (__m128i*)(pucRef + nRefPitch[0] * (i + 6)));
     // loaded 8 rows of Ref plane 16samples wide into ymm0..ymm3
+    _mm_prefetch(const_cast<const CHAR*>(reinterpret_cast<const CHAR*>(pucRef + nRefPitch[0] * (i + 8))), _MM_HINT_NTA); // prefetch next Ref row
 
     // process sad[-2,i-2]
     ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
@@ -1239,4 +1232,4 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp2_avx2_2(WorkingArea& workarea, 
 
   _mm256_zeroupper();
 }
-
+#endif

@@ -358,21 +358,17 @@ private:
   template<typename pixel_t>
   void ExpandingSearch(WorkingArea &workarea, int radius, int step, int mvx, int mvy); // diameter = 2*radius + 1
 
-// DTL test function
-  template<typename pixel_t>
-  void ExhaustiveSearch8x8_sp4_c(WorkingArea& workarea, int mvx, int mvy); // 8x8 esa search AVX2 radius 4 intrinsincs based
+  // DTL test function, 8x8 block, 8 bit only
+  // 8x8 esa search radius 4
+  void ExhaustiveSearch8x8_uint8_sp4_c(WorkingArea& workarea, int mvx, int mvy);
+  void ExhaustiveSearch8x8_uint8_sp4_avx2(WorkingArea& workarea, int mvx, int mvy);
+  //void ExhaustiveSearch8x8_uint8_sp4_avx2_2(WorkingArea& workarea, int mvx, int mvy);
 
-  void ExhaustiveSearch8x8_uint8_sp4_avx2(WorkingArea& workarea, int mvx, int mvy); // 8x8 esa search AVX2 radius 4 intrinsincs based
-
-  void ExhaustiveSearch8x8_uint8_sp4_avx2_2(WorkingArea& workarea, int mvx, int mvy); // 8x8 esa search AVX2 radius 4 intrinsincs based
-
-  template<typename pixel_t>
-  void ExhaustiveSearch8x8_sp2_c(WorkingArea& workarea, int mvx, int mvy); // 8x8 esa search AVX2 radius 2 intrinsincs based
-
-  void ExhaustiveSearch8x8_uint8_sp2_avx2(WorkingArea& workarea, int mvx, int mvy); // 8x8 esa search AVX2 radius 2 intrinsincs based
-
-  void ExhaustiveSearch8x8_uint8_sp2_avx2_2(WorkingArea& workarea, int mvx, int mvy); // 8x8 esa search AVX2 radius 2 intrinsincs based
-// END OF DTL test function
+  // 8x8 esa search radius 2
+  void ExhaustiveSearch8x8_uint8_sp2_c(WorkingArea& workarea, int mvx, int mvy);
+  void ExhaustiveSearch8x8_uint8_sp2_avx2(WorkingArea& workarea, int mvx, int mvy);
+  //void ExhaustiveSearch8x8_uint8_sp2_avx2_2(WorkingArea& workarea, int mvx, int mvy);
+  // END OF DTL test function
 
   template<typename pixel_t>
   void Hex2Search(WorkingArea &workarea, int i_me_range);

@@ -1131,7 +1131,7 @@ void PlaneOfBlocks::PseudoEPZSearch(WorkingArea& workarea)
   workarea.planeSAD += workarea.bestMV.sad; // for debug, plus fixme outer planeSAD is not used
 }
 
-
+// DTL test
 template<typename pixel_t>
 void PlaneOfBlocks::PseudoEPZSearch_no_pred(WorkingArea& workarea)
 {
@@ -1165,6 +1165,7 @@ void PlaneOfBlocks::PseudoEPZSearch_no_pred(WorkingArea& workarea)
     workarea.planeSAD += workarea.bestMV.sad; // for debug, plus fixme outer planeSAD is not used
 }
 
+// DTS test
 template<typename pixel_t>
 void PlaneOfBlocks::PseudoEPZSearch_glob_med_pred(WorkingArea& workarea)
 {
@@ -3196,11 +3197,12 @@ void	PlaneOfBlocks::search_mv_slice(Slicer::TaskData &td)
         workarea.predictors[4] = ClipMV(workarea, zeroMV);
       }
 
-      // Possible point of placement selection of 'predictiors control'
-      PseudoEPZSearch<pixel_t>(workarea); // all predictors
+      // Possible point of placement selection of 'predictors control'
+      PseudoEPZSearch<pixel_t>(workarea); // all predictors (original)
+      // DTL additions
 //      PseudoEPZSearch_glob_med_pred<pixel_t>(workarea); // partial predictors
 //      PseudoEPZSearch_no_pred<pixel_t>(workarea); // no predictiors
-      //			workarea.bestMV = zeroMV; // debug
+      // workarea.bestMV = zeroMV; // debug
 
       if (outfilebuf != NULL) // write vector to outfile
       {
@@ -3792,10 +3794,12 @@ PlaneOfBlocks::ExhaustiveSearchFunction_t PlaneOfBlocks::get_ExhaustiveSearchFun
   std::map<std::tuple<int, int, int, int, arch_t>, ExhaustiveSearchFunction_t> func_fn;
 
   // SearchParam 2 or 4 is supported at the moment
-  func_fn[std::make_tuple(8, 8, 2, 8, USE_AVX2)] = &PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp2_avx2_2;
-  func_fn[std::make_tuple(8, 8, 2, 8, NO_SIMD)] = &PlaneOfBlocks::ExhaustiveSearch8x8_sp2_c<uint8_t>;
-  func_fn[std::make_tuple(8, 8, 4, 8, USE_AVX2)] = &PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp4_avx2_2;
-  func_fn[std::make_tuple(8, 8, 4, 8, NO_SIMD)] = &PlaneOfBlocks::ExhaustiveSearch8x8_sp4_c<uint8_t>;
+  //func_fn[std::make_tuple(8, 8, 2, 8, USE_AVX2)] = &PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp2_avx2_2;
+  func_fn[std::make_tuple(8, 8, 2, 8, USE_AVX2)] = &PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp2_avx2;
+  func_fn[std::make_tuple(8, 8, 2, 8, NO_SIMD)] = &PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp2_c;
+  //func_fn[std::make_tuple(8, 8, 4, 8, USE_AVX2)] = &PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp4_avx2_2;
+  func_fn[std::make_tuple(8, 8, 4, 8, USE_AVX2)] = &PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp4_avx2;
+  func_fn[std::make_tuple(8, 8, 4, 8, NO_SIMD)] = &PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp4_c;
 
   ExhaustiveSearchFunction_t result = nullptr;
   arch_t archlist[] = { USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
@@ -3816,15 +3820,99 @@ PlaneOfBlocks::ExhaustiveSearchFunction_t PlaneOfBlocks::get_ExhaustiveSearchFun
 
 
 
-template<typename pixel_t>
-void PlaneOfBlocks::ExhaustiveSearch8x8_sp4_c(WorkingArea& workarea, int mvx, int mvy) // 8x8 esa search radius 4
+void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp4_c(WorkingArea& workarea, int mvx, int mvy) // 8x8 esa search radius 4
 {
-  // FIXME: implement
+  // debug check !
+  // idea - may be not 4 checks are required - only upper left corner (starting addresses of buffer) and lower right (to not over-run atfer end of buffer - need check/test)
+  if (!workarea.IsVectorOK(mvx - 4, mvy - 4))
+  {
+    return;
+  }
+  if (!workarea.IsVectorOK(mvx + 3, mvy + 4))
+  {
+    return;
+  }
+  /*	if (!workarea.IsVectorOK(mvx - 4, mvy + 3))
+      {
+          return;
+      }
+      if (!workarea.IsVectorOK(mvx + 3, mvy - 4))
+      {
+          return;
+      }
+      */
+  unsigned short minsad = 65535;
+  int x_minsad = 0;
+  int y_minsad = 0;
+  for (int x = -4; x < 4; x++)
+  {
+    for (int y = -4; y < 5; y++)
+    {
+      int sad = SAD(workarea.pSrc[0], nSrcPitch[0], GetRefBlock(workarea, mvx + x, mvy + y), nRefPitch[0]);
+      if (sad < minsad)
+      {
+        minsad = sad;
+        x_minsad = x;
+        y_minsad = y;
+      }
+    }
+  }
+
+  sad_t cost = minsad + ((penaltyNew * minsad) >> 8);
+  if (cost >= workarea.nMinCost) return;
+
+  workarea.bestMV.x = mvx + x_minsad;
+  workarea.bestMV.y = mvy + y_minsad;
+  workarea.nMinCost = cost;
+  workarea.bestMV.sad = minsad;
+
 }
 
 // Dispatcher for DTL tests
-template<typename pixel_t>
-void PlaneOfBlocks::ExhaustiveSearch8x8_sp2_c(WorkingArea& workarea, int mvx, int mvy) // 8x8 esa search radius 2
+void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp2_c(WorkingArea& workarea, int mvx, int mvy) // 8x8 esa search radius 2
 {
-  // FIXME: implement
+  // debug check !
+  // idea - may be not 4 checks are required - only upper left corner (starting addresses of buffer) and lower right (to not over-run atfer end of buffer - need check/test)
+  if (!workarea.IsVectorOK(mvx - 2, mvy - 2))
+  {
+    return;
+  }
+  if (!workarea.IsVectorOK(mvx + 2, mvy + 2))
+  {
+    return;
+  }
+  /*	if (!workarea.IsVectorOK(mvx - 2, mvy + 2))
+      {
+          return;
+      }
+      if (!workarea.IsVectorOK(mvx + 2, mvy - 2))
+      {
+          return;
+      }
+      */
+  unsigned short minsad = 65535;
+  int x_minsad = 0;
+  int y_minsad = 0;
+  for (int x = -2; x < 3; x++)
+  {
+    for (int y = -2; y < 3; y++)
+    {
+      int sad = SAD(workarea.pSrc[0], nSrcPitch[0], GetRefBlock(workarea, mvx + x, mvy + y), nRefPitch[0]);
+      if (sad < minsad)
+      {
+        minsad = sad;
+        x_minsad = x;
+        y_minsad = y;
+      }
+    }
+  }
+
+  sad_t cost = minsad + ((penaltyNew * minsad) >> 8);
+  if (cost >= workarea.nMinCost) return;
+
+  workarea.bestMV.x = mvx + x_minsad;
+  workarea.bestMV.y = mvy + y_minsad;
+  workarea.nMinCost = cost;
+  workarea.bestMV.sad = minsad;
+
 }
