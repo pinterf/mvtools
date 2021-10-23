@@ -106,6 +106,8 @@ void DegrainN_C(
   }
 }
 
+// Debug note: DegrainN filter is calling Degrain1-6 instead if ThSAD(C) == ThSAD(C)2.
+// To reach DegrainN_ functions, set the above parameters to different values
 
 // out16_type: 
 //   0: native 8 or 16
@@ -125,7 +127,7 @@ void DegrainN_sse2(
   constexpr bool lsb_flag = (out16_type == 1);
   constexpr bool out16 = (out16_type == 2);
 
-  const __m128i	z = _mm_setzero_si128();
+  const __m128i z = _mm_setzero_si128();
 
   constexpr bool is_mod8 = blockWidth % 8 == 0;
   constexpr int pixels_at_a_time = is_mod8 ? 8 : 4; // 4 for 4 and 12; 8 for all others 8, 16, 24, 32...
@@ -246,6 +248,116 @@ void DegrainN_sse2(
   }
 }
 
+template<int blockWidth, int blockHeight, bool lessThan16bits>
+void DegrainN_16_sse41(
+  BYTE* pDst, BYTE* pDstLsb, int nDstPitch,
+  const BYTE* pSrc, int nSrcPitch,
+  const BYTE* pRef[], int Pitch[],
+  int Wall[], int trad
+)
+{
+  assert(blockWidth % 4 == 0);
+  // only mod4 supported
+
+  // able to do madd for real 16 bit uint16_t data
+  const auto signed16_shifter = _mm_set1_epi16(-32768);
+  const auto signed16_shifter_si32 = _mm_set1_epi32(32768 << DEGRAIN_WEIGHT_BITS);
+
+  const __m128i z = _mm_setzero_si128();
+  constexpr int SHIFTBACK = DEGRAIN_WEIGHT_BITS;
+  constexpr int rounder_i = (1 << SHIFTBACK) / 2;
+  // note: DEGRAIN_WEIGHT_BITS is fixed 8 bits, so no rounding occurs on 8 bit in 16 bit out
+
+  __m128i rounder = _mm_set1_epi32(rounder_i); // rounding: 128 (mul by 8 bit wref scale back)
+
+  for (int h = 0; h < blockHeight; ++h)
+  {
+    for (int x = 0; x < blockWidth; x += 8 / sizeof(uint16_t)) // up to 4 pixels per cycle
+    {
+      // load 4 pixels
+      auto src = _mm_loadl_epi64((__m128i*)(pSrc + x * sizeof(uint16_t)));
+
+      // weights array structure: center, forward1, backward1, forward2, backward2, etc
+      //                          Wall[0] Wall[1]   Wall[2]    Wall[3]   Wall[4] ...
+      // inputs structure:        pSrc    pRef[0]   pRef[1]    pRef[2]   pRef[3] ...
+
+      __m128i res;
+      // make signed when unsigned 16 bit mode
+      if constexpr (!lessThan16bits)
+        src = _mm_add_epi16(src, signed16_shifter);
+
+      // Interleave Src 0 Src 0 ...
+      src = _mm_cvtepu16_epi32(src); // sse4 unpacklo_epi16 w/ zero
+
+      // interleave 0 and center weight
+      auto ws = _mm_set1_epi32((0 << 16) + Wall[0]);
+      // pSrc[x] * WSrc + 0 * 0
+      res = _mm_madd_epi16(src, ws);
+
+      // pRefF[n][x] * WRefF[n] + pRefB[n][x] * WRefB[n]
+      for (int k = 0; k < trad; ++k)
+      {
+        // Interleave SrcF SrcB
+        src = _mm_unpacklo_epi16(
+          _mm_loadl_epi64((__m128i*)(pRef[k * 2] + x * sizeof(uint16_t))), // from forward
+          _mm_loadl_epi64((__m128i*)(pRef[k * 2 + 1] + x * sizeof(uint16_t)))); // from backward
+        if constexpr (!lessThan16bits)
+          src = _mm_add_epi16(src, signed16_shifter);
+
+        // Interleave Forward and Backward 16 bit weights for madd
+        // backward << 16 | forward in a 32 bit
+        auto weightBF = _mm_set1_epi32((Wall[k * 2 + 2] << 16) + Wall[k * 2 + 1]);
+        res = _mm_add_epi32(res, _mm_madd_epi16(src, weightBF));
+      }
+
+      res = _mm_add_epi32(res, rounder); // round
+
+      res = _mm_packs_epi32(_mm_srai_epi32(res, SHIFTBACK), z);
+      // make unsigned when unsigned 16 bit mode
+      if constexpr (!lessThan16bits)
+        res = _mm_add_epi16(res, signed16_shifter);
+
+      // we are supporting only mod4
+      // 4, 8, 12, ...
+      _mm_storel_epi64((__m128i*)(pDst + x * sizeof(uint16_t)), res);
+
+#if 0
+      // sample from MDegrainX, not only mod4
+      if constexpr (blockWidth == 6) {
+        // special, 4+2
+        if (x == 0)
+          _mm_storel_epi64((__m128i*)(pDst + x * sizeof(uint16_t)), res);
+        else
+          *(uint32_t*)(pDst + x * sizeof(uint16_t)) = _mm_cvtsi128_si32(res);
+      }
+      else if constexpr (blockWidth >= 8 / sizeof(uint16_t)) { // block 4 is already 8 bytes
+        // 4, 8, 12, ...
+        _mm_storel_epi64((__m128i*)(pDst + x * sizeof(uint16_t)), res);
+      }
+      else if constexpr (blockWidth == 3) { // blockwidth 3 is 6 bytes
+        // x == 0 always
+        *(uint32_t*)(pDst) = _mm_cvtsi128_si32(res); // 1-4 bytes
+        uint32_t res32 = _mm_cvtsi128_si32(_mm_srli_si128(res, 4)); // 5-8 byte
+        *(uint16_t*)(pDst + sizeof(uint32_t)) = (uint16_t)res32; // 2 bytes needed
+      }
+      else { // blockwidth 2 is 4 bytes
+        *(uint32_t*)(pDst + x * sizeof(uint16_t)) = _mm_cvtsi128_si32(res);
+      }
+#endif
+
+    }
+
+    pDst += nDstPitch;
+    pSrc += nSrcPitch;
+    for (int k = 0; k < trad; ++k)
+    {
+      pRef[k * 2] += Pitch[k * 2];
+      pRef[k * 2 + 1] += Pitch[k * 2 + 1];
+    }
+  }
+
+}
+
 MDegrainN::DenoiseNFunction* MDegrainN::get_denoiseN_function(int BlockX, int BlockY, int _bits_per_pixel, bool _lsb_flag, bool _out16_flag, arch_t arch)
 {
   //---------- DENOISE/DEGRAIN
@@ -254,7 +366,6 @@ MDegrainN::DenoiseNFunction* MDegrainN::get_denoiseN_function(int BlockX, int Bl
   const int DEGRAIN_TYPE_8BIT_OUT16 = 4;
   const int DEGRAIN_TYPE_10to14BIT = 8;
   const int DEGRAIN_TYPE_16BIT = 16;
-  const int DEGRAIN_TYPE_10to16BIT = DEGRAIN_TYPE_10to14BIT + DEGRAIN_TYPE_16BIT;
   const int DEGRAIN_TYPE_32BIT = 32;
   // BlkSizeX, BlkSizeY, degrain_type, arch_t
   std::map<std::tuple<int, int, int, arch_t>, DenoiseNFunction*> func_degrain;
@@ -269,8 +380,10 @@ MDegrainN::DenoiseNFunction* MDegrainN::get_denoiseN_function(int BlockX, int Bl
     else
       type_to_search = DEGRAIN_TYPE_8BIT;
   }
-  else if (_bits_per_pixel <= 16)
-    type_to_search = DEGRAIN_TYPE_10to16BIT;
+  else if (_bits_per_pixel <= 14)
+    type_to_search = DEGRAIN_TYPE_10to14BIT;
+  else if (_bits_per_pixel == 16)
+    type_to_search = DEGRAIN_TYPE_16BIT;
   else if (_bits_per_pixel == 32)
     type_to_search = DEGRAIN_TYPE_32BIT;
   else
@@ -282,7 +395,8 @@ MDegrainN::DenoiseNFunction* MDegrainN::get_denoiseN_function(int BlockX, int Bl
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT, NO_SIMD)] = DegrainN_C<uint8_t, x, y, 0>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_STACKED, NO_SIMD)] = DegrainN_C<uint8_t, x, y, 1>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_OUT16, NO_SIMD)] = DegrainN_C<uint8_t, x, y, 2>; \
-func_degrain[make_tuple(x, y, DEGRAIN_TYPE_10to16BIT, NO_SIMD)] = DegrainN_C<uint16_t, x, y, 0>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_10to14BIT, NO_SIMD)] = DegrainN_C<uint16_t, x, y, 0>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_16BIT, NO_SIMD)] = DegrainN_C<uint16_t, x, y, 0>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_32BIT, NO_SIMD)] = DegrainN_C<float, x, y, 0>;
     MAKE_FN(64, 64)
     MAKE_FN(64, 48)
@@ -342,7 +456,10 @@ func_degrain[make_tuple(x, y, DEGRAIN_TYPE_32BIT, NO_SIMD)] = DegrainN_C<float, 
 #define MAKE_FN(x, y) \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT, USE_SSE2)] = DegrainN_sse2<x, y, 0>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_STACKED, USE_SSE2)] = DegrainN_sse2<x, y, 1>; \
-func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_OUT16, USE_SSE2)] = DegrainN_sse2<x, y, 2>;
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_OUT16, USE_SSE2)] = DegrainN_sse2<x, y, 2>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_10to14BIT, USE_SSE41)] = DegrainN_16_sse41<x, y, true>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_16BIT, USE_SSE41)] = DegrainN_16_sse41<x, y, false>;
+
   MAKE_FN(64, 64)
     MAKE_FN(64, 48)
     MAKE_FN(64, 32)
@@ -381,7 +498,7 @@ func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_OUT16, USE_SSE2)] = DegrainN_sse
     MAKE_FN(8, 4)
     MAKE_FN(8, 2)
     MAKE_FN(8, 1)
-    //MAKE_FN(6, 24) // w is mod4 supported
+    //MAKE_FN(6, 24) // w is mod4 only supported
     //MAKE_FN(6, 12)
     //MAKE_FN(6, 6)
     //MAKE_FN(6, 3)
@@ -389,7 +506,7 @@ func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_OUT16, USE_SSE2)] = DegrainN_sse
     MAKE_FN(4, 4)
     MAKE_FN(4, 2)
     MAKE_FN(4, 1)
-    //MAKE_FN(3, 6) // w is mod8 or w==4 supported
+    //MAKE_FN(3, 6) // w is mod4 only supported
     //MAKE_FN(3, 3)
     //MAKE_FN(2, 4) // no 2 byte width, only C
     //MAKE_FN(2, 2) // no 2 byte width, only C
