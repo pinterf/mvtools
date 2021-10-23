@@ -203,7 +203,7 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
     // block sizes and chroma remain the same
 
     // not implemented ones are nullptr
-    if (nBlkSizeX == 8 && nBlkSizeY == 8 and pixelsize == 1 && !chroma) {
+    if (nBlkSizeX == 8 && nBlkSizeY == 8 && pixelsize == 1 && !chroma) {
       for (int iSearchParam = 0; iSearchParam <= MAX_SUPPORTED_EXH_SEARCHPARAM; iSearchParam++)
         ExhaustiveSearchFunctions[iSearchParam] = get_ExhaustiveSearchFunction(nBlkSizeX, nBlkSizeY, iSearchParam, bits_per_pixel, arch);
     }
