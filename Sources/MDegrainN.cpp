@@ -27,46 +27,41 @@
 //   2: 8bit in, native16 out
 template <typename pixel_t, int blockWidth, int blockHeight, int out16_type>
 void DegrainN_C(
-  BYTE *pDst, BYTE *pDstLsb, int nDstPitch,
-  const BYTE *pSrc, int nSrcPitch,
-  const BYTE *pRef[], int Pitch[],
+  BYTE* pDst, BYTE* pDstLsb, int nDstPitch,
+  const BYTE* pSrc, int nSrcPitch,
+  const BYTE* pRef[], int Pitch[],
   int Wall[], int trad
 )
 {
-
-  // avoid unnecessary templates. C implementation is here for the sake of correctness and for very small block sizes
-  // For all other cases where speed counts, at least SSE2 is used
-  // Use only one parameter
-  // PF180306 not yet const int blockWidth = (WidthHeightForC >> 16);
-  // PF180306 const int blockHeight = (WidthHeightForC & 0xFFFF);
+  // for less template, see solution in Degrain1to6_C
 
   constexpr bool lsb_flag = (out16_type == 1);
   constexpr bool out16 = (out16_type == 2);
 
-  if constexpr(lsb_flag || out16)
+  if constexpr (lsb_flag || out16)
   {
     // 8 bit base only
     for (int h = 0; h < blockHeight; ++h)
     {
       for (int x = 0; x < blockWidth; ++x)
       {
-        int				val = pSrc[x] * Wall[0];
+        int val = pSrc[x] * Wall[0];
         for (int k = 0; k < trad; ++k)
         {
           val += pRef[k * 2][x] * Wall[k * 2 + 1]
             + pRef[k * 2 + 1][x] * Wall[k * 2 + 2];
         }
-        if constexpr(lsb_flag) {
+        if constexpr (lsb_flag) {
           pDst[x] = (uint8_t)(val >> 8);
           pDstLsb[x] = (uint8_t)(val & 255);
         }
         else { // out16
-          reinterpret_cast<uint16_t *>(pDst)[x] = (uint16_t)val;
+          reinterpret_cast<uint16_t*>(pDst)[x] = (uint16_t)val;
         }
       }
 
       pDst += nDstPitch;
-      if constexpr(lsb_flag)
+      if constexpr (lsb_flag)
         pDstLsb += nDstPitch;
       pSrc += nSrcPitch;
       for (int k = 0; k < trad; ++k)
@@ -88,16 +83,16 @@ void DegrainN_C(
     {
       for (int x = 0; x < blockWidth; ++x)
       {
-        target_t val = reinterpret_cast<const pixel_t *>(pSrc)[x] * (target_t)Wall[0] + rounder;
+        target_t val = reinterpret_cast<const pixel_t*>(pSrc)[x] * (target_t)Wall[0] + rounder;
         for (int k = 0; k < trad; ++k)
         {
-          val += reinterpret_cast<const pixel_t *>(pRef[k * 2])[x] * (target_t)Wall[k * 2 + 1]
-            + reinterpret_cast<const pixel_t *>(pRef[k * 2 + 1])[x] * (target_t)Wall[k * 2 + 2];
+          val += reinterpret_cast<const pixel_t*>(pRef[k * 2])[x] * (target_t)Wall[k * 2 + 1]
+            + reinterpret_cast<const pixel_t*>(pRef[k * 2 + 1])[x] * (target_t)Wall[k * 2 + 2];
         }
-        if constexpr(sizeof(pixel_t) <= 2)
-          reinterpret_cast<pixel_t *>(pDst)[x] = (pixel_t)(val >> 8); // 8-16bit
+        if constexpr (sizeof(pixel_t) <= 2)
+          reinterpret_cast<pixel_t*>(pDst)[x] = (pixel_t)(val >> 8); // 8-16bit
         else
-          reinterpret_cast<pixel_t *>(pDst)[x] = val * scaleback; // 32bit float
+          reinterpret_cast<pixel_t*>(pDst)[x] = val * scaleback; // 32bit float
       }
 
       pDst += nDstPitch;
@@ -111,103 +106,6 @@ void DegrainN_C(
   }
 }
 
-#if 0
-#ifndef _M_X64
-template <int blockWidth, int blockHeight>
-void DegrainN_mmx(
-  BYTE *pDst, BYTE *pDstLsb, bool lsb_flag, int nDstPitch,
-  const BYTE *pSrc, int nSrcPitch,
-  const BYTE *pRef[], int Pitch[],
-  int Wall[], int trad
-)
-{
-  const __m64			z = _mm_setzero_si64();
-
-  if (lsb_flag)
-  {
-    const __m64			m = _mm_set1_pi16(255);
-
-    for (int h = 0; h < blockHeight; ++h)
-    {
-      for (int x = 0; x < blockWidth; x += 4)
-      {
-        __m64				val = _m_pmullw(
-          _m_punpcklbw(*(__m64 *) (pSrc + x), z),
-          _mm_set1_pi16(Wall[0])
-        );
-        for (int k = 0; k < trad; ++k)
-        {
-          const __m64		s1 = _m_pmullw(
-            _m_punpcklbw(*(__m64 *) (pRef[k * 2] + x), z),
-            _mm_set1_pi16(Wall[k * 2 + 1])
-          );
-          const __m64		s2 = _m_pmullw(
-            _m_punpcklbw(*(__m64 *) (pRef[k * 2 + 1] + x), z),
-            _mm_set1_pi16(Wall[k * 2 + 2])
-          );
-          val = _m_paddw(val, s1);
-          val = _m_paddw(val, s2);
-        }
-        *(int *)(pDst + x) =
-          _m_to_int(_m_packuswb(_m_psrlwi(val, 8), z));
-        *(int *)(pDstLsb + x) =
-          _m_to_int(_m_packuswb(_mm_and_si64(val, m), z));
-      }
-
-      pDst += nDstPitch;
-      pDstLsb += nDstPitch;
-      pSrc += nSrcPitch;
-      for (int k = 0; k < trad; ++k)
-      {
-        pRef[k * 2] += Pitch[k * 2];
-        pRef[k * 2 + 1] += Pitch[k * 2 + 1];
-      }
-    }
-  }
-
-  else
-  {
-    const __m64		o = _mm_set1_pi16(128);
-
-    for (int h = 0; h < blockHeight; ++h)
-    {
-      for (int x = 0; x < blockWidth; x += 4)
-      {
-        __m64				val = _m_paddw(_m_pmullw(
-          _m_punpcklbw(*(__m64 *) (pSrc + x), z),
-          _mm_set1_pi16(Wall[0])
-        ), o);
-        for (int k = 0; k < trad; ++k)
-        {
-          const __m64		s1 = _m_pmullw(
-            _m_punpcklbw(*(__m64 *) (pRef[k * 2] + x), z),
-            _mm_set1_pi16(Wall[k * 2 + 1])
-          );
-          const __m64		s2 = _m_pmullw(
-            _m_punpcklbw(*(__m64 *) (pRef[k * 2 + 1] + x), z),
-            _mm_set1_pi16(Wall[k * 2 + 2])
-          );
-          val = _m_paddw(val, s1);
-          val = _m_paddw(val, s2);
-        }
-        *(int *)(pDst + x) =
-          _m_to_int(_m_packuswb(_m_psrlwi(val, 8), z));
-      }
-
-      pDst += nDstPitch;
-      pSrc += nSrcPitch;
-      for (int k = 0; k < trad; ++k)
-      {
-        pRef[k * 2] += Pitch[k * 2];
-        pRef[k * 2 + 1] += Pitch[k * 2 + 1];
-      }
-    }
-  }
-
-  _m_empty();
-}
-#endif
-#endif
 
 // out16_type: 
 //   0: native 8 or 16
@@ -221,47 +119,50 @@ void DegrainN_sse2(
   int Wall[], int trad
 )
 {
-  assert(!(blockWidth % 8) != 0 && blockWidth != 4);
-  // only mod8 or w=4 supported
-
-  // avoid unnecessary templates. C implementation is here for the sake of correctness and for very small block sizes
-  // For all other cases where speed counts, at least SSE2 is used
-  // Use only one parameter
-  // PF180306 not yet const int blockWidth = (WidthHeightForC >> 16);
-  // PF180306 const int blockHeight = (WidthHeightForC & 0xFFFF);
+  assert(blockWidth % 4 == 0);
+  // only mod4 supported
 
   constexpr bool lsb_flag = (out16_type == 1);
   constexpr bool out16 = (out16_type == 2);
 
   const __m128i	z = _mm_setzero_si128();
 
+  constexpr bool is_mod8 = blockWidth % 8 == 0;
+  constexpr int pixels_at_a_time = is_mod8 ? 8 : 4; // 4 for 4 and 12; 8 for all others 8, 16, 24, 32...
+
   if constexpr(lsb_flag || out16)
   {
     // no rounding
-    const __m128i	m = _mm_set1_epi16(255);
+    const __m128i m = _mm_set1_epi16(255);
 
     for (int h = 0; h < blockHeight; ++h)
     {
-      for (int x = 0; x < blockWidth; x += 8)
+      for (int x = 0; x < blockWidth; x += pixels_at_a_time)
       {
-        __m128i			val = _mm_mullo_epi16(
-          _mm_unpacklo_epi8(_mm_loadl_epi64((__m128i *) (pSrc + x)), z),
-          _mm_set1_epi16(Wall[0])
-        );
+        __m128i src;
+        if (is_mod8) // load 8 pixels
+          src = _mm_loadl_epi64((__m128i*) (pSrc + x));
+        else // load 4 pixels
+          src = _mm_cvtsi32_si128(*(pSrc + x));
+        __m128i val = _mm_mullo_epi16(_mm_unpacklo_epi8(src, z), _mm_set1_epi16(Wall[0]));
         for (int k = 0; k < trad; ++k)
         {
-          const __m128i	s1 = _mm_mullo_epi16(
-            _mm_unpacklo_epi8(_mm_loadl_epi64((__m128i *) (pRef[k * 2] + x)), z),
-            _mm_set1_epi16(Wall[k * 2 + 1])
-          );
-          const __m128i	s2 = _mm_mullo_epi16(
-            _mm_unpacklo_epi8(_mm_loadl_epi64((__m128i *) (pRef[k * 2 + 1] + x)), z),
-            _mm_set1_epi16(Wall[k * 2 + 2])
-          );
+          __m128i src1, src2;
+          if constexpr(is_mod8) // load 8-8 pixels
+          {
+            src1 = _mm_loadl_epi64((__m128i*) (pRef[k * 2] + x));
+            src2 = _mm_loadl_epi64((__m128i*) (pRef[k * 2 + 1] + x));
+          }
+          else { // 4-4 pixels
+            src1 = _mm_cvtsi32_si128(*(pRef[k * 2] + x));
+            src2 = _mm_cvtsi32_si128(*(pRef[k * 2 + 1] + x));
+          }
+          const __m128i	s1 = _mm_mullo_epi16(_mm_unpacklo_epi8(src1, z), _mm_set1_epi16(Wall[k * 2 + 1]));
+          const __m128i	s2 = _mm_mullo_epi16(_mm_unpacklo_epi8(src2, z), _mm_set1_epi16(Wall[k * 2 + 2]));
           val = _mm_add_epi16(val, s1);
           val = _mm_add_epi16(val, s2);
         }
-        if constexpr(blockWidth >= 8) {
+        if constexpr(is_mod8) {
           if constexpr(lsb_flag) {
             _mm_storel_epi64((__m128i*)(pDst + x), _mm_packus_epi16(_mm_srli_epi16(val, 8), z));
             _mm_storel_epi64((__m128i*)(pDstLsb + x), _mm_packus_epi16(_mm_and_si128(val, m), z));
@@ -270,7 +171,7 @@ void DegrainN_sse2(
             _mm_storeu_si128((__m128i*)(pDst + x * 2), val);
           }
         }
-        else if constexpr(blockWidth == 4) {
+        else {
           if constexpr(lsb_flag) {
             *(uint32_t*)(pDst + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_srli_epi16(val, 8), z));
             *(uint32_t*)(pDstLsb + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_and_si128(val, m), z));
@@ -295,37 +196,42 @@ void DegrainN_sse2(
   else
   {
     // base 8 bit -> 8 bit
-    const __m128i	o = _mm_set1_epi16(128); // rounding
+    const __m128i o = _mm_set1_epi16(128); // rounding
 
     for (int h = 0; h < blockHeight; ++h)
     {
-      for (int x = 0; x < blockWidth; x += 8)
+      for (int x = 0; x < blockWidth; x += pixels_at_a_time)
       {
-        __m128i			val = _mm_add_epi16(_mm_mullo_epi16(
-          _mm_unpacklo_epi8(_mm_loadl_epi64((__m128i *) (pSrc + x)), z),
-          _mm_set1_epi16(Wall[0])
-        ), o);
+        __m128i src;
+        if constexpr(is_mod8) // load 8 pixels
+          src = _mm_loadl_epi64((__m128i*) (pSrc + x));
+        else // load 4 pixels
+          src = _mm_cvtsi32_si128(*(pSrc + x));
+
+        __m128i val = _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(src, z), _mm_set1_epi16(Wall[0])), o);
         for (int k = 0; k < trad; ++k)
         {
-          const __m128i	s1 = _mm_mullo_epi16(
-            _mm_unpacklo_epi8(_mm_loadl_epi64((__m128i *) (pRef[k * 2] + x)), z),
-            _mm_set1_epi16(Wall[k * 2 + 1])
-          );
-          const __m128i	s2 = _mm_mullo_epi16(
-            _mm_unpacklo_epi8(_mm_loadl_epi64((__m128i *) (pRef[k * 2 + 1] + x)), z),
-            _mm_set1_epi16(Wall[k * 2 + 2])
-          );
+          __m128i src1, src2;
+          if constexpr(is_mod8) // load 8-8 pixels
+          {
+            src1 = _mm_loadl_epi64((__m128i*) (pRef[k * 2] + x));
+            src2 = _mm_loadl_epi64((__m128i*) (pRef[k * 2 + 1] + x));
+          }
+          else { // 4-4 pixels
+            src1 = _mm_cvtsi32_si128(*(pRef[k * 2] + x));
+            src2 = _mm_cvtsi32_si128(*(pRef[k * 2 + 1] + x));
+          }
+          const __m128i s1 = _mm_mullo_epi16(_mm_unpacklo_epi8(src1, z), _mm_set1_epi16(Wall[k * 2 + 1]));
+          const __m128i s2 = _mm_mullo_epi16(_mm_unpacklo_epi8(src2, z), _mm_set1_epi16(Wall[k * 2 + 2]));
           val = _mm_add_epi16(val, s1);
           val = _mm_add_epi16(val, s2);
         }
-        if constexpr(blockWidth >= 8) {
-          _mm_storel_epi64(
-            (__m128i*)(pDst + x),
-            _mm_packus_epi16(_mm_srli_epi16(val, 8), z)
-          );
+        auto res = _mm_packus_epi16(_mm_srli_epi16(val, 8), z);
+        if constexpr(is_mod8) {
+          _mm_storel_epi64((__m128i*)(pDst + x), res);
         }
         else {
-          *(uint32_t*)(pDst + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_srli_epi16(val, 8), z));
+          *(uint32_t*)(pDst + x) = _mm_cvtsi128_si32(res);
         }
       }
 
@@ -463,19 +369,19 @@ func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_OUT16, USE_SSE2)] = DegrainN_sse
     MAKE_FN(16, 4)
     MAKE_FN(16, 2)
     MAKE_FN(16, 1)
-    //MAKE_FN(12, 48) // w is mod8 or w==4 supported
-    //MAKE_FN(12, 24)
-    //MAKE_FN(12, 16)
-    //MAKE_FN(12, 12)
-    //MAKE_FN(12, 6)
-    //MAKE_FN(12, 3) 
+    MAKE_FN(12, 48)
+    MAKE_FN(12, 24)
+    MAKE_FN(12, 16)
+    MAKE_FN(12, 12)
+    MAKE_FN(12, 6)
+    MAKE_FN(12, 3) 
     MAKE_FN(8, 32)
     MAKE_FN(8, 16)
     MAKE_FN(8, 8)
     MAKE_FN(8, 4)
     MAKE_FN(8, 2)
     MAKE_FN(8, 1)
-    //MAKE_FN(6, 24) // w is mod8 or w==4 supported
+    //MAKE_FN(6, 24) // w is mod4 supported
     //MAKE_FN(6, 12)
     //MAKE_FN(6, 6)
     //MAKE_FN(6, 3)
