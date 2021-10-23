@@ -487,7 +487,7 @@ AVSValue __cdecl Create_MDegrainN(AVSValue args, void*, IScriptEnvironment* env)
         args[13].AsBool(false),  // lsb
         args[16].AsBool(true),   // mt
         args[17].AsBool(false),  // out16
-        args[18].AsBool(false),  // out32
+        false, // args[18].AsBool(false),  // cannot pass: no out32 parameter for MDegrainN
         tr, // PF: level
         env
       );
