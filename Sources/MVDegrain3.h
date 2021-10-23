@@ -815,9 +815,11 @@ void Degrain1to6_16_sse41(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nD
       // make signed when unsigned 16 bit mode
       if constexpr(!lessThan16bits)
         src = _mm_add_epi16(src, signed16_shifter);
+      // Interleave Src 0 Src 0 ...
       src = _mm_cvtepu16_epi32(src); // sse4 unpacklo_epi16 w/ zero
       res = _mm_madd_epi16(src, ws); // pSrc[x] * WSrc + 0 * 0
       // pRefF[n][x] * WRefF[n] + pRefB[n][x] * WRefB[n]
+      // Interleave SrcF SrcB
       src = _mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[0] + x * sizeof(uint16_t))), _mm_loadl_epi64((__m128i*)(pRefF[0] + x * sizeof(uint16_t))));
       if constexpr(!lessThan16bits)
         src = _mm_add_epi16(src, signed16_shifter);
