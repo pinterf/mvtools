@@ -425,14 +425,8 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp2_avx2(WorkingArea& workarea
   // loaded 8 rows of Ref plane 16samples wide into ymm0..ymm3
 
   // process sad[-2,i-2]
-  ymm4_tmp = _mm256_slli_si256(ymm0_Ref_01, 8);
-  ymm5_tmp = _mm256_slli_si256(ymm2_Ref_45, 8);
-
-  ymm4_tmp = _mm256_blend_epi32(ymm4_tmp, ymm1_Ref_23, 51);
-  ymm5_tmp = _mm256_blend_epi32(ymm5_tmp, ymm3_Ref_67, 51);
-
-  ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_2031);
-  ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_6475);
+  ymm4_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm0_Ref_01, 8), ymm1_Ref_23, 51), ymm10_Src_2031);
+  ymm5_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm2_Ref_45, 8), ymm3_Ref_67, 51), ymm11_Src_6475);
 
   ymm4_tmp = _mm256_adds_epu16(ymm4_tmp, ymm5_tmp);
   // sad -2,i-2 4 parts ready in low of mm4
@@ -445,14 +439,8 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp2_avx2(WorkingArea& workarea
   ymm3_Ref_67 = _mm256_srli_si256(ymm3_Ref_67, 1);
 
   // process sad[-1,-2]
-  ymm4_tmp = _mm256_slli_si256(ymm0_Ref_01, 8);
-  ymm5_tmp = _mm256_slli_si256(ymm2_Ref_45, 8);
-
-  ymm4_tmp = _mm256_blend_epi32(ymm4_tmp, ymm1_Ref_23, 51);
-  ymm5_tmp = _mm256_blend_epi32(ymm5_tmp, ymm3_Ref_67, 51);
-
-  ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_2031);
-  ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_6475);
+  ymm4_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm0_Ref_01, 8), ymm1_Ref_23, 51), ymm10_Src_2031);
+  ymm5_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm2_Ref_45, 8), ymm3_Ref_67, 51), ymm11_Src_6475);
 
   ymm4_tmp = _mm256_adds_epu16(ymm4_tmp, ymm5_tmp);
   // sad -1,i-2 4 parts ready in low of mm4
@@ -465,14 +453,8 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp2_avx2(WorkingArea& workarea
   ymm3_Ref_67 = _mm256_srli_si256(ymm3_Ref_67, 1);
 
   // process sad[-0,-2]
-  ymm4_tmp = _mm256_slli_si256(ymm0_Ref_01, 8);
-  ymm5_tmp = _mm256_slli_si256(ymm2_Ref_45, 8);
-
-  ymm4_tmp = _mm256_blend_epi32(ymm4_tmp, ymm1_Ref_23, 51);
-  ymm5_tmp = _mm256_blend_epi32(ymm5_tmp, ymm3_Ref_67, 51);
-
-  ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_2031);
-  ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_6475);
+  ymm4_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm0_Ref_01, 8), ymm1_Ref_23, 51), ymm10_Src_2031);
+  ymm5_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm2_Ref_45, 8), ymm3_Ref_67, 51), ymm11_Src_6475);
 
   ymm4_tmp = _mm256_adds_epu16(ymm4_tmp, ymm5_tmp);
   // sad 0,i-2 4 parts ready in low of mm4
@@ -485,14 +467,8 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp2_avx2(WorkingArea& workarea
   ymm3_Ref_67 = _mm256_srli_si256(ymm3_Ref_67, 1);
 
   // process sad[1,-2]
-  ymm4_tmp = _mm256_slli_si256(ymm0_Ref_01, 8);
-  ymm5_tmp = _mm256_slli_si256(ymm2_Ref_45, 8);
-
-  ymm4_tmp = _mm256_blend_epi32(ymm4_tmp, ymm1_Ref_23, 51);
-  ymm5_tmp = _mm256_blend_epi32(ymm5_tmp, ymm3_Ref_67, 51);
-
-  ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_2031);
-  ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_6475);
+  ymm4_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm0_Ref_01, 8), ymm1_Ref_23, 51), ymm10_Src_2031);
+  ymm5_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm2_Ref_45, 8), ymm3_Ref_67, 51), ymm11_Src_6475);
 
   ymm4_tmp = _mm256_adds_epu16(ymm4_tmp, ymm5_tmp);
   // sad 1,i-2 4 parts ready in low of mm4
@@ -509,14 +485,8 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp2_avx2(WorkingArea& workarea
   ymm3_Ref_67 = _mm256_srli_si256(ymm3_Ref_67, 1);
 
   // process sad[2,i-2]
-  ymm4_tmp = _mm256_slli_si256(ymm0_Ref_01, 8);
-  ymm5_tmp = _mm256_slli_si256(ymm2_Ref_45, 8);
-
-  ymm4_tmp = _mm256_blend_epi32(ymm4_tmp, ymm1_Ref_23, 51);
-  ymm5_tmp = _mm256_blend_epi32(ymm5_tmp, ymm3_Ref_67, 51);
-
-  ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_2031);
-  ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_6475);
+  ymm4_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm0_Ref_01, 8), ymm1_Ref_23, 51), ymm10_Src_2031);
+  ymm5_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm2_Ref_45, 8), ymm3_Ref_67, 51), ymm11_Src_6475);
 
   ymm4_tmp = _mm256_adds_epu16(ymm4_tmp, ymm5_tmp);
   // sad 2,i-2 4 parts ready in low of mm4
@@ -533,14 +503,8 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp2_avx2(WorkingArea& workarea
   // loaded 8 rows of Ref plane 16samples wide into ymm0..ymm3
 
   // process sad[-2,i-2]
-  ymm4_tmp = _mm256_slli_si256(ymm0_Ref_01, 8);
-  ymm5_tmp = _mm256_slli_si256(ymm2_Ref_45, 8);
-
-  ymm4_tmp = _mm256_blend_epi32(ymm4_tmp, ymm1_Ref_23, 51);
-  ymm5_tmp = _mm256_blend_epi32(ymm5_tmp, ymm3_Ref_67, 51);
-
-  ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_2031);
-  ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_6475);
+  ymm4_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm0_Ref_01, 8), ymm1_Ref_23, 51), ymm10_Src_2031);
+  ymm5_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm2_Ref_45, 8), ymm3_Ref_67, 51), ymm11_Src_6475);
 
   ymm4_tmp = _mm256_adds_epu16(ymm4_tmp, ymm5_tmp);
   // sad -2,i-2 2 parts ready in low of mm4
@@ -553,14 +517,8 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp2_avx2(WorkingArea& workarea
   ymm3_Ref_67 = _mm256_srli_si256(ymm3_Ref_67, 1);
 
   // process sad[-1,-2]
-  ymm4_tmp = _mm256_slli_si256(ymm0_Ref_01, 8);
-  ymm5_tmp = _mm256_slli_si256(ymm2_Ref_45, 8);
-
-  ymm4_tmp = _mm256_blend_epi32(ymm4_tmp, ymm1_Ref_23, 51);
-  ymm5_tmp = _mm256_blend_epi32(ymm5_tmp, ymm3_Ref_67, 51);
-
-  ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_2031);
-  ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_6475);
+  ymm4_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm0_Ref_01, 8), ymm1_Ref_23, 51), ymm10_Src_2031);
+  ymm5_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm2_Ref_45, 8), ymm3_Ref_67, 51), ymm11_Src_6475);
 
   ymm4_tmp = _mm256_adds_epu16(ymm4_tmp, ymm5_tmp);
   // sad -1,i-2 2 parts ready in low of mm4
@@ -573,14 +531,8 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp2_avx2(WorkingArea& workarea
   ymm3_Ref_67 = _mm256_srli_si256(ymm3_Ref_67, 1);
 
   // process sad[-0,-2]
-  ymm4_tmp = _mm256_slli_si256(ymm0_Ref_01, 8);
-  ymm5_tmp = _mm256_slli_si256(ymm2_Ref_45, 8);
-
-  ymm4_tmp = _mm256_blend_epi32(ymm4_tmp, ymm1_Ref_23, 51);
-  ymm5_tmp = _mm256_blend_epi32(ymm5_tmp, ymm3_Ref_67, 51);
-
-  ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_2031);
-  ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_6475);
+  ymm4_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm0_Ref_01, 8), ymm1_Ref_23, 51), ymm10_Src_2031);
+  ymm5_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm2_Ref_45, 8), ymm3_Ref_67, 51), ymm11_Src_6475);
 
   ymm4_tmp = _mm256_adds_epu16(ymm4_tmp, ymm5_tmp);
   // sad 0,i-2 2 parts ready in low of mm4
@@ -599,14 +551,8 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp2_avx2(WorkingArea& workarea
   ymm3_Ref_67 = _mm256_srli_si256(ymm3_Ref_67, 1);
 
   // process sad[1,-2]
-  ymm4_tmp = _mm256_slli_si256(ymm0_Ref_01, 8);
-  ymm5_tmp = _mm256_slli_si256(ymm2_Ref_45, 8);
-
-  ymm4_tmp = _mm256_blend_epi32(ymm4_tmp, ymm1_Ref_23, 51);
-  ymm5_tmp = _mm256_blend_epi32(ymm5_tmp, ymm3_Ref_67, 51);
-
-  ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_2031);
-  ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_6475);
+  ymm4_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm0_Ref_01, 8), ymm1_Ref_23, 51), ymm10_Src_2031);
+  ymm5_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm2_Ref_45, 8), ymm3_Ref_67, 51), ymm11_Src_6475);
 
   ymm4_tmp = _mm256_adds_epu16(ymm4_tmp, ymm5_tmp);
   // sad 1,i-2 ready in low of mm4
@@ -618,14 +564,8 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp2_avx2(WorkingArea& workarea
   ymm3_Ref_67 = _mm256_srli_si256(ymm3_Ref_67, 1);
 
   // process sad[2,i-2]
-  ymm4_tmp = _mm256_slli_si256(ymm0_Ref_01, 8);
-  ymm5_tmp = _mm256_slli_si256(ymm2_Ref_45, 8);
-
-  ymm4_tmp = _mm256_blend_epi32(ymm4_tmp, ymm1_Ref_23, 51);
-  ymm5_tmp = _mm256_blend_epi32(ymm5_tmp, ymm3_Ref_67, 51);
-
-  ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_2031);
-  ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_6475);
+  ymm4_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm0_Ref_01, 8), ymm1_Ref_23, 51), ymm10_Src_2031);
+  ymm5_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm2_Ref_45, 8), ymm3_Ref_67, 51), ymm11_Src_6475);
 
   ymm4_tmp = _mm256_adds_epu16(ymm4_tmp, ymm5_tmp);
   // sad 2,i-2 ready in low of mm4
@@ -644,20 +584,13 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp2_avx2(WorkingArea& workarea
   // loaded 8 rows of Ref plane 16samples wide into ymm0..ymm3
 
   // process sad[-2,i-2]
-  ymm4_tmp = _mm256_slli_si256(ymm0_Ref_01, 8);
-  ymm5_tmp = _mm256_slli_si256(ymm2_Ref_45, 8);
-
-  ymm4_tmp = _mm256_blend_epi32(ymm4_tmp, ymm1_Ref_23, 51);
-  ymm5_tmp = _mm256_blend_epi32(ymm5_tmp, ymm3_Ref_67, 51);
-
-  ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_2031);
-  ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_6475);
+  ymm4_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm0_Ref_01, 8), ymm1_Ref_23, 51), ymm10_Src_2031);
+  ymm5_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm2_Ref_45, 8), ymm3_Ref_67, 51), ymm11_Src_6475);
 
   ymm4_tmp = _mm256_adds_epu16(ymm4_tmp, ymm5_tmp);
   // sad -2,i-2 ready in low of mm4
   ymm6_part_sads = _mm256_slli_si256(ymm6_part_sads, 2);
   ymm6_part_sads = _mm256_blend_epi16(ymm6_part_sads, ymm4_tmp, 17); // partial sums 3 of 8 in hi and low 128bits
-
 
   ymm0_Ref_01 = _mm256_srli_si256(ymm0_Ref_01, 1);
   ymm1_Ref_23 = _mm256_srli_si256(ymm1_Ref_23, 1);
@@ -665,14 +598,8 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp2_avx2(WorkingArea& workarea
   ymm3_Ref_67 = _mm256_srli_si256(ymm3_Ref_67, 1);
 
   // process sad[-1,-2]
-  ymm4_tmp = _mm256_slli_si256(ymm0_Ref_01, 8);
-  ymm5_tmp = _mm256_slli_si256(ymm2_Ref_45, 8);
-
-  ymm4_tmp = _mm256_blend_epi32(ymm4_tmp, ymm1_Ref_23, 51);
-  ymm5_tmp = _mm256_blend_epi32(ymm5_tmp, ymm3_Ref_67, 51);
-
-  ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_2031);
-  ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_6475);
+  ymm4_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm0_Ref_01, 8), ymm1_Ref_23, 51), ymm10_Src_2031);
+  ymm5_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm2_Ref_45, 8), ymm3_Ref_67, 51), ymm11_Src_6475);
 
   ymm4_tmp = _mm256_adds_epu16(ymm4_tmp, ymm5_tmp);
   // sad -1,i-2 ready in low of mm4
@@ -689,14 +616,8 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp2_avx2(WorkingArea& workarea
   ymm3_Ref_67 = _mm256_srli_si256(ymm3_Ref_67, 1);
 
   // process sad[-0,-2]
-  ymm4_tmp = _mm256_slli_si256(ymm0_Ref_01, 8);
-  ymm5_tmp = _mm256_slli_si256(ymm2_Ref_45, 8);
-
-  ymm4_tmp = _mm256_blend_epi32(ymm4_tmp, ymm1_Ref_23, 51);
-  ymm5_tmp = _mm256_blend_epi32(ymm5_tmp, ymm3_Ref_67, 51);
-
-  ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_2031);
-  ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_6475);
+  ymm4_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm0_Ref_01, 8), ymm1_Ref_23, 51), ymm10_Src_2031);
+  ymm5_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm2_Ref_45, 8), ymm3_Ref_67, 51), ymm11_Src_6475);
 
   ymm4_tmp = _mm256_adds_epu16(ymm4_tmp, ymm5_tmp);
   // sad 0,i-2 ready in low of mm4
@@ -709,14 +630,8 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp2_avx2(WorkingArea& workarea
   ymm3_Ref_67 = _mm256_srli_si256(ymm3_Ref_67, 1);
 
   // process sad[1,-2]
-  ymm4_tmp = _mm256_slli_si256(ymm0_Ref_01, 8);
-  ymm5_tmp = _mm256_slli_si256(ymm2_Ref_45, 8);
-
-  ymm4_tmp = _mm256_blend_epi32(ymm4_tmp, ymm1_Ref_23, 51);
-  ymm5_tmp = _mm256_blend_epi32(ymm5_tmp, ymm3_Ref_67, 51);
-
-  ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_2031);
-  ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_6475);
+  ymm4_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm0_Ref_01, 8), ymm1_Ref_23, 51), ymm10_Src_2031);
+  ymm5_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm2_Ref_45, 8), ymm3_Ref_67, 51), ymm11_Src_6475);
 
   ymm4_tmp = _mm256_adds_epu16(ymm4_tmp, ymm5_tmp);
   // sad 1,i-2 ready in low of mm4
@@ -729,14 +644,8 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp2_avx2(WorkingArea& workarea
   ymm3_Ref_67 = _mm256_srli_si256(ymm3_Ref_67, 1);
 
   // process sad[2,i-2]
-  ymm4_tmp = _mm256_slli_si256(ymm0_Ref_01, 8);
-  ymm5_tmp = _mm256_slli_si256(ymm2_Ref_45, 8);
-
-  ymm4_tmp = _mm256_blend_epi32(ymm4_tmp, ymm1_Ref_23, 51);
-  ymm5_tmp = _mm256_blend_epi32(ymm5_tmp, ymm3_Ref_67, 51);
-
-  ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_2031);
-  ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_6475);
+  ymm4_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm0_Ref_01, 8), ymm1_Ref_23, 51), ymm10_Src_2031);
+  ymm5_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm2_Ref_45, 8), ymm3_Ref_67, 51), ymm11_Src_6475);
 
   ymm4_tmp = _mm256_adds_epu16(ymm4_tmp, ymm5_tmp);
   // sad 2,i-2 ready in low of mm4
@@ -754,14 +663,8 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp2_avx2(WorkingArea& workarea
   // loaded 8 rows of Ref plane 16samples wide into ymm0..ymm3
 
   // process sad[-2,i-2]
-  ymm4_tmp = _mm256_slli_si256(ymm0_Ref_01, 8);
-  ymm5_tmp = _mm256_slli_si256(ymm2_Ref_45, 8);
-
-  ymm4_tmp = _mm256_blend_epi32(ymm4_tmp, ymm1_Ref_23, 51);
-  ymm5_tmp = _mm256_blend_epi32(ymm5_tmp, ymm3_Ref_67, 51);
-
-  ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_2031);
-  ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_6475);
+  ymm4_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm0_Ref_01, 8), ymm1_Ref_23, 51), ymm10_Src_2031);
+  ymm5_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm2_Ref_45, 8), ymm3_Ref_67, 51), ymm11_Src_6475);
 
   ymm4_tmp = _mm256_adds_epu16(ymm4_tmp, ymm5_tmp);
   // sad -2,i-2 ready in low of mm4
@@ -780,14 +683,8 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp2_avx2(WorkingArea& workarea
   ymm3_Ref_67 = _mm256_srli_si256(ymm3_Ref_67, 1);
 
   // process sad[-1,-2]
-  ymm4_tmp = _mm256_slli_si256(ymm0_Ref_01, 8);
-  ymm5_tmp = _mm256_slli_si256(ymm2_Ref_45, 8);
-
-  ymm4_tmp = _mm256_blend_epi32(ymm4_tmp, ymm1_Ref_23, 51);
-  ymm5_tmp = _mm256_blend_epi32(ymm5_tmp, ymm3_Ref_67, 51);
-
-  ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_2031);
-  ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_6475);
+  ymm4_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm0_Ref_01, 8), ymm1_Ref_23, 51), ymm10_Src_2031);
+  ymm5_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm2_Ref_45, 8), ymm3_Ref_67, 51), ymm11_Src_6475);
 
   ymm4_tmp = _mm256_adds_epu16(ymm4_tmp, ymm5_tmp);
   // sad -1,i-2 ready in low of mm4
@@ -799,14 +696,8 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp2_avx2(WorkingArea& workarea
   ymm3_Ref_67 = _mm256_srli_si256(ymm3_Ref_67, 1);
 
   // process sad[-0,-2]
-  ymm4_tmp = _mm256_slli_si256(ymm0_Ref_01, 8);
-  ymm5_tmp = _mm256_slli_si256(ymm2_Ref_45, 8);
-
-  ymm4_tmp = _mm256_blend_epi32(ymm4_tmp, ymm1_Ref_23, 51);
-  ymm5_tmp = _mm256_blend_epi32(ymm5_tmp, ymm3_Ref_67, 51);
-
-  ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_2031);
-  ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_6475);
+  ymm4_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm0_Ref_01, 8), ymm1_Ref_23, 51), ymm10_Src_2031);
+  ymm5_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm2_Ref_45, 8), ymm3_Ref_67, 51), ymm11_Src_6475);
 
   ymm4_tmp = _mm256_adds_epu16(ymm4_tmp, ymm5_tmp);
   // sad 0,i-2 ready in low of mm4
@@ -819,14 +710,8 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp2_avx2(WorkingArea& workarea
   ymm3_Ref_67 = _mm256_srli_si256(ymm3_Ref_67, 1);
 
   // process sad[1,-2]
-  ymm4_tmp = _mm256_slli_si256(ymm0_Ref_01, 8);
-  ymm5_tmp = _mm256_slli_si256(ymm2_Ref_45, 8);
-
-  ymm4_tmp = _mm256_blend_epi32(ymm4_tmp, ymm1_Ref_23, 51);
-  ymm5_tmp = _mm256_blend_epi32(ymm5_tmp, ymm3_Ref_67, 51);
-
-  ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_2031);
-  ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_6475);
+  ymm4_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm0_Ref_01, 8), ymm1_Ref_23, 51), ymm10_Src_2031);
+  ymm5_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm2_Ref_45, 8), ymm3_Ref_67, 51), ymm11_Src_6475);
 
   ymm4_tmp = _mm256_adds_epu16(ymm4_tmp, ymm5_tmp);
   // sad 1,i-2 ready in low of mm4
@@ -839,14 +724,8 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp2_avx2(WorkingArea& workarea
   ymm3_Ref_67 = _mm256_srli_si256(ymm3_Ref_67, 1);
 
   // process sad[2,i-2]
-  ymm4_tmp = _mm256_slli_si256(ymm0_Ref_01, 8);
-  ymm5_tmp = _mm256_slli_si256(ymm2_Ref_45, 8);
-
-  ymm4_tmp = _mm256_blend_epi32(ymm4_tmp, ymm1_Ref_23, 51);
-  ymm5_tmp = _mm256_blend_epi32(ymm5_tmp, ymm3_Ref_67, 51);
-
-  ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_2031);
-  ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_6475);
+  ymm4_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm0_Ref_01, 8), ymm1_Ref_23, 51), ymm10_Src_2031);
+  ymm5_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm2_Ref_45, 8), ymm3_Ref_67, 51), ymm11_Src_6475);
 
   ymm4_tmp = _mm256_adds_epu16(ymm4_tmp, ymm5_tmp);
   // sad 2,i-2 ready in low of mm4
@@ -867,14 +746,8 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp2_avx2(WorkingArea& workarea
   // loaded 8 rows of Ref plane 16samples wide into ymm0..ymm3
 
   // process sad[-2,i-2]
-  ymm4_tmp = _mm256_slli_si256(ymm0_Ref_01, 8);
-  ymm5_tmp = _mm256_slli_si256(ymm2_Ref_45, 8);
-
-  ymm4_tmp = _mm256_blend_epi32(ymm4_tmp, ymm1_Ref_23, 51);
-  ymm5_tmp = _mm256_blend_epi32(ymm5_tmp, ymm3_Ref_67, 51);
-
-  ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_2031);
-  ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_6475);
+  ymm4_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm0_Ref_01, 8), ymm1_Ref_23, 51), ymm10_Src_2031);
+  ymm5_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm2_Ref_45, 8), ymm3_Ref_67, 51), ymm11_Src_6475);
 
   ymm4_tmp = _mm256_adds_epu16(ymm4_tmp, ymm5_tmp);
   // sad -2,i-2 ready in low of mm4
@@ -887,14 +760,8 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp2_avx2(WorkingArea& workarea
   ymm3_Ref_67 = _mm256_srli_si256(ymm3_Ref_67, 1);
 
   // process sad[-1,-2]
-  ymm4_tmp = _mm256_slli_si256(ymm0_Ref_01, 8);
-  ymm5_tmp = _mm256_slli_si256(ymm2_Ref_45, 8);
-
-  ymm4_tmp = _mm256_blend_epi32(ymm4_tmp, ymm1_Ref_23, 51);
-  ymm5_tmp = _mm256_blend_epi32(ymm5_tmp, ymm3_Ref_67, 51);
-
-  ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_2031);
-  ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_6475);
+  ymm4_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm0_Ref_01, 8), ymm1_Ref_23, 51), ymm10_Src_2031);
+  ymm5_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm2_Ref_45, 8), ymm3_Ref_67, 51), ymm11_Src_6475);
 
   ymm4_tmp = _mm256_adds_epu16(ymm4_tmp, ymm5_tmp);
   // sad -1,i-2 ready in low of mm4
@@ -908,14 +775,8 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp2_avx2(WorkingArea& workarea
 
 
   // process sad[-0,-2]
-  ymm4_tmp = _mm256_slli_si256(ymm0_Ref_01, 8);
-  ymm5_tmp = _mm256_slli_si256(ymm2_Ref_45, 8);
-
-  ymm4_tmp = _mm256_blend_epi32(ymm4_tmp, ymm1_Ref_23, 51);
-  ymm5_tmp = _mm256_blend_epi32(ymm5_tmp, ymm3_Ref_67, 51);
-
-  ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_2031);
-  ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_6475);
+  ymm4_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm0_Ref_01, 8), ymm1_Ref_23, 51), ymm10_Src_2031);
+  ymm5_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm2_Ref_45, 8), ymm3_Ref_67, 51), ymm11_Src_6475);
 
   ymm4_tmp = _mm256_adds_epu16(ymm4_tmp, ymm5_tmp);
   // sad 0,i-2 ready in low of mm4
@@ -929,14 +790,8 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp2_avx2(WorkingArea& workarea
 
 
   // process sad[1,-2]
-  ymm4_tmp = _mm256_slli_si256(ymm0_Ref_01, 8);
-  ymm5_tmp = _mm256_slli_si256(ymm2_Ref_45, 8);
-
-  ymm4_tmp = _mm256_blend_epi32(ymm4_tmp, ymm1_Ref_23, 51);
-  ymm5_tmp = _mm256_blend_epi32(ymm5_tmp, ymm3_Ref_67, 51);
-
-  ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_2031);
-  ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_6475);
+  ymm4_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm0_Ref_01, 8), ymm1_Ref_23, 51), ymm10_Src_2031);
+  ymm5_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm2_Ref_45, 8), ymm3_Ref_67, 51), ymm11_Src_6475);
 
   ymm4_tmp = _mm256_adds_epu16(ymm4_tmp, ymm5_tmp);
   // sad 1,i-2 ready in low of mm4
@@ -1053,14 +908,8 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp1_avx2(WorkingArea& workarea
   // loaded 8 rows of Ref plane 16samples wide into ymm0..ymm3
 
   // process sad[-1,-1]
-  ymm4_tmp = _mm256_slli_si256(ymm0_Ref_01, 8);
-  ymm5_tmp = _mm256_slli_si256(ymm2_Ref_45, 8);
-
-  ymm4_tmp = _mm256_blend_epi32(ymm4_tmp, ymm1_Ref_23, 51);
-  ymm5_tmp = _mm256_blend_epi32(ymm5_tmp, ymm3_Ref_67, 51);
-
-  ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_2031);
-  ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_6475);
+  ymm4_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm0_Ref_01, 8), ymm1_Ref_23, 51), ymm10_Src_2031);
+  ymm5_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm2_Ref_45, 8), ymm3_Ref_67, 51), ymm11_Src_6475);
 
   ymm4_tmp = _mm256_adds_epu16(ymm4_tmp, ymm5_tmp);
   // sad -1,i-1 4 parts ready in low of mm4
@@ -1073,14 +922,8 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp1_avx2(WorkingArea& workarea
   ymm3_Ref_67 = _mm256_srli_si256(ymm3_Ref_67, 1);
 
   // process sad[-0,-1]
-  ymm4_tmp = _mm256_slli_si256(ymm0_Ref_01, 8);
-  ymm5_tmp = _mm256_slli_si256(ymm2_Ref_45, 8);
-
-  ymm4_tmp = _mm256_blend_epi32(ymm4_tmp, ymm1_Ref_23, 51);
-  ymm5_tmp = _mm256_blend_epi32(ymm5_tmp, ymm3_Ref_67, 51);
-
-  ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_2031);
-  ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_6475);
+  ymm4_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm0_Ref_01, 8), ymm1_Ref_23, 51), ymm10_Src_2031);
+  ymm5_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm2_Ref_45, 8), ymm3_Ref_67, 51), ymm11_Src_6475);
 
   ymm4_tmp = _mm256_adds_epu16(ymm4_tmp, ymm5_tmp);
   // sad 0,-1 4 parts ready in low of mm4
@@ -1093,14 +936,8 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp1_avx2(WorkingArea& workarea
   ymm3_Ref_67 = _mm256_srli_si256(ymm3_Ref_67, 1);
 
   // process sad[1,-1]
-  ymm4_tmp = _mm256_slli_si256(ymm0_Ref_01, 8);
-  ymm5_tmp = _mm256_slli_si256(ymm2_Ref_45, 8);
-
-  ymm4_tmp = _mm256_blend_epi32(ymm4_tmp, ymm1_Ref_23, 51);
-  ymm5_tmp = _mm256_blend_epi32(ymm5_tmp, ymm3_Ref_67, 51);
-
-  ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_2031);
-  ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_6475);
+  ymm4_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm0_Ref_01, 8), ymm1_Ref_23, 51), ymm10_Src_2031);
+  ymm5_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm2_Ref_45, 8), ymm3_Ref_67, 51), ymm11_Src_6475);
 
   ymm4_tmp = _mm256_adds_epu16(ymm4_tmp, ymm5_tmp);
   // sad 1,-1 4 parts ready in low of mm4
@@ -1118,14 +955,8 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp1_avx2(WorkingArea& workarea
   // loaded 8 rows of Ref plane 16samples wide into ymm0..ymm3
 
   // process sad[-1,0]
-  ymm4_tmp = _mm256_slli_si256(ymm0_Ref_01, 8);
-  ymm5_tmp = _mm256_slli_si256(ymm2_Ref_45, 8);
-
-  ymm4_tmp = _mm256_blend_epi32(ymm4_tmp, ymm1_Ref_23, 51);
-  ymm5_tmp = _mm256_blend_epi32(ymm5_tmp, ymm3_Ref_67, 51);
-
-  ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_2031);
-  ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_6475);
+  ymm4_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm0_Ref_01, 8), ymm1_Ref_23, 51), ymm10_Src_2031);
+  ymm5_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm2_Ref_45, 8), ymm3_Ref_67, 51), ymm11_Src_6475);
 
   ymm4_tmp = _mm256_adds_epu16(ymm4_tmp, ymm5_tmp);
   // sad -1,0 4 parts ready in low of mm4
@@ -1142,14 +973,8 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp1_avx2(WorkingArea& workarea
   ymm3_Ref_67 = _mm256_srli_si256(ymm3_Ref_67, 1);
 
   // process sad[0,0]
-  ymm4_tmp = _mm256_slli_si256(ymm0_Ref_01, 8);
-  ymm5_tmp = _mm256_slli_si256(ymm2_Ref_45, 8);
-
-  ymm4_tmp = _mm256_blend_epi32(ymm4_tmp, ymm1_Ref_23, 51);
-  ymm5_tmp = _mm256_blend_epi32(ymm5_tmp, ymm3_Ref_67, 51);
-
-  ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_2031);
-  ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_6475);
+  ymm4_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm0_Ref_01, 8), ymm1_Ref_23, 51), ymm10_Src_2031);
+  ymm5_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm2_Ref_45, 8), ymm3_Ref_67, 51), ymm11_Src_6475);
 
   ymm4_tmp = _mm256_adds_epu16(ymm4_tmp, ymm5_tmp);
   // sad 0,0 4 parts ready in low of mm4
@@ -1161,14 +986,8 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp1_avx2(WorkingArea& workarea
   ymm3_Ref_67 = _mm256_srli_si256(ymm3_Ref_67, 1);
 
   // process sad[1,0]
-  ymm4_tmp = _mm256_slli_si256(ymm0_Ref_01, 8);
-  ymm5_tmp = _mm256_slli_si256(ymm2_Ref_45, 8);
-
-  ymm4_tmp = _mm256_blend_epi32(ymm4_tmp, ymm1_Ref_23, 51);
-  ymm5_tmp = _mm256_blend_epi32(ymm5_tmp, ymm3_Ref_67, 51);
-
-  ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_2031);
-  ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_6475);
+  ymm4_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm0_Ref_01, 8), ymm1_Ref_23, 51), ymm10_Src_2031);
+  ymm5_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm2_Ref_45, 8), ymm3_Ref_67, 51), ymm11_Src_6475);
 
   ymm4_tmp = _mm256_adds_epu16(ymm4_tmp, ymm5_tmp);
   // sad 1,0 4 parts ready in low of mm4
@@ -1186,20 +1005,13 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp1_avx2(WorkingArea& workarea
   // loaded 8 rows of Ref plane 16samples wide into ymm0..ymm3
 
   // process sad[-1,1]
-  ymm4_tmp = _mm256_slli_si256(ymm0_Ref_01, 8);
-  ymm5_tmp = _mm256_slli_si256(ymm2_Ref_45, 8);
-
-  ymm4_tmp = _mm256_blend_epi32(ymm4_tmp, ymm1_Ref_23, 51);
-  ymm5_tmp = _mm256_blend_epi32(ymm5_tmp, ymm3_Ref_67, 51);
-
-  ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_2031);
-  ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_6475);
+  ymm4_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm0_Ref_01, 8), ymm1_Ref_23, 51), ymm10_Src_2031);
+  ymm5_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm2_Ref_45, 8), ymm3_Ref_67, 51), ymm11_Src_6475);
 
   ymm4_tmp = _mm256_adds_epu16(ymm4_tmp, ymm5_tmp);
   // sad -1,1 ready in low of mm4
   ymm6_part_sads = _mm256_slli_si256(ymm6_part_sads, 2);
   ymm6_part_sads = _mm256_blend_epi16(ymm6_part_sads, ymm4_tmp, 17); // partial sums 7 of 8 in hi and low 128bits
-
 
   ymm0_Ref_01 = _mm256_srli_si256(ymm0_Ref_01, 1);
   ymm1_Ref_23 = _mm256_srli_si256(ymm1_Ref_23, 1);
@@ -1207,14 +1019,8 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp1_avx2(WorkingArea& workarea
   ymm3_Ref_67 = _mm256_srli_si256(ymm3_Ref_67, 1);
 
   // process sad[0,1]
-  ymm4_tmp = _mm256_slli_si256(ymm0_Ref_01, 8);
-  ymm5_tmp = _mm256_slli_si256(ymm2_Ref_45, 8);
-
-  ymm4_tmp = _mm256_blend_epi32(ymm4_tmp, ymm1_Ref_23, 51);
-  ymm5_tmp = _mm256_blend_epi32(ymm5_tmp, ymm3_Ref_67, 51);
-
-  ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_2031);
-  ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_6475);
+  ymm4_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm0_Ref_01, 8), ymm1_Ref_23, 51), ymm10_Src_2031);
+  ymm5_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm2_Ref_45, 8), ymm3_Ref_67, 51), ymm11_Src_6475);
 
   ymm4_tmp = _mm256_adds_epu16(ymm4_tmp, ymm5_tmp);
   // sad 0,1 ready in low of mm4
@@ -1233,14 +1039,8 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp1_avx2(WorkingArea& workarea
   ymm3_Ref_67 = _mm256_srli_si256(ymm3_Ref_67, 1);
 
   // process sad[1,1]
-  ymm4_tmp = _mm256_slli_si256(ymm0_Ref_01, 8);
-  ymm5_tmp = _mm256_slli_si256(ymm2_Ref_45, 8);
-
-  ymm4_tmp = _mm256_blend_epi32(ymm4_tmp, ymm1_Ref_23, 51);
-  ymm5_tmp = _mm256_blend_epi32(ymm5_tmp, ymm3_Ref_67, 51);
-
-  ymm4_tmp = _mm256_sad_epu8(ymm4_tmp, ymm10_Src_2031);
-  ymm5_tmp = _mm256_sad_epu8(ymm5_tmp, ymm11_Src_6475);
+  ymm4_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm0_Ref_01, 8), ymm1_Ref_23, 51), ymm10_Src_2031);
+  ymm5_tmp = _mm256_sad_epu8(_mm256_blend_epi32(_mm256_slli_si256(ymm2_Ref_45, 8), ymm3_Ref_67, 51), ymm11_Src_6475);
 
   ymm4_tmp = _mm256_adds_epu16(ymm4_tmp, ymm5_tmp);
   // sad 1,1 4 parts ready in low of mm4
