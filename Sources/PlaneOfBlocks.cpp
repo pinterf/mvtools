@@ -840,9 +840,9 @@ void PlaneOfBlocks::Refine(WorkingArea &workarea)
 
     // DTL TEST
     // one-pass Exa search by DTL
-    // only for 8 bit, nSearchParam == 2 and 4 && nBlkSizeX == 8 && nBlkSizeY == 8 && !chroma
+    // only for 8 bit, nPel==1, nSearchParam == 1 and 2 and 4 && nBlkSizeX == 8 && nBlkSizeY == 8 && !chroma
     // c or avx2. See function dispatcher
-    if (0 != optSearchOption) { // keep compatibility
+    if (0 != optSearchOption && nPel == 1) { // keep compatibility - new addition - only for pel=1 now !! other will cause buggy x,y,sad output
       if (nSearchParam <= MAX_SUPPORTED_EXH_SEARCHPARAM) {
         // nSearchParam can change during the algorithm so we are choosing from prefilled function pointer table
         auto ExhaustiveSearchFunction = ExhaustiveSearchFunctions[nSearchParam];
@@ -3190,6 +3190,13 @@ void	PlaneOfBlocks::search_mv_slice(Slicer::TaskData &td)
       workarea.nDxMin = -nPel * (workarea.x[0] - pSrcFrame->GetPlane(YPLANE)->GetHPadding() + nHPaddingScaled);
       workarea.nDyMin = -nPel * (workarea.y[0] - pSrcFrame->GetPlane(YPLANE)->GetVPadding() + nVPaddingScaled);
 
+      // try to early prefetch ?
+     /* const uint8_t* pucRef = GetRefBlock(workarea, zeroMVfieldShifted.x - 2, zeroMVfieldShifted.y - 2); // upper left corner
+      for (int row = 0; row < 9; row++)
+      {
+        _mm_prefetch(const_cast<const CHAR*>(reinterpret_cast<const CHAR*>(pucRef + nRefPitch[0] * row)), _MM_HINT_NTA); // prefetch next Ref rows
+      }*/
+
       /* search the mv */
       workarea.predictor = ClipMV(workarea, vectors[workarea.blkIdx]);
       if (temporal)
@@ -3800,12 +3807,13 @@ PlaneOfBlocks::ExhaustiveSearchFunction_t PlaneOfBlocks::get_ExhaustiveSearchFun
   // BlkSizeX, BlkSizeY, bits_per_pixel, arch_t
   std::map<std::tuple<int, int, int, int, arch_t>, ExhaustiveSearchFunction_t> func_fn;
 
-  // SearchParam 2 or 4 is supported at the moment
-  //func_fn[std::make_tuple(8, 8, 2, 8, USE_AVX2)] = &PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp2_avx2_2;
-  func_fn[std::make_tuple(8, 8, 2, 8, USE_AVX2)] = &PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp2_avx2;
+  //TODO: add nPel here too ? It need separate functions for nPel=1 and other nPel.
+
+  // SearchParam 1 or 2 or 4 is supported at the moment
+  func_fn[std::make_tuple(8, 8, 1, 8, USE_AVX2)] = &PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp1_avx2;
+  func_fn[std::make_tuple(8, 8, 2, 8, USE_AVX2)] = &PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp2_avx2;
   func_fn[std::make_tuple(8, 8, 2, 8, NO_SIMD)] = &PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp2_c;
-  //func_fn[std::make_tuple(8, 8, 4, 8, USE_AVX2)] = &PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp4_avx2_2;
-  func_fn[std::make_tuple(8, 8, 4, 8, USE_AVX2)] = &PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp4_avx2;
+  func_fn[std::make_tuple(8, 8, 4, 8, USE_AVX2)] = &PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp4_avx2;
   func_fn[std::make_tuple(8, 8, 4, 8, NO_SIMD)] = &PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp4_c;
 
   ExhaustiveSearchFunction_t result = nullptr;
@@ -3876,7 +3884,7 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp4_c(WorkingArea& workarea, int m
 }
 
 // Dispatcher for DTL tests
-void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp2_c(WorkingArea& workarea, int mvx, int mvy) // 8x8 esa search radius 2
+void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp2_c(WorkingArea& workarea, int mvx, int mvy) // 8x8 esa search radius 2,  works for any nPel !.
 {
   // debug check !
   // idea - may be not 4 checks are required - only upper left corner (starting addresses of buffer) and lower right (to not over-run atfer end of buffer - need check/test)
@@ -3888,21 +3896,13 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp2_c(WorkingArea& workarea, int m
   {
     return;
   }
-  /*	if (!workarea.IsVectorOK(mvx - 2, mvy + 2))
-      {
-          return;
-      }
-      if (!workarea.IsVectorOK(mvx + 2, mvy - 2))
-      {
-          return;
-      }
-      */
+
   unsigned short minsad = 65535;
   int x_minsad = 0;
   int y_minsad = 0;
-  for (int x = -2; x < 3; x++)
+  for (int y = -2; y < 3; y++)
   {
-    for (int y = -2; y < 3; y++)
+    for (int x = -2; x < 3; x++)
     {
       int sad = SAD(workarea.pSrc[0], nSrcPitch[0], GetRefBlock(workarea, mvx + x, mvy + y), nRefPitch[0]);
       if (sad < minsad)
@@ -3923,3 +3923,44 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp2_c(WorkingArea& workarea, int m
   workarea.bestMV.sad = minsad;
 
 }
+
+void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_sp1_c(WorkingArea& workarea, int mvx, int mvy) // 8x8 esa search radius 1, works for any nPel !
+{
+  // debug check !
+  // idea - may be not 4 checks are required - only upper left corner (starting addresses of buffer) and lower right (to not over-run atfer end of buffer - need check/test)
+  if (!workarea.IsVectorOK(mvx - 1, mvy - 1))
+  {
+    return;
+  }
+  if (!workarea.IsVectorOK(mvx + 1, mvy + 1))
+  {
+    return;
+  }
+
+  unsigned short minsad = 65535;
+  int x_minsad = 0;
+  int y_minsad = 0;
+  for (int y = -1; y < 2; y++)
+  {
+    for (int x = -1; x < 2; x++)
+    {
+      int sad = SAD(workarea.pSrc[0], nSrcPitch[0], GetRefBlock(workarea, mvx + x, mvy + y), nRefPitch[0]);
+      if (sad < minsad)
+      {
+        minsad = sad;
+        x_minsad = x;
+        y_minsad = y;
+      }
+    }
+  }
+
+  sad_t cost = minsad + ((penaltyNew * minsad) >> 8);
+  if (cost >= workarea.nMinCost) return;
+
+  workarea.bestMV.x = mvx + x_minsad;
+  workarea.bestMV.y = mvy + y_minsad;
+  workarea.nMinCost = cost;
+  workarea.bestMV.sad = minsad;
+
+}
+
