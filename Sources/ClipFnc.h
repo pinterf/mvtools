@@ -13,8 +13,8 @@ Various utility functions related to avisynth clips.
 #define	ClipFnc_HEADER_INCLUDED
 
 #if defined (_MSC_VER)
-	#pragma once
-	#pragma warning (4 : 4250)
+  #pragma once
+  #pragma warning (4 : 4250)
 #endif
 
 
@@ -62,10 +62,10 @@ class ClipFnc
 
 public:
 
-	static int		compute_fieldshift (::PClip &clp, bool field_flag, int npel, int nsrc, int nref);
-	static void		format_vector_clip (::VideoInfo &vi, bool single_line_flag, int nbr_blk_x, const char *vccs_0, int size_bytes, const char *funcname_0, IScriptEnvironment *env);
-	static int		compute_mvclip_best_width (int nbr_blk_x, int unit_size, int align);
-	static sad_t		interpolate_thsad (sad_t thsad1, sad_t thsad2, int d, int tr);
+  static int		compute_fieldshift (::PClip &clp, bool field_flag, int npel, int nsrc, int nref);
+  static void		format_vector_clip (::VideoInfo &vi, bool single_line_flag, int nbr_blk_x, const char *vccs_0, int size_bytes, const char *funcname_0, IScriptEnvironment *env);
+  static int		compute_mvclip_best_width (int nbr_blk_x, int unit_size, int align);
+  static sad_t		interpolate_thsad (sad_t thsad1, sad_t thsad2, int d, int tr);
 
 
 
@@ -85,12 +85,12 @@ private:
 
 private:
 
-						ClipFnc ();
+            ClipFnc ();
             ClipFnc (const ClipFnc &other);
-	virtual			~ClipFnc () {}
-	ClipFnc &		operator = (const ClipFnc &other);
-	bool				operator == (const ClipFnc &other) const;
-	bool				operator != (const ClipFnc &other) const;
+  virtual			~ClipFnc () {}
+  ClipFnc &		operator = (const ClipFnc &other);
+  bool				operator == (const ClipFnc &other) const;
+  bool				operator != (const ClipFnc &other) const;
 
 };	// class ClipFnc
 

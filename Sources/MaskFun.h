@@ -54,15 +54,15 @@ void VectorSmallMaskYToHalfUV(short * VSmallY, int nBlkX, int nBlkY, short *VSma
 //void VectorSmallMaskYToHalfUV(uint8_t * VSmallY, int nBlkX, int nBlkY, uint8_t *VSmallUV, int ratioUV);
 
 void Merge4PlanesToBig(uint8_t *pel2Plane, int pel2Pitch, const uint8_t *pPlane0, const uint8_t *pPlane1,
-					  const uint8_t *pPlane2, const uint8_t * pPlane3, int width, int height, int pitch, int pixelsize, int cpuFlags);
+            const uint8_t *pPlane2, const uint8_t * pPlane3, int width, int height, int pitch, int pixelsize, int cpuFlags);
 
 void Merge16PlanesToBig(
-	uint8_t *pel4Plane, int pel4Pitch,
-	const uint8_t *pPlane0,  const uint8_t *pPlane1,  const uint8_t *pPlane2,  const uint8_t * pPlane3,
-	const uint8_t *pPlane4,  const uint8_t *pPlane5,  const uint8_t *pPlane6,  const uint8_t * pPlane7,
-	const uint8_t *pPlane8,  const uint8_t *pPlane9,  const uint8_t *pPlane10, const uint8_t * pPlane11,
-	const uint8_t *pPlane12, const uint8_t *pPlane13, const uint8_t *pPlane14, const uint8_t * pPlane15,
-	int width, int height, int pitch, int pixelsize, int cpuFlags
+  uint8_t *pel4Plane, int pel4Pitch,
+  const uint8_t *pPlane0,  const uint8_t *pPlane1,  const uint8_t *pPlane2,  const uint8_t * pPlane3,
+  const uint8_t *pPlane4,  const uint8_t *pPlane5,  const uint8_t *pPlane6,  const uint8_t * pPlane7,
+  const uint8_t *pPlane8,  const uint8_t *pPlane9,  const uint8_t *pPlane10, const uint8_t * pPlane11,
+  const uint8_t *pPlane12, const uint8_t *pPlane13, const uint8_t *pPlane14, const uint8_t * pPlane15,
+  int width, int height, int pitch, int pixelsize, int cpuFlags
 );
 
 unsigned char SADToMask(sad_t sad, sad_t sadnorm1024);
@@ -89,13 +89,13 @@ template<typename pixel_t>
 template<typename pixel_t>
   void FlowInter(uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
   short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
-	int VPitch, int width, int height, int time256 /*T256P &t256_provider*/, int nPel );
+  int VPitch, int width, int height, int time256 /*T256P &t256_provider*/, int nPel );
 
 //template <class T256P>
 template<typename pixel_t>
   void FlowInterExtra(uint8_t * pdst, int dst_pitch, const uint8_t *prefB, const uint8_t *prefF, int ref_pitch,
   short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF, uint8_t *MaskB, uint8_t *MaskF,
-	int VPitch, int width, int height, int time256 /*T256P &t256_provider*/, int nPel,
+  int VPitch, int width, int height, int time256 /*T256P &t256_provider*/, int nPel,
   short *VXFullBB, short *VXFullFF, short *VYFullBB, short *VYFullFF);
 /* in 2 5.11.22 
 void FlowInterSimple(BYTE * pdst, int dst_pitch, const BYTE *prefB, const BYTE *prefF, int ref_pitch,

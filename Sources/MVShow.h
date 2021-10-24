@@ -41,21 +41,21 @@ class MVShow
 private:
   bool has_at_least_v8;
 
-	MVClip mvClip;
+  MVClip mvClip;
 
-	/*! \brief Scalar factor by which we multiply the motion vectors before drawing them */
-	int nScale;
+  /*! \brief Scalar factor by which we multiply the motion vectors before drawing them */
+  int nScale;
 
     /*! \brief choose the plane to show */
-	int nPlane;
+  int nPlane;
 
     /*! \brief threshold over which block's mv isn't shown */
-	sad_t nTolerance;
+  sad_t nTolerance;
 
     /*! \brief show sad mode : mean sad is shown instead of mvs */
-	bool showSad;
+  bool showSad;
 
-	int number;// vector number to show
+  int number;// vector number to show
 
     int  nSuperHPad;
     int  nSuperVPad;
@@ -63,25 +63,25 @@ private:
 //	inline static double BDABS(double x)
 //		{ return ( x < 0 ) ? -x : x; }
 
-	YUY2Planes * DstPlanes;
-	//bool isse;
+  YUY2Planes * DstPlanes;
+  //bool isse;
   int cpuFlags;
-	bool planar;
+  bool planar;
 
 public:
-	MVShow(PClip _child, PClip vectors, int _scale, int _plane, int _tol, bool _showsad, int number,
+  MVShow(PClip _child, PClip vectors, int _scale, int _plane, int _tol, bool _showsad, int number,
           sad_t nSCD1, int nSCD2, bool isse, bool _planar, IScriptEnvironment* env);
-	~MVShow();
-	PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env) override;
+  ~MVShow();
+  PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env) override;
 
   int __stdcall SetCacheHints(int cachehints, int frame_range) override {
     return cachehints == CACHE_GET_MTMODE ? MT_MULTI_INSTANCE : 0;
   }
 
-	void DrawMVs(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc,
+  void DrawMVs(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc,
                  int nSrcPitch);
-	void DrawMV(unsigned char *pDst, int nDstPitch, int scale,
-			    int x, int y, int sizex, int sizey, int w, int h, VECTOR vector, int pel);
+  void DrawMV(unsigned char *pDst, int nDstPitch, int scale,
+          int x, int y, int sizex, int sizey, int w, int h, VECTOR vector, int pel);
   template<typename pixel_t>
   void DrawPixel(unsigned char *pDst, int nDstPitch, int x, int y, int w, int h, int luma);
 };

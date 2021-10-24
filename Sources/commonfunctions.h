@@ -9,33 +9,33 @@
 // returns a > 0 ? a : 0
 inline static int satz(int a)
 {
-	return ~(a >> (sizeof(int)*8 - 1)) & a;
+  return ~(a >> (sizeof(int)*8 - 1)) & a;
 }
 
 // returns maximum(a, b)
 inline static int imax(int a, int b)
 {
-	return a + satz(b - a);
+  return a + satz(b - a);
 }
 
 // returns minimum(a, b)
 inline static int imin(int a, int b)
 {
-	return a - satz(a - b);
+  return a - satz(a - b);
 }
 
 /* returns the biggest integer x such as 2^x <= i */
 inline static int ilog2(int i)
 {
-	int result = 0;
-	while ( i > 1 ) { i /= 2; result++; }
-	return result;
+  int result = 0;
+  while ( i > 1 ) { i /= 2; result++; }
+  return result;
 }
 
 /* computes 2^i */
 inline static int iexp2(int i)
 {
-	return 1 << satz(i);
+  return 1 << satz(i);
 // 	int result = 1;
 // 	while ( i > 0 ) { result *= 2; i--; }
 // 	return result;
@@ -83,11 +83,11 @@ inline static int64_t gcd(int64_t u, int64_t v)
 // Least common multiple
 inline static int64_t	lcm (int64_t u, int64_t v)
 {
-	const int64_t		prod = u * v;
-	const int64_t		gcd_uv = gcd (u, v);
-	const int64_t		lcm_uv = prod / gcd_uv;
+  const int64_t		prod = u * v;
+  const int64_t		gcd_uv = gcd (u, v);
+  const int64_t		lcm_uv = prod / gcd_uv;
 
-	return (lcm_uv);
+  return (lcm_uv);
 }
 
 // Checks if a postive number is a power of two.
@@ -95,7 +95,7 @@ inline static int64_t	lcm (int64_t u, int64_t v)
 template <class T>
 bool	is_pow_2 (T x)
 {
-	return ((x & -x) == x);
+  return ((x & -x) == x);
 }
 
 // from avs+

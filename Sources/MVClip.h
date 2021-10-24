@@ -32,8 +32,8 @@ class MVClip
 ,	public FakeGroupOfPlanes
 ,	public MVAnalysisData
 {
-	/*! \brief Number of blocks at the first level */
-	int nBlkCount;
+  /*! \brief Number of blocks at the first level */
+  int nBlkCount;
 
    /*! \brief Horizontal padding */
    int nHPadding;
@@ -49,26 +49,26 @@ class MVClip
 
    int nHeaderSize; // offset to data
 
-	int				_group_len;
-	int				_group_ofs;
-	bool				_frame_update_flag;
+  int				_group_len;
+  int				_group_ofs;
+  bool				_frame_update_flag;
 
 public :
-	MVClip(const PClip &vectors, sad_t nSCD1, int nSCD2, IScriptEnvironment *env, int group_len, int group_ofs);
+  MVClip(const PClip &vectors, sad_t nSCD1, int nSCD2, IScriptEnvironment *env, int group_len, int group_ofs);
    ~MVClip();
 
-	int				get_child_frame_index (int n) const;
-	void				update_analysis_data (const MVAnalysisData &adata);
+  int				get_child_frame_index (int n) const;
+  void				update_analysis_data (const MVAnalysisData &adata);
 
-	::PVideoFrame __stdcall GetFrame (int n, IScriptEnvironment* env_ptr);
-	bool __stdcall	GetParity (int n);
+  ::PVideoFrame __stdcall GetFrame (int n, IScriptEnvironment* env_ptr);
+  bool __stdcall	GetParity (int n);
 
 //   void SetVectorsNeed(bool srcluma, bool refluma, bool var,
 //                       bool compy, bool compu, bool compv) const;
 
-	void				Update (PVideoFrame &fn, IScriptEnvironment *env); // v1.4.13
+  void				Update (PVideoFrame &fn, IScriptEnvironment *env); // v1.4.13
   void				use_ref_frame (int &ref_index, bool &usable_flag, PClip &super, int n, IScriptEnvironment *env_ptr);
-	void				use_ref_frame (PVideoFrame &ref, bool &usable_flag, PClip &super, int n, IScriptEnvironment *env_ptr);
+  void				use_ref_frame (PVideoFrame &ref, bool &usable_flag, PClip &super, int n, IScriptEnvironment *env_ptr);
 
    // encapsulation
    MV_FORCEINLINE int GetBlkCount() const { return nBlkCount; }

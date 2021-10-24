@@ -32,15 +32,15 @@ class MVAnalysisData
 {
 public:
 
-	enum
-	{
-		VERSION          = 5,
-		MOTION_MAGIC_KEY = 0x564D,	//'MV' is IMHO better 31415926 :)
+  enum
+  {
+    VERSION          = 5,
+    MOTION_MAGIC_KEY = 0x564D,	//'MV' is IMHO better 31415926 :)
 
-		// Additional header for storage
-		STORE_KEY        = 0xBEAD,
-		STORE_VERSION    = 5
-	};
+    // Additional header for storage
+    STORE_KEY        = 0xBEAD,
+    STORE_VERSION    = 5
+  };
 
    /*! \brief Unique identifier, not very useful */
    int nMagicKey; // placed to head in v.1.2.6
@@ -50,7 +50,7 @@ public:
    /*! \brief size of a block, in pixel */
    int nBlkSizeX; // horizontal block size
 
-	int nBlkSizeY; // vertical block size - v1.7
+  int nBlkSizeY; // vertical block size - v1.7
 
    /*! \brief pixel refinement of the motion estimation */
    int nPel;
@@ -58,32 +58,32 @@ public:
    /*! \brief number of level for the hierarchal search */
    int nLvCount;
 
-	// Important note: nDeltaFrame and isBackward fields may not be reliable
-	// when fetched from the audio-hack structure, because the motion vectors
-	// may have been generated in MAnalyse multi mode. Always waits for the
-	// first GetFrame() and get the information from the frame content, which
-	// should be exact.
+  // Important note: nDeltaFrame and isBackward fields may not be reliable
+  // when fetched from the audio-hack structure, because the motion vectors
+  // may have been generated in MAnalyse multi mode. Always waits for the
+  // first GetFrame() and get the information from the frame content, which
+  // should be exact.
 
    /*! \brief difference between the index of the reference and the index of the current frame */
-	// If nDeltaFrame <= 0, the reference frame is the absolute value of nDeltaFrame.
-	// Only a few functions accept negative nDeltaFrames.
+  // If nDeltaFrame <= 0, the reference frame is the absolute value of nDeltaFrame.
+  // Only a few functions accept negative nDeltaFrames.
    int nDeltaFrame;
 
    /*! \brief direction of the search ( forward / backward ) */
-	bool isBackward;
+  bool isBackward;
 
    /*! \brief diverse flags to set up the search */
    int nFlags;	// AnaFlags
 
-	/*! \brief Width of the frame */
-	int nWidth;
+  /*! \brief Width of the frame */
+  int nWidth;
 
-	/*! \brief Height of the frame */
-	int nHeight;
+  /*! \brief Height of the frame */
+  int nHeight;
 
-	int nOverlapX; // overlap block size - v1.1
+  int nOverlapX; // overlap block size - v1.1
 
-	int nOverlapY; // vertical overlap - v1.7
+  int nOverlapY; // vertical overlap - v1.7
 
    int nBlkX; // number of blocks along X
 
@@ -103,9 +103,9 @@ public:
 
 //	bool usePelClip; // use extra clip with upsized 2x frame size
 
-	int nHPadding; // Horizontal padding - v1.8.1
+  int nHPadding; // Horizontal padding - v1.8.1
 
-	int nVPadding; // Vertical padding - v1.8.1
+  int nVPadding; // Vertical padding - v1.8.1
 
 
 public :

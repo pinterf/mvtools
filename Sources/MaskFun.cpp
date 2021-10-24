@@ -122,94 +122,94 @@ void MakeVectorOcclusionMaskTime(MVClip &mvClip, int nBlkX, int nBlkY, double dM
 {	// analyse vectors field to detect occlusion
   // fix: 2.7.19.22: use occMaskPitch instead of nBlkX (result of 30 hours debug)
   // or else we have random garbage on bottom right part
-	MemZoneSet(occMask, 0, nBlkX, nBlkY, 0, 0, occMaskPitch); 
-	int time4096X = time256*16/blkSizeX;
-	int time4096Y = time256*16/blkSizeY;
+  MemZoneSet(occMask, 0, nBlkX, nBlkY, 0, 0, occMaskPitch); 
+  int time4096X = time256*16/blkSizeX;
+  int time4096Y = time256*16/blkSizeY;
 #ifndef _M_X64 
   _mm_empty ();
 #endif
-	double occnorm = 10 / dMaskNormFactor/nPel;
-	int occlusion;
+  double occnorm = 10 / dMaskNormFactor/nPel;
+  int occlusion;
 
-	for (int by=0; by<nBlkY; by++)
-	{
-		for (int bx=0; bx<nBlkX; bx++)
-		{
-			int i = bx + by*nBlkX; // current block
-			const FakeBlockData &block = mvClip.GetBlock(0, i);
-			int vx = block.GetMV().x;
-			int vy = block.GetMV().y;
-			if (bx < nBlkX-1) // right neighbor
-			{
-				int i1 = i+1;
-				const FakeBlockData &block1 = mvClip.GetBlock(0, i1);
-				int vx1 = block1.GetMV().x;
-				//int vy1 = block1.GetMV().y;
-				if (vx1<vx) {
-					occlusion = vx-vx1;
-					for (int bxi=bx+vx1*time4096X/4096; bxi<=bx+vx*time4096X/4096+1 && bxi>=0 && bxi<nBlkX; bxi++)
-						ByteOccMask(&occMask[bxi+by*occMaskPitch], occlusion, occnorm, fGamma);
-				}
-			}
-			if (by < nBlkY-1) // bottom neighbor
-			{
-				int i1 = i + nBlkX;
-				const FakeBlockData &block1 = mvClip.GetBlock(0, i1);
-				//int vx1 = block1.GetMV().x;
-				int vy1 = block1.GetMV().y;
-				if (vy1<vy) {
-					occlusion = vy-vy1;
-					for (int byi=by+vy1*time4096Y/4096; byi<=by+vy*time4096Y/4096+1 && byi>=0 && byi<nBlkY; byi++)
-						ByteOccMask(&occMask[bx+byi*occMaskPitch], occlusion, occnorm, fGamma);
-				}
-			}
-		}
-	}
+  for (int by=0; by<nBlkY; by++)
+  {
+    for (int bx=0; bx<nBlkX; bx++)
+    {
+      int i = bx + by*nBlkX; // current block
+      const FakeBlockData &block = mvClip.GetBlock(0, i);
+      int vx = block.GetMV().x;
+      int vy = block.GetMV().y;
+      if (bx < nBlkX-1) // right neighbor
+      {
+        int i1 = i+1;
+        const FakeBlockData &block1 = mvClip.GetBlock(0, i1);
+        int vx1 = block1.GetMV().x;
+        //int vy1 = block1.GetMV().y;
+        if (vx1<vx) {
+          occlusion = vx-vx1;
+          for (int bxi=bx+vx1*time4096X/4096; bxi<=bx+vx*time4096X/4096+1 && bxi>=0 && bxi<nBlkX; bxi++)
+            ByteOccMask(&occMask[bxi+by*occMaskPitch], occlusion, occnorm, fGamma);
+        }
+      }
+      if (by < nBlkY-1) // bottom neighbor
+      {
+        int i1 = i + nBlkX;
+        const FakeBlockData &block1 = mvClip.GetBlock(0, i1);
+        //int vx1 = block1.GetMV().x;
+        int vy1 = block1.GetMV().y;
+        if (vy1<vy) {
+          occlusion = vy-vy1;
+          for (int byi=by+vy1*time4096Y/4096; byi<=by+vy*time4096Y/4096+1 && byi>=0 && byi<nBlkY; byi++)
+            ByteOccMask(&occMask[bx+byi*occMaskPitch], occlusion, occnorm, fGamma);
+        }
+      }
+    }
+  }
 }
 
 
 
 void VectorMasksToOcclusionMaskTime(uint8_t *VXMask, uint8_t *VYMask, int nBlkX, int nBlkY, double dMaskNormFactor, double fGamma, int nPel, uint8_t * occMask, int occMaskPitch, int time256, int blkSizeX, int blkSizeY)
 {	// analyse vectors field to detect occlusion
-	MemZoneSet(occMask, 0, nBlkX, nBlkY, 0, 0, nBlkX);
-	int time4096X = time256*16/blkSizeX;
-	int time4096Y = time256*16/blkSizeY;
+  MemZoneSet(occMask, 0, nBlkX, nBlkY, 0, 0, nBlkX);
+  int time4096X = time256*16/blkSizeX;
+  int time4096Y = time256*16/blkSizeY;
 #ifndef _M_X64 
   _mm_empty ();
 #endif
-	double occnorm = 10 / dMaskNormFactor/nPel;
-	int occlusion;
-	for (int by=0; by<nBlkY; by++)
-	{
-		for (int bx=0; bx<nBlkX; bx++)
-		{
-			int i = bx + by*nBlkX; // current block
-			int vx = VXMask[i]-128;
-			int vy = VYMask[i]-128;
-			int bxv = bx+vx*time4096X/4096;
-			int byv = by+vy*time4096Y/4096;
-			if (bx < nBlkX-1) // right neighbor
-			{
-				int i1 = i+1;
-				int vx1 = VXMask[i1]-128;
-				if (vx1<vx) {
-					occlusion = vx-vx1;
-					for (int bxi=bx+vx1*time4096X/4096; bxi<=bx+vx*time4096X/4096+1 && bxi>=0 && bxi<nBlkX; bxi++)
-					ByteOccMask(&occMask[bxi+byv*occMaskPitch], occlusion, occnorm, fGamma);
-				}
-			}
-			if (by < nBlkY-1) // bottom neighbor
-			{
-				int i1 = i + nBlkX;
-				int vy1 = VYMask[i1]-128;
-				if (vy1<vy) {
-					occlusion = vy-vy1;
-					for (int byi=by+vy1*time4096Y/4096; byi<=by+vy*time4096Y/4096+1 && byi>=0 && byi<nBlkY; byi++)
-						ByteOccMask(&occMask[bxv+byi*occMaskPitch], occlusion, occnorm, fGamma);
-				}
-			}
-		}
-	}
+  double occnorm = 10 / dMaskNormFactor/nPel;
+  int occlusion;
+  for (int by=0; by<nBlkY; by++)
+  {
+    for (int bx=0; bx<nBlkX; bx++)
+    {
+      int i = bx + by*nBlkX; // current block
+      int vx = VXMask[i]-128;
+      int vy = VYMask[i]-128;
+      int bxv = bx+vx*time4096X/4096;
+      int byv = by+vy*time4096Y/4096;
+      if (bx < nBlkX-1) // right neighbor
+      {
+        int i1 = i+1;
+        int vx1 = VXMask[i1]-128;
+        if (vx1<vx) {
+          occlusion = vx-vx1;
+          for (int bxi=bx+vx1*time4096X/4096; bxi<=bx+vx*time4096X/4096+1 && bxi>=0 && bxi<nBlkX; bxi++)
+          ByteOccMask(&occMask[bxi+byv*occMaskPitch], occlusion, occnorm, fGamma);
+        }
+      }
+      if (by < nBlkY-1) // bottom neighbor
+      {
+        int i1 = i + nBlkX;
+        int vy1 = VYMask[i1]-128;
+        if (vy1<vy) {
+          occlusion = vy-vy1;
+          for (int byi=by+vy1*time4096Y/4096; byi<=by+vy*time4096Y/4096+1 && byi>=0 && byi<nBlkY; byi++)
+            ByteOccMask(&occMask[bxv+byi*occMaskPitch], occlusion, occnorm, fGamma);
+        }
+      }
+    }
+  }
 }
 
 
@@ -220,117 +220,117 @@ void MakeVectorOcclusionMask(MVClip &mvClip, int nBlkX, int nBlkY, double dMaskN
 #ifndef _M_X64 
   _mm_empty ();
 #endif
-	double occnorm = 10 / dMaskNormFactor/nPel; // empirical
-	for (int by=0; by<nBlkY; by++)
-	{
-		for (int bx=0; bx<nBlkX; bx++)
-		{
-			int occlusion = 0;
-			int i = bx + by*nBlkX; // current block
-			const FakeBlockData &block = mvClip.GetBlock(0, i);
-			int vx = block.GetMV().x;
-			int vy = block.GetMV().y;
-			if (bx > 0) // left neighbor
-			{
-				int i1 = i-1;
-				const FakeBlockData &block1 = mvClip.GetBlock(0, i1);
-				int vx1 = block1.GetMV().x;
-				//int vy1 = block1.GetMV().y;
-				if (vx1>vx) occlusion += (vx1-vx); // only positive (abs)
-			}
-			if (bx < nBlkX-1) // right neighbor
-			{
-				int i1 = i+1;
-				const FakeBlockData &block1 = mvClip.GetBlock(0, i1);
-				int vx1 = block1.GetMV().x;
-				//int vy1 = block1.GetMV().y;
-				if (vx1<vx) occlusion += vx-vx1;
-			}
-			if (by > 0) // top neighbor
-			{
-				int i1 = i - nBlkX;
-				const FakeBlockData &block1 = mvClip.GetBlock(0, i1);
-				//int vx1 = block1.GetMV().x;
-				int vy1 = block1.GetMV().y;
-				if (vy1>vy) occlusion += vy1-vy;
-			}
-			if (by < nBlkY-1) // bottom neighbor
-			{
-				int i1 = i + nBlkX;
-				const FakeBlockData &block1 = mvClip.GetBlock(0, i1);
-				//int vx1 = block1.GetMV().x;
-				int vy1 = block1.GetMV().y;
-				if (vy1<vy) occlusion += vy-vy1;
-			}
-			if (fGamma == 1.0)
-			{
-				occMask[bx + by*occMaskPitch] =
-					std::min (int (255 *      occlusion*occnorm         ), 255);
-			}
-			else
-			{
-				occMask[bx + by*occMaskPitch] =
-					std::min (int (255 * pow (occlusion*occnorm, fGamma)), 255);
-			}
-		}
-	}
+  double occnorm = 10 / dMaskNormFactor/nPel; // empirical
+  for (int by=0; by<nBlkY; by++)
+  {
+    for (int bx=0; bx<nBlkX; bx++)
+    {
+      int occlusion = 0;
+      int i = bx + by*nBlkX; // current block
+      const FakeBlockData &block = mvClip.GetBlock(0, i);
+      int vx = block.GetMV().x;
+      int vy = block.GetMV().y;
+      if (bx > 0) // left neighbor
+      {
+        int i1 = i-1;
+        const FakeBlockData &block1 = mvClip.GetBlock(0, i1);
+        int vx1 = block1.GetMV().x;
+        //int vy1 = block1.GetMV().y;
+        if (vx1>vx) occlusion += (vx1-vx); // only positive (abs)
+      }
+      if (bx < nBlkX-1) // right neighbor
+      {
+        int i1 = i+1;
+        const FakeBlockData &block1 = mvClip.GetBlock(0, i1);
+        int vx1 = block1.GetMV().x;
+        //int vy1 = block1.GetMV().y;
+        if (vx1<vx) occlusion += vx-vx1;
+      }
+      if (by > 0) // top neighbor
+      {
+        int i1 = i - nBlkX;
+        const FakeBlockData &block1 = mvClip.GetBlock(0, i1);
+        //int vx1 = block1.GetMV().x;
+        int vy1 = block1.GetMV().y;
+        if (vy1>vy) occlusion += vy1-vy;
+      }
+      if (by < nBlkY-1) // bottom neighbor
+      {
+        int i1 = i + nBlkX;
+        const FakeBlockData &block1 = mvClip.GetBlock(0, i1);
+        //int vx1 = block1.GetMV().x;
+        int vy1 = block1.GetMV().y;
+        if (vy1<vy) occlusion += vy-vy1;
+      }
+      if (fGamma == 1.0)
+      {
+        occMask[bx + by*occMaskPitch] =
+          std::min (int (255 *      occlusion*occnorm         ), 255);
+      }
+      else
+      {
+        occMask[bx + by*occMaskPitch] =
+          std::min (int (255 * pow (occlusion*occnorm, fGamma)), 255);
+      }
+    }
+  }
 }
 
 
 // it is olr pre 1.8 mask
 void VectorMasksToOcclusionMask(uint8_t *VXMask, uint8_t *VYMask, int nBlkX, int nBlkY, double dMaskNormFactor, double fGamma, int nPel, uint8_t * occMask)
 {	// analyse vectors field to detect occlusion
-	// note: dMaskNormFactor was = 1/ml, now is = ml
+  // note: dMaskNormFactor was = 1/ml, now is = ml
 #ifndef _M_X64 
   _mm_empty ();
 #endif
-	double occnorm = 10 / dMaskNormFactor/nPel; // empirical
-	for (int by=0; by<nBlkY; by++)
-	{
-		for (int bx=0; bx<nBlkX; bx++)
-		{
-			int occlusion = 0;
-			int i = bx + by*nBlkX; // current block
-			int vx = VXMask[i];
-			int vy = VYMask[i];
-			if (bx > 0) // left neighbor
-			{
-				int i1 = i-1;
-				int vx1 = VXMask[i1];
+  double occnorm = 10 / dMaskNormFactor/nPel; // empirical
+  for (int by=0; by<nBlkY; by++)
+  {
+    for (int bx=0; bx<nBlkX; bx++)
+    {
+      int occlusion = 0;
+      int i = bx + by*nBlkX; // current block
+      int vx = VXMask[i];
+      int vy = VYMask[i];
+      if (bx > 0) // left neighbor
+      {
+        int i1 = i-1;
+        int vx1 = VXMask[i1];
 //				int vy1 = VYMask[i1];
-				if (vx1>vx) occlusion += (vx1-vx); // only positive (abs)
-			}
-			if (bx < nBlkX-1) // right neighbor
-			{
-				int i1 = i+1;
-				int vx1 = VXMask[i1];
+        if (vx1>vx) occlusion += (vx1-vx); // only positive (abs)
+      }
+      if (bx < nBlkX-1) // right neighbor
+      {
+        int i1 = i+1;
+        int vx1 = VXMask[i1];
 //				int vy1 = VYMask[i1];
-				if (vx1<vx) occlusion += vx-vx1;
-			}
-			if (by > 0) // top neighbor
-			{
-				int i1 = i - nBlkX;
+        if (vx1<vx) occlusion += vx-vx1;
+      }
+      if (by > 0) // top neighbor
+      {
+        int i1 = i - nBlkX;
 //				int vx1 = VXMask[i1];
-				int vy1 = VYMask[i1];
-				if (vy1>vy) occlusion += vy1-vy;
-			}
-			if (by < nBlkY-1) // bottom neighbor
-			{
-				int i1 = i + nBlkX;
+        int vy1 = VYMask[i1];
+        if (vy1>vy) occlusion += vy1-vy;
+      }
+      if (by < nBlkY-1) // bottom neighbor
+      {
+        int i1 = i + nBlkX;
 //				int vx1 = VXMask[i1];
-				int vy1 = VYMask[i1];
-				if (vy1<vy) occlusion += vy-vy1;
-			}
-			if (fGamma == 1.0)
-			{
-				occMask[i] = std::min (int (255 *      occlusion*occnorm),          255);
-			}
-			else
-			{
-				occMask[i] = std::min (int (255 * pow (occlusion*occnorm, fGamma)), 255);
-			}
-		}
-	}
+        int vy1 = VYMask[i1];
+        if (vy1<vy) occlusion += vy-vy1;
+      }
+      if (fGamma == 1.0)
+      {
+        occMask[i] = std::min (int (255 *      occlusion*occnorm),          255);
+      }
+      else
+      {
+        occMask[i] = std::min (int (255 * pow (occlusion*occnorm, fGamma)), 255);
+      }
+    }
+  }
 }
 
 // creates 8 bit sad mask value from (8-16bit) block sad, scaling through dSADNormFactor
@@ -510,16 +510,16 @@ static void Merge4PlanesToBig_sse2(
 }
 
 void Merge4PlanesToBig(
-	uint8_t *pel2Plane, int pel2Pitch, const uint8_t *pPlane0, const uint8_t *pPlane1,
-	const uint8_t *pPlane2, const uint8_t * pPlane3, int width, int height, int pitch, int pixelsize, int cpuFlags)
+  uint8_t *pel2Plane, int pel2Pitch, const uint8_t *pPlane0, const uint8_t *pPlane1,
+  const uint8_t *pPlane2, const uint8_t * pPlane3, int width, int height, int pitch, int pixelsize, int cpuFlags)
 {
-	// copy refined planes to big one plane
+  // copy refined planes to big one plane
   // P =  p0 p1 p0 p1 p0 p1 p0 p1...
   //      p2 p3 p2 p3 p2 p3 p2 p3
   // 
   bool isse = !!(cpuFlags & CPUF_SSE2);
-	if (!isse || pixelsize == 4)
-	{
+  if (!isse || pixelsize == 4)
+  {
     if(pixelsize==1)
       Merge4PlanesToBig_c<uint8_t>(pel2Plane, pel2Pitch, pPlane0, pPlane1, pPlane2, pPlane3, width, height, pitch, pixelsize);
     else if(pixelsize==2)
@@ -540,93 +540,93 @@ void Merge4PlanesToBig(
 #if 0
 #if !(defined(_M_X64) && defined(_MSC_VER))
   else // isse - not very optimized
-	{
+  {
     // todo SIMD intrinsic
-		_asm
-		{
+    _asm
+    {
 #if !defined(_M_X64)
 #define pitch_ pitch
 #define pel2Pitch_ pel2Pitch
 #else
 #define pitch_ r8
 #define pel2Pitch_ r9
-		movsx_int pitch_,pitch
-		movsx_int pel2Pitch_,pel2Pitch
+    movsx_int pitch_,pitch
+    movsx_int pel2Pitch_,pel2Pitch
 #endif
-		//	push ebx;
-		//	push esi;
-		//	push edi;
-			mov rdi, pel2Plane;
-			mov rsi, pPlane0;
-			mov rdx, pPlane1;
+    //	push ebx;
+    //	push esi;
+    //	push edi;
+      mov rdi, pel2Plane;
+      mov rsi, pPlane0;
+      mov rdx, pPlane1;
 
-			mov ebx, height;
+      mov ebx, height;
 looph1:
-			mov ecx, width;
-			mov eax, 0;
+      mov ecx, width;
+      mov eax, 0;
 align 16
 loopw1:
-			movd mm0, [rsi+rax];
-			movd mm1, [rdx+rax];
-			punpcklbw mm0, mm1;
-			shl eax, 1;
-			movq [rdi+rax], mm0;
-			shr eax, 1;
-			add eax, 4;
-			cmp eax, ecx;
-			jl loopw1;
+      movd mm0, [rsi+rax];
+      movd mm1, [rdx+rax];
+      punpcklbw mm0, mm1;
+      shl eax, 1;
+      movq [rdi+rax], mm0;
+      shr eax, 1;
+      add eax, 4;
+      cmp eax, ecx;
+      jl loopw1;
 
-			mov rax, pel2Pitch_;
-			add rdi, rax;
-			add rdi, rax;
-			mov rax, pitch_;
-			add rsi, rax;
-			add rdx, rax;
-			dec ebx;
-			cmp ebx, 0;
-			jg looph1;
+      mov rax, pel2Pitch_;
+      add rdi, rax;
+      add rdi, rax;
+      mov rax, pitch_;
+      add rsi, rax;
+      add rdx, rax;
+      dec ebx;
+      cmp ebx, 0;
+      jg looph1;
 
-			mov rdi, pel2Plane;
-			mov rsi, pPlane2;
-			mov rdx, pPlane3;
+      mov rdi, pel2Plane;
+      mov rsi, pPlane2;
+      mov rdx, pPlane3;
 
-			mov rax, pel2Pitch_;
-			add rdi, rax;
+      mov rax, pel2Pitch_;
+      add rdi, rax;
 
-			mov ebx, height;
+      mov ebx, height;
 looph2:
-			mov ecx, width;
-			mov eax, 0;
+      mov ecx, width;
+      mov eax, 0;
 align 16
 loopw2:
-			movd mm0, [rsi+rax];
-			movd mm1, [rdx+rax];
-			punpcklbw mm0, mm1;
-			shl eax, 1;
-			movq [rdi+rax], mm0;
-			shr eax, 1;
-			add eax, 4;
-			cmp eax, ecx;
-			jl loopw2;
+      movd mm0, [rsi+rax];
+      movd mm1, [rdx+rax];
+      punpcklbw mm0, mm1;
+      shl eax, 1;
+      movq [rdi+rax], mm0;
+      shr eax, 1;
+      add eax, 4;
+      cmp eax, ecx;
+      jl loopw2;
 
-			mov rax, pel2Pitch_;
-			add rdi, rax;
-			add rdi, rax;
-			mov rax, pitch_;
-			add rsi, rax;
-			add rdx, rax;
-			dec ebx;
-			cmp ebx, 0;
-			jg looph2;
+      mov rax, pel2Pitch_;
+      add rdi, rax;
+      add rdi, rax;
+      mov rax, pitch_;
+      add rsi, rax;
+      add rdx, rax;
+      dec ebx;
+      cmp ebx, 0;
+      jg looph2;
 
-		//	pop edi;
-		//	pop esi;
-		//	pop ebx;
-			emms;
+    //	pop edi;
+    //	pop esi;
+    //	pop ebx;
+      emms;
 #undef src_pitch_
 #undef pel2Pitch_
-		}
-	}
+    }
+  }
 #endif // inline assembly MSVC X64 ignore
 #endif // if 0
 }
@@ -734,20 +734,20 @@ void Merge16PlanesToBig(
 //-----------------------------------------------------------
 unsigned char SADToMask(sad_t sad, sad_t sadnorm1024)
 {
-	// sadnorm1024 = 255 * (4*1024)/(mlSAD*nBlkSize*nBlkSize*chromablockfactor)
+  // sadnorm1024 = 255 * (4*1024)/(mlSAD*nBlkSize*nBlkSize*chromablockfactor)
   // Check todo: bits_per_pixel? pixelsize?
-	sad_t l = sadnorm1024*sad/1024;
-	return (unsigned char)((l > 255) ? 255 : l); // internally mask clip is 8 bit always, even for 10+ bit clips
+  sad_t l = sadnorm1024*sad/1024;
+  return (unsigned char)((l > 255) ? 255 : l); // internally mask clip is 8 bit always, even for 10+ bit clips
 }
 
 
 void Create_LUTV(int time256, short *LUTVB, short *LUTVF)
 {
-	for (int v=0; v<256; v++)
-	{
-		LUTVB[v] = (short)(((v-128)*(256-time256))/256);
-		LUTVF[v] = (short)(((v-128)*time256)/256);
-	}
+  for (int v=0; v<256; v++)
+  {
+    LUTVB[v] = (short)(((v-128)*(256-time256))/256);
+    LUTVF[v] = (short)(((v-128)*time256)/256);
+  }
 }
 
 /* was: in maskfun.hpp (template)*/

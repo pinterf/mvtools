@@ -133,7 +133,7 @@ namespace conc
 
 int32_t	Interlocked::swap (int32_t volatile &dest, int32_t excg)
 {
-	assert (is_ptr_aligned_nz (&dest));
+  assert (is_ptr_aligned_nz (&dest));
 
 #if defined(GCC)
   return (
@@ -141,8 +141,8 @@ int32_t	Interlocked::swap (int32_t volatile &dest, int32_t excg)
     );
 #else
   return (
-		_InterlockedExchange (reinterpret_cast <volatile long *> (&dest), excg)
-	);
+    _InterlockedExchange (reinterpret_cast <volatile long *> (&dest), excg)
+  );
 #endif
 }
 
@@ -150,7 +150,7 @@ int32_t	Interlocked::swap (int32_t volatile &dest, int32_t excg)
 
 int32_t	Interlocked::cas (int32_t volatile &dest, int32_t excg, int32_t comp)
 {
-	assert (is_ptr_aligned_nz (&dest));
+  assert (is_ptr_aligned_nz (&dest));
 
 #if defined(GCC)
   return (interlockedCompareExchange(
@@ -160,10 +160,10 @@ int32_t	Interlocked::cas (int32_t volatile &dest, int32_t excg, int32_t comp)
   ));
 #else
   return (_InterlockedCompareExchange (
-		reinterpret_cast <volatile long *> (&dest),
-		excg,
-		comp
-	));
+    reinterpret_cast <volatile long *> (&dest),
+    excg,
+    comp
+  ));
 #endif
 }
 
@@ -171,48 +171,48 @@ int32_t	Interlocked::cas (int32_t volatile &dest, int32_t excg, int32_t comp)
 
 int64_t	Interlocked::swap (int64_t volatile &dest, int64_t excg)
 {
-	assert (is_ptr_aligned_nz (&dest));
+  assert (is_ptr_aligned_nz (&dest));
 
-	int64_t			old;
+  int64_t			old;
 
 #if conc_WORD_SIZE == 64
 
 #if defined(GCC)
   old = interlockedExchange64(&dest, excg);
 #else
-	old = _InterlockedExchange64 (&dest, excg);
+  old = _InterlockedExchange64 (&dest, excg);
 #endif
 
 #else	// conc_WORD_SIZE
 
-	__asm
-	{
-		push				ebx
-		mov				esi, [dest]
-		mov				ebx, dword ptr[excg    ]
-		mov				ecx, dword ptr[excg + 4]
+  __asm
+  {
+    push				ebx
+    mov				esi, [dest]
+    mov				ebx, dword ptr[excg    ]
+    mov				ecx, dword ptr[excg + 4]
 
-	cas_loop:
-		mov				eax, [esi    ]
-		mov				edx, [esi + 4]
-		lock cmpxchg8b	[esi]
-		jnz				cas_loop
+  cas_loop:
+    mov				eax, [esi    ]
+    mov				edx, [esi + 4]
+    lock cmpxchg8b	[esi]
+    jnz				cas_loop
 
-		mov				dword ptr[old    ], eax
-		mov				dword ptr[old + 4], edx
-		pop				ebx
-	}
+    mov				dword ptr[old    ], eax
+    mov				dword ptr[old + 4], edx
+    pop				ebx
+  }
   
 #endif	// conc_WORD_SIZE
 
-	return (old);
+  return (old);
 }
 
 
 
 int64_t	Interlocked::cas (int64_t volatile &dest, int64_t excg, int64_t comp)
 {
-	assert (is_ptr_aligned_nz (&dest));
+  assert (is_ptr_aligned_nz (&dest));
 
 #if defined(GCC)
   return (interlockedCompareExchange64 (&dest, excg, comp));
@@ -227,16 +227,16 @@ int64_t	Interlocked::cas (int64_t volatile &dest, int64_t excg, int64_t comp)
 
 void	Interlocked::swap (Data128 &old, volatile Data128 &dest, const Data128 &excg)
 {
-	assert (&old != 0);
-	assert (is_ptr_aligned_nz (&dest));
+  assert (&old != 0);
+  assert (is_ptr_aligned_nz (&dest));
 
-	Data128			tmp;
-	do
-	{
-		old = *(const Data128 *) (&dest);
-		cas (tmp, dest, excg, old);
-	}
-	while (tmp != old);
+  Data128			tmp;
+  do
+  {
+    old = *(const Data128 *) (&dest);
+    cas (tmp, dest, excg, old);
+  }
+  while (tmp != old);
 }
 
 // clang-cl LLVM with VS2019 15.6.3: 
@@ -248,8 +248,8 @@ __attribute__((__target__("cx16")))
 #endif 
 void	Interlocked::cas (Data128 &old, volatile Data128 &dest, const Data128 &excg, const Data128 &comp)
 {
-	assert (&old != 0);
-	assert (is_ptr_aligned_nz (&dest));
+  assert (&old != 0);
+  assert (is_ptr_aligned_nz (&dest));
 
   /*
 _InterlockedCompareExchange128 intrinsic functions
@@ -284,10 +284,10 @@ call the __cpuid intrinsic with InfoType=0x00000001
 Bit 13 of CPUInfo[2] (ECX) is 1 if the instruction is supported.
 */
 
-		const int64_t	excg_lo = ((const int64_t *) &excg) [0];
-		const int64_t	excg_hi = ((const int64_t *) &excg) [1];
+    const int64_t	excg_lo = ((const int64_t *) &excg) [0];
+    const int64_t	excg_hi = ((const int64_t *) &excg) [1];
 
-		old = comp;
+    old = comp;
 
 #if defined(GCC)
     __sync_val_compare_and_swap(reinterpret_cast <volatile __int128*>(&dest), *(reinterpret_cast < __int128*>(&old)), *(reinterpret_cast <const __int128*>(&excg)));
@@ -306,18 +306,18 @@ Bit 13 of CPUInfo[2] (ECX) is 1 if the instruction is supported.
     */
 #elif ((_MSC_VER / 100) >= 15)	|| defined(CLANG)// VC2008 or above
 
-		_InterlockedCompareExchange128 (
-			reinterpret_cast <volatile int64_t *> (&dest),
-			excg_hi,
-			excg_lo,
-			reinterpret_cast <int64_t *> (&old)
-		);
-	#else
+    _InterlockedCompareExchange128 (
+      reinterpret_cast <volatile int64_t *> (&dest),
+      excg_hi,
+      excg_lo,
+      reinterpret_cast <int64_t *> (&old)
+    );
+  #else
 
-		/*** To do ***/
-		#error Requires assembly code
+    /*** To do ***/
+    #error Requires assembly code
 
-	#endif
+  #endif
 }
 
 
@@ -367,29 +367,29 @@ bool	Interlocked::Data128::operator != (const Data128 & other) const
 
 void *	Interlocked::swap (void * volatile &dest_ptr, void *excg_ptr)
 {
-	assert (&dest_ptr != 0);
+  assert (&dest_ptr != 0);
 
-	return (reinterpret_cast <void *> (
-		swap (
-			*reinterpret_cast <IntPtr volatile *> (&dest_ptr),
-			reinterpret_cast <IntPtr> (excg_ptr)
-		)
-	));
+  return (reinterpret_cast <void *> (
+    swap (
+      *reinterpret_cast <IntPtr volatile *> (&dest_ptr),
+      reinterpret_cast <IntPtr> (excg_ptr)
+    )
+  ));
 }
 
 
 
 void *	Interlocked::cas (void * volatile &dest_ptr, void *excg_ptr, void *comp_ptr)
 {
-	assert (&dest_ptr != 0);
+  assert (&dest_ptr != 0);
 
-	return (reinterpret_cast <void *> (
-		cas (
-			*reinterpret_cast <IntPtr volatile *> (&dest_ptr),
-			reinterpret_cast <IntPtr> (excg_ptr),
-			reinterpret_cast <IntPtr> (comp_ptr)
-		)
-	));
+  return (reinterpret_cast <void *> (
+    cas (
+      *reinterpret_cast <IntPtr volatile *> (&dest_ptr),
+      reinterpret_cast <IntPtr> (excg_ptr),
+      reinterpret_cast <IntPtr> (comp_ptr)
+    )
+  ));
 }
 
 #pragma warning (pop)

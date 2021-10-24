@@ -37,20 +37,20 @@ GenericVideoFilter(_super)
 
   cpuFlags = _isse ? env->GetCPUFlags() : 0;
 
-	// get parameters of prepared super clip - v2.0
-	SuperParams64Bits params;
-	memcpy(&params, &child->GetVideoInfo().num_audio_samples, 8);
-	int nHeightS = params.nHeight;
-	nSuperHPad = params.nHPad;
-	nSuperVPad = params.nVPad;
-	int nSuperPel = params.nPel;
-	int nSuperModeYUV = params.nModeYUV;
-	int nSuperLevels = params.nLevels;
-	nPel = nSuperPel;
-	nSuperWidth = _super->GetVideoInfo().width;
-	nSuperHeight = _super->GetVideoInfo().height;
-	int nWidth = nSuperWidth - 2*nSuperHPad;
-	int nHeight = nHeightS;
+  // get parameters of prepared super clip - v2.0
+  SuperParams64Bits params;
+  memcpy(&params, &child->GetVideoInfo().num_audio_samples, 8);
+  int nHeightS = params.nHeight;
+  nSuperHPad = params.nHPad;
+  nSuperVPad = params.nVPad;
+  int nSuperPel = params.nPel;
+  int nSuperModeYUV = params.nModeYUV;
+  int nSuperLevels = params.nLevels;
+  nPel = nSuperPel;
+  nSuperWidth = _super->GetVideoInfo().width;
+  nSuperHeight = _super->GetVideoInfo().height;
+  int nWidth = nSuperWidth - 2*nSuperHPad;
+  int nHeight = nHeightS;
     int xRatioUV;
     int yRatioUV;
     if(!vi.IsY() && !vi.IsRGB()) {
@@ -65,34 +65,34 @@ GenericVideoFilter(_super)
     pixelsize = _super->GetVideoInfo().ComponentSize();
     bits_per_pixel = _super->GetVideoInfo().BitsPerComponent();
 
-	pRefGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, cpuFlags, xRatioUV, yRatioUV, pixelsize, bits_per_pixel, true);
+  pRefGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, cpuFlags, xRatioUV, yRatioUV, pixelsize, bits_per_pixel, true);
 
 //	if (nHeight != nHeightS || nHeight != vi.height || nWidth != nSuperWidth-nSuperHPad*2 || nWidth != vi.width)
 //		env->ThrowError("MVFinest : different frame sizes of input clips");
 
-	vi.width = (nWidth + 2*nSuperHPad)*nSuperPel;
-	vi.height = (nHeight + 2*nSuperVPad)*nSuperPel;
+  vi.width = (nWidth + 2*nSuperHPad)*nSuperPel;
+  vi.height = (nHeight + 2*nSuperVPad)*nSuperPel;
 
 }
 
 MVFinest::~MVFinest()
 {
 
-	 delete pRefGOF;
+   delete pRefGOF;
 }
 
 //-------------------------------------------------------------------------
 PVideoFrame __stdcall MVFinest::GetFrame(int n, IScriptEnvironment* env)
 {
-	PVideoFrame	ref	= child->GetFrame(n, env);
+  PVideoFrame	ref	= child->GetFrame(n, env);
    BYTE *pDst[3];
-	const BYTE *pRef[3];
-	int nDstPitches[3], nRefPitches[3];
+  const BYTE *pRef[3];
+  int nDstPitches[3], nRefPitches[3];
 //	int nref;
 //	unsigned char *pDstYUY2;
 //	int nDstPitchYUY2;
 
-	PVideoFrame dst = has_at_least_v8 ? env->NewVideoFrameP(vi, &ref) : env->NewVideoFrame(vi); // frame property support
+  PVideoFrame dst = has_at_least_v8 ? env->NewVideoFrameP(vi, &ref) : env->NewVideoFrame(vi); // frame property support
 
   int planecount;
   if (nPel == 1) // simply copy top lines
@@ -115,27 +115,27 @@ PVideoFrame __stdcall MVFinest::GetFrame(int n, IScriptEnvironment* env)
       }
     }
   }
-	else	// nPel > 1
-	{
-		PROFILE_START(MOTION_PROFILE_2X);
+  else	// nPel > 1
+  {
+    PROFILE_START(MOTION_PROFILE_2X);
 
-		if ( (vi.pixel_type & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 )
-		{
-			// planar data packed to interleaved format (same as interleved2planar by kassandro) - v2.0.0.5
-			pRef[0] = ref->GetReadPtr();
-			pRef[1] = pRef[0] + nSuperWidth;
-			pRef[2] = pRef[1] + nSuperWidth/2;
-			nRefPitches[0] = ref->GetPitch();
-			nRefPitches[1] = nRefPitches[0];
-			nRefPitches[2] = nRefPitches[0];
-			pDst[0] = dst->GetWritePtr();
-			pDst[1] = pDst[0] + dst->GetRowSize()/2;
-			pDst[2] = pDst[1] + dst->GetRowSize()/4;
-			nDstPitches[0] = dst->GetPitch();
-			nDstPitches[1] = nDstPitches[0];
-			nDstPitches[2] = nDstPitches[0];
+    if ( (vi.pixel_type & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 )
+    {
+      // planar data packed to interleaved format (same as interleved2planar by kassandro) - v2.0.0.5
+      pRef[0] = ref->GetReadPtr();
+      pRef[1] = pRef[0] + nSuperWidth;
+      pRef[2] = pRef[1] + nSuperWidth/2;
+      nRefPitches[0] = ref->GetPitch();
+      nRefPitches[1] = nRefPitches[0];
+      nRefPitches[2] = nRefPitches[0];
+      pDst[0] = dst->GetWritePtr();
+      pDst[1] = pDst[0] + dst->GetRowSize()/2;
+      pDst[2] = pDst[1] + dst->GetRowSize()/4;
+      nDstPitches[0] = dst->GetPitch();
+      nDstPitches[1] = nDstPitches[0];
+      nDstPitches[2] = nDstPitches[0];
       planecount = 3;
-		}
+    }
     else
     {
       int planes_y[4] = { PLANAR_Y, PLANAR_U, PLANAR_V, PLANAR_A };
@@ -152,9 +152,9 @@ PVideoFrame __stdcall MVFinest::GetFrame(int n, IScriptEnvironment* env)
     }
 
     MVPlaneSet nMode = vi.IsY() ? YPLANE : YUVPLANES;
-		pRefGOF->Update(nMode, (BYTE*)pRef[0], nRefPitches[0], (BYTE*)pRef[1], nRefPitches[1], (BYTE*)pRef[2], nRefPitches[2]);// v2.0
+    pRefGOF->Update(nMode, (BYTE*)pRef[0], nRefPitches[0], (BYTE*)pRef[1], nRefPitches[1], (BYTE*)pRef[2], nRefPitches[2]);// v2.0
 
-		MVPlane *pPlanes[3];
+    MVPlane *pPlanes[3];
 
     MVPlaneSet planes[3] = { YPLANE, UPLANE, VPLANE };
     for (int p = 0; p < planecount; ++p) {
@@ -162,8 +162,8 @@ PVideoFrame __stdcall MVFinest::GetFrame(int n, IScriptEnvironment* env)
       pPlanes[p] = pRefGOF->GetFrame(0)->GetPlane(plane);
     }
 
-		if (nPel == 2)
-		{
+    if (nPel == 2)
+    {
       for (int p = 0; p < planecount; p++) {
         MVPlane *plane = pPlanes[p];
         if (plane) {
@@ -175,9 +175,9 @@ PVideoFrame __stdcall MVFinest::GetFrame(int n, IScriptEnvironment* env)
           );
         }
       }
-		}
-		else if (nPel==4)
-		{
+    }
+    else if (nPel==4)
+    {
       for (int p = 0; p < planecount; p++) {
         MVPlane *plane = pPlanes[p];
         if (plane) {
@@ -195,10 +195,10 @@ PVideoFrame __stdcall MVFinest::GetFrame(int n, IScriptEnvironment* env)
           );
         }
       }
-		}
+    }
 
-		PROFILE_STOP(MOTION_PROFILE_2X);
-	}
+    PROFILE_STOP(MOTION_PROFILE_2X);
+  }
 
-	return dst;
+  return dst;
 }

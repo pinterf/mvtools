@@ -56,25 +56,25 @@ PVideoFrame __stdcall MVSCDetection::GetFrame(int n, IScriptEnvironment* env)
 {
    PVideoFrame dst = env->NewVideoFrame(vi); // no frame props here
 
-	PVideoFrame mvn = mvClip.GetFrame(n, env);
+  PVideoFrame mvn = mvClip.GetFrame(n, env);
    mvClip.Update(mvn, env);
 
    if ( mvClip.IsUsable() )
-	{
-	   if((vi.IsYUV() || vi.IsYUVA()) && !vi.IsYUY2())
-	   {
-		  MemZoneSet(dst->GetWritePtr(PLANAR_Y), 0, dst->GetRowSize(PLANAR_Y), dst->GetHeight(PLANAR_Y), 0, 0, dst->GetPitch(PLANAR_Y));
-		  MemZoneSet(dst->GetWritePtr(PLANAR_U), 0, dst->GetRowSize(PLANAR_U), dst->GetHeight(PLANAR_U), 0, 0, dst->GetPitch(PLANAR_U));
-		  MemZoneSet(dst->GetWritePtr(PLANAR_V), 0, dst->GetRowSize(PLANAR_V), dst->GetHeight(PLANAR_V), 0, 0, dst->GetPitch(PLANAR_V));
-	   }
-	   else
-	   {
-		  MemZoneSet(dst->GetWritePtr(), 0, dst->GetRowSize(), dst->GetHeight(), 0, 0, dst->GetPitch());
-	   }
-	}
+  {
+     if((vi.IsYUV() || vi.IsYUVA()) && !vi.IsYUY2())
+     {
+      MemZoneSet(dst->GetWritePtr(PLANAR_Y), 0, dst->GetRowSize(PLANAR_Y), dst->GetHeight(PLANAR_Y), 0, 0, dst->GetPitch(PLANAR_Y));
+      MemZoneSet(dst->GetWritePtr(PLANAR_U), 0, dst->GetRowSize(PLANAR_U), dst->GetHeight(PLANAR_U), 0, 0, dst->GetPitch(PLANAR_U));
+      MemZoneSet(dst->GetWritePtr(PLANAR_V), 0, dst->GetRowSize(PLANAR_V), dst->GetHeight(PLANAR_V), 0, 0, dst->GetPitch(PLANAR_V));
+     }
+     else
+     {
+      MemZoneSet(dst->GetWritePtr(), 0, dst->GetRowSize(), dst->GetHeight(), 0, 0, dst->GetPitch());
+     }
+  }
    else {
-	   if((vi.IsYUV() || vi.IsYUVA()) && !vi.IsYUY2())
-	   {
+     if((vi.IsYUV() || vi.IsYUVA()) && !vi.IsYUY2())
+     {
        if (pixelsize == 1) {
          MemZoneSet(dst->GetWritePtr(PLANAR_Y), sceneChangeValue, dst->GetRowSize(PLANAR_Y), dst->GetHeight(PLANAR_Y), 0, 0, dst->GetPitch(PLANAR_Y));
          MemZoneSet(dst->GetWritePtr(PLANAR_U), sceneChangeValue, dst->GetRowSize(PLANAR_U), dst->GetHeight(PLANAR_U), 0, 0, dst->GetPitch(PLANAR_U));
@@ -91,11 +91,11 @@ PVideoFrame __stdcall MVSCDetection::GetFrame(int n, IScriptEnvironment* env)
          fill_plane<float>(dst->GetWritePtr(PLANAR_V), dst->GetHeight(PLANAR_V), dst->GetPitch(PLANAR_V), sceneChangeValue_f);
        }
      }
-	   else
-	   {
-		  MemZoneSet(dst->GetWritePtr(), sceneChangeValue, dst->GetRowSize(), dst->GetHeight(), 0, 0, dst->GetPitch());
-	   }
+     else
+     {
+      MemZoneSet(dst->GetWritePtr(), sceneChangeValue, dst->GetRowSize(), dst->GetHeight(), 0, 0, dst->GetPitch());
+     }
    }
 
-	return dst;
+  return dst;
 }

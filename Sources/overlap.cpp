@@ -94,16 +94,16 @@
 // oy: overlap vertical
 OverlapWindows::OverlapWindows(int _nx, int _ny, int _ox, int _oy)
 {
-	nx = _nx;
-	ny = _ny;
-	ox = _ox;
-	oy = _oy;
-	size = nx*ny;
+  nx = _nx;
+  ny = _ny;
+  ox = _ox;
+  oy = _oy;
+  size = nx*ny;
 
-	   //  windows
-	   fWin1UVx = new float[nx];
-	   fWin1UVxfirst = new float[nx];
-	   fWin1UVxlast = new float[nx];
+     //  windows
+     fWin1UVx = new float[nx];
+     fWin1UVxfirst = new float[nx];
+     fWin1UVxlast = new float[nx];
      // FFFFFFFF                LLLLLLLL   F=First block, L=Last block
      //       ========    ========
      // ========    ========    ========
@@ -112,57 +112,57 @@ OverlapWindows::OverlapWindows(int _nx, int _ny, int _ox, int _oy)
      
      // Horizontal part of weights
      // overlapping left area weights
-	   for (int i=0; i<ox; i++)
-	   {
+     for (int i=0; i<ox; i++)
+     {
       fWin1UVx[i] = float (cos(PI*(i-ox+0.5f)/(ox*2)));
-			fWin1UVx[i] = fWin1UVx[i]*fWin1UVx[i];// left window (rised cosine)
-			fWin1UVxfirst[i] = 1; // very first window, leftmost block, no overlap on the left side here
+      fWin1UVx[i] = fWin1UVx[i]*fWin1UVx[i];// left window (rised cosine)
+      fWin1UVxfirst[i] = 1; // very first window, leftmost block, no overlap on the left side here
       fWin1UVxlast[i] = fWin1UVx[i]; // very last, rightmost block, but yes, we still have overlap on the left side
-	   }
+     }
      // non-overlapping middle area weights. No overlap: weight=1!
      for (int i=ox; i<nx-ox; i++)
-	   {
+     {
        // overlapping left area weights
        fWin1UVx[i] = 1;
-			fWin1UVxfirst[i] = 1; // very first window
-			fWin1UVxlast[i] = 1; // very last
-	   }
+      fWin1UVxfirst[i] = 1; // very first window
+      fWin1UVxlast[i] = 1; // very last
+     }
      // overlapping right area weights
      for (int i=nx-ox; i<nx; i++)
-	   {
+     {
       fWin1UVx[i] = float (cos(PI*(i-nx+ox+0.5f)/(ox*2)));
-			fWin1UVx[i] = fWin1UVx[i]*fWin1UVx[i];// right window (falled cosine)
-			fWin1UVxfirst[i] = fWin1UVx[i]; // very first window, leftmost block, but yes, we still have overlap on the right side
-			fWin1UVxlast[i] = 1; // very last, rightmost block, no overlap on the right side here
-	   }
+      fWin1UVx[i] = fWin1UVx[i]*fWin1UVx[i];// right window (falled cosine)
+      fWin1UVxfirst[i] = fWin1UVx[i]; // very first window, leftmost block, but yes, we still have overlap on the right side
+      fWin1UVxlast[i] = 1; // very last, rightmost block, no overlap on the right side here
+     }
 
      // Similar to the horizontal: vertical part of weights
      fWin1UVy = new float[ny];
-	   fWin1UVyfirst = new float[ny];
-	   fWin1UVylast = new float[ny];
-	   for (int i=0; i<oy; i++)
-	   {
-			fWin1UVy[i] = float (cos(PI*(i-oy+0.5f)/(oy*2))); // -3.5 -2.5 -1.5 -0.5 / 2*4
-			fWin1UVy[i] = fWin1UVy[i]*fWin1UVy[i];// left window (rised cosine)
-			fWin1UVyfirst[i] = 1; // very first window
-			fWin1UVylast[i] = fWin1UVy[i]; // very last
-	   }
-	   for (int i=oy; i<ny-oy; i++)
-	   {
-			fWin1UVy[i] = 1;
-			fWin1UVyfirst[i] = 1; // very first window
-			fWin1UVylast[i] = 1; // very last
-	   }
-	   for (int i=ny-oy; i<ny; i++)
-	   {
-			fWin1UVy[i] = float (cos(PI*(i-ny+oy+0.5f)/(oy*2))); // 0.5 1.5 2.5 3.5 / 2*4
-			fWin1UVy[i] = fWin1UVy[i]*fWin1UVy[i];// right window (falled cosine)
-			fWin1UVyfirst[i] = fWin1UVy[i]; // very first window
-			fWin1UVylast[i] = 1; // very last
-	   }
+     fWin1UVyfirst = new float[ny];
+     fWin1UVylast = new float[ny];
+     for (int i=0; i<oy; i++)
+     {
+      fWin1UVy[i] = float (cos(PI*(i-oy+0.5f)/(oy*2))); // -3.5 -2.5 -1.5 -0.5 / 2*4
+      fWin1UVy[i] = fWin1UVy[i]*fWin1UVy[i];// left window (rised cosine)
+      fWin1UVyfirst[i] = 1; // very first window
+      fWin1UVylast[i] = fWin1UVy[i]; // very last
+     }
+     for (int i=oy; i<ny-oy; i++)
+     {
+      fWin1UVy[i] = 1;
+      fWin1UVyfirst[i] = 1; // very first window
+      fWin1UVylast[i] = 1; // very last
+     }
+     for (int i=ny-oy; i<ny; i++)
+     {
+      fWin1UVy[i] = float (cos(PI*(i-ny+oy+0.5f)/(oy*2))); // 0.5 1.5 2.5 3.5 / 2*4
+      fWin1UVy[i] = fWin1UVy[i]*fWin1UVy[i];// right window (falled cosine)
+      fWin1UVyfirst[i] = fWin1UVy[i]; // very first window
+      fWin1UVylast[i] = 1; // very last
+     }
 
 
-		Overlap9Windows = new short[size*9];
+    Overlap9Windows = new short[size*9];
     Overlap9WindowsF = new float[size * 9];
 
     // short
@@ -273,12 +273,12 @@ OverlapWindows::~OverlapWindows()
 {
   delete[] Overlap9Windows;
   delete [] Overlap9WindowsF;
-	delete [] fWin1UVx;
-	delete [] fWin1UVxfirst;
-	delete [] fWin1UVxlast;
-	delete [] fWin1UVy;
-	delete [] fWin1UVyfirst;
-	delete [] fWin1UVylast;
+  delete [] fWin1UVx;
+  delete [] fWin1UVxfirst;
+  delete [] fWin1UVxlast;
+  delete [] fWin1UVy;
+  delete [] fWin1UVyfirst;
+  delete [] fWin1UVylast;
 }
 
 // v2.7.25 Let's round 1<<4
@@ -327,16 +327,16 @@ void Short2Bytes_sse2(unsigned char *pDst, int nDstPitch, uint16_t *pDstShort, i
 
 void Short2Bytes(unsigned char *pDst, int nDstPitch, uint16_t *pDstShort, int dstShortPitch, int nWidth, int nHeight)
 {
-	for (int h=0; h<nHeight; h++)
-	{
-		for (int i=0; i<nWidth; i++)
-		{
-			int a = (pDstShort[i] + (1<<4)) >> 5; // pWin was of scale 11 bits, >> 6 was already done in overlaps
+  for (int h=0; h<nHeight; h++)
+  {
+    for (int i=0; i<nWidth; i++)
+    {
+      int a = (pDstShort[i] + (1<<4)) >> 5; // pWin was of scale 11 bits, >> 6 was already done in overlaps
       pDst[i] = min(255, a);
-		}
-		pDst += nDstPitch;
-		pDstShort += dstShortPitch;
-	}
+    }
+    pDst += nDstPitch;
+    pDstShort += dstShortPitch;
+  }
 }
 
 template<typename pixel_t>
@@ -598,14 +598,14 @@ template<typename pixel_t>
 void LimitChanges_c(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, float nLimit_f)
 {
   const int nLimit = (int)(nLimit_f + 0.5f);
-	for (int h=0; h<nHeight; h++)
-	{
-		for (int i=0; i<nWidth; i++)
-			reinterpret_cast<pixel_t *>(pDst)[i] = 
+  for (int h=0; h<nHeight; h++)
+  {
+    for (int i=0; i<nWidth; i++)
+      reinterpret_cast<pixel_t *>(pDst)[i] = 
         (pixel_t)clamp((int)reinterpret_cast<pixel_t *>(pDst)[i], (reinterpret_cast<const pixel_t *>(pSrc)[i]-nLimit), (reinterpret_cast<const pixel_t *>(pSrc)[i]+nLimit));
-		pDst += nDstPitch;
-		pSrc += nSrcPitch;
-	}
+    pDst += nDstPitch;
+    pSrc += nSrcPitch;
+  }
 }
 
 void LimitChanges_float_c(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, float nLimit_f)

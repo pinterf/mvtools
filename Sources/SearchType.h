@@ -25,14 +25,14 @@
 /*! \brief Search type : defines the algorithm used for minimizing the SAD */
 enum SearchType
 {
-	ONETIME     = 1,
-	NSTEP       = 2,
-	LOGARITHMIC = 4,
-	EXHAUSTIVE  = 8,
-	HEX2SEARCH  = 16,   // v.2
-	UMHSEARCH   = 32,   // v.2
-	HSEARCH     = 64,   // v.2.5.11
-	VSEARCH     = 128   // v.2.5.11
+  ONETIME     = 1,
+  NSTEP       = 2,
+  LOGARITHMIC = 4,
+  EXHAUSTIVE  = 8,
+  HEX2SEARCH  = 16,   // v.2
+  UMHSEARCH   = 32,   // v.2
+  HSEARCH     = 64,   // v.2.5.11
+  VSEARCH     = 128   // v.2.5.11
 };
 
 

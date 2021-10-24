@@ -27,9 +27,9 @@
 
 class FakeBlockData
 {
-	int x;
-	int y;
-	VECTOR vector;
+  int x;
+  int y;
+  VECTOR vector;
 //	int nSad;
 //	int nLength;
 //	int nVariance;

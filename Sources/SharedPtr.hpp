@@ -36,7 +36,7 @@ SharedPtr <T>::SharedPtr ()
 :	_obj_ptr (0)
 ,	_count_ptr (0)
 {
-	// Nothing
+  // Nothing
 }
 
 
@@ -46,7 +46,7 @@ SharedPtr <T>::SharedPtr (T *ptr)
 :	_obj_ptr (ptr)
 ,	_count_ptr ((ptr != 0) ? new long (1) : 0)
 {
-	// Nothing
+  // Nothing
 }
 
 
@@ -56,9 +56,9 @@ SharedPtr <T>::SharedPtr (const SharedPtr <T> &other)
 :	_obj_ptr (other._obj_ptr)
 ,	_count_ptr (other._count_ptr)
 {
-	assert (other.is_valid ());
-	add_ref ();
-	assert (is_consistent (other));
+  assert (other.is_valid ());
+  add_ref ();
+  assert (is_consistent (other));
 }
 
 
@@ -66,9 +66,9 @@ SharedPtr <T>::SharedPtr (const SharedPtr <T> &other)
 template <class T>
 SharedPtr <T>::~SharedPtr ()
 {
-	assert (is_valid ());
+  assert (is_valid ());
 
-	destroy_complete ();
+  destroy_complete ();
 }
 
 
@@ -76,19 +76,19 @@ SharedPtr <T>::~SharedPtr ()
 template <class T>
 SharedPtr <T> &	SharedPtr <T>::operator = (const SharedPtr <T> &other)
 {
-	assert (is_valid ());
-	assert (is_consistent (other));
+  assert (is_valid ());
+  assert (is_consistent (other));
 
-	if (other._obj_ptr != _obj_ptr)
-	{
-		destroy_complete ();
-		_obj_ptr = other._obj_ptr;
-		_count_ptr = other._count_ptr;
-		add_ref ();
-	}
-	assert (is_consistent (other));
+  if (other._obj_ptr != _obj_ptr)
+  {
+    destroy_complete ();
+    _obj_ptr = other._obj_ptr;
+    _count_ptr = other._count_ptr;
+    add_ref ();
+  }
+  assert (is_consistent (other));
 
-	return (*this);
+  return (*this);
 }
 
 
@@ -96,16 +96,16 @@ SharedPtr <T> &	SharedPtr <T>::operator = (const SharedPtr <T> &other)
 template <class T>
 void	SharedPtr <T>::swap (SharedPtr <T> &other)
 {
-	assert (&other != 0);
+  assert (&other != 0);
 
-	DataType *		tmp_obj_ptr   = _obj_ptr;
-	long *			tmp_count_ptr = _count_ptr;
+  DataType *		tmp_obj_ptr   = _obj_ptr;
+  long *			tmp_count_ptr = _count_ptr;
 
-	_obj_ptr = other._obj_ptr;
-	_count_ptr = other._count_ptr;
+  _obj_ptr = other._obj_ptr;
+  _count_ptr = other._count_ptr;
 
-	other._obj_ptr = tmp_obj_ptr;
-	other._count_ptr = tmp_count_ptr;
+  other._obj_ptr = tmp_obj_ptr;
+  other._count_ptr = tmp_count_ptr;
 }
 
 // 20181019 problems with vs2017 15.8.7: problems with shared_*_cast
@@ -115,10 +115,10 @@ template <class T>
 template <class U>
 void	SharedPtr <T>::assign_static (const SharedPtr <U> & other)
 {
-	assert (&other != 0);
-	
-	operator = (
-		//shared_static_cast <T, U> (other)
+  assert (&other != 0);
+  
+  operator = (
+    //shared_static_cast <T, U> (other)
     std::static_pointer_cast <T, U> (other)
     );
 }
@@ -129,12 +129,12 @@ template <class T>
 template <class U>
 void	SharedPtr <T>::assign_dynamic (const SharedPtr <U> & other)
 {
-	assert (&other != 0);
-	
-	operator = (
-		//shared_dynamic_cast <T, U> (other)
+  assert (&other != 0);
+  
+  operator = (
+    //shared_dynamic_cast <T, U> (other)
     std::dynamic_pointer_cast <T, U> (other)
-	);
+  );
 }
 
 
@@ -143,12 +143,12 @@ template <class T>
 template <class U>
 void	SharedPtr <T>::assign_reinterpret (const SharedPtr <U> & other)
 {
-	assert (&other != 0);
-	
-	operator = (
-		//shared_reinterpret_cast <T, U> (other)
+  assert (&other != 0);
+  
+  operator = (
+    //shared_reinterpret_cast <T, U> (other)
     std::reinterpret_pointer_cast <T, U> (other)
-	);
+  );
 }
 
 
@@ -156,7 +156,7 @@ void	SharedPtr <T>::assign_reinterpret (const SharedPtr <U> & other)
 template <class T>
 SharedPtr <T>::operator SharedPtr <const T> () const 
 {
-	return (reinterpret_cast <const SharedPtr<const T> &> (*this));
+  return (reinterpret_cast <const SharedPtr<const T> &> (*this));
 }
 
 
@@ -164,7 +164,7 @@ SharedPtr <T>::operator SharedPtr <const T> () const
 template <class T>
 T	*SharedPtr <T>::get () const
 {
-	return (_obj_ptr);
+  return (_obj_ptr);
 }
 
 
@@ -172,9 +172,9 @@ T	*SharedPtr <T>::get () const
 template <class T>
 T	*SharedPtr <T>::operator -> () const
 {
-	assert (_obj_ptr != 0);
-	
-	return (_obj_ptr);
+  assert (_obj_ptr != 0);
+  
+  return (_obj_ptr);
 }
 
 
@@ -182,9 +182,9 @@ T	*SharedPtr <T>::operator -> () const
 template <class T>
 T	&SharedPtr <T>::operator * () const
 {
-	assert (_obj_ptr != 0);
-	
-	return (*_obj_ptr);
+  assert (_obj_ptr != 0);
+  
+  return (*_obj_ptr);
 }
 
 
@@ -192,11 +192,11 @@ T	&SharedPtr <T>::operator * () const
 template <class T>
 void	SharedPtr <T>::destroy ()
 {
-	assert (is_valid ());
+  assert (is_valid ());
 
-	destroy_complete ();
-	_obj_ptr = 0;
-	_count_ptr = 0;
+  destroy_complete ();
+  _obj_ptr = 0;
+  _count_ptr = 0;
 }
 
 
@@ -204,16 +204,16 @@ void	SharedPtr <T>::destroy ()
 template <class T>
 long	SharedPtr <T>::get_count () const
 {
-	assert (is_valid ());
+  assert (is_valid ());
 
-	long				count = 0;
-	if (_count_ptr != 0)
-	{
-		count = *_count_ptr;
-		assert (count > 0);
-	}
+  long				count = 0;
+  if (_count_ptr != 0)
+  {
+    count = *_count_ptr;
+    assert (count > 0);
+  }
 
-	return (count);
+  return (count);
 }
 
 
@@ -221,9 +221,9 @@ long	SharedPtr <T>::get_count () const
 template <class T>
 bool	SharedPtr <T>::is_valid () const
 {
-	return (   (   (_obj_ptr == 0 && _count_ptr == 0)
-	            || (_obj_ptr != 0 && _count_ptr != 0))
-	        && (_count_ptr == 0 || (*_count_ptr) > 0));
+  return (   (   (_obj_ptr == 0 && _count_ptr == 0)
+              || (_obj_ptr != 0 && _count_ptr != 0))
+          && (_count_ptr == 0 || (*_count_ptr) > 0));
 }
 
 
@@ -237,8 +237,8 @@ SharedPtr <T>::SharedPtr (T *other_ptr, long *count_ptr)
 :	_obj_ptr (other_ptr)
 ,	_count_ptr (count_ptr)
 {
-	assert (is_valid ());
-	add_ref ();
+  assert (is_valid ());
+  add_ref ();
 }
 
 
@@ -246,7 +246,7 @@ SharedPtr <T>::SharedPtr (T *other_ptr, long *count_ptr)
 template <class T>
 long *	SharedPtr <T>::get_counter_ref () const
 {
-	return (_count_ptr);
+  return (_count_ptr);
 }
 
 
@@ -262,10 +262,10 @@ long *	SharedPtr <T>::get_counter_ref () const
 template <class T>
 void	SharedPtr <T>::add_ref ()
 {
-	if (_count_ptr != 0)
-	{
-		++ *_count_ptr;
-	}
+  if (_count_ptr != 0)
+  {
+    ++ *_count_ptr;
+  }
 }
 
 
@@ -273,11 +273,11 @@ void	SharedPtr <T>::add_ref ()
 template <class T>
 bool	SharedPtr <T>::is_consistent (const SharedPtr <T> &other) const
 {
-	assert (&other != 0);
+  assert (&other != 0);
 
-	return (   other.is_valid ()
-	        && (   (_obj_ptr == other._obj_ptr) && (_count_ptr == other._count_ptr)
-	            || (_obj_ptr != other._obj_ptr) && (_count_ptr != other._count_ptr)));
+  return (   other.is_valid ()
+          && (   (_obj_ptr == other._obj_ptr) && (_count_ptr == other._count_ptr)
+              || (_obj_ptr != other._obj_ptr) && (_count_ptr != other._count_ptr)));
 }
 
 
@@ -285,21 +285,21 @@ bool	SharedPtr <T>::is_consistent (const SharedPtr <T> &other) const
 template <class T>
 void	SharedPtr <T>::destroy_complete ()
 {
-	assert (is_valid ());
+  assert (is_valid ());
 
-	if (_obj_ptr != 0)
-	{
-		-- *_count_ptr;
-		
-		if (*_count_ptr == 0)
-		{
-			delete _obj_ptr;
-			_obj_ptr = 0;
+  if (_obj_ptr != 0)
+  {
+    -- *_count_ptr;
+    
+    if (*_count_ptr == 0)
+    {
+      delete _obj_ptr;
+      _obj_ptr = 0;
 
-			delete _count_ptr;
-			_count_ptr = 0;
-		}
-	}
+      delete _count_ptr;
+      _count_ptr = 0;
+    }
+  }
 }
 
 

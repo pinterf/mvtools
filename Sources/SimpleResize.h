@@ -26,14 +26,14 @@
 
 class SimpleResize 
 {
-	int newwidth;
-	int newheight;
-	int oldwidth;
-	int oldheight;
-	unsigned int* hControl;		// weighting masks, alternating dwords for Y & UV
-								// 1 qword for mask, 1 dword for src offset, 1 unused dword
-	unsigned int* vOffsets;		// Vertical offsets of the source lines we will use
-	unsigned int* vWeights;		// weighting masks, alternating dwords for Y & UV
+  int newwidth;
+  int newheight;
+  int oldwidth;
+  int oldheight;
+  unsigned int* hControl;		// weighting masks, alternating dwords for Y & UV
+                // 1 qword for mask, 1 dword for src offset, 1 unused dword
+  unsigned int* vOffsets;		// Vertical offsets of the source lines we will use
+  unsigned int* vWeights;		// weighting masks, alternating dwords for Y & UV
   unsigned char* vWorkY;		// weighting masks 0Y0Y 0Y0Y...
   short* vWorkY2;		//  work array for shorts
   bool SSE2enabled;
@@ -41,8 +41,8 @@ class SimpleResize
   void InitTables(void);
 
 public:
-	SimpleResize(int _newwidth, int _newheight, int _oldwidth, int _oldheight, long CPUFlags);
-	~SimpleResize();
+  SimpleResize(int _newwidth, int _newheight, int _oldwidth, int _oldheight, long CPUFlags);
+  ~SimpleResize();
 
   template<typename src_type, typename dst_type, bool limitIt, int nPel, bool isXpart>
   void SimpleResizeDo_New(uint8_t *dstp8, int row_size, int height, int dst_pitch,

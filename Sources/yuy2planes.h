@@ -23,18 +23,18 @@
 
 class YUY2Planes
 {
-	unsigned char *pSrc;
-	unsigned char *pSrcU;
-	unsigned char *pSrcV;
-	int nWidth;
-	int nHeight;
-	int srcPitch;
-	int srcPitchUV;
+  unsigned char *pSrc;
+  unsigned char *pSrcU;
+  unsigned char *pSrcV;
+  int nWidth;
+  int nHeight;
+  int srcPitch;
+  int srcPitchUV;
 
    
 public :
 
-	YUY2Planes(int _nWidth, int _nHeight);
+  YUY2Planes(int _nWidth, int _nHeight);
    ~YUY2Planes();
 
    MV_FORCEINLINE int GetPitch() const { return srcPitch; }
@@ -52,12 +52,12 @@ static	void conv422toYUV422(const unsigned char *py, const unsigned char *pu, co
 };
 
 void YUY2ToPlanes(const unsigned char *pSrcYUY2, int nSrcPitchYUY2, int nWidth, int nHeight,
-							  const unsigned char * pSrc1, int _srcPitch,
-							  const unsigned char * pSrcU1, const unsigned char * pSrcV1, int _srcPitchUV, int cpuFlags);
+                const unsigned char * pSrc1, int _srcPitch,
+                const unsigned char * pSrcU1, const unsigned char * pSrcV1, int _srcPitchUV, int cpuFlags);
 
 void YUY2FromPlanes(unsigned char *pSrcYUY2, int nSrcPitchYUY2, int nWidth, int nHeight,
-							  unsigned char * pSrc1, int _srcPitch,
-							  unsigned char * pSrcU1, unsigned char * pSrcV1, int _srcPitchUV, int cpuFlags);
+                unsigned char * pSrc1, int _srcPitch,
+                unsigned char * pSrcU1, unsigned char * pSrcV1, int _srcPitchUV, int cpuFlags);
 
 
 #endif

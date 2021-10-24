@@ -38,24 +38,24 @@
 
 class OverlapWindows
 {
-	int nx; // window sizes
-	int ny;
-	int ox; // overap sizes
-	int oy;
-	int size; // full window size= nx*ny
+  int nx; // window sizes
+  int ny;
+  int ox; // overap sizes
+  int oy;
+  int size; // full window size= nx*ny
 
-	short * Overlap9Windows;
+  short * Overlap9Windows;
   float * Overlap9WindowsF;
 
-	float *fWin1UVx;
-	float *fWin1UVxfirst;
-	float *fWin1UVxlast;
-	float *fWin1UVy;
-	float *fWin1UVyfirst;
-	float *fWin1UVylast;
+  float *fWin1UVx;
+  float *fWin1UVxfirst;
+  float *fWin1UVxlast;
+  float *fWin1UVy;
+  float *fWin1UVyfirst;
+  float *fWin1UVylast;
 public :
 
-	OverlapWindows(int _nx, int _ny, int _ox, int _oy);
+  OverlapWindows(int _nx, int _ny, int _ox, int _oy);
    ~OverlapWindows();
 
    MV_FORCEINLINE int Getnx() const { return nx; }
@@ -67,7 +67,7 @@ public :
 
 typedef void (OverlapsFunction)(uint16_t *pDst, int nDstPitch,
                             const unsigned char *pSrc, int nSrcPitch,
-							short *pWin, int nWinPitch);
+              short *pWin, int nWinPitch);
 typedef void (OverlapsLsbFunction)(int *pDst, int nDstPitch, const unsigned char *pSrc, const unsigned char *pSrcLsb, int nSrcPitch, short *pWin, int nWinPitch);
 
 OverlapsFunction* get_overlaps_function(int BlockX, int BlockY, int pixelsize, bool out32, arch_t arch);
@@ -80,7 +80,7 @@ template <typename pixel_t, int blockWidth, int blockHeight>
 // pDst is short* for 8 bit, int * for 16 bit sources
 void Overlaps_C(uint16_t *pDst0, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch)
 {
-	// pWin from 0 to 2048 total shift 11
+  // pWin from 0 to 2048 total shift 11
   // when pixel_t == uint16_t, dst should be int*
   typedef typename std::conditional < sizeof(pixel_t) == 1, short, int>::type target_t;
   target_t *pDst = reinterpret_cast<target_t *>(pDst0);
@@ -110,9 +110,9 @@ void Overlaps_C(uint16_t *pDst0, int nDstPitch, const unsigned char *pSrc, int n
   // a2+a3  a2+a3| a2+a3+b2+b3   a2+a3+b2+b3 | b2+b3   b2+b3 | b2+b3+c2+c3   b2+b3+c2+c3 | c2+c3   c2+c3
   // ...
   for (int j=0; j<blockHeight; j++)
-	{
-	    for (int i=0; i<blockWidth; i++)
-	    {
+  {
+      for (int i=0; i<blockWidth; i++)
+      {
         int val = reinterpret_cast<const pixel_t *>(pSrc)[i];
         short win = pWin[i];
         if constexpr(sizeof(pixel_t) == 1) {
@@ -136,11 +136,11 @@ void Overlaps_C(uint16_t *pDst0, int nDstPitch, const unsigned char *pSrc, int n
           pDst[i] = a + val * win;
           
         }
-	    }
+      }
       pDst += nDstPitch;
-		pSrc += nSrcPitch;
-		pWin += nWinPitch;
-	}
+    pSrc += nSrcPitch;
+    pWin += nWinPitch;
+  }
 }
 
 /* 8 bit source, 32 bit temporary target */
@@ -200,22 +200,22 @@ void Overlaps_float_C(uint16_t *pDst0, int nDstPitch, const unsigned char *pSrc,
 template <int blockWidth, int blockHeight>
 void OverlapsLsb_C(int *pDst, int nDstPitch, const unsigned char *pSrc, const unsigned char *pSrcLsb, int nSrcPitch, short *pWin, int nWinPitch)
 {
-	// pWin from 0 to 2048: total shift 11
-	for (int j=0; j<blockHeight; j++)
-	{
-		for (int i=0; i<blockWidth; i++)
-		{
-			const int		val = (pSrc [i] << 8) + pSrcLsb [i];
+  // pWin from 0 to 2048: total shift 11
+  for (int j=0; j<blockHeight; j++)
+  {
+    for (int i=0; i<blockWidth; i++)
+    {
+      const int		val = (pSrc [i] << 8) + pSrcLsb [i];
       short win = pWin[i];
       // 16 bits data + 11 bits window = 27 bits max (safe)
       // shift 11 in Short2Bytes_lsb
       pDst [i] += val * win;
-		}
-		pDst += nDstPitch;
-		pSrc += nSrcPitch;
-		pSrcLsb += nSrcPitch;
-		pWin += nWinPitch;
-	}
+    }
+    pDst += nDstPitch;
+    pSrc += nSrcPitch;
+    pSrcLsb += nSrcPitch;
+    pWin += nWinPitch;
+  }
 }
 
 

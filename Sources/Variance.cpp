@@ -26,7 +26,7 @@
 
 MV_FORCEINLINE unsigned int ABS(const int x)
 {
-	return ( x < 0 ) ? -x : x;
+  return ( x < 0 ) ? -x : x;
 }
 
 template<int nBlkWidth, int nBlkHeight>

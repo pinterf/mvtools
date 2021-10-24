@@ -83,10 +83,10 @@ private:
    YUY2Planes * DstPlanes;
 
 public:
-	MVFlowBlur(PClip _child, PClip _finest, PClip _mvbw, PClip _mvfw, int _blur256, int _prec,
+  MVFlowBlur(PClip _child, PClip _finest, PClip _mvbw, PClip _mvfw, int _blur256, int _prec,
                 int nSCD1, int nSCD2, bool isse, bool _planar, IScriptEnvironment* env);
-	~MVFlowBlur();
-	PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env) override;
+  ~MVFlowBlur();
+  PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env) override;
 
   int __stdcall SetCacheHints(int cachehints, int frame_range) override {
     return cachehints == CACHE_GET_MTMODE ? MT_MULTI_INSTANCE : 0;

@@ -28,15 +28,15 @@ MVClip::MVClip(const PClip &vectors, sad_t _nSCD1, int _nSCD2, IScriptEnvironmen
 ,	_group_ofs (group_ofs)
 ,	_frame_update_flag (true)
 {
-	vi.num_frames = (vi.num_frames - group_ofs + group_len - 1) / group_len;
-	vi.MulDivFPS (1, group_len);
+  vi.num_frames = (vi.num_frames - group_ofs + group_len - 1) / group_len;
+  vi.MulDivFPS (1, group_len);
 /* Memo: filled up with hack:
 #if !defined(MV_64BIT)
-	vi.nchannels = reinterpret_cast <uintptr_t> (&_mad);
+  vi.nchannels = reinterpret_cast <uintptr_t> (&_mad);
 #else
-	uintptr_t p = reinterpret_cast <uintptr_t> (&_mad);
-	vi.nchannels = 0x80000000L | (int)(p >> 32);
-	vi.sample_type = (int)(p & 0xffffffffUL);
+  uintptr_t p = reinterpret_cast <uintptr_t> (&_mad);
+  vi.nchannels = 0x80000000L | (int)(p >> 32);
+  vi.sample_type = (int)(p & 0xffffffffUL);
 #endif
 */
    // we fetch the handle on the analyze filter
@@ -48,14 +48,14 @@ MVClip::MVClip(const PClip &vectors, sad_t _nSCD1, int _nSCD2, IScriptEnvironmen
     uintptr_t p = (((uintptr_t)(unsigned int)vi.nchannels ^ 0x80000000) << 32) | (uintptr_t)(unsigned int)vi.sample_type;
     MVAnalysisData *pAnalyseFilter = reinterpret_cast<MVAnalysisData *>(p); 
 #endif
-	if (vi.nchannels >= 0 &&  vi.nchannels < 9) // seems some normal clip instead of vectors
-	     env->ThrowError("MVTools: invalid vector stream");
+  if (vi.nchannels >= 0 &&  vi.nchannels < 9) // seems some normal clip instead of vectors
+       env->ThrowError("MVTools: invalid vector stream");
 
-	// 'magic' key, just to check :
-	if ( pAnalyseFilter->GetMagicKey() != MVAnalysisData::MOTION_MAGIC_KEY )
+  // 'magic' key, just to check :
+  if ( pAnalyseFilter->GetMagicKey() != MVAnalysisData::MOTION_MAGIC_KEY )
       env->ThrowError("MVTools: invalid vector stream");
 
-	update_analysis_data (*pAnalyseFilter);
+  update_analysis_data (*pAnalyseFilter);
 
    // SCD thresholds
    // when nScd was 999999 (called from MRecalc) then this one would overflow at bits >= 12!
@@ -104,7 +104,7 @@ void MVClip::SetVectorsNeed(bool srcluma, bool refluma, bool var,
 
 void	MVClip::update_analysis_data (const MVAnalysisData &adata)
 {
-	assert (&adata != 0);
+  assert (&adata != 0);
 
    // MVAnalysisData
    nBlkSizeX   = adata.GetBlkSizeX();
@@ -126,15 +126,15 @@ void	MVClip::update_analysis_data (const MVAnalysisData &adata)
    bits_per_pixel = adata.GetBitsPerPixel();
 //	sharp       = adata.GetSharp();
 //	usePelClip  = adata.UsePelClip();
-	nVPadding   = adata.GetVPadding();
-	nHPadding   = adata.GetHPadding();
-	nFlags      = adata.GetFlags();
+  nVPadding   = adata.GetVPadding();
+  nHPadding   = adata.GetHPadding();
+  nFlags      = adata.GetFlags();
 
    // MVClip
 //	nVPadding   = nBlkSizeY;
 //	nHPadding   = nBlkSizeX;
-	nBlkX       = adata.GetBlkX();
-	nBlkY       = adata.GetBlkY();
+  nBlkX       = adata.GetBlkX();
+  nBlkY       = adata.GetBlkY();
    nBlkCount   = nBlkX * nBlkY;
 }
 
@@ -142,85 +142,85 @@ void	MVClip::update_analysis_data (const MVAnalysisData &adata)
 
 int	MVClip::get_child_frame_index (int n) const
 {
-	return (n * _group_len + _group_ofs);
+  return (n * _group_len + _group_ofs);
 }
 
 
 
 ::PVideoFrame __stdcall MVClip::GetFrame (int n, IScriptEnvironment* env_ptr)
 {
-	const int		child_n = get_child_frame_index (n);
-	::PVideoFrame	frame_ptr = child->GetFrame (child_n, env_ptr);
-	if (_frame_update_flag)
-	{
-		const BYTE *		frame_data_ptr = frame_ptr->GetReadPtr ();
-		const MVAnalysisData &	ana_data =
-			*reinterpret_cast <const MVAnalysisData *> (frame_data_ptr + sizeof (int));
-		if (ana_data.nMagicKey != MVAnalysisData::MOTION_MAGIC_KEY)
-		{
-			env_ptr->ThrowError("MVTools: invalid vector stream");
-		}
-		if (ana_data.nVersion != MVAnalysisData::VERSION)
-		{
-			env_ptr->ThrowError("MVTools: incompatible version of vector stream");
-		}
-		update_analysis_data (ana_data);
+  const int		child_n = get_child_frame_index (n);
+  ::PVideoFrame	frame_ptr = child->GetFrame (child_n, env_ptr);
+  if (_frame_update_flag)
+  {
+    const BYTE *		frame_data_ptr = frame_ptr->GetReadPtr ();
+    const MVAnalysisData &	ana_data =
+      *reinterpret_cast <const MVAnalysisData *> (frame_data_ptr + sizeof (int));
+    if (ana_data.nMagicKey != MVAnalysisData::MOTION_MAGIC_KEY)
+    {
+      env_ptr->ThrowError("MVTools: invalid vector stream");
+    }
+    if (ana_data.nVersion != MVAnalysisData::VERSION)
+    {
+      env_ptr->ThrowError("MVTools: incompatible version of vector stream");
+    }
+    update_analysis_data (ana_data);
 
-		_frame_update_flag = false;
-	}
+    _frame_update_flag = false;
+  }
 
-	return (frame_ptr);
+  return (frame_ptr);
 }
 
 
 
 bool __stdcall MVClip::GetParity (int n)
 {
-	const int		child_n = get_child_frame_index (n);
+  const int		child_n = get_child_frame_index (n);
 
-	return (child->GetParity (child_n));
+  return (child->GetParity (child_n));
 }
 
 
 
 void MVClip::Update (PVideoFrame &fn, IScriptEnvironment *env)
 {
-	assert (&fn != 0);
-	assert (env != 0);
+  assert (&fn != 0);
+  assert (env != 0);
 
   // vector clip is rgb32
-	const int		bytes_per_pix = vi.BitsPerPixel () >> 3; 
+  const int		bytes_per_pix = vi.BitsPerPixel () >> 3; 
   // for calculation of buffer size 
 
   const int		line_size = vi.width * bytes_per_pix;	// in bytes
-	int				data_size = vi.height * line_size / sizeof(int);	// in 32-bit words
+  int				data_size = vi.height * line_size / sizeof(int);	// in 32-bit words
 
-	const int *pMv = reinterpret_cast<const int*>(fn->GetReadPtr());
-	if (vi.height > 1 && fn->GetPitch () != line_size)
-	{
-		env->ThrowError("MVTools: width and pitch are not equal in this multi-line vector clip");
-	}
-	int header_size = pMv[0];
-	int nMagicKey1 = pMv[1];
-	if (nMagicKey1 != MVAnalysisData::MOTION_MAGIC_KEY)
-	{
-		env->ThrowError("MVTools: invalid vector stream");
-	}
-	int nVersion1 = pMv[2];
-	if (nVersion1 != MVAnalysisData::VERSION)
-	{
-		env->ThrowError("MVTools: incompatible version of vector stream");
-	}
+  const int *pMv = reinterpret_cast<const int*>(fn->GetReadPtr());
+  if (vi.height > 1 && fn->GetPitch () != line_size)
+  {
+    env->ThrowError("MVTools: width and pitch are not equal in this multi-line vector clip");
+  }
+  int header_size = pMv[0];
+  int nMagicKey1 = pMv[1];
+  if (nMagicKey1 != MVAnalysisData::MOTION_MAGIC_KEY)
+  {
+    env->ThrowError("MVTools: invalid vector stream");
+  }
+  int nVersion1 = pMv[2];
+  if (nVersion1 != MVAnalysisData::VERSION)
+  {
+    env->ThrowError("MVTools: incompatible version of vector stream");
+  }
 
   // 17.05.22 filling from motion vector clip
-	const int		hs_i32 = header_size / sizeof(int);
-	pMv       += hs_i32;									// go to data - v1.8.1
-	data_size -= hs_i32;
+  const int		hs_i32 = header_size / sizeof(int);
+  pMv       += hs_i32;									// go to data - v1.8.1
+  data_size -= hs_i32;
   const bool		ok_flag = FakeGroupOfPlanes::Update(pMv, data_size);	// fixed a bug with lost frames
-	if (! ok_flag)
-	{
-		env->ThrowError("MVTools: vector clip is too small (corrupted?)");
-	}
+  if (! ok_flag)
+  {
+    env->ThrowError("MVTools: vector clip is too small (corrupted?)");
+  }
 }
 
 
@@ -229,35 +229,35 @@ void MVClip::Update (PVideoFrame &fn, IScriptEnvironment *env)
 // before calling the function.
 void	MVClip::use_ref_frame (int &ref_index, bool &usable_flag, PClip &super, int n, IScriptEnvironment *env_ptr)
 {
-	if (usable_flag)
-	{
-		int				off = GetDeltaFrame ();
-		if (off > 0)
-		{
-			off *= (IsBackward ()) ? 1 : -1;
-			ref_index = n + off;
-		}
-		else
-		{
-			ref_index = -off;
-		}
+  if (usable_flag)
+  {
+    int				off = GetDeltaFrame ();
+    if (off > 0)
+    {
+      off *= (IsBackward ()) ? 1 : -1;
+      ref_index = n + off;
+    }
+    else
+    {
+      ref_index = -off;
+    }
 
-		const ::VideoInfo &vi_super = super->GetVideoInfo ();
-		if (ref_index < 0 || ref_index >= vi_super.num_frames)
-		{
-			usable_flag = false;
-		}
-	}
+    const ::VideoInfo &vi_super = super->GetVideoInfo ();
+    if (ref_index < 0 || ref_index >= vi_super.num_frames)
+    {
+      usable_flag = false;
+    }
+  }
 }
 
 void	MVClip::use_ref_frame (PVideoFrame &ref, bool &usable_flag, PClip &super, int n, IScriptEnvironment *env_ptr)
 {
-	int				ref_index;
-	use_ref_frame (ref_index, usable_flag, super, n, env_ptr);
-	if (usable_flag)
-	{
-		ref = super->GetFrame (ref_index, env_ptr);
-	}
+  int				ref_index;
+  use_ref_frame (ref_index, usable_flag, super, n, env_ptr);
+  if (usable_flag)
+  {
+    ref = super->GetFrame (ref_index, env_ptr);
+  }
 }
 
 

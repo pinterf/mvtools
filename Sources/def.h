@@ -20,7 +20,7 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 #pragma once
 
 #if defined (_MSC_VER)
-	#pragma warning (4 : 4250) // "Inherits via dominance."
+  #pragma warning (4 : 4250) // "Inherits via dominance."
 #endif
 
 
@@ -60,7 +60,7 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 // Name is a string containing only alpha+num+underscore, free of double quotes.
 // Requires a ";" at the end.
 #define  CHECK_COMPILE_TIME(name, cond)	\
-	typedef int CHECK_COMPILE_TIME_##name##_##__LINE__ [(cond) ? 1 : -1]
+  typedef int CHECK_COMPILE_TIME_##name##_##__LINE__ [(cond) ? 1 : -1]
 
 const long double	PI  = 3.1415926535897932384626433832795L;
 const long double	LN2 = 0.69314718055994530941723212145818L;

@@ -48,7 +48,7 @@ public:
    void RefineExt(const uint8_t *pSrc2x_8, int nSrc2xPitch, bool isExtPadded); //2.0.08
    
    void reduce_start (MVPlane *pReducedPlane);
-	void reduce_wait ();
+  void reduce_wait ();
    void WritePlane(FILE *pFile);
 
   template <int NPELL2>
@@ -63,8 +63,8 @@ public:
 
   MV_FORCEINLINE const uint8_t *GetAbsolutePelPointer(int nX, int nY) const
    {
-		return pPlane[0] + (nX << pixelsize_shift) + nY * nPitch;
-	}
+    return pPlane[0] + (nX << pixelsize_shift) + nY * nPitch;
+  }
 
   template <int NPELL2>
   MV_FORCEINLINE const uint8_t* GetPointerPel(int nX, int nY) const
@@ -84,22 +84,22 @@ public:
 
 private:
 
-	typedef	MTFlowGraphSched <MVPlane, MTFlowGraphSimple <16>, MVPlane, 16>	SchedulerRefine;
-	typedef	MTSlicer <MVPlane>	SlicerReduce;
+  typedef	MTFlowGraphSched <MVPlane, MTFlowGraphSimple <16>, MVPlane, 16>	SchedulerRefine;
+  typedef	MTSlicer <MVPlane>	SlicerReduce;
 
-	typedef void (*InterpFncPtr) (
-		unsigned char *pDst, const unsigned char *pSrc,
-	   int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel
-	);
+  typedef void (*InterpFncPtr) (
+    unsigned char *pDst, const unsigned char *pSrc,
+     int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel
+  );
 
-	typedef void (*ReducePtr) (
-		unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch,
-		int nWidth, int nHeight, int y_beg, int y_end, int cpuFlags
-	);
+  typedef void (*ReducePtr) (
+    unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch,
+    int nWidth, int nHeight, int y_beg, int y_end, int cpuFlags
+  );
 
-	void	refine_pel2 (SchedulerRefine::TaskData &td);
-	void	refine_pel4 (SchedulerRefine::TaskData &td);
-	void	reduce_slice (SlicerReduce::TaskData &td);
+  void	refine_pel2 (SchedulerRefine::TaskData &td);
+  void	refine_pel4 (SchedulerRefine::TaskData &td);
+  void	reduce_slice (SlicerReduce::TaskData &td);
 
    uint8_t **pPlane;
    int nWidth;
@@ -118,34 +118,34 @@ private:
    int pixelsize_shift; // prevent multiplicaion of *pixelsize, use shift
 
    int nPel;
-	int nSharp;		// Set only from MSuper, used in Refine()
-	int nRfilter;	// Same as above, for ReduceTo()
+  int nSharp;		// Set only from MSuper, used in Refine()
+  int nRfilter;	// Same as above, for ReduceTo()
 
    int cpuFlags;
-	bool _mt_flag;
+  bool _mt_flag;
 
    bool isPadded;
    bool isRefined;
    bool isFilled;
 
-	InterpFncPtr	_bilin_hor_ptr;
-	InterpFncPtr	_bilin_ver_ptr;
-	InterpFncPtr	_bilin_dia_ptr;
-	InterpFncPtr	_bicubic_hor_ptr;
-	InterpFncPtr	_bicubic_ver_ptr;
-	InterpFncPtr	_wiener_hor_ptr;
-	InterpFncPtr	_wiener_ver_ptr;
-	void				(*_average_ptr) (unsigned char*, const unsigned char*, const unsigned char*, int, int, int);
+  InterpFncPtr	_bilin_hor_ptr;
+  InterpFncPtr	_bilin_ver_ptr;
+  InterpFncPtr	_bilin_dia_ptr;
+  InterpFncPtr	_bicubic_hor_ptr;
+  InterpFncPtr	_bicubic_ver_ptr;
+  InterpFncPtr	_wiener_hor_ptr;
+  InterpFncPtr	_wiener_ver_ptr;
+  void				(*_average_ptr) (unsigned char*, const unsigned char*, const unsigned char*, int, int, int);
 
-	ReducePtr		_reduce_ptr;
+  ReducePtr		_reduce_ptr;
 
-	SchedulerRefine
-						_sched_refine;
-	MTFlowGraphSimple <16>
-						_plan_refine;
+  SchedulerRefine
+            _sched_refine;
+  MTFlowGraphSimple <16>
+            _plan_refine;
 
-	SlicerReduce	_slicer_reduce;
-	MVPlane *		_redp_ptr;			// The plane where the reduction is rendered.
+  SlicerReduce	_slicer_reduce;
+  MVPlane *		_redp_ptr;			// The plane where the reduction is rendered.
 };
 
 template <int NPELL2>

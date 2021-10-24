@@ -27,38 +27,38 @@
 class FakePlaneOfBlocks
 {
 
-	int nWidth_Bi;
-	int nHeight_Bi;
-	int nBlkX;
-	int nBlkY;
-	int nBlkSizeX;
-	int nBlkSizeY;
-	int nBlkCount;
-	int nPel;
-	int nLogPel;
-	int nScale;
-	int nLogScale;
-	int nOverlapX;
-	int nOverlapY;
+  int nWidth_Bi;
+  int nHeight_Bi;
+  int nBlkX;
+  int nBlkY;
+  int nBlkSizeX;
+  int nBlkSizeY;
+  int nBlkCount;
+  int nPel;
+  int nLogPel;
+  int nScale;
+  int nLogScale;
+  int nOverlapX;
+  int nOverlapY;
 
-	FakeBlockData *blocks;
+  FakeBlockData *blocks;
 
 public :
 
-	FakePlaneOfBlocks(int sizex,  int sizey, int lv, int pel, int overlapx, int overlapy, int nBlkX, int nBlkY);
-	~FakePlaneOfBlocks();
+  FakePlaneOfBlocks(int sizex,  int sizey, int lv, int pel, int overlapx, int overlapy, int nBlkX, int nBlkY);
+  ~FakePlaneOfBlocks();
 
-	void Update(const int *array);
-	bool IsSceneChange(sad_t nTh1, int nTh2) const;
+  void Update(const int *array);
+  bool IsSceneChange(sad_t nTh1, int nTh2) const;
 
   MV_FORCEINLINE bool IsInFrame(int i) const
-	{
-		return (( i >= 0 ) && ( i < nBlkCount ));
-	}
+  {
+    return (( i >= 0 ) && ( i < nBlkCount ));
+  }
 
   MV_FORCEINLINE const FakeBlockData& operator[](const int i) const {
-		return (blocks[i]);
-	}
+    return (blocks[i]);
+  }
 
   MV_FORCEINLINE int GetBlockCount() const { return nBlkCount; }
   MV_FORCEINLINE int GetReducedWidth() const { return nBlkX; }

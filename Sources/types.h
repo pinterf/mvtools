@@ -20,7 +20,7 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 #pragma once
 
 #if defined (_MSC_VER)
-	#pragma warning (4 : 4250) // "Inherits via dominance."
+  #pragma warning (4 : 4250) // "Inherits via dominance."
 #endif
 
 #include <stdint.h>

@@ -57,22 +57,22 @@ MVGroupOfFrames::MVGroupOfFrames(int _nLevelCount, int _nWidth, int _nHeight, in
 
 void MVGroupOfFrames::Update(int nMode, uint8_t * pSrcY, int pitchY, uint8_t * pSrcU, int pitchU, uint8_t *pSrcV, int pitchV) // v2.0
 {
-	for ( int i = 0; i < nLevelCount; i++ )
-	{
+  for ( int i = 0; i < nLevelCount; i++ )
+  {
         // offsets are pixelsize-aware because pitch is in bytes
-		unsigned int offY = PlaneSuperOffset(false, nHeight, i, nPel, nVPad, pitchY, yRatioUV); // no need here xRatioUV and pixelsize
-		unsigned int offU = PlaneSuperOffset(true, nHeight/yRatioUV, i, nPel, nVPad/yRatioUV, pitchU, yRatioUV);
-		unsigned int offV = PlaneSuperOffset(true, nHeight/yRatioUV, i, nPel, nVPad/yRatioUV, pitchV, yRatioUV);
-		pFrames[i]->Update (nMode, pSrcY+offY, pitchY, pSrcU+offU, pitchU, pSrcV+offV, pitchV);
-	}
+    unsigned int offY = PlaneSuperOffset(false, nHeight, i, nPel, nVPad, pitchY, yRatioUV); // no need here xRatioUV and pixelsize
+    unsigned int offU = PlaneSuperOffset(true, nHeight/yRatioUV, i, nPel, nVPad/yRatioUV, pitchU, yRatioUV);
+    unsigned int offV = PlaneSuperOffset(true, nHeight/yRatioUV, i, nPel, nVPad/yRatioUV, pitchV, yRatioUV);
+    pFrames[i]->Update (nMode, pSrcY+offY, pitchY, pSrcU+offU, pitchU, pSrcV+offV, pitchV);
+  }
 }
 
 MVGroupOfFrames::~MVGroupOfFrames()
 {
    for ( int i = 0; i < nLevelCount; i++ )
-	{
+  {
       delete pFrames[i];
-	}
+  }
 
    delete[] pFrames;
 }
@@ -128,8 +128,8 @@ void MVGroupOfFrames::Reduce(MVPlaneSet _nMode)
 void MVGroupOfFrames::ResetState()
 {
    for ( int i = 0; i < nLevelCount; i++ )
-	{
+  {
       pFrames[i]->ResetState();
-	}
+  }
 }
 

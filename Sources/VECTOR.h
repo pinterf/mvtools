@@ -26,15 +26,15 @@
 
 struct VECTOR
 {
-	union
-	{
-		struct
-		{
-			int x;
-			int y;
-		};
-		int coord [2];
-	};
+  union
+  {
+    struct
+    {
+      int x;
+      int y;
+    };
+    int coord [2];
+  };
   sad_t sad;
 };
 

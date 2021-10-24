@@ -27,10 +27,10 @@
 
 MVFilter::MVFilter(const PClip &vector, const char *filterName, IScriptEnvironment *env, int group_len, int group_ofs)
 {
-	if (vector == 0)
-		env->ThrowError("Error in %s : vector clip must be specified", filterName); //v1.8
+  if (vector == 0)
+    env->ThrowError("Error in %s : vector clip must be specified", filterName); //v1.8
 
-	MVClip mvClip(vector, 0, 0, env, group_len, group_ofs);
+  MVClip mvClip(vector, 0, 0, env, group_len, group_ofs);
 
    nWidth = mvClip.GetWidth();
    nHeight = mvClip.GetHeight();

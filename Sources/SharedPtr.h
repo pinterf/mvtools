@@ -19,8 +19,8 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 #define	SharedPtr_HEADER_INCLUDED
 
 #if defined (_MSC_VER)
-	#pragma once
-	#pragma warning (4 : 4250)
+  #pragma once
+  #pragma warning (4 : 4250)
 #endif
 
 
@@ -37,41 +37,41 @@ class SharedPtr
 
 public:
 
-	typedef	T	DataType;
+  typedef	T	DataType;
 
-						SharedPtr ();
-						SharedPtr (const SharedPtr <T> &other);
-	explicit			SharedPtr (T *ptr);
-						~SharedPtr ();
+            SharedPtr ();
+            SharedPtr (const SharedPtr <T> &other);
+  explicit			SharedPtr (T *ptr);
+            ~SharedPtr ();
 
-	SharedPtr <T> &operator = (const SharedPtr <T> &other);
-	void				swap (SharedPtr<T> &other);
-	
-	template <class U>
-	void				assign_static (const SharedPtr <U> &other);
-	template <class U>
-	void				assign_dynamic (const SharedPtr <U> &other);
-	template <class U>
-	void				assign_reinterpret (const SharedPtr <U> &other);
-	
-						operator SharedPtr <const T> () const;
+  SharedPtr <T> &operator = (const SharedPtr <T> &other);
+  void				swap (SharedPtr<T> &other);
+  
+  template <class U>
+  void				assign_static (const SharedPtr <U> &other);
+  template <class U>
+  void				assign_dynamic (const SharedPtr <U> &other);
+  template <class U>
+  void				assign_reinterpret (const SharedPtr <U> &other);
+  
+            operator SharedPtr <const T> () const;
 
-	T *				get () const;
-	T *				operator -> () const;
-	T &				operator * () const;
-	void				destroy ();
+  T *				get () const;
+  T *				operator -> () const;
+  T &				operator * () const;
+  void				destroy ();
 
-	long				get_count () const;
+  long				get_count () const;
 
-	bool				is_valid () const;
+  bool				is_valid () const;
 
 
 
 /*\\\ INTERNAL \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
-	// Do not use those functions (for implementation only)
-						SharedPtr (T *other_ptr, long *count_ptr);
-	long *			get_counter_ref () const;
+  // Do not use those functions (for implementation only)
+            SharedPtr (T *other_ptr, long *count_ptr);
+  long *			get_counter_ref () const;
 
 
 
@@ -85,13 +85,13 @@ protected:
 
 private:
 
-	bool				is_consistent (const SharedPtr <T> &other) const;
+  bool				is_consistent (const SharedPtr <T> &other) const;
 
-	void				add_ref ();
-	void				destroy_complete ();
+  void				add_ref ();
+  void				destroy_complete ();
 
-	DataType *		_obj_ptr;		// 0 if no associated object
-	long *			_count_ptr;		// 0 if no associated object
+  DataType *		_obj_ptr;		// 0 if no associated object
+  long *			_count_ptr;		// 0 if no associated object
 
 
 
@@ -106,19 +106,19 @@ private:
 template <class T, class U>
 bool	operator == (const SharedPtr <T> &l_op, const SharedPtr <U> &r_op)
 {
-	return (l_op.get () == r_op.get ());
+  return (l_op.get () == r_op.get ());
 }
 
 template <class T, class U>
 bool	operator != (const SharedPtr <T> &l_op, const SharedPtr <U> &r_op)
 {
-	return (l_op.get () != r_op.get ());
+  return (l_op.get () != r_op.get ());
 }
 
 template <class T, class U>
 bool	operator < (const SharedPtr <T> &l_op, const SharedPtr <U> &r_op)
 {
-	return (l_op.get () < r_op.get ());
+  return (l_op.get () < r_op.get ());
 }
 
 

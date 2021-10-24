@@ -43,19 +43,19 @@ void FakeGroupOfPlanes::Create(int nBlkSizeX, int nBlkSizeY, int nLevelCount, in
 
    planes = new FakePlaneOfBlocks*[nLevelCount];
    planes[0] = new FakePlaneOfBlocks(nBlkSizeX, nBlkSizeY, 0, nPel, nOverlapX, nOverlapY, nBlkX1, nBlkY1);
-	for (int i = 1; i < nLevelCount; i++ )
-	{
-	    nBlkX1 = ((nWidth_B>>i) - nOverlapX)/(nBlkSizeX-nOverlapX);
-	    nBlkY1 = ((nHeight_B>>i) - nOverlapY)/(nBlkSizeY-nOverlapY);
-		planes[i] = new FakePlaneOfBlocks(nBlkSizeX, nBlkSizeY, i, 1, nOverlapX, nOverlapY, nBlkX1, nBlkY1); // fixed bug with nOverlapX in v1.10.2
-	}
+  for (int i = 1; i < nLevelCount; i++ )
+  {
+      nBlkX1 = ((nWidth_B>>i) - nOverlapX)/(nBlkSizeX-nOverlapX);
+      nBlkY1 = ((nHeight_B>>i) - nOverlapY)/(nBlkSizeY-nOverlapY);
+    planes[i] = new FakePlaneOfBlocks(nBlkSizeX, nBlkSizeY, i, 1, nOverlapX, nOverlapY, nBlkX1, nBlkY1); // fixed bug with nOverlapX in v1.10.2
+  }
 //   InitializeCriticalSection(&cs); P.F.16.03.08 caused 0xC0000005! moved to the constructor!
 }
 
 FakeGroupOfPlanes::FakeGroupOfPlanes()
 {
-	//InitializeCriticalSection(&cs); // 16.03.08 moved here from ::Create
-	planes = 0;
+  //InitializeCriticalSection(&cs); // 16.03.08 moved here from ::Create
+  planes = 0;
 }
 
 FakeGroupOfPlanes::~FakeGroupOfPlanes()
@@ -63,9 +63,9 @@ FakeGroupOfPlanes::~FakeGroupOfPlanes()
    if ( planes )
    {
       for ( int i = 0; i < nLvCount_; i++ )
-		   delete planes[i];
-	   delete[] planes;
-	   planes = 0; //v1.2.1
+       delete planes[i];
+     delete[] planes;
+     planes = 0; //v1.2.1
    }
    //DeleteCriticalSection(&cs); 
 }
@@ -74,22 +74,22 @@ FakeGroupOfPlanes::~FakeGroupOfPlanes()
 // Returns false on error.
 bool FakeGroupOfPlanes::Update(const int *array, int data_size)
 {
-	//::EnterCriticalSection (&cs);
+  //::EnterCriticalSection (&cs);
   std::lock_guard<std::mutex> lock(cs);
 
-	bool				ok_flag = true;
+  bool				ok_flag = true;
 
-	validity = GetValidity(array);
-	const int *		pA = 0;
-	
-	// Checks available data
-	pA = array;
+  validity = GetValidity(array);
+  const int *		pA = 0;
+  
+  // Checks available data
+  pA = array;
 
    pA += 2;
-	ok_flag = (pA - array <= data_size);
+  ok_flag = (pA - array <= data_size);
 
-	for ( int i = nLvCount_ - 1; i >= 0 && ok_flag; i-- )
-	{
+  for ( int i = nLvCount_ - 1; i >= 0 && ok_flag; i-- )
+  {
     int length = pA[0];
     // special case for length set in GroupOfPlanes::ExtraDivide
     // from 2.7.14.22
@@ -99,32 +99,32 @@ bool FakeGroupOfPlanes::Update(const int *array, int data_size)
       pA += length;
       ok_flag = (pA - array <= data_size);
     }
-	}
+  }
 
 //   compensatedPlane = reinterpret_cast<const unsigned char *>(pA);
 //   compensatedPlaneU = compensatedPlane + nWidth_B * nHeight_B;
 //   compensatedPlaneV = compensatedPlaneU + nWidth_B * nHeight_B /(2*yRatioUV_B);
 
-	// Actually collects the data
-	if (ok_flag)
-	{
-		pA = array;
-		pA += 2;
-		for ( int i = nLvCount_ - 1; i >= 0; i-- )
-		{
+  // Actually collects the data
+  if (ok_flag)
+  {
+    pA = array;
+    pA += 2;
+    for ( int i = nLvCount_ - 1; i >= 0; i-- )
+    {
       planes[i]->Update(pA + 1);
       int length = pA[0];
       if (!(length == 0xFFFFFFFF && i == 0)) // extradivide case
         pA += length;
-		}
-	}
+    }
+  }
 
-	//::LeaveCriticalSection (&cs);
+  //::LeaveCriticalSection (&cs);
 
-	return (ok_flag);
+  return (ok_flag);
 }
 
 bool FakeGroupOfPlanes::IsSceneChange(sad_t nThSCD1, int nThSCD2) const
 {
-	return planes[0]->IsSceneChange(nThSCD1, nThSCD2);
+  return planes[0]->IsSceneChange(nThSCD1, nThSCD2);
 }

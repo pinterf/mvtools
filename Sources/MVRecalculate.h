@@ -44,27 +44,27 @@ class MVRecalculate
 {
 protected:
 
-	class SrcRefData
-	{
-	public:
-	   MVAnalysisData _analysis_data;
-	   MVAnalysisData _analysis_data_divided;
+  class SrcRefData
+  {
+  public:
+     MVAnalysisData _analysis_data;
+     MVAnalysisData _analysis_data_divided;
 
-		SharedPtr <MVClip>
-		               _clip_sptr;
-	};
-	typedef	std::vector <SrcRefData>	SrcRefArray;
+    SharedPtr <MVClip>
+                   _clip_sptr;
+  };
+  typedef	std::vector <SrcRefData>	SrcRefArray;
 
-	SrcRefArray    _srd_arr;
+  SrcRefArray    _srd_arr;
 
-	/*! \brief Frames of blocks for which motion vectors will be computed */
-	std::unique_ptr <GroupOfPlanes>
-	               _vectorfields_aptr;	// Temporary data, structure initialised once.
+  /*! \brief Frames of blocks for which motion vectors will be computed */
+  std::unique_ptr <GroupOfPlanes>
+                 _vectorfields_aptr;	// Temporary data, structure initialised once.
 
   bool has_at_least_v8;
 
    /*! \brief isse optimisations enabled */
-	//bool           isse;
+  //bool           isse;
   int cpuFlags;
 
    /*! \brief motion vecteur cost factor */
@@ -74,46 +74,46 @@ protected:
    SearchType     searchType;
 
    /*! \brief additionnal parameter for this search */
-	int            nSearchParam;  // usually search radius
+  int            nSearchParam;  // usually search radius
 
 //	int            nPelSearch;    // search radius at finest level
 
-	sad_t            lsad;          // SAD limit for lambda using - added by Fizick
-	int            pnew;          // penalty to cost for new canditate - added by Fizick
-	int            plen;          // penalty factor (similar to lambda) for vector length - added by Fizick
-	int            plevel;        // penalty factors (lambda, plen) level scaling - added by Fizick
+  sad_t            lsad;          // SAD limit for lambda using - added by Fizick
+  int            pnew;          // penalty to cost for new canditate - added by Fizick
+  int            plen;          // penalty factor (similar to lambda) for vector length - added by Fizick
+  int            plevel;        // penalty factors (lambda, plen) level scaling - added by Fizick
 //	bool           global;        // use global motion predictor
-	const char *   outfilename;   // vectors output file
+  const char *   outfilename;   // vectors output file
 //	PClip          pelclip;       // upsized source clip with doubled frame width and heigth (used for pel=2)
-	int            divideExtra;   // divide blocks on sublocks with median motion
-	int            smooth;        // smooth vector interpolation or by nearest neighbors
-	bool           meander;       //meander (alternate) scan blocks (even row left to right, odd row right to left
+  int            divideExtra;   // divide blocks on sublocks with median motion
+  int            smooth;        // smooth vector interpolation or by nearest neighbors
+  bool           meander;       //meander (alternate) scan blocks (even row left to right, odd row right to left
 
-	FILE *         outfile;
-	short *        outfilebuf;
+  FILE *         outfile;
+  short *        outfilebuf;
 
-	YUY2Planes *   SrcPlanes;
-	YUY2Planes *   RefPlanes;
-	YUY2Planes *   Src2xPlanes;
-	YUY2Planes *   Ref2xPlanes;
+  YUY2Planes *   SrcPlanes;
+  YUY2Planes *   RefPlanes;
+  YUY2Planes *   Src2xPlanes;
+  YUY2Planes *   Ref2xPlanes;
 
-	std::unique_ptr <DCTFactory>
-	               _dct_factory_ptr;	// Not instantiated if not needed
-	conc::ObjPool <DCTClass>
-	               _dct_pool;
+  std::unique_ptr <DCTFactory>
+                 _dct_factory_ptr;	// Not instantiated if not needed
+  conc::ObjPool <DCTClass>
+                 _dct_pool;
 
-	int headerSize;
+  int headerSize;
 
-	sad_t            thSAD;
+  sad_t            thSAD;
 
-	MVGroupOfFrames *             //v2.0
-	               pSrcGOF;
-	MVGroupOfFrames *
-	               pRefGOF;
-	int            nModeYUV;
+  MVGroupOfFrames *             //v2.0
+                 pSrcGOF;
+  MVGroupOfFrames *
+                 pRefGOF;
+  int            nModeYUV;
 
-	int            _nbr_srd;
-	bool           _mt_flag;
+  int            _nbr_srd;
+  bool           _mt_flag;
 
     int pixelsize; // PF
     int bits_per_pixel;
@@ -122,16 +122,16 @@ protected:
 
 public :
 
-	MVRecalculate (
-		PClip _super, PClip _vectors, sad_t thSAD, int smooth,
-		int _blksizex, int _blksizey, int st, int stp, int lambda, bool chroma,
-		int _pnew, int _overlapx, int _overlapy, const char* _outfilename,
-		int _dctmode, int _divide, int _sadx264, bool _isse, bool _meander,
-		int trad, bool mt_flag, int _chromaSADScale, int _optSearchOption, int _optPredictorType, IScriptEnvironment* env
-	);
-	~MVRecalculate();
+  MVRecalculate (
+    PClip _super, PClip _vectors, sad_t thSAD, int smooth,
+    int _blksizex, int _blksizey, int st, int stp, int lambda, bool chroma,
+    int _pnew, int _overlapx, int _overlapy, const char* _outfilename,
+    int _dctmode, int _divide, int _sadx264, bool _isse, bool _meander,
+    int trad, bool mt_flag, int _chromaSADScale, int _optSearchOption, int _optPredictorType, IScriptEnvironment* env
+  );
+  ~MVRecalculate();
 
-	PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env) override;
+  PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env) override;
 
   int __stdcall SetCacheHints(int cachehints, int frame_range) override {
     return cachehints == CACHE_GET_MTMODE ? MT_MULTI_INSTANCE : 0;
@@ -139,7 +139,7 @@ public :
 
 private:
 
-	void				load_src_frame (MVGroupOfFrames &gof, ::PVideoFrame &src, const MVAnalysisData &ana_data);
+  void				load_src_frame (MVGroupOfFrames &gof, ::PVideoFrame &src, const MVAnalysisData &ana_data);
 
 };
 

@@ -105,17 +105,17 @@ void MVFrame::ChangePlane(const uint8_t *pNewPlane, int nNewPitch, MVPlaneSet _n
 void	MVFrame::set_interp (MVPlaneSet _nMode, int rfilter, int sharp)
 {
    if (nMode & YPLANE & _nMode)
-	{
+  {
       pYPlane->set_interp (rfilter, sharp);
-	}
+  }
    if (nMode & UPLANE & _nMode)
-	{
+  {
       pUPlane->set_interp (rfilter, sharp);
-	}
+  }
    if (nMode & VPLANE & _nMode)
-	{
+  {
       pVPlane->set_interp (rfilter, sharp);
-	}
+  }
 }
 
 
@@ -123,30 +123,30 @@ void	MVFrame::set_interp (MVPlaneSet _nMode, int rfilter, int sharp)
 void MVFrame::Refine(MVPlaneSet _nMode)
 {
    if (nMode & YPLANE & _nMode)
-	{
+  {
       pYPlane->refine_start();
-	}
+  }
    if (nMode & UPLANE & _nMode)
-	{
+  {
       pUPlane->refine_start();
-	}
+  }
    if (nMode & VPLANE & _nMode)
-	{
+  {
       pVPlane->refine_start();
-	}
+  }
 
    if (nMode & YPLANE & _nMode)
-	{
+  {
       pYPlane->refine_wait();
-	}
+  }
    if (nMode & UPLANE & _nMode)
-	{
+  {
       pUPlane->refine_wait();
-	}
+  }
    if (nMode & VPLANE & _nMode)
-	{
+  {
       pVPlane->refine_wait();
-	}
+  }
 }
 
 
@@ -195,30 +195,30 @@ void MVFrame::WriteFrame(FILE *pFile)
 
 void MVFrame::ReduceTo(MVFrame *pFrame, MVPlaneSet _nMode)
 {
-	if (nMode & YPLANE & _nMode)
-	{
-		pYPlane->reduce_start (pFrame->GetPlane(YPLANE));
-	}
-	if (nMode & UPLANE & _nMode)
-	{
-		pUPlane->reduce_start (pFrame->GetPlane(UPLANE));
-	}
-	if (nMode & VPLANE & _nMode)
-	{
-		pVPlane->reduce_start (pFrame->GetPlane(VPLANE));
-	}
+  if (nMode & YPLANE & _nMode)
+  {
+    pYPlane->reduce_start (pFrame->GetPlane(YPLANE));
+  }
+  if (nMode & UPLANE & _nMode)
+  {
+    pUPlane->reduce_start (pFrame->GetPlane(UPLANE));
+  }
+  if (nMode & VPLANE & _nMode)
+  {
+    pVPlane->reduce_start (pFrame->GetPlane(VPLANE));
+  }
 
-	if (nMode & YPLANE & _nMode)
-	{
-		pYPlane->reduce_wait ();
-	}
-	if (nMode & UPLANE & _nMode)
-	{
-		pUPlane->reduce_wait ();
-	}
-	if (nMode & VPLANE & _nMode)
-	{
-		pVPlane->reduce_wait ();
-	}
+  if (nMode & YPLANE & _nMode)
+  {
+    pYPlane->reduce_wait ();
+  }
+  if (nMode & UPLANE & _nMode)
+  {
+    pUPlane->reduce_wait ();
+  }
+  if (nMode & VPLANE & _nMode)
+  {
+    pVPlane->reduce_wait ();
+  }
 }
 

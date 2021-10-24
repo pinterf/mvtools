@@ -28,26 +28,26 @@ class MVGroupOfFrames;
 
 class GroupOfPlanes
 {
-	int            nBlkSizeX;
-	int            nBlkSizeY;
-	int            nLevelCount;
-	int            nPel;
-	int            nFlags;
-	int            nOverlapX;
-	int            nOverlapY;
+  int            nBlkSizeX;
+  int            nBlkSizeY;
+  int            nLevelCount;
+  int            nPel;
+  int            nFlags;
+  int            nOverlapX;
+  int            nOverlapY;
   int            xRatioUV; // PF 160729
   int            yRatioUV;
     int           chromaSADScale; // P.F. 170504
     int            pixelsize; // PF 160729
     int bits_per_pixel;
-	int            divideExtra;
-	bool           _mt_flag;
+  int            divideExtra;
+  bool           _mt_flag;
   int optSearchOption; // DTL test
 
-	conc::ObjPool <DCTClass> *
-	               _dct_pool_ptr;
-	PlaneOfBlocks **
-	               planes;
+  conc::ObjPool <DCTClass> *
+                 _dct_pool_ptr;
+  PlaneOfBlocks **
+                 planes;
 
 public :
   GroupOfPlanes(
@@ -56,21 +56,21 @@ public :
     conc::ObjPool <DCTClass> *dct_pool_ptr,
     bool mt_flag, int _chromaSADScale, int _optSearchOption,
     IScriptEnvironment *env);
-	~GroupOfPlanes ();
-	void           SearchMVs (
-		MVGroupOfFrames *pSrcGOF, MVGroupOfFrames *pRefGOF,
-		SearchType searchType, int nSearchParam, int _PelSearch, int _nLambda,
-		sad_t _lsad, int _pnew, int _plevel, bool _global, int flags, int *out,
-		short * outfilebuf, int fieldShift, int _pzero, int _pglobal, sad_t badSAD,
-		int badrange, bool meander, int *vecPrev, bool tryMany, int optPredictorType);
-	void           WriteDefaultToArray (int *array);
-	int            GetArraySize ();
-	void           ExtraDivide (int *out, int flags);
-	void           RecalculateMVs (
-		MVClip &mvClip, MVGroupOfFrames *pSrcGOF, MVGroupOfFrames *pRefGOF,
-		SearchType _searchType, int _nSearchParam, int _nLambda, sad_t _lsad,
-		int _pnew, int flags, int *out, short * outfilebuf, int fieldShift,
-		sad_t thSAD, int smooth, bool meander, int optPredictorType);
+  ~GroupOfPlanes ();
+  void           SearchMVs (
+    MVGroupOfFrames *pSrcGOF, MVGroupOfFrames *pRefGOF,
+    SearchType searchType, int nSearchParam, int _PelSearch, int _nLambda,
+    sad_t _lsad, int _pnew, int _plevel, bool _global, int flags, int *out,
+    short * outfilebuf, int fieldShift, int _pzero, int _pglobal, sad_t badSAD,
+    int badrange, bool meander, int *vecPrev, bool tryMany, int optPredictorType);
+  void           WriteDefaultToArray (int *array);
+  int            GetArraySize ();
+  void           ExtraDivide (int *out, int flags);
+  void           RecalculateMVs (
+    MVClip &mvClip, MVGroupOfFrames *pSrcGOF, MVGroupOfFrames *pRefGOF,
+    SearchType _searchType, int _nSearchParam, int _nLambda, sad_t _lsad,
+    int _pnew, int flags, int *out, short * outfilebuf, int fieldShift,
+    sad_t thSAD, int smooth, bool meander, int optPredictorType);
 };
 
 #endif

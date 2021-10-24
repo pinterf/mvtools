@@ -1470,8 +1470,8 @@ void PlaneOfBlocks::OneTimeSearch(WorkingArea &workarea, int length)
 template<typename pixel_t>
 void PlaneOfBlocks::ExpandingSearch(WorkingArea &workarea, int r, int s, int mvx, int mvy) // diameter = 2*r + 1, step=s
 { // part of true enhaustive search (thin expanding square) around mvx, mvy
-	int i, j;
-	//	VECTOR mv = workarea.bestMV; // bug: it was pointer assignent, not values, so iterative! - v2.1
+  int i, j;
+  //	VECTOR mv = workarea.bestMV; // bug: it was pointer assignent, not values, so iterative! - v2.1
     // sides of square without corners
   for (i = -r + s; i < r; i += s) // without corners! - v2.1
   {
