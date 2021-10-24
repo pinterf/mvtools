@@ -302,7 +302,7 @@ void Degrain1to6_float_C(uint8_t *pDst, BYTE *pDstLsb, int WidthHeightForC, int 
 //   0: native 8 or 16
 //   1: 8bit in, lsb
 //   2: 8bit in, native16 out
-//   3: 8 bit in: float out
+//   3: 8 bit in: float out (out32)
 template<int blockWidth, int blockHeight, int out16_type, int level>
 void Degrain1to6_sse2(BYTE* pDst, BYTE* pDstLsb, int WidthHeightForC, int nDstPitch, const BYTE* pSrc, int nSrcPitch,
   const BYTE* pRefB[MAX_DEGRAIN], int BPitch[MAX_DEGRAIN], const BYTE* pRefF[MAX_DEGRAIN], int FPitch[MAX_DEGRAIN],
@@ -348,352 +348,239 @@ void Degrain1to6_sse2(BYTE* pDst, BYTE* pDstLsb, int WidthHeightForC, int nDstPi
     }
   }
 
-  if constexpr (lsb_flag || out16 || out32)
-  {
-    // 8 bit in 16 bits out
-    __m128i lsb_mask = _mm_set1_epi16(255);
-    for (int h = 0; h < realBlockHeight; h++)
-    {
-      for (int x = 0; x < blockWidth; x += 8)
-      {
-        __m128i val;
-        if constexpr (level == 6) {
-          val =
-            _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pSrc + x)), zero), ws),
-              _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[0] + x)), zero), wb1),
-                _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[0] + x)), zero), wf1),
-                  _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[1] + x)), zero), wb2),
-                    _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[1] + x)), zero), wf2),
-                      _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[2] + x)), zero), wb3),
-                        _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[2] + x)), zero), wf3),
-                          _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[3] + x)), zero), wb4),
-                            _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[3] + x)), zero), wf4),
-                              _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[4] + x)), zero), wb5),
-                                _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[4] + x)), zero), wf5),
-                                  _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[5] + x)), zero), wb6),
-                                    _mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[5] + x)), zero), wf6)))))))))))));
-        }
-        if constexpr (level == 5) {
-          val =
-            _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pSrc + x)), zero), ws),
-              _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[0] + x)), zero), wb1),
-                _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[0] + x)), zero), wf1),
-                  _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[1] + x)), zero), wb2),
-                    _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[1] + x)), zero), wf2),
-                      _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[2] + x)), zero), wb3),
-                        _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[2] + x)), zero), wf3),
-                          _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[3] + x)), zero), wb4),
-                            _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[3] + x)), zero), wf4),
-                              _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[4] + x)), zero), wb5),
-                                _mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[4] + x)), zero), wf5)))))))))));
-        }
-        if constexpr (level == 4) {
-          val =
-            _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pSrc + x)), zero), ws),
-              _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[0] + x)), zero), wb1),
-                _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[0] + x)), zero), wf1),
-                  _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[1] + x)), zero), wb2),
-                    _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[1] + x)), zero), wf2),
-                      _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[2] + x)), zero), wb3),
-                        _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[2] + x)), zero), wf3),
-                          _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[3] + x)), zero), wb4),
-                            _mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[3] + x)), zero), wf4)))))))));
-        }
-        if constexpr (level == 3) {
-          val =
-            _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pSrc + x)), zero), ws),
-              _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[0] + x)), zero), wb1),
-                _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[0] + x)), zero), wf1),
-                  _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[1] + x)), zero), wb2),
-                    _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[1] + x)), zero), wf2),
-                      _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[2] + x)), zero), wb3),
-                        _mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[2] + x)), zero), wf3)))))));
-        }
-        else if constexpr (level == 2) {
-          val =
-            _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pSrc + x)), zero), ws),
-              _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[0] + x)), zero), wb1),
-                _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[0] + x)), zero), wf1),
-                  _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[1] + x)), zero), wb2),
-                    _mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[1] + x)), zero), wf2)))));
-        }
-        else if constexpr (level == 1) {
-          val =
-            _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pSrc + x)), zero), ws),
-              _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[0] + x)), zero), wb1),
-                _mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[0] + x)), zero), wf1)));
-        }
 
-        if constexpr (lsb_flag) {
-          if constexpr (blockWidth == 12) {
-            // 8 from the first, 4 from the second cycle
-            if (x == 0) { // 1st 8 bytes
-              _mm_storel_epi64((__m128i*)(pDst + x), _mm_packus_epi16(_mm_srli_epi16(val, 8), zero));
-              _mm_storel_epi64((__m128i*)(pDstLsb + x), _mm_packus_epi16(_mm_and_si128(val, lsb_mask), zero));
-            }
-            else { // 2nd 4 bytes
-              *(uint32_t*)(pDst + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_srli_epi16(val, 8), zero));
-              *(uint32_t*)(pDstLsb + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_and_si128(val, lsb_mask), zero));
-            }
-          }
-          else if constexpr (blockWidth >= 8) {
-            // 8, 16, 24, ....
+  //  (lsb_flag || out16 || out32): 8 bit in 16 bits out, out32 will be converted to float
+  //  else 8 bit in 8 bit out (but 16 bit intermediate)
+  __m128i lsb_mask = _mm_set1_epi16(255);
+  for (int h = 0; h < realBlockHeight; h++)
+  {
+    for (int x = 0; x < blockWidth; x += 8)
+    {
+      // lambda to protect overread. Read exact number of bytes for all blocksizes 
+      auto getpixels_as_uint16_in_m128i = [zero, x](const BYTE* p) {
+        __m128i pixels;
+        if constexpr (blockWidth == 2)
+          pixels = _mm_cvtsi32_si128(*(reinterpret_cast<const uint16_t*>(p + x))); // 2 bytes
+        else if constexpr (blockWidth == 3)
+          pixels = _mm_cvtsi32_si128(*(reinterpret_cast<const uint16_t*>(p + x)) + (*(p + x + 2) << 16)); // 2+1 bytes
+        else if constexpr (blockWidth == 4)
+          pixels = _mm_cvtsi32_si128(*(reinterpret_cast<const uint32_t*>(p + x))); // 4 bytes
+        else if constexpr (blockWidth == 6) // uint32 + uint16
+          pixels = _mm_or_si128(
+            _mm_cvtsi32_si128(*(reinterpret_cast<const uint32_t*>(p + x))), // 4 bytes
+            _mm_slli_si128(_mm_cvtsi32_si128(*(reinterpret_cast<const uint16_t*>(p + x + 4))), 4) // 2 bytes
+          );
+        else if constexpr (blockWidth == 12) {
+          if (x == 0)
+            pixels = _mm_loadl_epi64((__m128i*)(p + x)); // 8 bytes in x==0 loop
+          else // x == 1
+            pixels = _mm_cvtsi32_si128(*(reinterpret_cast<const uint32_t*>(p + x))); // 4 bytes from 2nd loop (x==1)
+        }
+        else
+          pixels = _mm_loadl_epi64((__m128i*)(p + x)); // 8 bytes
+
+        return _mm_unpacklo_epi8(pixels, zero);
+      };
+
+      __m128i val = _mm_mullo_epi16(getpixels_as_uint16_in_m128i(pSrc), ws);
+
+      if constexpr (level >= 1) {
+        auto b = _mm_mullo_epi16(getpixels_as_uint16_in_m128i(pRefB[0]), wb1);
+        auto f = _mm_mullo_epi16(getpixels_as_uint16_in_m128i(pRefF[0]), wf1);
+        val = _mm_add_epi16(val, _mm_add_epi16(b, f));
+      }
+      if constexpr (level >= 2) {
+        auto b = _mm_mullo_epi16(getpixels_as_uint16_in_m128i(pRefB[1]), wb2);
+        auto f = _mm_mullo_epi16(getpixels_as_uint16_in_m128i(pRefF[1]), wf2);
+        val = _mm_add_epi16(val, _mm_add_epi16(b, f));
+      }
+      if constexpr (level >= 3) {
+        auto b = _mm_mullo_epi16(getpixels_as_uint16_in_m128i(pRefB[2]), wb3);
+        auto f = _mm_mullo_epi16(getpixels_as_uint16_in_m128i(pRefF[2]), wf3);
+        val = _mm_add_epi16(val, _mm_add_epi16(b, f));
+      }
+      if constexpr (level >= 4) {
+        auto b = _mm_mullo_epi16(getpixels_as_uint16_in_m128i(pRefB[3]), wb4);
+        auto f = _mm_mullo_epi16(getpixels_as_uint16_in_m128i(pRefF[3]), wf4);
+        val = _mm_add_epi16(val, _mm_add_epi16(b, f));
+      }
+      if constexpr (level >= 5) {
+        auto b = _mm_mullo_epi16(getpixels_as_uint16_in_m128i(pRefB[4]), wb5);
+        auto f = _mm_mullo_epi16(getpixels_as_uint16_in_m128i(pRefF[4]), wf5);
+        val = _mm_add_epi16(val, _mm_add_epi16(b, f));
+      }
+      if constexpr (level >= 6) {
+        auto b = _mm_mullo_epi16(getpixels_as_uint16_in_m128i(pRefB[5]), wb6);
+        auto f = _mm_mullo_epi16(getpixels_as_uint16_in_m128i(pRefF[5]), wf6);
+        val = _mm_add_epi16(val, _mm_add_epi16(b, f));
+      }
+
+      // storage
+      if constexpr (lsb_flag) {
+        if constexpr (blockWidth == 12) {
+          // 8 from the first, 4 from the second cycle
+          if (x == 0) { // 1st 8 bytes
             _mm_storel_epi64((__m128i*)(pDst + x), _mm_packus_epi16(_mm_srli_epi16(val, 8), zero));
             _mm_storel_epi64((__m128i*)(pDstLsb + x), _mm_packus_epi16(_mm_and_si128(val, lsb_mask), zero));
           }
-          else if constexpr (blockWidth == 6) {
-            // x is always 0
-            // 4+2 bytes
-            __m128i upper = _mm_packus_epi16(_mm_srli_epi16(val, 8), zero);
-            __m128i lower = _mm_packus_epi16(_mm_and_si128(val, lsb_mask), zero);
-            *(uint32_t*)(pDst + x) = _mm_cvtsi128_si32(upper);
-            *(uint32_t*)(pDstLsb + x) = _mm_cvtsi128_si32(lower);
-            *(uint16_t*)(pDst + x + 4) = (uint16_t)_mm_cvtsi128_si32(_mm_srli_si128(upper, 4));
-            *(uint16_t*)(pDstLsb + x + 4) = (uint16_t)_mm_cvtsi128_si32(_mm_srli_si128(lower, 4));
-          }
-          else if constexpr (blockWidth == 4) {
-            // x is always 0
+          else { // 2nd 4 bytes
             *(uint32_t*)(pDst + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_srli_epi16(val, 8), zero));
             *(uint32_t*)(pDstLsb + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_and_si128(val, lsb_mask), zero));
           }
-          else if constexpr (blockWidth == 3) {
-            // x is always 0
-            // 2 + 1 bytes
-            uint32_t reslo = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_srli_epi16(val, 8), zero));
-            uint32_t reshi = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_and_si128(val, lsb_mask), zero));
-            *(uint16_t*)(pDst + x) = (uint16_t)reslo;
-            *(uint16_t*)(pDstLsb + x) = (uint16_t)reshi;
-            *(uint8_t*)(pDst + x + 2) = (uint8_t)(reslo >> 16);
-            *(uint8_t*)(pDstLsb + x + 2) = (uint8_t)(reshi >> 16);
-          }
-          else if constexpr (blockWidth == 2) {
-            // x is always 0
-            // 2 bytes
-            uint32_t reslo = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_srli_epi16(val, 8), zero));
-            uint32_t reshi = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_and_si128(val, lsb_mask), zero));
-            *(uint16_t*)(pDst + x) = (uint16_t)reslo;
-            *(uint16_t*)(pDstLsb + x) = (uint16_t)reshi;
-          }
         }
-        else if constexpr (out16) {
-          // keep 16 bit result: no split into msb/lsb
+        else if constexpr (blockWidth >= 8) {
+          // 8, 16, 24, ....
+          _mm_storel_epi64((__m128i*)(pDst + x), _mm_packus_epi16(_mm_srli_epi16(val, 8), zero));
+          _mm_storel_epi64((__m128i*)(pDstLsb + x), _mm_packus_epi16(_mm_and_si128(val, lsb_mask), zero));
+        }
+        else if constexpr (blockWidth == 6) {
+          // x is always 0
+          // 4+2 bytes
+          __m128i upper = _mm_packus_epi16(_mm_srli_epi16(val, 8), zero);
+          __m128i lower = _mm_packus_epi16(_mm_and_si128(val, lsb_mask), zero);
+          *(uint32_t*)(pDst + x) = _mm_cvtsi128_si32(upper);
+          *(uint32_t*)(pDstLsb + x) = _mm_cvtsi128_si32(lower);
+          *(uint16_t*)(pDst + x + 4) = (uint16_t)_mm_cvtsi128_si32(_mm_srli_si128(upper, 4));
+          *(uint16_t*)(pDstLsb + x + 4) = (uint16_t)_mm_cvtsi128_si32(_mm_srli_si128(lower, 4));
+        }
+        else if constexpr (blockWidth == 4) {
+          // x is always 0
+          *(uint32_t*)(pDst + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_srli_epi16(val, 8), zero));
+          *(uint32_t*)(pDstLsb + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_and_si128(val, lsb_mask), zero));
+        }
+        else if constexpr (blockWidth == 3) {
+          // x is always 0
+          // 2 + 1 bytes
+          uint32_t reslo = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_srli_epi16(val, 8), zero));
+          uint32_t reshi = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_and_si128(val, lsb_mask), zero));
+          *(uint16_t*)(pDst + x) = (uint16_t)reslo;
+          *(uint16_t*)(pDstLsb + x) = (uint16_t)reshi;
+          *(uint8_t*)(pDst + x + 2) = (uint8_t)(reslo >> 16);
+          *(uint8_t*)(pDstLsb + x + 2) = (uint8_t)(reshi >> 16);
+        }
+        else if constexpr (blockWidth == 2) {
+          // x is always 0
+          // 2 bytes
+          uint32_t reslo = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_srli_epi16(val, 8), zero));
+          uint32_t reshi = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_and_si128(val, lsb_mask), zero));
+          *(uint16_t*)(pDst + x) = (uint16_t)reslo;
+          *(uint16_t*)(pDstLsb + x) = (uint16_t)reshi;
+        }
+      }
+      else if constexpr (out16) {
+        // keep 16 bit result: no split into msb/lsb
 
-          if constexpr (blockWidth == 12) {
-            // 8 from the first, 4 from the second cycle
-            if (x == 0) { // 1st 8 pixels 16 bytes
-              _mm_store_si128((__m128i*)(pDst + x * 2), val);
-            }
-            else { // 2nd: 4 pixels 8 bytes bytes
-              _mm_storel_epi64((__m128i*)(pDst + x * 2), val);
-              //*(uint32_t *)(pDst + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_srli_epi16(val, 8), z));
-              //*(uint32_t *)(pDstLsb + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_and_si128(val, m), z));
-            }
-          }
-          else if constexpr (blockWidth >= 8) {
-            // 8, 16, 24, ....
+        if constexpr (blockWidth == 12) {
+          // 8 from the first, 4 from the second cycle
+          if (x == 0) { // 1st 8 pixels 16 bytes
             _mm_store_si128((__m128i*)(pDst + x * 2), val);
           }
-          else if constexpr (blockWidth == 6) {
-            // x is always 0
-            // 4+2 pixels: 8 + 4 bytes
+          else { // 2nd: 4 pixels 8 bytes bytes
             _mm_storel_epi64((__m128i*)(pDst + x * 2), val);
-            *(uint32_t*)(pDst + x * 2 + 8) = (uint32_t)_mm_cvtsi128_si32(_mm_srli_si128(val, 8));
+            //*(uint32_t *)(pDst + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_srli_epi16(val, 8), z));
+            //*(uint32_t *)(pDstLsb + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_and_si128(val, m), z));
           }
-          else if constexpr (blockWidth == 4) {
-            // x is always 0, 4 pixels, 8 bytes
-            _mm_storel_epi64((__m128i*)(pDst + x * 2), val);
-          }
-          else if constexpr (blockWidth == 3) {
-            // x is always 0
-            // 2+1 pixels: 4 + 2 bytes
-            uint32_t reslo = _mm_cvtsi128_si32(val);
-            uint16_t reshi = (uint16_t)_mm_cvtsi128_si32(_mm_srli_si128(val, 4));
-            *(uint32_t*)(pDst + x * 2) = reslo;
-            *(uint16_t*)(pDst + x * 2 + 4) = reshi;
-          }
-          else if constexpr (blockWidth == 2) {
-            // x is always 0
-            // 2 pixels: 4 bytes
-            uint32_t reslo = _mm_cvtsi128_si32(val);
-            *(uint32_t*)(pDst + x * 2) = reslo;
-          }
-        } // out16 end
-        else if constexpr (out32) {
-          // fixme: eliminate in the future like in C version
-          //const auto scaleback = _mm_set1_ps(1.0f / (1 << DEGRAIN_WEIGHT_BITS));
-          // 16 bit result converted to float
-          if constexpr (blockWidth == 12) {
-            // 8 pixels from the first, 4 from the second cycle
-            // 4 pixels common for both cycles
-            __m128 valf_lo = _mm_cvtepi32_ps(_mm_cvtepu16_epi32(val));
-            //valf_lo = _mm_mul_ps(valf_lo, scaleback);
-            _mm_store_ps((float*)(pDst + x * sizeof(float)), valf_lo);
-            if (x == 0) { // 1st 4 pixels 16 bytes
-              // 4 more pixels from the first cycle
-              __m128 valf_hi = _mm_cvtepi32_ps(_mm_cvtepu16_epi32(_mm_srli_si128(val, 8)));
-              //valf_hi = _mm_mul_ps(valf_hi, scaleback);
-              _mm_store_ps((float*)(pDst + x * sizeof(float) + 16), valf_hi);
-            }
-          }
-          else if constexpr (blockWidth >= 8) {
-            // 8, 16, 24, ....
-            __m128 valf_lo = _mm_cvtepi32_ps(_mm_cvtepu16_epi32(val));
-            //valf_lo = _mm_mul_ps(valf_lo, scaleback);
-            _mm_store_ps((float*)(pDst + x * sizeof(float)), valf_lo);
+        }
+        else if constexpr (blockWidth >= 8) {
+          // 8, 16, 24, ....
+          _mm_store_si128((__m128i*)(pDst + x * 2), val);
+        }
+        else if constexpr (blockWidth == 6) {
+          // x is always 0
+          // 4+2 pixels: 8 + 4 bytes
+          _mm_storel_epi64((__m128i*)(pDst + x * 2), val);
+          *(uint32_t*)(pDst + x * 2 + 8) = (uint32_t)_mm_cvtsi128_si32(_mm_srli_si128(val, 8));
+        }
+        else if constexpr (blockWidth == 4) {
+          // x is always 0, 4 pixels, 8 bytes
+          _mm_storel_epi64((__m128i*)(pDst + x * 2), val);
+        }
+        else if constexpr (blockWidth == 3) {
+          // x is always 0
+          // 2+1 pixels: 4 + 2 bytes
+          uint32_t reslo = _mm_cvtsi128_si32(val);
+          uint16_t reshi = (uint16_t)_mm_cvtsi128_si32(_mm_srli_si128(val, 4));
+          *(uint32_t*)(pDst + x * 2) = reslo;
+          *(uint16_t*)(pDst + x * 2 + 4) = reshi;
+        }
+        else if constexpr (blockWidth == 2) {
+          // x is always 0
+          // 2 pixels: 4 bytes
+          uint32_t reslo = _mm_cvtsi128_si32(val);
+          *(uint32_t*)(pDst + x * 2) = reslo;
+        }
+      } // out16 end
+      else if constexpr (out32) {
+        // fixme: eliminate in the future like in C version
+        //const auto scaleback = _mm_set1_ps(1.0f / (1 << DEGRAIN_WEIGHT_BITS));
+        // 16 bit result converted to float
+        if constexpr (blockWidth == 12) {
+          // 8 pixels from the first, 4 from the second cycle
+          // 4 pixels common for both cycles
+          __m128 valf_lo = _mm_cvtepi32_ps(_mm_cvtepu16_epi32(val));
+          //valf_lo = _mm_mul_ps(valf_lo, scaleback);
+          _mm_store_ps((float*)(pDst + x * sizeof(float)), valf_lo);
+          if (x == 0) { // 1st 4 pixels 16 bytes
+            // 4 more pixels from the first cycle
             __m128 valf_hi = _mm_cvtepi32_ps(_mm_cvtepu16_epi32(_mm_srli_si128(val, 8)));
             //valf_hi = _mm_mul_ps(valf_hi, scaleback);
             _mm_store_ps((float*)(pDst + x * sizeof(float) + 16), valf_hi);
           }
-          else if constexpr (blockWidth == 6) {
-            // x is always 0
-            // 4+2 pixels: 8 + 4 bytes
-            // 4 pixels
-            __m128 valf_lo = _mm_cvtepi32_ps(_mm_cvtepu16_epi32(val));
-            //valf_lo = _mm_mul_ps(valf_lo, scaleback);
-            _mm_store_ps((float*)(pDst), valf_lo);
-            // 2nd 4 pixels, only 2 of them used
-            __m128 valf_hi = _mm_cvtepi32_ps(_mm_cvtepu16_epi32(_mm_srli_si128(val, 8)));
-            //valf_hi = _mm_mul_ps(valf_hi, scaleback);
-            _mm_storel_epi64((__m128i*)(pDst + 4 * sizeof(float)), _mm_castps_si128(valf_hi));
-          }
-          else if constexpr (blockWidth == 4) {
-            // x is always 0. 4 pixels, 16 bytes
-            __m128 valf_lo = _mm_cvtepi32_ps(_mm_cvtepu16_epi32(val));
-            //valf_lo = _mm_mul_ps(valf_lo, scaleback);
-            _mm_store_ps((float*)(pDst), valf_lo);
-          }
-          else if constexpr (blockWidth == 3) {
-            // x is always 0
-            // 2+1 pixels: 8 + 4 bytes
-            __m128 valf_lo = _mm_cvtepi32_ps(_mm_cvtepu16_epi32(val));
-            //valf_lo = _mm_mul_ps(valf_lo, scaleback);
-            _mm_storel_epi64((__m128i*)(pDst), _mm_castps_si128(valf_lo));
-            float resf = _mm_cvtss_f32(_mm_castsi128_ps(_mm_srli_si128(_mm_castps_si128(valf_lo), 2*4)));
-            *(float*)(pDst + 2 * sizeof(float)) = resf;
-          }
-          else if constexpr (blockWidth == 2) {
-            // x is always 0
-            // 2 pixels: 8 bytes
-            __m128 valf_lo = _mm_cvtepi32_ps(_mm_cvtepu16_epi32(val));
-            //valf_lo = _mm_mul_ps(valf_lo, scaleback);
-            _mm_storel_epi64((__m128i*)(pDst), _mm_castps_si128(valf_lo));
-          }
-        } // out32 end
+        }
+        else if constexpr (blockWidth >= 8) {
+          // 8, 16, 24, ....
+          __m128 valf_lo = _mm_cvtepi32_ps(_mm_cvtepu16_epi32(val));
+          //valf_lo = _mm_mul_ps(valf_lo, scaleback);
+          _mm_store_ps((float*)(pDst + x * sizeof(float)), valf_lo);
+          __m128 valf_hi = _mm_cvtepi32_ps(_mm_cvtepu16_epi32(_mm_srli_si128(val, 8)));
+          //valf_hi = _mm_mul_ps(valf_hi, scaleback);
+          _mm_store_ps((float*)(pDst + x * sizeof(float) + 16), valf_hi);
+        }
+        else if constexpr (blockWidth == 6) {
+          // x is always 0
+          // 4+2 pixels: 8 + 4 bytes
+          // 4 pixels
+          __m128 valf_lo = _mm_cvtepi32_ps(_mm_cvtepu16_epi32(val));
+          //valf_lo = _mm_mul_ps(valf_lo, scaleback);
+          _mm_store_ps((float*)(pDst), valf_lo);
+          // 2nd 4 pixels, only 2 of them used
+          __m128 valf_hi = _mm_cvtepi32_ps(_mm_cvtepu16_epi32(_mm_srli_si128(val, 8)));
+          //valf_hi = _mm_mul_ps(valf_hi, scaleback);
+          _mm_storel_epi64((__m128i*)(pDst + 4 * sizeof(float)), _mm_castps_si128(valf_hi));
+        }
+        else if constexpr (blockWidth == 4) {
+          // x is always 0. 4 pixels, 16 bytes
+          __m128 valf_lo = _mm_cvtepi32_ps(_mm_cvtepu16_epi32(val));
+          //valf_lo = _mm_mul_ps(valf_lo, scaleback);
+          _mm_store_ps((float*)(pDst), valf_lo);
+        }
+        else if constexpr (blockWidth == 3) {
+          // x is always 0
+          // 2+1 pixels: 8 + 4 bytes
+          __m128 valf_lo = _mm_cvtepi32_ps(_mm_cvtepu16_epi32(val));
+          //valf_lo = _mm_mul_ps(valf_lo, scaleback);
+          _mm_storel_epi64((__m128i*)(pDst), _mm_castps_si128(valf_lo));
+          float resf = _mm_cvtss_f32(_mm_castsi128_ps(_mm_srli_si128(_mm_castps_si128(valf_lo), 2 * 4)));
+          *(float*)(pDst + 2 * sizeof(float)) = resf;
+        }
+        else if constexpr (blockWidth == 2) {
+          // x is always 0
+          // 2 pixels: 8 bytes
+          __m128 valf_lo = _mm_cvtepi32_ps(_mm_cvtepu16_epi32(val));
+          //valf_lo = _mm_mul_ps(valf_lo, scaleback);
+          _mm_storel_epi64((__m128i*)(pDst), _mm_castps_si128(valf_lo));
+        }
+      } // out32 end
+      else {
+        // simpliest case: usual 8 bit to 8 bit
+        // 8 bit in, 8 bit out
+        __m128i rounder = _mm_set1_epi16(128);
+        // pDst[x] = (pSrc[x]*WSrc + pRefF[x]*WRefF + pRefB[x]*WRefB + 128)>>8;// weighted (by SAD) average
+        // pDst[x] = (pSrc[x]*WSrc + pRefF[x]*WRefF + pRefB[x]*WRefB + pRefF2[x]*WRefF2 + pRefB2[x]*WRefB2 + [...] 128)>>8;
 
-      }
-      pDst += nDstPitch;
-      if constexpr (lsb_flag)
-        pDstLsb += nDstPitch;
-      pSrc += nSrcPitch;
+        auto res = _mm_srli_epi16(_mm_add_epi16(val, rounder), 8);
+        res = _mm_packus_epi16(res, zero);
 
-      pRefB[0] += BPitch[0];
-      pRefF[0] += FPitch[0];
-      if constexpr (level >= 2) {
-        pRefB[1] += BPitch[1];
-        pRefF[1] += FPitch[1];
-        if constexpr (level >= 3) {
-          pRefB[2] += BPitch[2];
-          pRefF[2] += FPitch[2];
-        }
-        if constexpr (level >= 4) {
-          pRefB[3] += BPitch[3];
-          pRefF[3] += FPitch[3];
-        }
-        if constexpr (level >= 5) {
-          pRefB[4] += BPitch[4];
-          pRefF[4] += FPitch[4];
-        }
-        if constexpr (level >= 6) {
-          pRefB[5] += BPitch[5];
-          pRefF[5] += FPitch[5];
-        }
-      }
-    }
-  }
-  else
-  {
-    // 8 bit in, 8 bit out
-    __m128i rounder = _mm_set1_epi16(128);
-    for (int h = 0; h < realBlockHeight; h++)
-    {
-      for (int x = 0; x < blockWidth; x += 8)
-      {
-        __m128i res;
-        if constexpr (level == 6) {
-          res = _mm_packus_epi16(_mm_srli_epi16(
-            _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pSrc + x)), zero), ws),
-              _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[0] + x)), zero), wb1),
-                _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[0] + x)), zero), wf1),
-                  _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[1] + x)), zero), wb2),
-                    _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[1] + x)), zero), wf2),
-                      _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[2] + x)), zero), wb3),
-                        _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[2] + x)), zero), wf3),
-                          _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[3] + x)), zero), wb4),
-                            _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[3] + x)), zero), wf4),
-                              _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[4] + x)), zero), wb5),
-                                _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[4] + x)), zero), wf5),
-                                  _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[5] + x)), zero), wb6),
-                                    _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[5] + x)), zero), wf6),
-                                      rounder))))))))))))), 8), zero);
-        }
-        if constexpr (level == 5) {
-          res = _mm_packus_epi16(_mm_srli_epi16(
-            _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pSrc + x)), zero), ws),
-              _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[0] + x)), zero), wb1),
-                _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[0] + x)), zero), wf1),
-                  _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[1] + x)), zero), wb2),
-                    _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[1] + x)), zero), wf2),
-                      _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[2] + x)), zero), wb3),
-                        _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[2] + x)), zero), wf3),
-                          _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[3] + x)), zero), wb4),
-                            _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[3] + x)), zero), wf4),
-                              _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[4] + x)), zero), wb5),
-                                _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[4] + x)), zero), wf5),
-                                  rounder))))))))))), 8), zero);
-        }
-        else if constexpr (level == 4) {
-          res = _mm_packus_epi16(_mm_srli_epi16(
-            _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pSrc + x)), zero), ws),
-              _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[0] + x)), zero), wb1),
-                _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[0] + x)), zero), wf1),
-                  _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[1] + x)), zero), wb2),
-                    _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[1] + x)), zero), wf2),
-                      _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[2] + x)), zero), wb3),
-                        _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[2] + x)), zero), wf3),
-                          _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[3] + x)), zero), wb4),
-                            _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[3] + x)), zero), wf4),
-                              rounder))))))))), 8), zero);
-        }
-        else if constexpr (level == 3) {
-          res = _mm_packus_epi16(_mm_srli_epi16(
-            _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pSrc + x)), zero), ws),
-              _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[0] + x)), zero), wb1),
-                _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[0] + x)), zero), wf1),
-                  _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[1] + x)), zero), wb2),
-                    _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[1] + x)), zero), wf2),
-                      _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[2] + x)), zero), wb3),
-                        _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[2] + x)), zero), wf3),
-                          rounder))))))), 8), zero);
-          // pDst[x] = (pRefF[x]*WRefF + pSrc[x]*WSrc + pRefB[x]*WRefB + pRefF2[x]*WRefF2 + pRefB2[x]*WRefB2 + pRefF3[x]*WRefF3 + pRefB3[x]*WRefB3 + 128)>>8;
-        }
-        else if constexpr (level == 2) {
-          res = _mm_packus_epi16(_mm_srli_epi16(
-            _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pSrc + x)), zero), ws),
-              _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[0] + x)), zero), wb1),
-                _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[0] + x)), zero), wf1),
-                  _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[1] + x)), zero), wb2),
-                    _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[1] + x)), zero), wf2),
-                      rounder))))), 8), zero);
-          // pDst[x] = (pRefF[x]*WRefF + pSrc[x]*WSrc + pRefB[x]*WRefB + pRefF2[x]*WRefF2 + pRefB2[x]*WRefB2 + 128)>>8;
-        }
-        else if constexpr (level == 1) {
-          res = _mm_packus_epi16(_mm_srli_epi16(
-            _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pSrc + x)), zero), ws),
-              _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefB[0] + x)), zero), wb1),
-                _mm_add_epi16(_mm_mullo_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[0] + x)), zero), wf1),
-                  rounder))), 8), zero);
-          // pDst[x] = (pRefF[x]*WRefF + pSrc[x]*WSrc + pRefB[x]*WRefB + 128)>>8;// weighted (by SAD) average
-        }
         if constexpr (blockWidth == 12) {
           // 8 from the first, 4 from the second cycle
           if (x == 0) { // 1st 8 bytes
@@ -731,30 +618,33 @@ void Degrain1to6_sse2(BYTE* pDst, BYTE* pDstLsb, int WidthHeightForC, int nDstPi
           *(uint16_t*)(pDst + x) = (uint16_t)res32;
         }
       }
-      pDst += nDstPitch;
-      pSrc += nSrcPitch;
+    } // for x
 
-      pRefB[0] += BPitch[0];
-      pRefF[0] += FPitch[0];
-      if constexpr (level >= 2) {
-        pRefB[1] += BPitch[1];
-        pRefF[1] += FPitch[1];
-        if constexpr (level >= 3) {
-          pRefB[2] += BPitch[2];
-          pRefF[2] += FPitch[2];
-          if constexpr (level >= 4) {
-            pRefB[3] += BPitch[3];
-            pRefF[3] += FPitch[3];
-            if constexpr (level >= 5) {
-              pRefB[4] += BPitch[4];
-              pRefF[4] += FPitch[4];
-              if constexpr (level >= 6) {
-                pRefB[5] += BPitch[5];
-                pRefF[5] += FPitch[5];
-              }
-            }
-          }
-        }
+    pDst += nDstPitch;
+    if constexpr (lsb_flag)
+      pDstLsb += nDstPitch;
+    pSrc += nSrcPitch;
+
+    pRefB[0] += BPitch[0];
+    pRefF[0] += FPitch[0];
+    if constexpr (level >= 2) {
+      pRefB[1] += BPitch[1];
+      pRefF[1] += FPitch[1];
+      if constexpr (level >= 3) {
+        pRefB[2] += BPitch[2];
+        pRefF[2] += FPitch[2];
+      }
+      if constexpr (level >= 4) {
+        pRefB[3] += BPitch[3];
+        pRefF[3] += FPitch[3];
+      }
+      if constexpr (level >= 5) {
+        pRefB[4] += BPitch[4];
+        pRefF[4] += FPitch[4];
+      }
+      if constexpr (level >= 6) {
+        pRefB[5] += BPitch[5];
+        pRefF[5] += FPitch[5];
       }
     }
   }
@@ -765,6 +655,7 @@ void Degrain1to6_sse2(BYTE* pDst, BYTE* pDstLsb, int WidthHeightForC, int nDstPi
 #pragma warning( disable : 4101)
 // for blockwidth >=2 (4 bytes for blockwidth==2, 8 bytes for blockwidth==4)
 // for special height==0 -> internally nHeight comes from variable (for C: both width and height is variable)
+// heavily reducing the templates differing only in heights
 template<int blockWidth, int blockHeight, int level, bool lessThan16bits, bool out32>
 void Degrain1to6_16_sse41(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
   const BYTE *pRefB[MAX_DEGRAIN], int BPitch[MAX_DEGRAIN], const BYTE *pRefF[MAX_DEGRAIN], int FPitch[MAX_DEGRAIN],
@@ -810,8 +701,30 @@ void Degrain1to6_16_sse41(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nD
   {
     for (int x = 0; x < blockWidth; x += 8 / sizeof(uint16_t)) // up to 4 pixels per cycle
     {
+      // lambda to protect overread. Read exact number of bytes for all blocksizes 
+      auto getpixels_as_uint16_in_m128i = [x](const BYTE* p) {
+        __m128i pixels;
+        if constexpr (blockWidth == 2) // x == 0 for sure
+          pixels = _mm_cvtsi32_si128(*(reinterpret_cast<const uint32_t*>(p /* + x * sizeof(uint16_t)*/))); // 4 bytes
+        else if constexpr (blockWidth == 3) // uint32 + uint16, 3 pixels 6 bytes; x == 0 for sure
+          pixels = _mm_or_si128(
+            _mm_cvtsi32_si128(*(reinterpret_cast<const uint32_t*>(p /* + x * sizeof(uint16_t)*/))), // 4 bytes
+            _mm_slli_si128(_mm_cvtsi32_si128(*(reinterpret_cast<const uint16_t*>(p /* + x * sizeof(uint16_t)*/ + 4))), 4) // 2 bytes
+          );
+        else if constexpr (blockWidth == 6) {
+          // 6 pixels 12 bytes. Pull only 4 pixels in the second loop
+          if (x == 0)
+            pixels = _mm_loadl_epi64((__m128i*)(p + x * sizeof(uint16_t))); // 8 bytes in x==0 loop
+          else // x == 1
+            pixels = _mm_cvtsi32_si128(*(reinterpret_cast<const uint32_t*>(p + x * sizeof(uint16_t)))); // 4 bytes from 2nd loop (x==1)
+        }
+        else
+          pixels = _mm_loadl_epi64((__m128i*)(p + x * sizeof(uint16_t))); // 8 bytes
+        return pixels;
+      };
+
       __m128i res;
-      auto src = _mm_loadl_epi64((__m128i*)(pSrc + x * sizeof(uint16_t)));
+      auto src = getpixels_as_uint16_in_m128i(pSrc);
       // make signed when unsigned 16 bit mode
       if constexpr(!lessThan16bits)
         src = _mm_add_epi16(src, signed16_shifter);
@@ -820,36 +733,36 @@ void Degrain1to6_16_sse41(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nD
       res = _mm_madd_epi16(src, ws); // pSrc[x] * WSrc + 0 * 0
       // pRefF[n][x] * WRefF[n] + pRefB[n][x] * WRefB[n]
       // Interleave SrcF SrcB
-      src = _mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[0] + x * sizeof(uint16_t))), _mm_loadl_epi64((__m128i*)(pRefF[0] + x * sizeof(uint16_t))));
+      src = _mm_unpacklo_epi16(getpixels_as_uint16_in_m128i(pRefB[0]), getpixels_as_uint16_in_m128i(pRefF[0]));
       if constexpr(!lessThan16bits)
         src = _mm_add_epi16(src, signed16_shifter);
       res = _mm_add_epi32(res, _mm_madd_epi16(src, wbf1));
       if constexpr(level >= 2) {
-        src = _mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[1] + x * sizeof(uint16_t))), _mm_loadl_epi64((__m128i*)(pRefF[1] + x * sizeof(uint16_t))));
+        src = _mm_unpacklo_epi16(getpixels_as_uint16_in_m128i(pRefB[1]), getpixels_as_uint16_in_m128i(pRefF[1]));
         if constexpr(!lessThan16bits)
           src = _mm_add_epi16(src, signed16_shifter);
         res = _mm_add_epi32(res, _mm_madd_epi16(src, wbf2));
       }
       if constexpr(level >= 3) {
-        src = _mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[2] + x * sizeof(uint16_t))), _mm_loadl_epi64((__m128i*)(pRefF[2] + x * sizeof(uint16_t))));
+        src = _mm_unpacklo_epi16(getpixels_as_uint16_in_m128i(pRefB[2]), getpixels_as_uint16_in_m128i(pRefF[2]));
         if constexpr(!lessThan16bits)
           src = _mm_add_epi16(src, signed16_shifter);
         res = _mm_add_epi32(res, _mm_madd_epi16(src, wbf3));
       }
       if constexpr(level >= 4) {
-        src = _mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[3] + x * sizeof(uint16_t))), _mm_loadl_epi64((__m128i*)(pRefF[3] + x * sizeof(uint16_t))));
+        src = _mm_unpacklo_epi16(getpixels_as_uint16_in_m128i(pRefB[3]), getpixels_as_uint16_in_m128i(pRefF[3]));
         if constexpr(!lessThan16bits)
           src = _mm_add_epi16(src, signed16_shifter);
         res = _mm_add_epi32(res, _mm_madd_epi16(src, wbf4));
       }
       if constexpr(level >= 5) {
-        src = _mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[4] + x * sizeof(uint16_t))), _mm_loadl_epi64((__m128i*)(pRefF[4] + x * sizeof(uint16_t))));
+        src = _mm_unpacklo_epi16(getpixels_as_uint16_in_m128i(pRefB[4]), getpixels_as_uint16_in_m128i(pRefF[4]));
         if constexpr(!lessThan16bits)
           src = _mm_add_epi16(src, signed16_shifter);
         res = _mm_add_epi32(res, _mm_madd_epi16(src, wbf5));
       }
       if constexpr(level >= 6) {
-        src = _mm_unpacklo_epi16(_mm_loadl_epi64((__m128i*)(pRefB[5] + x * sizeof(uint16_t))), _mm_loadl_epi64((__m128i*)(pRefF[5] + x * sizeof(uint16_t))));
+        src = _mm_unpacklo_epi16(getpixels_as_uint16_in_m128i(pRefB[5]), getpixels_as_uint16_in_m128i(pRefF[5]));
         if constexpr(!lessThan16bits)
           src = _mm_add_epi16(src, signed16_shifter);
         res = _mm_add_epi32(res, _mm_madd_epi16(src, wbf6));
