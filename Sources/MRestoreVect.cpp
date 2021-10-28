@@ -57,8 +57,7 @@ MRestoreVect::MRestoreVect (::PClip src, int clip_index, IScriptEnvironment *env
   ::PVideoFrame	frame_ptr = src->GetFrame (0, env);
   int				data_offset     = 0;		// Bytes
   int				data_len        = 0;		// Bytes
-  bool				contiguous_flag = false;
-  read_frame_info (data_offset, data_len, contiguous_flag, frame_ptr, env);
+  read_frame_info (data_offset, data_len, frame_ptr, env);
 
   const uint8_t*	data_ptr = frame_ptr->GetReadPtr ();
   const int		pitch    = frame_ptr->GetPitch ();
@@ -96,31 +95,20 @@ MRestoreVect::MRestoreVect (::PClip src, int clip_index, IScriptEnvironment *env
 
   int				data_offset     = 0;		// Bytes
   int				data_len        = 0;		// Bytes
-  bool				contiguous_flag = false;
-  read_frame_info (data_offset, data_len, contiguous_flag, src_ptr, env_ptr);
+  read_frame_info (data_offset, data_len, src_ptr, env_ptr);
   if (data_len > vi.width * vi.height * _bytes_per_pix)
   {
     env_ptr->ThrowError ("MRestoreVect: invalid content at frame %d.", n);
   }
 
-  if (contiguous_flag)
-  {
-    const int		dst_pitch = vi.width * _bytes_per_pix;
-    dst_ptr = env_ptr->Subframe (
-      src_ptr, data_offset, dst_pitch, vi.width, vi.height
-    );
-  }
-  else
-  {
-    dst_ptr = has_at_least_v8 ? env_ptr->NewVideoFrameP(vi, &src_ptr) : env_ptr->NewVideoFrame(vi); // frame property support
+  dst_ptr = has_at_least_v8 ? env_ptr->NewVideoFrameP(vi, &src_ptr) : env_ptr->NewVideoFrame(vi); // frame property support
 
-    const uint8_t*	src_data_ptr = src_ptr->GetReadPtr ();
-    const int		src_pitch    = src_ptr->GetPitch ();
-    uint8_t *		dst_data_ptr = dst_ptr->GetWritePtr ();
-    const int		dst_pitch    = dst_ptr->GetPitch ();
-    assert (vi.height == 1 || dst_pitch == vi.width * _bytes_per_pix);
-    read_from_clip (data_offset, src_data_ptr, dst_data_ptr, data_len, src_pitch);
-  }
+  const uint8_t*	src_data_ptr = src_ptr->GetReadPtr ();
+  const int		src_pitch    = src_ptr->GetPitch ();
+  uint8_t *		dst_data_ptr = dst_ptr->GetWritePtr ();
+  const int		dst_pitch    = dst_ptr->GetPitch ();
+  assert (vi.height == 1 || dst_pitch == vi.width * _bytes_per_pix);
+  read_from_clip (data_offset, src_data_ptr, dst_data_ptr, data_len, src_pitch);
 
   assert (dst_ptr != 0);
 
@@ -138,10 +126,9 @@ MRestoreVect::MRestoreVect (::PClip src, int clip_index, IScriptEnvironment *env
 
 
 // data_offset and data_len are in bytes
-void	MRestoreVect::read_frame_info (int &data_offset, int &data_len, bool &contiguous_flag, ::PVideoFrame frame_ptr, ::IScriptEnvironment *env) const
+void	MRestoreVect::read_frame_info (int &data_offset, int &data_len, ::PVideoFrame frame_ptr, ::IScriptEnvironment *env) const
 {
   assert (&data_offset != 0);
-  assert (&contiguous_flag != 0);
   assert (frame_ptr != 0);
   assert (&env != 0);
 
@@ -187,7 +174,6 @@ void	MRestoreVect::read_frame_info (int &data_offset, int &data_len, bool &conti
     env->ThrowError ("MRestoreVect: corrupted data.");
   }
 
-  contiguous_flag = (pitch == _row_size);
 }
 
 

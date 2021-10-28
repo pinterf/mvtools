@@ -58,7 +58,7 @@ private:
 
   CHECK_COMPILE_TIME (SizeOfInt, (sizeof (int) == sizeof (int32_t)));
 
-  void				read_frame_info (int &data_offset_bytes, int &data_len, bool &contiguous_flag, ::PVideoFrame frame_ptr, ::IScriptEnvironment *env) const;
+  void				read_frame_info (int &data_offset_bytes, int &data_len, ::PVideoFrame frame_ptr, ::IScriptEnvironment *env) const;
   void				read_from_clip (int &src_pos, const uint8_t base_ptr [], void *dst_ptr, int len, int stride) const;
 
   MVAnalysisData	_mad;
