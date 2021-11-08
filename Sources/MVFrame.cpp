@@ -137,16 +137,41 @@ void MVFrame::Refine(MVPlaneSet _nMode)
 
    if (nMode & YPLANE & _nMode)
   {
-      pYPlane->refine_wait();
-  }
+     pYPlane->refine_wait();
+   }
    if (nMode & UPLANE & _nMode)
   {
-      pUPlane->refine_wait();
-  }
+     /*
+     sprintf(debugbuf, "Refine: waitfor U WHeWeH=%d %d %d %d",
+       this->pUPlane->GetWidth(),
+       this->pUPlane->GetHeight(),
+       this->pUPlane->GetExtendedWidth(),
+       this->pUPlane->GetExtendedHeight()
+     );
+     OutputDebugString(debugbuf);
+     */
+     pUPlane->refine_wait();
+     /*
+     sprintf(debugbuf, "Refine: waitfor U OK");
+     OutputDebugString(debugbuf);
+     */
+   }
    if (nMode & VPLANE & _nMode)
   {
-      pVPlane->refine_wait();
-  }
+     /*sprintf(debugbuf, "Refine: waitfor V WHeWeH=%d %d %d %d",
+       this->pVPlane->GetWidth(),
+       this->pVPlane->GetHeight(),
+       this->pVPlane->GetExtendedWidth(),
+       this->pVPlane->GetExtendedHeight()
+     );
+     OutputDebugString(debugbuf);
+     */
+     pVPlane->refine_wait();
+     /*
+      sprintf(debugbuf, "Refine: waitfor V OK");
+      OutputDebugString(debugbuf);
+      */
+   }
 }
 
 
@@ -195,6 +220,8 @@ void MVFrame::WriteFrame(FILE *pFile)
 
 void MVFrame::ReduceTo(MVFrame *pFrame, MVPlaneSet _nMode)
 {
+  // parameter pFrame target frame to which reducing takes place (smaller dimension)
+
   if (nMode & YPLANE & _nMode)
   {
     pYPlane->reduce_start (pFrame->GetPlane(YPLANE));
@@ -218,7 +245,27 @@ void MVFrame::ReduceTo(MVFrame *pFrame, MVPlaneSet _nMode)
   }
   if (nMode & VPLANE & _nMode)
   {
+    /* avstp bug chasing week
+    const bool be = this->pVPlane->GetWidth() == 45 && this->pVPlane->GetHeight() == 72;
+    if (be) {
+      sprintf(debugbuf, "Reduce: waitfor V WHeWeH=%dx%d %d %d to %dx%d",
+        this->pVPlane->GetWidth(),
+        this->pVPlane->GetHeight(),
+        this->pVPlane->GetExtendedWidth(),
+        this->pVPlane->GetExtendedHeight(),
+        pFrame->GetPlane(VPLANE)->GetWidth(),
+        pFrame->GetPlane(VPLANE)->GetHeight()
+        );
+      OutputDebugString(debugbuf);
+    }
+    */
     pVPlane->reduce_wait ();
+    /*
+    if (be) {
+      sprintf(debugbuf, "Reduce: waitfor V OK");
+      OutputDebugString(debugbuf);
+    }
+    */
   }
 }
 

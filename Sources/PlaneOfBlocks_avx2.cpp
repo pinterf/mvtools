@@ -115,7 +115,7 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp4_avx2(WorkingArea& workarea
     ymm2_Ref_45 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 5)), (__m128i*)(pucRef + nRefPitch[0] * (i + 4)));
     ymm3_Ref_67 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 7)), (__m128i*)(pucRef + nRefPitch[0] * (i + 6)));
     // loaded 8 rows of Ref plane 16samples wide into ymm0..ymm3
-    _mm_prefetch(const_cast<const CHAR*>(reinterpret_cast<const CHAR*>(pucRef + nRefPitch[0] * (i + 8))), _MM_HINT_NTA); // prefetch next Ref row
+    _mm_prefetch(const_cast<const char*>(reinterpret_cast<const char*>(pucRef + nRefPitch[0] * (i + 8))), _MM_HINT_NTA); // prefetch next Ref row
 
     // process sad[-4,i-4]
     ymm4_tmp = _mm256_blend_epi32(_mm256_setzero_si256(), ymm0_Ref_01, 51);
@@ -395,10 +395,10 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp2_avx2(WorkingArea& workarea
   const uint8_t* pucRef = GetRefBlock(workarea, mvx - 2, mvy - 2); // upper left corner
   const uint8_t* pucCurr = workarea.pSrc[0];
 
-  _mm_prefetch(const_cast<const CHAR*>(reinterpret_cast<const CHAR*>(pucRef + nRefPitch[0] * (9))), _MM_HINT_NTA); // prefetch next Ref row
-  _mm_prefetch(const_cast<const CHAR*>(reinterpret_cast<const CHAR*>(pucRef + nRefPitch[0] * (10))), _MM_HINT_NTA); // prefetch next Ref row
-  _mm_prefetch(const_cast<const CHAR*>(reinterpret_cast<const CHAR*>(pucRef + nRefPitch[0] * (11))), _MM_HINT_NTA); // prefetch next Ref row
-  _mm_prefetch(const_cast<const CHAR*>(reinterpret_cast<const CHAR*>(pucRef + nRefPitch[0] * (12))), _MM_HINT_NTA); // prefetch next Ref row
+  _mm_prefetch(const_cast<const char*>(reinterpret_cast<const char*>(pucRef + nRefPitch[0] * (9))), _MM_HINT_NTA); // prefetch next Ref row
+  _mm_prefetch(const_cast<const char*>(reinterpret_cast<const char*>(pucRef + nRefPitch[0] * (10))), _MM_HINT_NTA); // prefetch next Ref row
+  _mm_prefetch(const_cast<const char*>(reinterpret_cast<const char*>(pucRef + nRefPitch[0] * (11))), _MM_HINT_NTA); // prefetch next Ref row
+  _mm_prefetch(const_cast<const char*>(reinterpret_cast<const char*>(pucRef + nRefPitch[0] * (12))), _MM_HINT_NTA); // prefetch next Ref row
 
 
   __m256i ymm7_minsad8_1, ymm8_minsad8_2, ymm9_minsad8_3; // vectors of minsads for SSE4.1 _mm_minpos_epu16() minsad and pos search
@@ -421,7 +421,7 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp2_avx2(WorkingArea& workarea
   // current block for search loaded into ymm10 and ymm11
 
   // 1st row 
-  ULONG64 i = 0;
+  int i = 0;
   ymm0_Ref_01 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 1)), (__m128i*)(pucRef + nRefPitch[0] * (i + 0)));
   ymm1_Ref_23 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 3)), (__m128i*)(pucRef + nRefPitch[0] * (i + 2)));
   ymm2_Ref_45 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 5)), (__m128i*)(pucRef + nRefPitch[0] * (i + 4)));
@@ -883,7 +883,7 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp1_avx2(WorkingArea& workarea
   const uint8_t* pucRef = GetRefBlock(workarea, mvx - 1, mvy - 1); // upper left corner
   const uint8_t* pucCurr = workarea.pSrc[0];
 
-  _mm_prefetch(const_cast<const CHAR*>(reinterpret_cast<const CHAR*>(pucRef + nRefPitch[0] * (9))), _MM_HINT_NTA); // prefetch next Ref row
+  _mm_prefetch(const_cast<const char*>(reinterpret_cast<const char*>(pucRef + nRefPitch[0] * (9))), _MM_HINT_NTA); // prefetch next Ref row
 
 
   __m256i ymm7_minsad8_1; // vectors of minsads for SSE4.1 _mm_minpos_epu16() minsad and pos search
@@ -904,7 +904,7 @@ void PlaneOfBlocks::ExhaustiveSearch8x8_uint8_np1_sp1_avx2(WorkingArea& workarea
   // current block for search loaded into ymm10 and ymm11
 
   // 1st row 
-  ULONG64 i = 0;
+  int i = 0;
   ymm0_Ref_01 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 1)), (__m128i*)(pucRef + nRefPitch[0] * (i + 0)));
   ymm1_Ref_23 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 3)), (__m128i*)(pucRef + nRefPitch[0] * (i + 2)));
   ymm2_Ref_45 = _mm256_loadu2_m128i((__m128i*)(pucRef + nRefPitch[0] * (i + 5)), (__m128i*)(pucRef + nRefPitch[0] * (i + 4)));

@@ -9,6 +9,13 @@ FILE(GLOB MvTools2_Sources RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
   "conc/*.hpp"
 )
 
+IF(WIN32)
+ELSE()
+  LIST(REMOVE_ITEM MvTools2_Sources "AvstpFinder.cpp")
+  LIST(REMOVE_ITEM MvTools2_Sources "AvstpFinder.h")
+ENDIF()
+
+
 message("${MvTools2_Sources}")
 
 IF( MSVC OR MINGW )

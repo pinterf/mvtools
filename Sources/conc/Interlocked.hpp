@@ -239,6 +239,9 @@ int64_t	Interlocked::cas (int64_t volatile &dest, int64_t excg, int64_t comp)
 
 
 
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((__target__("cx16")))
+#endif 
 void	Interlocked::swap (Data128 &old, volatile Data128 &dest, const Data128 &excg)
 {
 	assert (is_ptr_aligned_nz (&dest));
