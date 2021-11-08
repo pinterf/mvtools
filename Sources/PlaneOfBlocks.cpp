@@ -64,8 +64,8 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
   , nBlkCount(_nBlkX * _nBlkY)
   , nPel(_nPel)
   , nLogPel(ilog2(_nPel))	// nLogPel=0 for nPel=1, 1 for nPel=2, 2 for nPel=4, i.e. (x*nPel) = (x<<nLogPel)
-  , nLogScale(_nLevel)
   , nScale(iexp2(_nLevel))
+  , nLogScale(_nLevel)
   , nFlags(_nFlags)
   , nOverlapX(_nOverlapX)
   , nOverlapY(_nOverlapY)
@@ -92,8 +92,8 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
   , chroma((_nFlags & MOTION_USE_CHROMA_MOTION) != 0)
   , dctpitch(AlignNumber(_nBlkSizeX, 16) * _pixelsize)
   , _dct_pool_ptr(dct_pool_ptr)
-  , verybigSAD(3 * _nBlkSizeX * _nBlkSizeY * (pixelsize == 4 ? 1 : (1 << bits_per_pixel))) // * 256, pixelsize==2 -> 65536. Float:1
   , freqArray()
+  , verybigSAD(3 * _nBlkSizeX * _nBlkSizeY * (pixelsize == 4 ? 1 : (1 << bits_per_pixel))) // * 256, pixelsize==2 -> 65536. Float:1
   , dctmode(0)
   , _workarea_fact(nBlkSizeX, nBlkSizeY, dctpitch, nLogxRatioUV, nLogyRatioUV, pixelsize, bits_per_pixel)
   , _workarea_pool()

@@ -222,3 +222,8 @@ void Padding::PadReferenceFrame(unsigned char *refFrame8, int refPitch, int hPad
     }
   }
 }
+
+template void Padding::PadReferenceFrame<uint8_t>(unsigned char* refFrame8, int refPitch, int hPad, int vPad, int width, int height);
+template void Padding::PadReferenceFrame<uint16_t>(unsigned char* refFrame8, int refPitch, int hPad, int vPad, int width, int height);
+template void Padding::PadReferenceFrame<float>(unsigned char* refFrame8, int refPitch, int hPad, int vPad, int width, int height);
+

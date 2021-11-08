@@ -8,7 +8,7 @@
 
 #if !defined(__FMA__)
 // Assume that all processors that have AVX2 also have FMA3
-#if defined (__GNUC__) && ! defined (__INTEL_COMPILER) && ! defined (__clang__)
+#if defined (__GNUC__) && ! defined (__INTEL_COMPILER) && ! defined (__INTEL_LLVM_COMPILER) && ! defined (__clang__)
 // Prevent error message in g++ when using FMA intrinsics with avx2:
 #pragma message "It is recommended to specify also option -mfma when using -mavx2 or higher"
 #else
@@ -16,7 +16,7 @@
 #endif
 #endif
 // FMA3 instruction set
-#if defined (__FMA__) && (defined(__GNUC__) || defined(__clang__))  && ! defined (__INTEL_COMPILER)
+#if defined (__FMA__) && (defined(__GNUC__) || defined(__clang__) || defined(__INTEL_LLVM_COMPILER))  && ! defined (__INTEL_COMPILER) 
 #include <fmaintrin.h>
 #endif // __FMA__ 
 

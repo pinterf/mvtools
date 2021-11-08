@@ -17,7 +17,7 @@
 // Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA, or visit
 // http://www.gnu.org/copyleft/gpl.html .
 
-#if defined (__GNUC__) && ! defined (__INTEL_COMPILER)
+#if defined (__GNUC__) && ! defined (__INTEL_COMPILER) && ! defined(__INTEL_LLVM_COMPILER)
 #include <x86intrin.h>
 // x86intrin.h includes header files for whatever instruction
 // sets are specified on the compiler command line, such as: xopintrin.h, fma4intrin.h
@@ -27,7 +27,7 @@
 
 #if !defined(__FMA__)
 // Assume that all processors that have AVX2 also have FMA3
-#if defined (__GNUC__) && ! defined (__INTEL_COMPILER) && ! defined (__clang__)
+#if defined (__GNUC__) && ! defined (__INTEL_COMPILER) && ! defined(__INTEL_LLVM_COMPILER) && ! defined (__clang__)
 // Prevent error message in g++ when using FMA intrinsics with avx2:
 #pragma message "It is recommended to specify also option -mfma when using -mavx2 or higher"
 #else
@@ -35,7 +35,7 @@
 #endif
 #endif
 // FMA3 instruction set
-#if defined (__FMA__) && (defined(__GNUC__) || defined(__clang__))  && ! defined (__INTEL_COMPILER)
+#if defined (__FMA__) && (defined(__GNUC__) || defined(__clang__) || defined(__INTEL_LLVM_COMPILER))  && ! defined (__INTEL_COMPILER) 
 #include <fmaintrin.h>
 #endif // __FMA__ 
 
@@ -87,59 +87,43 @@ void Degrain1to6_avx2(BYTE* pDst, BYTE* pDstLsb, int WidthHeightForC, int nDstPi
   __m128i wb4, wf4;
   __m128i wb5, wf5;
   __m128i wb6, wf6;
+
+  __m256i wbf_256[level];
+
+#if 0
   __m256i wbf1_256;
   __m256i wbf2_256;
   __m256i wbf3_256;
   __m256i wbf4_256;
   __m256i wbf5_256;
   __m256i wbf6_256;
-  if constexpr (out32) {
-    // the experimental out32 (float buffer) is here different than the sse2 version
-    ws_256 = _mm256_set1_epi16(WSrc);
-    wbf1_256 = _mm256_set1_epi32((WRefB[0] << 16) | WRefF[0]);
-    if constexpr (level >= 2) {
-      wbf2_256 = _mm256_set1_epi32((WRefB[1] << 16) | WRefF[1]);
-      if constexpr (level >= 3) {
-        wbf3_256 = _mm256_set1_epi32((WRefB[2] << 16) | WRefF[2]);
-        if constexpr (level >= 4) {
-          wbf4_256 = _mm256_set1_epi32((WRefB[3] << 16) | WRefF[3]);
-          if constexpr (level >= 5) {
-            wbf5_256 = _mm256_set1_epi32((WRefB[4] << 16) | WRefF[4]);
-            if constexpr (level >= 6) {
-              wbf6_256 = _mm256_set1_epi32((WRefB[5] << 16) | WRefF[5]);
-            }
+#endif
+  // interleave 0 and center weight
+  ws_256 = _mm256_set1_epi16((0 << 16) + WSrc);
+
+  // interleave F and B for madd
+  for(int i = 0; i < level; i++)
+    wbf_256[i] = _mm256_set1_epi32((WRefB[i] << 16) | WRefF[i]);
+
+#if 0
+  // interleave F and B for madd
+  wbf1_256 = _mm256_set1_epi32((WRefB[0] << 16) | WRefF[0]);
+  if constexpr (level >= 2) {
+    wbf2_256 = _mm256_set1_epi32((WRefB[1] << 16) | WRefF[1]);
+    if constexpr (level >= 3) {
+      wbf3_256 = _mm256_set1_epi32((WRefB[2] << 16) | WRefF[2]);
+      if constexpr (level >= 4) {
+        wbf4_256 = _mm256_set1_epi32((WRefB[3] << 16) | WRefF[3]);
+        if constexpr (level >= 5) {
+          wbf5_256 = _mm256_set1_epi32((WRefB[4] << 16) | WRefF[4]);
+          if constexpr (level >= 6) {
+            wbf6_256 = _mm256_set1_epi32((WRefB[5] << 16) | WRefF[5]);
           }
         }
       }
     }
   }
-  else {
-    // note: avx2 version is still using here 128 bit registers, code is almost same as in sse2
-    // but we probably benefit of newer instruction set
-    ws = _mm_set1_epi16(WSrc);
-    wb1 = _mm_set1_epi16(WRefB[0]);
-    wf1 = _mm_set1_epi16(WRefF[0]);
-    if constexpr (level >= 2) {
-      wb2 = _mm_set1_epi16(WRefB[1]);
-      wf2 = _mm_set1_epi16(WRefF[1]);
-      if constexpr (level >= 3) {
-        wb3 = _mm_set1_epi16(WRefB[2]);
-        wf3 = _mm_set1_epi16(WRefF[2]);
-        if constexpr (level >= 4) {
-          wb4 = _mm_set1_epi16(WRefB[3]);
-          wf4 = _mm_set1_epi16(WRefF[3]);
-          if constexpr (level >= 5) {
-            wb5 = _mm_set1_epi16(WRefB[4]);
-            wf5 = _mm_set1_epi16(WRefF[4]);
-            if constexpr (level >= 6) {
-              wb6 = _mm_set1_epi16(WRefB[5]);
-              wf6 = _mm_set1_epi16(WRefF[5]);
-            }
-          }
-        }
-      }
-    }
-  }
+#endif
 
   //  (lsb_flag || out16 || out32): 8 bit in 16 bits out, out32 will be converted to float
   //  else 8 bit in 8 bit out (but 16 bit intermediate)
@@ -148,85 +132,55 @@ void Degrain1to6_avx2(BYTE* pDst, BYTE* pDstLsb, int WidthHeightForC, int nDstPi
   {
     for (int x = 0; x < blockWidth; x += 8)
     {
+
+        // lambda to protect overread. Read exact number of bytes for all blocksizes 
+      auto getpixels_as_uint8_in_m128i = [&](const BYTE* p) {
+        __m128i pixels;
+        if constexpr (blockWidth == 2)
+          pixels = _mm_cvtsi32_si128(*(reinterpret_cast<const uint16_t*>(p + x))); // 2 bytes
+        else if constexpr (blockWidth == 3)
+          pixels = _mm_cvtsi32_si128(*(reinterpret_cast<const uint16_t*>(p + x)) + (*(p + x + 2) << 16)); // 2+1 bytes
+        else if constexpr (blockWidth == 4)
+          pixels = _mm_cvtsi32_si128(*(reinterpret_cast<const uint32_t*>(p + x))); // 4 bytes
+        else if constexpr (blockWidth == 6) // uint32 + uint16
+          pixels = _mm_or_si128(
+            _mm_cvtsi32_si128(*(reinterpret_cast<const uint32_t*>(p + x))), // 4 bytes
+            _mm_slli_si128(_mm_cvtsi32_si128(*(reinterpret_cast<const uint16_t*>(p + x + 4))), 4) // 2 bytes
+          );
+        else if constexpr (blockWidth == 12) {
+          if (x == 0)
+            pixels = _mm_loadl_epi64((__m128i*)(p + x)); // 8 bytes in x==0 loop
+          else // x == 1
+            pixels = _mm_cvtsi32_si128(*(reinterpret_cast<const uint32_t*>(p + x))); // 4 bytes from 2nd loop (x==1)
+        }
+        else
+          pixels = _mm_loadl_epi64((__m128i*)(p + x)); // 8 bytes
+
+        return pixels;
+      };
+
       __m128i val; // basic, lsb (stacked) and out16 operation
       __m256i val2; // out32 (float output) case
 
-      if constexpr (!out32) {
-        // lambda to protect overread. Read exact number of bytes for all blocksizes 
-        auto getpixels_as_uint16_in_m128i = [x](const BYTE* p) {
-          __m128i pixels;
-          if constexpr (blockWidth == 2)
-            pixels = _mm_cvtsi32_si128(*(reinterpret_cast<const uint16_t*>(p + x))); // 2 bytes
-          else if constexpr (blockWidth == 3)
-            pixels = _mm_cvtsi32_si128(*(reinterpret_cast<const uint16_t*>(p + x)) + (*(p + x + 2) << 16)); // 2+1 bytes
-          else if constexpr (blockWidth == 4)
-            pixels = _mm_cvtsi32_si128(*(reinterpret_cast<const uint32_t*>(p + x))); // 4 bytes
-          else if constexpr (blockWidth == 6) // uint32 + uint16
-            pixels = _mm_or_si128(
-              _mm_cvtsi32_si128(*(reinterpret_cast<const uint32_t*>(p + x))), // 4 bytes
-              _mm_slli_si128(_mm_cvtsi32_si128(*(reinterpret_cast<const uint16_t*>(p + x + 4))), 4) // 2 bytes
-            );
-          else if constexpr (blockWidth == 12) {
-            if (x == 0)
-              pixels = _mm_loadl_epi64((__m128i*)(p + x)); // 8 bytes in x==0 loop
-            else // x == 1
-              pixels = _mm_cvtsi32_si128(*(reinterpret_cast<const uint32_t*>(p + x))); // 4 bytes from 2nd loop (x==1)
-          }
-          else
-            pixels = _mm_loadl_epi64((__m128i*)(p + x)); // 8 bytes
+      auto src = getpixels_as_uint8_in_m128i(pSrc);
+      // Interleave Src 0 Src 0 ...
+      auto src_0 = _mm256_cvtepu8_epi32(src);
+      val2 = _mm256_madd_epi16(src_0, ws_256);
 
-          return _mm_cvtepu8_epi16(pixels); // instead of unpack with zero
-        };
-
-        val = _mm_mullo_epi16(getpixels_as_uint16_in_m128i(pSrc), ws);
-
-        if constexpr (level >= 1) {
-          auto b = _mm_mullo_epi16(getpixels_as_uint16_in_m128i(pRefB[0]), wb1);
-          auto f = _mm_mullo_epi16(getpixels_as_uint16_in_m128i(pRefF[0]), wf1);
-          val = _mm_add_epi16(val, _mm_add_epi16(b, f));
-        }
-        if constexpr (level >= 2) {
-          auto b = _mm_mullo_epi16(getpixels_as_uint16_in_m128i(pRefB[1]), wb2);
-          auto f = _mm_mullo_epi16(getpixels_as_uint16_in_m128i(pRefF[1]), wf2);
-          val = _mm_add_epi16(val, _mm_add_epi16(b, f));
-        }
-        if constexpr (level >= 3) {
-          auto b = _mm_mullo_epi16(getpixels_as_uint16_in_m128i(pRefB[2]), wb3);
-          auto f = _mm_mullo_epi16(getpixels_as_uint16_in_m128i(pRefF[2]), wf3);
-          val = _mm_add_epi16(val, _mm_add_epi16(b, f));
-        }
-        if constexpr (level >= 4) {
-          auto b = _mm_mullo_epi16(getpixels_as_uint16_in_m128i(pRefB[3]), wb4);
-          auto f = _mm_mullo_epi16(getpixels_as_uint16_in_m128i(pRefF[3]), wf4);
-          val = _mm_add_epi16(val, _mm_add_epi16(b, f));
-        }
-        if constexpr (level >= 5) {
-          auto b = _mm_mullo_epi16(getpixels_as_uint16_in_m128i(pRefB[4]), wb5);
-          auto f = _mm_mullo_epi16(getpixels_as_uint16_in_m128i(pRefF[4]), wf5);
-          val = _mm_add_epi16(val, _mm_add_epi16(b, f));
-        }
-        if constexpr (level >= 6) {
-          auto b = _mm_mullo_epi16(getpixels_as_uint16_in_m128i(pRefB[5]), wb6);
-          auto f = _mm_mullo_epi16(getpixels_as_uint16_in_m128i(pRefF[5]), wf6);
-          val = _mm_add_epi16(val, _mm_add_epi16(b, f));
-        }
-
+      for (int i = 0; i < level; i++) {
+        // Interleave SrcF SrcB
+        auto f = getpixels_as_uint8_in_m128i(pRefF[i]);
+        auto b = getpixels_as_uint8_in_m128i(pRefB[i]);
+        auto fb = _mm256_cvtepu8_epi16(_mm_unpacklo_epi8(f, b));
+        // madd: SrcF*WF + SrcB*WB
+        val2 = _mm256_add_epi32(val2, _mm256_madd_epi16(fb, wbf_256[i]));
       }
-      else {
-        // out32
-        val2 = _mm256_madd_epi16(_mm256_cvtepu8_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pSrc + x)), zero)), ws_256);
-        if constexpr (level >= 1)
-          val2 = _mm256_add_epi32(val2, _mm256_madd_epi16(_mm256_cvtepu8_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[0] + x)), _mm_loadl_epi64((__m128i*)(pRefB[0] + x)))), wbf1_256));
-        if constexpr (level >= 2)
-          val2 = _mm256_add_epi32(val2, _mm256_madd_epi16(_mm256_cvtepu8_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[1] + x)), _mm_loadl_epi64((__m128i*)(pRefB[1] + x)))), wbf2_256));
-        if constexpr (level >= 3)
-          val2 = _mm256_add_epi32(val2, _mm256_madd_epi16(_mm256_cvtepu8_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[2] + x)), _mm_loadl_epi64((__m128i*)(pRefB[2] + x)))), wbf3_256));
-        if constexpr (level >= 4)
-          val2 = _mm256_add_epi32(val2, _mm256_madd_epi16(_mm256_cvtepu8_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[3] + x)), _mm_loadl_epi64((__m128i*)(pRefB[3] + x)))), wbf4_256));
-        if constexpr (level >= 5)
-          val2 = _mm256_add_epi32(val2, _mm256_madd_epi16(_mm256_cvtepu8_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[4] + x)), _mm_loadl_epi64((__m128i*)(pRefB[4] + x)))), wbf5_256));
-        if constexpr (level >= 6)
-          val2 = _mm256_add_epi32(val2, _mm256_madd_epi16(_mm256_cvtepu8_epi16(_mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(pRefF[5] + x)), _mm_loadl_epi64((__m128i*)(pRefB[5] + x)))), wbf6_256));
+
+      if (!out32) {
+        // 256 -> 128
+        __m256i result_2x4x_uint16 = _mm256_packus_epi32(val2, zero_256); // 8*32+zeros = lower 4*16 in both 128bit lanes
+        __m128i result_2x4x_uint16_128 = _mm256_castsi256_si128(_mm256_permute4x64_epi64(result_2x4x_uint16, (0 << 0) | (2 << 2) | (0 << 4) | (0 << 6))); // low64 of 2nd 128bit lane to hi64 of 1st 128bit lane
+        val = result_2x4x_uint16_128;
       }
 
       // storage lsb/out16/out32/8 bit

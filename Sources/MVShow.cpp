@@ -33,8 +33,8 @@
 MVShow::MVShow(PClip _super, PClip vectors, int _scale, int _plane, int _tol, bool _showsad, int _number,
                sad_t nSCD1, int nSCD2, bool _isse, bool _planar, IScriptEnvironment* env) :
 GenericVideoFilter(_super),
-mvClip(vectors, nSCD1, nSCD2, env, 1, 0),
-MVFilter(vectors, "MShow", env, 1, 0)
+MVFilter(vectors, "MShow", env, 1, 0),
+mvClip(vectors, nSCD1, nSCD2, env, 1, 0)
 {
   has_at_least_v8 = true;
   try { env->CheckVersion(8); }
@@ -76,7 +76,7 @@ MVFilter(vectors, "MShow", env, 1, 0)
   if (nHeight != nHeightS || nWidth != nSuperWidth-nSuperHPad*2)
     env->ThrowError("MShow : wrong super frame clip");
 
-    vi.height = nHeight + nSuperVPad*2; // one level only (may be redesigned to show all levels with vectors at once)
+  vi.height = nHeight + nSuperVPad*2; // one level only (may be redesigned to show all levels with vectors at once)
 
   if ( (pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
    {

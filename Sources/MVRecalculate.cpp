@@ -157,7 +157,6 @@ MVRecalculate::MVRecalculate(
     cpuFlags, analysisData.xRatioUV, analysisData.yRatioUV, analysisData.pixelsize, analysisData.bits_per_pixel, mt_flag
   );
   const int nSuperWidth = child->GetVideoInfo().width;
-  const int nSuperHeight = child->GetVideoInfo().height;
 
   if (nHeight != analysisData.nHeight
     || nSuperWidth - 2 * nSuperHPad != analysisData.nWidth)

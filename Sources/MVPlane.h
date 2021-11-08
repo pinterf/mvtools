@@ -101,23 +101,23 @@ private:
   void	refine_pel4 (SchedulerRefine::TaskData &td);
   void	reduce_slice (SlicerReduce::TaskData &td);
 
-   uint8_t **pPlane;
-   int nWidth;
-   int nHeight;
-   int nPitch;
-   int nHPadding;
-   int nVPadding;
-   int nOffsetPadding;
-   int nHPaddingPel;
-   int nVPaddingPel;
-   int nExtendedWidth;
-   int nExtendedHeight;
+  uint8_t **pPlane;
+  int nWidth;
+  int nHeight;
+  int nPitch;
+  int nHPadding;
+  int nVPadding;
+  int nOffsetPadding;
+  int nHPaddingPel;
+  int nVPaddingPel;
+  int nExtendedWidth;
+  int nExtendedHeight;
 
-   int pixelsize; // PF
-   int bits_per_pixel;
-   int pixelsize_shift; // prevent multiplicaion of *pixelsize, use shift
+  int nPel;
+  int pixelsize;
+  int pixelsize_shift; // prevent multiplicaion of *pixelsize, use shift
+  int bits_per_pixel;
 
-   int nPel;
   int nSharp;		// Set only from MSuper, used in Refine()
   int nRfilter;	// Same as above, for ReduceTo()
 

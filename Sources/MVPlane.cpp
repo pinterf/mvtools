@@ -53,10 +53,10 @@ MVPlane::MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, i
   , nExtendedWidth(_nWidth + 2 * _nHPad)
   , nExtendedHeight(_nHeight + 2 * _nVPad)
   , nPel(_nPel)
-  , nSharp(2)
   , pixelsize(_pixelsize)
   , pixelsize_shift((_pixelsize == 1) ? 0 : (_pixelsize == 2 ? 1 : 2)) // pixelsize 1/2/4: shift 0/1/2
   , bits_per_pixel(_bits_per_pixel)
+  , nSharp(2)
   , cpuFlags(_cpuFlags)
   , _mt_flag(mt_flag)
   , isPadded(false)
@@ -525,9 +525,10 @@ void MVPlane::reduce_slice(SlicerReduce::TaskData &td)
   assert(&td != 0);
   assert(_redp_ptr != 0);
   // noffsetPadding is pixelsize aware
-  MVPlane &red = *_redp_ptr;
+  MVPlane &red = *_redp_ptr; // target (smaller dimension)
   _reduce_ptr(
-    red.pPlane[0] + red.nOffsetPadding, pPlane[0] + nOffsetPadding,
+    red.pPlane[0] + red.nOffsetPadding, // shrink to
+    pPlane[0] + nOffsetPadding, // shrink from
     red.nPitch, nPitch,
     red.nWidth, red.nHeight, td._y_beg, td._y_end,
     cpuFlags

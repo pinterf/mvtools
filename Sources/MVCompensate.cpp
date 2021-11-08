@@ -40,8 +40,8 @@ MVCompensate::MVCompensate(
   IScriptEnvironment* env_ptr
 )
   : GenericVideoFilter(_child)
-  , _mv_clip_arr(1)
   , MVFilter(vectors, "MCompensate", env_ptr, 1, 0)
+  , _mv_clip_arr(1)
   , super(_super)
   , _trad(trad)
   , _cclip_sptr((cclip_sptr != 0) ? cclip_sptr : _child)
