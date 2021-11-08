@@ -171,8 +171,7 @@ private:
   conc::ObjPool <DCTClass> *		// Set to 0 if not used
     _dct_pool_ptr;
 
-  // fixme: probably no need fot conc::Array
-  conc::Array <std::vector <int>, 2>
+  std::array <std::vector <int>, 2>
     freqArray; // temporary array for global motion estimaton [x|y][value]
 
   sad_t verybigSAD;
