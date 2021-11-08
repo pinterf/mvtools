@@ -694,12 +694,18 @@ static void RB2BilinearFilteredVerticalLine_sse2(uint8_t *pDst, const uint8_t *p
 }
 
 template<typename pixel_t, bool hasSSE41>
-static void RB2BilinearFilteredHorizontalInplaceLine_sse2(pixel_t *pSrc, int nWidthMMX) {
+static void RB2BilinearFilteredHorizontalInplaceLine_sse2(pixel_t *pSrc, int nWidthMMX, int nWidth) {
   __m128i everySecondMask;
   if constexpr(sizeof(pixel_t) == 1)
     everySecondMask = _mm_set1_epi16(0x00FF);
   else
     everySecondMask = _mm_set1_epi32(0x0000FFFF);
+
+  // reduces 2 * Width to Width.
+  // [0], [Width-2] [Width-1] is calculated in C
+  // non mod4/8 pixels before [Width-2] which are not covered by 16 byte SIMD load are also in C
+  // 
+  // nWidthMMX ensures that when reading the source -1 0 +1 +2 offsets are safely read
 
   for (int x = 1; x < nWidthMMX; x += 8 / sizeof(pixel_t)) {
     __m128i m0 = _mm_loadu_si128((const __m128i *)&pSrc[x * 2 - 1]);
@@ -1110,6 +1116,16 @@ void RB2BilinearFilteredHorizontalInplace(
   // 8 pixels at 8 bit, 4 pixels at 16 bit
   const int pixels_per_cycle = 8 / sizeof(pixel_t);
   int nWidthMMX = 1 + ((nWidth - 2) / pixels_per_cycle) * pixels_per_cycle;
+  //                                                                                        nWidth
+  // inplace 90->45                                                                            v
+  //           11111111112222222222333333333344444444445555555555666666666677777777778888888888999999999900
+  // 012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901
+  // 1
+  // RRRRRRRRrrrrrrrrRRRRRRRRrrrrrrrrRRRRRRRRrrrrrrrrRRRRRRRRrrrrrrrrRRRRRRRRrrrrrrrrRRRRRRRR    [-1]
+  //  RRRRRRRRrrrrrrrrRRRRRRRRrrrrrrrrRRRRRRRRrrrrrrrrRRRRRRRRrrrrrrrrRRRRRRRRrrrrrrrrRRRRRRRR   [0]
+  //   RRRRRRRRrrrrrrrrRRRRRRRRrrrrrrrrRRRRRRRRrrrrrrrrRRRRRRRRrrrrrrrrRRRRRRRRrrrrrrrrRRRRRRRR  [+1]
+  //    RRRRRRRRrrrrrrrrRRRRRRRRrrrrrrrrRRRRRRRRrrrrrrrrRRRRRRRRrrrrrrrrRRRRRRRRrrrrrrrrRRRRRRRR [+2]
+  //  AAAAaaaaAAAAaaaaAAAAaaaaAAAAaaaaAAAAaaaaAAAA
 
   int y = 0;
 
@@ -1132,13 +1148,13 @@ void RB2BilinearFilteredHorizontalInplace(
       if constexpr(sizeof(pixel_t) <= 2)
       {
         if constexpr (sizeof(pixel_t) == 1) {
-          RB2BilinearFilteredHorizontalInplaceLine_sse2<uint8_t, false>(pSrc, nWidthMMX); // very first is skipped
+          RB2BilinearFilteredHorizontalInplaceLine_sse2<uint8_t, false>(pSrc, nWidthMMX, nWidth); // very first is skipped
         }
         else {
           if (isse41)
-            RB2BilinearFilteredHorizontalInplaceLine_sse2<uint16_t, true>(pSrc, nWidthMMX);
+            RB2BilinearFilteredHorizontalInplaceLine_sse2<uint16_t, true>(pSrc, nWidthMMX, nWidth);
           else
-            RB2BilinearFilteredHorizontalInplaceLine_sse2<uint16_t, false>(pSrc, nWidthMMX);
+            RB2BilinearFilteredHorizontalInplaceLine_sse2<uint16_t, false>(pSrc, nWidthMMX, nWidth);
         }
         xstart = nWidthMMX;
       }
@@ -1175,7 +1191,7 @@ void RB2BilinearFiltered(
   int nWidth, int nHeight, int y_beg, int y_end, int cpuFlags)
 {
   RB2BilinearFilteredVertical<pixel_t>(pDst, pSrc, nDstPitch, nSrcPitch, nWidth * 2, nHeight, y_beg, y_end, cpuFlags); // intermediate half height
-  RB2BilinearFilteredHorizontalInplace<pixel_t>(pDst, nDstPitch, nWidth, nHeight, y_beg, y_end, cpuFlags); // inpace width reduction
+  RB2BilinearFilteredHorizontalInplace<pixel_t>(pDst, nDstPitch, nWidth, nHeight, y_beg, y_end, cpuFlags); // inplace width reduction
 }
 
 
@@ -1621,11 +1637,12 @@ void HorizontalBilin(unsigned char *pDst8, const unsigned char *pSrc8, int nDstP
 
   for (int j = 0; j < nHeight; j++)
   {
-    for (int i = 0; i < nWidth - 1; i++)
-      if constexpr(sizeof(pixel_t) <= 2)
+    for (int i = 0; i < nWidth - 1; i++) {
+      if constexpr (sizeof(pixel_t) <= 2)
         pDst[i] = (pSrc[i] + pSrc[i + 1] + 1) >> 1; // int
       else
         pDst[i] = (pSrc[i] + pSrc[i + 1]) * 0.5f; // float
+    }
 
     pDst[nWidth - 1] = pSrc[nWidth - 1];
     pDst += nDstPitch;
@@ -1639,22 +1656,59 @@ void HorizontalBilin_sse2(unsigned char *pDst8, const unsigned char *pSrc8, int 
   int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel) {
   (void)bits_per_pixel; // not used
 
+  pixel_t* pDst = reinterpret_cast<pixel_t*>(pDst8);
+  const pixel_t* pSrc = reinterpret_cast<const pixel_t*>(pSrc8);
+
+  nSrcPitch /= sizeof(pixel_t);
+  nDstPitch /= sizeof(pixel_t);
+
   for (int y = 0; y < nHeight; y++) {
-    for (int x = 0; x < nWidth * (int)sizeof(pixel_t); x += 16) {
-      __m128i m0 = _mm_loadu_si128((const __m128i *)&pSrc8[x]);
-      __m128i m1 = _mm_loadu_si128((const __m128i *)&pSrc8[x + sizeof(pixel_t)]);
+
+    // Byte: safe until x < Width-16;
+    // V               V
+    // 0123456789012345678
+    // 0000000000000000   
+    //  1111111111111111  
+
+    // uint16_t: safe until x < Width-8;
+    // V        V
+    // 0123456789012345678
+    // 00000000       
+    //  11111111      
+
+    // C: safe until x < Width-1;
+    // V V       
+    // 0123456789012345678
+    // 0          
+    //  1         
+
+    // v2.7.46: Width-8 uint8_t and Width-16 (uint16_t) instead of Width
+    const int safe_limit = sizeof(pixel_t) == 1 ? nWidth - 16 : nWidth - 8;
+
+    int x; // keep after 'for'
+
+    for (x = 0; x < safe_limit; x += 16 / sizeof(pixel_t)) {
+      __m128i m0 = _mm_loadu_si128((const __m128i *)&pSrc[x]);
+      __m128i m1 = _mm_loadu_si128((const __m128i *)&pSrc[x + 1]);
 
       if(sizeof(pixel_t) == 1)
         m0 = _mm_avg_epu8(m0, m1);
       else
         m0 = _mm_avg_epu16(m0, m1);
-      _mm_storeu_si128((__m128i *)&pDst8[x], m0);
+      _mm_storeu_si128((__m128i *)&pDst[x], m0);
     }
 
-    reinterpret_cast<pixel_t *>(pDst8)[nWidth - 1] = reinterpret_cast<const pixel_t *>(pSrc8)[nWidth - 1];
+    // right side not covered by 16 byte SIMD load
+    // go on with x
+    for (; x < nWidth - 1; x++) {
+      pDst[x] = (pSrc[x] + pSrc[x + 1] + 1) >> 1; // int
+    }
 
-    pSrc8 += nSrcPitch;
-    pDst8 += nDstPitch;
+    // rightmost
+    pDst[nWidth - 1] = pSrc[nWidth - 1];
+
+    pSrc += nSrcPitch;
+    pDst += nDstPitch;
   }
 }
 
@@ -1672,24 +1726,32 @@ void DiagonalBilin(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPit
 
   for (int j = 0; j < nHeight - 1; j++)
   {
-    for (int i = 0; i < nWidth - 1; i++)
-      if constexpr(sizeof(pixel_t) <= 2) {
+    for (int i = 0; i < nWidth - 1; i++) {
+      if constexpr (sizeof(pixel_t) <= 2) {
         pDst[i] = (pSrc[i] + pSrc[i + 1] + pSrc[i + nSrcPitch] + pSrc[i + nSrcPitch + 1] + 2) >> 2; // int
-        pDst[nWidth - 1] = (pSrc[nWidth - 1] + pSrc[nWidth + nSrcPitch - 1] + 1) >> 1;
       }
       else {
         pDst[i] = (pSrc[i] + pSrc[i + 1] + pSrc[i + nSrcPitch] + pSrc[i + nSrcPitch + 1]) * 0.25f; // float
-        pDst[nWidth - 1] = (pSrc[nWidth - 1] + pSrc[nWidth + nSrcPitch - 1]) * 0.5f;
       }
+    }
+    // rightmost pixel
+    if constexpr (sizeof(pixel_t) <= 2) {
+      pDst[nWidth - 1] = (pSrc[nWidth - 1] + pSrc[nWidth + nSrcPitch - 1] + 1) >> 1;
+    }
+    else {
+      pDst[nWidth - 1] = (pSrc[nWidth - 1] + pSrc[nWidth + nSrcPitch - 1]) * 0.5f;
+    }
 
     pDst += nDstPitch;
     pSrc += nSrcPitch;
   }
-  for (int i = 0; i < nWidth - 1; i++)
+  // bottom line
+  for (int i = 0; i < nWidth - 1; i++) // except rightmost
     if constexpr(sizeof(pixel_t) <= 2)
       pDst[i] = (pSrc[i] + pSrc[i + 1] + 1) >> 1; // int
     else
       pDst[i] = (pSrc[i] + pSrc[i + 1]) * 0.5f; // float
+  // bottom rightmost
   pDst[nWidth - 1] = pSrc[nWidth - 1];
 }
 
@@ -1701,14 +1763,43 @@ void DiagonalBilin_sse2(unsigned char *pDst8, const unsigned char *pSrc8, int nD
 {
   (void)bits_per_pixel; // not used
 
+  pixel_t* pDst = reinterpret_cast<pixel_t*>(pDst8);
+  const pixel_t* pSrc = reinterpret_cast<const pixel_t*>(pSrc8);
+
+  nSrcPitch /= sizeof(pixel_t);
+  nDstPitch /= sizeof(pixel_t);
+
   auto zeroes = _mm_setzero_si128();
 
+  int x; // keep value after 'for'
+
   for (int y = 0; y < nHeight - 1; y++) {
-    for (int x = 0; x < nWidth * (int)sizeof(pixel_t); x += 8) {
-      __m128i m0 = _mm_loadl_epi64((const __m128i *)&pSrc8[x]);
-      __m128i m1 = _mm_loadl_epi64((const __m128i *)&pSrc8[x + sizeof(pixel_t)]);
-      __m128i m2 = _mm_loadl_epi64((const __m128i *)&pSrc8[x + nSrcPitch]);
-      __m128i m3 = _mm_loadl_epi64((const __m128i *)&pSrc8[x + nSrcPitch + sizeof(pixel_t)]);
+    // Byte: safe until x < Width-8;
+    // V        V
+    // 0123456789012345678
+    // 00000000   
+    //  11111111  
+
+    // uint16_t: safe until x < Width-4;
+    // V    V
+    // 0123456789012345678
+    // 0000       
+    //  1111      
+
+    // C: safe until x < Width-1;
+    // V V       
+    // 0123456789012345678
+    // 0          
+    //  1         
+
+    // v2.7.46: Width-8 uint8_t and Width-4 (uint16_t) instead of Width - 1
+    const int safe_limit = sizeof(pixel_t) == 1 ? nWidth - 8 : nWidth - 4;
+
+    for (x = 0; x < safe_limit; x += 8 / sizeof(pixel_t)) {
+      __m128i m0 = _mm_loadl_epi64((const __m128i *)&pSrc[x]);
+      __m128i m1 = _mm_loadl_epi64((const __m128i *)&pSrc[x + 1]);
+      __m128i m2 = _mm_loadl_epi64((const __m128i *)&pSrc[x + nSrcPitch]);
+      __m128i m3 = _mm_loadl_epi64((const __m128i *)&pSrc[x + nSrcPitch + 1]);
 
       if constexpr(sizeof(pixel_t) == 1) {
         m0 = _mm_unpacklo_epi8(m0, zeroes);
@@ -1742,27 +1833,47 @@ void DiagonalBilin_sse2(unsigned char *pDst8, const unsigned char *pSrc8, int nD
         else
           m0 = _MM_PACKUS_EPI32(m0, m0);
       }
-      _mm_storel_epi64((__m128i *)&pDst8[x], m0);
+      _mm_storel_epi64((__m128i *)&pDst[x], m0);
     }
 
-    reinterpret_cast<pixel_t *>(pDst8)[nWidth - 1] = (reinterpret_cast<const pixel_t *>(pSrc8)[nWidth - 1] + reinterpret_cast<const pixel_t *>(pSrc8)[nWidth - 1 + nSrcPitch] + 1) >> 1;
+    // right-side pixels not covered by SIMD 8 byte load
+    // go on with x
+    for (; x < nWidth - 1; x++) { // except rightmost one
+      if constexpr (sizeof(pixel_t) <= 2) {
+        pDst[x] = (pSrc[x] + pSrc[x + 1] + pSrc[x + nSrcPitch] + pSrc[x + nSrcPitch + 1] + 2) >> 2; // int
+      }
+      else {
+        pDst[x] = (pSrc[x] + pSrc[x + 1] + pSrc[x + nSrcPitch] + pSrc[x + nSrcPitch + 1]) * 0.25f; // float
+      }
+    }
 
-    pSrc8 += nSrcPitch;
-    pDst8 += nDstPitch;
+    // rightmost
+    pDst[nWidth - 1] = (pSrc[nWidth - 1] + pSrc[nWidth - 1 + nSrcPitch] + 1) >> 1; // int
+
+    pSrc += nSrcPitch;
+    pDst += nDstPitch;
   }
 
-  for (int x = 0; x < nWidth * (int)sizeof(pixel_t); x += 8) {
-    __m128i m0 = _mm_loadl_epi64((const __m128i *)&pSrc8[x]);
-    __m128i m1 = _mm_loadl_epi64((const __m128i *)&pSrc8[x + sizeof(pixel_t)]);
+  // bottom line
+  for (x = 0; x < nWidth - 1; x += 8 / sizeof(pixel_t)) {
+    __m128i m0 = _mm_loadl_epi64((const __m128i *)&pSrc[x]);
+    __m128i m1 = _mm_loadl_epi64((const __m128i *)&pSrc[x + 1]);
 
     if constexpr(sizeof(pixel_t) == 1)
       m0 = _mm_avg_epu8(m0, m1);
     else
       m0 = _mm_avg_epu16(m0, m1);
-    _mm_storel_epi64((__m128i *)&pDst8[x], m0);
+    _mm_storel_epi64((__m128i *)&pDst[x], m0);
   }
 
-  reinterpret_cast<pixel_t *>(pDst8)[nWidth - 1] = reinterpret_cast<const pixel_t *>(pSrc8)[nWidth - 1];
+  // right-side pixels not covered by SIMD 8 byte load
+  // go on with present x
+  for (; x < nWidth - 1; x++) { // except rightmost one
+    pDst[x] = (pSrc[x] + pSrc[x + nSrcPitch] + 1) >> 1;
+  }
+
+  // bottom rightmost
+  pDst[nWidth - 1] = pSrc[nWidth - 1];
 }
 
 // so called Wiener interpolation. (sharp, similar to Lanczos ?)
@@ -2017,8 +2128,32 @@ void HorizontalWiener_sse2(unsigned char *pDst8, const unsigned char *pSrc8, int
     pDst[0] = (pSrc[0] + pSrc[1] + 1) >> 1;
     pDst[1] = (pSrc[1] + pSrc[2] + 1) >> 1;
 
-    for (int x = 2; x < nWidth - 7; x += 8 / sizeof(pixel_t)) {
-      // safe till < nWidth - 7
+    // Byte: safe until x < Width-10;
+    //   V          V
+    // 0123456789012345678
+    // 22222222     
+    //  11111111    
+    //   00000000   
+    //    11111111  
+    //     22222222 
+    //      33333333
+
+    // uint16_t: safe until x < Width-6;
+    //   V      V
+    // 0123456789012345678
+    // 2222         
+    //  1111        
+    //   0000       
+    //    1111      
+    //     2222     
+    //      3333    
+
+    // v2.7.46: Width-10 uint8_t and Width-6 (uint16_t) instead of Width - 7
+    const int safe_limit = sizeof(pixel_t) == 1 ? nWidth - 10 : nWidth - 6;
+
+    int x; // keep after 'for'
+
+    for (x = 2; x < safe_limit; x += 8 / sizeof(pixel_t)) {
       __m128i m0 = _mm_loadl_epi64((const __m128i *)&pSrc[x - 2]);
       __m128i m1 = _mm_loadl_epi64((const __m128i *)&pSrc[x - 1]);
       __m128i m2 = _mm_loadl_epi64((const __m128i *)&pSrc[x]);
@@ -2086,13 +2221,13 @@ void HorizontalWiener_sse2(unsigned char *pDst8, const unsigned char *pSrc8, int
       _mm_storel_epi64((__m128i *)&pDst[x], m0);
     }
 
-    for (int i = nWidth - 7; i < nWidth - 4; i++)
-    {
-        pDst[i] = std::min(_max_pixel_value, std::max(0, ((pSrc[i - 2]) + (-(pSrc[i - 1]) + (pSrc[i] << 2)
-          + (pSrc[i + 1] << 2) - (pSrc[i + 2])) * 5 + (pSrc[i + 3]) + 16) >> 5));
-    }
+    // go on with x
+    for (; x < nWidth - 4; x++)
+        pDst[x] = std::min(_max_pixel_value, std::max(0, ((pSrc[x - 2]) + (-(pSrc[x - 1]) + (pSrc[x] << 2)
+          + (pSrc[x + 1] << 2) - (pSrc[x + 2])) * 5 + (pSrc[x + 3]) + 16) >> 5));
 
-    for (int x = nWidth - 4; x < nWidth - 1; x++)
+    // go on with x
+    for (; x < nWidth - 1; x++)
       pDst[x] = (pSrc[x] + pSrc[x + 1] + 1) >> 1;
 
     pDst[nWidth - 1] = pSrc[nWidth - 1];
@@ -2385,10 +2520,31 @@ void HorizontalBicubic_sse2(unsigned char* pDst8, const unsigned char* pSrc8, in
 
   for (int y = 0; y < nHeight; y++) {
     pDst[0] = (pSrc[0] + pSrc[1] + 1) >> 1;
+
+    // Byte: safe until x < Width-9;
+    //  V         V
+    // 0123456789012345678
+    // 11111111    
+    //  00000000   
+    //   11111111  
+    //    22222222 
+
+    // uint16_t: safe until x < Width-5;
+    //  V     V
+    // 0123456789012345678
+    // 1111        
+    //  0000       
+    //   1111      
+    //    2222     
+
+    // v2.7.46: Width-9 uint8_t and Width-5 (uint16_t) instead of Width - 7
+    const int safe_limit = sizeof(pixel_t) == 1 ? nWidth - 9 : nWidth - 5;
+
+    int x; // keep value after 'for'
+
     // 1 to nWidth - 3 (wiener: 2 to nWidth - 4)
-    for (int x = 1; x < nWidth - 7; x += 8 / sizeof(pixel_t)) {
+    for (x = 1; x < safe_limit; x += 8 / sizeof(pixel_t)) {
       // (-m1 -m4 + (m2+m3)*9 + 8) >> 4
-      // safe till < nWidth - 7
       __m128i m1 = _mm_loadl_epi64((const __m128i*) & pSrc[x - 1]);
       __m128i m2 = _mm_loadl_epi64((const __m128i*) & pSrc[x]);
       __m128i m3 = _mm_loadl_epi64((const __m128i*) & pSrc[x + 1]);
@@ -2434,13 +2590,13 @@ void HorizontalBicubic_sse2(unsigned char* pDst8, const unsigned char* pSrc8, in
       _mm_storel_epi64((__m128i*) & pDst[x], res);
     }
 
-    for (int i = nWidth - 7; i < nWidth - 3; i++)
-    {
-      pDst[i] = std::min(_max_pixel_value, std::max(0,
-        (-(pSrc[i - 1] + pSrc[i + 2]) + (pSrc[i] + pSrc[i + 1]) * 9 + 8) >> 4));
-    }
+    // go on with x
+    for (; x < nWidth - 3; x++)
+      pDst[x] = std::min(_max_pixel_value, std::max(0,
+        (-(pSrc[x - 1] + pSrc[x + 2]) + (pSrc[x] + pSrc[x + 1]) * 9 + 8) >> 4));
 
-    for (int x = nWidth - 3; x < nWidth - 1; x++)
+    // go on with x
+    for (; x < nWidth - 1; x++)
       pDst[x] = (pSrc[x] + pSrc[x + 1] + 1) >> 1;
 
     pDst[nWidth - 1] = pSrc[nWidth - 1];
