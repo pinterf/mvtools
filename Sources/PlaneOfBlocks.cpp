@@ -2606,41 +2606,6 @@ void	PlaneOfBlocks::estimate_global_mv_doubled_slice(Slicer::TaskData &td)
 
 //----------------------------------------------------------------
 
-
-
-/* fetch the block in the reference frame, which is pointed by the vector (vx, vy) */
-MV_FORCEINLINE const uint8_t *	PlaneOfBlocks::GetRefBlock(WorkingArea &workarea, int nVx, int nVy)
-{
-  //	return pRefFrame->GetPlane(YPLANE)->GetAbsolutePointer((workarea.x[0]<<nLogPel) + nVx, (workarea.y[0]<<nLogPel) + nVy);
-  return (nPel == 2) ? pRefFrame->GetPlane(YPLANE)->GetAbsolutePointerPel <1>((workarea.x[0] << 1) + nVx, (workarea.y[0] << 1) + nVy) :
-    (nPel == 1) ? pRefFrame->GetPlane(YPLANE)->GetAbsolutePointerPel <0>((workarea.x[0]) + nVx, (workarea.y[0]) + nVy) :
-    pRefFrame->GetPlane(YPLANE)->GetAbsolutePointerPel <2>((workarea.x[0] << 2) + nVx, (workarea.y[0] << 2) + nVy);
-}
-
-MV_FORCEINLINE const uint8_t *	PlaneOfBlocks::GetRefBlockU(WorkingArea &workarea, int nVx, int nVy)
-{
-  //	return pRefFrame->GetPlane(UPLANE)->GetAbsolutePointer((workarea.x[1]<<nLogPel) + (nVx >> 1), (workarea.y[1]<<nLogPel) + (yRatioUV==1 ? nVy : nVy>>1) ); //v.1.2.1
-  // 161130 bitshifts instead of ternary operator
-  return (nPel == 2) ? pRefFrame->GetPlane(UPLANE)->GetAbsolutePointerPel <1>((workarea.x[1] << 1) + (nVx >> nLogxRatioUV), (workarea.y[1] << 1) + (nVy >> nLogyRatioUV)) :
-    (nPel == 1) ? pRefFrame->GetPlane(UPLANE)->GetAbsolutePointerPel <0>((workarea.x[1]) + (nVx >> nLogxRatioUV), (workarea.y[1]) + (nVy >> nLogyRatioUV)) :
-    pRefFrame->GetPlane(UPLANE)->GetAbsolutePointerPel <2>((workarea.x[1] << 2) + (nVx >> nLogxRatioUV), (workarea.y[1] << 2) + (nVy >> nLogyRatioUV));
-  // xRatioUV fix after 2.7.0.22c
-}
-
-MV_FORCEINLINE const uint8_t *	PlaneOfBlocks::GetRefBlockV(WorkingArea &workarea, int nVx, int nVy)
-{
-  //	return pRefFrame->GetPlane(VPLANE)->GetAbsolutePointer((workarea.x[2]<<nLogPel) + (nVx >> 1), (workarea.y[2]<<nLogPel) + (yRatioUV==1 ? nVy : nVy>>1) );
-  return (nPel == 2) ? pRefFrame->GetPlane(VPLANE)->GetAbsolutePointerPel <1>((workarea.x[2] << 1) + (nVx >> nLogxRatioUV), (workarea.y[2] << 1) + (nVy >> nLogyRatioUV)) :
-    (nPel == 1) ? pRefFrame->GetPlane(VPLANE)->GetAbsolutePointerPel <0>((workarea.x[2]) + (nVx >> nLogxRatioUV), (workarea.y[2]) + (nVy >> nLogyRatioUV)) :
-    pRefFrame->GetPlane(VPLANE)->GetAbsolutePointerPel <2>((workarea.x[2] << 2) + (nVx >> nLogxRatioUV), (workarea.y[2] << 2) + (nVy >> nLogyRatioUV));
-  // xRatioUV fix after 2.7.0.22c
-}
-
-MV_FORCEINLINE const uint8_t *	PlaneOfBlocks::GetSrcBlock(int nX, int nY)
-{
-  return pSrcFrame->GetPlane(YPLANE)->GetAbsolutePelPointer(nX, nY);
-}
-
 template<typename pixel_t>
 sad_t PlaneOfBlocks::LumaSADx(WorkingArea &workarea, const unsigned char *pRef0)
 {
@@ -3722,19 +3687,6 @@ PlaneOfBlocks::WorkingArea::~WorkingArea()
   // Nothing
 }
 
-
-
-
-/* check if a vector is inside search boundaries */
-MV_FORCEINLINE bool	PlaneOfBlocks::WorkingArea::IsVectorOK(int vx, int vy) const
-{
-  return (
-    (vx >= nDxMin)
-    && (vy >= nDyMin)
-    && (vx < nDxMax)
-    && (vy < nDyMax)
-    );
-}
 
 /* computes the cost of a vector (vx, vy) */
 template<typename pixel_t>

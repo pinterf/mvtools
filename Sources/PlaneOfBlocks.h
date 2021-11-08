@@ -42,6 +42,9 @@
 #include "avisynth.h"
 #include <atomic>
 
+#include "MVFrame.h"
+#include "MVPlane.h"
+#include "MVPlaneSet.h"
 
 
 // right now 5 should be enough (TSchniede)
@@ -284,7 +287,18 @@ private:
     WorkingArea(int nBlkSizeX, int nBlkSizeY, int dctpitch, int nLogxRatioUV, int nLogyRatioUV, int pixelsize, int bits_per_pixel);
     virtual			~WorkingArea();
 
-    MV_FORCEINLINE bool IsVectorOK(int vx, int vy) const;
+    /* check if a vector is inside search boundaries */
+    // Moved here from cpp in order to able to inlined from other modules (gcc error)
+    MV_FORCEINLINE bool IsVectorOK(int vx, int vy) const
+    {
+      return (
+        (vx >= nDxMin)
+        && (vy >= nDyMin)
+        && (vx < nDxMax)
+        && (vy < nDyMax)
+        );
+    }
+
     template<typename pixel_t>
     sad_t MotionDistorsion(int vx, int vy) const; // this one is better not forceinlined
   };
@@ -383,10 +397,37 @@ private:
   void UMHSearch(WorkingArea &workarea, int i_me_range, int omx, int omy);
 
   /* inline functions */
-  MV_FORCEINLINE const uint8_t *GetRefBlock(WorkingArea &workarea, int nVx, int nVy);
-  MV_FORCEINLINE const uint8_t *GetRefBlockU(WorkingArea &workarea, int nVx, int nVy);
-  MV_FORCEINLINE const uint8_t *GetRefBlockV(WorkingArea &workarea, int nVx, int nVy);
-  MV_FORCEINLINE const uint8_t *GetSrcBlock(int nX, int nY);
+
+  /* fetch the block in the reference frame, which is pointed by the vector (vx, vy) */
+  // moved here from cpp in order to able to inline from other (e.g. _avx2) cpps (gcc error)
+  MV_FORCEINLINE const uint8_t* GetRefBlock(WorkingArea& workarea, int nVx, int nVy) {
+    return
+      (nPel == 2) ? pRefFrame->GetPlane(YPLANE)->GetAbsolutePointerPel <1>((workarea.x[0] << 1) + nVx, (workarea.y[0] << 1) + nVy) :
+      (nPel == 1) ? pRefFrame->GetPlane(YPLANE)->GetAbsolutePointerPel <0>((workarea.x[0]) + nVx, (workarea.y[0]) + nVy) :
+      pRefFrame->GetPlane(YPLANE)->GetAbsolutePointerPel <2>((workarea.x[0] << 2) + nVx, (workarea.y[0] << 2) + nVy);
+  }
+
+  MV_FORCEINLINE const uint8_t* GetRefBlockU(WorkingArea& workarea, int nVx, int nVy)
+  {
+    return
+      (nPel == 2) ? pRefFrame->GetPlane(UPLANE)->GetAbsolutePointerPel <1>((workarea.x[1] << 1) + (nVx >> nLogxRatioUV), (workarea.y[1] << 1) + (nVy >> nLogyRatioUV)) :
+      (nPel == 1) ? pRefFrame->GetPlane(UPLANE)->GetAbsolutePointerPel <0>((workarea.x[1]) + (nVx >> nLogxRatioUV), (workarea.y[1]) + (nVy >> nLogyRatioUV)) :
+      pRefFrame->GetPlane(UPLANE)->GetAbsolutePointerPel <2>((workarea.x[1] << 2) + (nVx >> nLogxRatioUV), (workarea.y[1] << 2) + (nVy >> nLogyRatioUV));
+  }
+
+  MV_FORCEINLINE const uint8_t* GetRefBlockV(WorkingArea& workarea, int nVx, int nVy)
+  {
+    return
+      (nPel == 2) ? pRefFrame->GetPlane(VPLANE)->GetAbsolutePointerPel <1>((workarea.x[2] << 1) + (nVx >> nLogxRatioUV), (workarea.y[2] << 1) + (nVy >> nLogyRatioUV)) :
+      (nPel == 1) ? pRefFrame->GetPlane(VPLANE)->GetAbsolutePointerPel <0>((workarea.x[2]) + (nVx >> nLogxRatioUV), (workarea.y[2]) + (nVy >> nLogyRatioUV)) :
+      pRefFrame->GetPlane(VPLANE)->GetAbsolutePointerPel <2>((workarea.x[2] << 2) + (nVx >> nLogxRatioUV), (workarea.y[2] << 2) + (nVy >> nLogyRatioUV));
+  }
+
+  MV_FORCEINLINE const uint8_t* GetSrcBlock(int nX, int nY)
+  {
+    return pSrcFrame->GetPlane(YPLANE)->GetAbsolutePelPointer(nX, nY);
+  }
+
   //	MV_FORCEINLINE int LengthPenalty(int vx, int vy);
   template<typename pixel_t>
   sad_t LumaSADx(WorkingArea &workarea, const unsigned char *pRef0);
