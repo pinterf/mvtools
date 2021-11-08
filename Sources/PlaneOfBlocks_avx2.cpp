@@ -41,6 +41,10 @@
     _mm256_set_m128i(_mm_loadu_si128(hiaddr), _mm_loadu_si128(loaddr))
 #endif
 
+#ifndef _mm_storeu_si16
+#define _mm_storeu_si16(p, a) (void)(*(short*)(p) = (short)_mm_cvtsi128_si32((a)))
+#endif
+
 #include "PlaneOfBlocks.h"
 #include <map>
 #include <tuple>
