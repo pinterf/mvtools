@@ -252,7 +252,7 @@ avstp_TaskDispatcher *	MTFlowGraphSched <T, GR, GD, MAXT>::use_dispatcher () con
 template <class T, class GR, class GD, int MAXT>
 void	MTFlowGraphSched <T, GR, GD, MAXT>::complete_task (TaskData &td)
 {
-	for (GR::Iterator it = _dep_graph_ptr->get_out_node_it (td._task_index)
+	for (typename GR::Iterator it = _dep_graph_ptr->get_out_node_it (td._task_index)
 	;	it.cont ()
 	;	it.next ())
 	{
