@@ -58,21 +58,18 @@
     <PlatformToolset>v142</PlatformToolset>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
-    <BasePlatformToolset>v110</BasePlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <PlatformToolset>v142</PlatformToolset>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
-    <BasePlatformToolset>v110</BasePlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <PlatformToolset>v141_xp</PlatformToolset>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
-    <BasePlatformToolset>v110</BasePlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
@@ -195,13 +192,11 @@
       <PrecompiledHeaderOutputFile>.\Release\DePanEstimate.pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <ProgramDataBaseFileName>$(IntDir)\vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
-      <CompileAs>CompileAsCpp</CompileAs>
       <AdditionalOptions>
       </AdditionalOptions>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <GenerateAlternateCodePaths>SSE41</GenerateAlternateCodePaths>
       <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include\</AdditionalIncludeDirectories>
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <XMLDocumentationFileName>$(IntDir)</XMLDocumentationFileName>
@@ -249,13 +244,11 @@
       <PrecompiledHeaderOutputFile>.\Release\DePanEstimate.pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <ProgramDataBaseFileName>$(IntDir)\vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
-      <CompileAs>CompileAsCpp</CompileAs>
       <AdditionalOptions>
       </AdditionalOptions>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <GenerateAlternateCodePaths>SSE41</GenerateAlternateCodePaths>
       <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include\</AdditionalIncludeDirectories>
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <XMLDocumentationFileName>$(IntDir)</XMLDocumentationFileName>
@@ -303,12 +296,10 @@
       <PrecompiledHeaderOutputFile>.\Release\DePanEstimate.pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <ProgramDataBaseFileName>$(IntDir)\vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
-      <CompileAs>CompileAsCpp</CompileAs>
       <AdditionalOptions>/Zc:threadSafeInit-</AdditionalOptions>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <GenerateAlternateCodePaths>SSE41</GenerateAlternateCodePaths>
       <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include\</AdditionalIncludeDirectories>
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <XMLDocumentationFileName>$(IntDir)</XMLDocumentationFileName>
@@ -356,7 +347,6 @@
       <PrecompiledHeaderOutputFile>.\Release\DePanEstimate.pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <ProgramDataBaseFileName>$(IntDir)\vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
-      <CompileAs>CompileAsCpp</CompileAs>
       <AdditionalOptions>
       </AdditionalOptions>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
@@ -406,7 +396,6 @@
       <PrecompiledHeaderOutputFile>.\Release\DePanEstimate.pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <ProgramDataBaseFileName>$(IntDir)\vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
-      <CompileAs>CompileAsCpp</CompileAs>
       <AdditionalOptions>
       </AdditionalOptions>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
@@ -456,7 +445,6 @@
       <PrecompiledHeaderOutputFile>.\Release\DePanEstimate.pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <ProgramDataBaseFileName>$(IntDir)\vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
-      <CompileAs>CompileAsCpp</CompileAs>
       <AdditionalOptions>/Zc:threadSafeInit-</AdditionalOptions>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -505,7 +493,6 @@
       <PrecompiledHeaderOutputFile>.\Debug\DePanEstimate.pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <ProgramDataBaseFileName>$(IntDir)\vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
-      <CompileAs>CompileAsCpp</CompileAs>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include\</AdditionalIncludeDirectories>
@@ -555,7 +542,6 @@
       <PrecompiledHeaderOutputFile>.\Debug\DePanEstimate.pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <ProgramDataBaseFileName>$(IntDir)\vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
-      <CompileAs>CompileAsCpp</CompileAs>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include\</AdditionalIncludeDirectories>
@@ -592,12 +578,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="depanestimate.cpp">
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'"> /G7 /G7   /G7 /G7 </AdditionalOptions>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|Win32'"> /G7 /G7   /G7 /G7 </AdditionalOptions>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|Win32'"> /G7 /G7   /G7 /G7 </AdditionalOptions>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'"> /G7 /G7   /G7 /G7 </AdditionalOptions>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|x64'"> /G7 /G7   /G7 /G7 </AdditionalOptions>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|x64'"> /G7 /G7   /G7 /G7 </AdditionalOptions>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
@@ -608,12 +588,6 @@
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
     </ClCompile>
     <ClCompile Include="depanio.cpp">
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'"> /G7 /G7   /G7 /G7 </AdditionalOptions>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|Win32'"> /G7 /G7   /G7 /G7 </AdditionalOptions>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|Win32'"> /G7 /G7   /G7 /G7 </AdditionalOptions>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'"> /G7 /G7   /G7 /G7 </AdditionalOptions>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|x64'"> /G7 /G7   /G7 /G7 </AdditionalOptions>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|x64'"> /G7 /G7   /G7 /G7 </AdditionalOptions>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
@@ -624,12 +598,6 @@
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
     </ClCompile>
     <ClCompile Include="estimate_fftw.cpp">
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'"> /G7 /G7   /G7 /G7 </AdditionalOptions>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|Win32'"> /G7 /G7   /G7 /G7 </AdditionalOptions>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|Win32'"> /G7 /G7   /G7 /G7 </AdditionalOptions>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'"> /G7 /G7   /G7 /G7 </AdditionalOptions>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|x64'"> /G7 /G7   /G7 /G7 </AdditionalOptions>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|x64'"> /G7 /G7   /G7 /G7 </AdditionalOptions>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
@@ -640,12 +608,6 @@
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
     </ClCompile>
     <ClCompile Include="info.cpp">
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'"> /G7 /G7   /G7 /G7 </AdditionalOptions>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|Win32'"> /G7 /G7   /G7 /G7 </AdditionalOptions>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|Win32'"> /G7 /G7   /G7 /G7 </AdditionalOptions>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'"> /G7 /G7   /G7 /G7 </AdditionalOptions>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|x64'"> /G7 /G7   /G7 /G7 </AdditionalOptions>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|x64'"> /G7 /G7   /G7 /G7 </AdditionalOptions>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>

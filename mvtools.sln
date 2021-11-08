@@ -5,14 +5,12 @@ VisualStudioVersion = 16.0.28803.202
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mvtools", "Sources\mvtools.vcxproj", "{E9BEFD98-715B-40C8-A1F1-1F302DF0B32B}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DePan", "Depan\DePan.vcxproj", "{342E3D8B-846C-4950-8B58-20F28B66C78A}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DePan", "DePan\DePan.vcxproj", "{342E3D8B-846C-4950-8B58-20F28B66C78A}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DePanEstimate", "DePanEstimate\DePanEstimate.vcxproj", "{26B3E578-55E5-4AF9-80D7-EC1F1C4375DC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Basic_no_opt|Win32 = Basic_no_opt|Win32
-		Basic_no_opt|x64 = Basic_no_opt|x64
 		Debug|Win32 = Debug|Win32
 		Debug|x64 = Debug|x64
 		Rel_Clang|Win32 = Rel_Clang|Win32
@@ -25,10 +23,6 @@ Global
 		ReleaseWithDebugInfo|x64 = ReleaseWithDebugInfo|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{E9BEFD98-715B-40C8-A1F1-1F302DF0B32B}.Basic_no_opt|Win32.ActiveCfg = Basic_no_opt|Win32
-		{E9BEFD98-715B-40C8-A1F1-1F302DF0B32B}.Basic_no_opt|Win32.Build.0 = Basic_no_opt|Win32
-		{E9BEFD98-715B-40C8-A1F1-1F302DF0B32B}.Basic_no_opt|x64.ActiveCfg = Basic_no_opt|x64
-		{E9BEFD98-715B-40C8-A1F1-1F302DF0B32B}.Basic_no_opt|x64.Build.0 = Basic_no_opt|x64
 		{E9BEFD98-715B-40C8-A1F1-1F302DF0B32B}.Debug|Win32.ActiveCfg = Debug|Win32
 		{E9BEFD98-715B-40C8-A1F1-1F302DF0B32B}.Debug|Win32.Build.0 = Debug|Win32
 		{E9BEFD98-715B-40C8-A1F1-1F302DF0B32B}.Debug|x64.ActiveCfg = Debug|x64
@@ -49,10 +43,6 @@ Global
 		{E9BEFD98-715B-40C8-A1F1-1F302DF0B32B}.ReleaseWithDebugInfo|Win32.Build.0 = ReleaseWithDebugInfo|Win32
 		{E9BEFD98-715B-40C8-A1F1-1F302DF0B32B}.ReleaseWithDebugInfo|x64.ActiveCfg = ReleaseWithDebugInfo|x64
 		{E9BEFD98-715B-40C8-A1F1-1F302DF0B32B}.ReleaseWithDebugInfo|x64.Build.0 = ReleaseWithDebugInfo|x64
-		{342E3D8B-846C-4950-8B58-20F28B66C78A}.Basic_no_opt|Win32.ActiveCfg = Release|Win32
-		{342E3D8B-846C-4950-8B58-20F28B66C78A}.Basic_no_opt|Win32.Build.0 = Release|Win32
-		{342E3D8B-846C-4950-8B58-20F28B66C78A}.Basic_no_opt|x64.ActiveCfg = Release|x64
-		{342E3D8B-846C-4950-8B58-20F28B66C78A}.Basic_no_opt|x64.Build.0 = Release|x64
 		{342E3D8B-846C-4950-8B58-20F28B66C78A}.Debug|Win32.ActiveCfg = Debug|Win32
 		{342E3D8B-846C-4950-8B58-20F28B66C78A}.Debug|Win32.Build.0 = Debug|Win32
 		{342E3D8B-846C-4950-8B58-20F28B66C78A}.Debug|x64.ActiveCfg = Debug|x64
@@ -73,10 +63,6 @@ Global
 		{342E3D8B-846C-4950-8B58-20F28B66C78A}.ReleaseWithDebugInfo|Win32.Build.0 = Release|Win32
 		{342E3D8B-846C-4950-8B58-20F28B66C78A}.ReleaseWithDebugInfo|x64.ActiveCfg = Release|x64
 		{342E3D8B-846C-4950-8B58-20F28B66C78A}.ReleaseWithDebugInfo|x64.Build.0 = Release|x64
-		{26B3E578-55E5-4AF9-80D7-EC1F1C4375DC}.Basic_no_opt|Win32.ActiveCfg = Release|Win32
-		{26B3E578-55E5-4AF9-80D7-EC1F1C4375DC}.Basic_no_opt|Win32.Build.0 = Release|Win32
-		{26B3E578-55E5-4AF9-80D7-EC1F1C4375DC}.Basic_no_opt|x64.ActiveCfg = Release|x64
-		{26B3E578-55E5-4AF9-80D7-EC1F1C4375DC}.Basic_no_opt|x64.Build.0 = Release|x64
 		{26B3E578-55E5-4AF9-80D7-EC1F1C4375DC}.Debug|Win32.ActiveCfg = Debug|Win32
 		{26B3E578-55E5-4AF9-80D7-EC1F1C4375DC}.Debug|Win32.Build.0 = Debug|Win32
 		{26B3E578-55E5-4AF9-80D7-EC1F1C4375DC}.Debug|x64.ActiveCfg = Debug|x64

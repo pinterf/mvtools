@@ -191,7 +191,6 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <AssemblerOutput>NoListing</AssemblerOutput>
-      <GenerateAlternateCodePaths>SSE41</GenerateAlternateCodePaths>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include\</AdditionalIncludeDirectories>
@@ -245,7 +244,6 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <AssemblerOutput>NoListing</AssemblerOutput>
-      <GenerateAlternateCodePaths>SSE41</GenerateAlternateCodePaths>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include\</AdditionalIncludeDirectories>
@@ -301,7 +299,6 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <AssemblerOutput>NoListing</AssemblerOutput>
-      <GenerateAlternateCodePaths>SSE41</GenerateAlternateCodePaths>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include\</AdditionalIncludeDirectories>
@@ -355,7 +352,6 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include\</AdditionalIncludeDirectories>
-      <GenerateAlternateCodePaths>SSE41</GenerateAlternateCodePaths>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <XMLDocumentationFileName>$(IntDir)</XMLDocumentationFileName>
@@ -405,7 +401,6 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include\</AdditionalIncludeDirectories>
-      <GenerateAlternateCodePaths>SSE41</GenerateAlternateCodePaths>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <XMLDocumentationFileName>$(IntDir)</XMLDocumentationFileName>
@@ -456,7 +451,6 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include\</AdditionalIncludeDirectories>
-      <GenerateAlternateCodePaths>SSE41</GenerateAlternateCodePaths>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <XMLDocumentationFileName>$(IntDir)</XMLDocumentationFileName>

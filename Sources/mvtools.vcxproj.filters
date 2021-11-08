@@ -111,7 +111,6 @@
     <ClCompile Include="SimpleResize.cpp" />
     <ClCompile Include="Variance.cpp" />
     <ClCompile Include="yuy2planes.cpp" />
-    <ClCompile Include="Interlocked.cpp" />
     <ClCompile Include="Interface.cpp">
       <Filter>Filters</Filter>
     </ClCompile>
