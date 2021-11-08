@@ -252,8 +252,13 @@ void	Interlocked::swap (Data128 &old, volatile Data128 &dest, const Data128 &exc
 	while (tmp != old);
 }
 
-
-
+// clang-cl LLVM with VS2019 15.6.3: 
+// 1.) _InterlockedCompareExchange128' needs target feature cx16
+// 2.) Unresolved external for clang + x64: __sync_val_compare_and_swap_16, unless the whole project 
+//     in general is flagged as cx16 (along with sse4.1) -msse4.1 -mcx16
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((__target__("cx16")))
+#endif 
 void	Interlocked::cas (Data128 &old, volatile Data128 &dest, const Data128 &excg, const Data128 &comp)
 {
 	assert (is_ptr_aligned_nz (&dest));
