@@ -9,6 +9,13 @@ trim_trailing_whitespace = true
 end_of_line = crlf
 insert_final_newline = true
 
+[Sources/fstb/*.{cpp,h,hpp,c,asm}]
+indent_style = tab
+tab_width = 3
+[Sources/conc/*.{cpp,h,hpp,c,asm}]
+indent_style = tab
+tab_width = 3
+
 [*.md]
 indent_style = space
 trim_trailing_whitespace = false
