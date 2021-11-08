@@ -62,9 +62,10 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
-#include	"conc/Array.h"
 #include	"conc/AtomicInt.h"
 #include	"avstp.h"
+
+#include <array>
 
 
 
@@ -78,7 +79,7 @@ class MTFlowGraphSched
 
 public:
 
-  using ThisType =  MTFlowGraphSched <T, GR, GD, MAXT>;
+	typedef	MTFlowGraphSched <T, GR, GD, MAXT>	ThisType;
 
 	explicit			MTFlowGraphSched (bool mt_flag = true);
 	virtual			~MTFlowGraphSched ();
@@ -112,9 +113,7 @@ protected:
 
 private:
 
-  // When a task is finished, updates the dependency counter on the dependent
-  // tasks and enqueues them if they become ready.
-  void				complete_task(TaskData &td);
+	void				complete_task (TaskData &td);
 
 	static void		redirect_task (avstp_TaskDispatcher *dispatcher_ptr, void *data_ptr);
 
@@ -125,9 +124,9 @@ private:
 	avstp_TaskDispatcher * volatile
 						_dispatcher_ptr;
 	const GR * volatile	_dep_graph_ptr;
-	conc::Array <TaskData, MAXT>
+	std::array <TaskData, MAXT>
 						_task_data_arr;
-	conc::Array <conc::AtomicInt <int>, MAXT>
+	std::array <conc::AtomicInt <int>, MAXT>
 						_in_cnt_arr;
 
 	const bool		_mt_flag;
@@ -138,11 +137,14 @@ private:
 
 private:
 
-						MTFlowGraphSched (const MTFlowGraphSched <T, GR, GD, MAXT> &other);
+						MTFlowGraphSched (const MTFlowGraphSched <T, GR, GD, MAXT> &other)  = delete;
+						MTFlowGraphSched (MTFlowGraphSched <T, GR, GD, MAXT> &&other)       = delete;
 	MTFlowGraphSched <T, GR, GD, MAXT> &
-						operator = (const MTFlowGraphSched <T, GR, GD, MAXT> &other);
-	bool				operator == (const MTFlowGraphSched <T, GR, GD, MAXT> &other) const;
-	bool				operator != (const MTFlowGraphSched <T, GR, GD, MAXT> &other) const;
+						operator = (const MTFlowGraphSched <T, GR, GD, MAXT> &other)        = delete;
+	MTFlowGraphSched <T, GR, GD, MAXT> &
+						operator = (MTFlowGraphSched <T, GR, GD, MAXT> &&other)             = delete;
+	bool				operator == (const MTFlowGraphSched <T, GR, GD, MAXT> &other) const = delete;
+	bool				operator != (const MTFlowGraphSched <T, GR, GD, MAXT> &other) const = delete;
 
 };	// class MTFlowGraphSched
 

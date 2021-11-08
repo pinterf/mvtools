@@ -43,10 +43,9 @@ class AioMax
 public:
 
 	explicit inline
-						AioMax (T operand);
-	virtual			~AioMax () {}
+	               AioMax (T operand);
 
-	inline T			operator () (T old_val) const;
+	inline T       operator () (T old_val) const;
 
 
 
@@ -60,7 +59,7 @@ protected:
 
 private:
 
-	T					_operand;
+	T              _operand;
 
 
 
@@ -68,11 +67,13 @@ private:
 
 private:
 
-						AioMax ();
-						AioMax (const AioMax <T> &other);
-	AioMax <T> &	operator = (const AioMax <T> &other);
-	bool				operator == (const AioMax <T> &other) const;
-	bool				operator != (const AioMax <T> &other) const;
+	               AioMax ()                                   = delete;
+	               AioMax (const AioMax <T> &other)            = delete;
+	               AioMax (const AioMax <T> &&other)           = delete;
+	AioMax <T> &   operator = (const AioMax <T> &other)        = delete;
+	AioMax <T> &   operator = (const AioMax <T> &&other)       = delete;
+	bool           operator == (const AioMax <T> &other) const = delete;
+	bool           operator != (const AioMax <T> &other) const = delete;
 
 };	// class AioMax
 
@@ -82,7 +83,7 @@ private:
 
 
 
-#include	"conc/AioMax.hpp"
+#include "conc/AioMax.hpp"
 
 
 

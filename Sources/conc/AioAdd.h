@@ -43,10 +43,10 @@ class AioAdd
 public:
 
 	explicit inline
-						AioAdd (T operand);
-	virtual			~AioAdd () {}
+	               AioAdd (T operand);
+	virtual        ~AioAdd () = default;
 
-	inline T			operator () (T old_val) const;
+	inline T       operator () (T old_val) const;
 
 
 
@@ -60,7 +60,7 @@ protected:
 
 private:
 
-	T					_operand;
+	T              _operand;
 
 
 
@@ -68,11 +68,13 @@ private:
 
 private:
 
-						AioAdd ();
-						AioAdd (const AioAdd <T> &other);
-	AioAdd <T> &	operator = (const AioAdd <T> &other);
-	bool				operator == (const AioAdd <T> &other) const;
-	bool				operator != (const AioAdd <T> &other) const;
+	               AioAdd ()                                   = delete;
+	               AioAdd (const AioAdd <T> &other)            = delete;
+	               AioAdd (const AioAdd <T> &&other)           = delete;
+	AioAdd <T> &   operator = (const AioAdd <T> &other)        = delete;
+	AioAdd <T> &   operator = (const AioAdd <T> &&other)       = delete;
+	bool           operator == (const AioAdd <T> &other) const = delete;
+	bool           operator != (const AioAdd <T> &other) const = delete;
 
 };	// class AioAdd
 
@@ -82,7 +84,7 @@ private:
 
 
 
-#include	"conc/AioAdd.hpp"
+#include "conc/AioAdd.hpp"
 
 
 

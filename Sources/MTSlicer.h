@@ -43,8 +43,9 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
-#include	"conc/Array.h"
 #include	"avstp.h"
+
+#include <array>
 
 
 
@@ -101,7 +102,7 @@ private:
 						_proc_ptr;
 	avstp_TaskDispatcher * volatile
 						_dispatcher_ptr;
-	conc::Array <TaskData, MAXT>
+	std::array <TaskData, MAXT>
 						_task_data_arr;
 	const bool		_mt_flag;	// No need to be const, but must not be changed while task are enqueued.
 
@@ -111,10 +112,12 @@ private:
 
 private:
 
-						MTSlicer (const MTSlicer &other);
-	MTSlicer &		operator = (const MTSlicer &other);
-	bool				operator == (const MTSlicer &other) const;
-	bool				operator != (const MTSlicer &other) const;
+						MTSlicer (const MTSlicer &other)          = delete;
+						MTSlicer (MTSlicer &&other)               = delete;
+	MTSlicer &		operator = (const MTSlicer &other)        = delete;
+	MTSlicer &		operator = (MTSlicer &&other)             = delete;
+	bool				operator == (const MTSlicer &other) const = delete;
+	bool				operator != (const MTSlicer &other) const = delete;
 
 };	// class MTSlicer
 

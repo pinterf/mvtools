@@ -24,8 +24,9 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 #include	"AvstpWrapper.h"
 
-#include	<cassert>
 #include <algorithm>
+
+#include	<cassert>
 
 
 
@@ -144,7 +145,6 @@ template <class T, class GD, int MAXT>
 void	MTSlicer <T, GD, MAXT>::start (int height, GD &glob_data, ProcPtr proc_ptr, int min_slice_h)
 {
 	assert (height > 0);
-	assert (&glob_data != 0);
 	assert (proc_ptr != 0);
 	assert (min_slice_h > 0);
 
@@ -264,7 +264,7 @@ avstp_TaskDispatcher *	MTSlicer <T, GD, MAXT>::use_dispatcher () const
 
 
 template <class T, class GD, int MAXT>
-void	MTSlicer <T, GD, MAXT>::redirect_task (avstp_TaskDispatcher *dispatcher_ptr, void *data_ptr)
+void	MTSlicer <T, GD, MAXT>::redirect_task (avstp_TaskDispatcher * /*dispatcher_ptr*/, void *data_ptr)
 {
 	TaskData *		td_ptr   = reinterpret_cast <TaskData *> (data_ptr);
 	assert (td_ptr != 0);

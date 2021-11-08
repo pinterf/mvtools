@@ -34,14 +34,6 @@ namespace conc
 
 
 template <class T>
-ObjFactoryDef <T>::ObjFactoryDef ()
-{
-	// Nothing
-}
-
-
-
-template <class T>
 ObjFactoryDef <T>	ObjFactoryDef <T>::_fact;
 
 

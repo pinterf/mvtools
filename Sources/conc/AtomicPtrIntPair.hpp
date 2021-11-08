@@ -22,7 +22,7 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
-#include	<cassert>
+#include <cassert>
 
 
 
@@ -39,29 +39,35 @@ template <class T>
 AtomicPtrIntPair <T>::AtomicPtrIntPair ()
 :	_data ()
 {
-	conc_CHECK_CT (DataSize, sizeof (RealContent) == sizeof (DataType));
-
-	set (0, 0);
+	set (nullptr, 0);
 }
 
 
 template <class T>
-void	AtomicPtrIntPair <T>::set (T * ptr, ptrdiff_t val)
+void	AtomicPtrIntPair <T>::set (T * ptr, intptr_t val)
 {
-	_data._content._ptr = ptr;
-	_data._content._val = val;
+	const RealContent content = { ptr, val };
+
+#if (conc_ARCHI == conc_ARCHI_X86 || ! conc_USE_STD_ATOMIC_128BITS)
+
+	_data._content = content;
+
+#else  // conc_ARCHI
+
+	_data.store (content);
+
+#endif // conc_ARCHI
 }
 
 
 
 template <class T>
-void	AtomicPtrIntPair <T>::get (T * &ptr, ptrdiff_t &val) const
+void	AtomicPtrIntPair <T>::get (T * &ptr, intptr_t &val) const
 {
-	assert (&ptr != 0);
-	assert (&val != 0);
+#if (conc_ARCHI == conc_ARCHI_X86 || ! conc_USE_STD_ATOMIC_128BITS)
 
-	Combi				res;
-	Combi				old;
+	Combi          res;
+	Combi          old;
 	do
 	{
 		res = _data;
@@ -71,6 +77,14 @@ void	AtomicPtrIntPair <T>::get (T * &ptr, ptrdiff_t &val) const
 
 	ptr = res._content._ptr;
 	val = res._content._val;
+
+#else  // conc_ARCHI
+
+	const RealContent content = _data.load ();
+	ptr = content._ptr;
+	val = content._val;
+
+#endif // conc_ARCHI
 }
 
 
@@ -78,49 +92,67 @@ void	AtomicPtrIntPair <T>::get (T * &ptr, ptrdiff_t &val) const
 template <class T>
 T *	AtomicPtrIntPair <T>::get_ptr () const
 {
+#if (conc_ARCHI == conc_ARCHI_X86 || ! conc_USE_STD_ATOMIC_128BITS)
+
 	return (_data._content._ptr);
+
+#else  // conc_ARCHI
+
+	const RealContent content = _data.load ();
+
+	return (content._ptr);
+
+#endif // conc_ARCHI
 }
 
 
 
 template <class T>
-ptrdiff_t	AtomicPtrIntPair <T>::get_val () const
+intptr_t	AtomicPtrIntPair <T>::get_val () const
 {
+#if (conc_ARCHI == conc_ARCHI_X86 || ! conc_USE_STD_ATOMIC_128BITS)
+
 	return (_data._content._val);
+
+#else  // conc_ARCHI
+
+	const RealContent content = _data.load ();
+
+	return (content._val);
+
+#endif // conc_ARCHI
 }
 
 
-#if 0
-template <class T>
-bool	AtomicPtrIntPair <T>::cas (T *new_ptr, T *comp_ptr)
-{
-	 T *				old_ptr = Interlocked::cas_ptr (
-  //  T * old_ptr = Interlocked::cas(
-      _data._content._ptr,
-		new_ptr,
-		comp_ptr
-	);
-
-	return (old_ptr == comp_ptr);
-}
-#endif
-
 
 template <class T>
-bool	AtomicPtrIntPair <T>::cas2 (T *new_ptr, ptrdiff_t new_val, T *comp_ptr, ptrdiff_t comp_val)
+bool	AtomicPtrIntPair <T>::cas2 (T *new_ptr, intptr_t new_val, T *comp_ptr, intptr_t comp_val)
 {
-	Combi				newx;
+#if (conc_ARCHI == conc_ARCHI_X86 || ! conc_USE_STD_ATOMIC_128BITS)
+
+	Combi          newx;
 	newx._content._ptr = new_ptr;
 	newx._content._val = new_val;
 
-	Combi				comp;
+	Combi          comp;
 	comp._content._ptr = comp_ptr;
 	comp._content._val = comp_val;
 
-	Combi				old;
+	Combi          old;
 	cas_combi (old, _data, newx, comp);
 
 	return (old._storage == comp._storage);
+
+#else  // conc_ARCHI
+
+	const RealContent val      = { new_ptr , new_val  };
+	RealContent       expected = { comp_ptr, comp_val };
+
+	// Some algorithms do something specific upon failure, so we need to
+	// use the strong version.
+	return (_data.compare_exchange_strong (expected, val));
+
+#endif // conc_ARCHI
 }
 
 
@@ -132,6 +164,8 @@ bool	AtomicPtrIntPair <T>::cas2 (T *new_ptr, ptrdiff_t new_val, T *comp_ptr, ptr
 /*\\\ PRIVATE \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
 
+
+#if (conc_ARCHI == conc_ARCHI_X86 || ! conc_USE_STD_ATOMIC_128BITS)
 
 template <class T>
 void	AtomicPtrIntPair <T>::cas_combi (Combi &old, Combi &dest, const Combi &excg, const Combi &comp)
@@ -155,6 +189,8 @@ void	AtomicPtrIntPair <T>::cas_combi (Combi &old, Combi &dest, const Combi &excg
 
 #endif	// conc_WORD_SIZE
 }
+
+#endif // conc_ARCHI
 
 
 

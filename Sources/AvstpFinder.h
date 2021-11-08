@@ -3,7 +3,8 @@
         AvstpFinder.h
         Author: Laurent de Soras, 2012
 
-Private class used by AvstpWrapper. Handles library publication and discovery.
+Private class used by AvstpWrapper on Windows.
+Handles library publication and discovery.
 
 --- Legal stuff ---
 
@@ -29,9 +30,9 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
-#define	NOMINMAX
+#define NOMINMAX
 
-#include	<Windows.h>
+#include <Windows.h>
 
 
 
@@ -42,12 +43,12 @@ class AvstpFinder
 
 public:
 
-	static void		publish_lib (::HMODULE hinst);
+	static void    publish_lib (::HMODULE hinst);
 	static ::HMODULE
-						find_lib ();
+	               find_lib ();
 
 	static const wchar_t
-						_lib_name_0 [];
+	               _lib_name_0 [];
 
 
 
@@ -61,11 +62,11 @@ protected:
 
 private:
 
-	enum {			BUFFER_LEN = 32767+1	};	// Characters
+	enum {         BUFFER_LEN = 32767+1 }; // Characters
 
-	static void		compose_mapped_filename (wchar_t mf_name_0 [], wchar_t mu_name_0 []);
+	static void    compose_mapped_filename (wchar_t mf_name_0 [], wchar_t mu_name_0 []);
 	static ::HMODULE
-						get_code_module ();
+	               get_code_module ();
 
 
 
@@ -73,18 +74,20 @@ private:
 
 private:
 
-						AvstpFinder ();
-						AvstpFinder (const AvstpFinder &other);
-	virtual			~AvstpFinder () {}
-	AvstpFinder &	operator = (const AvstpFinder &other);
-	bool				operator == (const AvstpFinder &other) const;
-	bool				operator != (const AvstpFinder &other) const;
+	               AvstpFinder ()                               = delete;
+	               AvstpFinder (const AvstpFinder &other)       = delete;
+	               AvstpFinder (AvstpFinder &&other)            = delete;
+	               ~AvstpFinder ()                              = delete;
+	AvstpFinder &  operator = (const AvstpFinder &other)        = delete;
+	AvstpFinder &  operator = (AvstpFinder &&other)             = delete;
+	bool           operator == (const AvstpFinder &other) const = delete;
+	bool           operator != (const AvstpFinder &other) const = delete;
 
 };	// class AvstpFinder
 
 
 
-//#include	"AvstpFinder.hpp"
+//#include "AvstpFinder.hpp"
 
 
 

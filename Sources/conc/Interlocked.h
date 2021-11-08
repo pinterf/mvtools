@@ -27,9 +27,10 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
-#include <stdint.h>
-#include	"conc/def.h"
-#include	"types.h"
+#include "conc/def.h"
+
+#include <cstdint>
+
 
 
 namespace conc
@@ -43,39 +44,54 @@ class Interlocked
 /*\\\ PUBLIC \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
 public:
-  // ? https ://stackoverflow.com/questions/10876930/should-one-never-use-static-inline-function
-	static /*conc_FORCEINLINE*/ int32_t
-						swap (int32_t volatile &dest, int32_t excg);
-	static /*conc_FORCEINLINE*/ int32_t
-						cas (int32_t volatile &dest, int32_t excg, int32_t comp);
 
-	static /*conc_FORCEINLINE*/ int64_t
-						swap (int64_t volatile &dest, int64_t excg);
-	static /*conc_FORCEINLINE*/ int64_t
-						cas (int64_t volatile &dest, int64_t excg, int64_t comp);
+	static conc_FORCEINLINE int32_t
+	               swap (int32_t volatile &dest, int32_t excg);
+	static conc_FORCEINLINE int32_t
+	               cas (int32_t volatile &dest, int32_t excg, int32_t comp);
+
+	static conc_FORCEINLINE int64_t
+	               swap (int64_t volatile &dest, int64_t excg);
+	static conc_FORCEINLINE int64_t
+	               cas (int64_t volatile &dest, int64_t excg, int64_t comp);
 
 #if defined (conc_HAS_CAS_128)
+
+ #if defined (__GNUC__)
+
+	typedef unsigned __int128 Data128;
+
+ #elif defined (_MSC_VER)
 
 	class Data128
 	{
 	public:
-		/*conc_FORCEINLINE*/ bool
-							operator == (const Data128 & other) const;
-		/*conc_FORCEINLINE*/ bool
-							operator != (const Data128 & other) const;
-							
-		uint8_t		_data [16];
-	};
+		conc_FORCEINLINE bool
+		               operator == (const Data128 & other) const;
+		conc_FORCEINLINE bool
+		               operator != (const Data128 & other) const;
 
-	static void		swap (Data128 &old, volatile Data128 &dest, const Data128 &excg);
-	static void		cas (Data128 &old, volatile Data128 &dest, const Data128 &excg, const Data128 &comp);
+		int64_t        _data [2];
+	};
+	static_assert ((sizeof (Data128) == 16), "");
+
+ #else
+
+	typedef __uint128_t Data128;
+
+ #endif
+
+	static conc_FORCEINLINE void
+	               swap (Data128 &old, volatile Data128 &dest, const Data128 &excg);
+	static conc_FORCEINLINE void
+	               cas (Data128 &old, volatile Data128 &dest, const Data128 &excg, const Data128 &comp);
 
 #endif
 
-	static /*conc_FORCEINLINE*/ void *
-						swap (void * volatile &dest_ptr, void *excg_ptr);
-	static /*conc_FORCEINLINE*/ void *
-						cas (void * volatile &dest_ptr, void *excg_ptr, void *comp_ptr);
+	static conc_FORCEINLINE void *
+	               swap (void * volatile &dest_ptr, void *excg_ptr);
+	static conc_FORCEINLINE void *
+	               cas (void * volatile &dest_ptr, void *excg_ptr, void *comp_ptr);
 
 
 
@@ -89,12 +105,8 @@ protected:
 
 private:
 
-	#if (conc_WORD_SIZE == 64)
-		typedef	int64_t	IntPtr;
-	#else
-		typedef	int32_t	IntPtr;
-	#endif
-	conc_CHECK_CT (IntPtrSize, (sizeof (IntPtr) == sizeof (void *)));
+	typedef intptr_t IntPtr;
+	static_assert ((sizeof (IntPtr) >= sizeof (void *)), "");
 
 
 
@@ -102,12 +114,12 @@ private:
 
 private:
 
-						Interlocked ();
-						Interlocked (const Interlocked &other);
-	virtual			~Interlocked () {}
-	Interlocked &	operator = (const Interlocked &other);
-	bool				operator == (const Interlocked &other) const;
-	bool				operator != (const Interlocked &other) const;
+	               Interlocked ()                               = delete;
+	               Interlocked (const Interlocked &other)       = delete;
+	virtual        ~Interlocked ()                              = delete;
+	Interlocked &  operator = (const Interlocked &other)        = delete;
+	bool           operator == (const Interlocked &other) const = delete;
+	bool           operator != (const Interlocked &other) const = delete;
 
 };	// class Interlocked
 
@@ -117,7 +129,7 @@ private:
 
 
 
-#include	"conc/Interlocked.hpp"
+#include "conc/Interlocked.hpp"
 
 
 

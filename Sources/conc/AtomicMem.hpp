@@ -22,8 +22,7 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
-#include	"conc/def.h"
-#include	"conc/Interlocked.h"
+#include "conc/def.h"
 
 
 
@@ -39,7 +38,7 @@ namespace conc
 template <int SL2>
 typename AtomicMem <SL2>::DataType	AtomicMem <SL2>::swap (volatile DataType &dest, DataType excg)
 {
-	conc_CHECK_CT (Size, (SL2 >= 0 && SL2 <= 2));
+	static_assert ((SL2 >= 0 && SL2 <= 2), "");
 
 	return (Interlocked::swap (dest, excg));
 }
@@ -49,7 +48,7 @@ typename AtomicMem <SL2>::DataType	AtomicMem <SL2>::swap (volatile DataType &des
 template <int SL2>
 typename AtomicMem <SL2>::DataType	AtomicMem <SL2>::cas (volatile DataType &dest, DataType excg, DataType comp)
 {
-	conc_CHECK_CT (Size, (SL2 >= 0 && SL2 <= 2));
+	static_assert ((SL2 >= 0 && SL2 <= 2), "");
 
 	return (Interlocked::cas (dest, excg, comp));
 }
@@ -70,13 +69,13 @@ AtomicMem <3>::DataType	AtomicMem <3>::cas (volatile DataType &dest, DataType ex
 
 
 
-#if defined (ohm_archi_HAS_CAS_128)
+#if defined (fstb_HAS_CAS_128)
 
 
 
 AtomicMem <4>::DataType	AtomicMem <4>::swap (volatile DataType &dest, DataType excg)
 {
-	Interlocked::Data128	old;
+	Interlocked::Data128 old;
 
 	Interlocked::swap (
 		old,
@@ -93,7 +92,7 @@ AtomicMem <4>::DataType	AtomicMem <4>::swap (volatile DataType &dest, DataType e
 
 AtomicMem <4>::DataType	AtomicMem <4>::cas (volatile DataType &dest, DataType excg, DataType comp)
 {
-	Interlocked::Data128	old;
+	Interlocked::Data128 old;
 
 	Interlocked::cas (
 		old,
@@ -109,7 +108,7 @@ AtomicMem <4>::DataType	AtomicMem <4>::cas (volatile DataType &dest, DataType ex
 
 
 
-#endif	// ohm_archi_HAS_CAS_128
+#endif	// fstb_HAS_CAS_128
 
 
 

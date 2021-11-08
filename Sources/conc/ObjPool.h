@@ -41,9 +41,10 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
-#include	"conc/CellPool.h"
-#include	"conc/LockFreeStack.h"
-#include	"conc/ObjFactoryInterface.h"
+#include "conc/CellPool.h"
+#include "conc/LockFreeStack.h"
+#include "conc/ObjFactoryInterface.h"
+#include "fstb/SingleObj.h"
 
 
 
@@ -60,18 +61,18 @@ class ObjPool
 
 public:
 
-  using ObjType = T;
-  using Factory = ObjFactoryInterface <ObjType>;
+	typedef	T	ObjType;
+	typedef	ObjFactoryInterface <ObjType>	Factory;
 
-						ObjPool ();
-	virtual			~ObjPool ();
+	               ObjPool ();
+	virtual        ~ObjPool ();
 
-	void				set_factory (Factory &fact);
-	Factory &		use_factory () const;
-	void				cleanup ();
+	void           set_factory (Factory &fact);
+	Factory &      use_factory () const;
+	void           cleanup ();
 
-	T *				take_obj ();
-	void				return_obj (T &obj);
+	T *            take_obj ();
+	void           return_obj (T &obj);
 
 
 
@@ -85,16 +86,17 @@ protected:
 
 private:
 
-  using PtrPool = CellPool <ObjType *>;
-  using PtrCell = typename PtrPool::CellType;
-  using PtrStack = LockFreeStack <ObjType *>;
+	typedef	CellPool <ObjType *>	PtrPool;
+	typedef	typename PtrPool::CellType	PtrCell;
+	typedef	LockFreeStack <ObjType *>	PtrStack;
 
-	int				delete_obj_stack (PtrStack &ptr_stack, bool destroy_flag);
+	int            delete_obj_stack (PtrStack &ptr_stack, bool destroy_flag);
 
-	Factory *		_factory_ptr;		// 0 = not set
-	PtrStack			_stack_free;
-	PtrStack			_stack_all;
-	PtrPool			_obj_cell_pool;
+	Factory *      _factory_ptr = 0;    // 0 = not set
+	PtrStack       _stack_free;
+	PtrStack       _stack_all;
+	fstb::SingleObj <PtrPool>
+	               _obj_cell_pool_ptr;
 
 
 
@@ -102,10 +104,10 @@ private:
 
 private:
 
-						ObjPool (const ObjPool <T> &other);
-	ObjPool <T> &	operator = (const ObjPool <T> &other);
-	bool				operator == (const ObjPool <T> &other) const;
-	bool				operator != (const ObjPool <T> &other) const;
+	               ObjPool (const ObjPool <T> &other)           = delete;
+	ObjPool <T> &  operator = (const ObjPool <T> &other)        = delete;
+	bool           operator == (const ObjPool <T> &other) const = delete;
+	bool           operator != (const ObjPool <T> &other) const = delete;
 
 };	// class ObjPool
 
@@ -115,7 +117,7 @@ private:
 
 
 
-#include	"conc/ObjPool.hpp"
+#include "conc/ObjPool.hpp"
 
 
 

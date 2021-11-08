@@ -35,6 +35,22 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 
 
+#if defined (_WIN32) || defined (WIN32) || defined (__WIN32__) || defined (__CYGWIN__) || defined (__CYGWIN32__)
+ #define avstp_CC __cdecl
+ #define avstp_EXPORT(ret) __declspec(dllexport) ret avstp_CC
+
+#else
+ #define avstp_CC
+ #if defined (__GNUC__) && __GNUC__ >= 4
+  #define avstp_EXPORT(ret) __attribute__((visibility("default"))) ret avstp_CC
+ #else
+  #define avstp_EXPORT(ret) ret avstp_CC
+ #endif
+
+#endif
+
+
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -49,12 +65,7 @@ extern "C"
 	typedef	struct avstp_TaskDispatcher	avstp_TaskDispatcher;
 #endif // __cplusplus
 
-#ifdef __GNUC__
-  // GCC syntax does not allow __cdecl here
-  typedef void(*avstp_TaskPtr) (avstp_TaskDispatcher* td_ptr, void* user_data_ptr);
-#else
-  typedef void(__cdecl* avstp_TaskPtr) (avstp_TaskDispatcher* td_ptr, void* user_data_ptr);
-#endif
+typedef	void (avstp_CC *avstp_TaskPtr) (avstp_TaskDispatcher *td_ptr, void *user_data_ptr);
 
 enum
 {
@@ -66,17 +77,16 @@ enum
 
 enum {	avstp_INTERFACE_VERSION = 1	};
 
-#include "def.h"
 
-#ifdef USE_AVSTP
-__declspec (dllexport) int __cdecl	avstp_get_interface_version ();
-__declspec (dllexport) avstp_TaskDispatcher * __cdecl	avstp_create_dispatcher ();
-__declspec (dllexport) void __cdecl	avstp_destroy_dispatcher (avstp_TaskDispatcher *td_ptr);
 
-__declspec (dllexport) int __cdecl	avstp_get_nbr_threads ();
-__declspec (dllexport) int __cdecl	avstp_enqueue_task (avstp_TaskDispatcher *td_ptr, avstp_TaskPtr task_ptr, void *user_data_ptr);
-__declspec (dllexport) int __cdecl	avstp_wait_completion (avstp_TaskDispatcher *td_ptr);
-#endif
+avstp_EXPORT (int)   avstp_get_interface_version ();
+avstp_EXPORT (avstp_TaskDispatcher *)  avstp_create_dispatcher ();
+avstp_EXPORT (void)  avstp_destroy_dispatcher (avstp_TaskDispatcher *td_ptr);
+
+avstp_EXPORT (int)   avstp_get_nbr_threads ();
+avstp_EXPORT (int)   avstp_enqueue_task (avstp_TaskDispatcher *td_ptr, avstp_TaskPtr task_ptr, void *user_data_ptr);
+avstp_EXPORT (int)   avstp_wait_completion (avstp_TaskDispatcher *td_ptr);
+
 
 
 #ifdef __cplusplus

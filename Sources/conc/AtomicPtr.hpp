@@ -22,10 +22,12 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
-#include	"conc/fnc.h"
-#include	"conc/Interlocked.h"
+#include "conc/fnc.h"
+#if (conc_ARCHI == conc_ARCHI_X86)
+	#include "conc/Interlocked.h"
+#endif // conc_ARCHI
 
-#include	<cassert>
+#include <cassert>
 
 
 
@@ -42,16 +44,25 @@ template <class T>
 AtomicPtr <T>::AtomicPtr ()
 :	_ptr ()
 {
+#if (conc_ARCHI == conc_ARCHI_X86)
 	assert (is_ptr_aligned_nz ((const void *) (&_ptr), sizeof (_ptr)));
+#endif // conc_ARCHI
 }
 
 
 
 template <class T>
 AtomicPtr <T>::AtomicPtr (T *ptr)
+#if (conc_ARCHI == conc_ARCHI_X86)
+:	_ptr ()
+#else  // conc_ARCHI
 :	_ptr (ptr)
+#endif // conc_ARCHI
 {
+#if (conc_ARCHI == conc_ARCHI_X86)
 	assert (is_ptr_aligned_nz ((const void *) (&_ptr), sizeof (_ptr)));
+	_ptr._void_ptr = ptr;
+#endif // conc_ARCHI
 }
 
 
@@ -59,7 +70,11 @@ AtomicPtr <T>::AtomicPtr (T *ptr)
 template <class T>
 AtomicPtr <T> &	AtomicPtr <T>::operator = (T *other_ptr)
 {
-	Interlocked::swap (reinterpret_cast <void * volatile &> (_ptr), other_ptr);
+#if (conc_ARCHI == conc_ARCHI_X86)
+	Interlocked::swap (_ptr._void_ptr, other_ptr);
+#else  // conc_ARCHI
+	_ptr.store (other_ptr);
+#endif // conc_ARCHI
 
 	return (*this);
 }
@@ -77,7 +92,7 @@ AtomicPtr <T>::operator T * () const
 template <class T>
 bool	AtomicPtr <T>::operator == (T *other_ptr) const
 {
-	const T *		ptr = read_ptr ();
+	const T *      ptr = read_ptr ();
 
 	return (ptr == other_ptr);
 }
@@ -95,10 +110,14 @@ bool	AtomicPtr <T>::operator != (T *other_ptr) const
 template <class T>
 T *	AtomicPtr <T>::swap (T *other_ptr)
 {
+#if (conc_ARCHI == conc_ARCHI_X86)
 	return (static_cast <T *> (Interlocked::swap (
-		reinterpret_cast <void * volatile &> (_ptr),
+		_ptr._void_ptr,
 		other_ptr
 	)));
+#else  // conc_ARCHI
+	return (_ptr.exchange (other_ptr));
+#endif // conc_ARCHI
 }
 
 
@@ -106,11 +125,18 @@ T *	AtomicPtr <T>::swap (T *other_ptr)
 template <class T>
 T *	AtomicPtr <T>::cas (T *other_ptr, T *comp_ptr)
 {
+#if (conc_ARCHI == conc_ARCHI_X86)
 	return (static_cast <T *> (Interlocked::cas (
-		reinterpret_cast <void * volatile &> (_ptr),
+		_ptr._void_ptr,
 		other_ptr,
 		comp_ptr
 	)));
+#else  // conc_ARCHI
+	// Some algorithms do something specific upon failure, so we need to
+	// use the strong version.
+	_ptr.compare_exchange_strong (comp_ptr, other_ptr);
+	return (comp_ptr);
+#endif // conc_ARCHI
 }
 
 
@@ -126,7 +152,11 @@ T *	AtomicPtr <T>::cas (T *other_ptr, T *comp_ptr)
 template <class T>
 T *	AtomicPtr <T>::read_ptr () const
 {
-	return (static_cast <T *> (_ptr));
+#if (conc_ARCHI == conc_ARCHI_X86)
+	return _ptr._t_ptr;
+#else  // conc_ARCHI
+	return _ptr.load ();
+#endif // conc_ARCHI
 }
 
 

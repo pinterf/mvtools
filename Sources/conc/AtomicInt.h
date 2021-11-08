@@ -39,9 +39,15 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
-#include	"conc/AtomicMem.h"
-#include	"conc/def.h"
-#include	"types.h"
+#include "conc/def.h"
+
+#include <cstdint>
+
+#if (conc_ARCHI == conc_ARCHI_X86)
+#include "conc/AtomicMem.h"
+#else  // conc_ARCHI
+#include <atomic>
+#endif // conc_ARCHI
 
 
 
@@ -97,6 +103,8 @@ protected:
 
 private:
 
+#if (conc_ARCHI == conc_ARCHI_X86)
+
 	enum {			SZ  = sizeof (T)	};
 	enum {			SL2 =    (SZ > 16) ? -1
 						      : ((SZ >  8) ?  4
@@ -109,10 +117,25 @@ private:
 	typedef	typename StoredTypeWrapper::DataType	StoredType;
 	typedef	typename StoredTypeWrapper::DataTypeAlign	StoredTypeAlign;
 
-	conc_CHECK_CT (Size, sizeof (T) <= sizeof (StoredType));
+	static_assert (
+		sizeof (T) <= sizeof (StoredType),
+		"Data too big for the given storage type"
+	);
 
 	volatile StoredTypeAlign
-						_val;
+	               _val;
+
+#else  // conc_ARCHI
+
+#if (__cplusplus >= 201703L)
+	static_assert (
+		std::atomic <T>::is_always_lock_free,
+		"Atomic data must be lock-free."
+	);
+#endif
+	std::atomic<T> _val;
+
+#endif // conc_ARCHI
 
 
 
@@ -128,7 +151,7 @@ private:
 
 
 
-#include	"conc/AtomicInt.hpp"
+#include "conc/AtomicInt.hpp"
 
 
 

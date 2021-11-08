@@ -44,9 +44,9 @@ class ObjFactoryInterface
 
 public:
 
-	virtual			~ObjFactoryInterface () {}
+	virtual        ~ObjFactoryInterface () = default;
 
-	T *				create ();
+	T *            create ();
 
 
 
@@ -54,7 +54,7 @@ public:
 
 protected:
 
-	virtual T *		do_create () = 0;
+	virtual T *    do_create () = 0;
 
 
 
@@ -66,7 +66,7 @@ protected:
 
 
 
-#include	"conc/ObjFactoryInterface.hpp"
+#include "conc/ObjFactoryInterface.hpp"
 
 
 

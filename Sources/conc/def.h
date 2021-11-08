@@ -34,66 +34,57 @@ namespace conc
 
 
 
-// Native word size, in power of 2 bits
-#if UINTPTR_MAX == 0xffffffffffffffff || defined (_M_IA64) || defined (_WIN64) || defined (__64BIT__) || defined (__x86_64__)
-	#define	conc_WORD_SIZE_L2	6
-	#define	conc_WORD_SIZE		64
-	#define	conc_WORD_SIZE_BYTE 8
+#define conc_ARCHI_X86	1
+#define conc_ARCHI_ARM	2
+
+#if defined (__i386__) || defined (_M_IX86) || defined (_X86_) || defined (_M_X64) || defined (__x86_64__) || defined (__INTEL__)
+	#define conc_ARCHI conc_ARCHI_X86
+#elif defined (__arm__) || defined (__arm) || defined (__arm64__) || defined (__arm64) || defined (_M_ARM) || defined (__aarch64__)
+	#define conc_ARCHI conc_ARCHI_ARM
 #else
-	#define	conc_WORD_SIZE_L2	5
-	#define	conc_WORD_SIZE		32
-	#define	conc_WORD_SIZE_BYTE	4
+	#error
+#endif
+
+
+
+// Native word size, in power of 2 bits
+#if defined (_WIN64) || defined (__64BIT__) || defined (__amd64__) || defined (__x86_64__) || defined (__aarch64__) || defined (__arm64__) || defined (__arm64)
+	#define conc_WORD_SIZE_L2      6
+	#define conc_WORD_SIZE        64
+	#define conc_WORD_SIZE_BYTE    8
+#else
+	#define conc_WORD_SIZE_L2      5
+	#define conc_WORD_SIZE        32
+	#define conc_WORD_SIZE_BYTE    4
 #endif
 
 
 
 // 128-bit compare and swap
-#if (conc_WORD_SIZE_L2 >= 6)
-	#define	conc_HAS_CAS_128	1
+#if (conc_WORD_SIZE_L2 >= 6) && (conc_ARCHI == conc_ARCHI_X86 || conc_ARCHI == conc_ARCHI_ARM)
+	#define conc_HAS_CAS_128   1
 #endif
-
-#ifndef conc_FORCEINLINE
-#if defined(__clang__)
-// Check clang first. clang-cl also defines __MSC_VER
-// We set MSVC because they are mostly compatible
-#   define CLANG
-#if defined(_MSC_VER)
-#   define MSVC
-#   define conc_FORCEINLINE __attribute__((always_inline)) inline
-#else
-#   define conc_FORCEINLINE __attribute__((always_inline)) inline
-#endif
-#elif   defined(_MSC_VER)
-#   define MSVC
-#   define MSVC_PURE
-#   define conc_FORCEINLINE __forceinline
-#elif defined(__GNUC__)
-#   define GCC
-#   define conc_FORCEINLINE __attribute__((always_inline)) inline
-#else
-#   error Unsupported compiler.
-#   define conc_FORCEINLINE inline
-#   undef __forceinline
-#   define __forceinline inline
-#endif 
-
-#endif
-
-
-
-
-#define  conc_CHECK_CT(name, cond)	\
-	typedef int conc_CHECK_CT##name##_##__LINE__ [(cond) ? 1 : -1]
 
 
 
 #if defined (_MSC_VER)
-	#define	conc_TYPEDEF_ALIGN( alignsize, srctype, dsttype)	\
-		typedef __declspec (align (alignsize)) srctype dsttype
+	#define conc_FORCEINLINE   __forceinline
+#elif defined (__GNUC__)
+	#define conc_FORCEINLINE   inline __attribute__((always_inline))
 #else
-  // gcc syntax allows no __declspec
-#define	conc_TYPEDEF_ALIGN( alignsize, srctype, dsttype)	\
-		typedef __attribute__((aligned (alignsize))) srctype dsttype
+	#define conc_FORCEINLINE   inline
+#endif
+
+
+
+#if defined (_MSC_VER)
+	#define conc_TYPEDEF_ALIGN( alignsize, srctype, dsttype)	\
+		typedef __declspec (align (alignsize)) srctype dsttype
+#elif defined (__GNUC__)
+	#define conc_TYPEDEF_ALIGN( alignsize, srctype, dsttype)	\
+		typedef srctype __attribute__ ((aligned (alignsize))) dsttype
+#else
+	#error Undefined for this compiler
 #endif
 
 
@@ -102,7 +93,7 @@ namespace conc
 
 
 
-//#include	"conc/def.hpp"
+//#include "conc/def.hpp"
 
 
 

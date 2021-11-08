@@ -48,10 +48,11 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
-#include	"conc/AtomicPtrIntPair.h"
-#include	"conc/LockFreeCell.h"
+#include "conc/AtomicPtrIntPair.h"
+#include "conc/LockFreeCell.h"
+#include "fstb/SingleObj.h"
 
-#include	<cstddef>
+#include <cstddef>
 
 
 
@@ -71,11 +72,11 @@ public:
 	typedef	T	ValueType;
 	typedef	LockFreeCell <T>	CellType;
 
-						LockFreeQueue ();
-	virtual			~LockFreeQueue () {}
+	               LockFreeQueue ();
+	virtual        ~LockFreeQueue () = default;
 
-	void				enqueue (CellType &cell);
-	CellType *		dequeue ();
+	void           enqueue (CellType &cell);
+	CellType *     dequeue ();
 
 
 
@@ -91,14 +92,21 @@ private:
 
 	typedef	void *	InternalType;
 
-	enum {			SL2	= (sizeof (InternalType) == 8) ? 4 : 3	};
+	static const int  SL2 = (sizeof (InternalType) == 8) ? 4 : 3;
 
 	typedef	AtomicPtrIntPair <CellType>	SafePointer;
 
-	SafePointer		_head;	// Contains ocount
-	SafePointer		_tail;	// Contains icount
+	class Members	// Must be aligned
+	{
+	public:
+		SafePointer    _head;   // Contains ocount
+		SafePointer    _tail;   // Contains icount
 
-	CellType			_dummy;
+		CellType       _dummy;
+	};
+
+	fstb::SingleObj <Members>
+	               _m_ptr;
 
 
 
@@ -106,11 +114,14 @@ private:
 
 private:
 
-						LockFreeQueue (const LockFreeQueue <T> &other);
+	               LockFreeQueue (const LockFreeQueue <T> &other)     = delete;
+	               LockFreeQueue (LockFreeQueue <T> &&other)          = delete;
 	LockFreeQueue <T> &
-						operator = (const LockFreeQueue <T> &other);
-	bool				operator == (const LockFreeQueue <T> &other) const;
-	bool				operator != (const LockFreeQueue <T> &other) const;
+	               operator = (const LockFreeQueue <T> &other)        = delete;
+	LockFreeQueue <T> &
+	               operator = (LockFreeQueue <T> &&other)             = delete;
+	bool           operator == (const LockFreeQueue <T> &other) const = delete;
+	bool           operator != (const LockFreeQueue <T> &other) const = delete;
 
 };	// class LockFreeQueue
 
@@ -120,7 +131,7 @@ private:
 
 
 
-#include	"conc/LockFreeQueue.hpp"
+#include "conc/LockFreeQueue.hpp"
 
 
 

@@ -11,6 +11,9 @@ Take care of:
 This is a singleton, you cannot construct it directly. Use use_instance()
 to access it from anywhere.
 
+Note: must be compiled with a C++11-compliant compiler, in order to ensure
+that the construction of the singleton is thread-safe.
+
 --- Legal stuff ---
 
 This program is free software. It comes without any warranty, to
@@ -22,7 +25,6 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 *Tab=3***********************************************************************/
 
 
-#include "def.h" // get USE_AVSTP
 
 #if ! defined (AvstpWrapper_HEADER_INCLUDED)
 #define	AvstpWrapper_HEADER_INCLUDED
@@ -36,9 +38,7 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
-#include	"avstp.h"
-
-#include	<memory>
+#include "avstp.h"
 
 
 
@@ -49,19 +49,19 @@ class AvstpWrapper
 
 public:
 
-	virtual			~AvstpWrapper ();
+	virtual        ~AvstpWrapper ();
 
 	static AvstpWrapper &
-						use_instance ();
+	               use_instance ();
 
 	// Wrapped functions
-	int				get_interface_version () const;
+	int            get_interface_version () const;
 	avstp_TaskDispatcher *
-						create_dispatcher ();
-	void				destroy_dispatcher (avstp_TaskDispatcher *td_ptr);
-	int				get_nbr_threads () const;
-	int				enqueue_task (avstp_TaskDispatcher *td_ptr, avstp_TaskPtr task_ptr, void *user_data_ptr);
-	int				wait_completion (avstp_TaskDispatcher *td_ptr);
+	               create_dispatcher ();
+	void           destroy_dispatcher (avstp_TaskDispatcher *td_ptr);
+	int            get_nbr_threads () const;
+	int            enqueue_task (avstp_TaskDispatcher *td_ptr, avstp_TaskPtr task_ptr, void *user_data_ptr);
+	int            wait_completion (avstp_TaskDispatcher *td_ptr);
 
 
 
@@ -69,7 +69,7 @@ public:
 
 protected:
 
-						AvstpWrapper ();
+	               AvstpWrapper ();
 
 
 
@@ -77,39 +77,31 @@ protected:
 
 private:
 
-#ifdef USE_AVSTP
-  template <class T>
-	void				resolve_name (T &fnc_ptr, const char *name_0);
-	void				assign_normal ();
-#endif
-	void				assign_fallback ();
+	template <class T>
+	void           resolve_name (T &fnc_ptr, const char *name_0);
 
-	static int		fallback_get_interface_version_ptr ();
+	void           assign_normal ();
+	void           assign_fallback ();
+
+	static int     fallback_get_interface_version_ptr ();
 	static avstp_TaskDispatcher *
-						fallback_create_dispatcher_ptr ();
-	static void		fallback_destroy_dispatcher_ptr (avstp_TaskDispatcher *td_ptr);
-	static int		fallback_get_nbr_threads_ptr ();
-	static int		fallback_enqueue_task_ptr (avstp_TaskDispatcher *td_ptr, avstp_TaskPtr task_ptr, void *user_data_ptr);
-	static int		fallback_wait_completion_ptr (avstp_TaskDispatcher *td_ptr);
+	               fallback_create_dispatcher_ptr ();
+	static void    fallback_destroy_dispatcher_ptr (avstp_TaskDispatcher *td_ptr);
+	static int     fallback_get_nbr_threads_ptr ();
+	static int     fallback_enqueue_task_ptr (avstp_TaskDispatcher *td_ptr, avstp_TaskPtr task_ptr, void *user_data_ptr);
+	static int     fallback_wait_completion_ptr (avstp_TaskDispatcher *td_ptr);
 
-	int				(*_avstp_get_interface_version_ptr) ();
+	int            (*_avstp_get_interface_version_ptr) ();
 	avstp_TaskDispatcher *
-						(*_avstp_create_dispatcher_ptr) ();
-	void				(*_avstp_destroy_dispatcher_ptr) (avstp_TaskDispatcher *td_ptr);
-	int				(*_avstp_get_nbr_threads_ptr) ();
-	int				(*_avstp_enqueue_task_ptr) (avstp_TaskDispatcher *td_ptr, avstp_TaskPtr task_ptr, void *user_data_ptr);
-	int				(*_avstp_wait_completion_ptr) (avstp_TaskDispatcher *td_ptr);
+	               (*_avstp_create_dispatcher_ptr) ();
+	void           (*_avstp_destroy_dispatcher_ptr) (avstp_TaskDispatcher *td_ptr);
+	int            (*_avstp_get_nbr_threads_ptr) ();
+	int            (*_avstp_enqueue_task_ptr) (avstp_TaskDispatcher *td_ptr, avstp_TaskPtr task_ptr, void *user_data_ptr);
+	int            (*_avstp_wait_completion_ptr) (avstp_TaskDispatcher *td_ptr);
 
-#ifdef USE_AVSTP
-  void *			_dll_hnd;	// Avoids loading windows.h just for HMODULE
-#endif
+	void *         _dll_hnd;	// Avoids loading windows.h just for HMODULE
 
-	static std::unique_ptr <AvstpWrapper>
-                  _singleton_aptr;
-   static volatile bool
-						_singleton_init_flag;
-
-	static int		_dummy_dispatcher;
+	static int     _dummy_dispatcher;
 
 
 
@@ -117,16 +109,18 @@ private:
 
 private:
 
-						AvstpWrapper (const AvstpWrapper &other);
-	AvstpWrapper &	operator = (const AvstpWrapper &other);
-	bool				operator == (const AvstpWrapper &other) const;
-	bool				operator != (const AvstpWrapper &other) const;
+	               AvstpWrapper (const AvstpWrapper &other)      = delete;
+	               AvstpWrapper (AvstpWrapper &&other)           = delete;
+	AvstpWrapper & operator = (const AvstpWrapper &other)        = delete;
+	AvstpWrapper & operator = (AvstpWrapper &&other)             = delete;
+	bool           operator == (const AvstpWrapper &other) const = delete;
+	bool           operator != (const AvstpWrapper &other) const = delete;
 
 };	// class AvstpWrapper
 
 
 
-//#include	"AvstpWrapper.hpp"
+//#include "AvstpWrapper.hpp"
 
 
 

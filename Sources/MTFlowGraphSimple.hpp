@@ -201,7 +201,6 @@ MTFlowGraphSimple <MAXT>::Iterator::Iterator (const ThisType &fg, int node)
 ,	_node (node)
 ,	_pos (0)
 {
-	assert (&fg != 0);
 	assert (node >= 0);
 	assert (node < MAXT);
 }

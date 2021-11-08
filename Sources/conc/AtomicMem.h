@@ -29,10 +29,15 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
-#include	"conc/def.h"
-#include	"types.h"
-#include <stdint.h>
-#include	<emmintrin.h>
+#include "conc/def.h"
+#include "conc/Interlocked.h"
+
+#if defined (conc_HAS_CAS_128)
+#include <emmintrin.h>
+#endif
+
+#include <cstdint>
+
 
 
 namespace conc
@@ -48,9 +53,9 @@ public:
 	conc_TYPEDEF_ALIGN (4, DataType, DataTypeAlign);
 
 	conc_FORCEINLINE static DataType
-						swap (volatile DataType &dest, DataType excg);
+	               swap (volatile DataType &dest, DataType excg);
 	conc_FORCEINLINE static DataType
-						cas (volatile DataType &dest, DataType excg, DataType comp);
+	               cas (volatile DataType &dest, DataType excg, DataType comp);
 };	// class AtomicMem
 
 
@@ -63,10 +68,10 @@ public:
 	conc_TYPEDEF_ALIGN (8, DataType, DataTypeAlign);
 
 	conc_FORCEINLINE static DataType
-						swap (volatile DataType &dest, DataType excg);
+	               swap (volatile DataType &dest, DataType excg);
 	conc_FORCEINLINE static DataType
-						cas (volatile DataType &dest, DataType excg, DataType comp);
-};	// class AtomicMem
+	               cas (volatile DataType &dest, DataType excg, DataType comp);
+};	// class AtomicMem <3>
 
 
 
@@ -76,13 +81,13 @@ template <>
 class AtomicMem <4>
 {
 public:
-	typedef	__m128i	DataType;
+	typedef Interlocked::Data128 DataType;
 	conc_TYPEDEF_ALIGN (16, DataType, DataTypeAlign);
 
 	conc_FORCEINLINE static DataType
-						swap (volatile DataType &dest, DataType excg);
+	               swap (volatile DataType &dest, DataType excg);
 	conc_FORCEINLINE static DataType
-						cas (volatile DataType &dest, DataType excg, DataType comp);
+	               cas (volatile DataType &dest, DataType excg, DataType comp);
 };	// class AtomicMem <4>
 
 #endif	// conc_HAS_CAS_128
@@ -101,7 +106,7 @@ class AtomicMem <-1>
 
 
 
-#include	"conc/AtomicMem.hpp"
+#include "conc/AtomicMem.hpp"
 
 
 

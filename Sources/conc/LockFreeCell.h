@@ -8,6 +8,8 @@ Template parameters:
 - T. Contained object. Requires:
 	T::T();
 
+The cell must be aligned because of the AtomicPtr.
+
 --- Legal stuff ---
 
 This program is free software. It comes without any warranty, to
@@ -32,7 +34,7 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
-#include	"conc/AtomicPtr.h"
+#include "conc/AtomicPtr.h"
 
 
 
@@ -48,11 +50,12 @@ class LockFreeCell
 /*\\\ PUBLIC \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
 public:
-  using ValueType = T;
+
+	typedef	T	ValueType;
 
 	AtomicPtr <LockFreeCell <T> >
-					_next_ptr;
-	T				_val;
+	               _next_ptr { nullptr };
+	T              _val;
 
 
 
@@ -80,7 +83,7 @@ private:
 
 
 
-//#include	"conc/LockFreeCell.hpp"
+//#include "conc/LockFreeCell.hpp"
 
 
 

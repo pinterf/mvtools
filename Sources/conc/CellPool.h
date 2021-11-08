@@ -26,20 +26,18 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
-#ifdef _WIN32
-#include	"conc/AtomicInt.h"
-#include	"conc/Mutex.h"
-#else
-#include <atomic>
+
+#include "conc/AtomicPtr.h"
+#include "conc/AtomicInt.h"
+#include "conc/LockFreeCell.h"
+#include "conc/LockFreeStack.h"
+#include "fstb/SingleObj.h"
+
+#include <array>
 #include <mutex>
-#endif
 
-#include	"conc/Array.h"
-#include	"conc/AtomicPtr.h"
-#include	"conc/LockFreeCell.h"
-#include	"conc/LockFreeStack.h"
-
-#include	<cstddef>
+#include <cstddef>
+#include <cstdint>
 
 
 
@@ -59,15 +57,15 @@ public:
 	typedef	T	DataType;
 	typedef	LockFreeCell <T>	CellType;
 
-						CellPool ();
-	virtual			~CellPool ();
+	               CellPool ();
+	virtual        ~CellPool ();
 
-	void				clear_all ();
-	void				expand_to (size_t nbr_cells);
+	void           clear_all ();
+	void           expand_to (size_t nbr_cells);
 
 	inline CellType *
-						take_cell (bool autogrow_flag = false);
-	inline void		return_cell (CellType &cell);
+	               take_cell (bool autogrow_flag = false);
+	inline void    return_cell (CellType &cell);
 
 
 
@@ -81,37 +79,45 @@ protected:
 
 private:
 
-	enum {			MAX_NBR_ZONES	= 64	};
-	enum {			GROW_RATE_NUM	= 3	};
-	enum {			GROW_RATE_DEN	= 2	};
-	enum {			BASE_SIZE		= 64	};		// Number of cells for the first zone
+	static const int  MAX_NBR_ZONES  = 64;
+	static const int  GROW_RATE_NUM  = 3;
+	static const int  GROW_RATE_DEN  = 2;
+	static const int  BASE_SIZE      = 64; // Number of cells for the first zone
 
-	typedef	LockFreeStack <T>	CellStack;
-#ifdef _WIN32
-	typedef	 AtomicInt <size_t>	CountCells;
-	typedef	AtomicInt <int>		CountZones;
-#else
-  typedef	 std::atomic<size_t>	CountCells;
-  typedef	std::atomic<int>		CountZones;
-#endif
-	typedef	Array <AtomicPtr <CellType>, MAX_NBR_ZONES>	ZoneList;
+	typedef  LockFreeStack <T>    CellStack;
+	typedef  AtomicInt <size_t>   CountCells;
+	typedef  AtomicInt <int>      CountZones;
+	typedef  std::array <AtomicPtr <CellType>, MAX_NBR_ZONES>  ZoneList;
 
-	void				allocate_zone (int zone_index, size_t cur_size, AtomicPtr <CellType> & zone_ptr_ref);
+	class Members	// These ones must be aligned
+	{
+	public:
+		CountCells     _nbr_avail_cells;
+		CountZones     _nbr_zones;
+		ZoneList       _zone_list;
+	};
+
+	class AliAllo
+	{
+	public:
+		uint8_t *      _ptr;
+		size_t         _nbr_elt;
+	};
+
+	void           allocate_zone (size_t cur_size, AtomicPtr <CellType> & zone_ptr_ref);
 
 	static inline size_t
-						compute_grown_size (size_t prev_size);
+	               compute_grown_size (size_t prev_size);
 	static inline size_t
-						compute_total_size_for_zones (int nbr_zones);
+	               compute_total_size_for_zones (int nbr_zones);
+	static CellType *
+	               alloc_cells (size_t n);
+	static void    dealloc_cells (CellType *ptr);
 
-	CellStack		_cell_stack;
-	ZoneList			_zone_list;
-	CountCells		_nbr_avail_cells;
-	CountZones		_nbr_zones;
-#ifdef _WIN32
-	Mutex				_alloc_mutex;
-#else
-  std::mutex _alloc_mutex;
-#endif
+	CellStack      _cell_stack;
+	std::mutex     _alloc_mutex;
+	fstb::SingleObj <Members>
+	               _m_ptr;
 
 
 
@@ -119,10 +125,12 @@ private:
 
 private:
 
-						CellPool (const CellPool <T> &other);
-	CellPool <T> &	operator = (const CellPool <T> &other);
-	bool				operator == (const CellPool <T> &other) const;
-	bool				operator != (const CellPool <T> &other) const;
+	               CellPool (const CellPool <T> &other)          = delete;
+	               CellPool (CellPool <T> &&other)               = delete;
+	CellPool <T> & operator = (const CellPool <T> &other)        = delete;
+	CellPool <T> & operator = (CellPool <T> &&other)             = delete;
+	bool           operator == (const CellPool <T> &other) const = delete;
+	bool           operator != (const CellPool <T> &other) const = delete;
 
 };	// class CellPool
 
@@ -132,7 +140,7 @@ private:
 
 
 
-#include	"conc/CellPool.hpp"
+#include "conc/CellPool.hpp"
 
 
 

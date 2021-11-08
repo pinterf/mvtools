@@ -33,7 +33,7 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
-#include	"conc/Array.h"
+#include	<array>
 
 
 
@@ -45,7 +45,7 @@ class MTFlowGraphSimple
 
 public:
 
-  using ThisType = MTFlowGraphSimple <MAXT>;
+	typedef	MTFlowGraphSimple <MAXT>	ThisType;
 
 	class Iterator
 	{
@@ -89,12 +89,12 @@ private:
 	public:
 		int				_nbr_in;
 		int				_nbr_out;
-		conc::Array <short, MAXT>
+		std::array <short, MAXT>
 							_out_arr;
 	};
 
 	int				_last_node;
-	conc::Array <Node, MAXT>
+	std::array <Node, MAXT>
 						_node_arr;
 
 
@@ -103,11 +103,14 @@ private:
 
 private:
 
-						MTFlowGraphSimple (const MTFlowGraphSimple <MAXT> &other);
+						MTFlowGraphSimple (const MTFlowGraphSimple <MAXT> &other) = delete;
+						MTFlowGraphSimple (MTFlowGraphSimple <MAXT> &&other)      = delete;
 	MTFlowGraphSimple <MAXT> &
-						operator = (const MTFlowGraphSimple <MAXT> &other);
-	bool				operator == (const MTFlowGraphSimple <MAXT> &other) const;
-	bool				operator != (const MTFlowGraphSimple <MAXT> &other) const;
+						operator = (const MTFlowGraphSimple <MAXT> &other)        = delete;
+	MTFlowGraphSimple <MAXT> &
+						operator = (MTFlowGraphSimple <MAXT> &&other)             = delete;
+	bool				operator == (const MTFlowGraphSimple <MAXT> &other) const = delete;
+	bool				operator != (const MTFlowGraphSimple <MAXT> &other) const = delete;
 
 };	// class MTFlowGraphSimple
 

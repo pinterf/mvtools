@@ -22,16 +22,12 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
-// use std::mutex instead
-#ifdef _WIN32
-#include "conc/CritSec.h"
 #include "conc/AioMax.h"
 #include "conc/AtomicIntOp.h"
-#endif
 
-#include <mutex>
+#include <type_traits>
 
-#include	<cassert>
+#include <cassert>
 
 
 
@@ -47,16 +43,17 @@ namespace conc
 template <class T>
 CellPool <T>::CellPool ()
 :	_cell_stack ()
-,	_zone_list ()
-,	_nbr_avail_cells (0)
-,	_nbr_zones (0)
 ,	_alloc_mutex ()
+,	_m_ptr ()
 {
-	conc_CHECK_CT (Growth, BASE_SIZE * GROW_RATE_NUM / GROW_RATE_DEN > BASE_SIZE);
+	static_assert (BASE_SIZE * GROW_RATE_NUM / GROW_RATE_DEN > BASE_SIZE, "");
+
+	_m_ptr->_nbr_avail_cells = 0;
+	_m_ptr->_nbr_zones       = 0;
 
 	for (int zone_index = 0; zone_index < MAX_NBR_ZONES; ++zone_index)
 	{
-		_zone_list [zone_index] = 0;
+		_m_ptr->_zone_list [zone_index] = nullptr;
 	}
 }
 
@@ -76,70 +73,59 @@ template <class T>
 void	CellPool <T>::clear_all ()
 {
 #if !defined (NDEBUG)
-	size_t nbr_total_cells = compute_total_size_for_zones (_nbr_zones);
+	const size_t   nbr_total_cells =
+		compute_total_size_for_zones (_m_ptr->_nbr_zones);
 	
-	assert (_nbr_avail_cells == nbr_total_cells);
+	assert (_m_ptr->_nbr_avail_cells == nbr_total_cells);
 #endif
 	
-	while (_cell_stack.pop () != 0)
+	while (_cell_stack.pop () != nullptr)
 	{
 		continue;
 	}
 
-	for (int zone_index = 0; zone_index < _nbr_zones; ++zone_index)
+	const int      nbr_zones = _m_ptr->_nbr_zones;
+	for (int zone_index = 0; zone_index < nbr_zones; ++zone_index)
 	{
-		AtomicPtr <CellType> &	zone_ptr_ref = _zone_list [zone_index];
-		CellType *		zone_ptr = zone_ptr_ref;
-		if (zone_ptr != 0)
+		AtomicPtr <CellType> &  zone_ptr_ref = _m_ptr->_zone_list [zone_index];
+		CellType *     zone_ptr = zone_ptr_ref;
+		if (zone_ptr != nullptr)
 		{
-			delete [] zone_ptr;
-			zone_ptr_ref = 0;
+			dealloc_cells (zone_ptr);
+			zone_ptr_ref = nullptr;
 		}
 	}
-	_nbr_zones = 0;
-	_nbr_avail_cells = 0;
+	_m_ptr->_nbr_zones       = 0;
+	_m_ptr->_nbr_avail_cells = 0;
 }
 
-#ifndef _WIN32
-template<typename T>
-void update_maximum_atomic(std::atomic<T>& maximum_value, T const& value) noexcept
-{
-  T prev_value = maximum_value;
-  while (prev_value < value &&
-    !maximum_value.compare_exchange_weak(prev_value, value))
-  {
-  }
-}
-#endif
+
 
 // Thread-safe but locks
 template <class T>
 void	CellPool <T>::expand_to (size_t nbr_cells)
 {
 	assert (nbr_cells > 0);
-	size_t			cur_size = BASE_SIZE;
-	size_t			total_size = 0;
-	int				zone_index = 0;
+
+	size_t         cur_size = BASE_SIZE;
+	size_t         total_size = 0;
+	int            zone_index = 0;
 	while (total_size < nbr_cells && zone_index < MAX_NBR_ZONES)
 	{
-    AtomicPtr <CellType> &	zone_ptr_ref = _zone_list [zone_index];
-    CellType *		zone_ptr = zone_ptr_ref;
-		if (zone_ptr == 0)
+		AtomicPtr <CellType> &  zone_ptr_ref = _m_ptr->_zone_list [zone_index];
+		const CellType *  zone_ptr = zone_ptr_ref;
+		if (zone_ptr == nullptr)
 		{
-      allocate_zone (zone_index, cur_size, zone_ptr_ref);
-    }
+			allocate_zone (cur_size, zone_ptr_ref);
+		}
 
 		total_size += cur_size;
 		cur_size = compute_grown_size (cur_size);
-    ++ zone_index;
-  }
+		++ zone_index;
+	}
 
-#ifdef _WIN32
-  AioMax <int>	ftor (zone_index);
-  AtomicIntOp::exec (_nbr_zones, ftor);
-#else
-  update_maximum_atomic(_nbr_zones, zone_index); // std::mutex based (gcc)
-#endif
+	AioMax <int>	ftor (zone_index);
+	AtomicIntOp::exec (_m_ptr->_nbr_zones, ftor);
 }
 
 
@@ -148,27 +134,33 @@ void	CellPool <T>::expand_to (size_t nbr_cells)
 template <class T>
 typename CellPool <T>::CellType *	CellPool <T>::take_cell (bool autogrow_flag)
 {
-	CellType *		cell_ptr = 0;
+	CellType *     cell_ptr = nullptr;
 	
-	const int		nbr_zones = _nbr_zones;
-  do
-	{
-    cell_ptr = _cell_stack.pop ();
+	const int      nbr_zones = _m_ptr->_nbr_zones;
 
-		if ((cell_ptr == 0) && autogrow_flag && (nbr_zones < MAX_NBR_ZONES))
+	do
+	{
+		cell_ptr = _cell_stack.pop ();
+
+		if (   cell_ptr == nullptr
+		    && autogrow_flag
+		    && nbr_zones < MAX_NBR_ZONES)
 		{
-			const size_t	new_size = compute_total_size_for_zones (nbr_zones + 1);
-      expand_to (new_size);
-    }
+			const size_t	new_size =
+				compute_total_size_for_zones (nbr_zones + 1);
+			expand_to (new_size);
+		}
 	}
-	while ((cell_ptr == 0) && autogrow_flag && (nbr_zones < MAX_NBR_ZONES));
+	while (   cell_ptr == nullptr
+	       && autogrow_flag
+	       && nbr_zones < MAX_NBR_ZONES);
 
-  if (cell_ptr != 0)
+	if (cell_ptr != nullptr)
 	{
-		-- _nbr_avail_cells;
+		-- _m_ptr->_nbr_avail_cells;
 	}
 
-	return (cell_ptr);
+	return cell_ptr;
 }
 
 
@@ -177,11 +169,9 @@ typename CellPool <T>::CellType *	CellPool <T>::take_cell (bool autogrow_flag)
 template <class T>
 void	CellPool <T>::return_cell (CellType &cell)
 {
-	assert (&cell != 0);
-
 	_cell_stack.push (cell);
 
-	++ _nbr_avail_cells;
+	++ _m_ptr->_nbr_avail_cells;
 }
 
 
@@ -195,23 +185,16 @@ void	CellPool <T>::return_cell (CellType &cell)
 
 
 template <class T>
-void	CellPool <T>::allocate_zone (int zone_index, size_t cur_size, AtomicPtr <CellType> & zone_ptr_ref)
+void	CellPool <T>::allocate_zone (size_t cur_size, AtomicPtr <CellType> & zone_ptr_ref)
 {
-	assert (zone_index >= 0);
-	assert (zone_index < MAX_NBR_ZONES);
+	std::lock_guard <std::mutex>  lock (_alloc_mutex);
 
-#ifdef _WIN32
-	CritSec			lock (_alloc_mutex);
-#else
-  std::lock_guard lock(_alloc_mutex); // mutex based (gcc)
-#endif
+	CellType *     zone_ptr = alloc_cells (cur_size);
 
-	CellType *		zone_ptr = new CellType [cur_size];
-
-	if (zone_ptr_ref.cas (zone_ptr, 0) != (CellType *)0)
+	if (zone_ptr_ref.cas (zone_ptr, nullptr) != static_cast <CellType *> (nullptr))
 	{
 		// CAS has failed, meaning that another thread is allocating this zone.
-		delete [] zone_ptr;
+		dealloc_cells (zone_ptr);
 
 		// Note: because of the mutex, this part shouldn't be accessed.
 	}
@@ -221,10 +204,10 @@ void	CellPool <T>::allocate_zone (int zone_index, size_t cur_size, AtomicPtr <Ce
 		// Success: fill the stack with the new cells.
 		for (size_t pos = 0; pos < cur_size; ++pos)
 		{
-			CellType &		cell = zone_ptr [pos];
+			CellType &     cell = zone_ptr [pos];
 			_cell_stack.push (cell);
 
-			++ _nbr_avail_cells;
+			++ _m_ptr->_nbr_avail_cells;
 		}
 	}
 }
@@ -247,9 +230,9 @@ size_t	CellPool <T>::compute_total_size_for_zones (int nbr_zones)
 	assert (nbr_zones >= 0);
 	assert (nbr_zones <= MAX_NBR_ZONES);
 
-	size_t			cur_size = BASE_SIZE;
-	size_t			total_size = 0;
-	int				zone_index = 0;
+	size_t         cur_size = BASE_SIZE;
+	size_t         total_size = 0;
+	int            zone_index = 0;
 	while (zone_index < nbr_zones)
 	{
 		total_size += cur_size;
@@ -257,7 +240,63 @@ size_t	CellPool <T>::compute_total_size_for_zones (int nbr_zones)
 		++ zone_index;
 	}
 
-	return (total_size);
+	return total_size;
+}
+
+
+
+template <class T>
+typename CellPool <T>::CellType *	CellPool <T>::alloc_cells (size_t n)
+{
+	const size_t   nbr_bytes =
+		sizeof (AliAllo) + (n + 1) * sizeof (CellType);
+	const int      align     = std::alignment_of <CellType>::value;
+	uint8_t *      raw_ptr   = new uint8_t [nbr_bytes];
+	const intptr_t cell_zone =
+		(  reinterpret_cast <intptr_t> (raw_ptr)
+		 + sizeof (AliAllo)
+		 + sizeof (CellType)) & -align;
+	CellType *     cell_ptr  = reinterpret_cast <CellType *> (cell_zone);
+	AliAllo *      info_ptr  = reinterpret_cast <AliAllo *> (cell_zone) - 1;
+
+	info_ptr->_ptr     = raw_ptr;
+	info_ptr->_nbr_elt = n;
+
+	size_t         count = 0;
+	try
+	{
+		for (count = 0; count < n; ++count)
+		{
+			new (cell_ptr + count) CellType;
+		}
+	}
+	catch (...)
+	{
+		for (size_t i = count; i > 0; --i)
+		{
+			(cell_ptr + i - 1)->~CellType ();
+		}
+		delete [] raw_ptr;
+		throw;
+	}
+
+	return cell_ptr;
+}
+
+
+template <class T>
+void	CellPool <T>::dealloc_cells (CellType *ptr)
+{
+	AliAllo *      info_ptr = reinterpret_cast <AliAllo *> (ptr) - 1;
+	const size_t   n        = info_ptr->_nbr_elt;
+	uint8_t *      raw_ptr  = info_ptr->_ptr;
+
+	for (size_t i = n; i > 0; --i)
+	{
+		(ptr + i - 1)->~CellType ();
+	}
+
+	delete [] raw_ptr;
 }
 
 

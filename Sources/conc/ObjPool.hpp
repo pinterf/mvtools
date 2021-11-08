@@ -22,9 +22,9 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
-#include	<cassert>
+#include <cassert>
 
-#include	<stdexcept>
+#include <stdexcept>
 
 
 
@@ -51,9 +51,9 @@ ObjPool <T>::ObjPool ()
 :	_factory_ptr (0)
 ,	_stack_free ()
 ,	_stack_all ()
-,	_obj_cell_pool ()
+,	_obj_cell_pool_ptr ()
 {
-	_obj_cell_pool.expand_to (1024);
+	_obj_cell_pool_ptr->expand_to (1024);
 }
 
 
@@ -88,8 +88,6 @@ Throws: Nothing
 template <class T>
 void	ObjPool <T>::set_factory (Factory &fact)
 {
-	assert (&fact != 0);
-
 	_factory_ptr = &fact;
 }
 
@@ -124,19 +122,19 @@ T *	ObjPool <T>::take_obj ()
 {
 	assert (_factory_ptr != 0);
 
-	ObjType *		obj_ptr = 0;
+	ObjType *      obj_ptr = 0;
 
-	PtrCell *		cell_ptr = _stack_free.pop ();
+	PtrCell *      cell_ptr = _stack_free.pop ();
 	if (cell_ptr == 0)
 	{
 		obj_ptr = _factory_ptr->create ();
 
 		if (obj_ptr != 0)
 		{
-			bool				ok_flag = false;
+			bool        ok_flag = false;
 			try
 			{
-				cell_ptr = _obj_cell_pool.take_cell (true);
+				cell_ptr = _obj_cell_pool_ptr->take_cell (true);
 				if (cell_ptr != 0)
 				{
 					cell_ptr->_val = obj_ptr;
@@ -159,7 +157,7 @@ T *	ObjPool <T>::take_obj ()
 	else
 	{
 		obj_ptr = cell_ptr->_val;
-		_obj_cell_pool.return_cell (*cell_ptr);
+		_obj_cell_pool_ptr->return_cell (*cell_ptr);
 	}
 
 	return (obj_ptr);
@@ -184,12 +182,10 @@ Throws: Nothing
 template <class T>
 void	ObjPool <T>::return_obj (T &obj)
 {
-	assert (&obj != 0);
-
-	PtrCell *		cell_ptr = 0;
+	PtrCell *      cell_ptr = 0;
 	try
 	{
-		cell_ptr = _obj_cell_pool.take_cell (true);
+		cell_ptr = _obj_cell_pool_ptr->take_cell (true);
 	}
 	catch (...)
 	{
@@ -224,8 +220,14 @@ Throws: Nothing
 template <class T>
 void	ObjPool <T>::cleanup ()
 {
-	const int		count_free = delete_obj_stack  (_stack_free, false);
-	const int		count_all  = delete_obj_stack  (_stack_all,  true);
+#if ! defined (NDEBUG)
+	const int      count_free =
+#endif
+		delete_obj_stack  (_stack_free, false);
+#if ! defined (NDEBUG)
+	const int      count_all  =
+#endif
+		delete_obj_stack  (_stack_all,  true);
 
 	// False would mean that some cells are still out, in use.
 	assert (count_free == count_all);
@@ -244,11 +246,8 @@ void	ObjPool <T>::cleanup ()
 template <class T>
 int	ObjPool <T>::delete_obj_stack (PtrStack &ptr_stack, bool destroy_flag)
 {
-	assert (&ptr_stack != 0);
-
-  typename PtrStack::CellType *cell_ptr = 0;
-
-	int				count = 0;
+	typename PtrStack::CellType *   cell_ptr = 0;
+	int            count = 0;
 	do
 	{
 		cell_ptr = ptr_stack.pop ();
@@ -261,7 +260,7 @@ int	ObjPool <T>::delete_obj_stack (PtrStack &ptr_stack, bool destroy_flag)
 				obj_ptr = 0;
 			}
 
-			_obj_cell_pool.return_cell (*cell_ptr);
+			_obj_cell_pool_ptr->return_cell (*cell_ptr);
 			++ count;
 		}
 	}

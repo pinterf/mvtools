@@ -43,7 +43,7 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
-#include	"conc/AtomicInt.h"
+#include "conc/AtomicInt.h"
 
 
 
@@ -61,16 +61,16 @@ public:
 
 	template <class T, class F>
 	static inline void
-						exec (AtomicInt <T> &atom, F &ftor);
+	               exec (AtomicInt <T> &atom, F &ftor);
 	template <class T, class F>
 	static inline T
-						exec_old (AtomicInt <T> &atom, F &ftor);
+	               exec_old (AtomicInt <T> &atom, F &ftor);
 	template <class T, class F>
 	static inline T
-						exec_new (AtomicInt <T> &atom, F &ftor);
+	               exec_new (AtomicInt <T> &atom, F &ftor);
 	template <class T, class F>
 	static inline void
-						exec_both (AtomicInt <T> &atom, F &ftor, T &val_old, T &val_new);
+	               exec_both (AtomicInt <T> &atom, F &ftor, T &val_old, T &val_new);
 
 
 
@@ -90,12 +90,12 @@ private:
 
 private:
 
-						AtomicIntOp ();
-						AtomicIntOp (const AtomicIntOp &other);
-	virtual			~AtomicIntOp () {}
-	AtomicIntOp &	operator = (const AtomicIntOp &other);
-	bool				operator == (const AtomicIntOp &other) const;
-	bool				operator != (const AtomicIntOp &other) const;
+	               AtomicIntOp ()                               = delete;
+	               AtomicIntOp (const AtomicIntOp &other)       = delete;
+	virtual        ~AtomicIntOp ()                              = delete;
+	AtomicIntOp &  operator = (const AtomicIntOp &other)        = delete;
+	bool           operator == (const AtomicIntOp &other) const = delete;
+	bool           operator != (const AtomicIntOp &other) const = delete;
 
 };	// class AtomicIntOp
 
@@ -105,7 +105,7 @@ private:
 
 
 
-#include	"conc/AtomicIntOp.hpp"
+#include "conc/AtomicIntOp.hpp"
 
 
 

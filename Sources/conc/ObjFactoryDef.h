@@ -29,7 +29,7 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
-#include	"conc/ObjFactoryInterface.h"
+#include "conc/ObjFactoryInterface.h"
 
 
 
@@ -47,11 +47,11 @@ class ObjFactoryDef
 
 public:
 
-						ObjFactoryDef ();
-	virtual			~ObjFactoryDef () {}
+	               ObjFactoryDef ()  = default;
+	virtual        ~ObjFactoryDef () = default;
 
 	static ObjFactoryDef <T>
-						_fact;
+	               _fact;
 
 
 
@@ -60,7 +60,7 @@ public:
 protected:
 
 	// conc::ObjFactoryInterface
-	virtual T *		do_create ();
+	virtual T *    do_create ();
 
 
 
@@ -74,10 +74,10 @@ private:
 
 private:
 
-						ObjFactoryDef (const ObjFactoryDef &other);
-	ObjFactoryDef&	operator = (const ObjFactoryDef &other);
-	bool				operator == (const ObjFactoryDef &other) const;
-	bool				operator != (const ObjFactoryDef &other) const;
+	               ObjFactoryDef (const ObjFactoryDef &other)     = delete;
+	ObjFactoryDef& operator = (const ObjFactoryDef &other)        = delete;
+	bool           operator == (const ObjFactoryDef &other) const = delete;
+	bool           operator != (const ObjFactoryDef &other) const = delete;
 
 };	// class ObjFactoryDef
 
@@ -87,7 +87,7 @@ private:
 
 
 
-#include	"conc/ObjFactoryDef.hpp"
+#include "conc/ObjFactoryDef.hpp"
 
 
 

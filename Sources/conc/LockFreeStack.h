@@ -42,8 +42,9 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
-#include	"conc/AtomicPtrIntPair.h"
-#include	"conc/LockFreeCell.h"
+#include "conc/AtomicPtrIntPair.h"
+#include "conc/LockFreeCell.h"
+#include "fstb/SingleObj.h"
 
 
 
@@ -60,14 +61,14 @@ class LockFreeStack
 
 public:
 
-  using ValueType = T;
-  using CellType = LockFreeCell <T>;
+	typedef	T	ValueType;
+	typedef	LockFreeCell <T>	CellType;
 
-						LockFreeStack ();
-	virtual			~LockFreeStack () {}
+	               LockFreeStack ();
+	virtual        ~LockFreeStack () = default;
 
-	void				push (CellType &cell);
-	CellType *		pop ();
+	void           push (CellType &cell);
+	CellType *     pop ();
 
 
 
@@ -81,8 +82,8 @@ protected:
 
 private:
 
-	AtomicPtrIntPair <CellType>
-						_head_ptr;
+	fstb::SingleObj <AtomicPtrIntPair <CellType> >
+	               _head_ptr_ptr;
 
 
 
@@ -90,10 +91,14 @@ private:
 
 private:
 
-						LockFreeStack (const LockFreeStack <T> &other);
-	LockFreeStack <T> &operator = (const LockFreeStack <T> &other);
-	bool				operator == (const LockFreeStack <T> &other) const;
-	bool				operator != (const LockFreeStack <T> &other) const;
+	               LockFreeStack (const LockFreeStack <T> &other)     = delete;
+	               LockFreeStack (LockFreeStack <T> &&other)          = delete;
+	LockFreeStack <T> &
+	               operator = (const LockFreeStack <T> &other)        = delete;
+	LockFreeStack <T> &
+	               operator = (LockFreeStack <T> &&other)             = delete;
+	bool           operator == (const LockFreeStack <T> &other) const = delete;
+	bool           operator != (const LockFreeStack <T> &other) const = delete;
 
 };	// class LockFreeStack
 
@@ -103,7 +108,7 @@ private:
 
 
 
-#include	"conc/LockFreeStack.hpp"
+#include "conc/LockFreeStack.hpp"
 
 
 

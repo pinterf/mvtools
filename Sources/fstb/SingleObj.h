@@ -1,7 +1,7 @@
 /*****************************************************************************
 
-        CritSec.h
-        Author: Laurent de Soras, 2011
+        SingleObj.h
+        Author: Laurent de Soras, 2015
 
 --- Legal stuff ---
 
@@ -15,14 +15,11 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 
 
-#if ! defined (conc_CritSec_HEADER_INCLUDED)
-#define	conc_CritSec_HEADER_INCLUDED
-
-// use std::mutex instead
-#ifdef _WIN32
+#pragma once
+#if ! defined (fstb_SingleObj_HEADER_INCLUDED)
+#define	fstb_SingleObj_HEADER_INCLUDED
 
 #if defined (_MSC_VER)
-	#pragma once
 	#pragma warning (4 : 4250)
 #endif
 
@@ -30,24 +27,28 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
+#include "fstb/AllocAlign.h"
 
 
-namespace conc
+
+namespace fstb
 {
 
 
 
-class Mutex;
-
-class CritSec
+template <class T, class A = AllocAlign <T, 16> >
+class SingleObj
 {
 
 /*\\\ PUBLIC \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
 public:
 
-	inline			CritSec (Mutex &mutex);
-	inline			~CritSec ();
+	               SingleObj ();
+	virtual        ~SingleObj ();
+
+	T *            operator -> () const;
+	T &            operator * () const;
 
 
 
@@ -61,7 +62,8 @@ protected:
 
 private:
 
-	Mutex &			_mutex;
+	A              _allo;
+	T *            _obj_ptr;
 
 
 
@@ -69,24 +71,28 @@ private:
 
 private:
 
-						CritSec (const CritSec &other);
-	CritSec &		operator = (const CritSec &other);
-	bool				operator == (const CritSec &other) const;
-	bool				operator != (const CritSec &other) const;
+	               SingleObj (const SingleObj <T, A> &other)         = delete;
+	               SingleObj (const SingleObj <T, A> &&other)        = delete;
+	SingleObj <T, A> &
+	               operator = (const SingleObj <T, A> &other)        = delete;
+	SingleObj <T, A> &
+	               operator = (const SingleObj <T, A> &&other)       = delete;
+	bool           operator == (const SingleObj <T, A> &other) const = delete;
+	bool           operator != (const SingleObj <T, A> &other) const = delete;
 
-};	// class CritSec
+};	// class SingleObj
 
 
 
-}	// namespace conc
+}	// namespace fstb
 
 
 
-#include	"conc/CritSec.hpp"
+#include "fstb/SingleObj.hpp"
 
-#endif
 
-#endif	// conc_CritSec_HEADER_INCLUDED
+
+#endif	// fstb_SingleObj_HEADER_INCLUDED
 
 
 

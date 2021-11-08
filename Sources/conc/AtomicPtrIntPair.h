@@ -28,13 +28,22 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 
 
+#define conc_USE_STD_ATOMIC_128BITS 0
+
+
+
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
-#include	"conc/def.h"
-#include	"conc/Interlocked.h"
-#include	"types.h"
+#include "conc/def.h"
 
-#include	<cstddef>
+#if (conc_ARCHI == conc_ARCHI_X86 || ! conc_USE_STD_ATOMIC_128BITS)
+#include "conc/Interlocked.h"
+#else  // conc_ARCHI
+#include <atomic>
+#endif // conc_ARCHI
+
+#include <cstddef>
+#include <cstdint>
 
 
 
@@ -51,15 +60,13 @@ class AtomicPtrIntPair
 
 public:
 
-						AtomicPtrIntPair ();
-	virtual			~AtomicPtrIntPair () {}
+	               AtomicPtrIntPair ();
 
-	void				set (T * ptr, ptrdiff_t val);
-	void				get (T * &ptr, ptrdiff_t &val) const;
-	T *				get_ptr () const;
-	ptrdiff_t		get_val () const;
-	bool				cas (T *new_ptr, T *comp_ptr);
-	bool				cas2 (T *new_ptr, ptrdiff_t new_val, T *comp_ptr, ptrdiff_t comp_val);
+	void           set (T * ptr, intptr_t val);
+	void           get (T * &ptr, intptr_t &val) const;
+	T *            get_ptr () const;
+	intptr_t       get_val () const;
+	bool           cas2 (T *new_ptr, intptr_t new_val, T *comp_ptr, intptr_t comp_val);
 
 
 
@@ -73,14 +80,20 @@ protected:
 
 private:
 
-#if conc_WORD_SIZE == 64
+#if (conc_ARCHI == conc_ARCHI_X86 || ! conc_USE_STD_ATOMIC_128BITS)
 
-	typedef	Interlocked::Data128	DataType;
+#if (conc_WORD_SIZE == 64)
+
+#if (! conc_HAS_CAS_128)
+	#error 128-bit CAS is required for AtomicPtrIntPair on 64-bit architectures
+#endif
+
+	typedef typename Interlocked::Data128 DataType;
 	conc_TYPEDEF_ALIGN (16, DataType, DataTypeAlign);
 
 #else		// conc_WORD_SIZE
 
-	typedef	int64_t	DataType;
+	typedef int64_t DataType;
 	conc_TYPEDEF_ALIGN (8, DataType, DataTypeAlign);
 
 #endif	// conc_WORD_SIZE
@@ -88,30 +101,40 @@ private:
 	class RealContent
 	{
 	public:
-		T * volatile	_ptr;
-		volatile ptrdiff_t
-							_val;
+		T *            _ptr;
+		intptr_t       _val;
 	};
+	static_assert (sizeof (RealContent) <= sizeof (DataType), "");
 
-  // PF.20201219
-  // in GCC (Linux) a union is aligned only if typedef'd it to align!
-  // It's not enought to have its internal member aligned!
-	union Combi_unalign
+	union Combi
 	{
-		DataTypeAlign	_storage;
-		RealContent		_content;
+		DataTypeAlign  _storage;
+		RealContent    _content;
 	};
 
-#if conc_WORD_SIZE == 64
-  conc_TYPEDEF_ALIGN(16, Combi_unalign, Combi);
-#else		// conc_WORD_SIZE
-  conc_TYPEDEF_ALIGN(8, Combi_unalign, Combi);
-#endif	// conc_WORD_SIZE
-  // yeah, not Combi is now really aligned
+	static void    cas_combi (Combi &old, Combi &dest, const Combi &excg, const Combi &comp);
 
-	static void		cas_combi (Combi &old, Combi &dest, const Combi &excg, const Combi &comp);
+	Combi          _data;
 
-	Combi				_data;
+#else  // conc_ARCHI
+
+	class RealContent
+	{
+	public:
+		T *            _ptr;
+		intptr_t       _val;
+	};
+
+#if (__cplusplus >= 201703L)
+	static_assert (
+		std::atomic <RealContent>::is_always_lock_free,
+		"Atomic data must be lock-free."
+	);
+#endif
+	std::atomic <RealContent>
+	               _data;
+
+#endif // conc_ARCHI
 
 
 
@@ -119,11 +142,11 @@ private:
 
 private:
 
-						AtomicPtrIntPair (const AtomicPtrIntPair <T> &other);
+	               AtomicPtrIntPair (const AtomicPtrIntPair <T> &other) = delete;
 	AtomicPtrIntPair <T> &
-						operator = (const AtomicPtrIntPair <T> &other);
-	bool				operator == (const AtomicPtrIntPair <T> &other);
-	bool				operator != (const AtomicPtrIntPair <T> &other);
+	               operator = (const AtomicPtrIntPair <T> &other)       = delete;
+	bool           operator == (const AtomicPtrIntPair <T> &other)      = delete;
+	bool           operator != (const AtomicPtrIntPair <T> &other)      = delete;
 
 };	// class AtomicPtrIntPair
 
@@ -133,7 +156,7 @@ private:
 
 
 
-#include	"conc/AtomicPtrIntPair.hpp"
+#include "conc/AtomicPtrIntPair.hpp"
 
 
 

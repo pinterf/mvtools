@@ -146,8 +146,6 @@ Throws: Depends on dispatcher creation failures.
 template <class T, class GR, class GD, int MAXT>
 void	MTFlowGraphSched <T, GR, GD, MAXT>::start (const GR &dep_graph, GD &glob_data, ProcPtr proc_ptr)
 {
-	assert (&dep_graph != 0);
-	assert (&glob_data != 0);
 	assert (proc_ptr != 0);
 
 	_proc_ptr      = proc_ptr;
@@ -252,42 +250,40 @@ avstp_TaskDispatcher *	MTFlowGraphSched <T, GR, GD, MAXT>::use_dispatcher () con
 // When a task is finished, updates the dependency counter on the dependent
 // tasks and enqueues them if they become ready.
 template <class T, class GR, class GD, int MAXT>
-void	MTFlowGraphSched <T, GR, GD, MAXT>::complete_task(TaskData &td)
+void	MTFlowGraphSched <T, GR, GD, MAXT>::complete_task (TaskData &td)
 {
-  assert(&td != 0);
+	for (GR::Iterator it = _dep_graph_ptr->get_out_node_it (td._task_index)
+	;	it.cont ()
+	;	it.next ())
+	{
+		const int		out_index = it.get_index ();
+		assert (out_index >= 0);
+		assert (out_index < MAXT);
+		const int		count_new = ++ _in_cnt_arr [out_index];
+		const int		nbr_in    = _dep_graph_ptr->get_nbr_in (out_index);
+		if (count_new >= nbr_in)
+		{
+			TaskData &		out_node = _task_data_arr [out_index];
+			out_node._glob_data_ptr = td._glob_data_ptr;
+			out_node._scheduler_ptr = this;
+			out_node._task_index    = out_index;
 
-  for (typename GR::Iterator it = _dep_graph_ptr->get_out_node_it(td._task_index)
-    ;	it.cont()
-    ;	it.next())
-  {
-    const int		out_index = it.get_index();
-    assert(out_index >= 0);
-    assert(out_index < MAXT);
-    const int		count_new = ++_in_cnt_arr[out_index];
-    const int		nbr_in = _dep_graph_ptr->get_nbr_in(out_index);
-    if (count_new >= nbr_in)
-    {
-      TaskData &		out_node = _task_data_arr[out_index];
-      out_node._glob_data_ptr = td._glob_data_ptr;
-      out_node._scheduler_ptr = this;
-      out_node._task_index = out_index;
+			if (_mt_flag)
+			{
+				assert (_dispatcher_ptr != 0);
+				_avstp.enqueue_task (_dispatcher_ptr, &redirect_task, &out_node);
+			}
+			else
+			{
+				T *				this_ptr =
+					MTFlowGraphSched_Access <T, GD>::access (out_node._glob_data_ptr);
 
-      if (_mt_flag)
-      {
-        assert(_dispatcher_ptr != 0);
-        _avstp.enqueue_task(_dispatcher_ptr, &redirect_task, &out_node);
-      }
-      else
-      {
-        T *				this_ptr =
-          MTFlowGraphSched_Access <T, GD>::access(out_node._glob_data_ptr);
+				((*this_ptr).*(_proc_ptr)) (out_node);
 
-        ((*this_ptr).*(_proc_ptr)) (out_node);
-
-        complete_task(out_node);
-      }
-    }
-  }
+				complete_task (out_node);
+			}
+		}
+	}
 }
 
 

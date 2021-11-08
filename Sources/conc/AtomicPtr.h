@@ -27,7 +27,11 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
-#include	"conc/def.h"
+#include "conc/def.h"
+
+#if (conc_ARCHI != conc_ARCHI_X86)
+	#include <atomic>
+#endif
 
 
 
@@ -44,18 +48,18 @@ class AtomicPtr
 
 public:
 
-	inline			AtomicPtr ();
-	inline 			AtomicPtr (T *ptr);
+	inline         AtomicPtr ();
+	inline         AtomicPtr (T *ptr);
 	inline AtomicPtr <T> &
-						operator = (T *other_ptr);
+	               operator = (T *other_ptr);
 
-	inline			operator T * () const;
+	inline         operator T * () const;
 
-	bool				operator == (T *other_ptr) const;
-	bool				operator != (T *other_ptr) const;
+	bool           operator == (T *other_ptr) const;
+	bool           operator != (T *other_ptr) const;
 
-	inline T *		swap (T *other_ptr);
-	inline T *		cas (T *other_ptr, T *comp_ptr);
+	inline T *     swap (T *other_ptr);
+	inline T *     cas (T *other_ptr, T *comp_ptr);
 
 
 
@@ -69,14 +73,35 @@ protected:
 
 private:
 
-	conc_CHECK_CT (PtrSize, (conc_WORD_SIZE_BYTE == sizeof (T*)));
-	
-	conc_TYPEDEF_ALIGN (conc_WORD_SIZE_BYTE, T *, PtrAlign);
+	inline T *     read_ptr () const;
 
-	inline T *		read_ptr () const;
+#if (conc_ARCHI == conc_ARCHI_X86)
+
+	static_assert ((conc_WORD_SIZE_BYTE == sizeof (T*)), "");
+
+	union PtrMixed
+	{
+		T    *        _t_ptr;
+		void *        _void_ptr;
+	};
+
+	conc_TYPEDEF_ALIGN (conc_WORD_SIZE_BYTE, PtrMixed, PtrAlign);
 
 	volatile PtrAlign
-						_ptr;
+	               _ptr;
+
+#else  // conc_ARCHI
+
+#if (__cplusplus >= 201703L)
+	static_assert (
+		std::atomic <T *>::is_always_lock_free,
+		"Atomic data must be lock-free."
+	);
+#endif
+	std::atomic <T *>
+	               _ptr;
+
+#endif // conc_ARCHI
 
 
 
@@ -84,8 +109,8 @@ private:
 
 private:
 
-	bool				operator == (const AtomicPtr <T> &other) const;
-	bool				operator != (const AtomicPtr <T> &other) const;
+	bool           operator == (const AtomicPtr <T> &other) const = delete;
+	bool           operator != (const AtomicPtr <T> &other) const = delete;
 
 };	// class AtomicPtr
 
@@ -95,7 +120,7 @@ private:
 
 
 
-#include	"conc/AtomicPtr.hpp"
+#include "conc/AtomicPtr.hpp"
 
 
 

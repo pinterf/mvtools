@@ -24,31 +24,26 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 /*\\\ INCLUDE FILES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
-#include "def.h"
-
-#ifdef _WIN32
-#define	NOGDI
-#define	NOMINMAX
-#define	WIN32_LEAN_AND_MEAN
-#include	"Windows.h"
+#if defined (_MSC_VER)
+ #define NOGDI
+ #define NOMINMAX
+ #define WIN32_LEAN_AND_MEAN
 #endif
 
-// use std::mutex instead
-#ifdef _WIN32
-#include	"conc/CritSec.h"
-#include	"conc/Mutex.h"
+#include "fstb/def.h"
+
+#if defined (_MSC_VER)
+ #include "AvstpFinder.h"
+#endif
+#include "AvstpWrapper.h"
+
+#if defined (_MSC_VER)
+ #include "Windows.h"
 #endif
 
-#include <mutex>
+#include <stdexcept>
 
-#ifdef USE_AVSTP
-#include	"AvstpFinder.h"
-#endif
-#include	"AvstpWrapper.h"
-
-#include	<stdexcept>
-
-#include	<cassert>
+#include <cassert>
 
 
 
@@ -66,8 +61,8 @@ Name: dtor
 
 AvstpWrapper::~AvstpWrapper ()
 {
-#ifdef USE_AVSTP
-  ::FreeLibrary (reinterpret_cast < ::HMODULE> (_dll_hnd));
+#if defined (_MSC_VER)
+	::FreeLibrary (reinterpret_cast < ::HMODULE> (_dll_hnd));
 	_dll_hnd = 0;
 #endif
 }
@@ -91,30 +86,9 @@ Throws:
 
 AvstpWrapper &	AvstpWrapper::use_instance ()
 {
-  // First check
-	if (! _singleton_init_flag)
-	{
-		// Ensure serialization (guard constructor acquires mutex_new).
-#ifdef _WIN32
-    static conc::Mutex	mutex_new;
-    conc::CritSec	guard(mutex_new);
-#else
-    static std::mutex mutex_new;
-    std::lock_guard<std::mutex> lock(mutex_new);
-#endif
+	static AvstpWrapper instance;
 
-		// Double check.
-		if (! _singleton_init_flag)
-		{
-			assert (! _singleton_init_flag && _singleton_aptr.get () == 0);
-      _singleton_aptr = std::unique_ptr <AvstpWrapper> (new AvstpWrapper);
-      _singleton_init_flag = true;
-		}
-
-		// guard destructor releases mutex_new.
-	}
-
-  return (*_singleton_aptr);
+	return (instance);
 }
 
 
@@ -170,26 +144,32 @@ int	AvstpWrapper::wait_completion (avstp_TaskDispatcher *td_ptr)
 
 
 
-AvstpWrapper::AvstpWrapper ():
-#ifdef USE_AVSTP
-  _dll_hnd (AvstpFinder::find_lib ()),
-#endif
- 	_avstp_get_interface_version_ptr (0)
+AvstpWrapper::AvstpWrapper ()
+:	_avstp_get_interface_version_ptr (0)
 ,	_avstp_create_dispatcher_ptr (0)
 ,	_avstp_destroy_dispatcher_ptr (0)
 ,	_avstp_get_nbr_threads_ptr (0)
 ,	_avstp_enqueue_task_ptr (0)
 ,	_avstp_wait_completion_ptr (0)
+,	_dll_hnd (
+#if defined (_MSC_VER)
+		AvstpFinder::find_lib ()
+#else
+		0
+#endif
+	)
 {
-#ifdef USE_AVSTP
-  if (_dll_hnd == 0)
+#if defined (_MSC_VER)
+	if (_dll_hnd == 0)
 	{
 		::OutputDebugStringW (
 			L"AvstpWrapper: cannot find avstp.dll."
 			L"Usage restricted to single threading.\n"
 		);
 //		throw std::runtime_error ("Cannot find avstp.dll.");
+#endif
 		assign_fallback ();
+#if defined (_MSC_VER)
 	}
 
 	else
@@ -197,8 +177,6 @@ AvstpWrapper::AvstpWrapper ():
 		// Now resolves the function names
 		assign_normal ();
 	}
-#else
-  assign_fallback(); // no avstp support
 #endif
 }
 
@@ -208,14 +186,13 @@ AvstpWrapper::AvstpWrapper ():
 
 
 
-#ifdef USE_AVSTP
 template <class T>
 void	AvstpWrapper::resolve_name (T &fnc_ptr, const char *name_0)
 {
-	assert (&fnc_ptr != 0);
 	assert (name_0 != 0);
 	assert (_dll_hnd != 0);
 
+#if defined (_MSC_VER)
 	fnc_ptr = reinterpret_cast <T> (
 		::GetProcAddress (reinterpret_cast < ::HMODULE> (_dll_hnd), name_0)
 	);
@@ -225,11 +202,11 @@ void	AvstpWrapper::resolve_name (T &fnc_ptr, const char *name_0)
 		_dll_hnd = 0;
 		throw std::runtime_error ("Function missing in avstp.dll.");
 	}
-}
 #endif
+}
 
 
-#ifdef USE_AVSTP
+
 void	AvstpWrapper::assign_normal ()
 {
 	resolve_name (_avstp_get_interface_version_ptr, "avstp_get_interface_version");
@@ -239,7 +216,6 @@ void	AvstpWrapper::assign_normal ()
 	resolve_name (_avstp_enqueue_task_ptr,          "avstp_enqueue_task");
 	resolve_name (_avstp_wait_completion_ptr,       "avstp_wait_completion");
 }
-#endif
 
 
 
@@ -271,6 +247,8 @@ avstp_TaskDispatcher *	AvstpWrapper::fallback_create_dispatcher_ptr ()
 
 void	AvstpWrapper::fallback_destroy_dispatcher_ptr (avstp_TaskDispatcher *td_ptr)
 {
+	fstb::unused (td_ptr);
+
 	assert (td_ptr == (avstp_TaskDispatcher *) (&_dummy_dispatcher));
 }
 
@@ -285,7 +263,7 @@ int	AvstpWrapper::fallback_get_nbr_threads_ptr ()
 
 int	AvstpWrapper::fallback_enqueue_task_ptr (avstp_TaskDispatcher *td_ptr, avstp_TaskPtr task_ptr, void *user_data_ptr)
 {
-	int				ret_val = avstp_Err_OK;
+	int            ret_val = avstp_Err_OK;
 
 	if (   td_ptr != (avstp_TaskDispatcher *) (&_dummy_dispatcher)
 	    || task_ptr == 0)
@@ -304,7 +282,7 @@ int	AvstpWrapper::fallback_enqueue_task_ptr (avstp_TaskDispatcher *td_ptr, avstp
 
 int	AvstpWrapper::fallback_wait_completion_ptr (avstp_TaskDispatcher *td_ptr)
 {
-	int				ret_val = avstp_Err_OK;
+	int            ret_val = avstp_Err_OK;
 
 	if (td_ptr != (avstp_TaskDispatcher *) (&_dummy_dispatcher))
 	{
@@ -316,10 +294,8 @@ int	AvstpWrapper::fallback_wait_completion_ptr (avstp_TaskDispatcher *td_ptr)
 
 
 
-std::unique_ptr <AvstpWrapper>	AvstpWrapper::_singleton_aptr;
-volatile bool	AvstpWrapper::_singleton_init_flag = false;
-
 int	AvstpWrapper::_dummy_dispatcher;
+
 
 
 /*\\\ EOF \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
