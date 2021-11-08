@@ -9,6 +9,22 @@
       <Configuration>Debug</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="ICL|Win32">
+      <Configuration>ICL</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="ICL|x64">
+      <Configuration>ICL</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="ICX|Win32">
+      <Configuration>ICX</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="ICX|x64">
+      <Configuration>ICX</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Release_v141_xp|Win32">
       <Configuration>Release_v141_xp</Configuration>
       <Platform>Win32</Platform>
@@ -63,6 +79,18 @@
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ICL|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>Intel C++ Compiler 19.2</PlatformToolset>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ICX|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>Intel C++ Compiler 2021</PlatformToolset>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <PlatformToolset>v141_xp</PlatformToolset>
@@ -78,6 +106,18 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <PlatformToolset>v142</PlatformToolset>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ICL|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>Intel C++ Compiler 19.2</PlatformToolset>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ICX|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>Intel C++ Compiler 2021</PlatformToolset>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -106,6 +146,14 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC60.props" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='ICL|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC60.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='ICX|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC60.props" />
+  </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC60.props" />
@@ -115,6 +163,14 @@
     <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC60.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC60.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='ICL|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC60.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='ICX|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC60.props" />
   </ImportGroup>
@@ -136,6 +192,16 @@
     <IntDir>$(ProjectDir)$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ICL|Win32'">
+    <OutDir>$(ProjectDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(ProjectDir)$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ICX|Win32'">
+    <OutDir>$(ProjectDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(ProjectDir)$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|Win32'">
     <OutDir>$(ProjectDir)$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(ProjectDir)$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
@@ -147,6 +213,16 @@
     <IntDir>$(ProjectDir)$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(ProjectDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(ProjectDir)$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ICL|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(ProjectDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(ProjectDir)$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ICX|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(ProjectDir)$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(ProjectDir)$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
@@ -219,6 +295,114 @@
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|Win32'">
+    <Midl>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MkTypLibCompatible>true</MkTypLibCompatible>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <TargetEnvironment>Win32</TargetEnvironment>
+      <TypeLibraryName>.\Release/DePan.tlb</TypeLibraryName>
+      <HeaderFileName>
+      </HeaderFileName>
+    </Midl>
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;DePan_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeaderOutputFile>.\Release/DePan.pch</PrecompiledHeaderOutputFile>
+      <AssemblerListingLocation>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ProgramDataBaseFileName>$(IntDir)\vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
+      <BrowseInformation>true</BrowseInformation>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <AssemblerOutput>NoListing</AssemblerOutput>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include\</AdditionalIncludeDirectories>
+      <OmitFramePointers>
+      </OmitFramePointers>
+      <XMLDocumentationFileName>$(IntDir)</XMLDocumentationFileName>
+      <BrowseInformationFile>$(IntDir)$(ProjectName)\</BrowseInformationFile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+    </ResourceCompile>
+    <Link>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <ProgramDatabaseFile>$(OutDir)$(TargetName).pdb</ProgramDatabaseFile>
+      <ImportLibrary>$(OutDir)$(TargetName).lib</ImportLibrary>
+      <TargetMachine>MachineX86</TargetMachine>
+      <MinimumRequiredVersion>5.02</MinimumRequiredVersion>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </Link>
+    <Bscmake>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>$(OutDir)$(TargetName).bsc</OutputFile>
+    </Bscmake>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ICL|Win32'">
+    <Midl>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MkTypLibCompatible>true</MkTypLibCompatible>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <TargetEnvironment>Win32</TargetEnvironment>
+      <TypeLibraryName>.\Release/DePan.tlb</TypeLibraryName>
+      <HeaderFileName>
+      </HeaderFileName>
+    </Midl>
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;DePan_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeaderOutputFile>.\Release/DePan.pch</PrecompiledHeaderOutputFile>
+      <AssemblerListingLocation>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ProgramDataBaseFileName>$(IntDir)\vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
+      <BrowseInformation>true</BrowseInformation>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <AssemblerOutput>NoListing</AssemblerOutput>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include\</AdditionalIncludeDirectories>
+      <OmitFramePointers>
+      </OmitFramePointers>
+      <XMLDocumentationFileName>$(IntDir)</XMLDocumentationFileName>
+      <BrowseInformationFile>$(IntDir)$(ProjectName)\</BrowseInformationFile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+    </ResourceCompile>
+    <Link>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <ProgramDatabaseFile>$(OutDir)$(TargetName).pdb</ProgramDatabaseFile>
+      <ImportLibrary>$(OutDir)$(TargetName).lib</ImportLibrary>
+      <TargetMachine>MachineX86</TargetMachine>
+      <MinimumRequiredVersion>5.02</MinimumRequiredVersion>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </Link>
+    <Bscmake>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>$(OutDir)$(TargetName).bsc</OutputFile>
+    </Bscmake>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ICX|Win32'">
     <Midl>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MkTypLibCompatible>true</MkTypLibCompatible>
@@ -425,6 +609,104 @@
       <OutputFile>$(OutDir)$(TargetName).bsc</OutputFile>
     </Bscmake>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ICL|x64'">
+    <Midl>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MkTypLibCompatible>true</MkTypLibCompatible>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <TypeLibraryName>.\Release/DePan.tlb</TypeLibraryName>
+      <HeaderFileName>
+      </HeaderFileName>
+    </Midl>
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;DePan_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeaderOutputFile>.\Release/DePan.pch</PrecompiledHeaderOutputFile>
+      <AssemblerListingLocation>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ProgramDataBaseFileName>$(IntDir)\vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
+      <BrowseInformation>true</BrowseInformation>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include\</AdditionalIncludeDirectories>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <XMLDocumentationFileName>$(IntDir)</XMLDocumentationFileName>
+      <BrowseInformationFile>$(IntDir)$(ProjectName)\</BrowseInformationFile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AssemblerOutput>NoListing</AssemblerOutput>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+    </ResourceCompile>
+    <Link>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <ProgramDatabaseFile>$(OutDir)$(TargetName).pdb</ProgramDatabaseFile>
+      <ImportLibrary>$(OutDir)$(TargetName).lib</ImportLibrary>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </Link>
+    <Bscmake>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>$(OutDir)$(TargetName).bsc</OutputFile>
+    </Bscmake>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ICX|x64'">
+    <Midl>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MkTypLibCompatible>true</MkTypLibCompatible>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <TypeLibraryName>.\Release/DePan.tlb</TypeLibraryName>
+      <HeaderFileName>
+      </HeaderFileName>
+    </Midl>
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;DePan_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeaderOutputFile>.\Release/DePan.pch</PrecompiledHeaderOutputFile>
+      <AssemblerListingLocation>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ProgramDataBaseFileName>$(IntDir)\vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
+      <BrowseInformation>true</BrowseInformation>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include\</AdditionalIncludeDirectories>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <XMLDocumentationFileName>$(IntDir)</XMLDocumentationFileName>
+      <BrowseInformationFile>$(IntDir)$(ProjectName)\</BrowseInformationFile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AssemblerOutput>NoListing</AssemblerOutput>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+    </ResourceCompile>
+    <Link>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <ProgramDatabaseFile>$(OutDir)$(TargetName).pdb</ProgramDatabaseFile>
+      <ImportLibrary>$(OutDir)$(TargetName).lib</ImportLibrary>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </Link>
+    <Bscmake>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>$(OutDir)$(TargetName).bsc</OutputFile>
+    </Bscmake>
+  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|x64'">
     <Midl>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -574,90 +856,126 @@
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICL|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICX|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICL|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICX|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
     </ClCompile>
     <ClCompile Include="depanio.cpp">
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICL|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICX|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICL|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICX|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
     </ClCompile>
     <ClCompile Include="info.cpp">
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICL|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICX|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICL|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICX|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
     </ClCompile>
     <ClCompile Include="depan_interface.cpp">
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICL|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICX|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICL|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICX|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
     </ClCompile>
     <ClCompile Include="depan_interpolate.cpp">
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICL|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICX|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICL|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICX|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
     </ClCompile>
     <ClCompile Include="depan_scenes.cpp">
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICL|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICX|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICL|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICX|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
     </ClCompile>
     <ClCompile Include="depan_stabilize.cpp">
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICL|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICX|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICL|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICX|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
     </ClCompile>
     <ClCompile Include="depan_transform.cpp">
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICL|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICX|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICL|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICX|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
     </ClCompile>
     <ClCompile Include="yuy2planes.cpp">
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICL|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICX|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Rel_Clang|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICL|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
+      <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='ICX|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
       <AssemblerListingLocation Condition="'$(Configuration)|$(Platform)'=='Release_v141_xp|x64'">$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</AssemblerListingLocation>
     </ClCompile>
   </ItemGroup>
