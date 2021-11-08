@@ -139,8 +139,8 @@ int64_t	Interlocked::swap (int64_t volatile &dest, int64_t excg)
 	{
 		push           ebx
 		mov            esi, [dest]
-		mov            ebx, [dword ptr excg    ]
-		mov            ecx, [dword ptr excg + 4]
+		mov            ebx, dword ptr [excg    ]
+		mov            ecx, dword ptr [excg + 4]
 
 	cas_loop:
 		mov            eax, [esi    ]
@@ -148,8 +148,8 @@ int64_t	Interlocked::swap (int64_t volatile &dest, int64_t excg)
 		lock cmpxchg8b [esi]
 		jnz            cas_loop
 
-		mov            [dword ptr old    ], eax
-		mov            [dword ptr old + 4], edx
+		mov            dword ptr [old    ], eax
+		mov            dword ptr [old + 4], edx
 		pop            ebx
 	}
 
