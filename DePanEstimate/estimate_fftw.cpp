@@ -220,9 +220,11 @@ DePanEstimate_fftw::DePanEstimate_fftw(PClip _child, int _range, float _trust, i
 
     fftcache = (fftwf_complex**)fftfp.fftwf_malloc(fftcachecapacity * sizeof(uintptr_t)); // array of pointers x64: int->uintptr_t
     if (fftcache == NULL) env->ThrowError("DepanEstimate: FFTW Allocation Failure!\n");
-    fftcache2 = (fftwf_complex**)fftfp.fftwf_malloc(fftcachecapacity * sizeof(uintptr_t));
     fftcachecomp = (fftwf_complex**)fftfp.fftwf_malloc(fftcachecapacity * sizeof(uintptr_t));
-    fftcachecomp2 = (fftwf_complex**)fftfp.fftwf_malloc(fftcachecapacity * sizeof(uintptr_t));
+    if (zoommax != 1) {
+      fftcache2 = (fftwf_complex**)fftfp.fftwf_malloc(fftcachecapacity * sizeof(uintptr_t));
+      fftcachecomp2 = (fftwf_complex**)fftfp.fftwf_malloc(fftcachecapacity * sizeof(uintptr_t));
+    }
     for (i = 0; i < fftcachecapacity; i++) {
       fftcache[i] = (fftwf_complex*)fftfp.fftwf_malloc(sizeof(fftwf_complex) * fftsize);
       fftcachecomp[i] = (fftwf_complex*)fftfp.fftwf_malloc(sizeof(fftwf_complex) * fftsize);
@@ -266,6 +268,7 @@ DePanEstimate_fftw::DePanEstimate_fftw(PClip _child, int _range, float _trust, i
   for (i = 1; i < vi.num_frames; i++) {
     motionx[i] = MOTIONUNKNOWN;  //set motion as unknown for all frames beside 0
   }
+  trust[0] = 0;
 
   // set frame cache
 #ifdef AVS_2_5
@@ -357,7 +360,7 @@ void DePanEstimate_fftw::frame_data2d(const BYTE * srcp0, int height, int src_wi
   pitch = pitch / sizeof(pixel_t); // PF
 
   //	h0 = (height - winy)/2;  // top of fft window
-  
+
   if (isYUY2)
   {
     srcp += pitch*h0 + winleft * 2;		// offset of window data
