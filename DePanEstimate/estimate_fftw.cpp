@@ -266,6 +266,7 @@ DePanEstimate_fftw::DePanEstimate_fftw(PClip _child, int _range, float _trust, i
   for (i = 1; i < vi.num_frames; i++) {
     motionx[i] = MOTIONUNKNOWN;  //set motion as unknown for all frames beside 0
   }
+  trust[0] = 0;
 
   // set frame cache
 #ifdef AVS_2_5
