@@ -1948,8 +1948,10 @@ void	MDegrainN::use_block_uv(
   if (usable_flag)
   {
     const FakeBlockData &block = c_info._clip_sptr->GetBlock(0, i);
-    const int blx = block.GetX() * nPel + block.GetMV().x;
-    const int bly = block.GetY() * nPel + block.GetMV().y;
+    int blx = block.GetX() * nPel + block.GetMV().x;
+    int bly = block.GetY() * nPel + block.GetMV().y;
+    if (nLogxRatioUV_super == 1) blx++; // add bias for integer division for 4:2:x formats
+    if (nLogyRatioUV_super == 1) bly++; // add bias for integer division for 4:2:x formats
     p = plane_ptr->GetPointer(blx >> nLogxRatioUV_super, bly >> nLogyRatioUV_super);
     np = plane_ptr->GetPitch();
     const sad_t block_sad = block.GetSAD(); // SAD of MV Block. Scaled to MVClip's bits_per_pixel;

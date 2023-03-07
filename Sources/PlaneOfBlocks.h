@@ -409,18 +409,23 @@ private:
 
   MV_FORCEINLINE const uint8_t* GetRefBlockU(WorkingArea& workarea, int nVx, int nVy)
   {
+    int nVx1 = (nLogxRatioUV == 1) ? nVx + 1 : nVx;
+    int nVy1 = (nLogxRatioUV == 1) ? nVy + 1 : nVy;
     return
-      (nPel == 2) ? pRefFrame->GetPlane(UPLANE)->GetAbsolutePointerPel <1>((workarea.x[1] << 1) + (nVx >> nLogxRatioUV), (workarea.y[1] << 1) + (nVy >> nLogyRatioUV)) :
-      (nPel == 1) ? pRefFrame->GetPlane(UPLANE)->GetAbsolutePointerPel <0>((workarea.x[1]) + (nVx >> nLogxRatioUV), (workarea.y[1]) + (nVy >> nLogyRatioUV)) :
-      pRefFrame->GetPlane(UPLANE)->GetAbsolutePointerPel <2>((workarea.x[1] << 2) + (nVx >> nLogxRatioUV), (workarea.y[1] << 2) + (nVy >> nLogyRatioUV));
+      (nPel == 2) ? pRefFrame->GetPlane(UPLANE)->GetAbsolutePointerPel <1>((workarea.x[1] << 1) + (nVx1 >> nLogxRatioUV), (workarea.y[1] << 1) + (nVy1 >> nLogyRatioUV)) :
+      (nPel == 1) ? pRefFrame->GetPlane(UPLANE)->GetAbsolutePointerPel <0>((workarea.x[1]) + (nVx1 >> nLogxRatioUV), (workarea.y[1]) + (nVy1 >> nLogyRatioUV)) :
+      pRefFrame->GetPlane(UPLANE)->GetAbsolutePointerPel <2>((workarea.x[1] << 2) + (nVx1 >> nLogxRatioUV), (workarea.y[1] << 2) + (nVy1 >> nLogyRatioUV));
+
   }
 
   MV_FORCEINLINE const uint8_t* GetRefBlockV(WorkingArea& workarea, int nVx, int nVy)
   {
+    int nVx1 = (nLogxRatioUV == 1) ? nVx + 1 : nVx;
+    int nVy1 = (nLogxRatioUV == 1) ? nVy + 1 : nVy;
     return
-      (nPel == 2) ? pRefFrame->GetPlane(VPLANE)->GetAbsolutePointerPel <1>((workarea.x[2] << 1) + (nVx >> nLogxRatioUV), (workarea.y[2] << 1) + (nVy >> nLogyRatioUV)) :
-      (nPel == 1) ? pRefFrame->GetPlane(VPLANE)->GetAbsolutePointerPel <0>((workarea.x[2]) + (nVx >> nLogxRatioUV), (workarea.y[2]) + (nVy >> nLogyRatioUV)) :
-      pRefFrame->GetPlane(VPLANE)->GetAbsolutePointerPel <2>((workarea.x[2] << 2) + (nVx >> nLogxRatioUV), (workarea.y[2] << 2) + (nVy >> nLogyRatioUV));
+      (nPel == 2) ? pRefFrame->GetPlane(VPLANE)->GetAbsolutePointerPel <1>((workarea.x[2] << 1) + (nVx1 >> nLogxRatioUV), (workarea.y[2] << 1) + (nVy1 >> nLogyRatioUV)) :
+      (nPel == 1) ? pRefFrame->GetPlane(VPLANE)->GetAbsolutePointerPel <0>((workarea.x[2]) + (nVx1 >> nLogxRatioUV), (workarea.y[2]) + (nVy1 >> nLogyRatioUV)) :
+      pRefFrame->GetPlane(VPLANE)->GetAbsolutePointerPel <2>((workarea.x[2] << 2) + (nVx1 >> nLogxRatioUV), (workarea.y[2] << 2) + (nVy1 >> nLogyRatioUV));
   }
 
   MV_FORCEINLINE const uint8_t* GetSrcBlock(int nX, int nY)
