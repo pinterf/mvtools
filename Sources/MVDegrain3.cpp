@@ -1545,6 +1545,8 @@ MV_FORCEINLINE void MVDegrainX::use_block_uv(const BYTE * &p, int &np, int &WRef
     const FakeBlockData &block = mvclip.GetBlock(0, i);
     int blx = block.GetX() * nPel + block.GetMV().x;
     int bly = block.GetY() * nPel + block.GetMV().y;
+    if (nLogxRatioUV_super == 1) blx++; // add bias for integer division for 4:2:x formats
+    if (nLogyRatioUV_super == 1) bly++; // add bias for integer division for 4:2:x formats
     p = pPlane->GetPointer(blx >> nLogxRatioUV_super, bly >> nLogyRatioUV_super); // pixelsize - aware
     np = pPlane->GetPitch();
     sad_t blockSAD = block.GetSAD();  // SAD of MV Block. Scaled to MVClip's bits_per_pixel;

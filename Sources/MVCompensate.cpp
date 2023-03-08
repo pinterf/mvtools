@@ -682,8 +682,10 @@ void	MVCompensate::compensate_slice_normal(Slicer::TaskData &td)
         for (int i = 1; i < planecount; i++) {
           if (pPlanes[i])
           {
+            int blx_uv = (nLogxRatioUVs[i] == 1) ? blx + 1 : blx; // add bias for integer division for 4:2:x formats
+            int bly_uv = (nLogyRatioUVs[i] == 1) ? bly + 1 : bly; // add bias for integer division for 4:2:x formats
             BLITCHROMA(pDstCur[i] + (xx >> nLogxRatioUVs[i]), nDstPitches[i],
-              pPlanes[i]->GetPointer(blx >> nLogxRatioUVs[i], bly >> nLogyRatioUVs[i]), pPlanes[i]->GetPitch()
+              pPlanes[i]->GetPointer(blx_uv >> nLogxRatioUVs[i], bly_uv >> nLogyRatioUVs[i]), pPlanes[i]->GetPitch()
             );
           }
         }
@@ -699,10 +701,14 @@ void	MVCompensate::compensate_slice_normal(Slicer::TaskData &td)
         );
         for (int i = 1; i < planecount; i++) {
           if (pSrcPlanes[i])
+          {
+            int blxsrc_uv = (nLogxRatioUVs[i] == 1) ? blxsrc + 1 : blxsrc; // add bias for integer division for 4:2:x formats
+            int blysrc_uv = (nLogyRatioUVs[i] == 1) ? blysrc + 1 : blysrc; // add bias for integer division for 4:2:x formats
             BLITCHROMA(
               pDstCur[i] + (xx >> nLogxRatioUVs[i]), nDstPitches[i],
-              pSrcPlanes[i]->GetPointer(blxsrc >> nLogxRatioUVs[i], blysrc >> nLogyRatioUVs[i]), pSrcPlanes[i]->GetPitch()
+              pSrcPlanes[i]->GetPointer(blxsrc_uv >> nLogxRatioUVs[i], blysrc_uv >> nLogyRatioUVs[i]), pSrcPlanes[i]->GetPitch()
             );
+          }
         }
       }
 
@@ -832,11 +838,15 @@ void	MVCompensate::compensate_slice_overlap(int y_beg, int y_end)
           );
           for (int i = 1; i < planecount; i++) {
             if (pPlanes[i])
+            {
+              int blx_uv = (nLogxRatioUVs[i] == 1) ? blx + 1 : blx; // add bias for integer division for 4:2:x formats
+              int bly_uv = (nLogyRatioUVs[i] == 1) ? bly + 1 : bly; // add bias for integer division for 4:2:x formats
               OVERSCHROMA(
-              (uint16_t *)(pDstShorts[i] + (xx >> nLogxRatioUVs[i])), dstShortPitches[i],
-                pPlanes[i]->GetPointer(blx >> nLogxRatioUVs[i], bly >> nLogyRatioUVs[i]), pPlanes[i]->GetPitch(),
+                (uint16_t*)(pDstShorts[i] + (xx >> nLogxRatioUVs[i])), dstShortPitches[i],
+                pPlanes[i]->GetPointer(blx_uv >> nLogxRatioUVs[i], bly_uv >> nLogyRatioUVs[i]), pPlanes[i]->GetPitch(),
                 winOverUV, nBlkSizeX >> nLogxRatioUVs[i]
               );
+            }
           }
         }
         else if (pixelsize_super == 2) {
@@ -849,11 +859,15 @@ void	MVCompensate::compensate_slice_overlap(int y_beg, int y_end)
           // chroma uv
           for (int i = 1; i < planecount; i++) {
             if (pPlanes[i])
+            {
+              int blx_uv = (nLogxRatioUVs[i] == 1) ? blx + 1 : blx; // add bias for integer division for 4:2:x formats
+              int bly_uv = (nLogyRatioUVs[i] == 1) ? bly + 1 : bly; // add bias for integer division for 4:2:x formats
               OVERSCHROMA16(
-              (uint16_t *)(pDstShorts[i] + (xx >> nLogxRatioUVs[i])), dstShortPitches[i],
-                pPlanes[i]->GetPointer(blx >> nLogxRatioUVs[i], bly >> nLogyRatioUVs[i]), pPlanes[i]->GetPitch(),
+                (uint16_t*)(pDstShorts[i] + (xx >> nLogxRatioUVs[i])), dstShortPitches[i],
+                pPlanes[i]->GetPointer(blx_uv >> nLogxRatioUVs[i], bly_uv >> nLogyRatioUVs[i]), pPlanes[i]->GetPitch(),
                 winOverUV, nBlkSizeX >> nLogxRatioUVs[i]
               );
+            }
           }
         }
         else { // pixelsize_super == 4
@@ -866,11 +880,15 @@ void	MVCompensate::compensate_slice_overlap(int y_beg, int y_end)
           // chroma uv
           for (int i = 1; i < planecount; i++) {
             if (pPlanes[i])
+            {
+              int blx_uv = (nLogxRatioUVs[i] == 1) ? blx + 1 : blx; // add bias for integer division for 4:2:x formats
+              int bly_uv = (nLogyRatioUVs[i] == 1) ? bly + 1 : bly; // add bias for integer division for 4:2:x formats
               OVERSCHROMA32(
-              (uint16_t *)(pDstShorts[i] + (xx >> nLogxRatioUVs[i])), dstShortPitches[i],
-                pPlanes[i]->GetPointer(blx >> nLogxRatioUVs[i], bly >> nLogyRatioUVs[i]), pPlanes[i]->GetPitch(),
+                (uint16_t*)(pDstShorts[i] + (xx >> nLogxRatioUVs[i])), dstShortPitches[i],
+                pPlanes[i]->GetPointer(blx_uv >> nLogxRatioUVs[i], bly_uv >> nLogyRatioUVs[i]), pPlanes[i]->GetPitch(),
                 winOverUV, nBlkSizeX >> nLogxRatioUVs[i]
               );
+            }
           }
         }
       }
@@ -890,11 +908,15 @@ void	MVCompensate::compensate_slice_overlap(int y_beg, int y_end)
           // chroma uv
           for (int i = 1; i < planecount; i++) {
             if (pSrcPlanes[i])
+            {
+              int blxsrc_uv = (nLogxRatioUVs[i] == 1) ? blxsrc + 1 : blxsrc; // add bias for integer division for 4:2:x formats
+              int blysrc_uv = (nLogyRatioUVs[i] == 1) ? blysrc + 1 : blysrc; // add bias for integer division for 4:2:x formats
               OVERSCHROMA(
-              (uint16_t *)(pDstShorts[i] + (xx >> nLogxRatioUVs[i])), dstShortPitches[i],
-                pSrcPlanes[i]->GetPointer(blxsrc >> nLogxRatioUVs[i], blysrc >> nLogyRatioUVs[i]), pSrcPlanes[i]->GetPitch(),
+                (uint16_t*)(pDstShorts[i] + (xx >> nLogxRatioUVs[i])), dstShortPitches[i],
+                pSrcPlanes[i]->GetPointer(blxsrc_uv >> nLogxRatioUVs[i], blysrc_uv >> nLogyRatioUVs[i]), pSrcPlanes[i]->GetPitch(),
                 winOverUV, nBlkSizeX >> nLogxRatioUVs[i]
               );
+            }
           }
         }
         else if (pixelsize_super == 2){
@@ -907,11 +929,15 @@ void	MVCompensate::compensate_slice_overlap(int y_beg, int y_end)
           // chroma uv
           for (int i = 1; i < planecount; i++) {
             if (pSrcPlanes[i])
+            {
+              int blxsrc_uv = (nLogxRatioUVs[i] == 1) ? blxsrc + 1 : blxsrc; // add bias for integer division for 4:2:x formats
+              int blysrc_uv = (nLogyRatioUVs[i] == 1) ? blysrc + 1 : blysrc; // add bias for integer division for 4:2:x formats
               OVERSCHROMA16(
-              (uint16_t *)(pDstShorts[i] + (xx >> nLogxRatioUVs[i])), dstShortPitches[i],
-                pSrcPlanes[i]->GetPointer(blxsrc >> nLogxRatioUVs[i], blysrc >> nLogyRatioUVs[i]), pSrcPlanes[i]->GetPitch(),
+                (uint16_t*)(pDstShorts[i] + (xx >> nLogxRatioUVs[i])), dstShortPitches[i],
+                pSrcPlanes[i]->GetPointer(blxsrc_uv >> nLogxRatioUVs[i], blysrc_uv >> nLogyRatioUVs[i]), pSrcPlanes[i]->GetPitch(),
                 winOverUV, nBlkSizeX >> nLogxRatioUVs[i]
               );
+            }
           }
         }
         else { // if (pixelsize_super == 4)
@@ -923,11 +949,15 @@ void	MVCompensate::compensate_slice_overlap(int y_beg, int y_end)
           // chroma uv
           for (int i = 1; i < planecount; i++) {
             if (pSrcPlanes[i])
+            {
+              int blxsrc_uv = (nLogxRatioUVs[i] == 1) ? blxsrc + 1 : blxsrc; // add bias for integer division for 4:2:x formats
+              int blysrc_uv = (nLogyRatioUVs[i] == 1) ? blysrc + 1 : blysrc; // add bias for integer division for 4:2:x formats
               OVERSCHROMA32(
-              (uint16_t *)(pDstShorts[i] + (xx >> nLogxRatioUVs[i])), dstShortPitches[i],
-              pSrcPlanes[i]->GetPointer(blxsrc >> nLogxRatioUVs[i], blysrc >> nLogyRatioUVs[i]), pSrcPlanes[i]->GetPitch(),
-              winOverUV, nBlkSizeX >> nLogxRatioUVs[i]
-            );
+                (uint16_t*)(pDstShorts[i] + (xx >> nLogxRatioUVs[i])), dstShortPitches[i],
+                pSrcPlanes[i]->GetPointer(blxsrc_uv >> nLogxRatioUVs[i], blysrc_uv >> nLogyRatioUVs[i]), pSrcPlanes[i]->GetPitch(),
+                winOverUV, nBlkSizeX >> nLogxRatioUVs[i]
+              );
+            }
           }
         }
       }
