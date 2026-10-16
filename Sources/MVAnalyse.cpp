@@ -618,7 +618,12 @@ PVideoFrame __stdcall MVAnalyse::GetFrame(int n, IScriptEnvironment* env)
     }
 
     // temporal predictor dst if prev frame was really prev
-    int *			pVecPrevOrNull = 0;
+    int *pVecPrevOrNull = nullptr;
+    // FIXME: Why this check is needed: we have exactly one 'previous' data, so a
+    // RequestLinear-like access pattern is heavily expected.
+    // But in multithreading this is rare; even in single-threaded mode it is not guaranteed.
+    // Maybe we would consider using a circular buffer of previous vectors,
+    // to allow more freedom in access pattern and to increase the chance of temporal prediction.
     if (_temporal_flag && srd._vec_prev_frame == nsrc - 1)
     {
       pVecPrevOrNull = &srd._vec_prev[0];
