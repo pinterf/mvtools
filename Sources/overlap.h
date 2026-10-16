@@ -173,11 +173,11 @@ void Overlaps_float_new_C(uint16_t* pDst0, int nDstPitch, const unsigned char* p
 
 template <int blockWidth, int blockHeight>
 // pDst is short* for 8 bit, int * for 16 bit sources, float * from 32 bit sources
-void Overlaps_float_C(uint16_t *pDst0, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *_pWin, int nWinPitch)
+void Overlaps_float_C(uint16_t *pDst0, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch)
 {
-  auto pWin = reinterpret_cast<float*>(_pWin);
-  // in integer 8-16 bit format originally pWin from 0 to 2048 total shift 11
-  // for float internal working formats no scaling occurs in overlaps constants
+  // pWin from 0 to 2048 total shift 11
+  // 32 bit float is using the same int16 (short) windows as the 8/16 bit versions
+  // But: the non-documented experimental out32 variant (Overlaps_float_new_C) gets float windows.
 
   // when pixel_t == uint16_t, dst should be int*
   float *pDst = reinterpret_cast<float *>(pDst0);
