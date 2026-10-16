@@ -518,6 +518,8 @@ PVideoFrame __stdcall MVRecalculate::GetFrame(int n, IScriptEnvironment* env)
       sizeof(srd._analysis_data)
     );
   }
+  // avoid garbage (helps tests): zero the unused rest of the header
+  memset(pDst + sizeof(int) + sizeof(MVAnalysisData), 0, headerSize - sizeof(int) - sizeof(MVAnalysisData));
   pDst += headerSize;
 
   if (!srd._clip_sptr->IsUsable() || nsrc < minframe || nsrc >= maxframe)
