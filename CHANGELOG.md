@@ -1,11 +1,18 @@
 Change log
+- 2.7.48 (20261016)
+  - Fix (#69, #51): 32 bit float clips with overlap: garbage (black) output in MDegrain1-6, MDegrainN, MCompensate, MBlockFps.
+    Regression since 2.7.45, float overlap function read the integer overlap window table as float.
+  - Fix: MDegrain1-6 limitC was ineffective for 32 bit float clips.
+  - (internal cosmetics): MAnalyse, MRecalculate: clear the unused part of the vector clip header (was uninitialized garbage, 
+    harmless, but made the output non-deterministic).
+
 - 2.7.47 (20260424)
   - Update Avisynth headers to V12 interface (AcquireGlobalLock/ReleaseGlobalLock support)
   - Thread-safe FFTW plan creation/destruction in DCTFFTW using GlobalLockGuard:
     On Avisynth+ V12+ uses the shared global named lock "fftw", coordinating with
     other plugins (e.g. dfttest, depanestimate) that use the same FFTW DLL.
     Falls back to a local static mutex on older Avisynth versions.
-  - Project solution: moved to VS2026 solution format (.slnx)
+  - Project MS solution: moved to VS2026 solution format (.slnx); add Intel C++ Compiler 2025 ICX; drop Intel C++ Compiler 2024.1 ICX and 19.2 ICL
 
 - 2.7.46 (20240503)
   - Recheck and fix build processes for various compilers 

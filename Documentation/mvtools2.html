@@ -12,7 +12,7 @@
     <h2>Abstract</h2>
     <table class="n">
         <tr><td class="n"><b>Authors:      </b></td><td class="n">&nbsp;</td><td class="n">Manao, Tsp, TSchniede, SEt, Fizick (Alexander Balakhnin), Vit, Firesledge, pinterf</td></tr>
-        <tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.47</td></tr>
+        <tr><td class="n"><b>Version:      </b></td><td class="n">&nbsp;</td><td class="n">2.7.48</td></tr>
         <tr><td class="n"><b>git:          </b></td><td class="n">&nbsp;</td><td class="n"><a href="https://github.com/pinterf/mvtools/tree/mvtools-pfmod">https://github.com/pinterf/mvtools/tree/mvtools-pfmod</a></td></tr>
         <tr><td class="n"><b>Forum:        </b></td><td class="n">&nbsp;</td><td class="n"><a href="https://forum.doom9.org/showthread.php?t=173356">https://forum.doom9.org/showthread.php?t=173356</a></td></tr>
         <tr><td class="n"><b>Base versions:</b></td><td class="n">&nbsp;</td><td class="n">2.6.0.5 + 2.5.11.22</td></tr>
@@ -2215,34 +2215,49 @@ Planar2Interleaved() # convert back to normal interleave YUY2
 
     <h2><a name="revisions"></a>VI) Revisions</h2>
 
+    <p>2.7.48 (20261016)</p>
+    <ul>
+        <li>
+            Fix (#69, #51): 32 bit float clips with overlap: garbage (black) output in MDegrain1-6, MDegrainN, MCompensate, MBlockFps.<br />
+            Regression since 2.7.45, float overlap function read the integer overlap window table as float.
+        </li>
+        <li>Fix: MDegrain1-6 limitC was ineffective for 32 bit float clips.</li>
+        <li>MAnalyse, MRecalculate: clear the unused part of the vector clip header (was uninitialized garbage, harmless, but made the output non-deterministic).</li>
+    </ul>
+
     <p>2.7.47 (20260424)</p>
     <ul>
         <li>Update Avisynth headers to V12 interface (AcquireGlobalLock/ReleaseGlobalLock support)</li>
-        <li>Thread-safe FFTW plan creation/destruction in DCTFFTW using GlobalLockGuard:<br />
+        <li>
+            Thread-safe FFTW plan creation/destruction in DCTFFTW using GlobalLockGuard:<br />
             On Avisynth+ V12+ uses the shared global named lock &quot;fftw&quot;, coordinating with
             other plugins (e.g. dfttest, depanestimate) that use the same FFTW DLL.<br />
             Falls back to a local static mutex on older Avisynth versions.
         </li>
-        <li>Project solution: moved to VS2026 solution format (.slnx)</li>
+        <li>Project MS solution: moved to VS2026 solution format (.slnx); add Intel C++ Compiler 2025 ICX; drop Intel C++ Compiler 2024.1 ICX and 19.2 ICL</li>
     </ul>
 
     <p>2.7.46 (20240503)</p>
     <ul>
-        <li>Recheck and fix build processes for various compilers<br />
+        <li>
+            Recheck and fix build processes for various compilers<br />
             (Visual Studio MSVC v143, v141_xp; Intel C++ Compiler 2024.1 ICX, 19.2 ICL; ClangCL; gcc mingw64)
         </li>
         <li>Fix (#56): bug in Cross search</li>
         <li>(unreleased 2.7.46 (20230208) test build in https://github.com/pinterf/mvtools/issues/58)</li>
         <li>Fix (#58): MFlowFPS memory leak</li>
         <li>Fix (#49): lsad 0 caused division-by-zero crash</li>
-        <li>Optimization: MDegrain1-6 8 bit: Add avx2 code path (already was in code but disabled, now go live)
+        <li>
+            Optimization: MDegrain1-6 8 bit: Add avx2 code path (already was in code but disabled, now go live)
+        </li>
         <li>Optimization: MDegrainN 10-16 bits: SSE4.1 code path (was: C only)</li>
         <li>Optimization: VerticalBicubic interpolation SSE4.1 version besides SSE2</li>
         <li>Fix: MRestoreVect was trying to create unaligned frame (crash)</li>
         <li>(#48) Project files/solution: Intel C++ Compiler 2021 (icx) and 19.2 (icl classic) support on Windows</li>
         <li>Source internals: MDegrain: for block size of 4, read exactly 4 bytes instead of 8. (in extreme cases it would read past a valid memory area)</li>
         <li>MDegrain1-6 8 bit: Add avx2 code path (already was in code but disabled, now go live)</li>
-        <li>Possible LLVM-build speedup by not using _mm256_zeroupper in avx2,<br />
+        <li>
+            Possible LLVM-build speedup by not using _mm256_zeroupper in avx2,<br />
             compilers do that automatically. LLVM builds, because it unoptimizedly saved and restored _all_ ymm registers (slow!)
         </li>
     </ul>
