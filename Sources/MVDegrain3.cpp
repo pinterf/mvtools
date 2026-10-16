@@ -1509,7 +1509,7 @@ void MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
       if (pixelsize_output <= 2)
         realLimit = nLimitC * (1 << (bits_per_pixel_output - 8));
       else
-        realLimit = nLimitC * (1 << (bits_per_pixel_output - 8));
+        realLimit = nLimitC / 255.0f;
       LimitFunction(pDst, nDstPitch, pSrc, nSrcPitch, nWidth >> nLogxRatioUV_super, nHeight >> nLogyRatioUV_super, realLimit);
     }
   }
