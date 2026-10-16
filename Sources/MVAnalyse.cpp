@@ -37,13 +37,13 @@
 #include <algorithm>
 
 MVAnalyse::MVAnalyse(
-  PClip _child, int _blksizex, int _blksizey, int lv, int st, int stp,
+  PClip _child, int _blksizex, int _blksizey, int lv, int st /* searchtype */, int stp /* searchtype_param */,
   int _pelSearch, bool isb, int lambda, bool chroma, int df, sad_t _lsad,
   int _plevel, bool _global, int _pnew, int _pzero, int _pglobal,
   int _overlapx, int _overlapy, const char* _outfilename, int _dctmode,
   int _divide, int _sadx264, sad_t _badSAD, int _badrange, bool _isse,
   bool _meander, bool temporal_flag, bool _tryMany, bool multi_flag,
-  bool mt_flag, int _chromaSADScale, IScriptEnvironment* env
+  bool mt_flag, int _chromaSADScale, int st_coarse, bool _tryManyAll, IScriptEnvironment* env
 )
   : ::GenericVideoFilter(_child)
   , _srd_arr(1)
@@ -297,6 +297,7 @@ MVAnalyse::MVAnalyse(
   badrange = _badrange;
   meander = _meander;
   tryMany = _tryMany;
+  tryManyAll = _tryManyAll;
 
   if (_dctmode != 0)
   {
@@ -306,41 +307,48 @@ MVAnalyse::MVAnalyse(
     _dct_pool.set_factory(*_dct_factory_ptr);
   }
 
-  switch (st)
+  SearchType searchTypes[] = { ONETIME, NSTEP, LOGARITHMIC, EXHAUSTIVE, HEX2SEARCH, UMHSEARCH, HSEARCH, VSEARCH };
+  if (st < 0 || st > 7)
   {
-  case 0:
-    searchType = ONETIME;
+    st = 2; // LOGARITHMIC
+  }
+  searchType = searchTypes[st];
+  switch (searchType)
+  {
+  case ONETIME:
     nSearchParam = (stp < 1) ? 1 : stp;
     break;
-  case 1:
-    searchType = NSTEP;
+  case NSTEP:
     nSearchParam = (stp < 0) ? 0 : stp;
     break;
-  case 3:
-    searchType = EXHAUSTIVE;
+  case LOGARITHMIC:
     nSearchParam = (stp < 1) ? 1 : stp;
     break;
-  case 4:
-    searchType = HEX2SEARCH;
+  case EXHAUSTIVE:
     nSearchParam = (stp < 1) ? 1 : stp;
     break;
-  case 5:
-    searchType = UMHSEARCH;
+  case HEX2SEARCH:
+    nSearchParam = (stp < 1) ? 1 : stp;
+    break;
+  case UMHSEARCH:
     nSearchParam = (stp < 1) ? 1 : stp; // really min is 4
     break;
-  case 6:
-    searchType = HSEARCH;
+  case HSEARCH:
     nSearchParam = (stp < 1) ? 1 : stp;
     break;
-  case 7:
-    searchType = VSEARCH;
+  case VSEARCH:
     nSearchParam = (stp < 1) ? 1 : stp;
     break;
-  case 2:
-  default:
-    searchType = LOGARITHMIC;
-    nSearchParam = (stp < 1) ? 1 : stp;
   }
+
+  // default was 3 - EXHAUSTIVE
+  if (st_coarse < 0 || st_coarse > 7)
+  {
+    env->ThrowError(
+      "MAnalyse: search_coarse must be between 0 and 7"
+    );
+  }
+  searchTypeCoarse = searchTypes[st_coarse]; // coarse levels' radius is searchparam (nSearchParam)
 
   // not below value of 0 at finest level
   nPelSearch = (_pelSearch <= 0) ? analysisData.nPel : _pelSearch;
@@ -634,7 +642,7 @@ PVideoFrame __stdcall MVAnalyse::GetFrame(int n, IScriptEnvironment* env)
       searchType, nSearchParam, nPelSearch, nLambda, lsad, pnew, plevel,
       global, srd._analysis_data.nFlags, reinterpret_cast<int*>(pDst),
       outfilebuf, fieldShift, pzero, pglobal, badSAD, badrange,
-      meander, pVecPrevOrNull, tryMany
+      meander, pVecPrevOrNull, tryMany, searchTypeCoarse, tryManyAll
     );
 
     if (divideExtra)

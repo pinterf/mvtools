@@ -112,7 +112,10 @@ void	GroupOfPlanes::SearchMVs(
   int    badrange,
   bool   meander,
   int *  vecPrev,
-  bool   tryMany)
+  bool   tryMany,
+  SearchType searchTypeCoarse,
+  bool   tryManyAll
+  )
 {
   nFlags |= flags;
 
@@ -129,7 +132,7 @@ void	GroupOfPlanes::SearchMVs(
   }
 
   // may be non zero for finest level only
-  int				fieldShiftCur = (nLevelCount - 1 == 0) ? fieldShift : 0;
+  int fieldShiftCur = (nLevelCount - 1 == 0) ? fieldShift : 0;
 
   // create and init global motion vector as zero
   VECTOR globalMV;
@@ -145,14 +148,11 @@ void	GroupOfPlanes::SearchMVs(
   int meanLumaChange = 0;
 
   // Search the motion vectors, for the low details interpolations first
-  SearchType		searchTypeSmallest =
-    (nLevelCount == 1 || searchType == HSEARCH || searchType == VSEARCH)
-    ? searchType
-    : EXHAUSTIVE; // full search for smallest coarse plane
-  int				nSearchParamSmallest =
-    (nLevelCount == 1) ? nPelSearch : nSearchParam;
+  const bool needCoarseSearch = !(nLevelCount == 1 || searchType == HSEARCH || searchType == VSEARCH);
+  SearchType searchTypeSmallest = needCoarseSearch ? searchTypeCoarse : searchType; // default coarse was EXHAUSTIVE: full search for smallest coarse plane
+  int nSearchParamSmallest = (nLevelCount == 1) ? nPelSearch : nSearchParam; // searchparam is the coarse levels' radius
   DebugPrintf("SearchType %i", searchType);
-  bool				tryManyLevel = (tryMany && nLevelCount > 1);
+  bool tryManyLevel = (tryMany && nLevelCount > 1);
   planes[nLevelCount - 1]->SearchMVs(
     pSrcGOF->GetFrame(nLevelCount - 1),
     pRefGOF->GetFrame(nLevelCount - 1),
@@ -188,11 +188,9 @@ void	GroupOfPlanes::SearchMVs(
   PlaneOfBlocks::Slicer	slicer_glob(_mt_flag);
   for (int i = nLevelCount - 2; i >= 0; i--)
   {
-    SearchType		searchTypeLevel =
-      (i == 0 || searchType == HSEARCH || searchType == VSEARCH)
-      ? searchType
-      : EXHAUSTIVE; // full search for coarse planes
-    int				nSearchParamLevel =
+    const bool needCoarseSearch = !(i == 0 || searchType == HSEARCH || searchType == VSEARCH);
+    SearchType searchTypeLevel = needCoarseSearch ? searchTypeCoarse : searchType; // default coarse was EXHAUSTIVE: full search for coarse planes
+    int nSearchParamLevel =
       (i == 0) ? nPelSearch : nSearchParam; // special case for finest level
 
     PROFILE_START(MOTION_PROFILE_PREDICTION);
@@ -220,7 +218,7 @@ void	GroupOfPlanes::SearchMVs(
 
     fieldShiftCur = (i == 0) ? fieldShift : 0; // may be non zero for finest level only
 //		DebugPrintf("SearchMV level %i", i);
-    tryManyLevel = (tryMany && i > 0); // not for finest level to not decrease speed
+    tryManyLevel = (tryMany && (tryManyAll || i > 0)); // finest level only with trymanyall, it is slow
     planes[i]->SearchMVs(
       pSrcGOF->GetFrame(i),
       pRefGOF->GetFrame(i),

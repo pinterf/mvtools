@@ -70,6 +70,8 @@ protected:
   /*! \brief search type chosen for refinement in the EPZ */
   SearchType searchType;
 
+  SearchType searchTypeCoarse;
+
   /*! \brief additionnal parameter for this search */
   int nSearchParam; // usually search radius
 
@@ -88,6 +90,7 @@ protected:
   int badrange;// range (radius) of wide search
   bool meander; //meander (alternate) scan blocks (even row left to right, odd row right to left
   bool tryMany; // try refine around many predictors
+  bool tryManyAll; // try refine around many predictors even for finest level (not only for coarser levels)
   const bool _multi_flag;
   const bool _temporal_flag;
   const bool _mt_flag;
@@ -115,13 +118,13 @@ protected:
 public:
 
   MVAnalyse(
-    PClip _child, int _blksizex, int _blksizey, int lv, int st, int stp,
+    PClip _child, int _blksizex, int _blksizey, int lv, int st /* search type */, int stp /* search type param */,
     int _pelSearch, bool isb, int lambda, bool chroma, int df, sad_t _lsad,
     int _plevel, bool _global, int _pnew, int _pzero, int _pglobal,
     int _overlapx, int _overlapy, const char* _outfilename, int _dctmode,
     int _divide, int _sadx264, sad_t _badSAD, int _badrange, bool _isse,
     bool _meander, bool temporal_flag, bool _tryMany, bool multi_flag,
-    bool mt_flag, int _chromaSADScale, IScriptEnvironment* env);
+    bool mt_flag, int _chromaSADScale, int st_coarse, bool _tryManyAll, IScriptEnvironment* env);
   ~MVAnalyse();
 
   ::PVideoFrame __stdcall	GetFrame(int n, ::IScriptEnvironment* env) override;

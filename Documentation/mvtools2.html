@@ -411,7 +411,9 @@
 	bool   trymany (false),
 	bool   multi (false),
 	bool   mt (true),
-	int    scaleCSAD (0)
+	int    scaleCSAD (0),
+	int    search_coarse (3),
+	bool   trymanyall (false)
 )</pre>
     <p>
         Get prepared multilevel super clip, estimate motion by block-matching
@@ -503,13 +505,14 @@
         (computer graphics, etc).
         Default = 0 since v.2.5 (all levels are used).
     </p>
-    <p class="var">search, searchparam, pelsearch</p>
+    <p class="var">search, searchparam, pelsearch, search_coarse</p>
     <p>
-        <var>search</var> decides the type of search at every level,
-        <var>searchparam</var> is an additional parameter (step, radius) for this
-        search, and <var>pelsearch</var> is the radius parameter at finest (pel)
-        level.
-        Below are the possible values for the <var>search</var> type:
+        <var>search</var> decides the type of search at the finest level,
+        <var>search_coarse</var> decides the type of search at the coarser levels (default 3: exhaustive, as before v2.7.48).
+        <var>searchparam</var> is an additional parameter (step, radius) for the coarse levels' search,
+        and <var>pelsearch</var> is the radius parameter at finest (pel) level.
+        Exception: with <var>search</var>=6 or 7 (pure horizontal/vertical) or with a single level, <var>search</var> and <var>searchparam</var> are used at all levels.
+        Below are the possible values for the <var>search</var> and <var>search_coarse</var> type:
     </p>
     <table>
         <tr><td><b>0</b></td><td>'OneTimeSearch'. <var>searchparam</var> is the step between each vectors tried (if <var>searchparam</var> is superior to 1, step will be progressively refined).</td></tr>
@@ -521,6 +524,14 @@
         <tr><td><b>6</b></td><td>pure Horizontal exhaustive search, <var>searchparam</var> is the radius (width is 2*radius+1).</td></tr>
         <tr><td><b>7</b></td><td>pure Vertical exhaustive search, <var>searchparam</var> is the radius (height is 2*radius+1).</td></tr>
     </table>
+    <p>
+        Test note (v2.7.48): <var>search_coarse</var> is mainly a speed option (types 2 and 4 were about 5% faster
+        than the default 3). Quality differences were small (within about 1% on most clips); where a different
+        coarse type helped, raising <var>searchparam</var> (the coarse levels' range) gave the same improvement.
+        These are AI-driven numeric test results (luma mean absolute error of motion compensation and frame
+        interpolation, 60 frames each) on four real clips: a 720p camera clip, an 8mm film transfer, a 50 fps VHS
+        capture and a 1440x576 clip. No visual inspection was done.
+    </p>
     <p class="var">isb</p>
     <p>
         Allows to choose between a forward search (motion from the previous frame
@@ -712,8 +723,20 @@
         work correctly.
         Note: Since 2.7.32 the filter registers itself automatically MT_SERIALIZED instead of MT_MULTI_INSTANCE under Avisynth+ when temporal=true is given.
     </p>
-    <p class="var">trymany</p>
-    <p>Try to start searches around many predictors (besides finest level).</p>
+    <p class="var">trymany, trymanyall</p>
+    <p>
+        <var>trymany</var>: try to start searches around many predictors, at all levels except the finest one.
+        Default false.<br>
+        <var>trymanyall</var> (v2.7.48): used only when <var>trymany</var>=true. Then the finest level is searched
+        around many predictors as well, i.e. at all levels. Default false, since it is slow: MAnalyse takes
+        more than twice as long as with <var>trymany</var>=true alone.<br>
+        Similar to mvutensils (VapourSynth): <var>trymany</var>=true equals its trymany=1 (AllExceptFinest),
+        <var>trymany</var>=true with <var>trymanyall</var>=true equals its trymany=2 (All).<br>
+        Test note (v2.7.48): <var>trymanyall</var> gives slightly better block matching (about 0.4-1.6% lower compensation error
+        than <var>trymany</var> alone) at more than 2x MAnalyse time; frame interpolation (MFlowInter) did not improve.
+        These are AI-driven numeric test results (luma mean absolute error, 60 frames each) on four real clips:
+        a 720p camera clip, an 8mm film transfer, a 50 fps VHS capture and a 1440x576 clip. No visual inspection was done.
+    </p>
     <p class="var">multi</p>
     <p>
         When set to true, MAnalyse generates the motion vectors for all the
@@ -2217,6 +2240,10 @@ Planar2Interleaved() # convert back to normal interleave YUY2
 
     <p>2.7.48 (20261016)</p>
     <ul>
+        <li>
+            Feature request #68: adding search_coarse from SVP fork: MAnalyse: new parameters search_coarse.
+            MAnalyse: Add parameter trymanyall, which allows trymany for the finest level as well (default false to not decrease speed)
+        </li>
         <li>
             Fix (#69, #51): 32 bit float clips with overlap: garbage (black) output in MDegrain1-6, MDegrainN, MCompensate, MBlockFps.<br />
             Regression since 2.7.45, float overlap function read the integer overlap window table as float.

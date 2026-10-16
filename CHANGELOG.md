@@ -1,5 +1,7 @@
 Change log
 - 2.7.48 (20261016)
+  - Feature request #68: adding search_coarse from SVP fork: MAnalyse: new parameters search_coarse.
+  - MAnalyse: Add parameter trymanyall, which allows trymany for the finest level as well (default false to not decrease speed)
   - Fix (#69, #51): 32 bit float clips with overlap: garbage (black) output in MDegrain1-6, MDegrainN, MCompensate, MBlockFps.
     Regression since 2.7.45, float overlap function read the integer overlap window table as float.
   - Fix: MDegrain1-6 limitC was ineffective for 32 bit float clips.
