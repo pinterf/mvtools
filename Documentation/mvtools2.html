@@ -509,8 +509,10 @@
     <p>
         <var>search</var> decides the type of search at the finest level,
         <var>search_coarse</var> decides the type of search at the coarser levels (default 3: exhaustive, as before v2.7.48).
-        <var>searchparam</var> is an additional parameter (step, radius) for the coarse levels' search,
-        and <var>pelsearch</var> is the radius parameter at finest (pel) level.
+        <var>searchparam</var> is an additional parameter (step, radius) for the coarse levels' search.
+        It is applied on every coarse level, so its effective range at full resolution is roughly
+        <var>searchparam</var> &times; 2^(levels&minus;1); the default 2 is not as small as it looks.
+        <var>pelsearch</var> is the radius parameter at finest (pel) level.
         Exception: with <var>search</var>=6 or 7 (pure horizontal/vertical) or with a single level, <var>search</var> and <var>searchparam</var> are used at all levels.
         Below are the possible values for the <var>search</var> and <var>search_coarse</var> type:
     </p>
@@ -2250,6 +2252,17 @@ Planar2Interleaved() # convert back to normal interleave YUY2
         </li>
         <li>Fix: MDegrain1-6 limitC was ineffective for 32 bit float clips.</li>
         <li>MAnalyse, MRecalculate: clear the unused part of the vector clip header (was uninitialized garbage, harmless, but made the output non-deterministic).</li>
+        <li>
+            Fix (#59): chroma shift (up/left) in motion compensated output of subsampled formats (4:2:0, 4:2:2, 4:1:1).<br />
+            Converting the luma vector to the chroma grid now rounds symmetrically, both on the vector generation side
+            (MAnalyse, MRecalculate chroma SAD) and on the consumer side (MDegrain1-6, MDegrainN, MCompensate, MBlockFps,
+            MFlow, MFlowInter, MFlowFps, MFlowBlur). Not subsampled directions (e.g. vertical in 4:2:2, 4:4:4) were not affected.<br />
+            Chroma output (and vectors with chroma=true) of subsampled clips changes slightly.
+        </li>
+        <li>
+            MDegrain1-6: remove the experimental out32 (float intermediate overlap buffer) code path. No speed or quality benefit
+            (output differed from the normal path only by +-1 rounding). The out32 parameter is still accepted for compatibility, but ignored.
+        </li>
     </ul>
 
     <p>2.7.47 (20260424)</p>

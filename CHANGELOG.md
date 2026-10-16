@@ -7,6 +7,13 @@ Change log
   - Fix: MDegrain1-6 limitC was ineffective for 32 bit float clips.
   - (internal cosmetics): MAnalyse, MRecalculate: clear the unused part of the vector clip header (was uninitialized garbage, 
     harmless, but made the output non-deterministic).
+  - Fix (#59): chroma shift (up/left) in motion compensated output of subsampled formats (4:2:0, 4:2:2, 4:1:1).
+    Converting the luma vector to the chroma grid now rounds symmetrically, both on the vector generation side
+    (MAnalyse, MRecalculate chroma SAD) and on the consumer side (MDegrain1-6, MDegrainN, MCompensate, MBlockFps,
+    MFlow, MFlowInter, MFlowFps, MFlowBlur). Not subsampled directions (e.g. vertical in 4:2:2, 4:4:4) were not affected.
+    Chroma output (and vectors with chroma=true) of subsampled clips changes slightly.
+  - MDegrain1-6: remove the experimental out32 (float intermediate overlap buffer) code path. No speed or quality benefit
+    (output differed from the normal path only by +-1 rounding). The out32 parameter is still accepted for compatibility, but ignored.
 
 - 2.7.47 (20260424)
   - Update Avisynth headers to V12 interface (AcquireGlobalLock/ReleaseGlobalLock support)
