@@ -415,7 +415,7 @@ AVSValue __cdecl Create_MVDegrainX(AVSValue args, void* user_data, IScriptEnviro
     args[13 + param_index_shift].AsBool(false), // lsb
     args[14 + param_index_shift].AsBool(true),  // mt
     args[15 + param_index_shift].AsBool(false),  // out16
-    args[16 + param_index_shift].AsBool(false),  // out32
+    // args[16 + param_index_shift]: out32, experimental, removed in 2.7.48. Still accepted for compatibility, ignored.
     level,
     env
   );
@@ -487,7 +487,6 @@ AVSValue __cdecl Create_MDegrainN(AVSValue args, void*, IScriptEnvironment* env)
         args[13].AsBool(false),  // lsb
         args[16].AsBool(true),   // mt
         args[17].AsBool(false),  // out16
-        false, // args[18].AsBool(false),  // cannot pass: no out32 parameter for MDegrainN
         tr, // PF: level
         env
       );
@@ -513,7 +512,6 @@ AVSValue __cdecl Create_MDegrainN(AVSValue args, void*, IScriptEnvironment* env)
     thSADC2,                   // thSADC2
     args[16].AsBool(true),   // mt
     args[17].AsBool(false),   // out16
-    // fixme: out32
     env
   );
 }

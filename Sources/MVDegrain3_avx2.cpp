@@ -61,7 +61,6 @@
 //   0: native 8 or 16
 //   1: 8bit in, lsb
 //   2: 8bit in, native16 out
-//   3: 8 bit in: float out (out32)
 template<int blockWidth, int blockHeight, int out16_type, int level>
 void Degrain1to6_avx2(BYTE* pDst, BYTE* pDstLsb, int WidthHeightForC, int nDstPitch, const BYTE* pSrc, int nSrcPitch,
   const BYTE* pRefB[MAX_DEGRAIN], int BPitch[MAX_DEGRAIN], const BYTE* pRefF[MAX_DEGRAIN], int FPitch[MAX_DEGRAIN],
@@ -74,7 +73,6 @@ void Degrain1to6_avx2(BYTE* pDst, BYTE* pDstLsb, int WidthHeightForC, int nDstPi
 
   constexpr bool lsb_flag = (out16_type == 1);
   constexpr bool out16 = (out16_type == 2);
-  constexpr bool out32 = (out16_type == 3);
 
   // B: Back F: Forward
   __m128i zero = _mm_setzero_si128();
@@ -89,7 +87,7 @@ void Degrain1to6_avx2(BYTE* pDst, BYTE* pDstLsb, int WidthHeightForC, int nDstPi
   for(int i = 0; i < level; i++)
     wbf_256[i] = _mm256_set1_epi32((WRefB[i] << 16) | WRefF[i]);
 
-  //  (lsb_flag || out16 || out32): 8 bit in 16 bits out, out32 will be converted to float
+  //  (lsb_flag || out16): 8 bit in 16 bits out
   //  else 8 bit in 8 bit out (but 16 bit intermediate)
   __m128i lsb_mask = _mm_set1_epi16(255);
   for (int h = 0; h < realBlockHeight; h++)
@@ -124,7 +122,7 @@ void Degrain1to6_avx2(BYTE* pDst, BYTE* pDstLsb, int WidthHeightForC, int nDstPi
       };
 
       __m128i val; // basic, lsb (stacked) and out16 operation
-      __m256i val2; // out32 (float output) case
+      __m256i val2; // 32 bit madd result
 
       auto src = getpixels_as_uint8_in_m128i(pSrc);
       // Interleave Src 0 Src 0 ...
@@ -140,14 +138,12 @@ void Degrain1to6_avx2(BYTE* pDst, BYTE* pDstLsb, int WidthHeightForC, int nDstPi
         val2 = _mm256_add_epi32(val2, _mm256_madd_epi16(fb, wbf_256[i]));
       }
 
-      if (!out32) {
-        // 256 -> 128
-        __m256i result_2x4x_uint16 = _mm256_packus_epi32(val2, zero_256); // 8*32+zeros = lower 4*16 in both 128bit lanes
-        __m128i result_2x4x_uint16_128 = _mm256_castsi256_si128(_mm256_permute4x64_epi64(result_2x4x_uint16, (0 << 0) | (2 << 2) | (0 << 4) | (0 << 6))); // low64 of 2nd 128bit lane to hi64 of 1st 128bit lane
-        val = result_2x4x_uint16_128;
-      }
+      // 256 -> 128
+      __m256i result_2x4x_uint16 = _mm256_packus_epi32(val2, zero_256); // 8*32+zeros = lower 4*16 in both 128bit lanes
+      __m128i result_2x4x_uint16_128 = _mm256_castsi256_si128(_mm256_permute4x64_epi64(result_2x4x_uint16, (0 << 0) | (2 << 2) | (0 << 4) | (0 << 6))); // low64 of 2nd 128bit lane to hi64 of 1st 128bit lane
+      val = result_2x4x_uint16_128;
 
-      // storage lsb/out16/out32/8 bit
+      // storage lsb/out16/8 bit
       if constexpr (lsb_flag) {
         if constexpr (blockWidth == 12) {
           // 8 from the first, 4 from the second cycle
@@ -240,60 +236,6 @@ void Degrain1to6_avx2(BYTE* pDst, BYTE* pDstLsb, int WidthHeightForC, int nDstPi
           *(uint32_t*)(pDst + x * 2) = reslo;
         }
       } // out16 end
-      else if constexpr (out32) {
-        // val2: 32 bit integer result by 'madd'
-        // storage: converted to float
-        if constexpr (blockWidth == 12) {
-          // 8 pixels from the first, 4 from the second cycle
-          __m256 valf = _mm256_cvtepi32_ps(val2);
-          if (x == 0) {
-            _mm256_storeu_ps((float*)(pDst + 0 * sizeof(float)), valf);
-          }
-          else { //if (x == 1) { // last 4 pixels 16 bytes
-         // 4 pixels from the 2nd cycle
-            __m128 valf_lo = _mm256_castps256_ps128(valf);
-            _mm_storeu_ps((float*)(pDst + 8 * sizeof(float)), valf_lo);
-          }
-        }
-        else if constexpr (blockWidth >= 8) {
-          __m256 valf = _mm256_cvtepi32_ps(val2);
-          _mm256_storeu_ps((float*)(pDst + x * sizeof(float)), valf);
-        }
-        else if constexpr (blockWidth == 6) {
-          // x is always 0
-          // 4+2 pixels: 16 + 8 bytes
-          // 4 pixels
-          __m256 valf = _mm256_cvtepi32_ps(val2);
-          __m128 valf_lo = _mm256_castps256_ps128(valf);
-          _mm_storeu_ps((float*)(pDst + 0 * sizeof(float)), valf_lo);
-          // 2 pixels
-          __m128 valf_hi = _mm256_extractf128_ps(valf, 1); // upper 128
-          _mm_storel_epi64((__m128i*)(pDst + 4 * sizeof(float)), _mm_castps_si128(valf_hi));
-        }
-        else if constexpr (blockWidth == 4) {
-          // x is always 0. 4 pixels, 16 bytes
-          __m256 valf = _mm256_cvtepi32_ps(val2);
-          __m128 valf_lo = _mm256_castps256_ps128(valf);
-          _mm_store_ps((float*)(pDst + 0 * sizeof(float)), valf_lo);
-        }
-        else if constexpr (blockWidth == 3) {
-          // x is always 0
-          // 2+1 pixels: 8 + 4 bytes
-          __m256 valf = _mm256_cvtepi32_ps(val2);
-          __m128 valf_lo = _mm256_castps256_ps128(valf);
-          _mm_storel_epi64((__m128i*)(pDst + 0 * sizeof(float)), _mm_castps_si128(valf_lo));
-          // 1 pixels: single float
-          float resf = _mm_cvtss_f32(_mm_castsi128_ps(_mm_srli_si128(_mm_castps_si128(valf_lo), 4)));
-          *(float*)(pDst + 2 * sizeof(float)) = resf;
-        }
-        else if constexpr (blockWidth == 2) {
-          // x is always 0
-          // 2 pixels: 8 bytes
-          __m256 valf = _mm256_cvtepi32_ps(val2);
-          __m128 valf_lo = _mm256_castps256_ps128(valf);
-          _mm_storel_epi64((__m128i*)(pDst + 0 * sizeof(float)), _mm_castps_si128(valf_lo));
-        }
-      } // out32 end
       else {
         // simpliest case: usual 8 bit to 8 bit
         // 8 bit in, 8 bit out
@@ -384,7 +326,6 @@ void Degrain1to6_avx2(BYTE* pDst, BYTE* pDstLsb, int WidthHeightForC, int nDstPi
 template void Degrain1to6_avx2<x, y, 0, level>(BYTE*, BYTE*, int, int, const BYTE*, int, const BYTE* pRefB[MAX_DEGRAIN], int BPitch[MAX_DEGRAIN], const BYTE* pRefF[MAX_DEGRAIN], int FPitch[MAX_DEGRAIN], int, int WRefB[MAX_DEGRAIN], int WRefF[MAX_DEGRAIN]); \
 template void Degrain1to6_avx2<x, y, 1, level>(BYTE*, BYTE*, int, int, const BYTE*, int, const BYTE* pRefB[MAX_DEGRAIN], int BPitch[MAX_DEGRAIN], const BYTE* pRefF[MAX_DEGRAIN], int FPitch[MAX_DEGRAIN], int, int WRefB[MAX_DEGRAIN], int WRefF[MAX_DEGRAIN]); \
 template void Degrain1to6_avx2<x, y, 2, level>(BYTE*, BYTE*, int, int, const BYTE*, int, const BYTE* pRefB[MAX_DEGRAIN], int BPitch[MAX_DEGRAIN], const BYTE* pRefF[MAX_DEGRAIN], int FPitch[MAX_DEGRAIN], int, int WRefB[MAX_DEGRAIN], int WRefF[MAX_DEGRAIN]); \
-template void Degrain1to6_avx2<x, y, 3, level>(BYTE*, BYTE*, int, int, const BYTE*, int, const BYTE* pRefB[MAX_DEGRAIN], int BPitch[MAX_DEGRAIN], const BYTE* pRefF[MAX_DEGRAIN], int FPitch[MAX_DEGRAIN], int, int WRefB[MAX_DEGRAIN], int WRefF[MAX_DEGRAIN]); \
 /*func_degrain[make_tuple(x, y, DEGRAIN_TYPE_10to14BIT, level, USE_SSE41)] = Degrain1to6_16_sse41<x, yy, level, true>;*/ \
 /*func_degrain[make_tuple(x, y, DEGRAIN_TYPE_16BIT, level, USE_SSE41)] = Degrain1to6_16_sse41<x, yy, level, false>;*/
 
