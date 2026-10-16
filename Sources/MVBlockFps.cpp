@@ -809,9 +809,9 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
           if (needProcessPlanes[p]) {
             if (pixelsize_super == 1) {
               ResultBlock<uint8_t>(pDst[p], nDstPitches[p],
-                pPlanesB[p]->GetPointer(p == 0 ? refxB : refxB >> nLogxRatioUVs[1], p == 0 ? refyB : refyB >> nLogyRatioUVs[1]),
+                pPlanesB[p]->GetPointer(p == 0 ? refxB : pos_to_chroma(blockB.GetX() * nPel, refxB - blockB.GetX() * nPel, nLogxRatioUVs[1]), p == 0 ? refyB : pos_to_chroma(blockB.GetY() * nPel, refyB - blockB.GetY() * nPel, nLogyRatioUVs[1])),
                 pPlanesB[p]->GetPitch(),
-                pPlanesF[p]->GetPointer(p == 0 ? refxF : refxF >> nLogxRatioUVs[1], p == 0 ? refyF : refyF >> nLogyRatioUVs[1]),
+                pPlanesF[p]->GetPointer(p == 0 ? refxF : pos_to_chroma(blockF.GetX() * nPel, refxF - blockF.GetX() * nPel, nLogxRatioUVs[1]), p == 0 ? refyF : pos_to_chroma(blockF.GetY() * nPel, refyF - blockF.GetY() * nPel, nLogyRatioUVs[1])),
                 pPlanesF[p]->GetPitch(),
                 pRef[p], nRefPitches[p],
                 pSrc[p], nSrcPitches[p],
@@ -827,9 +827,9 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
             else if (pixelsize_super == 2)
             {
               ResultBlock<uint16_t>(pDst[p], nDstPitches[p],
-                pPlanesB[p]->GetPointer(p == 0 ? refxB : refxB >> nLogxRatioUVs[1], p == 0 ? refyB : refyB >> nLogyRatioUVs[1]),
+                pPlanesB[p]->GetPointer(p == 0 ? refxB : pos_to_chroma(blockB.GetX() * nPel, refxB - blockB.GetX() * nPel, nLogxRatioUVs[1]), p == 0 ? refyB : pos_to_chroma(blockB.GetY() * nPel, refyB - blockB.GetY() * nPel, nLogyRatioUVs[1])),
                 pPlanesB[p]->GetPitch(),
-                pPlanesF[p]->GetPointer(p == 0 ? refxF : refxF >> nLogxRatioUVs[1], p == 0 ? refyF : refyF >> nLogyRatioUVs[1]),
+                pPlanesF[p]->GetPointer(p == 0 ? refxF : pos_to_chroma(blockF.GetX() * nPel, refxF - blockF.GetX() * nPel, nLogxRatioUVs[1]), p == 0 ? refyF : pos_to_chroma(blockF.GetY() * nPel, refyF - blockF.GetY() * nPel, nLogyRatioUVs[1])),
                 pPlanesF[p]->GetPitch(),
                 pRef[p], nRefPitches[p],
                 pSrc[p], nSrcPitches[p],
@@ -845,9 +845,9 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
             else if (pixelsize_super == 4)
             {
               ResultBlock<float>(pDst[p], nDstPitches[p],
-                pPlanesB[p]->GetPointer(p == 0 ? refxB : refxB >> nLogxRatioUVs[1], p == 0 ? refyB : refyB >> nLogyRatioUVs[1]),
+                pPlanesB[p]->GetPointer(p == 0 ? refxB : pos_to_chroma(blockB.GetX() * nPel, refxB - blockB.GetX() * nPel, nLogxRatioUVs[1]), p == 0 ? refyB : pos_to_chroma(blockB.GetY() * nPel, refyB - blockB.GetY() * nPel, nLogyRatioUVs[1])),
                 pPlanesB[p]->GetPitch(),
-                pPlanesF[p]->GetPointer(p == 0 ? refxF : refxF >> nLogxRatioUVs[1], p == 0 ? refyF : refyF >> nLogyRatioUVs[1]),
+                pPlanesF[p]->GetPointer(p == 0 ? refxF : pos_to_chroma(blockF.GetX() * nPel, refxF - blockF.GetX() * nPel, nLogxRatioUVs[1]), p == 0 ? refyF : pos_to_chroma(blockF.GetY() * nPel, refyF - blockF.GetY() * nPel, nLogyRatioUVs[1])),
                 pPlanesF[p]->GetPitch(),
                 pRef[p], nRefPitches[p],
                 pSrc[p], nSrcPitches[p],
@@ -1068,9 +1068,9 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
               if (p == 0) current_xx = xx; else current_xx = xxUV;
               if (pixelsize_super == 1) {
                 ResultBlock<uint8_t>(TmpBlock, nBlkPitch*pixelsize_super,
-                  pPlanesB[p]->GetPointer(p == 0 ? refxB : refxB >> nLogxRatioUVs[1], p == 0 ? refyB : refyB >> nLogyRatioUVs[1]),
+                  pPlanesB[p]->GetPointer(p == 0 ? refxB : pos_to_chroma(blockB.GetX() * nPel, refxB - blockB.GetX() * nPel, nLogxRatioUVs[1]), p == 0 ? refyB : pos_to_chroma(blockB.GetY() * nPel, refyB - blockB.GetY() * nPel, nLogyRatioUVs[1])),
                   pPlanesB[p]->GetPitch(),
-                  pPlanesF[p]->GetPointer(p == 0 ? refxF : refxF >> nLogxRatioUVs[1], p == 0 ? refyF : refyF >> nLogyRatioUVs[1]),
+                  pPlanesF[p]->GetPointer(p == 0 ? refxF : pos_to_chroma(blockF.GetX() * nPel, refxF - blockF.GetX() * nPel, nLogxRatioUVs[1]), p == 0 ? refyF : pos_to_chroma(blockF.GetY() * nPel, refyF - blockF.GetY() * nPel, nLogyRatioUVs[1])),
                   pPlanesF[p]->GetPitch(),
                   pRef[p] + current_xx*pixelsize_super, nRefPitches[p],
                   pSrc[p] + current_xx*pixelsize_super, nSrcPitches[p],
@@ -1090,9 +1090,9 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
               }
               else if (pixelsize_super == 2) {
                 ResultBlock<uint16_t>(TmpBlock, nBlkPitch*pixelsize_super,
-                  pPlanesB[p]->GetPointer(p == 0 ? refxB : refxB >> nLogxRatioUVs[1], p == 0 ? refyB : refyB >> nLogyRatioUVs[1]),
+                  pPlanesB[p]->GetPointer(p == 0 ? refxB : pos_to_chroma(blockB.GetX() * nPel, refxB - blockB.GetX() * nPel, nLogxRatioUVs[1]), p == 0 ? refyB : pos_to_chroma(blockB.GetY() * nPel, refyB - blockB.GetY() * nPel, nLogyRatioUVs[1])),
                   pPlanesB[p]->GetPitch(),
-                  pPlanesF[p]->GetPointer(p == 0 ? refxF : refxF >> nLogxRatioUVs[1], p == 0 ? refyF : refyF >> nLogyRatioUVs[1]),
+                  pPlanesF[p]->GetPointer(p == 0 ? refxF : pos_to_chroma(blockF.GetX() * nPel, refxF - blockF.GetX() * nPel, nLogxRatioUVs[1]), p == 0 ? refyF : pos_to_chroma(blockF.GetY() * nPel, refyF - blockF.GetY() * nPel, nLogyRatioUVs[1])),
                   pPlanesF[p]->GetPitch(),
                   pRef[p] + current_xx*pixelsize_super, nRefPitches[p],
                   pSrc[p] + current_xx*pixelsize_super, nSrcPitches[p],
@@ -1112,9 +1112,9 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
               }
               else if (pixelsize_super == 4) {
                 ResultBlock<float>(TmpBlock, nBlkPitch*pixelsize_super,
-                  pPlanesB[p]->GetPointer(p == 0 ? refxB : refxB >> nLogxRatioUVs[1], p == 0 ? refyB : refyB >> nLogyRatioUVs[1]),
+                  pPlanesB[p]->GetPointer(p == 0 ? refxB : pos_to_chroma(blockB.GetX() * nPel, refxB - blockB.GetX() * nPel, nLogxRatioUVs[1]), p == 0 ? refyB : pos_to_chroma(blockB.GetY() * nPel, refyB - blockB.GetY() * nPel, nLogyRatioUVs[1])),
                   pPlanesB[p]->GetPitch(),
-                  pPlanesF[p]->GetPointer(p == 0 ? refxF : refxF >> nLogxRatioUVs[1], p == 0 ? refyF : refyF >> nLogyRatioUVs[1]),
+                  pPlanesF[p]->GetPointer(p == 0 ? refxF : pos_to_chroma(blockF.GetX() * nPel, refxF - blockF.GetX() * nPel, nLogxRatioUVs[1]), p == 0 ? refyF : pos_to_chroma(blockF.GetY() * nPel, refyF - blockF.GetY() * nPel, nLogyRatioUVs[1])),
                   pPlanesF[p]->GetPitch(),
                   pRef[p] + current_xx * pixelsize_super, nRefPitches[p],
                   pSrc[p] + current_xx * pixelsize_super, nSrcPitches[p],

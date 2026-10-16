@@ -32,6 +32,7 @@
 #include <stdint.h>
 #include <commonfunctions.h>
 #include "def.h"
+#include "commonfunctions.h"
 
 //#include	<mmintrin.h>
 
@@ -1544,9 +1545,9 @@ MV_FORCEINLINE void MVDegrainX::use_block_uv(const BYTE * &p, int &np, int &WRef
   if (isUsable)
   {
     const FakeBlockData &block = mvclip.GetBlock(0, i);
-    int blx = block.GetX() * nPel + block.GetMV().x;
-    int bly = block.GetY() * nPel + block.GetMV().y;
-    p = pPlane->GetPointer(blx >> nLogxRatioUV_super, bly >> nLogyRatioUV_super); // pixelsize - aware
+    const int blx = pos_to_chroma(block.GetX() * nPel, block.GetMV().x, nLogxRatioUV_super);
+    const int bly = pos_to_chroma(block.GetY() * nPel, block.GetMV().y, nLogyRatioUV_super);
+    p = pPlane->GetPointer(blx, bly); // pixelsize - aware
     np = pPlane->GetPitch();
     sad_t blockSAD = block.GetSAD();  // SAD of MV Block. Scaled to MVClip's bits_per_pixel;
     WRef = DegrainWeight(thSADC, thSADC_sq, blockSAD);

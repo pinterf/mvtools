@@ -1948,9 +1948,9 @@ void	MDegrainN::use_block_uv(
   if (usable_flag)
   {
     const FakeBlockData &block = c_info._clip_sptr->GetBlock(0, i);
-    const int blx = block.GetX() * nPel + block.GetMV().x;
-    const int bly = block.GetY() * nPel + block.GetMV().y;
-    p = plane_ptr->GetPointer(blx >> nLogxRatioUV_super, bly >> nLogyRatioUV_super);
+    const int blx = pos_to_chroma(block.GetX() * nPel, block.GetMV().x, nLogxRatioUV_super);
+    const int bly = pos_to_chroma(block.GetY() * nPel, block.GetMV().y, nLogyRatioUV_super);
+    p = plane_ptr->GetPointer(blx, bly);
     np = plane_ptr->GetPitch();
     const sad_t block_sad = block.GetSAD(); // SAD of MV Block. Scaled to MVClip's bits_per_pixel;
     wref = DegrainWeight(c_info._thsadc, c_info._thsadc_sq, block_sad);

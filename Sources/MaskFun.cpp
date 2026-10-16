@@ -20,6 +20,7 @@
 
 
 #include "MaskFun.h"
+#include "commonfunctions.h"
 #include <emmintrin.h>
 #include <cassert>
 
@@ -396,33 +397,17 @@ void MakeVectorSmallMasks(MVClip &mvClip, int nBlkX, int nBlkY, short *VXSmallY,
 // it can be called with X and Y vectors, ratioUV can be xRatioUV or yRatioUV
 void VectorSmallMaskYToHalfUV(short * VSmallY, int nBlkX, int nBlkY, short *VSmallUV, int ratioUV)
 {
-  if (ratioUV == 2)
+  // ratioUV: 1 (e.g. height of YUY2), 2 (e.g. YV12) or 4 (YV411 width)
+  const int log = ilog2(ratioUV);
+  for (int by = 0; by<nBlkY; by++)
   {
-    // e.g. YV12 colorformat 
-    for (int by = 0; by<nBlkY; by++)
+    for (int bx = 0; bx<nBlkX; bx++)
     {
-      for (int bx = 0; bx<nBlkX; bx++)
-      {
-        VSmallUV[bx] = ((VSmallY[bx]) >> 1); // chroma
-      }
-      VSmallY += nBlkX;
-      VSmallUV += nBlkX;
+      VSmallUV[bx] = (short)mv_to_chroma(VSmallY[bx], log); // chroma, symmetric rounding (#59)
     }
+    VSmallY += nBlkX;
+    VSmallUV += nBlkX;
   }
-  else // ratioUV==1
-  {
-    // e.g. Height YUY2 colorformat
-    for (int by = 0; by<nBlkY; by++)
-    {
-      for (int bx = 0; bx<nBlkX; bx++)
-      {
-        VSmallUV[bx] = VSmallY[bx]; // chroma
-      }
-      VSmallY += nBlkX;
-      VSmallUV += nBlkX;
-    }
-  }
-
 }
 
 template<typename pixel_t>

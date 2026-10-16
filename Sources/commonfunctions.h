@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "def.h" // MV_FORCEINLINE
 
 #define MV_UNUSED(x) (void)(x)
 
@@ -39,6 +40,30 @@ inline static int iexp2(int i)
 // 	int result = 1;
 // 	while ( i > 0 ) { result *= 2; i--; }
 // 	return result;
+}
+
+// helper function for fixing mdegrain/mcompensate chroma shift (#59)
+// Converts a luma vector component (in pel units) to the subsampled chroma plane.
+// How it works: rounds half away from zero. A plain v >> log rounds toward minus infinity for
+// both b/f vectors, so the errors of the references add up instead of cancelling out, and
+// degrained/compensated chroma is shifted up/left (#59).
+// (not subsampled directions were not affected).
+// Must be used on both sides consistently:
+// - vector generation: chroma SAD in MAnalyse/MRecalculate (PlaneOfBlocks::MvToChromaX/Y)
+// - consumers: MDegrain1-6, MDegrainN, MCompensate, MBlockFps, MFlow family (VectorSmallMaskYToHalfUV)
+// Note that consumer-only implementation was not enough, even can be worse (yes, tested.)
+MV_FORCEINLINE static int mv_to_chroma(int v, int log)
+{
+  // log: 0, 1, 2 for subsampling 1 (no subsample), 2, 4
+  const int half = (1 << log) >> 1; // 0 for log == 0
+  // v >= 0: (v + half) >> log; v < 0: (v + half - 1) >> log, both with arithmetic shift.
+  return (v + half - ((v < 0) & (log != 0))) >> log;
+}
+
+// Block position (pel units, divisible by the subsampling) plus a vector (or any offset) to chroma position.
+MV_FORCEINLINE static int pos_to_chroma(int blockpos, int v, int log)
+{
+  return (blockpos >> log) + mv_to_chroma(v, log);
 }
 
 // general common divisor (from wikipedia)

@@ -683,7 +683,7 @@ void	MVCompensate::compensate_slice_normal(Slicer::TaskData &td)
           if (pPlanes[i])
           {
             BLITCHROMA(pDstCur[i] + (xx >> nLogxRatioUVs[i]), nDstPitches[i],
-              pPlanes[i]->GetPointer(blx >> nLogxRatioUVs[i], bly >> nLogyRatioUVs[i]), pPlanes[i]->GetPitch()
+              pPlanes[i]->GetPointer(pos_to_chroma(block.GetX() * nPel, blx - block.GetX() * nPel, nLogxRatioUVs[i]), pos_to_chroma(block.GetY() * nPel, bly - block.GetY() * nPel, nLogyRatioUVs[i])), pPlanes[i]->GetPitch()
             );
           }
         }
@@ -834,7 +834,7 @@ void	MVCompensate::compensate_slice_overlap(int y_beg, int y_end)
             if (pPlanes[i])
               OVERSCHROMA(
               (uint16_t *)(pDstShorts[i] + (xx >> nLogxRatioUVs[i])), dstShortPitches[i],
-                pPlanes[i]->GetPointer(blx >> nLogxRatioUVs[i], bly >> nLogyRatioUVs[i]), pPlanes[i]->GetPitch(),
+                pPlanes[i]->GetPointer(pos_to_chroma(block.GetX() * nPel, blx - block.GetX() * nPel, nLogxRatioUVs[i]), pos_to_chroma(block.GetY() * nPel, bly - block.GetY() * nPel, nLogyRatioUVs[i])), pPlanes[i]->GetPitch(),
                 winOverUV, nBlkSizeX >> nLogxRatioUVs[i]
               );
           }
@@ -851,7 +851,7 @@ void	MVCompensate::compensate_slice_overlap(int y_beg, int y_end)
             if (pPlanes[i])
               OVERSCHROMA16(
               (uint16_t *)(pDstShorts[i] + (xx >> nLogxRatioUVs[i])), dstShortPitches[i],
-                pPlanes[i]->GetPointer(blx >> nLogxRatioUVs[i], bly >> nLogyRatioUVs[i]), pPlanes[i]->GetPitch(),
+                pPlanes[i]->GetPointer(pos_to_chroma(block.GetX() * nPel, blx - block.GetX() * nPel, nLogxRatioUVs[i]), pos_to_chroma(block.GetY() * nPel, bly - block.GetY() * nPel, nLogyRatioUVs[i])), pPlanes[i]->GetPitch(),
                 winOverUV, nBlkSizeX >> nLogxRatioUVs[i]
               );
           }
@@ -868,7 +868,7 @@ void	MVCompensate::compensate_slice_overlap(int y_beg, int y_end)
             if (pPlanes[i])
               OVERSCHROMA32(
               (uint16_t *)(pDstShorts[i] + (xx >> nLogxRatioUVs[i])), dstShortPitches[i],
-                pPlanes[i]->GetPointer(blx >> nLogxRatioUVs[i], bly >> nLogyRatioUVs[i]), pPlanes[i]->GetPitch(),
+                pPlanes[i]->GetPointer(pos_to_chroma(block.GetX() * nPel, blx - block.GetX() * nPel, nLogxRatioUVs[i]), pos_to_chroma(block.GetY() * nPel, bly - block.GetY() * nPel, nLogyRatioUVs[i])), pPlanes[i]->GetPitch(),
                 winOverUV, nBlkSizeX >> nLogxRatioUVs[i]
               );
           }
