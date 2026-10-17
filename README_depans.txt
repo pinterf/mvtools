@@ -19,7 +19,7 @@ http://avisynth.org.ru/depan/depan.html
 
 Change log (modifications by pinterf: https://github.com/pinterf/):
 
-- (2026xxxx)
+- (20261018)
   Depan 2.16
   - Support Y with alpha (YA) and YUVA, all subsamplings incl. 4:1:0, 4:1:1, 4:4:0.
     DePanScenes copies the alpha from the source.

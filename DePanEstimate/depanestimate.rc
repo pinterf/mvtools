@@ -1,6 +1,6 @@
 1 VERSIONINFO
- FILEVERSION 2,12,0,0
- PRODUCTVERSION 2,12,0,0
+ FILEVERSION 2,13,0,0
+ PRODUCTVERSION 2,13,0,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -18,14 +18,14 @@ BEGIN
             VALUE "Comments", "Estimate global motion (pan, zoom)\0"
             VALUE "CompanyName", "A.G.Balakhnin aka Fizick\0"
             VALUE "FileDescription", "Global motion estimation plugin for Avisynth\0"
-            VALUE "FileVersion", "2, 12, 0, 0\0"
+            VALUE "FileVersion", "2, 13, 0, 0\0"
             VALUE "InternalName", "DePanEstimate\0"
             VALUE "LegalCopyright", "Copyright © 2004-2016,A.G.Balakhnin aka Fizick, -2026 et al\0"
             VALUE "LegalTrademarks", "\0"
             VALUE "OriginalFilename", "DePanEstimate.dll\0"
             VALUE "PrivateBuild", "\0"
             VALUE "ProductName", "DePanEstimate\0"
-            VALUE "ProductVersion", "2, 12, 0, 0\0"
+            VALUE "ProductVersion", "2, 13, 0, 0\0"
             VALUE "SpecialBuild", "\0"
         END
     END
