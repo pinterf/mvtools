@@ -725,12 +725,20 @@ void compensate_plane_bicubic2(uint8_t *dstp8, int dst_pitch, const uint8_t * sr
       // rowleft = (int)floor(xsrc);  // low
       ix4 = 4 * ((int)((tr.dxc - inttr0) * 256));
 
+      int sum2d = 0;
+      int imax = 0;
       for (int j = 0; j < 4; j++) {
         for (int i = 0; i < 4; i++) {
-          intcoef2d[j * 4 + i] = ((intcoef[j + iy4] * intcoef[i + ix4])) / 2048;
+          const int c = intcoef[j + iy4] * intcoef[i + ix4];
+          intcoef2d[j * 4 + i] = (c + (c >= 0 ? 1024 : -1024)) / 2048; // rounded
           // 16 coeff. for bicubic 2D, scaled by 2048 (11 bits)
+          sum2d += intcoef2d[j * 4 + i];
+          if (intcoef2d[j * 4 + i] > intcoef2d[imax]) imax = j * 4 + i;
         }
       }
+      // Weights must sum to exactly 2048, otherwise flat areas change. Was truncated, the sum was 2046..2051:
+      // a flat area of value v became v * sum / 2048, visible from 12 bits (16 bit mid grey: -32..+48)
+      intcoef2d[imax] += 2048 - sum2d;
 
       if (hlow < 0 && mtop) hlow = -hlow;  // mirror borders
       if (hlow >= height && mbottom) hlow = height + height - hlow - 2;

@@ -39,6 +39,9 @@ Change log (modifications by pinterf: https://github.com/pinterf/):
     The chroma part of the text was drawn at double row offset, with 4:4:4 it could write past the frame buffer.
     Characters not fitting into the frame are skipped.
   - Fix: info=true on Y (greyscale) clips: "GetPlaneWidthSubsampling not available on Y or YA pixel type" error.
+  - Fix: subpixel=2 (bicubic, default) with pure shifts (no zoom, rotation): the 16 interpolation weights summed
+    to 2046..2051 instead of 2048 (truncated), so areas were made slightly darker or brighter, depending on the
+    subpixel position. Visible from 10 bits, e.g. 16 bit mid grey was off by -32..+48. 8 bit: rarely +-1.
   DepanEstimate 2.13
   - Support Y with alpha (YA) and YUVA (was: "input must be YUV or YUY2"). Alpha is copied when info or show is set.
   - 32 bit float input is rejected with an error.
