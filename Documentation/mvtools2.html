@@ -790,6 +790,22 @@
         1: 4:4<br />
         2: 4:8<br />
     </p>
+    <p>
+        The ratio is the same for all formats: the chroma SAD is normalized to the 4:2 ratio of 4:2:0
+        (4:4:4: chroma SAD divided by 4; 4:2:2, 4:4:0: by 2; 4:2:0, 4:1:1: unchanged; 4:1:0: multiplied by 4),
+        <var>scaleCSAD</var> changes it from there.
+    </p>
+    <p>
+        Note: only the SAD is weighted. The chroma part of the thresholds which are derived from <var>thSCD1</var>
+        (scene change detection) and <var>thSAD</var> (MDegrain1-6, MDegrainN <var>thSAD</var>, <var>thSADC</var>; MRecalculate <var>thSAD</var>)
+        is scaled in the <i>opposite</i> direction: with <var>scaleCSAD</var>=1 it is halved, with 2 it is quartered
+        (-1: doubled, -2: quadrupled). Relative to the luma part of the threshold, the whole threshold is
+        3.0 (-2), 2.0 (-1), 1.5 (0), 1.25 (1), 1.125 (2) times larger.<br />
+        So a positive <var>scaleCSAD</var> makes chroma differences count more and lowers the effective thresholds at the same time:
+        use larger <var>thSAD</var>, <var>thSCD1</var> values to keep the denoising strength and the scene change sensitivity.<br />
+        This behavior is kept for compatibility, scripts like SMDegrain and QTGMC+ use <var>scaleCSAD</var>=2 for HD sources
+        and their defaults are tuned to it.
+    </p>
     <h4>Truemotion parameters</h4>
     <p>
         There are few advanced parameters which set coherence of motion vectors
