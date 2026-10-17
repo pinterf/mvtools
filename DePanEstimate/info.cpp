@@ -1574,6 +1574,10 @@ void DrawDigit(PVideoFrame &dst, int x, int y, int num, int bits_per_pixel, int 
   x = x * 10;
   y = y * 20;
 
+  // skip characters not fitting fully into the frame, no writes out of the plane
+  if (x < 0 || y < 0 || x + 10 > dst->GetRowSize() / (int)sizeof(pixel_t) || y + 20 > dst->GetHeight())
+    return;
+
   const pixel_t color = sizeof(pixel_t) == 4 ? (pixel_t)(235 / 255.0f) : 235 << (bits_per_pixel - 8);
 
   int pitch = dst->GetPitch() / sizeof(pixel_t);
@@ -1641,7 +1645,7 @@ void DrawDigit(PVideoFrame &dst, int x, int y, int num, int bits_per_pixel, int 
   pixel_t* dstpU = reinterpret_cast<pixel_t *>(dst->GetWritePtr(PLANAR_U));
   pixel_t* dstpV = reinterpret_cast<pixel_t *>(dst->GetWritePtr(PLANAR_V));
 
-  int pitchUV = dst->GetPitch(PLANAR_U);
+  int pitchUV = dst->GetPitch(PLANAR_U) / sizeof(pixel_t); // in pixels, was bytes: 10-16 bit chroma rows at double offset, 4:4:4 wrote past the V plane
   const pixel_t midChroma = sizeof(pixel_t) == 4 ? (pixel_t)0.0f : 1 << (bits_per_pixel - 1);
   for (int tx = 0; tx < 10; tx++)
   {
@@ -1694,8 +1698,14 @@ void DrawString(PVideoFrame &dst, VideoInfo &vi, int x, int y, const char *s)
   }
 
   int bits_per_pixel = vi.BitsPerComponent();
-  int xRatioShift = vi.GetPlaneWidthSubsampling(PLANAR_U);
-  int yRatioShift = vi.GetPlaneHeightSubsampling(PLANAR_U);
+  // Y, YA: no U/V planes, GetPlaneWidthSubsampling(PLANAR_U) would throw
+  const bool grey = vi.IsY() || vi.IsYA();
+  int xRatioShift = 0;
+  int yRatioShift = 0;
+  if (!grey && !vi.IsRGB()) {
+    xRatioShift = vi.GetPlaneWidthSubsampling(PLANAR_U);
+    yRatioShift = vi.GetPlaneHeightSubsampling(PLANAR_U);
+  }
   if (vi.IsRGB()) {
     for (int xx = 0; *s; ++s, ++xx) {
       if (bits_per_pixel == 8)
@@ -1708,7 +1718,6 @@ void DrawString(PVideoFrame &dst, VideoInfo &vi, int x, int y, const char *s)
     return;
   }
 
-  const bool grey = vi.IsY();
   for (int xx = 0; *s; ++s, ++xx) {
     if (bits_per_pixel == 8)
       DrawDigit<uint8_t>(dst, x + xx, y, *s - ' ', bits_per_pixel, xRatioShift, yRatioShift, !grey, false);
@@ -1777,6 +1786,10 @@ void DrawDigitYUY2(::PVideoFrame &dst, int x, int y, int num)
 
 	x = x * 10;
 	y = y * 20;
+
+	// skip characters not fitting fully into the frame, no writes out of the plane
+	if (x < 0 || y < 0 || x + 10 > dst->GetRowSize() / 2 || y + 20 > dst->GetHeight())
+	  return;
 
 	int pitch = dst->GetPitch();
 	for (int tx = 0; tx < 10; tx++) {

@@ -965,7 +965,8 @@ PVideoFrame __stdcall DePanEstimate_fftw::GetFrame(int ndest, IScriptEnvironment
 
   // ---------------------------------------------------------------------------
   // isYUY2 = vi.IsYUY2(); // v.1.1 move to init
-  int width = (isYUY2) ? src_width / 2 : src_width; //vi.width; // v 1.1, bug fixed in v.1.1.5 (we change vi.width !)
+  // in pixels. Was: row size in bytes for planar, wrong right zoom window and info position for 10-16 bits
+  int width = (isYUY2) ? src_width / 2 : src_width / pixelsize; //vi.width; // v 1.1, bug fixed in v.1.1.5 (we change vi.width !)
 
   // Process Y Luma Plane
   const BYTE * srcp = src->GetReadPtr();
@@ -1225,8 +1226,10 @@ PVideoFrame __stdcall DePanEstimate_fftw::GetFrame(int ndest, IScriptEnvironment
 
   // So, now we got all needed global motion info
 
-  int xmsg = (fieldbased != 0) ? (width / 4 - 15 + (ndest % 2) * 15) : width / 4 - 8; // x-position of odd fields message //v1.6
-  int ymsg = dst_height / 40 - 4;  // y position
+  // x and y in character units (10x20 pixels), around the frame center.
+  // Was width / 4 - 8: outside the right edge, text wrapped into lower lines
+  int xmsg = std::max(0, (fieldbased != 0) ? (width / 20 - 15 + (ndest % 2) * 15) : width / 20 - 8); // x-position of odd fields message //v1.6
+  int ymsg = std::max(0, dst_height / 40 - 4);  // y position
   if (info) { // show text info on frame
     if (show == 0) {  // luma plane was not copied by show, then copy it now
       env->BitBlt(dstp, dst_pitch, srcp, src_pitch, dst_rowsize, dst_height);
