@@ -2271,6 +2271,7 @@ Planar2Interleaved() # convert back to normal interleave YUY2
             The chroma part of the text was drawn at double row offset, with 4:4:4 it could write past the frame buffer.<br />
             - Characters not fitting into the frame are skipped instead of being written outside of it.
         </li>
+        <li>New chroma block sizes 2x8 and 4x16, e.g. 4:1:1 needs them with blksize=8 and 16 (also 4:2:2 with 4x8, 8x16 and 4:2:0 with 8x32).</li>
     </ul>
 
     <p>2.7.47 (20260424)</p>
