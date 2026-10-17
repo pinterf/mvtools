@@ -232,7 +232,9 @@ DePan::DePan(PClip _child, PClip _DePanData, float _offset, int _subpixel, float
   TFF = (vi.IsTFF()) ? 1 : 0;
 
   if (!vi.IsYUY2() && !vi.IsYUV() && !vi.IsYUVA())
-    env->ThrowError("DePan: input must be YUV planar or YUY2!"); // PF: all planar, inlcuding native 16 bits
+    env->ThrowError("DePan: input must be Y(A), YUV(A) planar or YUY2!"); // PF: all planar, inlcuding native 16 bits
+  if (vi.BitsPerComponent() == 32)
+    env->ThrowError("DePan: 32 bit float input is not supported!");
 
   motionx = new float[vi.num_frames];
   motiony = new float[vi.num_frames];
@@ -615,7 +617,7 @@ PVideoFrame __stdcall DePan::GetFrame(int ndest, IScriptEnvironment* env) {
     // from now on
 
     int planes[] = { PLANAR_Y, PLANAR_U, PLANAR_V };
-    int plane_count = vi.IsY() ? 1 : 3;
+    int plane_count = (vi.IsY() || vi.IsYA()) ? 1 : 3; // Y, YA: no U/V planes
     // alpha plane undefined
 
     for (int p = 0; p < plane_count; p++)
@@ -1014,7 +1016,9 @@ DePanInterleave::DePanInterleave(PClip _child, PClip _DePanData, int _prev, int 
   int num = prev + next + 1;
 
   if (!vi.IsYUY2() && !vi.IsYUV() && !vi.IsYUVA())
-    env->ThrowError("DePanInterleave: input must be planar YUV or YUY2 !"); //v1.6
+    env->ThrowError("DePanInterleave: input must be Y(A), YUV(A) planar or YUY2 !"); //v1.6
+  if (vi.BitsPerComponent() == 32)
+    env->ThrowError("DePanInterleave: 32 bit float input is not supported!");
 
   if ((DePanData->GetVideoInfo().num_frames) != vi.num_frames)
     env->ThrowError("DePanInterleave: The length of input clip must be same as motion data clip !");

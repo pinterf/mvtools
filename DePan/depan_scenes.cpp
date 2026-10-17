@@ -132,8 +132,10 @@ DePanScenes::DePanScenes(PClip _child, int _plane, const char * _inputlog, IScri
   pixelsize = vi.ComponentSize();
   bits_per_pixel = vi.BitsPerComponent();
 
-	if (!vi.IsYUV() && !vi.IsYUY2())
-		env->ThrowError("DePanScenes: input to filter must be in YUV or YUY2!");
+	if (!vi.IsYUV() && !vi.IsYUVA() && !vi.IsYUY2())
+		env->ThrowError("DePanScenes: input to filter must be in Y(A), YUV(A) or YUY2!");
+  if (vi.BitsPerComponent() == 32)
+    env->ThrowError("DePanScenes: 32 bit float input is not supported!");
 
 	if (plane <1 || plane > 7)
 		env->ThrowError("DePanScenes: Plane parameter must be from 1 to 7!");
@@ -229,7 +231,7 @@ PVideoFrame __stdcall DePanScenes::GetFrame(int ndest, IScriptEnvironment* env) 
 	if (!vi.IsYUY2())
   {
     int planes[] = { PLANAR_Y, PLANAR_U, PLANAR_V };
-    int plane_count = vi.IsY() ? 1 : 3;
+    int plane_count = (vi.IsY() || vi.IsYA()) ? 1 : 3; // Y, YA: no U/V planes
 
     for (int p = 0; p < plane_count; p++)
     {
@@ -282,6 +284,8 @@ PVideoFrame __stdcall DePanScenes::GetFrame(int ndest, IScriptEnvironment* env) 
         }
       }
     } // for
+    if (vi.IsYUVA()) // YUVA and YA: copy alpha
+      env->BitBlt(dst->GetWritePtr(PLANAR_A), dst->GetPitch(PLANAR_A), src->GetReadPtr(PLANAR_A), src->GetPitch(PLANAR_A), src->GetRowSize(PLANAR_A), src->GetHeight(PLANAR_A));
 	}
   else
   { // YUY2

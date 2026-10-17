@@ -157,8 +157,10 @@ DePanEstimate_fftw::DePanEstimate_fftw(PClip _child, int _range, float _trust, i
   has_at_least_v8 = avisynth_if_ver >= 8;
   has_at_least_v12 = avisynth_if_ver >= 12; // global locks
 
-  if (!vi.IsYUY2() && !vi.IsYUV())
-    env->ThrowError("DePanEstimate: input must be YUV or YUY2!");
+  if (!vi.IsYUY2() && !vi.IsYUV() && !vi.IsYUVA())
+    env->ThrowError("DePanEstimate: input must be Y(A), YUV(A) or YUY2!");
+  if (vi.BitsPerComponent() == 32)
+    env->ThrowError("DePanEstimate: 32 bit float input is not supported!");
   // if (!vi.IsYV12() && !vi.IsYUY2())	env->ThrowError("DePanEstimate: input to filter must be in YV12 or YUY2!");
 
   pixelsize = vi.ComponentSize();
@@ -1275,7 +1277,7 @@ PVideoFrame __stdcall DePanEstimate_fftw::GetFrame(int ndest, IScriptEnvironment
 
 // ---------------------------------------------------------------------------
 
-  if (!vi.IsY() && !isYUY2)
+  if (!vi.IsY() && !vi.IsYA() && !isYUY2)
   { // all planar which is not grey
     // Process U plane
     srcp = src->GetReadPtr(PLANAR_U);
@@ -1299,6 +1301,9 @@ PVideoFrame __stdcall DePanEstimate_fftw::GetFrame(int ndest, IScriptEnvironment
 
     // end of V plane code
   }
+
+  if (vi.IsYUVA() && (info != 0 || show != 0)) // YUVA and YA: copy alpha
+    env->BitBlt(dst->GetWritePtr(PLANAR_A), dst->GetPitch(PLANAR_A), src->GetReadPtr(PLANAR_A), src->GetPitch(PLANAR_A), dst->GetRowSize(PLANAR_A), dst->GetHeight(PLANAR_A));
 
   return dst;
 }

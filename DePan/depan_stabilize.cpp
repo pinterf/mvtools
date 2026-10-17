@@ -267,7 +267,9 @@ DePanStabilize::DePanStabilize(PClip _child, PClip _DePanData, float _cutoff,
   bits_per_pixel = vi.BitsPerComponent();
 
   if (!vi.IsYUY2() && !vi.IsYUV() && !vi.IsYUVA() && !vi.IsPlanarRGB() && !vi.IsPlanarRGBA())
-    env->ThrowError("DePanStabilize: input must be Y or planar YUV(A)/RGB(A)!");
+    env->ThrowError("DePanStabilize: input must be Y(A), YUY2 or planar YUV(A)/RGB(A)!");
+  if (vi.BitsPerComponent() == 32)
+    env->ThrowError("DePanStabilize: 32 bit float input is not supported!");
 
   if (method < -1 || method > 2)
     env->ThrowError("DePanStabilize: wrong method");//v1.13
@@ -1466,7 +1468,7 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
     const int planes_r[4] = { PLANAR_G, PLANAR_B, PLANAR_R, PLANAR_A };
     const int *planes = (vi.IsYUV() || vi.IsYUVA()) ? planes_y : planes_r;
 
-    const int planecount = std::min(vi.NumComponents(), 3);
+    const int planecount = (vi.IsY() || vi.IsYA()) ? 1 : std::min(vi.NumComponents(), 3); // Y, YA: no U/V planes
 
     // YUY2: work on planar copies, the destination planes are converted back after the last phase.
     // Was: the packed YUY2 row was processed as a single luma plane
