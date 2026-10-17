@@ -66,9 +66,9 @@ AvisynthPluginInit3(IScriptEnvironment* env, const AVS_Linkage* const vectors) {
   /* New 2.6 requirment!!! */
   // Save the server pointers.
   AVS_linkage = vectors;
-  env->AddFunction("DePan", "c[data]c[offset]f[subpixel]i[pixaspect]f[matchfields]b[mirror]i[blur]i[info]b[inputlog]s", Create_DePan, 0);
-  env->AddFunction("DePanInterleave", "c[data]c[prev]i[next]i[subpixel]i[pixaspect]f[matchfields]b[mirror]i[blur]i[info]b[inputlog]s", Create_DePanInterleave, 0);
-  env->AddFunction("DePanStabilize", "c[data]c[cutoff]f[damping]f[initzoom]f[addzoom]b[prev]i[next]i[mirror]i[blur]i[dxmax]f[dymax]f[zoommax]f[rotmax]f[subpixel]i[pixaspect]f[fitlast]i[tzoom]f[info]b[inputlog]s[vdx]s[vdy]s[vzoom]s[vrot]s[method]i[debuglog]s", Create_DePanStabilize, 0);
+  env->AddFunction("DePan", "c[data]c[offset]f[subpixel]i[pixaspect]f[matchfields]b[mirror]i[blur]i[info]b[inputlog]s[alphainvert]b", Create_DePan, 0);
+  env->AddFunction("DePanInterleave", "c[data]c[prev]i[next]i[subpixel]i[pixaspect]f[matchfields]b[mirror]i[blur]i[info]b[inputlog]s[alphainvert]b", Create_DePanInterleave, 0);
+  env->AddFunction("DePanStabilize", "c[data]c[cutoff]f[damping]f[initzoom]f[addzoom]b[prev]i[next]i[mirror]i[blur]i[dxmax]f[dymax]f[zoommax]f[rotmax]f[subpixel]i[pixaspect]f[fitlast]i[tzoom]f[info]b[inputlog]s[vdx]s[vdy]s[vzoom]s[vrot]s[method]i[debuglog]s[alphainvert]b", Create_DePanStabilize, 0);
   env->AddFunction("DePanScenes", "c[plane]i[inputlog]s", Create_DePanScenes, 0);
   // The AddFunction has the following parameters:
     // AddFunction(Filtername , Arguments, Function to call,0);

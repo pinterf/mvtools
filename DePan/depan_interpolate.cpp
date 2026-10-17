@@ -1070,6 +1070,39 @@ template void compensate_plane_bilinear2<uint16_t>(uint8_t *dstp8, int dst_pitch
 template void compensate_plane_bicubic2<uint8_t>(uint8_t *dstp8, int dst_pitch, const uint8_t * srcp8, int src_pitch, int row_size, int height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel);
 template void compensate_plane_bicubic2<uint16_t>(uint8_t *dstp8, int dst_pitch, const uint8_t * srcp8, int src_pitch, int row_size, int height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel);
 
+void compensate_plane2(int subpixel, int pixelsize, uint8_t *dstp8, int dst_pitch, const uint8_t * srcp8, int src_pitch, int row_size, int height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel)
+{
+  if (subpixel == 2) {
+    if (pixelsize == 1)
+      compensate_plane_bicubic2<uint8_t>(dstp8, dst_pitch, srcp8, src_pitch, row_size, height, tr, mirror, border, blurmax, bits_per_pixel);
+    else
+      compensate_plane_bicubic2<uint16_t>(dstp8, dst_pitch, srcp8, src_pitch, row_size, height, tr, mirror, border, blurmax, bits_per_pixel);
+  }
+  else if (subpixel == 1) {
+    if (pixelsize == 1)
+      compensate_plane_bilinear2<uint8_t>(dstp8, dst_pitch, srcp8, src_pitch, row_size, height, tr, mirror, border, blurmax, bits_per_pixel);
+    else
+      compensate_plane_bilinear2<uint16_t>(dstp8, dst_pitch, srcp8, src_pitch, row_size, height, tr, mirror, border, blurmax, bits_per_pixel);
+  }
+  else {
+    if (pixelsize == 1)
+      compensate_plane_nearest2<uint8_t>(dstp8, dst_pitch, srcp8, src_pitch, row_size, height, tr, mirror, border, blurmax, bits_per_pixel);
+    else
+      compensate_plane_nearest2<uint16_t>(dstp8, dst_pitch, srcp8, src_pitch, row_size, height, tr, mirror, border, blurmax, bits_per_pixel);
+  }
+}
+
+void fill_plane(uint8_t *dstp8, int dst_pitch, int row_size, int height, int value, int pixelsize)
+{
+  for (int y = 0; y < height; y++) {
+    if (pixelsize == 1)
+      std::fill_n(dstp8, row_size, (uint8_t)value);
+    else
+      std::fill_n(reinterpret_cast<uint16_t *>(dstp8), row_size / 2, (uint16_t)value);
+    dstp8 += dst_pitch;
+  }
+}
+
 
 //****************************************************************************
 // move plane of nextp frame to dstp for motion compensation by trc, trm with NEAREST pixels

@@ -117,6 +117,7 @@ class DePanStabilize : public GenericVideoFilter {
   const char *vrot; // global parameter rot name
   int method; // stabllization method
   const char *debuglog;  // filename of debug log P.F.
+  int alphainvert;  // YUVA, YA, RGBA: alpha of the new empty borders is max instead of 0
 
   // internal parameters
 //	int matchfields;
@@ -196,7 +197,7 @@ public:
     float _initzoom, bool _addzoom, int _fillprev, int _fillnext, int _mirror, int _blur, float _dxmax,
     float _dymax, float _zoommax, float _rotmax, int _subpixel, float _pixaspect,
     int _fitlast, float _tzoom, int _info, const char * _inputlog,
-    const char * _vdx, const char * _vdy, const char * _vzoom, const char * _vrot, int _method, const char * _debuglog, IScriptEnvironment* env);
+    const char * _vdx, const char * _vdy, const char * _vzoom, const char * _vrot, int _method, const char * _debuglog, int _alphainvert, IScriptEnvironment* env);
   // This is the constructor. It does not return any value, and is always used,
   //  when an instance of the class is created.
   // Since there is no code in this, this is the definition.
@@ -222,13 +223,13 @@ DePanStabilize::DePanStabilize(PClip _child, PClip _DePanData, float _cutoff,
   int _mirror, int _blur, float _dxmax, float _dymax, float _zoommax,
   float _rotmax, int _subpixel, float _pixaspect,
   int _fitlast, float _tzoom, int _info, const char * _inputlog,
-  const char * _vdx, const char * _vdy, const char * _vzoom, const char * _vrot, int _method, const char * _debuglog, IScriptEnvironment* env) :
+  const char * _vdx, const char * _vdy, const char * _vzoom, const char * _vrot, int _method, const char * _debuglog, int _alphainvert, IScriptEnvironment* env) :
 
   GenericVideoFilter(_child), DePanData(_DePanData), cutoff(_cutoff), damping(_damping),
   initzoom(_initzoom), addzoom(_addzoom), fillprev(_fillprev), fillnext(_fillnext), mirror(_mirror), blur(_blur),
   dxmax(_dxmax), dymax(_dymax), zoommax(_zoommax), rotmax(_rotmax), subpixel(_subpixel),
   pixaspect(_pixaspect), fitlast(_fitlast), tzoom(_tzoom), info(_info), inputlog(_inputlog),
-  vdx(_vdx), vdy(_vdy), vzoom(_vzoom), vrot(_vrot), method(_method), debuglog(_debuglog) {
+  vdx(_vdx), vdy(_vdy), vzoom(_vzoom), vrot(_vrot), method(_method), debuglog(_debuglog), alphainvert(_alphainvert) {
   // This is the implementation of the constructor.
   // The child clip (source clip) is inherited by the GenericVideoFilter,
   //  where the following variables gets defined:
@@ -1356,6 +1357,13 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
 
   VideoInfo vi_dst;
   dst = env->NewVideoFrame(vi);
+
+  // Alpha marks the new empty borders (#67): starts as all border (0, alphainvert: max), each used frame
+  // (fillprev, fillnext, current) writes its moved source alpha where it covers, without mirror and blur.
+  const bool has_alpha = vi.IsYUVA() || vi.IsPlanarRGBA(); // YUVA, YA, RGBA
+  if (has_alpha)
+    fill_plane(dst->GetWritePtr(PLANAR_A), dst->GetPitch(PLANAR_A), dst->GetRowSize(PLANAR_A), dst->GetHeight(PLANAR_A),
+      alphainvert ? (1 << bits_per_pixel) - 1 : 0, pixelsize);
   vi_dst = vi; // same
 
   // Ready to make motion stabilization,
@@ -1566,6 +1574,11 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
       _RPT2(0, "Compensate plane %d %f\r\n", p, elapsed_seconds);
 #endif
     } // for planes
+
+    if (has_alpha) // border -1: only the area covered by this frame is written
+      compensate_plane2((subpixel == 0 || fillprev0next1current2 != 2) ? 0 : subpixel, pixelsize,
+        dst->GetWritePtr(PLANAR_A), dst->GetPitch(PLANAR_A), src->GetReadPtr(PLANAR_A), src->GetPitch(PLANAR_A),
+        src->GetRowSize(PLANAR_A), src->GetHeight(PLANAR_A), trY, 0, -1, 0, bits_per_pixel);
   } // prev/next/current frame phase
 
   if (vi.IsYUY2())
@@ -1631,6 +1644,7 @@ AVSValue __cdecl Create_DePanStabilize(AVSValue args, void* user_data, IScriptEn
     args[23].AsString(""),  // rot global param
     args[24].AsInt(0),	// parameter  - method
     args[25].AsString(""), // debuglog file name - PF
+    args[26].AsBool(false), // alphainvert
     env);
     // Calls the constructor with the arguments provided.
 }

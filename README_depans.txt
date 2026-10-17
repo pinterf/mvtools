@@ -22,8 +22,13 @@ Change log (modifications by pinterf: https://github.com/pinterf/):
 - (2026xxxx)
   Depan 2.16
   - Support Y with alpha (YA) and YUVA, all subsamplings incl. 4:1:0, 4:1:1, 4:4:0.
-    DePanScenes copies the alpha from the source; DePan, DePanInterleave, DePanStabilize do not process alpha yet
-    (output alpha is undefined).
+    DePanScenes copies the alpha from the source.
+  - DePan, DePanInterleave, DePanStabilize: the alpha plane marks the new empty borders (#67, #43).
+    Alpha is moved like luma, without mirror and blur: the borders get alpha 0, the rest keeps the moved source
+    alpha (DePanStabilize: areas filled from prev, next frames count as picture). Works with zoom and rotation too.
+    New parameter alphainvert (default false): the borders get the maximum alpha value instead. E.g. with
+    AddAlphaPlane(0) before DePan the alpha plane is a mask of the borders, usable to fill them later.
+    Formats with alpha: YUVA, YA (DePanStabilize: planar RGBA too).
   - 32 bit float input is rejected with an error (was not supported).
   - Fix: DePanStabilize on YUY2 produced garbage. Regression since 2.13.1.0 (mvtools 2.7.5.22): the packed
     YUY2 frame was processed as one plane, the YUY2 <-> planar conversion of the original DePan was lost.

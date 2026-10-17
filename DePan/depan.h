@@ -67,6 +67,11 @@ void compensate_plane_bilinear2(uint8_t *dstp8, int dst_pitch, const uint8_t * s
 template <typename pixel_t>
 void compensate_plane_bicubic2(uint8_t *dstp8, int dst_pitch, const uint8_t * srcp8, int src_pitch, int row_size, int height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel);
 
+// compensate_plane_*2 selected by subpixel (0: nearest, 1: bilinear, 2: bicubic) and pixelsize (1 or 2)
+void compensate_plane2(int subpixel, int pixelsize, uint8_t *dstp8, int dst_pitch, const uint8_t * srcp8, int src_pitch, int row_size, int height, transform tr, int mirror, int border, int blurmax, int bits_per_pixel);
+// fills a plane with value, 8-16 bits; row_size in bytes
+void fill_plane(uint8_t *dstp8, int dst_pitch, int row_size, int height, int value, int pixelsize);
+
 //void compensate_plane_nearest_stacked(uint8_t *dstp, int dst_pitch, const uint8_t * srcp, int src_pitch, int src_width, int src_height, transform tr, int mirror, int border, int * work1width, int blurmax);
 
 //int read_depan_data(const uint8_t *data, float motionx[], float motiony[], float motionzoom[], float motionrot[],int neededframe);

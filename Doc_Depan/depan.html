@@ -125,7 +125,7 @@ DePanScenes(client)
 DePanEstimate.
 </p>
 <h4>Function call:</h4>
-<p><code>DePan</code> (<var>clip, clip data, float offset, int subpixel, float pixaspect, bool matchfields, int mirror, int blur, bool info, string inputlog</var>)&nbsp; </p>
+<p><code>DePan</code> (<var>clip, clip data, float offset, int subpixel, float pixaspect, bool matchfields, int mirror, int blur, bool info, string inputlog, bool alphainvert</var>)&nbsp; </p>
 <h4>Parameters of DePan:</h4>
 <p>
 <var>
@@ -175,6 +175,11 @@ info</var> - show motion info on frame (default=false).<br>
 
 <var>
 inputlog</var> - name of input log file in Deshaker format (default - none, not read)<br>
+<var>
+alphainvert</var> - clips with alpha (YUVA, YA): the alpha plane marks the new empty borders
+(moved like luma, without mirror and blur). The borders get alpha 0, the rest keeps the (moved) source alpha.
+With alphainvert=true the borders get the maximum alpha value instead, e.g. use <code>AddAlphaPlane(0)</code> before
+and the alpha plane is a mask of the borders (default false). Since v2.16.<br>
 </p>
 <p>Note: The <var>offset</var> parameter of DePan is extended version of <var>delta</var> parameter of GenMotion.</p>
 
@@ -190,7 +195,7 @@ for easy following temporal denoising, with following SelectEvery(prev+next+1, p
 <h4>Function call:</h4>
 <p><code>DePanInterleave</code> (<var>clip,
 clip data, int prev, int next,&nbsp;int subpixel, float pixaspect,
-bool matchfields, int mirror, int blur, bool info, string inputlog</var>)</p>
+bool matchfields, int mirror, int blur, bool info, string inputlog, bool alphainvert</var>)</p>
 <h4>Parameters of DePanInterleave similar to Depan:</h4>
 <p>
 <var>
@@ -233,6 +238,11 @@ info</var> - show motion info on frame (default=false).<br>
 
 <var>
 inputlog</var> - name of input log file in Deshaker format (none default,  not read)<br>
+<var>
+alphainvert</var> - clips with alpha (YUVA, YA): the alpha plane marks the new empty borders
+(moved like luma, without mirror and blur). The borders get alpha 0, the rest keeps the (moved) source alpha.
+With alphainvert=true the borders get the maximum alpha value instead, e.g. use <code>AddAlphaPlane(0)</code> before
+and the alpha plane is a mask of the borders (default false). Since v2.16.<br>
 </p>
 <h3>DePanStabilize</h3>
 <p>This function make some motion stabilization (deshake) by smoothing of global motion.
@@ -243,7 +253,7 @@ inputlog</var> - name of input log file in Deshaker format (none default,  not r
 clip data, float cutoff, float damping, float initzoom, bool addzoom, int prev, int
 next, int mirror, int blur, int dxmax, int dymax, float zoommax, float
 rotmax, int subpixel, float pixaspect, int fitlast, float
-tzoom, bool info, string inputlog, int method</var>)
+tzoom, bool info, string inputlog, int method, bool alphainvert</var>)
 </p>
 <h4>Parameters of DePanStabilize:</h4>
 <p>
@@ -330,6 +340,12 @@ Some parameters (including <var>dxmax, dymax, rotmax, zoommax, fitlast</var> etc
 &nbsp;&nbsp;&nbsp; 1 - two-way average;<br>
 &nbsp;&nbsp;&nbsp; 2 - unlimited (static) stabilization;<br>
 &nbsp;&nbsp;&nbsp; -1 - tracking of the base (first) frame instead of stabilization.<br>
+<var>
+alphainvert</var> - clips with alpha (YUVA, YA, planar RGBA): the alpha plane marks the new empty borders
+(moved like luma, without mirror and blur). The borders get alpha 0, the rest keeps the (moved) source alpha;
+areas filled from <var>prev</var>, <var>next</var> frames count as picture. With alphainvert=true the borders get the
+maximum alpha value instead, e.g. use <code>AddAlphaPlane(0)</code> before and the alpha plane is a mask of the
+borders (default false). Since v2.16.<br>
 </p>
 <h3>DePanScenes function</h3>
 <p>Generate clip with pixel values =255 for defined plane at scenechange and pixel values =0 at rest frames,<br>
