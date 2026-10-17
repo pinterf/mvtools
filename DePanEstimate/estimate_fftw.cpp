@@ -911,6 +911,44 @@ int __stdcall DePanEstimate_fftw::SetCacheHints(int cachehints, int frame_range)
   return 0;
 }
 
+// Fills the whole frame: luma 0, chroma neutral, alpha opaque.
+// For the motion data clip, where only the data area is written (deterministic output).
+// 8-16 bit only: 32 bit float input is rejected in the constructor
+static void clear_frame(PVideoFrame &dst, const VideoInfo &vi)
+{
+  if (vi.IsYUY2()) {
+    uint8_t *p = dst->GetWritePtr();
+    for (int y = 0; y < dst->GetHeight(); y++) {
+      for (int x = 0; x < dst->GetRowSize(); x += 2) {
+        p[x] = 0;       // Y
+        p[x + 1] = 128; // U or V
+      }
+      p += dst->GetPitch();
+    }
+    return;
+  }
+  const int bits = vi.BitsPerComponent(); // 8-16
+  const bool has_uv = !vi.IsY() && !vi.IsYA();
+  const bool has_alpha = vi.IsYUVA(); // YUVA and YA
+  const int planes[4] = { PLANAR_Y, PLANAR_U, PLANAR_V, PLANAR_A };
+  for (int i = 0; i < 4; i++) {
+    const int plane = planes[i];
+    if ((plane == PLANAR_U || plane == PLANAR_V) && !has_uv) continue;
+    if (plane == PLANAR_A && !has_alpha) continue;
+    const int value = plane == PLANAR_Y ? 0 : plane == PLANAR_A ? (1 << bits) - 1 : 1 << (bits - 1);
+    uint8_t *p = dst->GetWritePtr(plane);
+    const int pitch = dst->GetPitch(plane);
+    const int rowsize = dst->GetRowSize(plane);
+    for (int y = 0; y < dst->GetHeight(plane); y++) {
+      if (bits == 8)
+        std::fill_n(p, rowsize, (uint8_t)value);
+      else
+        std::fill_n(reinterpret_cast<uint16_t *>(p), rowsize / 2, (uint16_t)value);
+      p += pitch;
+    }
+  }
+}
+
 //
 PVideoFrame __stdcall DePanEstimate_fftw::GetFrame(int ndest, IScriptEnvironment* env) {
   fftwf_complex *fftcur, *fftprev; // chanded in v.1.0
@@ -964,6 +1002,9 @@ PVideoFrame __stdcall DePanEstimate_fftw::GetFrame(int ndest, IScriptEnvironment
 
  // create output frame with crypted motion data info
   PVideoFrame dst = has_at_least_v8 ? env->NewVideoFrameP(vi, &src) : env->NewVideoFrame(vi); // frame property support
+  // (internal cosmetics) motion data clip: only the data area is written below, the rest was uninitialized
+  if (info == 0 && show == 0)
+    clear_frame(dst, vi);
 
   // ---------------------------------------------------------------------------
   // isYUY2 = vi.IsYUY2(); // v.1.1 move to init

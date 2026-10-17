@@ -39,6 +39,10 @@ Change log (modifications by pinterf: https://github.com/pinterf/):
   - 32 bit float input is rejected with an error.
   - Fix: info=true at 10-16 bits: crash (4:4:4) or misplaced text; text position was outside the right edge.
   - Fix: zoom window and info position used the row size in bytes instead of pixels at 10-16 bits.
+  - (internal cosmetics): clear the unused part of the motion data clip (luma 0, chroma neutral, alpha opaque).
+    Was uninitialized memory outside the data area: harmless for DePan, but the output differed from run to run,
+    and DePanScenes copied it into its not marked planes. Deterministic output helps testing (frame hashes,
+    comparing the output of different versions).
 
 - (20260421)
   Depan 2.15
