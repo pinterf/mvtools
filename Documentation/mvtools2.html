@@ -2263,6 +2263,14 @@ Planar2Interleaved() # convert back to normal interleave YUY2
             MDegrain1-6: remove the experimental out32 (float intermediate overlap buffer) code path. No speed or quality benefit
             (output differed from the normal path only by +-1 rounding). The out32 parameter is still accepted for compatibility, but ignored.
         </li>
+        <li>Update Avisynth headers to V13 interface (YA, 4:1:0, 4:1:1, 4:4:0 formats in all bit depths)</li>
+        <li>
+            Fix: MShow, MDepan text overlay (showsad=true, info=true):<br />
+            - Y (greyscale) clips: "GetPlaneWidthSubsampling not available on Y or YA pixel type" error.<br />
+            - 10-16 bits: possible crash (access violation), or text shading at the wrong place.
+            The chroma part of the text was drawn at double row offset, with 4:4:4 it could write past the frame buffer.<br />
+            - Characters not fitting into the frame are skipped instead of being written outside of it.
+        </li>
     </ul>
 
     <p>2.7.47 (20260424)</p>

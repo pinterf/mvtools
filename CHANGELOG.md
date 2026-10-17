@@ -14,6 +14,12 @@ Change log
     Chroma output (and vectors with chroma=true) of subsampled clips changes slightly.
   - MDegrain1-6: remove the experimental out32 (float intermediate overlap buffer) code path. No speed or quality benefit
     (output differed from the normal path only by +-1 rounding). The out32 parameter is still accepted for compatibility, but ignored.
+  - Update Avisynth headers to V13 interface (YA, 4:1:0, 4:1:1, 4:4:0 formats in all bit depths)
+  - Fix: MShow, MDepan text overlay (showsad=true, info=true):
+    - Y (greyscale) clips: "GetPlaneWidthSubsampling not available on Y or YA pixel type" error.
+    - 10-16 bits: possible crash (access violation), or text shading at the wrong place.
+      The chroma part of the text was drawn at double row offset, with 4:4:4 it could write past the frame buffer.
+    - Characters not fitting into the frame are skipped instead of being written outside of it.
 
 - 2.7.47 (20260424)
   - Update Avisynth headers to V12 interface (AcquireGlobalLock/ReleaseGlobalLock support)
