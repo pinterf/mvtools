@@ -2286,7 +2286,7 @@ Planar2Interleaved() # convert back to normal interleave YUY2
         </li>
         <li>
             MDegrain1-6: remove the experimental out32 (float intermediate overlap buffer) code path. No speed or quality benefit
-            (output differed from the normal path only by +-1 rounding). The out32 parameter is still accepted for compatibility, but ignored.
+            (output differed from the normal path only by +-1 rounding). The out32 parameter is removed as well: scripts passing out32 get an error.
         </li>
         <li>Update Avisynth headers to V13 interface (YA, 4:1:0, 4:1:1, 4:4:0 formats in all bit depths)</li>
         <li>

@@ -13,7 +13,7 @@ Change log
     MFlow, MFlowInter, MFlowFps, MFlowBlur). Not subsampled directions (e.g. vertical in 4:2:2, 4:4:4) were not affected.
     Chroma output (and vectors with chroma=true) of subsampled clips changes slightly.
   - MDegrain1-6: remove the experimental out32 (float intermediate overlap buffer) code path. No speed or quality benefit
-    (output differed from the normal path only by +-1 rounding). The out32 parameter is still accepted for compatibility, but ignored.
+    (output differed from the normal path only by +-1 rounding). The out32 parameter is removed as well: scripts passing out32 get an error.
   - Update Avisynth headers to V13 interface (YA, 4:1:0, 4:1:1, 4:4:0 formats in all bit depths)
   - Fix: MShow, MDepan text overlay (showsad=true, info=true):
     - Y (greyscale) clips: "GetPlaneWidthSubsampling not available on Y or YA pixel type" error.
