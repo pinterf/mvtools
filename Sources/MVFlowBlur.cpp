@@ -86,12 +86,12 @@ MVFlowBlur::MVFlowBlur(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, int 
   bits_per_pixel_super = super->GetVideoInfo().BitsPerComponent();
   pixelsize_super_shift = ilog2(pixelsize_super);
 
-  planecount = vi.IsYUY2() ? 3 : std::min(vi.NumComponents(), 3);
+  planecount = vi.IsYUY2() ? 3 : ClipFnc::nbr_planes_processed(vi);
 
   xRatioUVs[0] = xRatioUVs[1] = xRatioUVs[2] = 1;
   yRatioUVs[0] = yRatioUVs[1] = yRatioUVs[2] = 1;
 
-  if (!vi.IsY() && !vi.IsRGB()) {
+  if (!ClipFnc::is_grey(vi) && !vi.IsRGB()) {
     xRatioUVs[1] = xRatioUVs[2] = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U));
     yRatioUVs[1] = yRatioUVs[2] = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U));
   }
@@ -110,7 +110,7 @@ MVFlowBlur::MVFlowBlur(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, int 
   VPitchUV = nWidthUV;
 
   is444 = vi.Is444();
-  isGrey = vi.IsY();
+  isGrey = ClipFnc::is_grey(vi);
   isRGB = vi.IsPlanarRGB() || vi.IsPlanarRGBA(); // planar only
   //needDistinctChroma = !is444 && !isGrey && !isRGB;
 
@@ -350,7 +350,7 @@ PVideoFrame __stdcall MVFlowBlur::GetFrame(int n, IScriptEnvironment* env)
       int planes_y[4] = { PLANAR_Y, PLANAR_U, PLANAR_V, PLANAR_A };
       int planes_r[4] = { PLANAR_G, PLANAR_B, PLANAR_R, PLANAR_A };
       int *planes = (vi.IsYUV() || vi.IsYUVA()) ? planes_y : planes_r;
-      planecount = std::min(vi.NumComponents(), 3);
+      planecount = ClipFnc::nbr_planes_processed(vi);
       for (int p = 0; p < planecount; ++p) {
         const int plane = planes[p];
 

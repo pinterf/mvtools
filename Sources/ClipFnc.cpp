@@ -191,6 +191,40 @@ sad_t	ClipFnc::interpolate_thsad (sad_t thsad1, sad_t thsad2, int d, int tr)
 
 
 
+bool	ClipFnc::is_ya (const ::VideoInfo &vi)
+{
+  // Y and A planes, no U/V. Not IsY(), but IsYUVA().
+  // V13 interface function; on older cores it is resolved to false (AVS_LinkIsMissing), where YA cannot exist anyway.
+  return vi.IsYA();
+}
+
+
+
+bool	ClipFnc::is_grey (const ::VideoInfo &vi)
+{
+  return vi.IsY() || is_ya(vi);
+}
+
+
+
+bool	ClipFnc::is_yuv_any (const ::VideoInfo &vi)
+{
+  return vi.IsYUV() || vi.IsYUVA();
+}
+
+
+
+int	ClipFnc::nbr_planes_processed (const ::VideoInfo &vi)
+{
+  if (vi.IsYUY2())
+    return 3;
+  if (is_grey(vi))
+    return 1;
+  return std::min(vi.NumComponents(), 3);
+}
+
+
+
 /*\\\ PROTECTED \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
 

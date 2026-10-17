@@ -84,12 +84,12 @@ MVAnalyse::MVAnalyse(
     env->ThrowError("MAnalyse: Clip with float pixel type is not supported");
   }
 
-  if (!vi.IsYUV() && !vi.IsYUY2()) // YUY2 is also YUV but let's see what is supported
+  if (!ClipFnc::is_yuv_any(vi)) // YUY2 is also YUV but let's see what is supported
   {
-    env->ThrowError("MAnalyse: Clip must be YUV or YUY2");
+    env->ThrowError("MAnalyse: Clip must be Y(A), YUV(A) or YUY2");
   }
 
-  if (vi.IsY())
+  if (ClipFnc::is_grey(vi))
     chroma = false; // silent fallback
 
   // get parameters of super clip - v2.0
@@ -118,7 +118,7 @@ MVAnalyse::MVAnalyse(
   analysisData.nWidth = vi.width - nSuperHPad * 2;
   analysisData.nHeight = nHeight;
   analysisData.pixelType = vi.pixel_type;
-  if (!vi.IsY()) {
+  if (!ClipFnc::is_grey(vi)) {
     analysisData.yRatioUV = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U));
     analysisData.xRatioUV = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U));
   }

@@ -153,7 +153,7 @@ PVideoFrame __stdcall MVShow::GetFrame(int n, IScriptEnvironment* env)
 
   // Copy the frame into the created frame
    env->BitBlt(pDst[0], nDstPitches[0], pSrc[0], nSrcPitches[0], vi.width*pixelsize, vi.height);
-   if (!vi.IsY()) {
+   if (!ClipFnc::is_grey(vi)) {
       env->BitBlt(pDst[1], nDstPitches[1], pSrc[1], nSrcPitches[1], vi.width / xRatioUV * pixelsize, vi.height / yRatioUV);
       env->BitBlt(pDst[2], nDstPitches[2], pSrc[2], nSrcPitches[2], vi.width / xRatioUV * pixelsize, vi.height / yRatioUV);
     }

@@ -63,7 +63,7 @@ MVMask::MVMask(
     env->ThrowError("MMask: time must be 0.0 to 100.0");
   time256 = int(256 * _time100 / 100);
 
-  chroma = !vi.IsY(); // 2.7.19.22-
+  chroma = !ClipFnc::is_grey(vi); // 2.7.19.22-
   // target format is independent from the vector clip's original format
   maskclip_bits_per_pixel = vi.BitsPerComponent();
   maskclip_pixelsize = vi.ComponentSize();

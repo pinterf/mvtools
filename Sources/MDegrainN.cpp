@@ -625,7 +625,7 @@ MDegrainN::MDegrainN(
   // because xRatioUV and yRatioUV: in MVFilter, property of motion vectors
   xRatioUV_super = 1;
   yRatioUV_super = 1;
-  if (!vi.IsY() && !vi.IsRGB()) {
+  if (!ClipFnc::is_grey(vi) && !vi.IsRGB()) {
     xRatioUV_super = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U));
     yRatioUV_super = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U));
   }
@@ -1209,8 +1209,11 @@ static void plane_copy_8_to_16_c(uint8_t *dstp, int dstpitch, const uint8_t *src
   //-------------------------------------------------------------------------
   // CHROMA planes
 
-  process_chroma <1>(UPLANE & _nsupermodeyuv);
-  process_chroma <2>(VPLANE & _nsupermodeyuv);
+  if (!ClipFnc::is_grey(vi)) // Y, YA: no U/V planes (for YA the U/V pointers are not valid)
+  {
+    process_chroma <1>(UPLANE & _nsupermodeyuv);
+    process_chroma <2>(VPLANE & _nsupermodeyuv);
+  }
 
   //-------------------------------------------------------------------------
 

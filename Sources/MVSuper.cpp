@@ -21,6 +21,7 @@
 // http://www.gnu.org/copyleft/gpl.html .
 
 #include	"debugprintf.h"
+#include "ClipFnc.h"
 #include "MVFrame.h"
 #include "MVGroupOfFrames.h"
 #include "MVPlane.h"
@@ -60,9 +61,9 @@ MVSuper::MVSuper(
   nHeight = vi.height;
 
   // 2.7.35 planar RGB support
-  if (!vi.IsYUV() && !vi.IsYUY2() && !vi.IsPlanarRGB() && !vi.IsPlanarRGBA()) // YUY2 is also YUV but let's see what is supported
+  if (!ClipFnc::is_yuv_any(vi) && !vi.IsPlanarRGB() && !vi.IsPlanarRGBA()) // YUY2 is also YUV but let's see what is supported
   {
-    env->ThrowError("MSuper: Clip must be YUV or YUY2 or planar RGB/RGBA");
+    env->ThrowError("MSuper: Clip must be Y(A), YUV(A), YUY2 or planar RGB(A)");
   }
 
   nPel = _pel;
@@ -80,13 +81,13 @@ MVSuper::MVSuper(
   chroma = _chroma;
   if (vi.IsRGB())
     chroma = true; // Chroma means: all channels, for RGB: compulsory
-  if (vi.IsY())
+  if (ClipFnc::is_grey(vi))
     chroma = false; // Grey support, no U V plane usage
 
   nModeYUV = chroma ? YUVPLANES : YPLANE;
 
   pixelType = vi.pixel_type;
-  if (!vi.IsY() && !vi.IsRGB()) {
+  if (!ClipFnc::is_grey(vi) && !vi.IsRGB()) {
     yRatioUV = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U));
     xRatioUV = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U)); // for YV12 and YUY2, really do not used and assumed to 2
   }
@@ -260,7 +261,7 @@ PVideoFrame __stdcall MVSuper::GetFrame(int n, IScriptEnvironment* env)
     int planes_y[4] = { PLANAR_Y, PLANAR_U, PLANAR_V, PLANAR_A };
     int planes_r[4] = { PLANAR_G, PLANAR_B, PLANAR_R, PLANAR_A };
     int *planes = (vi.IsYUV() || vi.IsYUVA()) ? planes_y : planes_r;
-    planecount = std::min(vi.NumComponents(), 3);
+    planecount = ClipFnc::nbr_planes_processed(vi);
     for (int p = 0; p < planecount; ++p) {
       const int plane = planes[p];
       pSrc[p] = src->GetReadPtr(plane);
@@ -279,7 +280,7 @@ PVideoFrame __stdcall MVSuper::GetFrame(int n, IScriptEnvironment* env)
   // maybe some garbage is read outside the area by MAnalyse later?
   /*
   MemZoneSet(pDstY, 0, dst->GetRowSize(PLANAR_Y_ALIGNED), vi.height, 0, 0, nDstPitchY);
-  if (!vi.IsY()) {
+  if (!ClipFnc::is_grey(vi)) {
     MemZoneSet(pDstU, 0, dst->GetRowSize(PLANAR_U_ALIGNED), vi.height >> vi.GetPlaneHeightSubsampling(PLANAR_U), 0, 0, nDstPitchUV);
     MemZoneSet(pDstV, 0, dst->GetRowSize(PLANAR_V_ALIGNED), vi.height >> vi.GetPlaneHeightSubsampling(PLANAR_V), 0, 0, nDstPitchUV);
   }

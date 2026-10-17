@@ -18,8 +18,9 @@
         <tr><td class="n"><b>Base versions:</b></td><td class="n">&nbsp;</td><td class="n">2.6.0.5 + 2.5.11.22</td></tr>
         <tr><td class="n"><b>Base download:</b></td><td class="n">&nbsp;</td><td class="n">Contained in the Dither package, <a href="http://ldesoras.free.fr/prod.html#src_ditheravsi">http://ldesoras.free.fr/prod.html</a></td></tr>
         <tr><td class="n"><b>Category:     </b></td><td class="n">&nbsp;</td><td class="n">Misc Plugins</td></tr>
-        <tr><td class="n"><b>Requirements: </b></td><td class="n">&nbsp;</td><td class="n">YV12, YV16, YV24 or YUY2, Y, YUV420P10-16, YUV422P10-16, YUV444P10-16 for finding vectors</td></tr>
-        <tr><td class="n"><b>              </b></td><td class="n">&nbsp;</td><td class="n">8-32 bit Y, YUV 420, 422, 444 and planar RGB for MSuper, MCompensate and MDegrains and MFlowXX family</td></tr>
+        <tr><td class="n"><b>Requirements: </b></td><td class="n">&nbsp;</td><td class="n">YV12, YV16, YV24 or YUY2, Y, YUV420P10-16, YUV422P10-16, YUV444P10-16 for finding vectors;
+            since 2.7.48 also YA, YUVA, 4:1:0, 4:1:1, 4:4:0 (8-16 bit)</td></tr>
+        <tr><td class="n"><b>              </b></td><td class="n">&nbsp;</td><td class="n">8-32 bit Y(A), YUV(A) 420, 422, 444, 410, 411, 440 and planar RGB(A) for MSuper, MCompensate and MDegrains and MFlowXX family</td></tr>
         <tr><td class="n"><b>License:      </b></td><td class="n">&nbsp;</td><td class="n">GPL</td></tr>
 
     </table>
@@ -112,6 +113,8 @@
         Versions from 2.7.5.22 support all 420, 422, 444 planar YUV formats, 8 and 10-16 bits
         with recent Avisynth Plus versions.
         Since 2.7.40 almost all 8-32 bit Y, YUV and planar RGB colorspaces are supported for many filters.
+        Since 2.7.48 the formats of Avisynth+ interface V13 (Y with alpha (YA), 4:1:0, 4:1:1, 4:4:0 in all bit depths)
+        and clips with alpha (YUVA) are supported as well. The alpha plane is copied from the source, it is not processed.
         Except that for motion vector search only 8-16 bit Y or YUV clips are supported.
 
         Use color format conversion and try using (smart) bob-deinterlace for
@@ -285,7 +288,7 @@
         That is one of reasons why we additionally use source clip with client
         functions.
         You may have a look to super clip yourself (it has normal format).
-        Supported formats: greyscale, YUV and planar RGB 8-32 bits, YUY2
+        Supported formats: greyscale (Y, YA), YUV(A) 4:2:0, 4:2:2, 4:4:4, 4:1:0, 4:1:1, 4:4:0 and planar RGB(A) 8-32 bits, YUY2
         You can use different Super clip for generation vectors with MAnalyze and a different
         super clip format for the actual action. Thus MFlowFPS can support native RGB (planar),
         and MDegrain can work with 32 bit float input clips.
@@ -903,7 +906,8 @@
     <p>
         This is multilevel super clip prepared by <code>MSuper</code> function.
         Mandatory.
-        From 2.7.37 may more bit depths and formats supported: 8-32 bits, YUV420-422-444, Planar RGB, and YUY2 planar
+        From 2.7.37 may more bit depths and formats supported: 8-32 bits, YUV420-422-444, Planar RGB, and YUY2 planar.
+        From 2.7.48 also Y with alpha (YA), YUV(A) 4:1:0, 4:1:1, 4:4:0 and clips with alpha (YUVA, planar RGBA).
         Super clip format must match with the source, but can be different from the base format of vector clip.
     </p>
     <p class="var">vectors</p>
@@ -2272,6 +2276,11 @@ Planar2Interleaved() # convert back to normal interleave YUY2
             - Characters not fitting into the frame are skipped instead of being written outside of it.
         </li>
         <li>New chroma block sizes 2x8 and 4x16, e.g. 4:1:1 needs them with blksize=8 and 16 (also 4:2:2 with 4x8, 8x16 and 4:2:0 with 8x32).</li>
+        <li>
+            Support the formats added in Avisynth+ interface V13: YUV(A) 4:1:0 and 4:4:0, YUV(A) 4:1:1 in all bit depths, Y with alpha (YA).<br />
+            Clips with alpha (YUVA, YA) are accepted now (YUVA was rejected).
+        </li>
+        <li>Fix: MDegrain1-6, MDegrainN on greyscale (Y) clips: part of the degrained luma was overwritten with source luma.</li>
     </ul>
 
     <p>2.7.47 (20260424)</p>

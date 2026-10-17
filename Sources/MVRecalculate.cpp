@@ -79,9 +79,9 @@ MVRecalculate::MVRecalculate(
     env->ThrowError("MRecalculate: Clip with float pixel type is not supported");
   }
 
-  if (!vi.IsYUV() && !vi.IsYUY2()) // YUY2 is also YUV but let's see what is supported
+  if (!ClipFnc::is_yuv_any(vi)) // YUY2 is also YUV but let's see what is supported
   {
-    env->ThrowError("MRecalculate: Clip must be YUV or YUY2");
+    env->ThrowError("MRecalculate: Clip must be Y(A), YUV(A) or YUY2");
   }
 
   vi.num_frames *= _nbr_srd;
@@ -98,7 +98,7 @@ MVRecalculate::MVRecalculate(
   const int nSuperModeYUV = params.nModeYUV;
   const int nSuperLevels = params.nLevels;
 
-  if (vi.IsY())
+  if (ClipFnc::is_grey(vi))
     chroma = false; // silent fallback
 
   nModeYUV = chroma ? YUVPLANES : YPLANE;
@@ -121,7 +121,7 @@ MVRecalculate::MVRecalculate(
   analysisData.nWidth = pAnalyseFilter->GetWidth();
   analysisData.nHeight = pAnalyseFilter->GetHeight();
   analysisData.pixelType = pAnalyseFilter->GetPixelType();
-  if (!vi.IsY()) {
+  if (!ClipFnc::is_grey(vi)) {
     analysisData.yRatioUV = 1 << vi.GetPlaneHeightSubsampling(PLANAR_U);
     analysisData.xRatioUV = 1 << vi.GetPlaneWidthSubsampling(PLANAR_U);
   }

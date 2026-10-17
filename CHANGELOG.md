@@ -21,6 +21,9 @@ Change log
       The chroma part of the text was drawn at double row offset, with 4:4:4 it could write past the frame buffer.
     - Characters not fitting into the frame are skipped instead of being written outside of it.
   - New chroma block sizes 2x8 and 4x16, e.g. 4:1:1 needs them with blksize=8 and 16 (also 4:2:2 with 4x8, 8x16 and 4:2:0 with 8x32).
+  - Support the formats added in Avisynth+ interface V13: YUV(A) 4:1:0 and 4:4:0, YUV(A) 4:1:1 in all bit depths, Y with alpha (YA).
+    Clips with alpha (YUVA, YA) are accepted now (YUVA was rejected).
+  - Fix: MDegrain1-6, MDegrainN on greyscale (Y) clips: part of the degrained luma was overwritten with source luma.
 
 - 2.7.47 (20260424)
   - Update Avisynth headers to V12 interface (AcquireGlobalLock/ReleaseGlobalLock support)

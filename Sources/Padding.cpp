@@ -17,6 +17,7 @@
 // http://www.gnu.org/copyleft/gpl.html .
 
 #include "Padding.h"
+#include "ClipFnc.h"
 #include <algorithm>
 #include <stdint.h>
 
@@ -43,8 +44,8 @@ Padding::Padding(PClip _child, int hPad, int vPad, bool _planar, IScriptEnvironm
   try { env->CheckVersion(8); }
   catch (const AvisynthError&) { has_at_least_v8 = false; }
 
-  if (!vi.IsYUV() && !vi.IsYUY2() && !vi.IsPlanarRGB() && !vi.IsPlanarRGBA())
-    env->ThrowError("Padding : clip must be in the YUV or YUY2 or planar RGB/RGBA color format");
+  if (!ClipFnc::is_yuv_any(vi) && !vi.IsPlanarRGB() && !vi.IsPlanarRGBA())
+    env->ThrowError("Padding : clip must be in the Y(A), YUV(A), YUY2 or planar RGB(A) color format");
 
   horizontalPadding = hPad;
   verticalPadding = vPad;
@@ -90,7 +91,7 @@ PVideoFrame __stdcall Padding::GetFrame(int n, IScriptEnvironment *env)
   int yRatioUVs[3] = { 1, 1, 1 };
   int planecount;
 
-  if (!vi.IsY() && !vi.IsRGB()) {
+  if (!ClipFnc::is_grey(vi) && !vi.IsRGB()) {
     xRatioUVs[1] = xRatioUVs[2] = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U));
     yRatioUVs[1] = yRatioUVs[2] = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U));
   }
@@ -139,7 +140,7 @@ PVideoFrame __stdcall Padding::GetFrame(int n, IScriptEnvironment *env)
     int planes_y[4] = { PLANAR_Y, PLANAR_U, PLANAR_V, PLANAR_A };
     int planes_r[4] = { PLANAR_G, PLANAR_B, PLANAR_R, PLANAR_A };
     int *planes = (vi.IsYUV() || vi.IsYUVA()) ? planes_y : planes_r;
-    planecount = std::min(vi.NumComponents(), 3);
+    planecount = ClipFnc::nbr_planes_processed(vi);
     for (int p = 0; p < planecount; ++p) {
       const int plane = planes[p];
       pDst[p] = dst->GetWritePtr(plane);

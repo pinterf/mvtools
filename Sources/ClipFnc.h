@@ -67,6 +67,13 @@ public:
   static int		compute_mvclip_best_width (int nbr_blk_x, int unit_size, int align);
   static sad_t		interpolate_thsad (sad_t thsad1, sad_t thsad2, int d, int tr);
 
+  // Color format helpers (2.7.48), also for the formats added in Avisynth+ interface V13
+  // (YA, 410, 440, 411 in all bit depths). Greyscale means Y or YA: no U/V planes.
+  static bool		is_ya (const ::VideoInfo &vi);        // Y + alpha (4:0:0:A)
+  static bool		is_grey (const ::VideoInfo &vi);      // Y or YA: no U/V planes
+  static bool		is_yuv_any (const ::VideoInfo &vi);   // YUV or YUVA (incl. YUY2, YA)
+  static int		nbr_planes_processed (const ::VideoInfo &vi); // color planes processed by mvtools (alpha is not)
+
 
 
 /*\\\ PROTECTED \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/

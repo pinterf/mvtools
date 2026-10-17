@@ -53,7 +53,7 @@ GenericVideoFilter(_super)
   int nHeight = nHeightS;
     int xRatioUV;
     int yRatioUV;
-    if(!vi.IsY() && !vi.IsRGB()) {
+    if(!ClipFnc::is_grey(vi) && !vi.IsRGB()) {
         xRatioUV = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U));
         yRatioUV = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U));;
     }
@@ -107,7 +107,7 @@ PVideoFrame __stdcall MVFinest::GetFrame(int n, IScriptEnvironment* env)
       int planes_y[4] = { PLANAR_Y, PLANAR_U, PLANAR_V, PLANAR_A };
       int planes_r[4] = { PLANAR_G, PLANAR_B, PLANAR_R, PLANAR_A };
       int *planes = (vi.IsYUV() || vi.IsYUVA()) ? planes_y : planes_r;
-      planecount = std::min(vi.NumComponents(), 3);
+      planecount = ClipFnc::nbr_planes_processed(vi);
       for (int p = 0; p < planecount; ++p) {
         const int plane = planes[p];
         env->BitBlt(dst->GetWritePtr(plane), dst->GetPitch(plane),
@@ -141,7 +141,7 @@ PVideoFrame __stdcall MVFinest::GetFrame(int n, IScriptEnvironment* env)
       int planes_y[4] = { PLANAR_Y, PLANAR_U, PLANAR_V, PLANAR_A };
       int planes_r[4] = { PLANAR_G, PLANAR_B, PLANAR_R, PLANAR_A };
       int *planes = (vi.IsYUV() || vi.IsYUVA()) ? planes_y : planes_r;
-      planecount = std::min(vi.NumComponents(), 3);
+      planecount = ClipFnc::nbr_planes_processed(vi);
       for (int p = 0; p < planecount; ++p) {
         const int plane = planes[p];
         pDst[p] = dst->GetWritePtr(plane);
@@ -151,7 +151,7 @@ PVideoFrame __stdcall MVFinest::GetFrame(int n, IScriptEnvironment* env)
       }
     }
 
-    MVPlaneSet nMode = vi.IsY() ? YPLANE : YUVPLANES;
+    MVPlaneSet nMode = ClipFnc::is_grey(vi) ? YPLANE : YUVPLANES;
     pRefGOF->Update(nMode, (BYTE*)pRef[0], nRefPitches[0], (BYTE*)pRef[1], nRefPitches[1], (BYTE*)pRef[2], nRefPitches[2]);// v2.0
 
     MVPlane *pPlanes[3];

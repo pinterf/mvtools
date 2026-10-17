@@ -16,6 +16,7 @@
 // Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA, or visit
 // http://www.gnu.org/copyleft/gpl.html .
 
+#include "ClipFnc.h"
 #include "info.h"
 #include "MVDepan.h"
 
@@ -465,25 +466,28 @@ PVideoFrame __stdcall MVDepan::GetFrame(int ndest, IScriptEnvironment* env)
   int mask_height;
   int mask_pitch;
 
-  if ((vi.IsYUV() || vi.IsYUVA()) && !vi.IsYUY2())
+  if (ClipFnc::is_yuv_any(vi) && !vi.IsYUY2())
   {
-  // copy U
-    srcp = src->GetReadPtr(PLANAR_U);
-    src_width = src->GetRowSize(PLANAR_U);
-    src_height = src->GetHeight(PLANAR_U);
-    src_pitch = src->GetPitch(PLANAR_U);
-    dstp = dst->GetWritePtr(PLANAR_U);
-    dst_pitch = dst->GetPitch(PLANAR_U);
-    env->BitBlt(dstp, dst_pitch, srcp, src_pitch, src_width, src_height);
+    if (!ClipFnc::is_grey(vi)) // Y, YA: no U/V planes
+    {
+      // copy U
+      srcp = src->GetReadPtr(PLANAR_U);
+      src_width = src->GetRowSize(PLANAR_U);
+      src_height = src->GetHeight(PLANAR_U);
+      src_pitch = src->GetPitch(PLANAR_U);
+      dstp = dst->GetWritePtr(PLANAR_U);
+      dst_pitch = dst->GetPitch(PLANAR_U);
+      env->BitBlt(dstp, dst_pitch, srcp, src_pitch, src_width, src_height);
 
-    // copy V
-    srcp = src->GetReadPtr(PLANAR_V);
-    src_width = src->GetRowSize(PLANAR_V);
-    src_height = src->GetHeight(PLANAR_V);
-    src_pitch = src->GetPitch(PLANAR_V);
-    dstp = dst->GetWritePtr(PLANAR_V);
-    dst_pitch = dst->GetPitch(PLANAR_V);
-    env->BitBlt(dstp, dst_pitch, srcp, src_pitch, src_width, src_height);
+      // copy V
+      srcp = src->GetReadPtr(PLANAR_V);
+      src_width = src->GetRowSize(PLANAR_V);
+      src_height = src->GetHeight(PLANAR_V);
+      src_pitch = src->GetPitch(PLANAR_V);
+      dstp = dst->GetWritePtr(PLANAR_V);
+      dst_pitch = dst->GetPitch(PLANAR_V);
+      env->BitBlt(dstp, dst_pitch, srcp, src_pitch, src_width, src_height);
+    }
 
     // copy Y and prepare for output data
     srcp = src->GetReadPtr(PLANAR_Y);

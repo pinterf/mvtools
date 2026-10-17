@@ -344,7 +344,7 @@ MVDegrainX::MVDegrainX(
   // because xRatioUV and yRatioUV: in MVFilter, property of motion vectors
   xRatioUV_super = 1;
   yRatioUV_super = 1;
-  if (!vi.IsY() && !vi.IsRGB()) {
+  if (!ClipFnc::is_grey(vi) && !vi.IsRGB()) {
     xRatioUV_super = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U));
     yRatioUV_super = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U));
   }
@@ -1035,26 +1035,29 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
 
   //----------------------------------------------------------------------------
   // -----------------------------------------------------------------------------
-  // CHROMA plane U
-  process_chroma(
-    UPLANE & nSuperModeYUV,
-    pDst[1], pDstCur[1], nDstPitches[1], pSrc[1], pSrcCur[1], nSrcPitches[1],
-    isUsableB, isUsableF,
-    pPlanesB[1], pPlanesF[1],
-    lsb_offset_u, nWidth_B, nHeight_B
-  );
+  if (!ClipFnc::is_grey(vi)) // Y, YA: no U/V planes (for YA the U/V pointers are not valid)
+  {
+    // CHROMA plane U
+    process_chroma(
+      UPLANE & nSuperModeYUV,
+      pDst[1], pDstCur[1], nDstPitches[1], pSrc[1], pSrcCur[1], nSrcPitches[1],
+      isUsableB, isUsableF,
+      pPlanesB[1], pPlanesF[1],
+      lsb_offset_u, nWidth_B, nHeight_B
+    );
 
-  //----------------------------------------------------------------------------------
-  // -----------------------------------------------------------------------------
-  // CHROMA plane V
+    //----------------------------------------------------------------------------------
+    // -----------------------------------------------------------------------------
+    // CHROMA plane V
 
-  process_chroma(
-    VPLANE & nSuperModeYUV,
-    pDst[2], pDstCur[2], nDstPitches[2], pSrc[2], pSrcCur[2], nSrcPitches[2],
-    isUsableB, isUsableF,
-    pPlanesB[2], pPlanesF[2],
-    lsb_offset_v, nWidth_B, nHeight_B
-  );
+    process_chroma(
+      VPLANE & nSuperModeYUV,
+      pDst[2], pDstCur[2], nDstPitches[2], pSrc[2], pSrcCur[2], nSrcPitches[2],
+      isUsableB, isUsableF,
+      pPlanesB[2], pPlanesF[2],
+      lsb_offset_v, nWidth_B, nHeight_B
+    );
+  }
 
   //--------------------------------------------------------------------------------
 

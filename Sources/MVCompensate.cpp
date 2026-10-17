@@ -65,12 +65,12 @@ MVCompensate::MVCompensate(
   ovrBufferElementSize = pixelsize_super == 1 ? sizeof(short) : sizeof(int); // for 10-16 bits and float: 32 bit int or float tmp buffer
   ovrBufferElementSize_shift = ilog2(ovrBufferElementSize);
 
-  planecount = vi.IsYUY2() ? 3 : std::min(vi.NumComponents(), 3);
+  planecount = vi.IsYUY2() ? 3 : ClipFnc::nbr_planes_processed(vi);
 
   xRatioUVs[0] = xRatioUVs[1] = xRatioUVs[2] = 1;
   yRatioUVs[0] = yRatioUVs[1] = yRatioUVs[2] = 1;
 
-  if (!vi.IsY() && !vi.IsRGB()) {
+  if (!ClipFnc::is_grey(vi) && !vi.IsRGB()) {
     xRatioUVs[1] = xRatioUVs[2] = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U));
     yRatioUVs[1] = yRatioUVs[2] = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U));
   }
@@ -214,11 +214,11 @@ MVCompensate::MVCompensate(
   if (nOverlapX > 0 || nOverlapY > 0)
   {
     OverWins = new OverlapWindows(nBlkSizeX, nBlkSizeY, nOverlapX, nOverlapY);
-    if (!vi.IsY())
+    if (!ClipFnc::is_grey(vi))
       OverWinsUV = new OverlapWindows(nBlkSizeX >> nLogxRatioUVs[1], nBlkSizeY >> nLogyRatioUVs[1], nOverlapX >> nLogxRatioUVs[1], nOverlapY >> nLogyRatioUVs[1]);
 
     DstShort = (BYTE *)_aligned_malloc(dstShortPitch * nHeight *  ovrBufferElementSize, 32);
-    if (!vi.IsY()) {
+    if (!ClipFnc::is_grey(vi)) {
       DstShortU = (BYTE *)_aligned_malloc(dstShortPitchUV * nHeight * ovrBufferElementSize, 32);
       DstShortV = (BYTE *)_aligned_malloc(dstShortPitchUV * nHeight * ovrBufferElementSize, 32);
     }
@@ -244,7 +244,7 @@ MVCompensate::MVCompensate(
     {
       nLoopPitches[0] = AlignNumber(nSuperWidth*pixelsize_super, 32);
       pLoop[0] = (unsigned char*)_aligned_malloc(nLoopPitches[0] * nSuperHeight, 32);
-      if (!vi.IsY()) {
+      if (!ClipFnc::is_grey(vi)) {
         nLoopPitches[1] = nLoopPitches[2] = AlignNumber((nSuperWidth >> nLogxRatioUVs[1]) * pixelsize_super, 32);
         pLoop[1] = (unsigned char*)_aligned_malloc(nLoopPitches[1] * nSuperHeight, 32);
         pLoop[2] = (unsigned char*)_aligned_malloc(nLoopPitches[2] * nSuperHeight, 32);
@@ -263,10 +263,10 @@ MVCompensate::~MVCompensate()
   if (nOverlapX > 0 || nOverlapY > 0)
   {
     delete OverWins;
-    if (!vi.IsY())
+    if (!ClipFnc::is_grey(vi))
       delete OverWinsUV;
     _aligned_free(DstShort);
-    if (!vi.IsY()) {
+    if (!ClipFnc::is_grey(vi)) {
       _aligned_free(DstShortU);
       _aligned_free(DstShortV);
     }
@@ -277,7 +277,7 @@ MVCompensate::~MVCompensate()
   if (recursion > 0)
   {
     _aligned_free(pLoop[0]);
-    if ((pixelType & VideoInfo::CS_YUY2) != VideoInfo::CS_YUY2 && !vi.IsY())
+    if ((pixelType & VideoInfo::CS_YUY2) != VideoInfo::CS_YUY2 && !ClipFnc::is_grey(vi))
     {
       _aligned_free(pLoop[1]);
       _aligned_free(pLoop[2]);
