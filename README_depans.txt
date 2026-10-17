@@ -42,6 +42,10 @@ Change log (modifications by pinterf: https://github.com/pinterf/):
   - Fix: subpixel=2 (bicubic, default) with pure shifts (no zoom, rotation): the 16 interpolation weights summed
     to 2046..2051 instead of 2048 (truncated), so areas were made slightly darker or brighter, depending on the
     subpixel position. Visible from 10 bits, e.g. 16 bit mid grey was off by -32..+48. 8 bit: rarely +-1.
+  - Fix: DePanStabilize with prev, next (border fill from neighbor frames): the remaining empty border parts,
+    covered by none of the used frames, were not written: they showed garbage (usually picture leftovers
+    from earlier frames). Now they are filled like the border without prev, next: luma (RGB: all planes) 0,
+    chroma neutral.
   DepanEstimate 2.13
   - Support Y with alpha (YA) and YUVA (was: "input must be YUV or YUY2"). Alpha is copied when info or show is set.
   - 32 bit float input is rejected with an error.

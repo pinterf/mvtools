@@ -1364,6 +1364,29 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
   if (has_alpha)
     fill_plane(dst->GetWritePtr(PLANAR_A), dst->GetPitch(PLANAR_A), dst->GetRowSize(PLANAR_A), dst->GetHeight(PLANAR_A),
       alphainvert ? (1 << bits_per_pixel) - 1 : 0, pixelsize);
+
+  // fillprev, fillnext: each phase writes only the area covered by its frame (border -1). The rest gets the same
+  // values as the empty border without fill: luma (RGB: all planes) 0, chroma neutral.
+  // Was: left uninitialized, the holes showed garbage (usually picture leftovers from earlier frames).
+  if (fillprev > 0 || fillnext > 0) {
+    if (vi.IsYUY2()) { // planar work buffers, converted back after the last phase
+      fill_plane(YUY2data.dstplaneY, YUY2data.planeYpitch, YUY2data.planeYwidth, vi.height, 0, 1);
+      fill_plane(YUY2data.dstplaneU, YUY2data.planeUVpitch, YUY2data.planeUVwidth, vi.height, 128, 1);
+      fill_plane(YUY2data.dstplaneV, YUY2data.planeUVpitch, YUY2data.planeUVwidth, vi.height, 128, 1);
+    }
+    else {
+      const int planes_y[3] = { PLANAR_Y, PLANAR_U, PLANAR_V };
+      const int planes_r[3] = { PLANAR_G, PLANAR_B, PLANAR_R };
+      const int *planes = (vi.IsYUV() || vi.IsYUVA()) ? planes_y : planes_r;
+      const int planecount = (vi.IsY() || vi.IsYA()) ? 1 : 3;
+      for (int p = 0; p < planecount; p++) {
+        const int plane = planes[p];
+        const bool is_chroma = (plane == PLANAR_U) || (plane == PLANAR_V);
+        fill_plane(dst->GetWritePtr(plane), dst->GetPitch(plane), dst->GetRowSize(plane), dst->GetHeight(plane),
+          is_chroma ? 1 << (bits_per_pixel - 1) : 0, pixelsize);
+      }
+    }
+  }
   vi_dst = vi; // same
 
   // Ready to make motion stabilization,
