@@ -51,6 +51,7 @@ Various utility functions related to avisynth clips.
 // avisynth.h forward declarations
 class IScriptEnvironment;
 class PClip;
+class PVideoFrame;
 struct VideoInfo;
 
 
@@ -72,7 +73,14 @@ public:
   static bool		is_ya (const ::VideoInfo &vi);        // Y + alpha (4:0:0:A)
   static bool		is_grey (const ::VideoInfo &vi);      // Y or YA: no U/V planes
   static bool		is_yuv_any (const ::VideoInfo &vi);   // YUV or YUVA (incl. YUY2, YA)
+  static bool		has_alpha (const ::VideoInfo &vi);    // planar YUVA, YA or planar RGBA
   static int		nbr_planes_processed (const ::VideoInfo &vi); // color planes processed by mvtools (alpha is not)
+  // copies the alpha plane of src to dst when the format has alpha; no-op otherwise
+  static void		copy_alpha (::PVideoFrame &dst, const ::PVideoFrame &src, const ::VideoInfo &vi, IScriptEnvironment *env);
+  // sets the alpha plane fully opaque (max value, 1.0 for float) when the format has alpha
+  static void		fill_alpha_opaque (::PVideoFrame &dst, const ::VideoInfo &vi);
+  // same, the alpha source is frame n of clip; the frame is fetched only for formats with alpha
+  static void		copy_alpha_from (::PVideoFrame &dst, ::PClip &clip, int n, const ::VideoInfo &vi, IScriptEnvironment *env);
 
 
 

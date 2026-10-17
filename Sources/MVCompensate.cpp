@@ -637,6 +637,7 @@ PVideoFrame __stdcall MVCompensate::GetFrame(int n, IScriptEnvironment* env_ptr)
 
   _mv_clip_ptr = 0;
 
+  ClipFnc::copy_alpha_from(dst, _cclip_sptr, nsrc, vi, env_ptr); // alpha of the current frame
   return dst;
 }
 

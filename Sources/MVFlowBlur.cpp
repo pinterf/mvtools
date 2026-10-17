@@ -528,6 +528,7 @@ PVideoFrame __stdcall MVFlowBlur::GetFrame(int n, IScriptEnvironment* env)
       YUY2FromPlanes(pDstYUY2, nDstPitchYUY2, nWidth, nHeight,
         pDst[0], nDstPitches[0], pDst[1], pDst[2], nDstPitches[1], cpuFlags);
     }
+    ClipFnc::copy_alpha_from(dst, child, n, vi, env); // alpha of the current frame
     return dst;
   }
   else

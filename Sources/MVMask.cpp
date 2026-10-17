@@ -425,5 +425,6 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
     YUY2FromPlanes(pDstYUY2, nDstPitchYUY2, maskclip_nWidth, maskclip_nHeight,
       pDst[0], nDstPitches[0], pDst[1], pDst[2], nDstPitches[1], cpuFlags);
   }
+  ClipFnc::copy_alpha_from(dst, child, n, vi, env);
   return dst;
 }

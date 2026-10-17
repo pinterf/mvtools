@@ -488,6 +488,7 @@ PVideoFrame __stdcall MVDepan::GetFrame(int ndest, IScriptEnvironment* env)
       dst_pitch = dst->GetPitch(PLANAR_V);
       env->BitBlt(dstp, dst_pitch, srcp, src_pitch, src_width, src_height);
     }
+    ClipFnc::copy_alpha(dst, src, vi, env);
 
     // copy Y and prepare for output data
     srcp = src->GetReadPtr(PLANAR_Y);

@@ -404,6 +404,8 @@ MVDegrainX::MVDegrainX(
     if(!vi.IsY8() && !vi.IsYV12() && !vi.IsYV16() && !vi.IsYV24())
       env_ptr->ThrowError("MDegrainX : only Y8, YV12, YV16 or YV24 allowed for out16");
   }
+  if (lsb_flag && ClipFnc::has_alpha(vi))
+    env_ptr->ThrowError("MDegrain%d : lsb is not supported for clips with alpha plane", level);
 
   if(lsb_flag && out16_flag)
     env_ptr->ThrowError("MDegrainX : cannot specify both lsb and out16 flag");
@@ -1073,6 +1075,7 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
       pDst[0], nDstPitches[0], pDst[1], pDst[2], nDstPitches[1], cpuFlags);
   }
 
+  ClipFnc::copy_alpha(dst, src, vi, env);
   return dst;
 }
 

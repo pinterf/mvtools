@@ -226,6 +226,7 @@ PVideoFrame __stdcall MVShow::GetFrame(int n, IScriptEnvironment* env)
 
 
   }
+  ClipFnc::fill_alpha_opaque(dst, vi); // the super clip has no meaningful alpha
   return dst;
 }
 

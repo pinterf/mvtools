@@ -562,6 +562,7 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
       YUY2FromPlanes(pDstYUY2, nDstPitchYUY2, nWidth, nHeight,
         pDst[0], nDstPitches[0], pDst[1], pDst[2], nDstPitches[1], cpuFlags);
     }
+    ClipFnc::copy_alpha_from(dst, child, time256 < 128 ? n : nref, vi, env); // alpha of the nearest frame
     return dst;
   }
 
@@ -629,6 +630,7 @@ PVideoFrame __stdcall MVFlowInter::GetFrame(int n, IScriptEnvironment* env)
           }
         }
       }
+      ClipFnc::copy_alpha_from(dst, child, time256 < 128 ? n : nref, vi, env); // alpha of the nearest frame
       return dst;
     }
     else

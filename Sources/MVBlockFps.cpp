@@ -1201,6 +1201,7 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
     }
     PROFILE_STOP(MOTION_PROFILE_YUY2CONVERT);
 
+    ClipFnc::copy_alpha_from(dst, child, time256 < 128 ? nleft : nright, vi, env); // alpha of the nearest frame
     return dst;
   }
 
@@ -1268,6 +1269,7 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
       }
       PROFILE_STOP(MOTION_PROFILE_FLOWINTER);
 
+      ClipFnc::copy_alpha_from(dst, child, time256 < 128 ? nleft : nright, vi, env); // alpha of the nearest frame
       return dst;
     }
     else

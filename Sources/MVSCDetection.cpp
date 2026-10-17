@@ -20,6 +20,7 @@
 // http://www.gnu.org/copyleft/gpl.html .
 
 #include "MVSCDetection.h"
+#include "ClipFnc.h"
 #include "CopyCode.h"
 #include "avs/minmax.h"
 #include <vector>
@@ -97,5 +98,6 @@ PVideoFrame __stdcall MVSCDetection::GetFrame(int n, IScriptEnvironment* env)
      }
    }
 
+  ClipFnc::copy_alpha_from(dst, child, n, vi, env);
   return dst;
 }

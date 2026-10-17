@@ -214,6 +214,13 @@ bool	ClipFnc::is_yuv_any (const ::VideoInfo &vi)
 
 
 
+bool	ClipFnc::has_alpha (const ::VideoInfo &vi)
+{
+  return vi.IsPlanar() && (vi.IsYUVA() || vi.IsPlanarRGBA());
+}
+
+
+
 int	ClipFnc::nbr_planes_processed (const ::VideoInfo &vi)
 {
   if (vi.IsYUY2())
@@ -221,6 +228,54 @@ int	ClipFnc::nbr_planes_processed (const ::VideoInfo &vi)
   if (is_grey(vi))
     return 1;
   return std::min(vi.NumComponents(), 3);
+}
+
+
+
+void	ClipFnc::copy_alpha (::PVideoFrame &dst, const ::PVideoFrame &src, const ::VideoInfo &vi, IScriptEnvironment *env)
+{
+  if (!has_alpha(vi))
+    return;
+  // common area only: src may be larger (e.g. a super clip frame with padding)
+  env->BitBlt(
+    dst->GetWritePtr(PLANAR_A), dst->GetPitch(PLANAR_A),
+    src->GetReadPtr(PLANAR_A), src->GetPitch(PLANAR_A),
+    std::min(dst->GetRowSize(PLANAR_A), src->GetRowSize(PLANAR_A)),
+    std::min(dst->GetHeight(PLANAR_A), src->GetHeight(PLANAR_A))
+  );
+}
+
+
+
+void	ClipFnc::fill_alpha_opaque (::PVideoFrame &dst, const ::VideoInfo &vi)
+{
+  if (!has_alpha(vi))
+    return;
+  uint8_t *p = dst->GetWritePtr(PLANAR_A);
+  const int pitch = dst->GetPitch(PLANAR_A);
+  const int width = dst->GetRowSize(PLANAR_A) / vi.ComponentSize();
+  const int height = dst->GetHeight(PLANAR_A);
+  const int bits = vi.BitsPerComponent();
+  for (int y = 0; y < height; y++)
+  {
+    if (bits == 8)
+      std::fill_n(p, width, uint8_t(255));
+    else if (bits <= 16)
+      std::fill_n(reinterpret_cast<uint16_t *>(p), width, uint16_t((1 << bits) - 1));
+    else
+      std::fill_n(reinterpret_cast<float *>(p), width, 1.0f);
+    p += pitch;
+  }
+}
+
+
+
+void	ClipFnc::copy_alpha_from (::PVideoFrame &dst, ::PClip &clip, int n, const ::VideoInfo &vi, IScriptEnvironment *env)
+{
+  if (!has_alpha(vi))
+    return;
+  ::PVideoFrame src = clip->GetFrame(n, env);
+  copy_alpha(dst, src, vi, env);
 }
 
 

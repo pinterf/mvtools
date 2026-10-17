@@ -705,6 +705,8 @@ MDegrainN::MDegrainN(
     if (!vi.IsY8() && !vi.IsYV12() && !vi.IsYV16() && !vi.IsYV24())
       env_ptr->ThrowError("MDegrainN : only YV8, YV12, YV16 or YV24 allowed for out16");
   }
+  if (lsb_flag && ClipFnc::has_alpha(vi))
+    env_ptr->ThrowError("MDegrainN : lsb is not supported for clips with alpha plane");
 
   if (lsb_flag && out16_flag)
     env_ptr->ThrowError("MDegrainN : cannot specify both lsb and out16 flag");
@@ -1231,6 +1233,7 @@ static void plane_copy_8_to_16_c(uint8_t *dstp, int dstpitch, const uint8_t *src
       _dst_ptr_arr[1], _dst_ptr_arr[2], _dst_pitch_arr[1], _cpuFlags);
   }
 
+  ClipFnc::copy_alpha(dst, src, vi, env_ptr);
   return (dst);
 }
 

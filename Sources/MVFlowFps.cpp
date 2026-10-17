@@ -940,6 +940,7 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
     PROFILE_STOP(MOTION_PROFILE_YUY2CONVERT);
     _RPT2(0, "MVFlowFPS GetFrame END, frame=%d id=%d\n", n, _instance_id);
     reentrancy_check = false;
+    ClipFnc::copy_alpha_from(dst, child, time256 < 128 ? nleft : nright, vi, env); // alpha of the nearest frame
     return dst;
   }
   else
@@ -1030,6 +1031,7 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
       }
 
       reentrancy_check = false;
+      ClipFnc::copy_alpha_from(dst, child, time256 < 128 ? nleft : nright, vi, env); // alpha of the nearest frame
       return dst;
     }
     else

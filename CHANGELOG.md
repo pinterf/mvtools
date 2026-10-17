@@ -24,6 +24,9 @@ Change log
   - Support the formats added in Avisynth+ interface V13: YUV(A) 4:1:0 and 4:4:0, YUV(A) 4:1:1 in all bit depths, Y with alpha (YA).
     Clips with alpha (YUVA, YA) are accepted now (YUVA was rejected).
   - Fix: MDegrain1-6, MDegrainN on greyscale (Y) clips: part of the degrained luma was overwritten with source luma.
+  - Alpha plane: the output alpha is copied from the source (current frame; the nearest frame in MFlowInter, MFlowFps, MBlockFps;
+    MShow: fully opaque). Alpha is not processed. Earlier the output alpha of planar RGBA clips was left undefined.
+  - MDegrain1-6, MDegrainN: lsb=true is not allowed for clips with alpha.
 
 - 2.7.47 (20260424)
   - Update Avisynth headers to V12 interface (AcquireGlobalLock/ReleaseGlobalLock support)
