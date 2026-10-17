@@ -19,6 +19,27 @@ http://avisynth.org.ru/depan/depan.html
 
 Change log (modifications by pinterf: https://github.com/pinterf/):
 
+- (2026xxxx)
+  Depan 2.16
+  - Support Y with alpha (YA) and YUVA, all subsamplings incl. 4:1:0, 4:1:1, 4:4:0.
+    DePanScenes copies the alpha from the source; DePan, DePanInterleave, DePanStabilize do not process alpha yet
+    (output alpha is undefined).
+  - 32 bit float input is rejected with an error (was not supported).
+  - Fix: DePanStabilize on YUY2 produced garbage. Regression since 2.13.1.0 (mvtools 2.7.5.22): the packed
+    YUY2 frame was processed as one plane, the YUY2 <-> planar conversion of the original DePan was lost.
+  - Fix: DePanScenes on planar formats marked only the top-left part of the planes (half width and height,
+    a quarter of the width for 4:1:1, 4:1:0 chroma), the rest was uninitialized, so AverageLuma-style scene change
+    checks could read garbage. Regression since 2.13.1.0 (mvtools 2.7.5.22). YUY2 was not affected.
+  - Fix: info=true at 10-16 bits: possible crash (access violation), or text shading at the wrong place.
+    The chroma part of the text was drawn at double row offset, with 4:4:4 it could write past the frame buffer.
+    Characters not fitting into the frame are skipped.
+  - Fix: info=true on Y (greyscale) clips: "GetPlaneWidthSubsampling not available on Y or YA pixel type" error.
+  DepanEstimate 2.13
+  - Support Y with alpha (YA) and YUVA (was: "input must be YUV or YUY2"). Alpha is copied when info or show is set.
+  - 32 bit float input is rejected with an error.
+  - Fix: info=true at 10-16 bits: crash (4:4:4) or misplaced text; text position was outside the right edge.
+  - Fix: zoom window and info position used the row size in bytes instead of pixels at 10-16 bits.
+
 - (20260421)
   Depan 2.15
   - Update Avisynth headers to V12 interface
