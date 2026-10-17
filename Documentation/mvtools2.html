@@ -1653,6 +1653,27 @@
         <code>MDeGrainN</code> has a temporal radius given by the <var>tr</var>
         parameter, and uses a special motion vector clip.
     </p>
+    <p>
+        Note: only whole blocks are processed. If the frame is not covered by whole blocks, the remaining
+        pixels at the right and bottom edges are not denoised, they are copied from the source.
+        The uncovered width is (<var>width</var>&nbsp;-&nbsp;<var>overlap</var>) modulo
+        (<var>blksize</var>&nbsp;-&nbsp;<var>overlap</var>), the uncovered height is the same with
+        <var>height</var>, <var>overlapV</var> and <var>blksizeV</var>.
+        E.g. at 1920x1080 with <var>blksize</var>=16, <var>overlap</var>=0 the last 8 rows,
+        with <var>blksize</var>=32 the last 24 rows are not denoised;
+        at 1280x720 with <var>blksize</var>=24, <var>overlap</var>=2 the last 2 columns and 14 rows.<br />
+        Workaround: pad the clip to a covered size before <code>MSuper</code>, crop the result:
+    </p>
+    <pre>bs = 16
+ov = 4
+step = bs - ov
+padx = (step - (Width() - ov) % step) % step
+pady = (step - (Height() - ov) % step) % step
+padded = AddBorders(0, 0, padx, pady)
+super = padded.MSuper()
+backward_vec = super.MAnalyse(isb = true, blksize = bs, overlap = ov)
+forward_vec = super.MAnalyse(isb = false, blksize = bs, overlap = ov)
+padded.MDegrain1(super, backward_vec, forward_vec, thSAD = 400).Crop(0, 0, -padx, -pady)</pre>
     <p class="var">super</p>
     <p>
         Multilevel super clip prepared by <code>MSuper</code> function.
