@@ -75,6 +75,7 @@
 #include "info.h"
 #include "depanio.h"
 #include "depan.h"
+#include "yuy2planes.h"
 
 #include <chrono>
 #include <cassert>
@@ -1467,13 +1468,19 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
 
     const int planecount = std::min(vi.NumComponents(), 3);
 
+    // YUY2: work on planar copies, the destination planes are converted back after the last phase.
+    // Was: the packed YUY2 row was processed as a single luma plane
+    const bool isYUY2 = vi.IsYUY2();
+    if (isYUY2)
+      YUY2ToPlanes(src->GetReadPtr(), src->GetPitch(), vi.width, vi.height, YUY2data.srcplaneY, YUY2data.planeYpitch, YUY2data.srcplaneU, YUY2data.srcplaneV, YUY2data.planeUVpitch, env->GetCPUFlags());
+
     for (int p = 0; p < planecount; p++)
     {
       const int plane = planes[p];
 
-      int width_sub = vi.GetPlaneWidthSubsampling(plane);
-      int height_sub = vi.GetPlaneHeightSubsampling(plane);
       bool is_chroma = (plane == PLANAR_U) || (plane == PLANAR_V);
+      int width_sub = isYUY2 ? (is_chroma ? 1 : 0) : vi.GetPlaneWidthSubsampling(plane);
+      int height_sub = isYUY2 ? 0 : vi.GetPlaneHeightSubsampling(plane);
       if (notfilled == 0)
         border = -1; // negative - borders is filled by prev, not by black!
       else {
@@ -1497,6 +1504,14 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
 
       const uint8_t *srcp = src->GetReadPtr(plane);
       int src_pitch = src->GetPitch(plane);
+
+      if (isYUY2) {
+        src_width = is_chroma ? YUY2data.planeUVwidth : YUY2data.planeYwidth;
+        src_height = vi.height;
+        src_pitch = dst_pitch_current = is_chroma ? YUY2data.planeUVpitch : YUY2data.planeYpitch;
+        srcp = plane == PLANAR_Y ? YUY2data.srcplaneY : plane == PLANAR_U ? YUY2data.srcplaneU : YUY2data.srcplaneV;
+        dstp_current = plane == PLANAR_Y ? YUY2data.dstplaneY : plane == PLANAR_U ? YUY2data.dstplaneU : YUY2data.dstplaneV;
+      }
 
       // memo: 
       // move: xc/yc 
@@ -1550,6 +1565,9 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
 #endif
     } // for planes
   } // prev/next/current frame phase
+
+  if (vi.IsYUY2())
+    YUY2FromPlanes(dst->GetWritePtr(), dst->GetPitch(), vi.width, vi.height, YUY2data.dstplaneY, YUY2data.planeYpitch, YUY2data.dstplaneU, YUY2data.dstplaneV, YUY2data.planeUVpitch, env->GetCPUFlags());
 
   if (debuglogfile != NULL) {
     fflush(debuglogfile);
