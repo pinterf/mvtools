@@ -27,6 +27,7 @@ Change log
   - Alpha plane: the output alpha is copied from the source (current frame; the nearest frame in MFlowInter, MFlowFps, MBlockFps;
     MShow: fully opaque). Alpha is not processed. Earlier the output alpha of planar RGBA clips was left undefined.
   - MDegrain1-6, MDegrainN: lsb=true is not allowed for clips with alpha.
+  - Fix: MFlowBlur: chroma used the horizontal padding of the super clip as vertical padding (wrong chroma when hpad != vpad).
 
 - 2.7.47 (20260424)
   - Update Avisynth headers to V12 interface (AcquireGlobalLock/ReleaseGlobalLock support)

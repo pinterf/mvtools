@@ -104,7 +104,7 @@ MVFlowBlur::MVFlowBlur(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, int 
   nHeightUV = nHeight / yRatioUVs[1];
   nWidthUV = nWidth / xRatioUVs[1];
   nHPaddingUV = nHPadding / xRatioUVs[1];
-  nVPaddingUV = nHPadding / yRatioUVs[1];
+  nVPaddingUV = nVPadding / yRatioUVs[1]; // was nHPadding: wrong chroma offset when hpad != vpad
 
   VPitchY = nWidth;
   VPitchUV = nWidthUV;

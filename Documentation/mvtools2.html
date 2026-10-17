@@ -2307,6 +2307,7 @@ Planar2Interleaved() # convert back to normal interleave YUY2
             MShow: fully opaque). Alpha is not processed. Earlier the output alpha of planar RGBA clips was left undefined.
         </li>
         <li>MDegrain1-6, MDegrainN: lsb=true is not allowed for clips with alpha.</li>
+        <li>Fix: MFlowBlur: chroma used the horizontal padding of the super clip as vertical padding (wrong chroma when hpad != vpad).</li>
     </ul>
 
     <p>2.7.47 (20260424)</p>
