@@ -237,8 +237,10 @@ PVideoFrame __stdcall DePanScenes::GetFrame(int ndest, IScriptEnvironment* env) 
 
       srcp = src->GetReadPtr(workplane);
 
-      src_width = vi.width >> (1 << vi.GetPlaneWidthSubsampling(workplane));    // src->GetRowSize(workplane);
-      src_height = vi.height >> (1 << vi.GetPlaneHeightSubsampling(workplane)); //  src->GetHeight(workplane);
+      // was: vi.width >> (1 << subsampling): only the top-left part of each plane was written
+      // (half width and height; a quarter of the width for 4:1:1, 4:1:0 chroma)
+      src_width = src->GetRowSize(workplane) / pixelsize;
+      src_height = src->GetHeight(workplane);
       src_pitch = src->GetPitch(workplane);
 
       dstp = dst->GetWritePtr(workplane);
