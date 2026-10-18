@@ -174,6 +174,7 @@ DePanEstimate_fftw::DePanEstimate_fftw(PClip _child, int _range, float _trust, i
 
   int wleft0 = wleft; // save
   if (wleft < 0) wleft = 0; // auto
+  const bool winx_auto = (winx == 0);
 
   // check and set fft window x size
   if (winx > vi.width - wleft)	env->ThrowError("DePanEstimate: WINX must not be greater than WIDTH-WLeft !");
@@ -204,6 +205,16 @@ DePanEstimate_fftw::DePanEstimate_fftw(PClip _child, int _range, float _trust, i
   }
   else
     if (wleft0 < 0) wleft = (vi.width - winx) / 2;
+
+  // zoom: the right fft window starts at wleft + width/2, it must fit into the frame as well
+  if (zoommax != 1.0 && wleft0 >= 0) {
+    if (winx_auto) {
+      while (winx > 1 && wleft + vi.width / 2 + winx > vi.width)
+        winx /= 2; // keep it a power of 2
+    }
+    if (wleft + vi.width / 2 + winx > vi.width)
+      env->ThrowError("DePanEstimate: with zoommax, WLeft + WINX/2 must not be greater than WIDTH/2 !");
+  }
 
 
   int wtop0 = wtop; // save
@@ -342,6 +353,7 @@ DePanEstimate_fftw::DePanEstimate_fftw(PClip _child, int _range, float _trust, i
   motionx[0] = 0;
   motiony[0] = 0;
   motionzoom[0] = 1.0;
+  trust[0] = 0; // no previous frame; read by the scene change check of frame 1 and written to extlog
   for (i = 1; i < vi.num_frames; i++) {
     motionx[i] = MOTIONUNKNOWN;  //set motion as unknown for all frames beside 0
   }

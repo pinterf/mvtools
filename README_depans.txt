@@ -57,6 +57,12 @@ Change log (modifications by pinterf: https://github.com/pinterf/):
   - 32 bit float input is rejected with an error.
   - Fix: info=true at 10-16 bits: crash (4:4:4) or misplaced text; text position was outside the right edge.
   - Fix: zoom window and info position used the row size in bytes instead of pixels at 10-16 bits.
+  - Fix: zoommax with an explicit wleft: the right fft window (starting at wleft + width/2) could reach past the
+    right frame edge, reading outside the frame (since wleft was added in Fizick's 1.10). Now an error is given
+    ("WLeft + WINX/2 must not be greater than WIDTH/2"); with automatic winx the window size is reduced to fit.
+  - Fix: the trust value of frame 0 was uninitialized (Fizick's original included). It is used by the scene change
+    check of frame 1 (sharp drop of trust), which could randomly reset the motion of frame 1, and it was written
+    to extlog. Now 0.
   - (internal cosmetics): clear the unused part of the motion data clip (luma 0, chroma neutral, alpha opaque).
     Was uninitialized memory outside the data area: harmless for DePan, but the output differed from run to run,
     and DePanScenes copied it into its not marked planes. Deterministic output helps testing (frame hashes,

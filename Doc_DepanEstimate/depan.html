@@ -68,7 +68,9 @@ range</var> - number of previous (and also next) frames (fields) near requested 
 winy</var> - number of rows (height) of fft window (default = 0 for maximum power of 2 within frame height).<br>
 
 <var>
-wleft</var> - left position (offset) of fft window (default = -1 for auto centered window).<br>
+wleft</var> - left position (offset) of fft window (default = -1 for auto centered window).
+With <var>zoommax</var> two windows of WINX/2 width are used, the right one starts at <var>wleft</var> + width/2,
+so <var>wleft</var> + WINX/2 must not be greater than width/2 (with auto <var>winx</var> the window is reduced to fit).<br>
 
 <var>
 wtop</var> - top position (offset) of fft window (default = -1 for auto centered window).<br>
