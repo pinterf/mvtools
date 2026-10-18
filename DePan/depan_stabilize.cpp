@@ -428,6 +428,8 @@ DePanStabilize::DePanStabilize(PClip _child, PClip _DePanData, float _cutoff,
   for (int i = winfzsize; i <= wintsize; i++)
     winfz[i] = 0;
 
+  width = vi.width; // frame edges for the adaptive zoom limits
+  height = vi.height;
   xcenter = vi.width / 2.0f;  // center of frame
   ycenter = vi.height / 2.0f;
 

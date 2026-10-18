@@ -46,6 +46,12 @@ Change log (modifications by pinterf: https://github.com/pinterf/):
     covered by none of the used frames, were not written: they showed garbage (usually picture leftovers
     from earlier frames). Now they are filled like the border without prev, next: luma (RGB: all planes) 0,
     chroma neutral.
+  - Fix: DePanStabilize addzoom=true: the right and bottom frame edges used for the adaptive zoom limits were
+    never initialized (garbage values). Since 2.13.1, the first version of this mod (Fizick's DePan 1.10.1
+    used the frame size directly). Effect in a test before the fix on a DV clip: no stabilization at all, the
+    output was identical to the source (and no zoom was applied). Being uninitialized, other builds may have
+    behaved differently. Now the clip is stabilized and the adaptive zoom hides the borders as intended.
+    addzoom=false was not affected.
   DepanEstimate 2.13
   - Support Y with alpha (YA) and YUVA (was: "input must be YUV or YUY2"). Alpha is copied when info or show is set.
   - 32 bit float input is rejected with an error.
