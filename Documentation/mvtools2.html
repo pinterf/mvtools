@@ -302,6 +302,14 @@
     </p>
     <p class="var">vpad</p>
     <p>It is vertical padding added to source frame (both top and bottom).</p>
+    <p>
+        Note for subsampled formats: the chroma planes get <var>hpad</var> and <var>vpad</var> divided by the
+        chroma subsampling, rounded down (e.g. 4:2:0 with vpad=3: chroma vpad 1; 4:1:1 with hpad=2: chroma hpad 0).
+        Near the frame edges a vector may then point to a chroma area which is not padded.
+        Recommended: multiples of the subsampling, i.e. 4:2:0: both even, 4:2:2: hpad even,
+        4:1:1: hpad multiple of 4, 4:1:0: both multiples of 4, 4:4:0: vpad even. The default 8 is fine for all formats.
+        With 4:1:1 and 4:1:0 an odd hpad is rejected (width + 2 * hpad must be a multiple of 4).
+    </p>
     <p class="var">pel</p>
     <p>
         It is the accuracy of the motion estimation.
