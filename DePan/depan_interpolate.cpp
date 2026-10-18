@@ -736,7 +736,8 @@ void compensate_plane_bicubic2(uint8_t *dstp8, int dst_pitch, const uint8_t * sr
           if (intcoef2d[j * 4 + i] > intcoef2d[imax]) imax = j * 4 + i;
         }
       }
-      // Weights must sum to exactly 2048, otherwise flat areas change. Was truncated, the sum was 2046..2051:
+      // Weights must sum to exactly 2048, otherwise flat areas change. Up to DePan 2.15 (Fizick's original included)
+      // the weights were truncated, the sum was 2046..2051:
       // a flat area of value v became v * sum / 2048, visible from 12 bits (16 bit mid grey: -32..+48)
       intcoef2d[imax] += 2048 - sum2d;
 

@@ -1504,7 +1504,7 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
     const int planecount = (vi.IsY() || vi.IsYA()) ? 1 : std::min(vi.NumComponents(), 3); // Y, YA: no U/V planes
 
     // YUY2: work on planar copies, the destination planes are converted back after the last phase.
-    // Was: the packed YUY2 row was processed as a single luma plane
+    // DePan 2.13.1.0 - 2.15: the packed YUY2 row was processed as a single luma plane
     const bool isYUY2 = vi.IsYUY2();
     if (isYUY2)
       YUY2ToPlanes(src->GetReadPtr(), src->GetPitch(), vi.width, vi.height, YUY2data.srcplaneY, YUY2data.planeYpitch, YUY2data.srcplaneU, YUY2data.srcplaneV, YUY2data.planeUVpitch, env->GetCPUFlags());
