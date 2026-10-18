@@ -17,6 +17,7 @@
 // http://www.gnu.org/copyleft/gpl.html .
 
 #include "CopyCode.h"
+#include "BlockSizes.h"
 #include <map>
 #include <tuple>
 #include <stdint.h>
@@ -108,60 +109,7 @@ COPYFunction* get_copy_function(int BlockX, int BlockY, int pixelsize, arch_t ar
 #define MAKE_COPY_FN(x, y) func_copy[make_tuple(x, y, 1, NO_SIMD)] = Copy_C<x, y, uint8_t>; \
 func_copy[make_tuple(x, y, 2, NO_SIMD)] = Copy_C<x, y, uint16_t>; \
 func_copy[make_tuple(x, y, 4, NO_SIMD)] = Copy_C<x, y, float>;
-    // same list as in overlap.cpp SadFunction.cpp, Sad_C selector
-    MAKE_COPY_FN(64, 64)
-      MAKE_COPY_FN(64, 48)
-      MAKE_COPY_FN(64, 32)
-      MAKE_COPY_FN(64, 16)
-      MAKE_COPY_FN(48, 64)
-      MAKE_COPY_FN(48, 48)
-      MAKE_COPY_FN(48, 24)
-      MAKE_COPY_FN(48, 12)
-      MAKE_COPY_FN(32, 64)
-      MAKE_COPY_FN(32, 32)
-      MAKE_COPY_FN(32, 24)
-      MAKE_COPY_FN(32, 16)
-      MAKE_COPY_FN(32, 8)
-      MAKE_COPY_FN(24, 48)
-      MAKE_COPY_FN(24, 32)
-      MAKE_COPY_FN(24, 24)
-      MAKE_COPY_FN(24, 12)
-      MAKE_COPY_FN(24, 6)
-      MAKE_COPY_FN(16, 64)
-      MAKE_COPY_FN(16, 32)
-      MAKE_COPY_FN(16, 16)
-      MAKE_COPY_FN(16, 12)
-      MAKE_COPY_FN(16, 8)
-      MAKE_COPY_FN(16, 4)
-      MAKE_COPY_FN(16, 2)
-      MAKE_COPY_FN(16, 1)
-      MAKE_COPY_FN(12, 48)
-      MAKE_COPY_FN(12, 24)
-      MAKE_COPY_FN(12, 16)
-      MAKE_COPY_FN(12, 12)
-      MAKE_COPY_FN(12, 6)
-      MAKE_COPY_FN(12, 3)
-      MAKE_COPY_FN(8, 32)
-      MAKE_COPY_FN(8, 16)
-      MAKE_COPY_FN(8, 8)
-      MAKE_COPY_FN(8, 4)
-      MAKE_COPY_FN(8, 2)
-      MAKE_COPY_FN(8, 1)
-      MAKE_COPY_FN(6, 24)
-      MAKE_COPY_FN(6, 12)
-      MAKE_COPY_FN(6, 6)
-      MAKE_COPY_FN(6, 3)
-      MAKE_COPY_FN(4, 16)
-      MAKE_COPY_FN(4, 8)
-      MAKE_COPY_FN(4, 4)
-      MAKE_COPY_FN(4, 2)
-      MAKE_COPY_FN(4, 1)
-      MAKE_COPY_FN(3, 6)
-      MAKE_COPY_FN(3, 3)
-      MAKE_COPY_FN(2, 8)
-      MAKE_COPY_FN(2, 4)
-      MAKE_COPY_FN(2, 2)
-      MAKE_COPY_FN(2, 1)
+    MVTOOLS_BLOCKSIZES(MAKE_COPY_FN) // BlockSizes.h: the same list for all C tables
 #undef MAKE_COPY_FN
 
 #ifdef USE_COPYCODE_ASM

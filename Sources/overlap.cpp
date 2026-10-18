@@ -26,6 +26,7 @@
 #include <cassert>
 #include <emmintrin.h>
 #include <smmintrin.h>
+#include "BlockSizes.h"
 
 #ifndef min
 #define min(a,b)            (((a) < (b)) ? (a) : (b))
@@ -746,61 +747,8 @@ OverlapsFunction *get_overlaps_function(int BlockX, int BlockY, int pixelsize, a
 #define MAKE_OVR_FN(x, y) \
 func_overlaps[make_tuple(x, y, 1, NO_SIMD)] = Overlaps_C<uint8_t, x, y>; \
 func_overlaps[make_tuple(x, y, 2, NO_SIMD)] = Overlaps_C<uint16_t, x, y>; \
-func_overlaps[make_tuple(x, y, 4, NO_SIMD)] = Overlaps_float_C<x, y>; \
-    // sad, copy, overlap, luma, should support the blocksize list
-    MAKE_OVR_FN(64, 64)
-      MAKE_OVR_FN(64, 48)
-      MAKE_OVR_FN(64, 32)
-      MAKE_OVR_FN(64, 16)
-      MAKE_OVR_FN(48, 64)
-      MAKE_OVR_FN(48, 48)
-      MAKE_OVR_FN(48, 24)
-      MAKE_OVR_FN(48, 12)
-      MAKE_OVR_FN(32, 64)
-      MAKE_OVR_FN(32, 32)
-      MAKE_OVR_FN(32, 24)
-      MAKE_OVR_FN(32, 16)
-      MAKE_OVR_FN(32, 8)
-      MAKE_OVR_FN(24, 48)
-      MAKE_OVR_FN(24, 32)
-      MAKE_OVR_FN(24, 24)
-      MAKE_OVR_FN(24, 12)
-      MAKE_OVR_FN(24, 6)
-      MAKE_OVR_FN(16, 64)
-      MAKE_OVR_FN(16, 32)
-      MAKE_OVR_FN(16, 16)
-      MAKE_OVR_FN(16, 12)
-      MAKE_OVR_FN(16, 8)
-      MAKE_OVR_FN(16, 4)
-      MAKE_OVR_FN(16, 2)
-      MAKE_OVR_FN(16, 1)
-      MAKE_OVR_FN(12, 48)
-      MAKE_OVR_FN(12, 24)
-      MAKE_OVR_FN(12, 16)
-      MAKE_OVR_FN(12, 12)
-      MAKE_OVR_FN(12, 6)
-      MAKE_OVR_FN(12, 3)
-      MAKE_OVR_FN(8, 32)
-      MAKE_OVR_FN(8, 16)
-      MAKE_OVR_FN(8, 8)
-      MAKE_OVR_FN(8, 4)
-      MAKE_OVR_FN(8, 2)
-      MAKE_OVR_FN(8, 1)
-      MAKE_OVR_FN(6, 24)
-      MAKE_OVR_FN(6, 12)
-      MAKE_OVR_FN(6, 6)
-      MAKE_OVR_FN(6, 3)
-      MAKE_OVR_FN(4, 16)
-      MAKE_OVR_FN(4, 8)
-      MAKE_OVR_FN(4, 4)
-      MAKE_OVR_FN(4, 2)
-      MAKE_OVR_FN(4, 1)
-      MAKE_OVR_FN(3, 6)
-      MAKE_OVR_FN(3, 3)
-      MAKE_OVR_FN(2, 8)
-      MAKE_OVR_FN(2, 4)
-      MAKE_OVR_FN(2, 2)
-      MAKE_OVR_FN(2, 1)
+func_overlaps[make_tuple(x, y, 4, NO_SIMD)] = Overlaps_float_C<x, y>;
+    MVTOOLS_BLOCKSIZES(MAKE_OVR_FN) // BlockSizes.h: the same list for all C tables
 #undef MAKE_OVR_FN
 
 #ifdef USE_OVERLAPS_ASM
@@ -935,60 +883,7 @@ OverlapsLsbFunction *get_overlaps_lsb_function(int BlockX, int BlockY, int pixel
     using std::make_tuple;
     // define C for 8 bits
 #define MAKE_OVR_FN(x, y) func_overlaps_lsb[make_tuple(x, y, 1, NO_SIMD)] = OverlapsLsb_C<x, y>;
-    // sad, copy, overlap, luma, should be the same list
-    MAKE_OVR_FN(64, 64)
-      MAKE_OVR_FN(64, 48)
-      MAKE_OVR_FN(64, 32)
-      MAKE_OVR_FN(64, 16)
-      MAKE_OVR_FN(48, 64)
-      MAKE_OVR_FN(48, 48)
-      MAKE_OVR_FN(48, 24)
-      MAKE_OVR_FN(48, 12)
-      MAKE_OVR_FN(32, 64)
-      MAKE_OVR_FN(32, 32)
-      MAKE_OVR_FN(32, 24)
-      MAKE_OVR_FN(32, 16)
-      MAKE_OVR_FN(32, 8)
-      MAKE_OVR_FN(24, 48)
-      MAKE_OVR_FN(24, 32)
-      MAKE_OVR_FN(24, 24)
-      MAKE_OVR_FN(24, 12)
-      MAKE_OVR_FN(24, 6)
-      MAKE_OVR_FN(16, 64)
-      MAKE_OVR_FN(16, 32)
-      MAKE_OVR_FN(16, 16)
-      MAKE_OVR_FN(16, 12)
-      MAKE_OVR_FN(16, 8)
-      MAKE_OVR_FN(16, 4)
-      MAKE_OVR_FN(16, 2)
-      MAKE_OVR_FN(16, 1)
-      MAKE_OVR_FN(12, 48)
-      MAKE_OVR_FN(12, 24)
-      MAKE_OVR_FN(12, 16)
-      MAKE_OVR_FN(12, 12)
-      MAKE_OVR_FN(12, 6)
-      MAKE_OVR_FN(12, 3)
-      MAKE_OVR_FN(8, 32)
-      MAKE_OVR_FN(8, 16)
-      MAKE_OVR_FN(8, 8)
-      MAKE_OVR_FN(8, 4)
-      MAKE_OVR_FN(8, 2)
-      MAKE_OVR_FN(8, 1)
-      MAKE_OVR_FN(6, 24)
-      MAKE_OVR_FN(6, 12)
-      MAKE_OVR_FN(6, 6)
-      MAKE_OVR_FN(6, 3)
-      MAKE_OVR_FN(4, 16)
-      MAKE_OVR_FN(4, 8)
-      MAKE_OVR_FN(4, 4)
-      MAKE_OVR_FN(4, 2)
-      MAKE_OVR_FN(4, 1)
-      MAKE_OVR_FN(3, 6)
-      MAKE_OVR_FN(3, 3)
-      MAKE_OVR_FN(2, 8)
-      MAKE_OVR_FN(2, 4)
-      MAKE_OVR_FN(2, 2)
-      MAKE_OVR_FN(2, 1)
+    MVTOOLS_BLOCKSIZES(MAKE_OVR_FN) // BlockSizes.h: the same list for all C tables
 #undef MAKE_OVR_FN
 
     OverlapsLsbFunction *result = nullptr;

@@ -1560,6 +1560,7 @@
     <ClInclude Include="AvstpFinder.h" />
     <ClInclude Include="AvstpWrapper.h" />
     <ClInclude Include="ClipFnc.h" />
+    <ClInclude Include="BlockSizes.h" />
     <ClInclude Include="commonfunctions.h" />
     <ClInclude Include="conc\AioAdd.h" />
     <ClInclude Include="conc\AioAdd.hpp" />

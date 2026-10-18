@@ -345,6 +345,7 @@
     <ClInclude Include="AllocAlign.hpp" />
     <ClInclude Include="AnaFlags.h" />
     <ClInclude Include="ClipFnc.h" />
+    <ClInclude Include="BlockSizes.h" />
     <ClInclude Include="commonfunctions.h" />
     <ClInclude Include="CopyCode.h" />
     <ClInclude Include="DCTClass.h" />

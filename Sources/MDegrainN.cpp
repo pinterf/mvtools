@@ -20,6 +20,7 @@
 #include <tuple>
 #include <stdint.h>
 #include "commonfunctions.h"
+#include "BlockSizes.h"
 
 // out16_type: 
 //   0: native 8 or 16
@@ -398,59 +399,7 @@ func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_OUT16, NO_SIMD)] = DegrainN_C<ui
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_10to14BIT, NO_SIMD)] = DegrainN_C<uint16_t, x, y, 0>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_16BIT, NO_SIMD)] = DegrainN_C<uint16_t, x, y, 0>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_32BIT, NO_SIMD)] = DegrainN_C<float, x, y, 0>;
-    MAKE_FN(64, 64)
-    MAKE_FN(64, 48)
-    MAKE_FN(64, 32)
-    MAKE_FN(64, 16)
-    MAKE_FN(48, 64)
-    MAKE_FN(48, 48)
-    MAKE_FN(48, 24)
-    MAKE_FN(48, 12)
-    MAKE_FN(32, 64)
-    MAKE_FN(32, 32)
-    MAKE_FN(32, 24)
-    MAKE_FN(32, 16)
-    MAKE_FN(32, 8)
-    MAKE_FN(24, 48)
-    MAKE_FN(24, 32)
-    MAKE_FN(24, 24)
-    MAKE_FN(24, 12)
-    MAKE_FN(24, 6)
-    MAKE_FN(16, 64)
-    MAKE_FN(16, 32)
-    MAKE_FN(16, 16)
-    MAKE_FN(16, 12)
-    MAKE_FN(16, 8)
-    MAKE_FN(16, 4)
-    MAKE_FN(16, 2)
-    MAKE_FN(16, 1)
-    MAKE_FN(12, 48)
-    MAKE_FN(12, 24)
-    MAKE_FN(12, 16)
-    MAKE_FN(12, 12)
-    MAKE_FN(12, 6)
-    MAKE_FN(12, 3)
-    MAKE_FN(8, 32)
-    MAKE_FN(8, 16)
-    MAKE_FN(8, 8)
-    MAKE_FN(8, 4)
-    MAKE_FN(8, 2)
-    MAKE_FN(8, 1)
-    MAKE_FN(6, 24)
-    MAKE_FN(6, 12)
-    MAKE_FN(6, 6)
-    MAKE_FN(6, 3)
-    MAKE_FN(4, 16)
-    MAKE_FN(4, 8)
-    MAKE_FN(4, 4)
-    MAKE_FN(4, 2)
-    MAKE_FN(4, 1)
-    MAKE_FN(3, 6)
-    MAKE_FN(3, 3)
-    MAKE_FN(2, 8)
-    MAKE_FN(2, 4)
-    MAKE_FN(2, 2)
-    MAKE_FN(2, 1)
+    MVTOOLS_BLOCKSIZES(MAKE_FN) // BlockSizes.h: the same list for all C tables
 #undef MAKE_FN
 #undef MAKE_FN_LEVEL
 
@@ -787,6 +736,8 @@ MDegrainN::MDegrainN(
   _degrainluma_ptr = get_denoiseN_function(nBlkSizeX, nBlkSizeY, bits_per_pixel_super, lsb_flag, out16_flag, arch);
   _degrainchroma_ptr = get_denoiseN_function(nBlkSizeX / xRatioUV_super, nBlkSizeY / yRatioUV_super, bits_per_pixel_super, lsb_flag, out16_flag, arch);
 
+  if (nBlkSizeX % xRatioUV_super || nBlkSizeY % yRatioUV_super)
+    env_ptr->ThrowError("MDegrainN : block size %dx%d is not a multiple of the chroma subsampling (%dx%d)", nBlkSizeX, nBlkSizeY, xRatioUV_super, yRatioUV_super);
   if (!_oversluma_lsb_ptr)
     env_ptr->ThrowError("MDegrainN : no valid _oversluma_lsb_ptr function for %dx%d, pixelsize=%d, lsb_flag=%d", nBlkSizeX, nBlkSizeY, pixelsize_super, (int)lsb_flag);
   if (!_overschroma_lsb_ptr)

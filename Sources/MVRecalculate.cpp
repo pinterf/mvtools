@@ -206,6 +206,13 @@ MVRecalculate::MVRecalculate(
     env->ThrowError("MRecalculate: wrong overlap for the colorspace subsampling");
   }
 
+  // chroma block = block size / subsampling, it must be exact (e.g. 3x3 in 4:2:0 would give a truncated 1x1 chroma block)
+  if (chroma && (analysisData.nBlkSizeX % analysisData.xRatioUV || analysisData.nBlkSizeY % analysisData.yRatioUV))
+  {
+    env->ThrowError("MRecalculate: block size %dx%d is not a multiple of the chroma subsampling (%dx%d), use chroma=false or another block size",
+      analysisData.nBlkSizeX, analysisData.nBlkSizeY, analysisData.xRatioUV, analysisData.yRatioUV);
+  }
+
   if (_divide != 0 && (_blksizex < 8 || _blksizey < 8)) // 2.5.11.22 || instead of &&
   {
     env->ThrowError(

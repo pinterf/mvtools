@@ -31,6 +31,15 @@ Change log
   - Fix: MSuper, MShow with 4:1:0 and odd vpad: the frame height was not a multiple of 4
     (Avisynth error: "Attempted to request a planar frame that wasn't mod4").
   - MSuper: odd hpad with 4:1:1 and 4:1:0 is rejected with a clear error message (width + 2 * hpad must be a multiple of 4).
+  - All block sizes work with subsampled formats when the block size is a multiple of the chroma subsampling, e.g.
+    16x12 in 4:2:0 (chroma 8x6), 32x24 in 4:2:2, 4x4 in 4:1:1 and 4:1:0 (chroma 1x4, 1x1), 64x48 in 4:4:0.
+    39 chroma-only block sizes were missing (C versions added): "no BLITCHROMA function" or similar errors,
+    in MCompensate a crash (access violation).
+  - Block sizes which are not a multiple of the chroma subsampling (e.g. 3x3, 6x3 in 4:2:0, 2x2 in 4:1:1) are rejected
+    with a clear error in MAnalyse, MRecalculate (chroma=true), MDegrain1-6, MDegrainN, MCompensate, MBlockFps.
+    Was: various missing function errors, or a truncated chroma block.
+  - Fix: blksize 6x24 and 12x3: crash (access violation) in MAnalyse, all formats (missing luma function).
+  - Fix: blksize 48x48 at 8 bit with the adaptive dct modes: the block luma was taken from the top 48x12 part only.
 
 - 2.7.47 (20260424)
   - Update Avisynth headers to V12 interface (AcquireGlobalLock/ReleaseGlobalLock support)

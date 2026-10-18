@@ -174,6 +174,15 @@ MVBlockFps::MVBlockFps(
   OVERSLUMA32 = get_overlaps_function(nBlkSizeX, nBlkSizeY, sizeof(float), arch);
   OVERSCHROMA32 = get_overlaps_function(nBlkSizeX >> nLogxRatioUVs[1], nBlkSizeY >> nLogyRatioUVs[1], sizeof(float), arch);
 
+  if (nBlkSizeX % xRatioUVs[1] || nBlkSizeY % yRatioUVs[1])
+    env->ThrowError("MBlockFps: block size %dx%d is not a multiple of the chroma subsampling (%dx%d)", nBlkSizeX, nBlkSizeY, xRatioUVs[1], yRatioUVs[1]);
+  // only the overlap path uses these; a missing size would be a null call
+  if (nOverlapX > 0 || nOverlapY > 0) {
+    const bool ovr_ok = pixelsize_super == 1 ? OVERSLUMA && OVERSCHROMA : pixelsize_super == 2 ? OVERSLUMA16 && OVERSCHROMA16 : OVERSLUMA32 && OVERSCHROMA32;
+    if (!ovr_ok)
+      env->ThrowError("MBlockFps: no valid overlap function for block size %dx%d (chroma %dx%d)", nBlkSizeX, nBlkSizeY, nBlkSizeX >> nLogxRatioUVs[1], nBlkSizeY >> nLogyRatioUVs[1]);
+  }
+
   // may be padded for full frame cover
   /*
   nBlkXP = (nBlkX*(nBlkSizeX - nOverlapX) + nOverlapX < nWidth) ? nBlkX + 1 : nBlkX;

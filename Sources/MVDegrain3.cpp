@@ -33,6 +33,7 @@
 #include <commonfunctions.h>
 #include "def.h"
 #include "commonfunctions.h"
+#include "BlockSizes.h"
 
 //#include	<mmintrin.h>
 
@@ -87,59 +88,7 @@ MAKE_FN_LEVEL(x,y,3) \
 MAKE_FN_LEVEL(x,y,4) \
 MAKE_FN_LEVEL(x,y,5) \
 MAKE_FN_LEVEL(x,y,6)
-  MAKE_FN(64, 64)
-    MAKE_FN(64, 48)
-    MAKE_FN(64, 32)
-    MAKE_FN(64, 16)
-    MAKE_FN(48, 64)
-    MAKE_FN(48, 48)
-    MAKE_FN(48, 24)
-    MAKE_FN(48, 12)
-    MAKE_FN(32, 64)
-    MAKE_FN(32, 32)
-    MAKE_FN(32, 24)
-    MAKE_FN(32, 16)
-    MAKE_FN(32, 8)
-    MAKE_FN(24, 48)
-    MAKE_FN(24, 32)
-    MAKE_FN(24, 24)
-    MAKE_FN(24, 12)
-    MAKE_FN(24, 6)
-    MAKE_FN(16, 64)
-    MAKE_FN(16, 32)
-    MAKE_FN(16, 16)
-    MAKE_FN(16, 12)
-    MAKE_FN(16, 8)
-    MAKE_FN(16, 4)
-    MAKE_FN(16, 2)
-    MAKE_FN(16, 1)
-    MAKE_FN(12, 48)
-    MAKE_FN(12, 24)
-    MAKE_FN(12, 16)
-    MAKE_FN(12, 12)
-    MAKE_FN(12, 6)
-    MAKE_FN(12, 3)
-    MAKE_FN(8, 32)
-    MAKE_FN(8, 16)
-    MAKE_FN(8, 8)
-    MAKE_FN(8, 4)
-    MAKE_FN(8, 2)
-MAKE_FN(8, 1)
-MAKE_FN(6, 24)
-MAKE_FN(6, 12)
-MAKE_FN(6, 6)
-MAKE_FN(6, 3)
-MAKE_FN(4, 16)
-MAKE_FN(4, 8)
-MAKE_FN(4, 4)
-MAKE_FN(4, 2)
-MAKE_FN(4, 1)
-MAKE_FN(3, 6)
-MAKE_FN(3, 3)
-MAKE_FN(2, 8)
-MAKE_FN(2, 4)
-MAKE_FN(2, 2)
-MAKE_FN(2, 1)
+    MVTOOLS_BLOCKSIZES(MAKE_FN) // BlockSizes.h: the same list for all C tables
 #undef MAKE_FN
 #undef MAKE_FN_LEVEL
 
@@ -473,6 +422,8 @@ MVDegrainX::MVDegrainX(
 
   DEGRAINLUMA = get_denoise123_function(nBlkSizeX, nBlkSizeY, bits_per_pixel_super, lsb_flag, out16_flag, level, arch);
   DEGRAINCHROMA = get_denoise123_function(nBlkSizeX >> nLogxRatioUV_super, nBlkSizeY >> nLogyRatioUV_super, bits_per_pixel_super, lsb_flag, out16_flag, level, arch);
+  if ((nBlkSizeX & ((1 << nLogxRatioUV_super) - 1)) || (nBlkSizeY & ((1 << nLogyRatioUV_super) - 1)))
+    env_ptr->ThrowError("MDegrain%d : block size %dx%d is not a multiple of the chroma subsampling (%dx%d)", level, nBlkSizeX, nBlkSizeY, 1 << nLogxRatioUV_super, 1 << nLogyRatioUV_super);
   if (!OVERSLUMA)
     env_ptr->ThrowError("MDegrain%d : no valid OVERSLUMA function for %dx%d, bitsperpixel=%d, lsb_flag=%d, level=%d", level, nBlkSizeX, nBlkSizeY, bits_per_pixel_super, (int)lsb_flag, level);
   if (!OVERSCHROMA)

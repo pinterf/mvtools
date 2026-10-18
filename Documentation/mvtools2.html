@@ -487,7 +487,10 @@
         4x8, 4x4, 4x2<br />
         3x6, 3x3<br />
         2x4, 2x2<br />
-        Note: some smaller block sizes can only be available in 4:4:4 formats, due to block size division (chroma subsampling)
+        With subsampled formats (and chroma processing) the block size must be a multiple of the chroma subsampling,
+        e.g. 4:2:0: both even, 4:2:2: width even, 4:1:1: width multiple of 4, 4:1:0: both multiples of 4, 4:4:0: height even.
+        E.g. 4x4 works with 4:1:1 and 4:1:0 (chroma block 1x4, 1x1), but 3x3 is 4:4:4 only.
+        Other sizes are rejected with an error message.
     </p>
     <p class="var">blksizeV</p>
     <p>
@@ -2329,6 +2332,15 @@ Planar2Interleaved() # convert back to normal interleave YUY2
             (Avisynth error: "Attempted to request a planar frame that wasn't mod4").
         </li>
         <li>MSuper: odd hpad with 4:1:1 and 4:1:0 is rejected with a clear error message (width + 2 * hpad must be a multiple of 4).</li>
+        <li>All block sizes work with subsampled formats when the block size is a multiple of the chroma subsampling, e.g.
+            16x12 in 4:2:0 (chroma 8x6), 32x24 in 4:2:2, 4x4 in 4:1:1 and 4:1:0 (chroma 1x4, 1x1), 64x48 in 4:4:0.
+            39 chroma-only block sizes were missing (C versions added): "no BLITCHROMA function" or similar errors,
+            in MCompensate a crash (access violation).</li>
+        <li>Block sizes which are not a multiple of the chroma subsampling (e.g. 3x3, 6x3 in 4:2:0, 2x2 in 4:1:1) are rejected
+            with a clear error in MAnalyse, MRecalculate (chroma=true), MDegrain1-6, MDegrainN, MCompensate, MBlockFps.
+            Was: various missing function errors, or a truncated chroma block.</li>
+        <li>Fix: blksize 6x24 and 12x3: crash (access violation) in MAnalyse, all formats (missing luma function).</li>
+        <li>Fix: blksize 48x48 at 8 bit with the adaptive dct modes: the block luma was taken from the top 48x12 part only.</li>
     </ul>
 
     <p>2.7.47 (20260424)</p>

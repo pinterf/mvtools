@@ -18,6 +18,7 @@
 #include "Variance.h"
 #include <stdint.h>
 #include "CopyCode.h" // arch_t
+#include "BlockSizes.h"
 #include <tuple>
 #include <map>
 #include "def.h"
@@ -178,57 +179,7 @@ LUMAFunction* get_luma_function(int BlockX, int BlockY, int pixelsize, arch_t ar
 
 #define MAKE_LUMA_FN(x, y) func_luma[make_tuple(x, y, 1, NO_SIMD)] = Luma_C<x, y, uint8_t>; \
 func_luma[make_tuple(x, y, 2, NO_SIMD)] = Luma_C<x, y, uint16_t>;
-    MAKE_LUMA_FN(64, 64)
-      MAKE_LUMA_FN(64, 48)
-      MAKE_LUMA_FN(64, 32)
-      MAKE_LUMA_FN(64, 16)
-      MAKE_LUMA_FN(48, 64)
-      MAKE_LUMA_FN(48, 48)
-      MAKE_LUMA_FN(48, 24)
-      MAKE_LUMA_FN(48, 12)
-      MAKE_LUMA_FN(32, 64)
-      MAKE_LUMA_FN(32, 32)
-      MAKE_LUMA_FN(32, 24)
-      MAKE_LUMA_FN(32, 16)
-      MAKE_LUMA_FN(32, 8)
-      MAKE_LUMA_FN(24, 48)
-      MAKE_LUMA_FN(24, 32)
-      MAKE_LUMA_FN(24, 24)
-      MAKE_LUMA_FN(24, 12)
-      MAKE_LUMA_FN(24, 6)
-      MAKE_LUMA_FN(16, 64)
-      MAKE_LUMA_FN(16, 32)
-      MAKE_LUMA_FN(16, 16)
-      MAKE_LUMA_FN(16, 12)
-      MAKE_LUMA_FN(16, 8)
-      MAKE_LUMA_FN(16, 4)
-      MAKE_LUMA_FN(16, 2)
-      MAKE_LUMA_FN(16, 1)
-      MAKE_LUMA_FN(12, 48)
-      MAKE_LUMA_FN(12, 24)
-      MAKE_LUMA_FN(12, 16)
-      MAKE_LUMA_FN(12, 12)
-      MAKE_LUMA_FN(12, 6)
-      MAKE_LUMA_FN(8, 32)
-      MAKE_LUMA_FN(8, 16)
-      MAKE_LUMA_FN(8, 8)
-      MAKE_LUMA_FN(8, 4)
-      MAKE_LUMA_FN(8, 2)
-      MAKE_LUMA_FN(8, 1)
-      MAKE_LUMA_FN(6, 12)
-      MAKE_LUMA_FN(6, 6)
-      MAKE_LUMA_FN(6, 3)
-      MAKE_LUMA_FN(4, 16)
-      MAKE_LUMA_FN(4, 8)
-      MAKE_LUMA_FN(4, 4)
-      MAKE_LUMA_FN(4, 2)
-      MAKE_LUMA_FN(4, 1)
-      MAKE_LUMA_FN(3, 6)
-      MAKE_LUMA_FN(3, 3)
-      MAKE_LUMA_FN(2, 8)
-      MAKE_LUMA_FN(2, 4)
-      MAKE_LUMA_FN(2, 2)
-      MAKE_LUMA_FN(2, 1)
+    MVTOOLS_BLOCKSIZES(MAKE_LUMA_FN) // BlockSizes.h: the same list for all C tables
 #undef MAKE_LUMA_FN
     // non-template functions come from Variance-a.asm
     func_luma[make_tuple(64, 64, 1, USE_SSE2)] = Luma8_sse2<64, 64>;
@@ -237,8 +188,8 @@ func_luma[make_tuple(x, y, 2, NO_SIMD)] = Luma_C<x, y, uint16_t>;
     func_luma[make_tuple(64, 16, 1, USE_SSE2)] = Luma8_sse2<64, 16>;
     func_luma[make_tuple(48, 64, 1, USE_SSE2)] = Luma8_sse2<48, 64>;
     func_luma[make_tuple(48, 48, 1, USE_SSE2)] = Luma8_sse2<48, 48>;
-    func_luma[make_tuple(48, 48, 1, USE_SSE2)] = Luma8_sse2<48, 24>;
-    func_luma[make_tuple(48, 48, 1, USE_SSE2)] = Luma8_sse2<48, 12>;
+    func_luma[make_tuple(48, 24, 1, USE_SSE2)] = Luma8_sse2<48, 24>;
+    func_luma[make_tuple(48, 12, 1, USE_SSE2)] = Luma8_sse2<48, 12>;
     func_luma[make_tuple(32, 64, 1, USE_SSE2)] = Luma8_sse2<32, 64>;
 #ifdef USE_LUMA_ASM
     func_luma[make_tuple(32, 32, 1, USE_SSE2)] = Luma32x32_sse2;
