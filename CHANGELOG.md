@@ -28,6 +28,9 @@ Change log
     MShow: fully opaque). Alpha is not processed. Earlier the output alpha of planar RGBA clips was left undefined.
   - MDegrain1-6, MDegrainN: lsb=true is not allowed for clips with alpha.
   - Fix: MFlowBlur: chroma used the horizontal padding of the super clip as vertical padding (wrong chroma when hpad != vpad).
+  - Fix: MSuper, MShow with 4:1:0 and odd vpad: the frame height was not a multiple of 4
+    (Avisynth error: "Attempted to request a planar frame that wasn't mod4").
+  - MSuper: odd hpad with 4:1:1 and 4:1:0 is rejected with a clear error message (width + 2 * hpad must be a multiple of 4).
 
 - 2.7.47 (20260424)
   - Update Avisynth headers to V12 interface (AcquireGlobalLock/ReleaseGlobalLock support)

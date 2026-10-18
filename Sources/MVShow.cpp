@@ -77,6 +77,8 @@ mvClip(vectors, nSCD1, nSCD2, env, 1, 0)
     env->ThrowError("MShow : wrong super frame clip");
 
   vi.height = nHeight + nSuperVPad*2; // one level only (may be redesigned to show all levels with vectors at once)
+  // multiple of the vertical chroma subsampling, like the super clip (4:1:0 with odd vpad: was not mod 4)
+  vi.height = (vi.height + yRatioUV - 1) / yRatioUV * yRatioUV;
 
   if ( (pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
    {

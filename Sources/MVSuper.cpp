@@ -129,8 +129,12 @@ MVSuper::MVSuper(
   }
 
   nSuperWidth = nWidth + 2 * nHPad;
+  if (nSuperWidth % xRatioUV != 0) // 4:1:1, 4:1:0 with odd hpad; was: Avisynth 'planar frame that wasn't mod4' error
+    env->ThrowError("MSuper: hpad must be even for 4:1:1 and 4:1:0 (width + 2 * hpad must be a multiple of 4)");
   nSuperHeight = PlaneSuperOffset(false, nHeight, nLevels, nPel, nVPad, nSuperWidth*pixelsize, yRatioUV) / (nSuperWidth*pixelsize);
-  if (yRatioUV == 2 && nSuperHeight & 1) nSuperHeight++; // even
+  // height must be a multiple of the vertical chroma subsampling (4:2:0, 4:4:0: 2, 4:1:0: 4)
+  // was: only made even, 4:1:0 with odd vpad gave e.g. 498
+  nSuperHeight = (nSuperHeight + yRatioUV - 1) / yRatioUV * yRatioUV;
   vi.width = nSuperWidth;
   vi.height = nSuperHeight;
 
