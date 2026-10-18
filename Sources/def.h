@@ -119,7 +119,7 @@ const long double	LN2 = 0.69314718055994530941723212145818L;
 
 // external asm related defines, disable them for non-windows
 #if defined(_WIN32) && !defined(__GNUC__)
-#define USE_COPYCODE_ASM
+//#define USE_COPYCODE_ASM // not needed: the C block copies (memcpy with constant size) compile to register moves
 #define USE_OVERLAPS_ASM
 #define USE_SAD_ASM
 #define USE_SATD_ASM

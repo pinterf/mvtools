@@ -4,6 +4,7 @@
 
 
 #include "types.h"
+#include "def.h"
 
 #include <cstring>
 #include <stdint.h>
