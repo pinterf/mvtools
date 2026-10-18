@@ -1346,15 +1346,15 @@ void	MDegrainN::process_chroma(int plane_mask)
       {
         if (_out16_flag) {
           // copy 8 bit source to 16bit target
-          plane_copy_8_to_16_c(_dst_ptr_arr[P] + ((_dst_pitch_arr[P] * _covered_height) >> nLogyRatioUV_super), _dst_pitch_arr[P],
-            _src_ptr_arr[P] + ((_src_pitch_arr[P] * _covered_height) >> nLogyRatioUV_super), _src_pitch_arr[P],
+          plane_copy_8_to_16_c(_dst_ptr_arr[P] + (_dst_pitch_arr[P] * (_covered_height >> nLogyRatioUV_super)), _dst_pitch_arr[P],
+            _src_ptr_arr[P] + (_src_pitch_arr[P] * (_covered_height >> nLogyRatioUV_super)), _src_pitch_arr[P],
             nWidth >> nLogxRatioUV_super, ((nHeight - _covered_height) >> nLogyRatioUV_super)
           );
         }
         else {
           BitBlt(
-            _dst_ptr_arr[P] + ((_dst_pitch_arr[P] * _covered_height) >> nLogyRatioUV_super), _dst_pitch_arr[P],
-            _src_ptr_arr[P] + ((_src_pitch_arr[P] * _covered_height) >> nLogyRatioUV_super), _src_pitch_arr[P],
+            _dst_ptr_arr[P] + (_dst_pitch_arr[P] * (_covered_height >> nLogyRatioUV_super)), _dst_pitch_arr[P],
+            _src_ptr_arr[P] + (_src_pitch_arr[P] * (_covered_height >> nLogyRatioUV_super)), _src_pitch_arr[P],
             (nWidth >> nLogxRatioUV_super) << pixelsize_super_shift, ((nHeight - _covered_height) >> nLogyRatioUV_super)
           );
         }

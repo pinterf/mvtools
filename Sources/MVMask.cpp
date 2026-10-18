@@ -112,7 +112,7 @@ MVMask::MVMask(
   }
 
   /*
-  if (xRatioUV != (1 << vi.GetPlaneWidthSubsampling(PLANAR_U)) || yRatioUV != (1 << vi.GetPlaneWidthSubsampling(PLANAR_U)) || 
+  if (xRatioUV != (1 << vi.GetPlaneWidthSubsampling(PLANAR_U)) || yRatioUV != (1 << vi.GetPlaneHeightSubsampling(PLANAR_U)) || 
       bits_per_pixel != vi.BitsPerComponent())
   {
     env->ThrowError("MMask: input clip format has different bit depth or subsampling");

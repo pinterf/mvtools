@@ -1249,13 +1249,13 @@ void MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
       {
         if (out16_flag) {
           // copy 8 bit source to 16bit target
-          plane_copy_8_to_16_c(pDst + ((nDstPitch*nHeight_B) >> nLogyRatioUV_super), nDstPitch,
-            pSrc + ((nSrcPitch*nHeight_B) >> nLogyRatioUV_super), nSrcPitch,
+          plane_copy_8_to_16_c(pDst + (nDstPitch * (nHeight_B >> nLogyRatioUV_super)), nDstPitch,
+            pSrc + (nSrcPitch * (nHeight_B >> nLogyRatioUV_super)), nSrcPitch,
             (nWidth >> nLogxRatioUV_super), (nHeight - nHeight_B) >> nLogyRatioUV_super);
         }
         else {
-          BitBlt(pDst + ((nDstPitch*nHeight_B) >> nLogyRatioUV_super), nDstPitch,
-            pSrc + ((nSrcPitch*nHeight_B) >> nLogyRatioUV_super), nSrcPitch,
+          BitBlt(pDst + (nDstPitch * (nHeight_B >> nLogyRatioUV_super)), nDstPitch,
+            pSrc + (nSrcPitch * (nHeight_B >> nLogyRatioUV_super)), nSrcPitch,
             (nWidth >> nLogxRatioUV_super) << pixelsize_super_shift, (nHeight - nHeight_B) >> nLogyRatioUV_super);
         }
       }

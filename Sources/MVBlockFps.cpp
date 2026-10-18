@@ -118,7 +118,7 @@ MVBlockFps::MVBlockFps(
     yRatioUVs[1] = yRatioUVs[2] = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U));
   }
 
-  for (int i = 0; i < planecount; i++) {
+  for (int i = 0; i < 3; i++) { // all planes, also for Y-only clips (ratio 1), the chroma function lookups use [1]
     nLogxRatioUVs[i] = ilog2(xRatioUVs[i]);
     nLogyRatioUVs[i] = ilog2(yRatioUVs[i]);
   }

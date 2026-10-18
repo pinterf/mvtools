@@ -75,7 +75,7 @@ MVCompensate::MVCompensate(
     yRatioUVs[1] = yRatioUVs[2] = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U));
   }
 
-  for (int i = 0; i < planecount; i++) {
+  for (int i = 0; i < 3; i++) { // all planes, also for Y-only clips (ratio 1), the chroma function lookups use [1]
     nLogxRatioUVs[i] = ilog2(xRatioUVs[i]);
     nLogyRatioUVs[i] = ilog2(yRatioUVs[i]);
   }
@@ -623,7 +623,7 @@ PVideoFrame __stdcall MVCompensate::GetFrame(int n, IScriptEnvironment* env_ptr)
     }
 
     nOffset[0] = nHPadding * pixelsize_super + nVPadding * nSrcPitches[0];
-    nOffset[1] = nOffset[2] = (nHPadding >> nLogxRatioUV) * pixelsize_super + (nVPadding >> nLogyRatioUVs[1]) * nSrcPitches[1];
+    nOffset[1] = nOffset[2] = (nHPadding >> nLogxRatioUVs[1]) * pixelsize_super + (nVPadding >> nLogyRatioUVs[1]) * nSrcPitches[1];
 
     for (int i = 0; i < planecount; i++) {
       env_ptr->BitBlt(pDst[i], nDstPitches[i], pSrc[i] + nOffset[i], nSrcPitches[i], (nWidth >> nLogxRatioUVs[i]) << pixelsize_super_shift, nHeight >> nLogyRatioUVs[i]);
