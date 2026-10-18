@@ -46,12 +46,6 @@ class OverlapWindows
 
   short * Overlap9Windows;
 
-  float *fWin1UVx;
-  float *fWin1UVxfirst;
-  float *fWin1UVxlast;
-  float *fWin1UVy;
-  float *fWin1UVyfirst;
-  float *fWin1UVylast;
 public :
 
   OverlapWindows(int _nx, int _ny, int _ox, int _oy);

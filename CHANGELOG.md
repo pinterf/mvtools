@@ -40,6 +40,12 @@ Change log
     Was: various missing function errors, or a truncated chroma block.
   - Fix: blksize 6x24 and 12x3: crash (access violation) in MAnalyse, all formats (missing luma function).
   - Fix: blksize 48x48 at 8 bit with the adaptive dct modes: the block luma was taken from the top 48x12 part only.
+  - Fix: overlap windows, further fix (after #69 above), MCompensate, MDegrain1-6, MDegrainN, MBlockFps with overlap: the weights of the overlapping
+    blocks summed to 2047..2049 instead of 2048, so a flat area changed by up to +-0.05%: at 16 bit up to +-32
+    (e.g. flat 30000 became 29985..30015), from 12 bits visible. 8 bit: rarely +-1. Now the sum is exact.
+    What users could see: a faint static grid on bright, smooth areas, following the block overlap layout
+    (pixels 0.05% too dark or too bright, larger on brighter areas), mostly after strong grading or contrast boost
+    of 12-16 bit material. Degrain strength was not affected, only this small level error in the overlap zones.
 
 - 2.7.47 (20260424)
   - Update Avisynth headers to V12 interface (AcquireGlobalLock/ReleaseGlobalLock support)

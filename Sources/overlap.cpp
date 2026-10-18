@@ -22,6 +22,7 @@
 #include <cmath>
 #include <tuple>
 #include <map>
+#include <vector>
 #include "avs/minmax.h"
 #include <cassert>
 #include <emmintrin.h>
@@ -101,67 +102,22 @@ OverlapWindows::OverlapWindows(int _nx, int _ny, int _ox, int _oy)
   oy = _oy;
   size = nx*ny;
 
-     //  windows
-     fWin1UVx = new float[nx];
-     fWin1UVxfirst = new float[nx];
-     fWin1UVxlast = new float[nx];
+     // 1D weights of the overlapping left (top) zone: rising cos^2, 0..1.
+     // The right (bottom) zone of a block is the complement of the next block's left (top) zone.
      // FFFFFFFF                LLLLLLLL   F=First block, L=Last block
      //       ========    ========
      // ========    ========    ========
      //       AABBBBCC                     A:0..ox-1 ; B:ox..nx-ox-1 ; C:nx-ox..nx-1
      // For BlkSize=8, Overlap=2           A:0..1  B:2..5  C:6..7
-     
-     // Horizontal part of weights
-     // overlapping left area weights
-     for (int i=0; i<ox; i++)
-     {
-      fWin1UVx[i] = float (cos(PI*(i-ox+0.5f)/(ox*2)));
-      fWin1UVx[i] = fWin1UVx[i]*fWin1UVx[i];// left window (rised cosine)
-      fWin1UVxfirst[i] = 1; // very first window, leftmost block, no overlap on the left side here
-      fWin1UVxlast[i] = fWin1UVx[i]; // very last, rightmost block, but yes, we still have overlap on the left side
+     std::vector<float> wx(ox), wy(oy);
+     for (int i = 0; i < ox; i++) {
+       wx[i] = float(cos(PI * (i - ox + 0.5f) / (ox * 2)));
+       wx[i] = wx[i] * wx[i];
      }
-     // non-overlapping middle area weights. No overlap: weight=1!
-     for (int i=ox; i<nx-ox; i++)
-     {
-       // overlapping left area weights
-       fWin1UVx[i] = 1;
-      fWin1UVxfirst[i] = 1; // very first window
-      fWin1UVxlast[i] = 1; // very last
+     for (int i = 0; i < oy; i++) {
+       wy[i] = float(cos(PI * (i - oy + 0.5f) / (oy * 2)));
+       wy[i] = wy[i] * wy[i];
      }
-     // overlapping right area weights
-     for (int i=nx-ox; i<nx; i++)
-     {
-      fWin1UVx[i] = float (cos(PI*(i-nx+ox+0.5f)/(ox*2)));
-      fWin1UVx[i] = fWin1UVx[i]*fWin1UVx[i];// right window (falled cosine)
-      fWin1UVxfirst[i] = fWin1UVx[i]; // very first window, leftmost block, but yes, we still have overlap on the right side
-      fWin1UVxlast[i] = 1; // very last, rightmost block, no overlap on the right side here
-     }
-
-     // Similar to the horizontal: vertical part of weights
-     fWin1UVy = new float[ny];
-     fWin1UVyfirst = new float[ny];
-     fWin1UVylast = new float[ny];
-     for (int i=0; i<oy; i++)
-     {
-      fWin1UVy[i] = float (cos(PI*(i-oy+0.5f)/(oy*2))); // -3.5 -2.5 -1.5 -0.5 / 2*4
-      fWin1UVy[i] = fWin1UVy[i]*fWin1UVy[i];// left window (rised cosine)
-      fWin1UVyfirst[i] = 1; // very first window
-      fWin1UVylast[i] = fWin1UVy[i]; // very last
-     }
-     for (int i=oy; i<ny-oy; i++)
-     {
-      fWin1UVy[i] = 1;
-      fWin1UVyfirst[i] = 1; // very first window
-      fWin1UVylast[i] = 1; // very last
-     }
-     for (int i=ny-oy; i<ny; i++)
-     {
-      fWin1UVy[i] = float (cos(PI*(i-ny+oy+0.5f)/(oy*2))); // 0.5 1.5 2.5 3.5 / 2*4
-      fWin1UVy[i] = fWin1UVy[i]*fWin1UVy[i];// right window (falled cosine)
-      fWin1UVyfirst[i] = fWin1UVy[i]; // very first window
-      fWin1UVylast[i] = 1; // very last
-     }
-
 
     Overlap9Windows = new short[size*9];
 
@@ -189,20 +145,49 @@ OverlapWindows::OverlapWindows(int _nx, int _ny, int _ox, int _oy)
       // a2+a3  a2+a3| a2+a3+b2+b3   a2+a3+b2+b3 | b2+b3   b2+b3 | b2+b3+c2+c3   b2+b3+c2+c3 | c2+c3   c2+c3
       // ...
 
-      // Combine precomputed horizontal and vertical weights for 3x3 special areas
+      // Integer weights. Where blocks overlap, the weights of the 2 or 4 blocks covering a pixel must sum to exactly 2048,
+      // otherwise a flat area changes (at 16 bit up to +-32, 2047..2049 sum when the 2D products were rounded one by one).
+      // Rounded once per axis: Ix (left zone), Iy (top zone), the partner block gets the complement (2048 - Ix);
+      // in the corners one product P is rounded, the other three are derived from it.
+      // Same idea as the differential coefficients of the Avisynth+ resizers (sum of rounded differences), in 2D.
+      // Zones per axis: 0: no overlap (weight 1), 1: left/top zone (rising), 2: right/bottom zone (falling)
+      std::vector<int> Ix(ox), Iy(oy);
+      for (int k = 0; k < ox; k++) Ix[k] = (int)(wx[k] * 2048 + 0.5f);
+      for (int m = 0; m < oy; m++) Iy[m] = (int)(wy[m] * 2048 + 0.5f);
+      // first: no overlap on the left/top side, last: no overlap on the right/bottom side
+      auto zone = [](int i, int n, int o, bool first, bool last, int &k) {
+        if (i < o) { k = i; return first ? 0 : 1; }
+        if (i >= n - o) { k = i - (n - o); return last ? 0 : 2; }
+        k = 0; return 0;
+      };
+      auto weight = [&](int i, int j, bool xfirst, bool xlast, bool yfirst, bool ylast) -> short {
+        int k, m;
+        const int zx = zone(i, nx, ox, xfirst, xlast, k);
+        const int zy = zone(j, ny, oy, yfirst, ylast, m);
+        if (zy == 0) return (short)(zx == 0 ? 2048 : zx == 1 ? Ix[k] : 2048 - Ix[k]);
+        if (zx == 0) return (short)(zy == 1 ? Iy[m] : 2048 - Iy[m]);
+        // left-top; limited so that none of the four weights is negative (SIMD overlaps read the window as unsigned)
+        const int P = max(max(0, Ix[k] + Iy[m] - 2048), min(min(Ix[k], Iy[m]), (int)(wx[k] * wy[m] * 2048 + 0.5f)));
+        if (zx == 1 && zy == 1) return (short)P;
+        if (zx == 2 && zy == 1) return (short)(Iy[m] - P);
+        if (zx == 1 && zy == 2) return (short)(Ix[k] - P);
+        return (short)(2048 - Ix[k] - Iy[m] + P); // right-bottom
+      };
+
+      // 3x3 special areas: T/M/B: top, middle, bottom block row; L/M/R: left, middle, right block column
       for (int j = 0; j < ny; j++)
       {
         for (int i = 0; i < nx; i++)
         {
-          winOverUVTL[i] = (int)(fWin1UVyfirst[j] * fWin1UVxfirst[i] * 2048 + 0.5f); // Top Left
-          winOverUVTM[i] = (int)(fWin1UVyfirst[j] * fWin1UVx[i] * 2048 + 0.5f);      // Top Middle
-          winOverUVTR[i] = (int)(fWin1UVyfirst[j] * fWin1UVxlast[i] * 2048 + 0.5f);  // Top Right
-          winOverUVML[i] = (int)(fWin1UVy[j] * fWin1UVxfirst[i] * 2048 + 0.5f);      // Middle Left
-          winOverUVMM[i] = (int)(fWin1UVy[j] * fWin1UVx[i] * 2048 + 0.5f);           // Middle Middle
-          winOverUVMR[i] = (int)(fWin1UVy[j] * fWin1UVxlast[i] * 2048 + 0.5f);       // Middle Right
-          winOverUVBL[i] = (int)(fWin1UVylast[j] * fWin1UVxfirst[i] * 2048 + 0.5f);  // Bottom Left
-          winOverUVBM[i] = (int)(fWin1UVylast[j] * fWin1UVx[i] * 2048 + 0.5f);       // Bottom Middle
-          winOverUVBR[i] = (int)(fWin1UVylast[j] * fWin1UVxlast[i] * 2048 + 0.5f);   // Bottom Right
+          winOverUVTL[i] = weight(i, j, true, false, true, false);   // Top Left
+          winOverUVTM[i] = weight(i, j, false, false, true, false);  // Top Middle
+          winOverUVTR[i] = weight(i, j, false, true, true, false);   // Top Right
+          winOverUVML[i] = weight(i, j, true, false, false, false);  // Middle Left
+          winOverUVMM[i] = weight(i, j, false, false, false, false); // Middle Middle
+          winOverUVMR[i] = weight(i, j, false, true, false, false);  // Middle Right
+          winOverUVBL[i] = weight(i, j, true, false, false, true);   // Bottom Left
+          winOverUVBM[i] = weight(i, j, false, false, false, true);  // Bottom Middle
+          winOverUVBR[i] = weight(i, j, false, true, false, true);   // Bottom Right
         }
         winOverUVTL += nx;
         winOverUVTM += nx;
@@ -222,12 +207,6 @@ OverlapWindows::OverlapWindows(int _nx, int _ny, int _ox, int _oy)
 OverlapWindows::~OverlapWindows()
 {
   delete[] Overlap9Windows;
-  delete [] fWin1UVx;
-  delete [] fWin1UVxfirst;
-  delete [] fWin1UVxlast;
-  delete [] fWin1UVy;
-  delete [] fWin1UVyfirst;
-  delete [] fWin1UVylast;
 }
 
 // v2.7.25 Let's round 1<<4
