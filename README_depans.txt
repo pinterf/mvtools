@@ -52,6 +52,10 @@ Change log (modifications by pinterf: https://github.com/pinterf/):
     output was identical to the source (and no zoom was applied). Being uninitialized, other builds may have
     behaved differently. Now the clip is stabilized and the adaptive zoom hides the borders as intended.
     addzoom=false was not affected.
+  - Fix: DePan, DePanInterleave, DePanStabilize with inputlog and without a motion data clip: DePanStabilize and
+    DePanInterleave crashed or failed (they always accessed the data clip, Fizick's original included), DePan worked,
+    but a debug build of Avisynth stopped with an assertion. Now the data clip is optional with inputlog;
+    without both a clear error is given.
   DepanEstimate 2.13
   - Support Y with alpha (YA) and YUVA (was: "input must be YUV or YUY2"). Alpha is copied when info or show is set.
   - 32 bit float input is rejected with an error.

@@ -266,6 +266,8 @@ DePan::DePan(PClip _child, PClip _DePanData, float _offset, int _subpixel, float
     //		if(vi.IsFieldBased  && loginterlaced==0)	env->ThrowError("DePan: Input log must be in interlaced for fieldbased!");
   }
   else { // motion data will be requesred from DepanEstimate
+    if (!DePanData)
+      env->ThrowError("DePan: motion data clip or inputlog is required!");
     if ((DePanData->GetVideoInfo().num_frames) != child->GetVideoInfo().num_frames)
       env->ThrowError("DePan: The length of input clip must be same as motion data clip  !");
 
@@ -925,7 +927,7 @@ PVideoFrame __stdcall DePan::GetFrame(int ndest, IScriptEnvironment* env) {
 
 AVSValue __cdecl Create_DePan(AVSValue args, void* user_data, IScriptEnvironment* env) {
   return new DePan(args[0].AsClip(), // the 0th parameter is the source clip
-    args[1].AsClip(),		// parameter  - motion data clip.
+    args[1].Defined() ? args[1].AsClip() : nullptr, // parameter  - motion data clip (optional with inputlog)
     (float)args[2].AsFloat(0),	// parameter  - offset
     args[3].AsInt(2),		// parameter  - subpixel 
     (float)args[4].AsFloat(1.),	// parameter  - pixaspect
@@ -1032,8 +1034,12 @@ DePanInterleave::DePanInterleave(PClip _child, PClip _DePanData, int _prev, int 
   if (vi.BitsPerComponent() == 32)
     env->ThrowError("DePanInterleave: 32 bit float input is not supported!");
 
-  if ((DePanData->GetVideoInfo().num_frames) != vi.num_frames)
-    env->ThrowError("DePanInterleave: The length of input clip must be same as motion data clip !");
+  if (!*inputlog) { // with inputlog the motion data clip is not used
+    if (!DePanData)
+      env->ThrowError("DePanInterleave: motion data clip or inputlog is required!");
+    if ((DePanData->GetVideoInfo().num_frames) != vi.num_frames)
+      env->ThrowError("DePanInterleave: The length of input clip must be same as motion data clip !");
+  }
   if (prev < 0 || next < 0 || num <= 0)
     env->ThrowError("DePanInterleave: The number of clips must be positive !");
 
@@ -1116,7 +1122,7 @@ PVideoFrame __stdcall DePanInterleave::GetFrame(int ndest, IScriptEnvironment* e
 
 AVSValue __cdecl Create_DePanInterleave(AVSValue args, void* user_data, IScriptEnvironment* env) {
   return new DePanInterleave(args[0].AsClip(), // the 0th parameter is the source clip
-    args[1].AsClip(),	// parameter  - motion data clip.
+    args[1].Defined() ? args[1].AsClip() : nullptr, // parameter  - motion data clip (optional with inputlog)
     args[2].AsInt(1),	// parameter  - prev
     args[3].AsInt(1),	// parameter  - next
     args[4].AsInt(1),	// parameter  - subpixel - changed default to 1 in v1.6

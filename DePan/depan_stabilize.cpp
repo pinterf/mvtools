@@ -275,8 +275,12 @@ DePanStabilize::DePanStabilize(PClip _child, PClip _DePanData, float _cutoff,
   if (method < -1 || method > 2)
     env->ThrowError("DePanStabilize: wrong method");//v1.13
 
-  if ((DePanData->GetVideoInfo().num_frames) != vi.num_frames)
-    env->ThrowError("DePanStabilize: The length of input clip must be same as motion data clip !");
+  if (lstrlen(inputlog) == 0) { // with inputlog the motion data clip is not used
+    if (!DePanData)
+      env->ThrowError("DePanStabilize: motion data clip or inputlog is required!");
+    if ((DePanData->GetVideoInfo().num_frames) != vi.num_frames)
+      env->ThrowError("DePanStabilize: The length of input clip must be same as motion data clip !");
+  }
 
   motionx = new float[vi.num_frames]; // was: (float *)malloc(vi.num_frames*sizeof(float));
   motiony = new float[vi.num_frames];
@@ -1644,7 +1648,7 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
 
 AVSValue __cdecl Create_DePanStabilize(AVSValue args, void* user_data, IScriptEnvironment* env) {
   return new DePanStabilize(args[0].AsClip(), // the 0th parameter is the source clip
-    args[1].AsClip(),	// parameter  - motion data clip.
+    args[1].Defined() ? args[1].AsClip() : nullptr, // parameter  - motion data clip (optional with inputlog)
     (float)args[2].AsFloat(1.0f),	// parameter  - cutoff
     (float)args[3].AsFloat(0.9f),	// parameter  - damping  - default changed to 0.9 in v.1.1.4 (was really fixed =0.9 in all prev versions)
     (float)args[4].AsFloat(1.0f),	// parameter  - initial zoom

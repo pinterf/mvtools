@@ -176,7 +176,7 @@ mirror</var> - fill empty borders with mirrored from frame edge pixels (instead 
 info</var> - show motion info on frame (default=false).<br>
 
 <var>
-inputlog</var> - name of input log file in Deshaker format (default - none, not read)<br>
+inputlog</var> - name of input log file in Deshaker format (default - none, not read); when given, the motion <var>data</var> clip is not needed (and not used)<br>
 <var>
 alphainvert</var> - clips with alpha (YUVA, YA): the alpha plane marks the new empty borders
 (moved like luma, without mirror and blur). The borders get alpha 0, the rest keeps the (moved) source alpha.
@@ -239,7 +239,7 @@ mirror</var> - fill empty borders with mirrored from frame edge pixels (instead 
 info</var> - show motion info on frame (default=false).<br>
 
 <var>
-inputlog</var> - name of input log file in Deshaker format (none default,  not read)<br>
+inputlog</var> - name of input log file in Deshaker format (none default,  not read); when given, the motion <var>data</var> clip is not needed (and not used)<br>
 <var>
 alphainvert</var> - clips with alpha (YUVA, YA): the alpha plane marks the new empty borders
 (moved like luma, without mirror and blur). The borders get alpha 0, the rest keeps the (moved) source alpha.
@@ -334,7 +334,7 @@ pixaspect</var> - pixel aspect (default = 1.0);<br>
 info</var> - show motion info on frame (default=false).<br>
 
 <var>
-inputlog</var> - name of input log file in Deshaker format (none default,  not read)<br>
+inputlog</var> - name of input log file in Deshaker format (none default,  not read); when given, the motion <var>data</var> clip is not needed (and not used)<br>
 <var>
 method</var> - used method for stabilization:<br>
 &nbsp;&nbsp;&nbsp; 0 - inertial (default);<br>
