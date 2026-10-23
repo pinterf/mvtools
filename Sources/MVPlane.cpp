@@ -34,6 +34,9 @@ boundaries.
 
 #include "CopyCode.h"
 #include "Interpolation.h"
+#ifdef NEON_INTRINSICS
+#include "Interpolation_neon.h"
+#endif
 #include "MVPlane.h"
 #include "Padding.h"
 #include <stdint.h>
@@ -123,6 +126,18 @@ MVPlane::MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, i
       _wiener_hor_ptr = hasSSE41 ? HorizontalWiener_sse2<uint16_t, true> : HorizontalWiener_sse2<uint16_t, false>;
       _wiener_ver_ptr = hasSSE41 ? VerticalWiener_sse2<uint16_t, 1> : VerticalWiener_sse2<uint16_t, false>;
       _average_ptr = Average2_sse2<uint16_t>;
+    }
+  }
+#endif
+#ifdef NEON_INTRINSICS
+  if (cpuFlags & CPUF_ARM_NEON) {
+    if (pixelsize == 1) {
+      _wiener_hor_ptr = HorizontalWiener_neon<uint8_t>;
+      _wiener_ver_ptr = VerticalWiener_neon<uint8_t>;
+    }
+    else if (pixelsize == 2) {
+      _wiener_hor_ptr = HorizontalWiener_neon<uint16_t>;
+      _wiener_ver_ptr = VerticalWiener_neon<uint16_t>;
     }
   }
 #endif

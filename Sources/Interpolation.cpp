@@ -36,6 +36,9 @@
 #include <stdint.h>
 #include "def.h"
 #include "avs/cpuid.h"
+#ifdef NEON_INTRINSICS
+#include "Interpolation_neon.h"
+#endif
 
 #ifdef INTEL_INTRINSICS
 MV_FORCEINLINE __m128i _MM_CMPLE_EPU16(__m128i x, __m128i y)
@@ -1086,6 +1089,12 @@ void RB2BilinearFilteredVertical(
       startx = nWidthMMX;
     }
 #endif // INTEL_INTRINSICS
+#ifdef NEON_INTRINSICS
+    if constexpr (sizeof(pixel_t) <= 2) {
+      if (cpuFlags & CPUF_ARM_NEON)
+        startx = RB2BilinearFilteredVerticalLine_neon<pixel_t>(pDst, pSrc, nSrcPitch / sizeof(pixel_t), nWidth);
+    }
+#endif
 
     for (int x = startx; x < nWidth; x++)
     {
@@ -1180,7 +1189,13 @@ void RB2BilinearFilteredHorizontalInplace(
       }
     }
 #endif // INTEL_INTRINSICS
-    
+#ifdef NEON_INTRINSICS
+    if constexpr (sizeof(pixel_t) <= 2) {
+      if (cpuFlags & CPUF_ARM_NEON)
+        xstart = RB2BilinearFilteredHorizontalInplaceLine_neon<pixel_t>(pSrc, nWidth);
+    }
+#endif
+
     for (int x = xstart; x < nWidth - 1; x++)
     {
       if constexpr(sizeof(pixel_t) <= 2)
