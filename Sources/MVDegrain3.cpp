@@ -415,8 +415,8 @@ MVDegrainX::MVDegrainX(
 
   // C only -> NO_SIMD
   // lsb 16-bit hack: uint8_t only
-  OVERSLUMALSB = get_overlaps_lsb_function(nBlkSizeX, nBlkSizeY, sizeof(uint8_t), NO_SIMD);
-  OVERSCHROMALSB = get_overlaps_lsb_function(nBlkSizeX >> nLogxRatioUV_super, nBlkSizeY >> nLogyRatioUV_super, sizeof(uint8_t), NO_SIMD);
+  OVERSLUMALSB = get_overlaps_lsb_function(nBlkSizeX, nBlkSizeY, sizeof(uint8_t), arch);
+  OVERSCHROMALSB = get_overlaps_lsb_function(nBlkSizeX >> nLogxRatioUV_super, nBlkSizeY >> nLogyRatioUV_super, sizeof(uint8_t), arch);
 
   OVERSLUMA = get_overlaps_function(nBlkSizeX, nBlkSizeY, sizeof(uint8_t), arch);
   OVERSCHROMA = get_overlaps_function(nBlkSizeX >> nLogxRatioUV_super, nBlkSizeY >> nLogyRatioUV_super, sizeof(uint8_t), arch);

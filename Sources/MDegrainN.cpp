@@ -732,8 +732,8 @@ MDegrainN::MDegrainN(
     arch = NO_SIMD;
 
 // C only -> NO_SIMD
-  _oversluma_lsb_ptr = get_overlaps_lsb_function(nBlkSizeX, nBlkSizeY, sizeof(uint8_t), NO_SIMD);
-  _overschroma_lsb_ptr = get_overlaps_lsb_function(nBlkSizeX / xRatioUV_super, nBlkSizeY / yRatioUV_super, sizeof(uint8_t), NO_SIMD);
+  _oversluma_lsb_ptr = get_overlaps_lsb_function(nBlkSizeX, nBlkSizeY, sizeof(uint8_t), arch);
+  _overschroma_lsb_ptr = get_overlaps_lsb_function(nBlkSizeX / xRatioUV_super, nBlkSizeY / yRatioUV_super, sizeof(uint8_t), arch);
 
   _oversluma_ptr = get_overlaps_function(nBlkSizeX, nBlkSizeY, sizeof(uint8_t), arch);
   _overschroma_ptr = get_overlaps_function(nBlkSizeX / xRatioUV_super, nBlkSizeY / yRatioUV_super, sizeof(uint8_t), arch);

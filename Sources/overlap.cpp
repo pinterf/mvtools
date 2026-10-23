@@ -30,6 +30,9 @@
 #include <smmintrin.h>
 #endif
 #include "BlockSizes.h"
+#ifdef NEON_INTRINSICS
+#include "overlap_neon.h"
+#endif
 
 #ifndef min
 #define min(a,b)            (((a) < (b)) ? (a) : (b))
@@ -742,6 +745,15 @@ func_overlaps[make_tuple(x, y, 4, NO_SIMD)] = Overlaps_float_C<x, y>;
     MVTOOLS_BLOCKSIZES(MAKE_OVR_FN) // BlockSizes.h: the same list for all C tables
 #undef MAKE_OVR_FN
 
+#ifdef NEON_INTRINSICS
+#define MAKE_OVR_FN(x, y) \
+func_overlaps[make_tuple(x, y, 1, USE_NEON)] = Overlaps_neon<uint8_t, x, y>; \
+func_overlaps[make_tuple(x, y, 2, USE_NEON)] = Overlaps_neon<uint16_t, x, y>; \
+func_overlaps[make_tuple(x, y, 4, USE_NEON)] = Overlaps_float_neon<x, y>;
+    MVTOOLS_BLOCKSIZES(MAKE_OVR_FN)
+#undef MAKE_OVR_FN
+#endif
+
 #ifdef USE_OVERLAPS_ASM
     // in overlap-a.asm
     func_overlaps[make_tuple(64, 64, 1, USE_SSE2)] = Overlaps64x64_sse2;
@@ -878,6 +890,11 @@ OverlapsLsbFunction *get_overlaps_lsb_function(int BlockX, int BlockY, int pixel
 #define MAKE_OVR_FN(x, y) func_overlaps_lsb[make_tuple(x, y, 1, NO_SIMD)] = OverlapsLsb_C<x, y>;
     MVTOOLS_BLOCKSIZES(MAKE_OVR_FN) // BlockSizes.h: the same list for all C tables
 #undef MAKE_OVR_FN
+#ifdef NEON_INTRINSICS
+#define MAKE_OVR_FN(x, y) func_overlaps_lsb[make_tuple(x, y, 1, USE_NEON)] = OverlapsLsb_neon<x, y>;
+    MVTOOLS_BLOCKSIZES(MAKE_OVR_FN)
+#undef MAKE_OVR_FN
+#endif
 
     OverlapsLsbFunction *result = nullptr;
     arch_t archlist[] = { USE_NEON, USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
