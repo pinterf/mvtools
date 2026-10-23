@@ -533,7 +533,9 @@ void DCTFFTW::Float2Bytes_C(unsigned char * dstp0, int dst_pitch, float * realda
   const int middlePixelValue = 1 << (bits_per_pixel - 1);   // 128..32768 
 
   // normalization: to be compatible with integer DCTINT8
-  // DC: truncated, AC: rounded to nearest (even), the same as the SIMD versions
+  // AC: rounded to nearest. The coefficients are only compared by SAD (src vs ref block): nearest (and floor) give
+  // an unbiased |q(a) - q(b)|, truncation toward zero has a dead zone around 0 that lowers it (about -0.25 per coefficient).
+  // DC: never negative (REDFT10 of raw pixels), there truncation is a floor: also unbiased.
   dstp[0] = (pixel_t)std::min(maxPixelValue, std::max(0, int(realdata[0] * dctNormalize_DC) + middlePixelValue)); // DC;
 
   for (int i = 1; i < sizex; i += 1)

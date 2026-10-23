@@ -42,8 +42,9 @@ void DCTFFTW::Bytes2Float_neon(const unsigned char * srcp, int src_pitch, float 
   }
 }
 
-// same results as Float2Bytes_C: one multiply (no contraction question), DC truncated, AC rounded to nearest even
-// (vcvtnq == lrint in the default rounding mode), clamped to 0..maxPixelValue
+// same results as Float2Bytes_C (see the reason of the rounding there): one multiply (no contraction question),
+// DC truncated (never negative: a floor), AC rounded to nearest (vcvtnq == lrint in the default rounding mode),
+// clamped to 0..maxPixelValue
 template<typename pixel_t>
 void DCTFFTW::Float2Bytes_neon(unsigned char * dstp0, int dst_pitch, float * realdata)
 {
