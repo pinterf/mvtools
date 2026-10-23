@@ -137,7 +137,7 @@ func_copy[make_tuple(x, y, 4, NO_SIMD)] = Copy_C<x, y, float>;
     //func_copy[make_tuple(2 , 1 , 1, USE_SSE2)] = Copy2x1_sse2; no such
 #endif
     COPYFunction *result = nullptr;
-    arch_t archlist[] = { USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
+    arch_t archlist[] = { USE_NEON, USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
     int index = 0;
     while (result == nullptr) {
       arch_t current_arch_try = archlist[index++];

@@ -297,7 +297,7 @@ func_luma[make_tuple(x, y, 2, NO_SIMD)] = Luma_C<x, y, uint16_t>;
 #endif // INTEL_INTRINSICS
 
     LUMAFunction *result = nullptr;
-    arch_t archlist[] = { USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
+    arch_t archlist[] = { USE_NEON, USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
     int index = 0;
     while (result == nullptr) {
       arch_t current_arch_try = archlist[index++];

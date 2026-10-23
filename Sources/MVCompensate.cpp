@@ -152,6 +152,11 @@ MVCompensate::MVCompensate(
   }
 
   arch_t arch;
+#ifdef NEON_INTRINSICS
+  if ((cpuFlags & CPUF_ARM_NEON) != 0)
+    arch = USE_NEON;
+  else
+#endif
   if ((cpuFlags & CPUF_AVX2) != 0)
     arch = USE_AVX2;
   else if ((cpuFlags & CPUF_AVX) != 0)

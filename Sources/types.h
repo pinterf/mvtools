@@ -42,7 +42,8 @@ enum arch_t {
     USE_SSE41,
     USE_SSE42,
     USE_AVX,
-    USE_AVX2
+    USE_AVX2,
+    USE_NEON // aarch64; the x86 values above are ordered by ISA level, this one is never reached from x86
 };
 
 typedef uint8_t BYTE;

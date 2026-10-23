@@ -1007,7 +1007,7 @@ func_sad[make_tuple(x, y, 8, USE_SSE2)] = Sad_sse2<x,y>;
 
 
     SADFunction *result = nullptr;
-    arch_t archlist[] = { USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
+    arch_t archlist[] = { USE_NEON, USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
     int index = 0;
     while (result == nullptr) {
       arch_t current_arch_try = archlist[index++];
@@ -1396,7 +1396,7 @@ SADFunction* get_satd_function(int BlockX, int BlockY, int pixelsize, arch_t arc
 #undef MAKE_FN_SSE
 
     SADFunction *result = nullptr;
-    arch_t archlist[] = { USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
+    arch_t archlist[] = { USE_NEON, USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
     int index = 0;
     while (result == nullptr) {
       arch_t current_arch_try = archlist[index++];

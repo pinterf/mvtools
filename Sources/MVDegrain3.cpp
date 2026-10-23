@@ -172,7 +172,7 @@ MAKE_FN(2, 1, 1)
 #undef MAKE_FN_LEVEL
 
   Denoise1to6Function* result = nullptr;
-  arch_t archlist[] = { USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
+  arch_t archlist[] = { USE_NEON, USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
   int index = 0;
   while (result == nullptr) {
     arch_t current_arch_try = archlist[index++];
@@ -397,6 +397,11 @@ MVDegrainX::MVDegrainX(
   // OverlapsFunction
   // in M(V)DegrainX: DenoiseXFunction
   arch_t arch;
+#ifdef NEON_INTRINSICS
+  if ((cpuFlags & CPUF_ARM_NEON) != 0)
+    arch = USE_NEON;
+  else
+#endif
   if ((cpuFlags & CPUF_AVX2) != 0)
     arch = USE_AVX2;
   else if ((cpuFlags & CPUF_AVX) != 0)

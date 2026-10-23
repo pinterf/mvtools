@@ -855,7 +855,7 @@ func_overlaps[make_tuple(x, y, 1, USE_SSE41)] = Overlaps_uint8_t_sse4<x, y>;
 
     OverlapsFunction *result = nullptr;
 
-    arch_t archlist[] = { USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
+    arch_t archlist[] = { USE_NEON, USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
     int index = 0;
     while (result == nullptr) {
       arch_t current_arch_try = archlist[index++];
@@ -880,7 +880,7 @@ OverlapsLsbFunction *get_overlaps_lsb_function(int BlockX, int BlockY, int pixel
 #undef MAKE_OVR_FN
 
     OverlapsLsbFunction *result = nullptr;
-    arch_t archlist[] = { USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
+    arch_t archlist[] = { USE_NEON, USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
     int index = 0;
     while (result == nullptr) {
       arch_t current_arch_try = archlist[index++];

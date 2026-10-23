@@ -40,6 +40,10 @@ int conv_cpuf_flags_to_cpu(int avscpu)
   if (avscpu & CPUF_SSE4_2) acpu |= CPU_SSE42;
   if (avscpu & CPUF_AVX) acpu |= CPU_AVX;
   if (avscpu & CPUF_AVX2) acpu |= CPU_AVX2;
+#ifdef NEON_INTRINSICS
+  // the ARM flag values are shared with x86 flags, they are meaningful only on aarch64
+  if (avscpu & CPUF_ARM_NEON) acpu |= CPU_NEON;
+#endif
   return acpu;
 }
 

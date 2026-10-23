@@ -163,6 +163,11 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
                      // OverlapsFunction
                      // in M(V)DegrainX: DenoiseXFunction
   arch_t arch;
+#ifdef NEON_INTRINSICS
+  if (isse && (nFlags & CPU_NEON))
+    arch = USE_NEON;
+  else
+#endif
   if (isse && avx2)
     arch = USE_AVX2;
   else if (isse && avx)

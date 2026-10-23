@@ -127,6 +127,11 @@ DCTFFTW::DCTFFTW(int _sizex, int _sizey, FFTFunctionPointers &fftfp_preloaded, i
 
   bool isse_flag = true;
   arch_t arch;
+#ifdef NEON_INTRINSICS
+  if ((((cpu & CPUF_ARM_NEON) != 0) & isse_flag))
+    arch = USE_NEON;
+  else
+#endif
   if ((((cpu & CPUF_AVX2) != 0) & isse_flag))
     arch = USE_AVX2;
   else if ((((cpu & CPUF_AVX) != 0) & isse_flag))
@@ -589,7 +594,7 @@ DCTFFTW::Float2BytesFunction DCTFFTW::get_floatToBytesPROC_function(int BlockX, 
 #endif // INTEL_INTRINSICS
   
   DCTFFTW::Float2BytesFunction result = nullptr;
-  arch_t archlist[] = { USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
+  arch_t archlist[] = { USE_NEON, USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
   int index = 0;
   while (result == nullptr) {
     arch_t current_arch_try = archlist[index++];
@@ -633,7 +638,7 @@ DCTFFTW::Bytes2FloatFunction DCTFFTW::get_bytesToFloatPROC_function(int BlockX, 
 #endif // INTEL_INTRINSICS
   
   DCTFFTW::Bytes2FloatFunction result = nullptr;
-  arch_t archlist[] = { USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
+  arch_t archlist[] = { USE_NEON, USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
   int index = 0;
   while (result == nullptr) {
     arch_t current_arch_try = archlist[index++];

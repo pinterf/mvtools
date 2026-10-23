@@ -55,7 +55,9 @@ enum AnaFlags
 
   // force MVAnalyse to use a different function for SAD / SADCHROMA (debug)
 	MOTION_USE_SSD             = 0x08000000,
-	MOTION_USE_SATD            = 0x10000000
+	MOTION_USE_SATD            = 0x10000000,
+
+  CPU_NEON                   = 0x20000000  // aarch64 NEON (ASIMD)
 };
 
 
