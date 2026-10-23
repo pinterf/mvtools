@@ -23,6 +23,9 @@
 #include <stdint.h>
 #include "commonfunctions.h"
 #include "BlockSizes.h"
+#ifdef NEON_INTRINSICS
+#include "MDegrainN_neon.h"
+#endif
 
 // out16_type: 
 //   0: native 8 or 16
@@ -406,6 +409,18 @@ func_degrain[make_tuple(x, y, DEGRAIN_TYPE_32BIT, NO_SIMD)] = DegrainN_C<float, 
     MVTOOLS_BLOCKSIZES(MAKE_FN) // BlockSizes.h: the same list for all C tables
 #undef MAKE_FN
 #undef MAKE_FN_LEVEL
+
+#ifdef NEON_INTRINSICS
+  // integer formats, float stays C
+#define MAKE_FN(x, y) \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT, USE_NEON)] = DegrainN_neon<uint8_t, x, y, 0>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_STACKED, USE_NEON)] = DegrainN_neon<uint8_t, x, y, 1>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_OUT16, USE_NEON)] = DegrainN_neon<uint8_t, x, y, 2>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_10to14BIT, USE_NEON)] = DegrainN_neon<uint16_t, x, y, 0>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_16BIT, USE_NEON)] = DegrainN_neon<uint16_t, x, y, 0>;
+    MVTOOLS_BLOCKSIZES(MAKE_FN)
+#undef MAKE_FN
+#endif
 
 #ifdef INTEL_INTRINSICS
       // and the SSE2 versions for 8 bit
