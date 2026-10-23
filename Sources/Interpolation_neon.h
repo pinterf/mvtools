@@ -19,4 +19,18 @@ void HorizontalWiener_neon(unsigned char *pDst8, const unsigned char *pSrc8, int
 template<typename pixel_t>
 void VerticalWiener_neon(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
+// drop-in replacements of the bilinear / bicubic refine filters and Average2
+template<typename pixel_t>
+void VerticalBilin_neon(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+template<typename pixel_t>
+void HorizontalBilin_neon(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+template<typename pixel_t>
+void DiagonalBilin_neon(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+template<typename pixel_t>
+void HorizontalBicubic_neon(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+template<typename pixel_t>
+void VerticalBicubic_neon(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
+template<typename pixel_t>
+void Average2_neon(unsigned char *pDst8, const unsigned char *pSrc1_8, const unsigned char *pSrc2_8, int nPitch, int nWidth, int nHeight);
+
 #endif

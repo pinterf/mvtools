@@ -132,12 +132,24 @@ MVPlane::MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, i
 #ifdef NEON_INTRINSICS
   if (cpuFlags & CPUF_ARM_NEON) {
     if (pixelsize == 1) {
+      _bilin_hor_ptr = HorizontalBilin_neon<uint8_t>;
+      _bilin_ver_ptr = VerticalBilin_neon<uint8_t>;
+      _bilin_dia_ptr = DiagonalBilin_neon<uint8_t>;
+      _bicubic_hor_ptr = HorizontalBicubic_neon<uint8_t>;
+      _bicubic_ver_ptr = VerticalBicubic_neon<uint8_t>;
       _wiener_hor_ptr = HorizontalWiener_neon<uint8_t>;
       _wiener_ver_ptr = VerticalWiener_neon<uint8_t>;
+      _average_ptr = Average2_neon<uint8_t>;
     }
     else if (pixelsize == 2) {
+      _bilin_hor_ptr = HorizontalBilin_neon<uint16_t>;
+      _bilin_ver_ptr = VerticalBilin_neon<uint16_t>;
+      _bilin_dia_ptr = DiagonalBilin_neon<uint16_t>;
+      _bicubic_hor_ptr = HorizontalBicubic_neon<uint16_t>;
+      _bicubic_ver_ptr = VerticalBicubic_neon<uint16_t>;
       _wiener_hor_ptr = HorizontalWiener_neon<uint16_t>;
       _wiener_ver_ptr = VerticalWiener_neon<uint16_t>;
+      _average_ptr = Average2_neon<uint16_t>;
     }
   }
 #endif

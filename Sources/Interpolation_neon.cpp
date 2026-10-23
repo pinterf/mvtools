@@ -184,6 +184,222 @@ void VerticalWiener_neon(unsigned char *pDst8, const unsigned char *pSrc8, int n
     pDst[i] = pSrc[i];
 }
 
+// (a + b + 1) >> 1 == vrhadd, exact for 8 and 16 bit
+template<typename pixel_t>
+static inline void avg8(pixel_t *dst, const pixel_t *a, const pixel_t *b)
+{
+  if constexpr (sizeof(pixel_t) == 1)
+    vst1_u8(dst, vrhadd_u8(vld1_u8(a), vld1_u8(b)));
+  else
+    vst1q_u16(dst, vrhaddq_u16(vld1q_u16(a), vld1q_u16(b)));
+}
+
+// (a + b + c + d + 2) >> 2
+template<typename pixel_t>
+static inline void avg4_8(pixel_t *dst, const pixel_t *a, const pixel_t *b, const pixel_t *c, const pixel_t *d)
+{
+  if constexpr (sizeof(pixel_t) == 1) {
+    const uint16x8_t s = vaddq_u16(vaddl_u8(vld1_u8(a), vld1_u8(b)), vaddl_u8(vld1_u8(c), vld1_u8(d)));
+    vst1_u8(dst, vrshrn_n_u16(s, 2));
+  }
+  else {
+    const uint16x8_t va = vld1q_u16(a), vb = vld1q_u16(b), vc = vld1q_u16(c), vd = vld1q_u16(d);
+    const uint32x4_t lo = vaddq_u32(vaddl_u16(vget_low_u16(va), vget_low_u16(vb)), vaddl_u16(vget_low_u16(vc), vget_low_u16(vd)));
+    const uint32x4_t hi = vaddq_u32(vaddl_high_u16(va, vb), vaddl_high_u16(vc, vd));
+    vst1q_u16(dst, vcombine_u16(vrshrn_n_u32(lo, 2), vrshrn_n_u32(hi, 2)));
+  }
+}
+
+// bicubic 4 tap: (-(a + d) + (b + c) * 9 + 8) >> 4, clamped to 0..max_pixel_value
+// 8 bit: within -510..4590, 16 bit lanes; 16 bit: 32 bit lanes
+template<typename pixel_t>
+static inline void bicubic8(pixel_t *dst, const pixel_t *a, const pixel_t *b, const pixel_t *c, const pixel_t *d, uint16x8_t vmax)
+{
+  if constexpr (sizeof(pixel_t) == 1) {
+    const int16x8_t ad = vreinterpretq_s16_u16(vaddl_u8(vld1_u8(a), vld1_u8(d)));
+    const int16x8_t bc = vreinterpretq_s16_u16(vaddl_u8(vld1_u8(b), vld1_u8(c)));
+    vst1_u8(dst, vqrshrun_n_s16(vmlaq_n_s16(vnegq_s16(ad), bc, 9), 4));
+  }
+  else {
+    const uint16x8_t va = vld1q_u16(a), vb = vld1q_u16(b), vc = vld1q_u16(c), vd = vld1q_u16(d);
+    const int32x4_t ad_lo = vreinterpretq_s32_u32(vaddl_u16(vget_low_u16(va), vget_low_u16(vd)));
+    const int32x4_t ad_hi = vreinterpretq_s32_u32(vaddl_high_u16(va, vd));
+    const int32x4_t bc_lo = vreinterpretq_s32_u32(vaddl_u16(vget_low_u16(vb), vget_low_u16(vc)));
+    const int32x4_t bc_hi = vreinterpretq_s32_u32(vaddl_high_u16(vb, vc));
+    const uint16x8_t r = vcombine_u16(vqrshrun_n_s32(vmlaq_n_s32(vnegq_s32(ad_lo), bc_lo, 9), 4),
+      vqrshrun_n_s32(vmlaq_n_s32(vnegq_s32(ad_hi), bc_hi, 9), 4));
+    vst1q_u16(dst, vminq_u16(r, vmax));
+  }
+}
+
+template<typename pixel_t>
+void VerticalBilin_neon(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch,
+  int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel)
+{
+  pixel_t *pDst = reinterpret_cast<pixel_t *>(pDst8);
+  const pixel_t *pSrc = reinterpret_cast<const pixel_t *>(pSrc8);
+  nSrcPitch /= sizeof(pixel_t);
+  nDstPitch /= sizeof(pixel_t);
+  const int w8 = nWidth / 8 * 8;
+  for (int j = 0; j < nHeight - 1; j++)
+  {
+    for (int i = 0; i < w8; i += 8)
+      avg8<pixel_t>(pDst + i, pSrc + i, pSrc + i + nSrcPitch);
+    for (int i = w8; i < nWidth; i++)
+      pDst[i] = (pSrc[i] + pSrc[i + nSrcPitch] + 1) >> 1;
+    pDst += nDstPitch;
+    pSrc += nSrcPitch;
+  }
+  for (int i = 0; i < nWidth; i++)
+    pDst[i] = pSrc[i];
+}
+
+template<typename pixel_t>
+void HorizontalBilin_neon(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch,
+  int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel)
+{
+  pixel_t *pDst = reinterpret_cast<pixel_t *>(pDst8);
+  const pixel_t *pSrc = reinterpret_cast<const pixel_t *>(pSrc8);
+  nSrcPitch /= sizeof(pixel_t);
+  nDstPitch /= sizeof(pixel_t);
+  for (int j = 0; j < nHeight; j++)
+  {
+    int i = 0;
+    for (; i + 8 <= nWidth - 1; i += 8)
+      avg8<pixel_t>(pDst + i, pSrc + i, pSrc + i + 1);
+    for (; i < nWidth - 1; i++)
+      pDst[i] = (pSrc[i] + pSrc[i + 1] + 1) >> 1;
+    pDst[nWidth - 1] = pSrc[nWidth - 1];
+    pDst += nDstPitch;
+    pSrc += nSrcPitch;
+  }
+}
+
+template<typename pixel_t>
+void DiagonalBilin_neon(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch,
+  int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel)
+{
+  pixel_t *pDst = reinterpret_cast<pixel_t *>(pDst8);
+  const pixel_t *pSrc = reinterpret_cast<const pixel_t *>(pSrc8);
+  nSrcPitch /= sizeof(pixel_t);
+  nDstPitch /= sizeof(pixel_t);
+  for (int j = 0; j < nHeight - 1; j++)
+  {
+    int i = 0;
+    for (; i + 8 <= nWidth - 1; i += 8)
+      avg4_8<pixel_t>(pDst + i, pSrc + i, pSrc + i + 1, pSrc + i + nSrcPitch, pSrc + i + nSrcPitch + 1);
+    for (; i < nWidth - 1; i++)
+      pDst[i] = (pSrc[i] + pSrc[i + 1] + pSrc[i + nSrcPitch] + pSrc[i + nSrcPitch + 1] + 2) >> 2;
+    pDst[nWidth - 1] = (pSrc[nWidth - 1] + pSrc[nWidth + nSrcPitch - 1] + 1) >> 1;
+    pDst += nDstPitch;
+    pSrc += nSrcPitch;
+  }
+  int i = 0;
+  for (; i + 8 <= nWidth - 1; i += 8)
+    avg8<pixel_t>(pDst + i, pSrc + i, pSrc + i + 1);
+  for (; i < nWidth - 1; i++) // except rightmost
+    pDst[i] = (pSrc[i] + pSrc[i + 1] + 1) >> 1;
+  pDst[nWidth - 1] = pSrc[nWidth - 1];
+}
+
+template<typename pixel_t>
+void HorizontalBicubic_neon(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch,
+  int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel)
+{
+  pixel_t *pDst = reinterpret_cast<pixel_t *>(pDst8);
+  const pixel_t *pSrc = reinterpret_cast<const pixel_t *>(pSrc8);
+  nSrcPitch /= sizeof(pixel_t);
+  nDstPitch /= sizeof(pixel_t);
+  const int max_pixel_value = sizeof(pixel_t) == 1 ? 255 : (1 << bits_per_pixel) - 1;
+  const uint16x8_t vmax = vdupq_n_u16((uint16_t)max_pixel_value);
+  for (int j = 0; j < nHeight; j++)
+  {
+    pDst[0] = (pSrc[0] + pSrc[1] + 1) >> 1;
+    int i = 1;
+    for (; i + 8 <= nWidth - 3; i += 8)
+      bicubic8<pixel_t>(pDst + i, pSrc + i - 1, pSrc + i, pSrc + i + 1, pSrc + i + 2, vmax);
+    for (; i < nWidth - 3; i++)
+      pDst[i] = std::min(max_pixel_value, std::max(0,
+        (-(pSrc[i - 1] + pSrc[i + 2]) + (pSrc[i] + pSrc[i + 1]) * 9 + 8) >> 4));
+    for (int i = nWidth - 3; i < nWidth - 1; i++)
+      pDst[i] = (pSrc[i] + pSrc[i + 1] + 1) >> 1;
+    pDst[nWidth - 1] = pSrc[nWidth - 1];
+    pDst += nDstPitch;
+    pSrc += nSrcPitch;
+  }
+}
+
+template<typename pixel_t>
+void VerticalBicubic_neon(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch,
+  int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel)
+{
+  pixel_t *pDst = reinterpret_cast<pixel_t *>(pDst8);
+  const pixel_t *pSrc = reinterpret_cast<const pixel_t *>(pSrc8);
+  nSrcPitch /= sizeof(pixel_t);
+  nDstPitch /= sizeof(pixel_t);
+  const int max_pixel_value = sizeof(pixel_t) == 1 ? 255 : (1 << bits_per_pixel) - 1;
+  const uint16x8_t vmax = vdupq_n_u16((uint16_t)max_pixel_value);
+  const int w8 = nWidth / 8 * 8;
+  for (int i = 0; i < nWidth; i++)
+    pDst[i] = (pSrc[i] + pSrc[i + nSrcPitch] + 1) >> 1;
+  pDst += nDstPitch;
+  pSrc += nSrcPitch;
+  for (int j = 1; j < nHeight - 3; j++)
+  {
+    for (int i = 0; i < w8; i += 8)
+      bicubic8<pixel_t>(pDst + i, pSrc + i - nSrcPitch, pSrc + i, pSrc + i + nSrcPitch, pSrc + i + nSrcPitch * 2, vmax);
+    for (int i = w8; i < nWidth; i++)
+      pDst[i] = std::min(max_pixel_value, std::max(0,
+        (-pSrc[i - nSrcPitch] - pSrc[i + nSrcPitch * 2] + (pSrc[i] + pSrc[i + nSrcPitch]) * 9 + 8) >> 4));
+    pDst += nDstPitch;
+    pSrc += nSrcPitch;
+  }
+  for (int j = nHeight - 3; j < nHeight - 1; j++)
+  {
+    for (int i = 0; i < w8; i += 8)
+      avg8<pixel_t>(pDst + i, pSrc + i, pSrc + i + nSrcPitch);
+    for (int i = w8; i < nWidth; i++)
+      pDst[i] = (pSrc[i] + pSrc[i + nSrcPitch] + 1) >> 1;
+    pDst += nDstPitch;
+    pSrc += nSrcPitch;
+  }
+  for (int i = 0; i < nWidth; i++)
+    pDst[i] = pSrc[i];
+}
+
+template<typename pixel_t>
+void Average2_neon(unsigned char *pDst8, const unsigned char *pSrc1_8, const unsigned char *pSrc2_8,
+  int nPitch, int nWidth, int nHeight)
+{
+  pixel_t *pDst = reinterpret_cast<pixel_t *>(pDst8);
+  const pixel_t *pSrc1 = reinterpret_cast<const pixel_t *>(pSrc1_8);
+  const pixel_t *pSrc2 = reinterpret_cast<const pixel_t *>(pSrc2_8);
+  nPitch /= sizeof(pixel_t);
+  const int w8 = nWidth / 8 * 8;
+  for (int j = 0; j < nHeight; j++)
+  {
+    for (int i = 0; i < w8; i += 8)
+      avg8<pixel_t>(pDst + i, pSrc1 + i, pSrc2 + i);
+    for (int i = w8; i < nWidth; i++)
+      pDst[i] = (pSrc1[i] + pSrc2[i] + 1) >> 1;
+    pDst += nPitch;
+    pSrc1 += nPitch;
+    pSrc2 += nPitch;
+  }
+}
+
+#define MAKE_REFINE(name) \
+template void name<uint8_t>(unsigned char *, const unsigned char *, int, int, int, int, int); \
+template void name<uint16_t>(unsigned char *, const unsigned char *, int, int, int, int, int);
+MAKE_REFINE(VerticalBilin_neon)
+MAKE_REFINE(HorizontalBilin_neon)
+MAKE_REFINE(DiagonalBilin_neon)
+MAKE_REFINE(HorizontalBicubic_neon)
+MAKE_REFINE(VerticalBicubic_neon)
+#undef MAKE_REFINE
+template void Average2_neon<uint8_t>(unsigned char *, const unsigned char *, const unsigned char *, int, int, int);
+template void Average2_neon<uint16_t>(unsigned char *, const unsigned char *, const unsigned char *, int, int, int);
+
 template int RB2BilinearFilteredVerticalLine_neon<uint8_t>(uint8_t *pDst, const uint8_t *pSrc, int nSrcPitch, int nWidth);
 template int RB2BilinearFilteredVerticalLine_neon<uint16_t>(uint16_t *pDst, const uint16_t *pSrc, int nSrcPitch, int nWidth);
 template int RB2BilinearFilteredHorizontalInplaceLine_neon<uint8_t>(uint8_t *pSrc, int nWidth);
