@@ -302,8 +302,9 @@ PVideoFrame __stdcall MVSuper::GetFrame(int n, IScriptEnvironment* env)
     pSrcGOF->SetPlane(pSrc[p], nSrcPitch[p], plane);
   }
 
-  pSrcGOF->Reduce(nModeYUV);
+  // level 0 is padded first: with odd (chroma) dimensions the reduction to level 1 reads its padding
   pSrcGOF->Pad(nModeYUV);
+  pSrcGOF->Reduce(nModeYUV);
 
   if (usePelClip)
   {
