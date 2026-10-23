@@ -1385,6 +1385,21 @@ SADFunction* get_satd_function(int BlockX, int BlockY, int pixelsize, arch_t arc
 #undef MAKE_FN
 #undef MAKE_FN_SSE
 
+#ifdef NEON_INTRINSICS
+#define MAKE_FN(w,h) \
+    func_satd[make_tuple(w, h, 1, USE_NEON)] = Satd_neon<w, h, uint8_t>; \
+    func_satd[make_tuple(w, h, 2, USE_NEON)] = Satd_neon<w, h, uint16_t>;
+    MAKE_FN(64, 64) MAKE_FN(64, 48) MAKE_FN(64, 32) MAKE_FN(64, 16)
+    MAKE_FN(48, 64) MAKE_FN(48, 48) MAKE_FN(48, 24) MAKE_FN(48, 12)
+    MAKE_FN(32, 64) MAKE_FN(32, 32) MAKE_FN(32, 24) MAKE_FN(32, 16) MAKE_FN(32, 8) MAKE_FN(32, 4)
+    MAKE_FN(24, 48) MAKE_FN(24, 32) MAKE_FN(24, 24) MAKE_FN(24, 12)
+    MAKE_FN(16, 64) MAKE_FN(16, 32) MAKE_FN(16, 16) MAKE_FN(16, 12) MAKE_FN(16, 8) MAKE_FN(16, 4)
+    MAKE_FN(12, 48) MAKE_FN(12, 24) MAKE_FN(12, 16) MAKE_FN(12, 12)
+    MAKE_FN(8, 32) MAKE_FN(8, 16) MAKE_FN(8, 8) MAKE_FN(8, 4)
+    MAKE_FN(4, 32) MAKE_FN(4, 16) MAKE_FN(4, 8) MAKE_FN(4, 4)
+#undef MAKE_FN
+#endif
+
     SADFunction *result = nullptr;
     arch_t archlist[] = { USE_NEON, USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
     int index = 0;

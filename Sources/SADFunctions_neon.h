@@ -26,4 +26,8 @@
 template<int nBlkWidth, int nBlkHeight, typename pixel_t>
 unsigned int Sad_neon(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
 
+// SATD, same results as mvtools_satd_WxH_c (the same 8x4 / 4x4 piece decomposition)
+template<int nBlkWidth, int nBlkHeight, typename pixel_t>
+unsigned int Satd_neon(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+
 #endif
