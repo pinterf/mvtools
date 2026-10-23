@@ -224,6 +224,11 @@ void RB2F(
       RB2F_sse2<pixel_t, false>(pDst, pSrc, nDstPitch, nSrcPitch, nWidth, y_end - y_beg);
     else
 #endif // INTEL_INTRINSICS
+#ifdef NEON_INTRINSICS
+    if (cpuFlags & CPUF_ARM_NEON)
+      RB2F_neon<pixel_t>(pDst, pSrc, nDstPitch, nSrcPitch, nWidth, y_end - y_beg);
+    else
+#endif
       RB2F_C<pixel_t>(pDst, pSrc, nDstPitch, nSrcPitch, nWidth, y_end - y_beg);
   }
 }
@@ -880,6 +885,19 @@ void RB2FilteredVertical(
     }
   }
 #endif // INTEL_INTRINSICS
+#ifdef NEON_INTRINSICS
+  else if (cpuFlags & CPUF_ARM_NEON)
+  {
+    for (; y < y_end; ++y)
+    {
+      const int xs = RB2FilteredVerticalLine_neon<pixel_t>(pDst, pSrc, nSrcPitch, nWidth);
+      for (int x = xs; x < nWidth; x++)
+        pDst[x] = (pSrc[x - nSrcPitch] + pSrc[x] * 2 + pSrc[x + nSrcPitch] + 2) >> 2;
+      pDst += nDstPitch;
+      pSrc += nSrcPitch * 2;
+    }
+  }
+#endif
   else
   {
     // pure C 
@@ -1005,6 +1023,15 @@ void RB2FilteredHorizontalInplace(
       }
       else
 #endif // INTEL_INTRINSICS
+#ifdef NEON_INTRINSICS
+      if (cpuFlags & CPUF_ARM_NEON)
+      {
+        const int xs = RB2FilteredHorizontalInplaceLine_neon<pixel_t>(pSrc, nWidth);
+        for (int x = xs; x < nWidth; x++)
+          pSrc[x] = (pSrc[x * 2 - 1] + pSrc[x * 2] * 2 + pSrc[x * 2 + 1] + 2) >> 2;
+      }
+      else
+#endif
       {
         // pure C
         for (int x = 1; x < nWidth; x++)
@@ -1283,6 +1310,12 @@ void RB2QuadraticVertical(
       xstart = nWidthMMX;
     }
 #endif // INTEL_INTRINSICS
+#ifdef NEON_INTRINSICS
+    if constexpr (sizeof(pixel_t) <= 2) {
+      if (cpuFlags & CPUF_ARM_NEON)
+        xstart = RB2Tap6VerticalLine_neon<pixel_t, 9, 22, 6>(pDst, pSrc, nSrcPitch / sizeof(pixel_t), nWidth);
+    }
+#endif
 
     for (int x = xstart; x < nWidth; x++)
     {
@@ -1370,6 +1403,12 @@ void RB2QuadraticHorizontalInplace(
       }
     }
 #endif // INTEL_INTRINSICS
+#ifdef NEON_INTRINSICS
+    if constexpr (sizeof(pixel_t) <= 2) {
+      if (cpuFlags & CPUF_ARM_NEON)
+        xstart = RB2Tap6HorizontalInplaceLine_neon<pixel_t, 9, 22, 6>(pSrc, nWidth);
+    }
+#endif
     
     for (int x = xstart; x < nWidth - 1; x++)
     {
@@ -1463,6 +1502,12 @@ void RB2CubicVertical(
       }
     }
 #endif // INTEL_INTRINSICS
+#ifdef NEON_INTRINSICS
+    if constexpr (sizeof(pixel_t) <= 2) {
+      if (cpuFlags & CPUF_ARM_NEON)
+        xstart = RB2Tap6VerticalLine_neon<pixel_t, 5, 10, 5>(pDst, pSrc, nSrcPitch / sizeof(pixel_t), nWidth);
+    }
+#endif
 
     for (int x = xstart; x < nWidth; x++)
     {
@@ -1572,6 +1617,12 @@ void RB2CubicHorizontalInplace(
       }
     }
 #endif // INTEL_INTRINSICS
+#ifdef NEON_INTRINSICS
+    if constexpr (sizeof(pixel_t) <= 2) {
+      if (cpuFlags & CPUF_ARM_NEON)
+        xstart = RB2Tap6HorizontalInplaceLine_neon<pixel_t, 5, 10, 5>(pSrc, nWidth);
+    }
+#endif
 
     for (int x = xstart; x < nWidth - 1; x++)
     {

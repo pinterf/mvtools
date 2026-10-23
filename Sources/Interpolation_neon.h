@@ -13,6 +13,22 @@ int RB2BilinearFilteredVerticalLine_neon(pixel_t *pDst, const pixel_t *pSrc, int
 template<typename pixel_t>
 int RB2BilinearFilteredHorizontalInplaceLine_neon(pixel_t *pSrc, int nWidth);
 
+// RB2F: all rows, pitches in bytes (as RB2F_C)
+template<typename pixel_t>
+void RB2F_neon(pixel_t *pDst, const pixel_t *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight);
+
+// RB2FilteredVertical / RB2FilteredHorizontalInplace rows (1 2 1), as the bilinear line functions above
+template<typename pixel_t>
+int RB2FilteredVerticalLine_neon(pixel_t *pDst, const pixel_t *pSrc, int nSrcPitch, int nWidth);
+template<typename pixel_t>
+int RB2FilteredHorizontalInplaceLine_neon(pixel_t *pSrc, int nWidth);
+
+// RB2Quadratic (9, 22, 6) / RB2Cubic (5, 10, 5) rows: 6 tap (1, W1, W2, W2, W1, 1) >> SH, as the bilinear line functions
+template<typename pixel_t, int W1, int W2, int SH>
+int RB2Tap6VerticalLine_neon(pixel_t *pDst, const pixel_t *pSrc, int nSrcPitch, int nWidth);
+template<typename pixel_t, int W1, int W2, int SH>
+int RB2Tap6HorizontalInplaceLine_neon(pixel_t *pSrc, int nWidth);
+
 // drop-in replacements of HorizontalWiener / VerticalWiener
 template<typename pixel_t>
 void HorizontalWiener_neon(unsigned char *pDst8, const unsigned char *pSrc8, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);

@@ -184,6 +184,164 @@ void VerticalWiener_neon(unsigned char *pDst8, const unsigned char *pSrc8, int n
     pDst[i] = pSrc[i];
 }
 
+// RB2F: (2x2 box sum + 2) / 4 for all rows (pitches in bytes, as RB2F_C)
+template<typename pixel_t>
+void RB2F_neon(pixel_t *pDst, const pixel_t *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight)
+{
+  nDstPitch /= sizeof(pixel_t);
+  nSrcPitch /= sizeof(pixel_t);
+  const int w8 = nWidth / 8 * 8;
+  for (int y = 0; y < nHeight; ++y)
+  {
+    for (int x = 0; x < w8; x += 8) {
+      if constexpr (sizeof(pixel_t) == 1) {
+        const uint8x8x2_t r0 = vld2_u8(pSrc + x * 2);
+        const uint8x8x2_t r1 = vld2_u8(pSrc + x * 2 + nSrcPitch);
+        const uint16x8_t s = vaddq_u16(vaddl_u8(r0.val[0], r0.val[1]), vaddl_u8(r1.val[0], r1.val[1]));
+        vst1_u8(pDst + x, vrshrn_n_u16(s, 2));
+      }
+      else {
+        const uint16x8x2_t r0 = vld2q_u16(pSrc + x * 2);
+        const uint16x8x2_t r1 = vld2q_u16(pSrc + x * 2 + nSrcPitch);
+        const uint32x4_t lo = vaddq_u32(vaddl_u16(vget_low_u16(r0.val[0]), vget_low_u16(r0.val[1])), vaddl_u16(vget_low_u16(r1.val[0]), vget_low_u16(r1.val[1])));
+        const uint32x4_t hi = vaddq_u32(vaddl_high_u16(r0.val[0], r0.val[1]), vaddl_high_u16(r1.val[0], r1.val[1]));
+        vst1q_u16(pDst + x, vcombine_u16(vrshrn_n_u32(lo, 2), vrshrn_n_u32(hi, 2)));
+      }
+    }
+    for (int x = w8; x < nWidth; x++)
+      pDst[x] = (pSrc[x * 2] + pSrc[x * 2 + 1] + pSrc[x * 2 + nSrcPitch] + pSrc[x * 2 + nSrcPitch + 1] + 2) / 4;
+    pDst += nDstPitch;
+    pSrc += nSrcPitch * 2;
+  }
+}
+
+// 1 2 1 filter of three vectors: (a + 2b + c + 2) >> 2
+template<typename pixel_t>
+static inline void tap3_121(pixel_t *dst, uint16x8_t a, uint16x8_t b, uint16x8_t c)
+{
+  if constexpr (sizeof(pixel_t) == 1) {
+    const uint16x8_t s = vaddq_u16(vaddq_u16(a, c), vshlq_n_u16(b, 1)); // <= 4 * 255
+    vst1_u8(dst, vmovn_u16(vrshrq_n_u16(s, 2)));
+  }
+  else {
+    uint32x4_t lo = vaddl_u16(vget_low_u16(a), vget_low_u16(c));
+    uint32x4_t hi = vaddl_high_u16(a, c);
+    lo = vmlal_n_u16(lo, vget_low_u16(b), 2);
+    hi = vmlal_high_n_u16(hi, b, 2);
+    vst1q_u16(dst, vcombine_u16(vrshrn_n_u32(lo, 2), vrshrn_n_u32(hi, 2)));
+  }
+}
+
+template<typename pixel_t>
+static inline uint16x8_t load8(const pixel_t *p)
+{
+  if constexpr (sizeof(pixel_t) == 1)
+    return vmovl_u8(vld1_u8(p));
+  else
+    return vld1q_u16(p);
+}
+
+// RB2FilteredVertical row (element pitch): (s[-p] + 2 s[0] + s[p] + 2) >> 2 for x in [0, n), n returned
+template<typename pixel_t>
+int RB2FilteredVerticalLine_neon(pixel_t *pDst, const pixel_t *pSrc, int nSrcPitch, int nWidth)
+{
+  const int w8 = nWidth / 8 * 8;
+  for (int x = 0; x < w8; x += 8)
+    tap3_121<pixel_t>(pDst + x, load8(pSrc + x - nSrcPitch), load8(pSrc + x), load8(pSrc + x + nSrcPitch));
+  return w8;
+}
+
+// RB2FilteredHorizontalInplace row: (s[2x-1] + 2 s[2x] + s[2x+1] + 2) >> 2 for x in [1, n), n returned
+template<typename pixel_t>
+int RB2FilteredHorizontalInplaceLine_neon(pixel_t *pSrc, int nWidth)
+{
+  int x = 1;
+  for (; x + 8 <= nWidth - 1; x += 8) { // the last load reaches s[2x+2] (not used): stay within the C's reads
+    if constexpr (sizeof(pixel_t) == 1) {
+      const uint8x8x2_t m = vld2_u8(pSrc + 2 * x - 1); // s[2x-1], s[2x]
+      const uint8x8x2_t p = vld2_u8(pSrc + 2 * x + 1); // s[2x+1], (s[2x+2])
+      tap3_121<pixel_t>(pSrc + x, vmovl_u8(m.val[0]), vmovl_u8(m.val[1]), vmovl_u8(p.val[0]));
+    }
+    else {
+      const uint16x8x2_t m = vld2q_u16(pSrc + 2 * x - 1);
+      const uint16x8x2_t p = vld2q_u16(pSrc + 2 * x + 1);
+      tap3_121<pixel_t>(pSrc + x, m.val[0], m.val[1], p.val[0]);
+    }
+  }
+  return x;
+}
+
+// symmetric 6 tap (1, W1, W2, W2, W1, 1) with rounding (sum + (1 << (SH - 1))) >> SH; all weights positive:
+// 8 bit sum <= 64 * 255 fits 16 bit lanes, 16 bit uses 32 bit lanes
+template<typename pixel_t, int W1, int W2, int SH>
+static inline void tap6(pixel_t *dst, uint16x8_t a, uint16x8_t b, uint16x8_t c, uint16x8_t d, uint16x8_t e, uint16x8_t f)
+{
+  if constexpr (sizeof(pixel_t) == 1) {
+    uint16x8_t s = vaddq_u16(a, f);
+    s = vmlaq_n_u16(s, vaddq_u16(b, e), W1);
+    s = vmlaq_n_u16(s, vaddq_u16(c, d), W2);
+    vst1_u8(dst, vmovn_u16(vrshrq_n_u16(s, SH)));
+  }
+  else {
+    uint32x4_t lo = vaddl_u16(vget_low_u16(a), vget_low_u16(f));
+    uint32x4_t hi = vaddl_high_u16(a, f);
+    lo = vmlal_n_u16(vmlal_n_u16(lo, vget_low_u16(b), W1), vget_low_u16(e), W1);
+    hi = vmlal_high_n_u16(vmlal_high_n_u16(hi, b, W1), e, W1);
+    lo = vmlal_n_u16(vmlal_n_u16(lo, vget_low_u16(c), W2), vget_low_u16(d), W2);
+    hi = vmlal_high_n_u16(vmlal_high_n_u16(hi, c, W2), d, W2);
+    vst1q_u16(dst, vcombine_u16(vrshrn_n_u32(lo, SH), vrshrn_n_u32(hi, SH)));
+  }
+}
+
+// RB2Quadratic/RB2Cubic vertical row (element pitch): rows -2..3, x in [0, n), n returned
+template<typename pixel_t, int W1, int W2, int SH>
+int RB2Tap6VerticalLine_neon(pixel_t *pDst, const pixel_t *pSrc, int nSrcPitch, int nWidth)
+{
+  const int w8 = nWidth / 8 * 8;
+  for (int x = 0; x < w8; x += 8)
+    tap6<pixel_t, W1, W2, SH>(pDst + x, load8(pSrc + x - nSrcPitch * 2), load8(pSrc + x - nSrcPitch), load8(pSrc + x),
+      load8(pSrc + x + nSrcPitch), load8(pSrc + x + nSrcPitch * 2), load8(pSrc + x + nSrcPitch * 3));
+  return w8;
+}
+
+// RB2Quadratic/RB2Cubic horizontal in-place row: s[2x-2..2x+3], x in [1, n), n returned
+template<typename pixel_t, int W1, int W2, int SH>
+int RB2Tap6HorizontalInplaceLine_neon(pixel_t *pSrc, int nWidth)
+{
+  int x = 1;
+  for (; x + 8 <= nWidth - 1; x += 8) {
+    if constexpr (sizeof(pixel_t) == 1) {
+      const uint8x8x2_t m = vld2_u8(pSrc + 2 * x - 2); // s[2x-2], s[2x-1]
+      const uint8x8x2_t c = vld2_u8(pSrc + 2 * x);     // s[2x],   s[2x+1]
+      const uint8x8x2_t p = vld2_u8(pSrc + 2 * x + 2); // s[2x+2], s[2x+3]
+      tap6<pixel_t, W1, W2, SH>(pSrc + x, vmovl_u8(m.val[0]), vmovl_u8(m.val[1]), vmovl_u8(c.val[0]),
+        vmovl_u8(c.val[1]), vmovl_u8(p.val[0]), vmovl_u8(p.val[1]));
+    }
+    else {
+      const uint16x8x2_t m = vld2q_u16(pSrc + 2 * x - 2);
+      const uint16x8x2_t c = vld2q_u16(pSrc + 2 * x);
+      const uint16x8x2_t p = vld2q_u16(pSrc + 2 * x + 2);
+      tap6<pixel_t, W1, W2, SH>(pSrc + x, m.val[0], m.val[1], c.val[0], c.val[1], p.val[0], p.val[1]);
+    }
+  }
+  return x;
+}
+
+template void RB2F_neon<uint8_t>(uint8_t *, const uint8_t *, int, int, int, int);
+template void RB2F_neon<uint16_t>(uint16_t *, const uint16_t *, int, int, int, int);
+template int RB2FilteredVerticalLine_neon<uint8_t>(uint8_t *, const uint8_t *, int, int);
+template int RB2FilteredVerticalLine_neon<uint16_t>(uint16_t *, const uint16_t *, int, int);
+template int RB2FilteredHorizontalInplaceLine_neon<uint8_t>(uint8_t *, int);
+template int RB2FilteredHorizontalInplaceLine_neon<uint16_t>(uint16_t *, int);
+template int RB2Tap6VerticalLine_neon<uint8_t, 9, 22, 6>(uint8_t *, const uint8_t *, int, int);
+template int RB2Tap6VerticalLine_neon<uint16_t, 9, 22, 6>(uint16_t *, const uint16_t *, int, int);
+template int RB2Tap6VerticalLine_neon<uint8_t, 5, 10, 5>(uint8_t *, const uint8_t *, int, int);
+template int RB2Tap6VerticalLine_neon<uint16_t, 5, 10, 5>(uint16_t *, const uint16_t *, int, int);
+template int RB2Tap6HorizontalInplaceLine_neon<uint8_t, 9, 22, 6>(uint8_t *, int);
+template int RB2Tap6HorizontalInplaceLine_neon<uint16_t, 9, 22, 6>(uint16_t *, int);
+template int RB2Tap6HorizontalInplaceLine_neon<uint8_t, 5, 10, 5>(uint8_t *, int);
+template int RB2Tap6HorizontalInplaceLine_neon<uint16_t, 5, 10, 5>(uint16_t *, int);
+
 // (a + b + 1) >> 1 == vrhadd, exact for 8 and 16 bit
 template<typename pixel_t>
 static inline void avg8(pixel_t *dst, const pixel_t *a, const pixel_t *b)
