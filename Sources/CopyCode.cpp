@@ -18,6 +18,7 @@
 
 #include "CopyCode.h"
 #include "BlockSizes.h"
+#include <algorithm>
 #include <map>
 #include <tuple>
 #include <stdint.h>
