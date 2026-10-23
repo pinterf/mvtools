@@ -68,6 +68,14 @@ class DCTFFTW
   template <typename pixel_t, int nBlkSizeX>
   void Float2Bytes_uint16_t_SSE4(unsigned char* dstp0, int dst_pitch, float* realdata);
 
+#ifdef NEON_INTRINSICS
+  // any block width (sizex), DCTFFTW_neon.cpp
+  template<typename pixel_t>
+  void Bytes2Float_neon(const unsigned char * srcp8, int _pitch, float * realdata);
+  template<typename pixel_t>
+  void Float2Bytes_neon(unsigned char * dstp0, int dst_pitch, float * realdata);
+#endif
+
   DCTFFTW::Float2BytesFunction get_floatToBytesPROC_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
   DCTFFTW::Float2BytesFunction floatToBytesPROC;
 

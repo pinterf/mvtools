@@ -594,6 +594,11 @@ DCTFFTW::Float2BytesFunction DCTFFTW::get_floatToBytesPROC_function(int BlockX, 
   func[make_tuple(12, 1, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<12>; // mod4 allowed
   func[make_tuple(8, 1, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<8>;
 #endif // INTEL_INTRINSICS
+#ifdef NEON_INTRINSICS
+  // any width
+  func[make_tuple(BlockX, 1, USE_NEON)] = &DCTFFTW::Float2Bytes_neon<uint8_t>;
+  func[make_tuple(BlockX, 2, USE_NEON)] = &DCTFFTW::Float2Bytes_neon<uint16_t>;
+#endif
   
   DCTFFTW::Float2BytesFunction result = nullptr;
   arch_t archlist[] = { USE_NEON, USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
@@ -639,6 +644,11 @@ DCTFFTW::Bytes2FloatFunction DCTFFTW::get_bytesToFloatPROC_function(int BlockX, 
   func[make_tuple(4, 2, USE_SSE2)] = &DCTFFTW::Bytes2Float_SSE2<uint16_t, 4>;
 #endif // INTEL_INTRINSICS
   
+#ifdef NEON_INTRINSICS
+  // any width
+  func[make_tuple(BlockX, 1, USE_NEON)] = &DCTFFTW::Bytes2Float_neon<uint8_t>;
+  func[make_tuple(BlockX, 2, USE_NEON)] = &DCTFFTW::Bytes2Float_neon<uint16_t>;
+#endif
   DCTFFTW::Bytes2FloatFunction result = nullptr;
   arch_t archlist[] = { USE_NEON, USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
   int index = 0;
