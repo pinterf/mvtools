@@ -34,6 +34,9 @@
 #include "def.h"
 #include "commonfunctions.h"
 #include "BlockSizes.h"
+#ifdef NEON_INTRINSICS
+#include "MVDegrain3_neon.h"
+#endif
 
 //#include	<mmintrin.h>
 
@@ -91,6 +94,26 @@ MAKE_FN_LEVEL(x,y,6)
     MVTOOLS_BLOCKSIZES(MAKE_FN) // BlockSizes.h: the same list for all C tables
 #undef MAKE_FN
 #undef MAKE_FN_LEVEL
+
+#ifdef NEON_INTRINSICS
+  // integer formats; any block size (runtime width/height as in C), float stays C
+#define MAKE_FN_LEVEL(x, y, level) \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT, level, USE_NEON)] = Degrain1to6_neon<uint8_t, 0, level>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_STACKED, level, USE_NEON)] = Degrain1to6_neon<uint8_t, 1, level>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_OUT16, level, USE_NEON)] = Degrain1to6_neon<uint8_t, 2, level>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_10to14BIT, level, USE_NEON)] = Degrain1to6_neon<uint16_t, 0, level>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_16BIT, level, USE_NEON)] = Degrain1to6_neon<uint16_t, 0, level>;
+#define MAKE_FN(x, y) \
+MAKE_FN_LEVEL(x,y,1) \
+MAKE_FN_LEVEL(x,y,2) \
+MAKE_FN_LEVEL(x,y,3) \
+MAKE_FN_LEVEL(x,y,4) \
+MAKE_FN_LEVEL(x,y,5) \
+MAKE_FN_LEVEL(x,y,6)
+    MVTOOLS_BLOCKSIZES(MAKE_FN)
+#undef MAKE_FN
+#undef MAKE_FN_LEVEL
+#endif
 
 #ifdef INTEL_INTRINSICS
 // 8 bit sse2 degrain function (mmx is replaced with sse2 for x86 width 4)
