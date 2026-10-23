@@ -411,13 +411,13 @@ func_degrain[make_tuple(x, y, DEGRAIN_TYPE_32BIT, NO_SIMD)] = DegrainN_C<float, 
 #undef MAKE_FN_LEVEL
 
 #ifdef NEON_INTRINSICS
-  // integer formats, float stays C
 #define MAKE_FN(x, y) \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT, USE_NEON)] = DegrainN_neon<uint8_t, x, y, 0>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_STACKED, USE_NEON)] = DegrainN_neon<uint8_t, x, y, 1>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_OUT16, USE_NEON)] = DegrainN_neon<uint8_t, x, y, 2>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_10to14BIT, USE_NEON)] = DegrainN_neon<uint16_t, x, y, 0>; \
-func_degrain[make_tuple(x, y, DEGRAIN_TYPE_16BIT, USE_NEON)] = DegrainN_neon<uint16_t, x, y, 0>;
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_16BIT, USE_NEON)] = DegrainN_neon<uint16_t, x, y, 0>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_32BIT, USE_NEON)] = DegrainN_float_neon<x, y>;
     MVTOOLS_BLOCKSIZES(MAKE_FN)
 #undef MAKE_FN
 #endif

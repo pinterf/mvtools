@@ -13,4 +13,13 @@ void DegrainN_neon(
   int Wall[], int trad
 );
 
+// float: DegrainN_C<float> with the same FMA contraction as GCC on aarch64
+template <int blockWidth, int blockHeight>
+void DegrainN_float_neon(
+  uint8_t* pDst, uint8_t* pDstLsb, int nDstPitch,
+  const uint8_t* pSrc, int nSrcPitch,
+  const uint8_t* pRef[], int Pitch[],
+  int Wall[], int trad
+);
+
 #endif

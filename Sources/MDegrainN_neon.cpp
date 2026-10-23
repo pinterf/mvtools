@@ -98,6 +98,50 @@ static void DegrainN_neon_impl(
   }
 }
 
+// float: as GCC contracts DegrainN_C<float> on aarch64 (checked in the disassembly):
+// val = fma(src, W0, 0.0f) (the + rounder; +0 also turns a -0 product into +0), then per reference pair
+// val = val + fma(A, W1, B * W2), finally * (1/256)
+template <int blockWidth, int blockHeight>
+void DegrainN_float_neon(
+  uint8_t* pDst, uint8_t* pDstLsb, int nDstPitch,
+  const uint8_t* pSrc, int nSrcPitch,
+  const uint8_t* pRef[], int Pitch[],
+  int Wall[], int trad
+)
+{
+  constexpr int w4 = blockWidth / 4 * 4;
+  const float scaleback = 1.0f / (1 << DEGRAIN_WEIGHT_BITS);
+  const float32x4_t vscale = vdupq_n_f32(scaleback);
+  const float32x4_t vzero = vdupq_n_f32(0.0f);
+  for (int h = 0; h < blockHeight; ++h)
+  {
+    for (int x = 0; x < w4; x += 4) {
+      float32x4_t val = vfmaq_f32(vzero, vld1q_f32(reinterpret_cast<const float *>(pSrc) + x), vdupq_n_f32((float)Wall[0]));
+      for (int k = 0; k < trad; ++k) {
+        const float32x4_t a = vld1q_f32(reinterpret_cast<const float *>(pRef[k * 2]) + x);
+        const float32x4_t b = vld1q_f32(reinterpret_cast<const float *>(pRef[k * 2 + 1]) + x);
+        const float32x4_t t = vfmaq_f32(vmulq_f32(b, vdupq_n_f32((float)Wall[k * 2 + 2])), a, vdupq_n_f32((float)Wall[k * 2 + 1]));
+        val = vaddq_f32(val, t);
+      }
+      vst1q_f32(reinterpret_cast<float *>(pDst) + x, vmulq_f32(val, vscale));
+    }
+    for (int x = w4; x < blockWidth; ++x) {
+      float val = reinterpret_cast<const float*>(pSrc)[x] * (float)Wall[0] + 0.0f;
+      for (int k = 0; k < trad; ++k)
+        val += reinterpret_cast<const float*>(pRef[k * 2])[x] * (float)Wall[k * 2 + 1]
+          + reinterpret_cast<const float*>(pRef[k * 2 + 1])[x] * (float)Wall[k * 2 + 2];
+      reinterpret_cast<float*>(pDst)[x] = val * scaleback;
+    }
+    pDst += nDstPitch;
+    pSrc += nSrcPitch;
+    for (int k = 0; k < trad; ++k)
+    {
+      pRef[k * 2] += Pitch[k * 2];
+      pRef[k * 2 + 1] += Pitch[k * 2 + 1];
+    }
+  }
+}
+
 template <typename pixel_t, int blockWidth, int blockHeight, int out16_type>
 void DegrainN_neon(
   uint8_t* pDst, uint8_t* pDstLsb, int nDstPitch,
@@ -113,6 +157,7 @@ void DegrainN_neon(
 template void DegrainN_neon<uint8_t, x, y, 0>(uint8_t*, uint8_t*, int, const uint8_t*, int, const uint8_t*[], int[], int[], int); \
 template void DegrainN_neon<uint8_t, x, y, 1>(uint8_t*, uint8_t*, int, const uint8_t*, int, const uint8_t*[], int[], int[], int); \
 template void DegrainN_neon<uint8_t, x, y, 2>(uint8_t*, uint8_t*, int, const uint8_t*, int, const uint8_t*[], int[], int[], int); \
-template void DegrainN_neon<uint16_t, x, y, 0>(uint8_t*, uint8_t*, int, const uint8_t*, int, const uint8_t*[], int[], int[], int);
+template void DegrainN_neon<uint16_t, x, y, 0>(uint8_t*, uint8_t*, int, const uint8_t*, int, const uint8_t*[], int[], int[], int); \
+template void DegrainN_float_neon<x, y>(uint8_t*, uint8_t*, int, const uint8_t*, int, const uint8_t*[], int[], int[], int);
 MVTOOLS_BLOCKSIZES(MAKE_FN)
 #undef MAKE_FN
