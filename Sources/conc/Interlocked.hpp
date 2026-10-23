@@ -186,7 +186,7 @@ int64_t	Interlocked::cas (int64_t volatile &dest, int64_t excg, int64_t comp)
 
 	return (_InterlockedCompareExchange64 (&dest, excg, comp));
 
-#elif defined (_WIN32) || defined (WIN32) || defined (__WIN32__) || defined (__CYGWIN__) || defined (__CYGWIN32__)
+#elif (defined (_WIN32) || defined (WIN32) || defined (__WIN32__) || defined (__CYGWIN__) || defined (__CYGWIN32__)) && defined (__i386__)
 
 	// Set to zero just to make the compiler stop complaining about
 	// uninitialized variables.
