@@ -155,7 +155,8 @@ template<int nBlkWidth, int nBlkHeight, typename pixel_t>
 unsigned int Luma_C(const unsigned char *pSrc, int nSrcPitch)
 {
     const unsigned char *s = pSrc;
-    typedef typename std::conditional < sizeof(pixel_t) == 1 && (nBlkWidth*nBlkHeight*255 < 65535), short, int>::type internal_sum_t;
+    // 8 bit: an unsigned 16 bit sum is enough up to 256 pixels (a signed one overflowed e.g. for 16x16)
+    typedef typename std::conditional < sizeof(pixel_t) == 1 && (nBlkWidth*nBlkHeight*255 < 65535), uint16_t, int>::type internal_sum_t;
     internal_sum_t sumLuma = 0; // until sum is 16 bits, better asm is generated
     for ( int j = 0; j < nBlkHeight; j++ )
     {
