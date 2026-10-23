@@ -32,9 +32,11 @@
 #include "types.h"
 #include <stdint.h>
 #include <cassert>
+#ifdef INTEL_INTRINSICS
 #include "emmintrin.h"
+#endif
 
-#ifndef USE_SAD_ASM
+#if !defined(USE_SAD_ASM) && defined(INTEL_INTRINSICS)
 // alternative to the external asm sad function. is slower a bit
 template<int nBlkWidth, int nBlkHeight>
 #if defined(GCC) || defined(CLANG)
@@ -171,7 +173,9 @@ unsigned int Sad_sse2(const uint8_t* pSrc, int nSrcPitch8, const uint8_t* pRef, 
 
  // SAD routines are same for SADFunctions.h and SADFunctions_avx.cpp
  // put it into a common h
+#ifdef INTEL_INTRINSICS
 #include "SADFunctions16.h"
+#endif
 
 SADFunction* get_sad_function(int BlockX, int BlockY, int bits_per_pixel, arch_t arch);
 SADFunction* get_satd_function(int BlockX, int BlockY, int pixelsize, arch_t arch);

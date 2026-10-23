@@ -29,7 +29,10 @@
 #include "SuperParams64Bits.h"
 #include "Time256ProviderCst.h"
 
+#include "types.h"
+#ifdef INTEL_INTRINSICS
 #include	<mmintrin.h>
+#endif
 
 
 
@@ -482,6 +485,7 @@ PVideoFrame __stdcall MVCompensate::GetFrame(int n, IScriptEnvironment* env_ptr)
 
       if (pixelsize_super == 1) {
         // nWidth_B and nHeight_B, right and bottom was blended
+#ifdef INTEL_INTRINSICS
         if ((cpuFlags & CPUF_SSE2) != 0) {
           Short2Bytes_sse2(pDst[0], nDstPitches[0], (uint16_t *)DstShort, dstShortPitch, nWidth_B, nHeight_B);
           if (pPlanes[1])
@@ -489,7 +493,9 @@ PVideoFrame __stdcall MVCompensate::GetFrame(int n, IScriptEnvironment* env_ptr)
           if (pPlanes[2])
             Short2Bytes_sse2(pDst[2], nDstPitches[2], (uint16_t *)DstShortV, dstShortPitchUV, nWidth_B >> nLogxRatioUVs[2], nHeight_B >> nLogyRatioUVs[2]);
         }
-        else {
+        else
+#endif
+        {
           Short2Bytes(pDst[0], nDstPitches[0], (uint16_t *)DstShort, dstShortPitch, nWidth_B, nHeight_B);
           if (pPlanes[1])
             Short2Bytes(pDst[1], nDstPitches[1], (uint16_t *)DstShortU, dstShortPitchUV, nWidth_B >> nLogxRatioUVs[1], nHeight_B >> nLogyRatioUVs[1]);
@@ -499,6 +505,7 @@ PVideoFrame __stdcall MVCompensate::GetFrame(int n, IScriptEnvironment* env_ptr)
       }
       else if (pixelsize_super == 2)
       {
+#ifdef INTEL_INTRINSICS
         if ((cpuFlags & CPUF_SSE4_1) != 0) {
           Short2Bytes_Int32toWord16_sse4((uint16_t *)(pDst[0]), nDstPitches[0], (int *)DstShort, dstShortPitch, nWidth_B, nHeight_B, bits_per_pixel_super);
           if (pPlanes[1])
@@ -506,7 +513,9 @@ PVideoFrame __stdcall MVCompensate::GetFrame(int n, IScriptEnvironment* env_ptr)
           if (pPlanes[2])
             Short2Bytes_Int32toWord16_sse4((uint16_t *)(pDst[2]), nDstPitches[2], (int *)DstShortV, dstShortPitchUV, nWidth_B >> nLogxRatioUVs[2], nHeight_B >> nLogyRatioUVs[2], bits_per_pixel_super);
         }
-        else {
+        else
+#endif
+        {
           Short2Bytes_Int32toWord16((uint16_t *)(pDst[0]), nDstPitches[0], (int *)DstShort, dstShortPitch, nWidth_B, nHeight_B, bits_per_pixel_super);
           if (pPlanes[1])
             Short2Bytes_Int32toWord16((uint16_t *)(pDst[1]), nDstPitches[1], (int *)DstShortU, dstShortPitchUV, nWidth_B >> nLogxRatioUVs[1], nHeight_B >> nLogyRatioUVs[1], bits_per_pixel_super);
@@ -644,7 +653,7 @@ PVideoFrame __stdcall MVCompensate::GetFrame(int n, IScriptEnvironment* env_ptr)
     }
   }
 
-#ifndef _M_X64
+#if defined(INTEL_INTRINSICS) && !defined(_M_X64)
   _mm_empty(); // (we may use double-float somewhere) Fizick
 #endif
 

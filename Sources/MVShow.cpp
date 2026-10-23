@@ -26,7 +26,10 @@
 
 #include <stdlib.h>
 #include <cstdio>
+#include "types.h"
+#ifdef INTEL_INTRINSICS
 #include "emmintrin.h"
+#endif
 //#include <intrin.h>
 
 
@@ -175,7 +178,7 @@ PVideoFrame __stdcall MVShow::GetFrame(int n, IScriptEnvironment* env)
 
   if ( showSad ) {
     char buf[80];
-#ifndef _M_X64
+#if defined(INTEL_INTRINSICS) && !defined(_M_X64)
     _mm_empty();
 #endif
     double mean = 0;

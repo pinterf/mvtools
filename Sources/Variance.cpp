@@ -23,13 +23,16 @@
 #include <map>
 #include "def.h"
 #include <cassert>
+#ifdef INTEL_INTRINSICS
 #include <emmintrin.h>
+#endif
 
 MV_FORCEINLINE unsigned int ABS(const int x)
 {
   return ( x < 0 ) ? -x : x;
 }
 
+#ifdef INTEL_INTRINSICS
 template<int nBlkWidth, int nBlkHeight>
 unsigned int Luma8_sse2(const unsigned char *pSrc, int nSrcPitch)
 {
@@ -146,6 +149,7 @@ unsigned int Luma16_sse2(const unsigned char *pSrc, int nSrcPitch)
 
   return result;
 }
+#endif // INTEL_INTRINSICS
 
 template<int nBlkWidth, int nBlkHeight, typename pixel_t>
 unsigned int Luma_C(const unsigned char *pSrc, int nSrcPitch)
@@ -181,6 +185,7 @@ LUMAFunction* get_luma_function(int BlockX, int BlockY, int pixelsize, arch_t ar
 func_luma[make_tuple(x, y, 2, NO_SIMD)] = Luma_C<x, y, uint16_t>;
     MVTOOLS_BLOCKSIZES(MAKE_LUMA_FN) // BlockSizes.h: the same list for all C tables
 #undef MAKE_LUMA_FN
+#ifdef INTEL_INTRINSICS
     // non-template functions come from Variance-a.asm
     func_luma[make_tuple(64, 64, 1, USE_SSE2)] = Luma8_sse2<64, 64>;
     func_luma[make_tuple(64, 48, 1, USE_SSE2)] = Luma8_sse2<64, 48>;
@@ -289,6 +294,7 @@ func_luma[make_tuple(x, y, 2, NO_SIMD)] = Luma_C<x, y, uint16_t>;
       //MAKE_LUMA_FN(2, 2)
       //MAKE_LUMA_FN(2, 1)
 #undef MAKE_LUMA_FN
+#endif // INTEL_INTRINSICS
 
     LUMAFunction *result = nullptr;
     arch_t archlist[] = { USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };

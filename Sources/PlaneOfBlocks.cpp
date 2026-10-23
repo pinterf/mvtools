@@ -33,10 +33,12 @@
 #include "Padding.h"
 #include "profile.h"
 
+#ifdef INTEL_INTRINSICS
 #include <emmintrin.h> // SSE2
 #include <pmmintrin.h> // SSE3
 #include <tmmintrin.h> // SSSE3
 #include <smmintrin.h> // SSE4
+#endif
 
 #include <algorithm>
 #include <cmath>
@@ -3081,7 +3083,7 @@ void	PlaneOfBlocks::search_mv_slice(Slicer::TaskData &td)
 
   if (isse)
   {
-#ifndef _M_X64
+#if defined(INTEL_INTRINSICS) && !defined(_M_X64)
     _mm_empty();
 #endif
   }
@@ -3468,7 +3470,7 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
 
   if (isse)
   {
-#ifndef _M_X64
+#if defined(INTEL_INTRINSICS) && !defined(_M_X64)
     _mm_empty();
 #endif
   }

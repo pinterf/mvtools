@@ -19,7 +19,9 @@
 
 #include <algorithm> // min
 #include "commonfunctions.h"
+#ifdef INTEL_INTRINSICS
 #include <emmintrin.h>
+#endif
 #include "avs/cpuid.h"
 #include "stdint.h"
 
@@ -41,6 +43,7 @@ YUY2Planes::~YUY2Planes()
   _aligned_free(pSrcV);
 }
 
+#ifdef INTEL_INTRINSICS
 // borrowed from Avisynth+ project
 static void convert_yuy2_to_yv16_sse2(const uint8_t *srcp, uint8_t *dstp_y, uint8_t *dstp_u, uint8_t *dstp_v, size_t src_pitch, size_t dst_pitch_y, size_t dst_pitch_uv, size_t width, size_t height)
 {
@@ -71,6 +74,7 @@ static void convert_yuy2_to_yv16_sse2(const uint8_t *srcp, uint8_t *dstp_y, uint
     dstp_v += dst_pitch_uv;
   }
 }
+#endif // INTEL_INTRINSICS
 
 // borrowed from Avisynth+ project
 static void convert_yuy2_to_yv16_c(const uint8_t *srcp, uint8_t *dstp_y, uint8_t *dstp_u, uint8_t *dstp_v, size_t src_pitch, size_t dst_pitch_y, size_t dst_pitch_uv, size_t width, size_t height)
@@ -91,6 +95,7 @@ static void convert_yuy2_to_yv16_c(const uint8_t *srcp, uint8_t *dstp_y, uint8_t
   }
 }
 
+#ifdef INTEL_INTRINSICS
 void convert_yv16_to_yuy2_sse2(const uint8_t *srcp_y, const uint8_t *srcp_u, const uint8_t *srcp_v, uint8_t *dstp, size_t src_pitch_y, size_t src_pitch_uv, size_t dst_pitch, size_t width, size_t height)
 {
   width /= 2;
@@ -116,6 +121,7 @@ void convert_yv16_to_yuy2_sse2(const uint8_t *srcp_y, const uint8_t *srcp_u, con
     dstp += dst_pitch;
   }
 }
+#endif // INTEL_INTRINSICS
 
 void convert_yv16_to_yuy2_c(const uint8_t *srcp_y, const uint8_t *srcp_u, const uint8_t *srcp_v, uint8_t *dstp, size_t src_pitch_y, size_t src_pitch_uv, size_t dst_pitch, size_t width, size_t height) {
   for (size_t y = 0; y < height; y++) {
@@ -138,10 +144,12 @@ void YUY2ToPlanes(const unsigned char *pSrcYUY2, int nSrcPitchYUY2, int nWidth, 
   const unsigned char * dstU, const unsigned char * dstV, int dstPitchUV, int cpuFlags)
 {
 
+#ifdef INTEL_INTRINSICS
   if (!!(cpuFlags & CPUF_SSE2) && IsPtrAligned(pSrcYUY2, 16)) {
     convert_yuy2_to_yv16_sse2(pSrcYUY2, (unsigned char *)dstY, (unsigned char *)dstU, (unsigned char *)dstV, nSrcPitchYUY2, dstPitchY, dstPitchUV, nWidth, nHeight);
   }
   else
+#endif // INTEL_INTRINSICS
   {
     convert_yuy2_to_yv16_c(pSrcYUY2, (unsigned char *)dstY, (unsigned char *)dstU, (unsigned char *)dstV, nSrcPitchYUY2, dstPitchY, dstPitchUV, nWidth, nHeight);
   }
@@ -152,11 +160,13 @@ void YUY2FromPlanes(unsigned char *pDstYUY2, int nDstPitchYUY2, int nWidth, int 
   unsigned char * srcY, int srcPitch,
   unsigned char * srcU, unsigned char * srcV, int srcPitchUV, int cpuFlags)
 {
+#ifdef INTEL_INTRINSICS
   if (!!(cpuFlags & CPUF_SSE2) && IsPtrAligned(srcY, 16)) {
     //U and V don't have to be aligned since we user movq to read from those
     convert_yv16_to_yuy2_sse2(srcY, srcU, srcV, pDstYUY2, srcPitch, srcPitchUV, nDstPitchYUY2, nWidth, nHeight);
   }
   else
+#endif // INTEL_INTRINSICS
   {
     convert_yv16_to_yuy2_c(srcY, srcU, srcV, pDstYUY2, srcPitch, srcPitchUV, nDstPitchYUY2, nWidth, nHeight);
   }

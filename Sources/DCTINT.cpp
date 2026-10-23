@@ -27,7 +27,9 @@
 #include "types.h"
 
 #include "malloc.h"
+#ifdef INTEL_INTRINSICS
 #include <emmintrin.h>
+#endif
 #include <stdint.h>
 
 #ifdef USE_FDCT88INT_ASM

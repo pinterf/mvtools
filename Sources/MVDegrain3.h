@@ -8,8 +8,10 @@
 #include "yuy2planes.h"
 #include <stdint.h>
 #include "def.h"
+#ifdef INTEL_INTRINSICS
 #include	<emmintrin.h>
 #include	<smmintrin.h> // SSE4.1
+#endif // INTEL_INTRINSICS
 
 class MVGroupOfFrames;
 class MVPlane;
@@ -280,6 +282,7 @@ void Degrain1to6_float_C(uint8_t *pDst, BYTE *pDstLsb, int WidthHeightForC, int 
 #pragma warning( pop ) 
 
 
+#ifdef INTEL_INTRINSICS
 #pragma warning( push )
 #pragma warning( disable : 4101)
 // out16_type: 
@@ -750,6 +753,7 @@ void Degrain1to6_16_sse41(BYTE *pDst, BYTE *pDstLsb, int WidthHeightForC, int nD
   }
 }
 #pragma warning( pop ) 
+#endif // INTEL_INTRINSICS
 
 
 // Not really related to overlap, but common to MDegrainX functions

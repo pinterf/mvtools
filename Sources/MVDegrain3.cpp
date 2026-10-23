@@ -92,6 +92,7 @@ MAKE_FN_LEVEL(x,y,6)
 #undef MAKE_FN
 #undef MAKE_FN_LEVEL
 
+#ifdef INTEL_INTRINSICS
 // 8 bit sse2 degrain function (mmx is replaced with sse2 for x86 width 4)
 // and 16 bit SSE4 function
 // for no_template_by_y: special height==0 -> internally nHeight comes from variable (for C: both width and height is variable)
@@ -167,6 +168,7 @@ MAKE_FN(2, 4, 4)
 MAKE_FN(2, 2, 2)
 MAKE_FN(2, 1, 1)
 #undef MAKE_FN
+#endif // INTEL_INTRINSICS
 #undef MAKE_FN_LEVEL
 
   Denoise1to6Function* result = nullptr;
@@ -447,6 +449,7 @@ MVDegrainX::MVDegrainX(
   tmpBlock = (uint8_t *)_aligned_malloc(tmp_size * height_lsb_or_out16_mul, 64); // new BYTE[tmp_size * height_lsb_or_out16_mul]; PF. 16.10.26
   tmpBlockLsb = (lsb_flag) ? (tmpBlock + tmp_size) : 0;
 
+#ifdef INTEL_INTRINSICS
   if ((cpuFlags & CPUF_SSE2) != 0)
   {
     if(out16_flag)
@@ -463,6 +466,7 @@ MVDegrainX::MVDegrainX(
       LimitFunction = LimitChanges_float_c; // no SSE2
   }
   else
+#endif // INTEL_INTRINSICS
   {
     if (out16_flag)
       LimitFunction = LimitChanges_src8_target16_c; // todo SSE2
@@ -918,23 +922,29 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
       }
       else if (out16_flag)
       {
+#ifdef INTEL_INTRINSICS
         if ((cpuFlags & CPUF_SSE4_1) != 0)
           Short2Bytes_Int32toWord16_sse4((uint16_t *)(pDst[0]), nDstPitches[0], DstInt, dstIntPitch, nWidth_B, nHeight_B, bits_per_pixel_output);
         else
+#endif // INTEL_INTRINSICS
           Short2Bytes_Int32toWord16((uint16_t *)(pDst[0]), nDstPitches[0], DstInt, dstIntPitch, nWidth_B, nHeight_B, bits_per_pixel_output);
       }
       else if (pixelsize_super == 1)
       { 
+#ifdef INTEL_INTRINSICS
         if ((cpuFlags & CPUF_SSE2) != 0)
           Short2Bytes_sse2(pDst[0], nDstPitches[0], DstShort, dstShortPitch, nWidth_B, nHeight_B);
         else
+#endif // INTEL_INTRINSICS
           Short2Bytes(pDst[0], nDstPitches[0], DstShort, dstShortPitch, nWidth_B, nHeight_B);
       }
       else if (pixelsize_super == 2)
       {
+#ifdef INTEL_INTRINSICS
         if ((cpuFlags & CPUF_SSE4_1) != 0)
           Short2Bytes_Int32toWord16_sse4((uint16_t*)(pDst[0]), nDstPitches[0], DstInt, dstIntPitch, nWidth_B, nHeight_B, bits_per_pixel_super);
         else
+#endif // INTEL_INTRINSICS
           Short2Bytes_Int32toWord16((uint16_t*)(pDst[0]), nDstPitches[0], DstInt, dstIntPitch, nWidth_B, nHeight_B, bits_per_pixel_super);
       }
       else if (pixelsize_super == 4)
@@ -1014,7 +1024,7 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
 
   //--------------------------------------------------------------------------------
 
-#ifndef _M_X64
+#if defined(INTEL_INTRINSICS) && !defined(_M_X64)
   _mm_empty();	// (we may use double-float somewhere) Fizick
 #endif
 
@@ -1208,23 +1218,29 @@ void MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
       }
       else if (out16_flag)
       {
+#ifdef INTEL_INTRINSICS
         if ((cpuFlags & CPUF_SSE4_1) != 0)
           Short2Bytes_Int32toWord16_sse4((uint16_t *)(pDst), nDstPitch, DstInt, dstIntPitch, nWidth_B >> nLogxRatioUV_super, nHeight_B >> nLogyRatioUV_super, bits_per_pixel_output);
         else
+#endif // INTEL_INTRINSICS
           Short2Bytes_Int32toWord16((uint16_t *)(pDst), nDstPitch, DstInt, dstIntPitch, nWidth_B >> nLogxRatioUV_super, nHeight_B >> nLogyRatioUV_super, bits_per_pixel_output);
       }
       else if (pixelsize_super == 1)
       { // pixelsize
+#ifdef INTEL_INTRINSICS
         if ((cpuFlags & CPUF_SSE2) != 0)
           Short2Bytes_sse2(pDst, nDstPitch, DstShort, dstShortPitch, nWidth_B >> nLogxRatioUV_super, nHeight_B >> nLogyRatioUV_super);
         else
+#endif // INTEL_INTRINSICS
           Short2Bytes(pDst, nDstPitch, DstShort, dstShortPitch, nWidth_B >> nLogxRatioUV_super, nHeight_B >> nLogyRatioUV_super);
       }
       else if (pixelsize_super == 2)
       { 
+#ifdef INTEL_INTRINSICS
         if ((cpuFlags & CPUF_SSE4_1) != 0)
           Short2Bytes_Int32toWord16_sse4((uint16_t*)(pDst), nDstPitch, DstInt, dstIntPitch, nWidth_B >> nLogxRatioUV_super, nHeight_B >> nLogyRatioUV_super, bits_per_pixel_super);
         else
+#endif // INTEL_INTRINSICS
           Short2Bytes_Int32toWord16((uint16_t*)(pDst), nDstPitch, DstInt, dstIntPitch, nWidth_B >> nLogxRatioUV_super, nHeight_B >> nLogyRatioUV_super, bits_per_pixel_super);
       }
       else if (pixelsize_super == 4)

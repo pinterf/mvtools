@@ -23,7 +23,9 @@
 #include "CopyCode.h"
 #include <cstdio>
 #include "def.h"
+#ifdef INTEL_INTRINSICS
 #include "emmintrin.h"
+#endif
 
 // top, middle, bottom and left, middle, right windows
 #define OW_TL 0

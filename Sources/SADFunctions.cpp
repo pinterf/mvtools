@@ -5,7 +5,9 @@
 #include <tuple>
 #include <stdint.h>
 #include "def.h"
+#ifdef INTEL_INTRINSICS
 #include <immintrin.h>
+#endif
 #include "BlockSizes.h"
 
 MV_FORCEINLINE unsigned int SADABS(int x) {	return ( x < 0 ) ? -x : x; }
@@ -26,6 +28,7 @@ static unsigned int Sad_C(const uint8_t *pSrc, int nSrcPitch,const uint8_t *pRef
   return sum;
 }
 
+#ifdef INTEL_INTRINSICS
 // -- Start of SATD16 intrinsics
 // https://github.com/xiph/daala/blob/master/src/x86/sse2mcenc.c
 MV_FORCEINLINE void butterfly_2x2_16x8(__m128i &t0, __m128i &t1, __m128i &t2, __m128i &t3) {
@@ -396,6 +399,7 @@ static int32_t compute_satd16_16x16_sse2(const unsigned char *src, int systride,
 */
 
 // -- End of SATD16 intrinsics
+#endif // INTEL_INTRINSICS
 
 /*
 void HADAMARD4_sse2(__m128i &d10, __m128i &d32, __m128i &s10, __m128i &s32) {
@@ -732,6 +736,7 @@ func_sad[make_tuple(x, y, 16, NO_SIMD)] = Sad_C<x, y, uint16_t>;
     MVTOOLS_BLOCKSIZES(MAKE_SAD_FN) // BlockSizes.h: the same list for all C tables
 #undef MAKE_SAD_FN
 
+#ifdef INTEL_INTRINSICS
 // PF SAD 10 SIMD intrinsic functions
 // only for >=8 bytes widths
 // really this is SSSE3, we make it use from SSE4.1 (until I make an USE_SSSE3 flag)
@@ -998,6 +1003,7 @@ func_sad[make_tuple(x, y, 8, USE_SSE2)] = Sad_sse2<x,y>;
       //MAKE_SAD_FN(2, 2)
       //MAKE_SAD_FN(2, 1)
 #undef MAKE_SAD_FN
+#endif // INTEL_INTRINSICS
 
 
     SADFunction *result = nullptr;
@@ -1328,22 +1334,27 @@ SADFunction* get_satd_function(int BlockX, int BlockY, int pixelsize, arch_t arc
     func_satd[make_tuple(4 , 8 , 1, USE_SSE2)] = x264_pixel_satd_4x8_sse2;
     func_satd[make_tuple(4 , 4 , 1, USE_SSE2)] = x264_pixel_satd_4x4_mmx2;
 #endif // USE_SATD_ASM
+#ifdef INTEL_INTRINSICS
+#define MAKE_FN_SSE(w,h) \
+    func_satd[make_tuple(w, h, 2, USE_SSE41)] = satd16_##w##x##h##_sse2<true>; \
+    func_satd[make_tuple(w, h, 2, USE_SSE2)] = satd16_##w##x##h##_sse2<false>;
+#else
+#define MAKE_FN_SSE(w,h)
+#endif
     // 8 and 16 bit C; 16 bit SSE4/SSE2 SADT functions
     // e.g.. satd16_64x64_sse2<false>;
 #ifdef USE_SATD_ASM
 #define MAKE_FN(w,h) \
     func_satd[make_tuple(w, h, 2, NO_SIMD)] = mvtools_satd_##w##x##h##_c<uint16_t>; \
     func_satd[make_tuple(w, h, 1, NO_SIMD)] = mvtools_satd_##w##x##h##_c<uint8_t>; \
-    func_satd[make_tuple(w, h, 2, USE_SSE41)] = satd16_##w##x##h##_sse2<true>; \
-    func_satd[make_tuple(w, h, 2, USE_SSE2)] = satd16_##w##x##h##_sse2<false>;
+    MAKE_FN_SSE(w,h)
 #else
     // additional: 8 bit C from 2.7.46 (gcc)
     // FIXME: implement 8 bit sse2 in case of external asm-less compilation
 #define MAKE_FN(w,h) \
     func_satd[make_tuple(w, h, 2, NO_SIMD)] = mvtools_satd_##w##x##h##_c<uint16_t>; \
     func_satd[make_tuple(w, h, 1, NO_SIMD)] = mvtools_satd_##w##x##h##_c<uint8_t>; \
-    func_satd[make_tuple(w, h, 2, USE_SSE41)] = satd16_##w##x##h##_sse2<true>; \
-    func_satd[make_tuple(w, h, 2, USE_SSE2)] = satd16_##w##x##h##_sse2<false>;
+    MAKE_FN_SSE(w,h)
 #endif
       MAKE_FN(64, 64)
       MAKE_FN(64, 48)
@@ -1382,6 +1393,7 @@ SADFunction* get_satd_function(int BlockX, int BlockY, int pixelsize, arch_t arc
       MAKE_FN(4, 8)
       MAKE_FN(4, 4)
 #undef MAKE_FN
+#undef MAKE_FN_SSE
 
     SADFunction *result = nullptr;
     arch_t archlist[] = { USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };

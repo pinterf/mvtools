@@ -23,7 +23,10 @@
 #include	<algorithm>
 
 #include <cmath>
+#include "types.h"
+#ifdef INTEL_INTRINSICS
 #include <emmintrin.h>
+#endif
 
 MV_FORCEINLINE void ByteOccMask(uint8_t *occMask, int occlusion, double occnorm, double fGamma)
 {
@@ -49,7 +52,7 @@ void MakeVectorOcclusionMaskTimePlane(MVClip &mvClip, int nBlkX, int nBlkY, doub
   pt256 += t256_pitch * (blkSizeY / 2) + (blkSizeX / 2);
 
   MemZoneSet(occMask, 0, nBlkX, nBlkY, 0, 0, nBlkX);
-#ifndef _M_X64 
+#if defined(INTEL_INTRINSICS) && !defined(_M_X64)
   _mm_empty();
 #endif
   double occnorm = 10 / dMaskNormFactor / nPel;

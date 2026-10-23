@@ -239,7 +239,7 @@ int64_t	Interlocked::cas (int64_t volatile &dest, int64_t excg, int64_t comp)
 
 
 
-#if defined(__GNUC__) || defined(__clang__)
+#if (defined(__GNUC__) || defined(__clang__)) && conc_ARCHI == conc_ARCHI_X86
 __attribute__((__target__("cx16")))
 #endif 
 void	Interlocked::swap (Data128 &old, volatile Data128 &dest, const Data128 &excg)
@@ -259,7 +259,7 @@ void	Interlocked::swap (Data128 &old, volatile Data128 &dest, const Data128 &exc
 // 1.) _InterlockedCompareExchange128' needs target feature cx16
 // 2.) Unresolved external for clang + x64: __sync_val_compare_and_swap_16, unless the whole project 
 //     in general is flagged as cx16 (along with sse4.1) -msse4.1 -mcx16
-#if defined(__GNUC__) || defined(__clang__)
+#if (defined(__GNUC__) || defined(__clang__)) && conc_ARCHI == conc_ARCHI_X86
 __attribute__((__target__("cx16")))
 #endif 
 void	Interlocked::cas (Data128 &old, volatile Data128 &dest, const Data128 &excg, const Data128 &comp)

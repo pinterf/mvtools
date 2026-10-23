@@ -21,7 +21,10 @@
 
 #include "MaskFun.h"
 #include "commonfunctions.h"
+#include "types.h"
+#ifdef INTEL_INTRINSICS
 #include <emmintrin.h>
+#endif
 #include <cassert>
 
 #if !defined(_M_X64)
@@ -126,7 +129,7 @@ void MakeVectorOcclusionMaskTime(MVClip &mvClip, int nBlkX, int nBlkY, double dM
   MemZoneSet(occMask, 0, nBlkX, nBlkY, 0, 0, occMaskPitch); 
   int time4096X = time256*16/blkSizeX;
   int time4096Y = time256*16/blkSizeY;
-#ifndef _M_X64 
+#if defined(INTEL_INTRINSICS) && !defined(_M_X64)
   _mm_empty ();
 #endif
   double occnorm = 10 / dMaskNormFactor/nPel;
@@ -175,7 +178,7 @@ void VectorMasksToOcclusionMaskTime(uint8_t *VXMask, uint8_t *VYMask, int nBlkX,
   MemZoneSet(occMask, 0, nBlkX, nBlkY, 0, 0, nBlkX);
   int time4096X = time256*16/blkSizeX;
   int time4096Y = time256*16/blkSizeY;
-#ifndef _M_X64 
+#if defined(INTEL_INTRINSICS) && !defined(_M_X64)
   _mm_empty ();
 #endif
   double occnorm = 10 / dMaskNormFactor/nPel;
@@ -218,7 +221,7 @@ void VectorMasksToOcclusionMaskTime(uint8_t *VXMask, uint8_t *VYMask, int nBlkX,
 // it is old pre 1.8 version
 void MakeVectorOcclusionMask(MVClip &mvClip, int nBlkX, int nBlkY, double dMaskNormFactor, double fGamma, int nPel, uint8_t * occMask, int occMaskPitch)
 {	// analyse vectors field to detect occlusion
-#ifndef _M_X64 
+#if defined(INTEL_INTRINSICS) && !defined(_M_X64)
   _mm_empty ();
 #endif
   double occnorm = 10 / dMaskNormFactor/nPel; // empirical
@@ -282,7 +285,7 @@ void MakeVectorOcclusionMask(MVClip &mvClip, int nBlkX, int nBlkY, double dMaskN
 void VectorMasksToOcclusionMask(uint8_t *VXMask, uint8_t *VYMask, int nBlkX, int nBlkY, double dMaskNormFactor, double fGamma, int nPel, uint8_t * occMask)
 {	// analyse vectors field to detect occlusion
   // note: dMaskNormFactor was = 1/ml, now is = ml
-#ifndef _M_X64 
+#if defined(INTEL_INTRINSICS) && !defined(_M_X64)
   _mm_empty ();
 #endif
   double occnorm = 10 / dMaskNormFactor/nPel; // empirical
@@ -437,6 +440,7 @@ static void Merge4PlanesToBig_c(
   }
 }
 
+#ifdef INTEL_INTRINSICS
 template<typename pixel_t>
 static void Merge4PlanesToBig_sse2(
   uint8_t *pel2Plane, int pel2Pitch, const uint8_t *pPlane0, const uint8_t *pPlane1,
@@ -493,6 +497,7 @@ static void Merge4PlanesToBig_sse2(
     pPlane3 += pitch;
   }
 }
+#endif // INTEL_INTRINSICS
 
 void Merge4PlanesToBig(
   uint8_t *pel2Plane, int pel2Pitch, const uint8_t *pPlane0, const uint8_t *pPlane1,
@@ -502,25 +507,22 @@ void Merge4PlanesToBig(
   // P =  p0 p1 p0 p1 p0 p1 p0 p1...
   //      p2 p3 p2 p3 p2 p3 p2 p3
   // 
-  bool isse = !!(cpuFlags & CPUF_SSE2);
-  if (!isse || pixelsize == 4)
+#ifdef INTEL_INTRINSICS
+  if (!!(cpuFlags & CPUF_SSE2) && pixelsize != 4)
   {
-    if(pixelsize==1)
-      Merge4PlanesToBig_c<uint8_t>(pel2Plane, pel2Pitch, pPlane0, pPlane1, pPlane2, pPlane3, width, height, pitch, pixelsize);
-    else if(pixelsize==2)
-      Merge4PlanesToBig_c<uint16_t>(pel2Plane, pel2Pitch, pPlane0, pPlane1, pPlane2, pPlane3, width, height, pitch, pixelsize);
-    else if(pixelsize==4)
-      Merge4PlanesToBig_c<float>(pel2Plane, pel2Pitch, pPlane0, pPlane1, pPlane2, pPlane3, width, height, pitch, pixelsize);
-    return;
-  }
-  else {
     if (pixelsize == 1)
       Merge4PlanesToBig_sse2<uint8_t>(pel2Plane, pel2Pitch, pPlane0, pPlane1, pPlane2, pPlane3, width, height, pitch, pixelsize);
     else if (pixelsize == 2)
       Merge4PlanesToBig_sse2<uint16_t>(pel2Plane, pel2Pitch, pPlane0, pPlane1, pPlane2, pPlane3, width, height, pitch, pixelsize);
-    else
-      assert(0);
+    return;
   }
+#endif // INTEL_INTRINSICS
+  if(pixelsize==1)
+    Merge4PlanesToBig_c<uint8_t>(pel2Plane, pel2Pitch, pPlane0, pPlane1, pPlane2, pPlane3, width, height, pitch, pixelsize);
+  else if(pixelsize==2)
+    Merge4PlanesToBig_c<uint16_t>(pel2Plane, pel2Pitch, pPlane0, pPlane1, pPlane2, pPlane3, width, height, pitch, pixelsize);
+  else if(pixelsize==4)
+    Merge4PlanesToBig_c<float>(pel2Plane, pel2Pitch, pPlane0, pPlane1, pPlane2, pPlane3, width, height, pitch, pixelsize);
   return;
 #if 0
 #if !(defined(_M_X64) && defined(_MSC_VER))

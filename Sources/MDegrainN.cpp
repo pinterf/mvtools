@@ -11,8 +11,10 @@
 #include "profile.h"
 #include "SuperParams64Bits.h"
 
+#ifdef INTEL_INTRINSICS
 #include	<emmintrin.h>
 #include	<mmintrin.h>
+#endif
 
 #include	<cassert>
 #include	<cmath>
@@ -110,6 +112,7 @@ void DegrainN_C(
 // Debug note: DegrainN filter is calling Degrain1-6 instead if ThSAD(C) == ThSAD(C)2.
 // To reach DegrainN_ functions, set the above parameters to different values
 
+#ifdef INTEL_INTRINSICS
 // out16_type: 
 //   0: native 8 or 16
 //   1: 8bit in, lsb
@@ -358,6 +361,7 @@ void DegrainN_16_sse41(
   }
 
 }
+#endif // INTEL_INTRINSICS
 
 MDegrainN::DenoiseNFunction* MDegrainN::get_denoiseN_function(int BlockX, int BlockY, int _bits_per_pixel, bool _lsb_flag, bool _out16_flag, arch_t arch)
 {
@@ -403,6 +407,7 @@ func_degrain[make_tuple(x, y, DEGRAIN_TYPE_32BIT, NO_SIMD)] = DegrainN_C<float, 
 #undef MAKE_FN
 #undef MAKE_FN_LEVEL
 
+#ifdef INTEL_INTRINSICS
       // and the SSE2 versions for 8 bit
 #define MAKE_FN(x, y) \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT, USE_SSE2)] = DegrainN_sse2<x, y, 0>; \
@@ -464,6 +469,7 @@ func_degrain[make_tuple(x, y, DEGRAIN_TYPE_16BIT, USE_SSE41)] = DegrainN_16_sse4
     //MAKE_FN(2, 2) // no 2 byte width, only C
     //MAKE_FN(2, 1) // no 2 byte width, only C
 #undef MAKE_FN
+#endif // INTEL_INTRINSICS
 #undef MAKE_FN_LEVEL
 
   DenoiseNFunction* result = nullptr;
@@ -751,6 +757,7 @@ MDegrainN::MDegrainN(
   if (!_degrainchroma_ptr)
     env_ptr->ThrowError("MDegrainN : no valid _degrainchroma_ptr function for %dx%d, pixelsize=%d, lsb_flag=%d", nBlkSizeX, nBlkSizeY, pixelsize_super, (int)lsb_flag);
 
+#ifdef INTEL_INTRINSICS
   if ((_cpuFlags & CPUF_SSE2) != 0)
   {
     if(out16_flag)
@@ -768,6 +775,7 @@ MDegrainN::MDegrainN(
     }
   }
   else
+#endif // INTEL_INTRINSICS
   {
     if (out16_flag)
       LimitFunction = LimitChanges_src8_target16_c; // todo SSE2
@@ -1170,7 +1178,7 @@ static void plane_copy_8_to_16_c(uint8_t *dstp, int dstpitch, const uint8_t *src
 
   //-------------------------------------------------------------------------
 
-#ifndef _M_X64 
+#if defined(INTEL_INTRINSICS) && !defined(_M_X64)
   _mm_empty(); // (we may use double-float somewhere) Fizick
 #endif
 

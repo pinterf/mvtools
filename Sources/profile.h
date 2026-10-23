@@ -40,7 +40,10 @@
 
 
 
+#include "types.h"
+#ifdef INTEL_INTRINSICS
 #include <emmintrin.h>
+#endif
 #include	"debugprintf.h"
 
 extern int ProfTimeTable[MOTION_PROFILE_COUNT];

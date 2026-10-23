@@ -583,7 +583,7 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
   int nHeightUV = nHeight / yRatioUVs[1];
   int nWidthUV = nWidth / xRatioUVs[1];
 
-#ifndef _M_X64
+#if defined(INTEL_INTRINSICS) && !defined(_M_X64)
   _mm_empty();  // paranoya
 #endif
   // intermediate product may be very large! Now I know how to multiply int64

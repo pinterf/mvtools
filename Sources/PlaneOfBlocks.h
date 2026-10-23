@@ -15,6 +15,8 @@
 // Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA, or visit
 // http://www.gnu.org/copyleft/gpl.html .
 
+#include "types.h"
+#ifdef INTEL_INTRINSICS
 #if defined (__GNUC__) && ! defined (__INTEL_COMPILER)
 #include <x86intrin.h>
 // x86intrin.h includes header files for whatever instruction
@@ -22,6 +24,7 @@
 #else
 #include <immintrin.h> // MS version of immintrin.h covers AVX, AVX2 and FMA3
 #endif // __GNUC__
+#endif // INTEL_INTRINSICS
 
 #ifndef __POBLOCKS__
 #define __POBLOCKS__

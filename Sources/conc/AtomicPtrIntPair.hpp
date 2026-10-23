@@ -168,7 +168,7 @@ bool	AtomicPtrIntPair <T>::cas2 (T *new_ptr, intptr_t new_val, T *comp_ptr, intp
 #if (conc_ARCHI == conc_ARCHI_X86 || ! conc_USE_STD_ATOMIC_128BITS)
 
 template <class T>
-#if defined(__GNUC__) || defined(__clang__)
+#if (defined(__GNUC__) || defined(__clang__)) && conc_ARCHI == conc_ARCHI_X86
 __attribute__((__target__("cx16")))
 #endif 
 void	AtomicPtrIntPair <T>::cas_combi (Combi &old, Combi &dest, const Combi &excg, const Combi &comp)

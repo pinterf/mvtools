@@ -36,8 +36,10 @@
 
 #include	"avisynth.h"
 #include	"malloc.h"
+#ifdef INTEL_INTRINSICS
 #include <emmintrin.h>
 #include <smmintrin.h>
+#endif
 #include "def.h"
 #include <algorithm>
 
@@ -76,6 +78,7 @@ SimpleResize::~SimpleResize()
   _aligned_free(vWeights);
 }
 
+#ifdef INTEL_INTRINSICS
 template<int cpuflags>
 static MV_FORCEINLINE __m128i simd_blend_epi8(__m128i const &selector, __m128i const &a, __m128i const &b) {
   if constexpr(cpuflags >= CPUF_SSE4_1) {
@@ -462,24 +465,73 @@ void SimpleResize::SimpleResizeDo_New(uint8_t *dstp8, int row_size, int height, 
 
   } // for y
 }
+#endif // INTEL_INTRINSICS
 
 void SimpleResize::SimpleResizeDo_uint8_to_uint16(uint8_t *dstp, int row_size, int height, int dst_pitch,
   const uint8_t* srcp, int src_row_size, int src_pitch, int bits_per_pixel) {
   dst_pitch /= sizeof(uint16_t);  // pitch from byte granularity to uint16 for SimpleResizeDo
-  SimpleResizeDo_New<uint8_t, uint16_t, false, 0, true>(dstp, row_size, height, dst_pitch, srcp, src_row_size, src_pitch, bits_per_pixel,
-    row_size, height); // n/a: no limiting in 8->16;
-  return;
+#ifdef INTEL_INTRINSICS
+  if (SSE2enabled) {
+    SimpleResizeDo_New<uint8_t, uint16_t, false, 0, true>(dstp, row_size, height, dst_pitch, srcp, src_row_size, src_pitch, bits_per_pixel,
+      row_size, height); // n/a: no limiting in 8->16;
+    return;
+  }
+#endif
+
+  // C: the 8 bit resize of SimpleResizeDo_uint8, the result is scaled to bits_per_pixel, 255 becomes max_pixel_value
+  uint16_t *dstp16 = reinterpret_cast<uint16_t *>(dstp);
+  const unsigned int* pControl = &hControl[0];
+  unsigned char* vWorkYW = (unsigned char *)vWorkY;
+  unsigned int* vOffsetsW = vOffsets;
+  unsigned int* vWeightsW = vWeights;
+  unsigned int last_vOffsetsW = vOffsetsW[height - 1];
+  const int max_pixel_value = (1 << bits_per_pixel) - 1;
+
+  for (int y = 0; y < height; y++)
+  {
+    int CurrentWeight = vWeightsW[y];
+    int invCurrentWeight = 256 - CurrentWeight;
+
+    const uint8_t *srcp1 = srcp + vOffsetsW[y] * src_pitch;
+    // scrp2 is the next line if applicable
+    bool UseNextLine = vOffsetsW[y] < last_vOffsetsW;
+    const uint8_t *srcp2 = UseNextLine ? srcp1 + src_pitch : srcp;
+
+    for (int x = 0; x < src_row_size; x++) {
+      vWorkYW[x] = (srcp1[x] * invCurrentWeight + srcp2[x] * CurrentWeight + 128) >> 8;
+    }
+
+    for (int x = 0; x < row_size; x++) {
+      unsigned int pc;
+      unsigned int offs;
+      if ((x & 1) == 0) { // even
+        pc = pControl[3 * x];
+        offs = pControl[3 * x + 4];
+      }
+      else { // odd
+        pc = pControl[3 * x - 2]; // [3*xeven+1]
+        offs = pControl[3 * x + 2]; // [3*xeven+5]
+      }
+      unsigned int wY1 = pc & 0x0000ffff; //low
+      unsigned int wY2 = pc >> 16; //high
+      int val = (vWorkYW[offs] * wY1 + vWorkYW[offs + 1] * wY2 + 128) >> 8;
+      dstp16[x] = val >= 255 ? max_pixel_value : val << (bits_per_pixel - 8);
+    }
+    dstp16 += dst_pitch;
+  }
 }
 
 void SimpleResize::SimpleResizeDo_uint8(uint8_t *dstp, int row_size, int height, int dst_pitch,
   const uint8_t* srcp, int src_row_size, int src_pitch)
 {
 
+#ifdef INTEL_INTRINSICS
   if (SSE2enabled) {
     SimpleResizeDo_New<uint8_t, uint8_t, false, 0, true>(dstp, row_size, height, dst_pitch, srcp, src_row_size, src_pitch, 8, 
       row_size, height); // n/a: no limiting in 8->8;
     return;
   }
+#endif // INTEL_INTRINSICS
   // C-only
   typedef unsigned char src_type;
   
@@ -555,6 +607,7 @@ void SimpleResize::SimpleResizeDo_int16(short *dstp, int row_size, int height, i
 {
   const bool limitVectors = true;
 
+#ifdef INTEL_INTRINSICS
   if (SSE2enabled) {
     if (limitVectors)
     {
@@ -583,6 +636,7 @@ void SimpleResize::SimpleResizeDo_int16(short *dstp, int row_size, int height, i
 
     return;
   }
+#endif // INTEL_INTRINSICS
   
   // C version
   const unsigned int* pControl = &hControl[0];

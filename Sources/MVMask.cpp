@@ -273,7 +273,7 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
 
   PVideoFrame mvn = mvClip.GetFrame(n, env);
   mvClip.Update(mvn, env);
-#ifndef _M_X64
+#if defined(INTEL_INTRINSICS) && !defined(_M_X64)
   _mm_empty();
 #endif
 

@@ -25,8 +25,10 @@
 #include <vector>
 #include "avs/minmax.h"
 #include <cassert>
+#ifdef INTEL_INTRINSICS
 #include <emmintrin.h>
 #include <smmintrin.h>
+#endif
 #include "BlockSizes.h"
 
 #ifndef min
@@ -215,6 +217,7 @@ OverlapWindows::~OverlapWindows()
 // Here originally there was no rounding at all
 // So instead of: Sum((overlapped + 256)>>6) >> 5
 // So we do: (Sum((overlapped + 32) >> 6) + 16) >> 5
+#ifdef INTEL_INTRINSICS
 void Short2Bytes_sse2(unsigned char *pDst, int nDstPitch, uint16_t *pDstShort, int dstShortPitch, int nWidth, int nHeight)
 {
   // v.2.7.25-: round 16 here, round 32 earlier. See comments in C
@@ -252,6 +255,7 @@ void Short2Bytes_sse2(unsigned char *pDst, int nDstPitch, uint16_t *pDstShort, i
     pSrc8 += nSrcPitch;
   }
 }
+#endif // INTEL_INTRINSICS
 
 void Short2Bytes(unsigned char *pDst, int nDstPitch, uint16_t *pDstShort, int dstShortPitch, int nWidth, int nHeight)
 {
@@ -301,6 +305,7 @@ void Short2Bytes_Int32toWord16(uint16_t *pDst, int nDstPitch, int *pDstInt, int 
   }
 }
 
+#ifdef INTEL_INTRINSICS
 void Short2Bytes_Int32toWord16_sse4(uint16_t *pDst, int nDstPitch, int *pDstInt, int dstIntPitch, int nWidth, int nHeight, int bits_per_pixel)
 {
   const int max_pixel_value = (1 << bits_per_pixel) - 1;
@@ -335,6 +340,7 @@ void Short2Bytes_Int32toWord16_sse4(uint16_t *pDst, int nDstPitch, int *pDstInt,
     pSrc8 += nSrcPitch;
   }
 }
+#endif // INTEL_INTRINSICS
 
 void Short2Bytes_FloatInInt32ArrayToFloat(float *pDst, int nDstPitch, float *pDstInt, int dstIntPitch, int nWidth, int nHeight)
 {
@@ -350,6 +356,7 @@ void Short2Bytes_FloatInInt32ArrayToFloat(float *pDst, int nDstPitch, float *pDs
   }
 }
 
+#ifdef INTEL_INTRINSICS
 MV_FORCEINLINE __m128i _MM_CMPLE_EPU16(__m128i x, __m128i y)
 {
   // Returns 0xFFFF where x <= y:
@@ -417,6 +424,7 @@ void LimitChanges_sse2_new(unsigned char *pDst8, int nDstPitch, const unsigned c
     pSrc8 += nSrcPitch;
   }
 }
+#endif // INTEL_INTRINSICS
 
 // out16=true case
 void LimitChanges_src8_target16_c(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, float nLimit_f)
@@ -462,10 +470,13 @@ void LimitChanges_float_c(unsigned char *pDst, int nDstPitch, const unsigned cha
 // if a non-static template function is in cpp, we have to instantiate it
 template void LimitChanges_c<uint8_t>(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, float nLimit);
 template void LimitChanges_c<uint16_t>(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, float nLimit);
+#ifdef INTEL_INTRINSICS
 template void LimitChanges_sse2_new<uint8_t,0>(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, float nLimit);
 template void LimitChanges_sse2_new<uint16_t,0>(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, float nLimit);
 template void LimitChanges_sse2_new<uint16_t,1>(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, float nLimit);
+#endif // INTEL_INTRINSICS
 
+#ifdef INTEL_INTRINSICS
 template <int blockWidth, int blockHeight>
 // pDst is short* for 8 bit, int * for 16 bit
 // works for blockWidth >= 4 && uint16_t
@@ -715,6 +726,7 @@ void Overlaps_uint8_t_sse4(uint16_t* pDst0, int nDstPitch, const unsigned char* 
     pWin += nWinPitch;
   }
 }
+#endif // INTEL_INTRINSICS
 
 OverlapsFunction *get_overlaps_function(int BlockX, int BlockY, int pixelsize, arch_t arch)
 {
@@ -776,6 +788,7 @@ func_overlaps[make_tuple(x, y, 4, NO_SIMD)] = Overlaps_float_C<x, y>;
     func_overlaps[make_tuple(2 , 4 , 1, USE_SSE2)] = Overlaps2x4_sse2;
     func_overlaps[make_tuple(2 , 2 , 1, USE_SSE2)] = Overlaps2x2_sse2;
 #endif
+#ifdef INTEL_INTRINSICS
     // define sse4 for 16 bits
 #ifdef USE_OVERLAPS_ASM
 #define MAKE_OVR_FN(x, y) \
@@ -838,6 +851,7 @@ func_overlaps[make_tuple(x, y, 1, USE_SSE41)] = Overlaps_uint8_t_sse4<x, y>;
       MAKE_OVR_FN(2, 2)
       MAKE_OVR_FN(2, 1)
 #undef MAKE_OVR_FN
+#endif // INTEL_INTRINSICS
 
     OverlapsFunction *result = nullptr;
 

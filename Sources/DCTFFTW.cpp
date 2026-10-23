@@ -25,7 +25,10 @@
 #include "DCTFFTW.h"
 
 //#define __INTEL_COMPILER_USE_INTRINSIC_PROTOTYPES 1
+#include "types.h"
+#ifdef INTEL_INTRINSICS
 #include <emmintrin.h>
+#endif
 #include <algorithm>
 #include <cstdio>
 #include <tuple>
@@ -33,8 +36,10 @@
 #include "types.h"
 #include <avisynth.h>
 #include "def.h"
+#ifdef INTEL_INTRINSICS
 #include <emmintrin.h>
 #include <smmintrin.h>
+#endif
 #include <mutex>
 #include <cassert>
 
@@ -203,6 +208,7 @@ void DCTFFTW::Bytes2Float_C(const unsigned char * srcp, int src_pitch, float * r
   }
 }
 
+#ifdef INTEL_INTRINSICS
 template<typename pixel_t, int nBlkSizeX>
 void DCTFFTW::Bytes2Float_SSE2(const unsigned char * srcp8, int src_pitch, float * realdata)
 {
@@ -296,7 +302,9 @@ void DCTFFTW::Bytes2Float_SSE2(const unsigned char * srcp8, int src_pitch, float
     realdata += floatpitch;
   }
 }
+#endif // INTEL_INTRINSICS
 
+#ifdef INTEL_INTRINSICS
 #ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable: 4309)
@@ -504,6 +512,7 @@ void DCTFFTW::Float2Bytes_uint16_t_SSE4(unsigned char* dstp0, int dst_pitch, flo
   // overwrite very first
   dstp_save[0] = (pixel_t)first_integ;
 }
+#endif // INTEL_INTRINSICS
 
 
 template <typename pixel_t>
@@ -547,6 +556,7 @@ DCTFFTW::Float2BytesFunction DCTFFTW::get_floatToBytesPROC_function(int BlockX, 
   std::map<std::tuple<int, int, arch_t>, DCTFFTW::Float2BytesFunction> func;
   using std::make_tuple;
 
+#ifdef INTEL_INTRINSICS
   // SSE4
   
   // uint8_t
@@ -576,6 +586,7 @@ DCTFFTW::Float2BytesFunction DCTFFTW::get_floatToBytesPROC_function(int BlockX, 
   func[make_tuple(16, 1, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<16>;
   func[make_tuple(12, 1, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<12>; // mod4 allowed
   func[make_tuple(8, 1, USE_SSE2)] = &DCTFFTW::Float2Bytes_SSE2<8>;
+#endif // INTEL_INTRINSICS
   
   DCTFFTW::Float2BytesFunction result = nullptr;
   arch_t archlist[] = { USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
@@ -598,6 +609,7 @@ DCTFFTW::Bytes2FloatFunction DCTFFTW::get_bytesToFloatPROC_function(int BlockX, 
   std::map<std::tuple<int, int, arch_t>, DCTFFTW::Bytes2FloatFunction> func;
   using std::make_tuple;
 
+#ifdef INTEL_INTRINSICS
   // SSE2
   
   // uint8_t
@@ -618,6 +630,7 @@ DCTFFTW::Bytes2FloatFunction DCTFFTW::get_bytesToFloatPROC_function(int BlockX, 
   func[make_tuple(12, 2, USE_SSE2)] = &DCTFFTW::Bytes2Float_SSE2<uint16_t, 12>; // 12 ok, mod4 handled
   func[make_tuple(8, 2, USE_SSE2)] = &DCTFFTW::Bytes2Float_SSE2<uint16_t, 8>;
   func[make_tuple(4, 2, USE_SSE2)] = &DCTFFTW::Bytes2Float_SSE2<uint16_t, 4>;
+#endif // INTEL_INTRINSICS
   
   DCTFFTW::Bytes2FloatFunction result = nullptr;
   arch_t archlist[] = { USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };

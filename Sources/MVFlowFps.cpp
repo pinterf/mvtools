@@ -353,7 +353,7 @@ PVideoFrame __stdcall MVFlowFps::GetFrame(int n, IScriptEnvironment* env)
   }
   reentrancy_check = true;
 
-#ifndef _M_X64
+#if defined(INTEL_INTRINSICS) && !defined(_M_X64)
   _mm_empty();
 #endif
   _RPT2(0, "MFlowFPS GetFrame, frame=%d id=%d\n", n, _instance_id);
