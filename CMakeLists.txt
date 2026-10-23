@@ -199,7 +199,7 @@ ELSE()
     endif()
   endif()
   IF(WIN32)
-    SET( CMAKE_SHARED_LINKER_FLAGS "-Wl,--enable-stdcall-fixup" )
+    SET( CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-stdcall-fixup" )
   ELSE()
     if(APPLE)
       # macOS uses Clang's linker, doesn't like --no-undefined
