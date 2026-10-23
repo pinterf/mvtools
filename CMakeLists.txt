@@ -21,20 +21,27 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CMAKE_CXX_EXTENSIONS FALSE)
 
-# Detect Intel processors and turn Intel SIMD on or off automatically.
+# Detect Intel and AArch64 processors and turn Intel SIMD or NEON SIMD on automatically.
 message("-- Detected target processor as: ${CMAKE_SYSTEM_PROCESSOR}")
 string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" ARCHID)
+set(INTEL_SIMD "OFF")
+set(NEON_SIMD "OFF")
 if( ("${ARCHID}" STREQUAL "x86") OR
     ("${ARCHID}" STREQUAL "x64") OR
     ("${ARCHID}" STREQUAL "i686") OR
     ("${ARCHID}" STREQUAL "amd64") OR
     ("${ARCHID}" STREQUAL "x86_64") )
   set(INTEL_SIMD "ON")
-else()
-  set(INTEL_SIMD "OFF")
+elseif( ("${ARCHID}" STREQUAL "aarch64") OR
+        ("${ARCHID}" STREQUAL "arm64") )
+  set(NEON_SIMD "ON")
 endif()
 
 option(ENABLE_INTEL_SIMD "Enable SIMD intrinsics for Intel processors" "${INTEL_SIMD}")
+option(ENABLE_NEON_SIMD "Enable SIMD intrinsics for AArch64 processors" "${NEON_SIMD}")
+if(ENABLE_INTEL_SIMD AND ENABLE_NEON_SIMD)
+  message(FATAL_ERROR "ENABLE_INTEL_SIMD and ENABLE_NEON_SIMD are mutually exclusive")
+endif()
 
 if(CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_CONFIGURATION_TYPES Debug Release RelWithDebInfo)
@@ -182,6 +189,14 @@ ELSE()
 
   if(ENABLE_INTEL_SIMD)
     SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -msse2 -DINTEL_INTRINSICS" )
+  elseif(ENABLE_NEON_SIMD)
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DNEON_INTRINSICS" )
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+      # GCC (GNU mode) contracts a*b+c to fmadd also across inlined calls, Clang's default
+      # (-ffp-contract=on) only within one expression. The NEON float paths fuse like GCC's C;
+      # with this the C reference is the same under GCC and Clang.
+      SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -ffp-contract=fast" )
+    endif()
   endif()
   IF(WIN32)
     SET( CMAKE_SHARED_LINKER_FLAGS "-Wl,--enable-stdcall-fixup" )

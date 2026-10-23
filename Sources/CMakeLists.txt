@@ -24,8 +24,10 @@ if (MINGW)
   set_target_properties(${PluginName} PROPERTIES IMPORT_PREFIX "")
 endif()
 
-#require sse4.1, there are mixed parts in the source
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DINTEL_INTRINSICS -msse4.1")
+if(ENABLE_INTEL_SIMD)
+  #require sse4.1, there are mixed parts in the source
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DINTEL_INTRINSICS -msse4.1")
+endif()
 
 # Automatically group source files according to directory structure
 foreach(FILE ${MvTools2_Sources}) 
@@ -78,7 +80,11 @@ if (MSVC_IDE)
       file(GLOB_RECURSE SRCS_AVX512 "*_avx512.cpp")
       set_source_files_properties(${SRCS_AVX512} PROPERTIES COMPILE_FLAGS " /arch:AVX512 ")
   ENDIF()
-else()
+elseif(ENABLE_NEON_SIMD)
+  # NEON baseline (ASIMD) for source files with *_neon.cpp pattern
+  file(GLOB_RECURSE SRCS_NEON "*_neon.cpp")
+  set_source_files_properties(${SRCS_NEON} PROPERTIES COMPILE_FLAGS " -march=armv8-a ")
+elseif(ENABLE_INTEL_SIMD)
   # special SSSE3 option for source files with *_ssse3.cpp pattern
   file(GLOB_RECURSE SRCS_SSSE3 "*_ssse3.cpp")
   set_source_files_properties(${SRCS_SSSE3} PROPERTIES COMPILE_FLAGS " -mssse3 ")

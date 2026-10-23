@@ -15,6 +15,14 @@ ELSE()
   LIST(REMOVE_ITEM MvTools2_Sources "AvstpFinder.h")
 ENDIF()
 
+# x86 ISA-specific files only for Intel targets, NEON files only for AArch64 targets
+IF(NOT ENABLE_INTEL_SIMD)
+  LIST(FILTER MvTools2_Sources EXCLUDE REGEX "_(ssse3|sse41|avx|avx2|avx512)\\.cpp$")
+ENDIF()
+IF(NOT ENABLE_NEON_SIMD)
+  LIST(FILTER MvTools2_Sources EXCLUDE REGEX "_neon\\.(cpp|h)$")
+ENDIF()
+
 
 message("${MvTools2_Sources}")
 

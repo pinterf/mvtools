@@ -24,8 +24,10 @@ if (MINGW)
   set_target_properties(${PluginName} PROPERTIES IMPORT_PREFIX "")
 endif()
 
-#require sse4.1, there are mixed parts in the source
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DINTEL_INTRINSICS -msse4.1")
+if(ENABLE_INTEL_SIMD)
+  #require sse4.1, there are mixed parts in the source
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DINTEL_INTRINSICS -msse4.1")
+endif()
 
 # Automatically group source files according to directory structure
 foreach(FILE ${DePanEstimate_Sources}) 
