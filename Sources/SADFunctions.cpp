@@ -9,6 +9,9 @@
 #include <immintrin.h>
 #endif
 #include "BlockSizes.h"
+#ifdef NEON_INTRINSICS
+#include "SADFunctions_neon.h"
+#endif
 
 MV_FORCEINLINE unsigned int SADABS(int x) {	return ( x < 0 ) ? -x : x; }
 //inline unsigned int SADABS(int x) {	return ( x < -16 ) ? 16 : ( x < 0 ) ? -x : ( x > 16) ? 16 : x; }
@@ -735,6 +738,14 @@ SADFunction* get_sad_function(int BlockX, int BlockY, int bits_per_pixel, arch_t
 func_sad[make_tuple(x, y, 16, NO_SIMD)] = Sad_C<x, y, uint16_t>;
     MVTOOLS_BLOCKSIZES(MAKE_SAD_FN) // BlockSizes.h: the same list for all C tables
 #undef MAKE_SAD_FN
+
+#ifdef NEON_INTRINSICS
+    // 10-14 bit: found by the secondary (16 bit) search
+#define MAKE_SAD_FN(x, y) func_sad[make_tuple(x, y, 8, USE_NEON)] = Sad_neon<x, y, uint8_t>; \
+func_sad[make_tuple(x, y, 16, USE_NEON)] = Sad_neon<x, y, uint16_t>;
+    MVTOOLS_BLOCKSIZES(MAKE_SAD_FN)
+#undef MAKE_SAD_FN
+#endif
 
 #ifdef INTEL_INTRINSICS
 // PF SAD 10 SIMD intrinsic functions
