@@ -101,12 +101,18 @@ MVTOOLS_BLOCKSIZES(MAKE_SAD_FN)
 // blocks with width mod 8 are summed by 8x4 pieces ((S_left + S_right) >> 1), the others by 4x4 pieces (S >> 1),
 // where S is the exact sum of the 16 absolute coefficients. The abs sum does not depend on the coefficient order.
 
-// 4 point Hadamard of 4 vectors (in place)
-template<typename V>
-static MV_FORCEINLINE void hadamard4(V &v0, V &v1, V &v2, V &v3)
+// 4 point Hadamard of 4 vectors (in place); intrinsics, not vector operators, and distinct names:
+// MSVC has no operators for the NEON types and all its 128 bit NEON types are the same type
+static MV_FORCEINLINE void hadamard4_s16(int16x8_t &v0, int16x8_t &v1, int16x8_t &v2, int16x8_t &v3)
 {
-  const V a = v0 + v1, b = v0 - v1, c = v2 + v3, d = v2 - v3;
-  v0 = a + c; v1 = b + d; v2 = a - c; v3 = b - d;
+  const int16x8_t a = vaddq_s16(v0, v1), b = vsubq_s16(v0, v1), c = vaddq_s16(v2, v3), d = vsubq_s16(v2, v3);
+  v0 = vaddq_s16(a, c); v1 = vaddq_s16(b, d); v2 = vsubq_s16(a, c); v3 = vsubq_s16(b, d);
+}
+
+static MV_FORCEINLINE void hadamard4_s32(int32x4_t &v0, int32x4_t &v1, int32x4_t &v2, int32x4_t &v3)
+{
+  const int32x4_t a = vaddq_s32(v0, v1), b = vsubq_s32(v0, v1), c = vaddq_s32(v2, v3), d = vsubq_s32(v2, v3);
+  v0 = vaddq_s32(a, c); v1 = vaddq_s32(b, d); v2 = vsubq_s32(a, c); v3 = vsubq_s32(b, d);
 }
 
 // 8 bit: two horizontally adjacent 4x4 blocks (x .. x+7, or x .. x+3 and the next 4x4 when only 4 wide is used:
@@ -117,7 +123,7 @@ static MV_FORCEINLINE uint16x8_t satd_2x4x4_u8_abs(const uint8_t *p1, int i1, co
   int16x8_t r1 = vreinterpretq_s16_u16(vsubl_u8(vld1_u8(p1 + i1), vld1_u8(p2 + i2)));
   int16x8_t r2 = vreinterpretq_s16_u16(vsubl_u8(vld1_u8(p1 + 2 * i1), vld1_u8(p2 + 2 * i2)));
   int16x8_t r3 = vreinterpretq_s16_u16(vsubl_u8(vld1_u8(p1 + 3 * i1), vld1_u8(p2 + 3 * i2)));
-  hadamard4(r0, r1, r2, r3); // vertical (between rows)
+  hadamard4_s16(r0, r1, r2, r3); // vertical (between rows)
   // transpose both 4x4 blocks: lanes become rows
   const int16x8x2_t t0 = vtrnq_s16(r0, r1);
   const int16x8x2_t t1 = vtrnq_s16(r2, r3);
@@ -127,7 +133,7 @@ static MV_FORCEINLINE uint16x8_t satd_2x4x4_u8_abs(const uint8_t *p1, int i1, co
   int16x8_t c1 = vreinterpretq_s16_s32(u1.val[0]);
   int16x8_t c2 = vreinterpretq_s16_s32(u0.val[1]);
   int16x8_t c3 = vreinterpretq_s16_s32(u1.val[1]);
-  hadamard4(c0, c1, c2, c3); // horizontal; |coef| <= 16 * 255, the abs sum of 4 <= 16320
+  hadamard4_s16(c0, c1, c2, c3); // horizontal; |coef| <= 16 * 255, the abs sum of 4 <= 16320
   return vaddq_u16(vaddq_u16(vreinterpretq_u16_s16(vabsq_s16(c0)), vreinterpretq_u16_s16(vabsq_s16(c1))),
     vaddq_u16(vreinterpretq_u16_s16(vabsq_s16(c2)), vreinterpretq_u16_s16(vabsq_s16(c3))));
 }
@@ -139,14 +145,14 @@ static MV_FORCEINLINE uint32_t satd_4x4_u16_abs(const uint8_t *p1, int i1, const
     return vreinterpretq_s32_u32(vsubl_u16(vld1_u16(reinterpret_cast<const uint16_t *>(a)), vld1_u16(reinterpret_cast<const uint16_t *>(b))));
   };
   int32x4_t r0 = row(p1, p2), r1 = row(p1 + i1, p2 + i2), r2 = row(p1 + 2 * i1, p2 + 2 * i2), r3 = row(p1 + 3 * i1, p2 + 3 * i2);
-  hadamard4(r0, r1, r2, r3);
+  hadamard4_s32(r0, r1, r2, r3);
   const int32x4x2_t t0 = vtrnq_s32(r0, r1);
   const int32x4x2_t t1 = vtrnq_s32(r2, r3);
   int32x4_t c0 = vcombine_s32(vget_low_s32(t0.val[0]), vget_low_s32(t1.val[0]));
   int32x4_t c1 = vcombine_s32(vget_low_s32(t0.val[1]), vget_low_s32(t1.val[1]));
   int32x4_t c2 = vcombine_s32(vget_high_s32(t0.val[0]), vget_high_s32(t1.val[0]));
   int32x4_t c3 = vcombine_s32(vget_high_s32(t0.val[1]), vget_high_s32(t1.val[1]));
-  hadamard4(c0, c1, c2, c3); // |coef| <= 16 * 65535
+  hadamard4_s32(c0, c1, c2, c3); // |coef| <= 16 * 65535
   const uint32x4_t s = vaddq_u32(vaddq_u32(vreinterpretq_u32_s32(vabsq_s32(c0)), vreinterpretq_u32_s32(vabsq_s32(c1))),
     vaddq_u32(vreinterpretq_u32_s32(vabsq_s32(c2)), vreinterpretq_u32_s32(vabsq_s32(c3))));
   return vaddvq_u32(s);

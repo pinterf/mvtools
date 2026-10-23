@@ -39,7 +39,7 @@ namespace conc
 
 #if defined (__i386__) || defined (_M_IX86) || defined (_X86_) || defined (_M_X64) || defined (__x86_64__) || defined (__INTEL__)
 	#define conc_ARCHI conc_ARCHI_X86
-#elif defined (__arm__) || defined (__arm) || defined (__arm64__) || defined (__arm64) || defined (_M_ARM) || defined (__aarch64__)
+#elif defined (__arm__) || defined (__arm) || defined (__arm64__) || defined (__arm64) || defined (_M_ARM) || defined (_M_ARM64) || defined (__aarch64__)
 	#define conc_ARCHI conc_ARCHI_ARM
 #else
 	#error

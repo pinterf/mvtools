@@ -117,8 +117,8 @@ const long double	LN2 = 0.69314718055994530941723212145818L;
 
 #define MAX_BLOCK_SIZE 64
 
-// external asm related defines, disable them for non-windows
-#if defined(_WIN32) && !defined(__GNUC__)
+// external asm related defines (x86 NASM/MASM): MSVC x86/x64 only, not for non-windows or ARM64
+#if defined(_WIN32) && !defined(__GNUC__) && (defined(_M_IX86) || defined(_M_X64))
 //#define USE_COPYCODE_ASM // not needed: the C block copies (memcpy with constant size) compile to register moves
 #define USE_OVERLAPS_ASM
 #define USE_SAD_ASM
