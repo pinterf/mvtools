@@ -421,14 +421,8 @@ void HADAMARD4_sse2(__m128i &d10, __m128i &d32, __m128i &s10, __m128i &s32) {
 
 }
 */
-#define SUB(a,b) \
-(uint32_t)(((int)(a & 0xFFFFFFFF)) - ((int)(b & 0xFFFFFFFF))) | \
-((uint64_t)(((int)(((int64_t)a >> 32) & 0xFFFFFFFF)) - ((int)(((int64_t)b >> 32) & 0xFFFFFFFF))) << 32)
-#define ADD(a,b) \
-(uint32_t)(((int)(a & 0xFFFFFFFF)) + ((int)(b & 0xFFFFFFFF))) | \
-((uint64_t)(((int)(((int64_t)a >> 32) & 0xFFFFFFFF)) + ((int)(((int64_t)b >> 32) & 0xFFFFFFFF))) << 32)
-
-/*
+// x264 pseudo SIMD: two values in one sum2_t, lo + (hi << BITS_PER_SUM), plain + and -: the carries between the
+// halves are resolved by abs2 (exact for 8-16 bit, checked against a direct Hadamard SATD)
 #define HADAMARD4(d0, d1, d2, d3, s0, s1, s2, s3) {\
     sum2_t t0 = s0 + s1;\
     sum2_t t1 = s0 - s1;\
@@ -439,25 +433,10 @@ void HADAMARD4_sse2(__m128i &d10, __m128i &d32, __m128i &s10, __m128i &s32) {
     d1 = t1 + t3;\
     d3 = t1 - t3;\
 }
-todo why this differs from the ADD and SUB version?
-*/
-#define HADAMARD4(d0, d1, d2, d3, s0, s1, s2, s3) {\
-    sum2_t t0 = ADD(s0,s1);\
-    sum2_t t1 = SUB(s0,s1);\
-    sum2_t t2 = ADD(s2,s3);\
-    sum2_t t3 = SUB(s2,s3);\
-    d0 = ADD(t0,t2);\
-    d2 = SUB(t0,t2);\
-    d1 = ADD(t1,t3);\
-    d3 = SUB(t1,t3);\
-}
-
-// (a+b*256) - (c+d*256) = a-c + 256*(b-d) is it OK always?
 
 // in: a pseudo-simd number of the form x+(y<<16)
 // return: abs(x)+(abs(y)<<16)
 // or <<32 for 16 bit pixels
-// todo check is it OK?
 template<typename sum_t, typename sum2_t>
 static MV_FORCEINLINE sum2_t abs2( sum2_t a )
 {
