@@ -20,7 +20,7 @@ BEGIN
             VALUE "FileDescription", "Global motion compensation plugin for Avisynth\0"
             VALUE "FileVersion", "2, 16, 0, 0\0"
             VALUE "InternalName", "DePan\0"
-            VALUE "LegalCopyright", "� 2004-2016 A.G.Balakhnin, -2026 et al.\0"
+            VALUE "LegalCopyright", "(C) 2004-2016 A.G.Balakhnin, -2026 et al.\0"
             VALUE "LegalTrademarks", "\0"
             VALUE "OriginalFilename", "DePan.dll\0"
             VALUE "PrivateBuild", "\0"

@@ -20,7 +20,7 @@ BEGIN
             VALUE "FileDescription", "Global motion estimation plugin for Avisynth\0"
             VALUE "FileVersion", "2, 13, 0, 0\0"
             VALUE "InternalName", "DePanEstimate\0"
-            VALUE "LegalCopyright", "Copyright © 2004-2016,A.G.Balakhnin aka Fizick, -2026 et al\0"
+            VALUE "LegalCopyright", "Copyright (C) 2004-2016,A.G.Balakhnin aka Fizick, -2026 et al\0"
             VALUE "LegalTrademarks", "\0"
             VALUE "OriginalFilename", "DePanEstimate.dll\0"
             VALUE "PrivateBuild", "\0"

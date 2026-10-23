@@ -24,6 +24,12 @@ if (MINGW)
   set_target_properties(${PluginName} PROPERTIES IMPORT_PREFIX "")
 endif()
 
+# version resource
+if (WIN32)
+  enable_language(RC)
+  target_sources(${PluginName} PRIVATE "mvtools.rc")
+endif()
+
 if(ENABLE_INTEL_SIMD)
   #require sse4.1, there are mixed parts in the source
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DINTEL_INTRINSICS -msse4.1")
