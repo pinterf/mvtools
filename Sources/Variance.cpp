@@ -19,6 +19,9 @@
 #include <stdint.h>
 #include "CopyCode.h" // arch_t
 #include "BlockSizes.h"
+#ifdef NEON_INTRINSICS
+#include "Variance_neon.h"
+#endif
 #include <tuple>
 #include <map>
 #include "def.h"
@@ -186,6 +189,12 @@ LUMAFunction* get_luma_function(int BlockX, int BlockY, int pixelsize, arch_t ar
 func_luma[make_tuple(x, y, 2, NO_SIMD)] = Luma_C<x, y, uint16_t>;
     MVTOOLS_BLOCKSIZES(MAKE_LUMA_FN) // BlockSizes.h: the same list for all C tables
 #undef MAKE_LUMA_FN
+#ifdef NEON_INTRINSICS
+#define MAKE_LUMA_FN(x, y) func_luma[make_tuple(x, y, 1, USE_NEON)] = Luma_neon<x, y, uint8_t>; \
+func_luma[make_tuple(x, y, 2, USE_NEON)] = Luma_neon<x, y, uint16_t>;
+    MVTOOLS_BLOCKSIZES(MAKE_LUMA_FN)
+#undef MAKE_LUMA_FN
+#endif
 #ifdef INTEL_INTRINSICS
     // non-template functions come from Variance-a.asm
     func_luma[make_tuple(64, 64, 1, USE_SSE2)] = Luma8_sse2<64, 64>;
