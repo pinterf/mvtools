@@ -41,6 +41,7 @@
 #include <smmintrin.h>
 #endif
 #include <mutex>
+#include <cmath>
 #include <cassert>
 
 // FFTW is not thread-safe for plan creation/destruction.
@@ -532,12 +533,13 @@ void DCTFFTW::Float2Bytes_C(unsigned char * dstp0, int dst_pitch, float * realda
   const int middlePixelValue = 1 << (bits_per_pixel - 1);   // 128..32768 
 
   // normalization: to be compatible with integer DCTINT8
+  // DC: truncated, AC: rounded to nearest (even), the same as the SIMD versions
   dstp[0] = (pixel_t)std::min(maxPixelValue, std::max(0, int(realdata[0] * dctNormalize_DC) + middlePixelValue)); // DC;
 
   for (int i = 1; i < sizex; i += 1)
   {
     const float f = realdata[i] * dctNormalize_AC; // to be compatible with integer DCTINT8
-    dstp[i] = (pixel_t)std::min(maxPixelValue, std::max(0, int(f) + middlePixelValue));
+    dstp[i] = (pixel_t)std::min(maxPixelValue, std::max(0, int(std::lrint(f)) + middlePixelValue));
   }
 
   dstp += dst_pitch;
@@ -548,7 +550,7 @@ void DCTFFTW::Float2Bytes_C(unsigned char * dstp0, int dst_pitch, float * realda
     for (int i = 0; i < sizex; i += 1)
     {
       const float f = realdata[i] * dctNormalize_AC; // to be compatible with integer DCTINT8
-      dstp[i] = (pixel_t)std::min(maxPixelValue, std::max(0, int(f) + middlePixelValue));
+      dstp[i] = (pixel_t)std::min(maxPixelValue, std::max(0, int(std::lrint(f)) + middlePixelValue));
     }
     dstp += dst_pitch;
     realdata += floatpitch;
