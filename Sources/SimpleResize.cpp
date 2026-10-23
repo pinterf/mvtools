@@ -434,7 +434,8 @@ void SimpleResize::SimpleResizeDo_New(uint8_t *dstp8, int row_size, int height, 
 
       }
       else {
-        int result = (vWorkYW[offs] * wY1 + vWorkYW[offs + 1] * wY2 + 128) >> 8;
+        // signed: unsigned weights would turn negative vectors into big positive ones
+        int result = (vWorkYW[offs] * (int)wY1 + vWorkYW[offs + 1] * (int)wY2 + 128) >> 8;
         // resize of signed 16 bit vectors needs limiting
         if constexpr (limitIt) {
           if constexpr (isXpart)
