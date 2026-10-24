@@ -21,6 +21,10 @@
 
 
 
+// SuperParams64Bits::param bits
+// the source of MSuper was YUY2, the super clip is YV16 (Yuy2Planar.h); MShow converts its output back
+constexpr unsigned char SUPER_PARAM_YUY2_SOURCE = 1;
+
 // MVSuper parameters packed to 64 bit num_audio_samples
 class SuperParams64Bits
 {
@@ -31,7 +35,7 @@ public:
   unsigned char nPel;
   unsigned char nModeYUV;
   unsigned char nLevels;
-  unsigned char param;
+  unsigned char param; // SUPER_PARAM_ flags
 };
 
 

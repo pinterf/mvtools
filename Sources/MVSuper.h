@@ -133,7 +133,7 @@ public:
   MVSuper(
     PClip _child, int _hpad, int _vpad, int pel, int _levels, bool _chroma,
     int _sharp, int _rfilter, PClip _pelclip, bool _isse, bool _planar,
-    bool mt_flag, IScriptEnvironment* env
+    bool mt_flag, bool yuy2_source, IScriptEnvironment* env
   );
   ~MVSuper();
 

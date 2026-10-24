@@ -44,7 +44,7 @@ int64_t ProfCumulatedResults[MOTION_PROFILE_COUNT * 2];
 MVSuper::MVSuper(
   PClip _child, int _hPad, int _vPad, int _pel, int _levels, bool _chroma,
   int _sharp, int _rfilter, PClip _pelclip, bool _isse, bool _planar,
-  bool mt_flag, IScriptEnvironment* env
+  bool mt_flag, bool yuy2_source, IScriptEnvironment* env
 )
   : GenericVideoFilter(_child)
   , pelclip(_pelclip)
@@ -155,6 +155,7 @@ MVSuper::MVSuper(
   params.nPel = nPel;
   params.nModeYUV = nModeYUV;
   params.nLevels = nLevels;
+  params.param = yuy2_source ? SUPER_PARAM_YUY2_SOURCE : 0;
 
 
   // pack parameters to fake audio properties

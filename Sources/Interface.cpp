@@ -39,6 +39,8 @@
 #include "MVDegrain3.h"
 #include "MDegrainN.h"
 #include "Stacked16.h"
+#include "SuperParams64Bits.h"
+#include "Yuy2Planar.h"
 #include "MVBlockFps.h"
 
 // Analysing filter
@@ -58,6 +60,17 @@
 
 
 
+// YUY2 source: the filter is made on its YV16 conversion, the result goes back to YUY2 (Yuy2Planar.h)
+template <typename Make>
+static AVSValue yuy2_wrapped(const PClip& source, bool planar, IScriptEnvironment* env, Make make)
+{
+  const bool yuy2 = source->GetVideoInfo().IsYUY2();
+  PClip result = make(yuy2_to_yv16(source, planar, env));
+  if (yuy2)
+    return yv16_to_yuy2(result, planar, env);
+  return result;
+}
+
 AVSValue __cdecl Create_Padding(AVSValue args, void* user_data, IScriptEnvironment* env)
 {
   return new Padding(
@@ -74,7 +87,12 @@ AVSValue __cdecl Create_MVShow(AVSValue args, void* user_data, IScriptEnvironmen
   int sc = 1;
   int sil = 0;
   int tol = 20000;
-  return new MVShow(
+  // a super clip made from a YUY2 source is YV16: the result goes back to YUY2 (Yuy2Planar.h)
+  SuperParams64Bits params;
+  memcpy(&params, &args[0].AsClip()->GetVideoInfo().num_audio_samples, 8);
+  const bool yuy2 = (params.param & SUPER_PARAM_YUY2_SOURCE) != 0;
+  const bool planar = args[10].AsBool(false);
+  PClip show = new MVShow(
     args[0].AsClip(),       // super
     args[1].AsClip(),       // vec
     args[2].AsInt(sc),
@@ -85,17 +103,22 @@ AVSValue __cdecl Create_MVShow(AVSValue args, void* user_data, IScriptEnvironmen
     args[7].AsInt(MV_DEFAULT_SCD1),
     args[8].AsInt(MV_DEFAULT_SCD2),
     args[9].AsBool(true),
-    args[10].AsBool(false), // planar
+    false, // planar: a YUY2 source is converted
     env
   );
+  if (yuy2)
+    return yv16_to_yuy2(show, planar, env);
+  return show;
 }
 
 AVSValue __cdecl Create_MVCompensate(AVSValue args, void* user_data, IScriptEnvironment* env)
 {
   const sad_t thsad = args[5].AsInt(10000);   // thSAD
 
+  const bool planar = args[11].AsBool(false);
+  return yuy2_wrapped(args[0].AsClip(), planar, env, [&](const PClip& source) -> PClip {
   return new MVCompensate(
-    args[0].AsClip(),       // source
+    source,       // source
     args[1].AsClip(),       // super
     args[2].AsClip(),       // vec
     args[3].AsBool(true),
@@ -106,27 +129,29 @@ AVSValue __cdecl Create_MVCompensate(AVSValue args, void* user_data, IScriptEnvi
     args[8].AsInt(MV_DEFAULT_SCD1),
     args[9].AsInt(MV_DEFAULT_SCD2),
     args[10].AsBool(true),
-    args[11].AsBool(false), // planar
+    false, // planar: a YUY2 source is converted (Yuy2Planar.h)
     args[12].AsBool(true),  // mt
     args[13].AsInt(0),		// tr
     args[14].AsBool(true),	// center
-    args[15].IsClip() ? args[15].AsClip() : 0, // cclip
+    args[15].IsClip() ? yuy2_to_yv16(args[15].AsClip(), planar, env) : 0, // cclip
     args[16].AsInt(thsad),  // thSAD2  todo sad_t float
     env
-  );
+  ); });
 }
 
 AVSValue __cdecl Create_MVSCDetection(AVSValue args, void* user_data, IScriptEnvironment* env)
 {
+  const bool planar = false;
+  return yuy2_wrapped(args[0].AsClip(), planar, env, [&](const PClip& source) -> PClip {
   return new MVSCDetection(
-    args[0].AsClip(),
+    source,
     args[1].AsClip(),
     args[2].AsFloatf(-9999.0f),
     args[3].AsInt(MV_DEFAULT_SCD1),
     args[4].AsInt(MV_DEFAULT_SCD2),
     args[5].AsBool(true),
     env
-  );
+  ); });
 }
 
 AVSValue __cdecl Create_MVAnalyse(AVSValue args, void* user_data, IScriptEnvironment* env)
@@ -205,8 +230,10 @@ AVSValue __cdecl Create_MVMask(AVSValue args, void*, IScriptEnvironment* env)
     env->ThrowError("MVMask: ML must be > 0.0");
   float gamma = 1;
   int Ysc = 0;
+  const bool planar = args[10].AsBool(false);
+  return yuy2_wrapped(args[0].AsClip(), planar, env, [&](const PClip& source) -> PClip {
   return new MVMask(
-    args[0].AsClip(), // source
+    source, // source
     args[1].AsClip(), // vec
     ml,
     args[3].AsFloat(gamma),
@@ -216,9 +243,9 @@ AVSValue __cdecl Create_MVMask(AVSValue args, void*, IScriptEnvironment* env)
     args[7].AsInt(MV_DEFAULT_SCD1),
     args[8].AsInt(MV_DEFAULT_SCD2),
     args[9].AsBool(true),
-    args[10].AsBool(false),
+    false, // planar: a YUY2 source is converted (Yuy2Planar.h)
     env
-  );
+  ); });
 }
 
 AVSValue __cdecl Create_MVDepan(AVSValue args, void*, IScriptEnvironment* env) // Added by Fizick
@@ -253,8 +280,10 @@ AVSValue __cdecl Create_MVFlow(AVSValue args, void*, IScriptEnvironment* env)
     env->ThrowError("MVFlow: Time must be from 0 to 100 percent.");
   }
   int time256 = int(time*256.0 / 100.0);
+  const bool planar = args[9].AsBool(false);
+  return yuy2_wrapped(args[0].AsClip(), planar, env, [&](const PClip& source) -> PClip {
   return new MVFlow(
-    args[0].AsClip(),      // source
+    source,      // source
     args[1].AsClip(),      // super
     args[2].AsClip(),      // vec
     time256,
@@ -263,10 +292,10 @@ AVSValue __cdecl Create_MVFlow(AVSValue args, void*, IScriptEnvironment* env)
     args[6].AsInt(MV_DEFAULT_SCD1),
     args[7].AsInt(MV_DEFAULT_SCD2),
     args[8].AsBool(true),
-    args[9].AsBool(false), // planar
-    args[10].IsClip() ? args[10].AsClip() : 0,
+    false, // planar: a YUY2 source is converted (Yuy2Planar.h)
+    args[10].IsClip() ? yuy2_to_yv16(args[10].AsClip(), planar, env) : 0, // tclip
     env
-  );
+  ); });
 }
 
 AVSValue __cdecl Create_MVFlowInter(AVSValue args, void*, IScriptEnvironment* env)
@@ -282,8 +311,10 @@ AVSValue __cdecl Create_MVFlowInter(AVSValue args, void*, IScriptEnvironment* en
   {
     env->ThrowError("MVFlowInter: ML must be > 0.0");
   }
+  const bool planar = args[10].AsBool(false);
+  return yuy2_wrapped(args[0].AsClip(), planar, env, [&](const PClip& source) -> PClip {
   return new MVFlowInter(
-    args[0].AsClip(),       // source
+    source,       // source
     args[1].AsClip(),       // finest
     args[2].AsClip(),       // mvbw
     args[3].AsClip(),       // mvfw
@@ -293,8 +324,8 @@ AVSValue __cdecl Create_MVFlowInter(AVSValue args, void*, IScriptEnvironment* en
     args[7].AsInt(MV_DEFAULT_SCD1),
     args[8].AsInt(MV_DEFAULT_SCD2),
     args[9].AsBool(true),   // isse
-    args[10].AsBool(false), // planar
-    env);
+    false, // planar: a YUY2 source is converted (Yuy2Planar.h)
+    env); });
 }
 
 AVSValue __cdecl Create_MVFlowFps(AVSValue args, void*, IScriptEnvironment* env)
@@ -304,8 +335,10 @@ AVSValue __cdecl Create_MVFlowFps(AVSValue args, void*, IScriptEnvironment* env)
   {
     env->ThrowError("MVFlowFps: ML must be > 0.0");
   }
+  const bool planar = args[12].AsBool(false);
+  return yuy2_wrapped(args[0].AsClip(), planar, env, [&](const PClip& source) -> PClip {
   return new MVFlowFps(
-    args[0].AsClip(),       // source
+    source,       // source
     args[1].AsClip(),       // finest
     args[2].AsClip(),       // mvbw
     args[3].AsClip(),       // mvfw
@@ -317,10 +350,10 @@ AVSValue __cdecl Create_MVFlowFps(AVSValue args, void*, IScriptEnvironment* env)
     args[9].AsInt(MV_DEFAULT_SCD1),
     args[10].AsInt(MV_DEFAULT_SCD2),
     args[11].AsBool(true),  // isse
-    args[12].AsBool(false), // planar
+    false, // planar: a YUY2 source is converted (Yuy2Planar.h)
     args[13].AsInt(0), // optDebug
     env
-  );
+  ); });
 }
 
 AVSValue __cdecl Create_MVFlowBlur(AVSValue args, void*, IScriptEnvironment* env)
@@ -331,8 +364,10 @@ AVSValue __cdecl Create_MVFlowBlur(AVSValue args, void*, IScriptEnvironment* env
     env->ThrowError("MVFlowBlur: Blur time must be from 0 to 200 percent.");
   }
   int blur256 = int(time*256.0 / 200.0);
+  const bool planar = args[9].AsBool(false);
+  return yuy2_wrapped(args[0].AsClip(), planar, env, [&](const PClip& source) -> PClip {
   return new MVFlowBlur(
-    args[0].AsClip(),      // source
+    source,      // source
     args[1].AsClip(),      // finest
     args[2].AsClip(),      // mvbw
     args[3].AsClip(),      // mvfw
@@ -341,9 +376,9 @@ AVSValue __cdecl Create_MVFlowBlur(AVSValue args, void*, IScriptEnvironment* env
     args[6].AsInt(MV_DEFAULT_SCD1),
     args[7].AsInt(MV_DEFAULT_SCD2),
     args[8].AsBool(true),  // isse
-    args[9].AsBool(false), // planar
+    false, // planar: a YUY2 source is converted (Yuy2Planar.h)
     env
-  );
+  ); });
 }
 
 // lsb=true: the out16=true result in the stacked 16 bit format (Stacked16), the source checks of both
@@ -402,8 +437,12 @@ AVSValue __cdecl Create_MVDegrainX(AVSValue args, void* user_data, IScriptEnviro
   const bool out16 = args[15 + param_index_shift].AsBool(false);
   if (lsb)
     check_lsb_source(args[0].AsClip()->GetVideoInfo(), out16, "MDegrainX", env);
+  if (out16 && args[0].AsClip()->GetVideoInfo().IsYUY2())
+    env->ThrowError("MDegrainX : only Y8, YV12, YV16 or YV24 allowed for out16");
+  const bool planar = args[12 + param_index_shift].AsBool(false);
+  return yuy2_wrapped(args[0].AsClip(), planar, env, [&](const PClip& source) -> PClip {
   PClip degrain = new MVDegrainX(
-    args[0].AsClip(),       // source
+    source,                 // source
     args[1].AsClip(),       // super
     args[2].AsClip(),       // mvbw
     args[3].AsClip(),       // mvfw
@@ -425,7 +464,7 @@ AVSValue __cdecl Create_MVDegrainX(AVSValue args, void* user_data, IScriptEnviro
     args[9 + param_index_shift].AsInt(MV_DEFAULT_SCD1), // thSCD1
     args[10 + param_index_shift].AsInt(MV_DEFAULT_SCD2), // thSCD2
     args[11 + param_index_shift].AsBool(true),  // isse
-    args[12 + param_index_shift].AsBool(false), // planar
+    false, // planar: a YUY2 source is converted (Yuy2Planar.h)
     args[14 + param_index_shift].AsBool(true),  // mt
     out16 || lsb,           // out16
     level,
@@ -433,7 +472,7 @@ AVSValue __cdecl Create_MVDegrainX(AVSValue args, void* user_data, IScriptEnviro
   );
   if (lsb)
     return new Stacked16(degrain, env);
-  return degrain;
+  return degrain; });
 }
 
 AVSValue __cdecl Create_MDegrainN(AVSValue args, void*, IScriptEnvironment* env)
@@ -472,6 +511,10 @@ AVSValue __cdecl Create_MDegrainN(AVSValue args, void*, IScriptEnvironment* env)
   const bool out16 = args[17].AsBool(false);
   if (lsb)
     check_lsb_source(args[0].AsClip()->GetVideoInfo(), out16, "MDegrainN", env);
+  if (out16 && args[0].AsClip()->GetVideoInfo().IsYUY2())
+    env->ThrowError("MDegrainN : only Y8, YV12, YV16 or YV24 allowed for out16");
+  const bool planar = args[12].AsBool(false);
+  return yuy2_wrapped(args[0].AsClip(), planar, env, [&](const PClip& source) -> PClip {
   PClip degrain;
 
   // Switch to MDegrain1/2/3/4/5/6 when possible (faster)
@@ -481,7 +524,7 @@ AVSValue __cdecl Create_MDegrainN(AVSValue args, void*, IScriptEnvironment* env)
     {
 
       degrain = new MVDegrainX(
-        args[0].AsClip(),        // source
+        source,                  // source
         args[1].AsClip(),        // super clip
         args[2].AsClip(),        // mvbw
         ::PClip(),                // mvfw
@@ -503,7 +546,7 @@ AVSValue __cdecl Create_MDegrainN(AVSValue args, void*, IScriptEnvironment* env)
         args[9].AsInt(MV_DEFAULT_SCD1),  // thSCD1
         args[10].AsInt(MV_DEFAULT_SCD2), // thSCD2
         args[11].AsBool(true),   // isse
-        args[12].AsBool(false),  // planar
+        false, // planar: a YUY2 source is converted (Yuy2Planar.h)
         args[16].AsBool(true),   // mt
         out16 || lsb,            // out16
         tr, // PF: level
@@ -514,7 +557,7 @@ AVSValue __cdecl Create_MDegrainN(AVSValue args, void*, IScriptEnvironment* env)
   // Standard MDegrainN
   if (!degrain)
     degrain = new MDegrainN(
-    args[0].AsClip(),        // source
+    source,                  // source
     args[1].AsClip(),        // super clip
     args[2].AsClip(),        // mvmulti
     tr,                        // tr
@@ -526,7 +569,7 @@ AVSValue __cdecl Create_MDegrainN(AVSValue args, void*, IScriptEnvironment* env)
     args[9].AsInt(MV_DEFAULT_SCD1),  // thSCD1
     args[10].AsInt(MV_DEFAULT_SCD2), // thSCD2
     args[11].AsBool(true),   // isse
-    args[12].AsBool(false),  // planar
+    false, // planar: a YUY2 source is converted (Yuy2Planar.h)
     thSAD2,                    // thSAD2
     thSADC2,                   // thSADC2
     args[16].AsBool(true),   // mt
@@ -535,7 +578,7 @@ AVSValue __cdecl Create_MDegrainN(AVSValue args, void*, IScriptEnvironment* env)
   );
   if (lsb)
     return new Stacked16(degrain, env);
-  return degrain;
+  return degrain; });
 }
 
 AVSValue __cdecl Create_MVRecalculate(AVSValue args, void*, IScriptEnvironment* env)
@@ -588,8 +631,10 @@ AVSValue __cdecl Create_MVRecalculate(AVSValue args, void*, IScriptEnvironment* 
 
 AVSValue __cdecl Create_MVBlockFps(AVSValue args, void*, IScriptEnvironment* env)
 {
+  const bool planar = args[12].AsBool(false);
+  return yuy2_wrapped(args[0].AsClip(), planar, env, [&](const PClip& source) -> PClip {
   return new MVBlockFps(
-    args[0].AsClip(),       // src
+    source,       // src
     args[1].AsClip(),       // super
     args[2].AsClip(),       // bw
     args[3].AsClip(),       // fw
@@ -601,16 +646,18 @@ AVSValue __cdecl Create_MVBlockFps(AVSValue args, void*, IScriptEnvironment* env
     args[9].AsInt(MV_DEFAULT_SCD1),
     args[10].AsInt(MV_DEFAULT_SCD2),
     args[11].AsBool(true),  // isse2
-    args[12].AsBool(false), // planar
+    false, // planar: a YUY2 source is converted (Yuy2Planar.h)
     args[13].AsBool(true),  // mt
     env
-  );
+  ); });
 }
 
 AVSValue __cdecl Create_MVSuper(AVSValue args, void*, IScriptEnvironment* env)
 {
+  // YUY2: the super clip is made from YV16 (Yuy2Planar.h) and stays YV16, flagged for MShow
+  const bool planar = args[10].AsBool(false);
   return new MVSuper(
-    args[0].AsClip(),      // source
+    yuy2_to_yv16(args[0].AsClip(), planar, env), // source
     args[1].AsInt(8),      // hpad
     args[2].AsInt(8),      // vpad
     args[3].AsInt(2),      // pel
@@ -618,10 +665,11 @@ AVSValue __cdecl Create_MVSuper(AVSValue args, void*, IScriptEnvironment* env)
     args[5].AsBool(true),  // chroma
     args[6].AsInt(2),      // sharp
     args[7].AsInt(2),      // rfilter
-    (args[8].Defined() ? args[8].AsClip() : 0), // pelclip
+    (args[8].Defined() ? yuy2_to_yv16(args[8].AsClip(), planar, env) : 0), // pelclip
     args[9].AsBool(true),   // isse2
-    args[10].AsBool(false), // planar
+    false, // planar: a YUY2 source is converted
     args[11].AsBool(true), // mt
+    args[0].AsClip()->GetVideoInfo().IsYUY2(), // yuy2_source
     env
   );
 }
