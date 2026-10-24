@@ -49,8 +49,9 @@ unsigned int Sad_sse2(const uint8_t* pSrc, int nSrcPitch8, const uint8_t* pRef, 
   const int nSrcPitch = nSrcPitch8;
   const int nRefPitch = nRefPitch8;
 
-  constexpr int vert_inc = ((nBlkWidth % 16 != 0 && nBlkWidth % 8 == 0)) && (nBlkHeight % 8) == 0 ? 8 : nBlkHeight % 4 == 0 ? 4 : nBlkHeight % 2 == 0 ? 2 : 1;
-  // unrolled 8, 4, 2 option; 8 implemented only for wmod8
+  constexpr int vert_inc = (nBlkWidth == 8 && (nBlkHeight % 8) == 0) ? 8 : nBlkHeight % 4 == 0 ? 4 : nBlkHeight % 2 == 0 ? 2 : 1;
+  // unrolled 8, 4, 2 option; 8 implemented only for the 8 pixel part (16 pixel parts: up to 4 rows)
+  // a row is 16 pixel parts, then an 8, a 4 and a 2 pixel part when the width has them (e.g. 12: 8 + 4, 6: 4 + 2)
 
   __m128i acc = _mm_setzero_si128();
   for (int y = 0; y < nBlkHeight; y += vert_inc)
@@ -77,7 +78,7 @@ unsigned int Sad_sse2(const uint8_t* pSrc, int nSrcPitch8, const uint8_t* pRef, 
         acc = _mm_add_epi32(acc, sad1);
       }
     }
-    if constexpr (nBlkWidth % 16 != 0 && nBlkWidth % 8 == 0) {
+    if constexpr (nBlkWidth % 16 >= 8) {
       for (int x = nBlkWidth / 16 * 16; x < nBlkWidth / 8 * 8; x += 8) {
         auto dst1 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(pRef + x));
         auto src1 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(pSrc + x));
@@ -116,7 +117,7 @@ unsigned int Sad_sse2(const uint8_t* pSrc, int nSrcPitch8, const uint8_t* pRef, 
         }
       }
     }
-    if constexpr (nBlkWidth % 8 != 0 && nBlkWidth % 4 == 0) {
+    if constexpr (nBlkWidth % 8 >= 4) {
       for (int x = nBlkWidth / 8 * 8; x < nBlkWidth / 4 * 4; x += 4) {
         auto dst1 = _mm_cvtsi32_si128(*reinterpret_cast<const uint32_t*>(pRef + x));
         auto src1 = _mm_cvtsi32_si128(*reinterpret_cast<const uint32_t*>(pSrc + x));
@@ -137,7 +138,7 @@ unsigned int Sad_sse2(const uint8_t* pSrc, int nSrcPitch8, const uint8_t* pRef, 
         }
       }
     }
-    if constexpr (nBlkWidth % 4 != 0 && nBlkWidth % 2 == 0) {
+    if constexpr (nBlkWidth % 4 >= 2) {
       for (int x = nBlkWidth / 4 * 4; x < nBlkWidth / 2 * 2; x += 2) {
         auto dst1 = _mm_cvtsi32_si128(*reinterpret_cast<const uint16_t*>(pRef + x));
         auto src1 = _mm_cvtsi32_si128(*reinterpret_cast<const uint16_t*>(pSrc + x));
