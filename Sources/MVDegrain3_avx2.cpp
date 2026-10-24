@@ -200,8 +200,8 @@ void Degrain1to6_avx2(BYTE* pDst, BYTE* pDstLsb, int WidthHeightForC, int nDstPi
 
         if constexpr (blockWidth == 12) {
           // 8 from the first, 4 from the second cycle
-          if (x == 0) { // 1st 8 pixels 16 bytes
-            _mm_store_si128((__m128i*)(pDst + x * 2), val);
+          if (x == 0) { // 1st 8 pixels 16 bytes; unaligned: blocks start at 24 byte steps
+            _mm_storeu_si128((__m128i*)(pDst + x * 2), val);
           }
           else { // 2nd: 4 pixels 8 bytes bytes
             _mm_storel_epi64((__m128i*)(pDst + x * 2), val);
@@ -209,7 +209,7 @@ void Degrain1to6_avx2(BYTE* pDst, BYTE* pDstLsb, int WidthHeightForC, int nDstPi
         }
         else if constexpr (blockWidth >= 8) {
           // 8, 16, 24, ....
-          _mm_store_si128((__m128i*)(pDst + x * 2), val);
+          _mm_storeu_si128((__m128i*)(pDst + x * 2), val);
         }
         else if constexpr (blockWidth == 6) {
           // x is always 0
