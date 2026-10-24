@@ -66,6 +66,7 @@ void write_depan_data(uint8_t *dstp, int framefirst, int framelast, float motion
     header.signature[i] = signaturegood[i];
   }
 
+  header.reserved = 0;
   header.nframes = framelast - framefirst + 1; // number of frames to write motion info about
 
   int sizeheader = sizeof(header);

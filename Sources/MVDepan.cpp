@@ -125,6 +125,7 @@ void MVDepan::write_depan_data1(unsigned char *dstp, int frame, float motionx, f
     header.signature[i] = signaturegood[i];
   }
 
+  header.reserved = 0;
   header.nframes = 1;// framelast - framefirst +1; // number of frames to write motion info about
 
   int sizeheader = sizeof(header);
@@ -158,6 +159,7 @@ void MVDepan::write_depan_data(unsigned char *dstp, int framefirst, int framelas
     header.signature[i] = signaturegood[i];
   }
 
+  header.reserved = 0;
   header.nframes = framelast - framefirst + 1; // number of frames to write motion info about
 
   int sizeheader = sizeof(header);
