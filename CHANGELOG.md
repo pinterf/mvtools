@@ -1,5 +1,5 @@
 Change log
-- 2.7.48 (20261016)
+- 2.7.48 (20261024)
   - Feature request #68: adding search_coarse from SVP fork: MAnalyse: new parameters search_coarse.
   - MAnalyse: Add parameter trymanyall, which allows trymany for the finest level as well (default false to not decrease speed)
   - Fix (#69, #51): 32 bit float clips with overlap: garbage (black) output in MDegrain1-6, MDegrainN, MCompensate, MBlockFps.
@@ -46,6 +46,68 @@ Change log
     What users could see: a faint static grid on bright, smooth areas, following the block overlap layout
     (pixels 0.05% too dark or too bright, larger on brighter areas), mostly after strong grading or contrast boost
     of 12-16 bit material. Degrain strength was not affected, only this small level error in the overlap zones.
+
+  Fixes, all builds
+  - Fix: MSuper with an odd chroma width or height (e.g. 854x480 4:2:0): the first coarser level was reduced from
+    level 0 before level 0 was padded, so the coarser levels, and the vectors of MAnalyse/MRecalculate, depended on
+    uninitialized memory (non-deterministic output). Vectors of such clips change.
+  - Fix: MCompensate cclip was ignored (the parameter was read from the thSAD2 argument). With tr > 0 the center frames
+    come from cclip now, as documented.
+
+  Fixes, C path (non-x86 builds, and x86 with SetMaxCPU("none"))
+  - Fix: MFlow, MFlowInter, MFlowFps, MFlowBlur, MBlockFps: heap corruption (crash) in the vector upsizer: rows were
+    written past the end of the buffer. Vector limiting is now done per pixel, giving the same vectors as SSE2.
+  - Fix: MAnalyse, MRecalculate dct modes, 8 bit: the block luma sum overflowed for bright blocks of 129..256 pixels
+    (16x16, 12x12, 8x32, ...).
+  - Fix: MAnalyse, MRecalculate dct=5..10, 10-16 bit: wrong SATD for most blocks.
+  - MAnalyse, MRecalculate dct=1..4: the DCT AC coefficients are rounded to nearest like the SIMD versions (were
+    truncated, biased towards zero). The C path gives the same vectors as the x86 SIMD path now.
+
+  Fixes, Intel SIMD
+  - Fix: MFlow, MFlowInter, MFlowFps, MFlowBlur: wrong (clamped) values for negative vectors in the last 1-3 columns of
+    the upsized vector field when its width is not a multiple of 4: MFlowBlur at any width not mod 4; the others when the
+    padded luma or chroma width is not mod 4 (e.g. blksize 4, 6, 12).
+  - Fix: MDegrain1-6 out16=true: crash with block width 12 (luma blksize 12, or 24 with 4:2:0 / 4:2:2 chroma).
+  - Fix: 8 bit SAD for block widths 6 and 12, and 24x24, 24x32, 24x48: only a part of the block was compared (the last
+    4 or 2 columns, or 4 of every 8 rows), MAnalyse gave bad vectors. Builds without the external asm only: Linux and
+    macOS on x86, MinGW (GCC, llvm-mingw). The MSVC and ClangCL builds were not affected.
+  - Fix: YUY2 with planar=true, limit and a width not a multiple of 16: crash in MDegrain1-6, MDegrainN.
+  - Fix: x64 MinGW builds: the 64 bit atomic compare-exchange used 32 bit address registers.
+
+  Optimizations
+  - New aarch64 (ARM64) NEON code paths, bit-identical to the C path:
+    - SAD (all block sizes, 8 and 10-16 bit), SATD for dct=5..10 (8 and 10-16 bit)
+    - DCT modes (dct=1..4): pixel <-> float conversion of the fftw DCT, 8 and 10-16 bit
+    - block luma sums (dct modes), 8 and 10-16 bit
+    - MSuper: all rfilter reducers, all sharp refines, the pel=4 averaging, 8-16 bit
+    - overlapped block output (8, 10-16 bit, float)
+    - MDegrain1-6, MDegrainN (8 bit, out16, 10-16 bit; MDegrainN also 32 bit float)
+  - MFlow, MFlowBlur, MFlowFps with pel=2 and pel=4: the subpixel plane merge is vectorized by the compilers
+    (all platforms).
+
+  Code simplification (no change in output unless noted)
+  - MDegrain1-6, MDegrainN lsb=true: implemented as the out16=true result converted to the stacked format (MSB rows on
+    top of the LSB rows, 8 bit clip of double height). All stacked-output kernels and overlap functions are removed.
+    - Output is identical except with limit/limitC < 255: the stacked path limited the MSB half only, now the
+      16 bit value is limited (as with out16=true).
+    - lsb=true with a YUY2 source is an error now (as out16=true).
+  - YUY2: converted to YV16 at the filter boundary, the filters work on YV16 only. planar=false (normal YUY2):
+    ConvertToYV16 before, ConvertToYUY2 after; planar=true (the planar YUY2 layout of Interleaved2Planar): repacked the
+    same way. The internal YUY2 code of all filters is removed. Output is unchanged.
+    - The super clip of a YUY2 source is YV16 (was a planar-layout YUY2 clip); MShow converts its output back to YUY2.
+    - MDepan keeps its own YUY2 handling (its output is a data clip).
+
+  Build environment
+  - CMake: aarch64 targets are detected, NEON is enabled (ENABLE_NEON_SIMD), x86 SIMD flags and files are used on
+    Intel targets only. A C-only build compiles and runs on any target.
+  - Windows on ARM64: build_arm64_mingw.bat, cross-compiled on x64 Windows with llvm-mingw (UCRT), CMake and Ninja;
+    libc++ is linked statically, the DLLs need only system DLLs. MvTools2, DePan and DePanEstimate.
+    The DCT modes and DePanEstimate need an ARM64 libfftw3f-3.dll.
+  - The sources compile with MSVC for ARM64 as well.
+  - CMake builds for Windows (MinGW, llvm-mingw) include the version resources of all three DLLs.
+  - Linux aarch64: the DCT modes and DePanEstimate need the fftw library (libfftw3-single3 / fftw), as on x86.
+  - Note: aarch64 vs x86 output differs slightly for 32 bit float clips (fused multiply-add) and in the DCT modes
+    (fftw), as between different compilers.
 
 - 2.7.47 (20260424)
   - Update Avisynth headers to V12 interface (AcquireGlobalLock/ReleaseGlobalLock support)
