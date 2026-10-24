@@ -73,15 +73,15 @@ unsigned int Sad_neon(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, i
         acc[3] = vabal_u8(acc[3], load_4x8(pSrc), load_4x8(pRef));
     }
     else {
-      constexpr int w16 = nBlkWidth / 16 * 16;
-      constexpr bool has8 = (nBlkWidth % 16) >= 8;
-      constexpr int x4 = w16 + (has8 ? 8 : 0);
-      constexpr bool has4 = (nBlkWidth - x4) >= 4;
-      constexpr int x2 = x4 + (has4 ? 4 : 0);
-      constexpr bool has2 = (nBlkWidth - x2) >= 2;
-      constexpr int x1 = x2 + (has2 ? 2 : 0);
-      constexpr int nSteps = w16 / 16 + has8 + has4 + has2; // vector steps per row
-      constexpr int G = (nSteps == 0 || nSteps >= 4) ? 1 : 4 / nSteps; // rows per round
+      static constexpr int w16 = nBlkWidth / 16 * 16;
+      static constexpr bool has8 = (nBlkWidth % 16) >= 8;
+      static constexpr int x4 = w16 + (has8 ? 8 : 0);
+      static constexpr bool has4 = (nBlkWidth - x4) >= 4;
+      static constexpr int x2 = x4 + (has4 ? 4 : 0);
+      static constexpr bool has2 = (nBlkWidth - x2) >= 2;
+      static constexpr int x1 = x2 + (has2 ? 2 : 0);
+      static constexpr int nSteps = w16 / 16 + has8 + has4 + has2; // vector steps per row
+      static constexpr int G = (nSteps == 0 || nSteps >= 4) ? 1 : 4 / nSteps; // rows per round
       auto row = [&](int r) { // r: row in the round
         int k = r * nSteps;
         for (int x = 0; x < w16; x += 16, k++)
@@ -119,11 +119,11 @@ unsigned int Sad_neon(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, i
   }
   else {
     uint32x4_t acc[4] = { vdupq_n_u32(0), vdupq_n_u32(0), vdupq_n_u32(0), vdupq_n_u32(0) };
-    constexpr int w8 = nBlkWidth / 8 * 8;
-    constexpr bool has4 = (nBlkWidth % 8) >= 4;
-    constexpr int x1 = w8 + (has4 ? 4 : 0);
-    constexpr int nSteps = w8 / 8 + has4;
-    constexpr int G = (nSteps == 0 || nSteps >= 4) ? 1 : 4 / nSteps;
+    static constexpr int w8 = nBlkWidth / 8 * 8;
+    static constexpr bool has4 = (nBlkWidth % 8) >= 4;
+    static constexpr int x1 = w8 + (has4 ? 4 : 0);
+    static constexpr int nSteps = w8 / 8 + has4;
+    static constexpr int G = (nSteps == 0 || nSteps >= 4) ? 1 : 4 / nSteps;
     auto row = [&](int r) {
       const uint16_t *s = reinterpret_cast<const uint16_t *>(pSrc);
       const uint16_t *rf = reinterpret_cast<const uint16_t *>(pRef);
