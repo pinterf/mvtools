@@ -71,17 +71,6 @@ static AVSValue yuy2_wrapped(const PClip& source, bool planar, IScriptEnvironmen
   return result;
 }
 
-AVSValue __cdecl Create_Padding(AVSValue args, void* user_data, IScriptEnvironment* env)
-{
-  return new Padding(
-    args[0].AsClip(),
-    args[1].AsInt(8),
-    args[2].AsInt(8),
-    args[3].AsBool(false), // planar
-    env
-  );
-}
-
 AVSValue __cdecl Create_MVShow(AVSValue args, void* user_data, IScriptEnvironment* env)
 {
   int sc = 1;
@@ -103,7 +92,6 @@ AVSValue __cdecl Create_MVShow(AVSValue args, void* user_data, IScriptEnvironmen
     args[7].AsInt(MV_DEFAULT_SCD1),
     args[8].AsInt(MV_DEFAULT_SCD2),
     args[9].AsBool(true),
-    false, // planar: a YUY2 source is converted
     env
   );
   if (yuy2)
@@ -129,7 +117,6 @@ AVSValue __cdecl Create_MVCompensate(AVSValue args, void* user_data, IScriptEnvi
     args[8].AsInt(MV_DEFAULT_SCD1),
     args[9].AsInt(MV_DEFAULT_SCD2),
     args[10].AsBool(true),
-    false, // planar: a YUY2 source is converted (Yuy2Planar.h)
     args[12].AsBool(true),  // mt
     args[13].AsInt(0),		// tr
     args[14].AsBool(true),	// center
@@ -243,7 +230,6 @@ AVSValue __cdecl Create_MVMask(AVSValue args, void*, IScriptEnvironment* env)
     args[7].AsInt(MV_DEFAULT_SCD1),
     args[8].AsInt(MV_DEFAULT_SCD2),
     args[9].AsBool(true),
-    false, // planar: a YUY2 source is converted (Yuy2Planar.h)
     env
   ); });
 }
@@ -292,7 +278,6 @@ AVSValue __cdecl Create_MVFlow(AVSValue args, void*, IScriptEnvironment* env)
     args[6].AsInt(MV_DEFAULT_SCD1),
     args[7].AsInt(MV_DEFAULT_SCD2),
     args[8].AsBool(true),
-    false, // planar: a YUY2 source is converted (Yuy2Planar.h)
     args[10].IsClip() ? yuy2_to_yv16(args[10].AsClip(), planar, env) : 0, // tclip
     env
   ); });
@@ -324,7 +309,6 @@ AVSValue __cdecl Create_MVFlowInter(AVSValue args, void*, IScriptEnvironment* en
     args[7].AsInt(MV_DEFAULT_SCD1),
     args[8].AsInt(MV_DEFAULT_SCD2),
     args[9].AsBool(true),   // isse
-    false, // planar: a YUY2 source is converted (Yuy2Planar.h)
     env); });
 }
 
@@ -350,7 +334,6 @@ AVSValue __cdecl Create_MVFlowFps(AVSValue args, void*, IScriptEnvironment* env)
     args[9].AsInt(MV_DEFAULT_SCD1),
     args[10].AsInt(MV_DEFAULT_SCD2),
     args[11].AsBool(true),  // isse
-    false, // planar: a YUY2 source is converted (Yuy2Planar.h)
     args[13].AsInt(0), // optDebug
     env
   ); });
@@ -376,7 +359,6 @@ AVSValue __cdecl Create_MVFlowBlur(AVSValue args, void*, IScriptEnvironment* env
     args[6].AsInt(MV_DEFAULT_SCD1),
     args[7].AsInt(MV_DEFAULT_SCD2),
     args[8].AsBool(true),  // isse
-    false, // planar: a YUY2 source is converted (Yuy2Planar.h)
     env
   ); });
 }
@@ -464,7 +446,6 @@ AVSValue __cdecl Create_MVDegrainX(AVSValue args, void* user_data, IScriptEnviro
     args[9 + param_index_shift].AsInt(MV_DEFAULT_SCD1), // thSCD1
     args[10 + param_index_shift].AsInt(MV_DEFAULT_SCD2), // thSCD2
     args[11 + param_index_shift].AsBool(true),  // isse
-    false, // planar: a YUY2 source is converted (Yuy2Planar.h)
     args[14 + param_index_shift].AsBool(true),  // mt
     out16 || lsb,           // out16
     level,
@@ -546,7 +527,6 @@ AVSValue __cdecl Create_MDegrainN(AVSValue args, void*, IScriptEnvironment* env)
         args[9].AsInt(MV_DEFAULT_SCD1),  // thSCD1
         args[10].AsInt(MV_DEFAULT_SCD2), // thSCD2
         args[11].AsBool(true),   // isse
-        false, // planar: a YUY2 source is converted (Yuy2Planar.h)
         args[16].AsBool(true),   // mt
         out16 || lsb,            // out16
         tr, // PF: level
@@ -569,7 +549,6 @@ AVSValue __cdecl Create_MDegrainN(AVSValue args, void*, IScriptEnvironment* env)
     args[9].AsInt(MV_DEFAULT_SCD1),  // thSCD1
     args[10].AsInt(MV_DEFAULT_SCD2), // thSCD2
     args[11].AsBool(true),   // isse
-    false, // planar: a YUY2 source is converted (Yuy2Planar.h)
     thSAD2,                    // thSAD2
     thSADC2,                   // thSADC2
     args[16].AsBool(true),   // mt
@@ -646,7 +625,6 @@ AVSValue __cdecl Create_MVBlockFps(AVSValue args, void*, IScriptEnvironment* env
     args[9].AsInt(MV_DEFAULT_SCD1),
     args[10].AsInt(MV_DEFAULT_SCD2),
     args[11].AsBool(true),  // isse2
-    false, // planar: a YUY2 source is converted (Yuy2Planar.h)
     args[13].AsBool(true),  // mt
     env
   ); });
@@ -667,7 +645,6 @@ AVSValue __cdecl Create_MVSuper(AVSValue args, void*, IScriptEnvironment* env)
     args[7].AsInt(2),      // rfilter
     (args[8].Defined() ? yuy2_to_yv16(args[8].AsClip(), planar, env) : 0), // pelclip
     args[9].AsBool(true),   // isse2
-    false, // planar: a YUY2 source is converted
     args[11].AsBool(true), // mt
     args[0].AsClip()->GetVideoInfo().IsYUY2(), // yuy2_source
     env

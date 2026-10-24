@@ -6,7 +6,6 @@
 #include "SimpleResize.h"
 #include "Time256ProviderCst.h"
 #include "Time256ProviderPlane.h"
-#include "yuy2planes.h"
 
 
 
@@ -27,7 +26,6 @@ private:
 //	PClip pelclip;
   //bool isse;
   int cpuFlags;
-  bool planar;
 
   PClip finest; // v2.0
 // 	PClip	timeclip; P.F. commented out (2.6.0.5?), could not resolve with 2.5.11.22 intended changes
@@ -86,7 +84,6 @@ private:
   void Shift_NPel(BYTE * pdst8, int dst_pitch, const BYTE *pref8, int ref_pitch, short *VXFull, int VXPitch, short *VYFull, int VYPitch, int width, int height, int time256);
   // 2.5.11.22	void Create_LUTV(int time256, VectLut plut);
 
-  YUY2Planes * DstPlanes;
 
   bool is444;
   bool isGrey;
@@ -104,7 +101,7 @@ private:
 
 public:
   MVFlow(PClip _child, PClip _super, PClip _vectors, int _time256, int _mode, bool _fields,
-    sad_t nSCD1, int nSCD2, bool isse, bool _planar, PClip _timeclip, IScriptEnvironment* env);
+    sad_t nSCD1, int nSCD2, bool isse, PClip _timeclip, IScriptEnvironment* env);
   ~MVFlow();
   PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env) override;
 

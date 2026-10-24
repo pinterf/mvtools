@@ -23,7 +23,6 @@
 #include "MVClip.h"
 #include "MVFilter.h"
 #include "SimpleResize.h"
-#include "yuy2planes.h"
 
 
 /*! \brief Filter which shows the motion mask
@@ -72,11 +71,8 @@ private:
   // void EnlargeMaskBilinear(unsigned char *derp, const int pitch);
   // void Reorganize(unsigned char *d, int dp);
 
-  YUY2Planes * DstPlanes;
-  YUY2Planes * SrcPlanes;
   //bool isse;
   int cpuFlags;
-  bool planar;
 
   bool chroma;
   int maskclip_bits_per_pixel;
@@ -86,7 +82,7 @@ private:
 
 public:
   MVMask(::PClip _child, ::PClip mvs, double _maxlength, double _gamma, int _kind, double _time100,
-    int _scvalue, sad_t nSCD1, int nSCD2, bool isse, bool _planar, ::IScriptEnvironment* env);
+    int _scvalue, sad_t nSCD1, int nSCD2, bool isse, ::IScriptEnvironment* env);
   ~MVMask();
   ::PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env) override;
 

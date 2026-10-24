@@ -4,7 +4,6 @@
 #include "MVClip.h"
 #include "MVFilter.h"
 #include "SimpleResize.h"
-#include "yuy2planes.h"
 
 class MVFlowBlur
 :	public GenericVideoFilter
@@ -20,7 +19,6 @@ private:
    PClip finest;
    //bool isse;
    int cpuFlags;
-   bool planar;
 
 //    bool usePelClipHere;
 
@@ -80,11 +78,10 @@ private:
      short *VXFullB, short *VXFullF, short *VYFullB, short *VYFullF,
      int VPitch, int width, int height, int time256, int nb);
 
-   YUY2Planes * DstPlanes;
 
 public:
   MVFlowBlur(PClip _child, PClip _finest, PClip _mvbw, PClip _mvfw, int _blur256, int _prec,
-                int nSCD1, int nSCD2, bool isse, bool _planar, IScriptEnvironment* env);
+                int nSCD1, int nSCD2, bool isse, IScriptEnvironment* env);
   ~MVFlowBlur();
   PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env) override;
 

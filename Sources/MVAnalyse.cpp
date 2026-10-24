@@ -119,8 +119,8 @@ MVAnalyse::MVAnalyse(
   analysisData.nHeight = nHeight;
   analysisData.pixelType = vi.pixel_type;
   if (!ClipFnc::is_grey(vi)) {
-    analysisData.yRatioUV = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U));
-    analysisData.xRatioUV = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U));
+    analysisData.yRatioUV = (1 << vi.GetPlaneHeightSubsampling(PLANAR_U));
+    analysisData.xRatioUV = (1 << vi.GetPlaneWidthSubsampling(PLANAR_U));
   }
   else {
     analysisData.yRatioUV = 1; // n/a
@@ -694,31 +694,16 @@ PVideoFrame __stdcall MVAnalyse::GetFrame(int n, IScriptEnvironment* env)
 
 void	MVAnalyse::load_src_frame(MVGroupOfFrames &gof, ::PVideoFrame &src, const MVAnalysisData &ana_data)
 {
-  PROFILE_START(MOTION_PROFILE_YUY2CONVERT);
   const unsigned char *	pSrcY;
   const unsigned char *	pSrcU;
   const unsigned char *	pSrcV;
   int				nSrcPitchY;
   int				nSrcPitchUV;
-  if ((ana_data.pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2)
-  {
-    // planar data packed to interleaved format (same as interleved2planar
-    // by kassandro) - v2.0.0.5
-    pSrcY = src->GetReadPtr();
-    pSrcU = pSrcY + src->GetRowSize() / 2;
-    pSrcV = pSrcU + src->GetRowSize() / 4;
-    nSrcPitchY = src->GetPitch();
-    nSrcPitchUV = nSrcPitchY;
-  }
-  else
-  {
-    pSrcY = src->GetReadPtr(PLANAR_Y);
-    pSrcU = src->GetReadPtr(PLANAR_U);
-    pSrcV = src->GetReadPtr(PLANAR_V);
-    nSrcPitchY = src->GetPitch(PLANAR_Y);
-    nSrcPitchUV = src->GetPitch(PLANAR_U);
-  }
-  PROFILE_STOP(MOTION_PROFILE_YUY2CONVERT);
+  pSrcY = src->GetReadPtr(PLANAR_Y);
+  pSrcU = src->GetReadPtr(PLANAR_U);
+  pSrcV = src->GetReadPtr(PLANAR_V);
+  nSrcPitchY = src->GetPitch(PLANAR_Y);
+  nSrcPitchUV = src->GetPitch(PLANAR_U);
 
   gof.Update(
     nModeYUV,

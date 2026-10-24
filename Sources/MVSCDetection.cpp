@@ -62,7 +62,7 @@ PVideoFrame __stdcall MVSCDetection::GetFrame(int n, IScriptEnvironment* env)
 
    if ( mvClip.IsUsable() )
   {
-     if((vi.IsYUV() || vi.IsYUVA()) && !vi.IsYUY2())
+     if((vi.IsYUV() || vi.IsYUVA()) )
      {
       MemZoneSet(dst->GetWritePtr(PLANAR_Y), 0, dst->GetRowSize(PLANAR_Y), dst->GetHeight(PLANAR_Y), 0, 0, dst->GetPitch(PLANAR_Y));
       MemZoneSet(dst->GetWritePtr(PLANAR_U), 0, dst->GetRowSize(PLANAR_U), dst->GetHeight(PLANAR_U), 0, 0, dst->GetPitch(PLANAR_U));
@@ -74,7 +74,7 @@ PVideoFrame __stdcall MVSCDetection::GetFrame(int n, IScriptEnvironment* env)
      }
   }
    else {
-     if((vi.IsYUV() || vi.IsYUVA()) && !vi.IsYUY2())
+     if((vi.IsYUV() || vi.IsYUVA()) )
      {
        if (pixelsize == 1) {
          MemZoneSet(dst->GetWritePtr(PLANAR_Y), sceneChangeValue, dst->GetRowSize(PLANAR_Y), dst->GetHeight(PLANAR_Y), 0, 0, dst->GetPitch(PLANAR_Y));

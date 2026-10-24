@@ -113,7 +113,6 @@
     <ClCompile Include="SADFunctions.cpp" />
     <ClCompile Include="SimpleResize.cpp" />
     <ClCompile Include="Variance.cpp" />
-    <ClCompile Include="yuy2planes.cpp" />
     <ClCompile Include="Interface.cpp">
       <Filter>Filters</Filter>
     </ClCompile>
@@ -388,7 +387,6 @@
     <ClInclude Include="Variance.h" />
     <ClInclude Include="VECTOR.h" />
     <ClInclude Include="version.h" />
-    <ClInclude Include="yuy2planes.h" />
     <ClInclude Include="conc\Interlocked.hpp" />
     <ClInclude Include="include\avs\alignment.h">
       <Filter>Include</Filter>

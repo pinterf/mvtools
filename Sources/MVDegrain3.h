@@ -5,7 +5,6 @@
 #include "MVClip.h"
 #include "MVFilter.h"
 #include "overlap.h"
-#include "yuy2planes.h"
 #include <stdint.h>
 #include "def.h"
 #ifdef INTEL_INTRINSICS
@@ -50,7 +49,6 @@ private:
   PClip super;
   //bool isse_flag;
   int cpuFlags;
-  bool planar;
   bool out16_flag; // 8 bit in, native 16 bit out (lsb=true: Stacked16 after it)
   //int pixelsize, bits_per_pixel; // in MVFilter
   //int xRatioUV, yRatioUV; // in MVFilter
@@ -67,8 +65,6 @@ private:
 
   int nSuperModeYUV;
 
-  YUY2Planes * DstPlanes;
-  YUY2Planes * SrcPlanes;
 
   OverlapWindows *OverWins;
   OverlapWindows *OverWinsUV;
@@ -101,7 +97,7 @@ public:
   MVDegrainX(PClip _child, PClip _super, 
     PClip _mvbw, PClip _mvfw, PClip _mvbw2, PClip _mvfw2, PClip _mvbw3, PClip _mvfw3, PClip _mvbw4, PClip _mvfw4, PClip _mvbw5, PClip _mvfw5, PClip _mvbw6, PClip _mvfw6,
     sad_t _thSAD, sad_t _thSADC, int _YUVplanes, float _nLimit, float _nLimitC,
-    sad_t _nSCD1, int _nSCD2, bool _isse2, bool _planar,
+    sad_t _nSCD1, int _nSCD2, bool _isse2,
     bool _mt_flag, bool _out16_flag,
     int _level, 
     IScriptEnvironment* env_ptr);

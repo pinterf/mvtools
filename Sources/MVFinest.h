@@ -1,7 +1,6 @@
 #ifndef __MV_FINEST__
 #define __MV_FINEST__
 
-#include "yuy2planes.h"
 #include "avisynth.h"
 
 class MVGroupOfFrames;
@@ -29,8 +28,6 @@ private:
 //   bool usePelClipHere;
 
 
-//	YUY2Planes * RefPlanes;
-//	YUY2Planes * DstPlanes;
 
 
 public:

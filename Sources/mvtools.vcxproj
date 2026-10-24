@@ -1550,7 +1550,6 @@
     </ClCompile>
     <ClCompile Include="SimpleResize.cpp" />
     <ClCompile Include="Variance.cpp" />
-    <ClCompile Include="yuy2planes.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AllocAlign.h" />
@@ -1694,7 +1693,6 @@
     <ClInclude Include="Variance.h" />
     <ClInclude Include="VECTOR.h" />
     <ClInclude Include="version.h" />
-    <ClInclude Include="yuy2planes.h" />
   </ItemGroup>
   <ItemGroup>
     <NASM Include="asm\const-a.asm">

@@ -470,7 +470,7 @@ func_degrain[make_tuple(x, y, DEGRAIN_TYPE_16BIT, USE_SSE41)] = DegrainN_16_sse4
 MDegrainN::MDegrainN(
   PClip child, PClip super, PClip mvmulti, int trad,
   sad_t thsad, sad_t thsadc, int yuvplanes, float nlimit, float nlimitc,
-  sad_t nscd1, int nscd2, bool isse_flag, bool planar_flag,
+  sad_t nscd1, int nscd2, bool isse_flag,
   sad_t thsad2, sad_t thsadc2, bool mt_flag, bool out16_flag, IScriptEnvironment* env_ptr
 )
   : GenericVideoFilter(child)
@@ -481,12 +481,9 @@ MDegrainN::MDegrainN(
   , _nlimit(nlimit)
   , _nlimitc(nlimitc)
   , _super(super)
-  , _planar_flag(planar_flag)
   , _mt_flag(mt_flag)
   , _out16_flag(out16_flag)
   , _nsupermodeyuv(-1)
-  , _dst_planes(nullptr)
-  , _src_planes(nullptr)
   , _overwins()
   , _overwins_uv()
   , _oversluma_ptr(0)
@@ -556,8 +553,8 @@ MDegrainN::MDegrainN(
   xRatioUV_super = 1;
   yRatioUV_super = 1;
   if (!ClipFnc::is_grey(vi) && !vi.IsRGB()) {
-    xRatioUV_super = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U));
-    yRatioUV_super = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U));
+    xRatioUV_super = (1 << vi.GetPlaneWidthSubsampling(PLANAR_U));
+    yRatioUV_super = (1 << vi.GetPlaneHeightSubsampling(PLANAR_U));
   }
   nLogxRatioUV_super = ilog2(xRatioUV_super);
   nLogyRatioUV_super = ilog2(yRatioUV_super);
@@ -643,15 +640,6 @@ MDegrainN::MDegrainN(
     pixelsize_output_shift = ilog2(pixelsize_output);
   }
 
-  if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !_planar_flag)
-  {
-    _dst_planes = std::unique_ptr <YUY2Planes>(
-      new YUY2Planes(nWidth, nHeight) // out16 is not allowed for YUY2
-      );
-    _src_planes = std::unique_ptr <YUY2Planes>(
-      new YUY2Planes(nWidth, nHeight)
-      );
-  }
   _dst_short_pitch = ((nWidth + 15) / 16) * 16;
   _dst_int_pitch = _dst_short_pitch;
   if (nOverlapX > 0 || nOverlapY > 0)
@@ -791,10 +779,6 @@ static void plane_copy_8_to_16_c(uint8_t *dstp, int dstpitch, const uint8_t *src
 
   const BYTE * pRef[MAX_TEMP_RAD * 2][3];
   int nRefPitches[MAX_TEMP_RAD * 2][3];
-  unsigned char *pDstYUY2;
-  const unsigned char *pSrcYUY2;
-  int nDstPitchYUY2;
-  int nSrcPitchYUY2;
 
   for (int k2 = 0; k2 < _trad * 2; ++k2)
   {
@@ -812,66 +796,18 @@ static void plane_copy_8_to_16_c(uint8_t *dstp, int dstpitch, const uint8_t *src
   PVideoFrame src = child->GetFrame(n, env_ptr);
   PVideoFrame dst = has_at_least_v8 ? env_ptr->NewVideoFrameP(vi, &src) : env_ptr->NewVideoFrame(vi); // frame property support
 
-  if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2)
-  {
-    if (!_planar_flag)
-    {
-      pDstYUY2 = dst->GetWritePtr();
-      nDstPitchYUY2 = dst->GetPitch();
-      _dst_ptr_arr[0] = _dst_planes->GetPtr();
-      _dst_ptr_arr[1] = _dst_planes->GetPtrU();
-      _dst_ptr_arr[2] = _dst_planes->GetPtrV();
-      _dst_pitch_arr[0] = _dst_planes->GetPitch();
-      _dst_pitch_arr[1] = _dst_planes->GetPitchUV();
-      _dst_pitch_arr[2] = _dst_planes->GetPitchUV();
-
-      pSrcYUY2 = src->GetReadPtr();
-      nSrcPitchYUY2 = src->GetPitch();
-      _src_ptr_arr[0] = _src_planes->GetPtr();
-      _src_ptr_arr[1] = _src_planes->GetPtrU();
-      _src_ptr_arr[2] = _src_planes->GetPtrV();
-      _src_pitch_arr[0] = _src_planes->GetPitch();
-      _src_pitch_arr[1] = _src_planes->GetPitchUV();
-      _src_pitch_arr[2] = _src_planes->GetPitchUV();
-
-      YUY2ToPlanes(
-        pSrcYUY2, nSrcPitchYUY2, nWidth, nHeight,
-        _src_ptr_arr[0], _src_pitch_arr[0],
-        _src_ptr_arr[1], _src_ptr_arr[2], _src_pitch_arr[1],
-        _cpuFlags
-      );
-    }
-    else
-    {
-      _dst_ptr_arr[0] = dst->GetWritePtr();
-      _dst_ptr_arr[1] = _dst_ptr_arr[0] + nWidth;
-      _dst_ptr_arr[2] = _dst_ptr_arr[1] + nWidth / 2; //yuy2 xratio
-      _dst_pitch_arr[0] = dst->GetPitch();
-      _dst_pitch_arr[1] = _dst_pitch_arr[0];
-      _dst_pitch_arr[2] = _dst_pitch_arr[0];
-      _src_ptr_arr[0] = src->GetReadPtr();
-      _src_ptr_arr[1] = _src_ptr_arr[0] + nWidth;
-      _src_ptr_arr[2] = _src_ptr_arr[1] + nWidth / 2;
-      _src_pitch_arr[0] = src->GetPitch();
-      _src_pitch_arr[1] = _src_pitch_arr[0];
-      _src_pitch_arr[2] = _src_pitch_arr[0];
-    }
-  }
-  else
-  {
-    _dst_ptr_arr[0] = YWPLAN(dst);
-    _dst_ptr_arr[1] = UWPLAN(dst);
-    _dst_ptr_arr[2] = VWPLAN(dst);
-    _dst_pitch_arr[0] = YPITCH(dst);
-    _dst_pitch_arr[1] = UPITCH(dst);
-    _dst_pitch_arr[2] = VPITCH(dst);
-    _src_ptr_arr[0] = YRPLAN(src);
-    _src_ptr_arr[1] = URPLAN(src);
-    _src_ptr_arr[2] = VRPLAN(src);
-    _src_pitch_arr[0] = YPITCH(src);
-    _src_pitch_arr[1] = UPITCH(src);
-    _src_pitch_arr[2] = VPITCH(src);
-  }
+  _dst_ptr_arr[0] = YWPLAN(dst);
+  _dst_ptr_arr[1] = UWPLAN(dst);
+  _dst_ptr_arr[2] = VWPLAN(dst);
+  _dst_pitch_arr[0] = YPITCH(dst);
+  _dst_pitch_arr[1] = UPITCH(dst);
+  _dst_pitch_arr[2] = VPITCH(dst);
+  _src_ptr_arr[0] = YRPLAN(src);
+  _src_ptr_arr[1] = URPLAN(src);
+  _src_ptr_arr[2] = VRPLAN(src);
+  _src_pitch_arr[0] = YPITCH(src);
+  _src_pitch_arr[1] = UPITCH(src);
+  _src_pitch_arr[2] = VPITCH(src);
 
   ::PVideoFrame ref[MAX_TEMP_RAD * 2];
 
@@ -883,36 +819,17 @@ static void plane_copy_8_to_16_c(uint8_t *dstp, int dstpitch, const uint8_t *src
     mv_clip.use_ref_frame(ref[k], _usable_flag_arr[k], _super, n, env_ptr);
   }
 
-  if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2)
+  for (int k2 = 0; k2 < _trad * 2; ++k2)
   {
-    for (int k2 = 0; k2 < _trad * 2; ++k2)
+    const int k = reorder_ref(k2);
+    if (_usable_flag_arr[k])
     {
-      const int k = reorder_ref(k2);
-      if (_usable_flag_arr[k])
-      {
-        pRef[k][0] = ref[k]->GetReadPtr();
-        pRef[k][1] = pRef[k][0] + ref[k]->GetRowSize() / 2;
-        pRef[k][2] = pRef[k][1] + ref[k]->GetRowSize() / 4;
-        nRefPitches[k][0] = ref[k]->GetPitch();
-        nRefPitches[k][1] = nRefPitches[k][0];
-        nRefPitches[k][2] = nRefPitches[k][0];
-      }
-    }
-  }
-  else
-  {
-    for (int k2 = 0; k2 < _trad * 2; ++k2)
-    {
-      const int k = reorder_ref(k2);
-      if (_usable_flag_arr[k])
-      {
-        pRef[k][0] = YRPLAN(ref[k]);
-        pRef[k][1] = URPLAN(ref[k]);
-        pRef[k][2] = VRPLAN(ref[k]);
-        nRefPitches[k][0] = YPITCH(ref[k]);
-        nRefPitches[k][1] = UPITCH(ref[k]);
-        nRefPitches[k][2] = VPITCH(ref[k]);
-      }
+      pRef[k][0] = YRPLAN(ref[k]);
+      pRef[k][1] = URPLAN(ref[k]);
+      pRef[k][2] = VRPLAN(ref[k]);
+      nRefPitches[k][0] = YPITCH(ref[k]);
+      nRefPitches[k][1] = UPITCH(ref[k]);
+      nRefPitches[k][2] = VPITCH(ref[k]);
     }
   }
 
@@ -1118,13 +1035,6 @@ static void plane_copy_8_to_16_c(uint8_t *dstp, int dstpitch, const uint8_t *src
 
   PROFILE_STOP(MOTION_PROFILE_COMPENSATION);
 
-  if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !_planar_flag)
-  {
-    YUY2FromPlanes(
-      pDstYUY2, nDstPitchYUY2, nWidth, nHeight,
-      _dst_ptr_arr[0], _dst_pitch_arr[0],
-      _dst_ptr_arr[1], _dst_ptr_arr[2], _dst_pitch_arr[1], _cpuFlags);
-  }
 
   ClipFnc::copy_alpha(dst, src, vi, env_ptr);
   return (dst);

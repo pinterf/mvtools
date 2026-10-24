@@ -43,7 +43,7 @@ int64_t ProfCumulatedResults[MOTION_PROFILE_COUNT * 2];
 
 MVSuper::MVSuper(
   PClip _child, int _hPad, int _vPad, int _pel, int _levels, bool _chroma,
-  int _sharp, int _rfilter, PClip _pelclip, bool _isse, bool _planar,
+  int _sharp, int _rfilter, PClip _pelclip, bool _isse,
   bool mt_flag, bool yuy2_source, IScriptEnvironment* env
 )
   : GenericVideoFilter(_child)
@@ -54,7 +54,6 @@ MVSuper::MVSuper(
   try { env->CheckVersion(8); }
   catch (const AvisynthError&) { has_at_least_v8 = false; }
 
-  planar = _planar;
 
   nWidth = vi.width;
 
@@ -88,8 +87,8 @@ MVSuper::MVSuper(
 
   pixelType = vi.pixel_type;
   if (!ClipFnc::is_grey(vi) && !vi.IsRGB()) {
-    yRatioUV = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U));
-    xRatioUV = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U)); // for YV12 and YUY2, really do not used and assumed to 2
+    yRatioUV = (1 << vi.GetPlaneHeightSubsampling(PLANAR_U));
+    xRatioUV = (1 << vi.GetPlaneWidthSubsampling(PLANAR_U)); // for YV12 and YUY2, really do not used and assumed to 2
   }
   else {
     yRatioUV = 1; // n/a
@@ -137,15 +136,6 @@ MVSuper::MVSuper(
   vi.width = nSuperWidth;
   vi.height = nSuperHeight;
 
-  if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
-  {
-    SrcPlanes = new YUY2Planes(nWidth, nHeight);
-    //		DstPlanes =  new YUY2Planes(nSuperWidth, nSuperHeight); // other size!
-    if (usePelClip)
-    {
-      SrcPelPlanes = new YUY2Planes(pelclip->GetVideoInfo().width, pelclip->GetVideoInfo().height);
-    }
-  }
 
   SuperParams64Bits params;
 
@@ -173,15 +163,6 @@ MVSuper::MVSuper(
 
 MVSuper::~MVSuper()
 {
-  if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
-  {
-    delete SrcPlanes;
-    //		delete DstPlanes;
-    if (usePelClip)
-    {
-      delete SrcPelPlanes;
-    }
-  }
   delete pSrcGOF;
 
   PROFILE_SHOW();
@@ -192,7 +173,6 @@ PVideoFrame __stdcall MVSuper::GetFrame(int n, IScriptEnvironment* env)
   const unsigned char *pSrc[3];
   unsigned char *pDst[3];
   const unsigned char *pSrcPel[3];
-  //	unsigned char *pDstYUY2;
   int nSrcPitch[3];
   int nDstPitch[3];
   int nSrcPelPitch[3];
@@ -208,76 +188,21 @@ PVideoFrame __stdcall MVSuper::GetFrame(int n, IScriptEnvironment* env)
 
   PVideoFrame dst = has_at_least_v8 ? env->NewVideoFrameP(vi, &src) : env->NewVideoFrame(vi); // frame property support
 
-  PROFILE_START(MOTION_PROFILE_YUY2CONVERT);
-  if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2)
-  {
-    if (!planar)
+  int planes_y[4] = { PLANAR_Y, PLANAR_U, PLANAR_V, PLANAR_A };
+  int planes_r[4] = { PLANAR_G, PLANAR_B, PLANAR_R, PLANAR_A };
+  int *planes = (vi.IsYUV() || vi.IsYUVA()) ? planes_y : planes_r;
+  planecount = ClipFnc::nbr_planes_processed(vi);
+  for (int p = 0; p < planecount; ++p) {
+    const int plane = planes[p];
+    pSrc[p] = src->GetReadPtr(plane);
+    nSrcPitch[p] = src->GetPitch(plane);
+    if (usePelClip)
     {
-      pSrc[0] = SrcPlanes->GetPtr();
-      pSrc[1] = SrcPlanes->GetPtrU();
-      pSrc[2] = SrcPlanes->GetPtrV();
-      nSrcPitch[0] = SrcPlanes->GetPitch();
-      nSrcPitch[1] = nSrcPitch[2] = SrcPlanes->GetPitchUV();
-      YUY2ToPlanes(src->GetReadPtr(), src->GetPitch(), nWidth, nHeight,
-        pSrc[0], nSrcPitch[0], pSrc[1], pSrc[2], nSrcPitch[1], cpuFlags);
-      if (usePelClip)
-      {
-        pSrcPel[0] = SrcPelPlanes->GetPtr();
-        pSrcPel[1] = SrcPelPlanes->GetPtrU();
-        pSrcPel[2] = SrcPelPlanes->GetPtrV();
-        nSrcPelPitch[0] = SrcPelPlanes->GetPitch();
-        nSrcPelPitch[1] = nSrcPelPitch[2] = SrcPelPlanes->GetPitchUV();
-        YUY2ToPlanes(srcPel->GetReadPtr(), srcPel->GetPitch(), srcPel->GetRowSize() / 2, srcPel->GetHeight(),
-          pSrcPel[0], nSrcPelPitch[0], pSrcPel[1], pSrcPel[2], nSrcPelPitch[1], cpuFlags);
-      }
+      pSrcPel[p] = srcPel->GetReadPtr(plane);
+      nSrcPelPitch[p] = srcPel->GetPitch(plane);
     }
-    else
-    {
-      pSrc[0] = src->GetReadPtr();
-      pSrc[1] = pSrc[0] + src->GetRowSize() / 2;
-      pSrc[2]= pSrc[1] + src->GetRowSize() / 4;
-      nSrcPitch[0] = src->GetPitch();
-      nSrcPitch[1] = nSrcPitch[2] = nSrcPitch[0];
-      if (usePelClip)
-      {
-        pSrcPel[0] = srcPel->GetReadPtr();
-        pSrcPel[1] = pSrcPel[0] + srcPel->GetRowSize() / 2;
-        pSrcPel[2] = pSrcPel[1] + srcPel->GetRowSize() / 4;
-        nSrcPelPitch[0] = srcPel->GetPitch();
-        nSrcPelPitch[1] = nSrcPelPitch[2] = nSrcPelPitch[0];
-      }
-    }
-    //		pDstY = DstPlanes->GetPtr();
-    //		pDstU = DstPlanes->GetPtrU();
-    //		pDstV = DstPlanes->GetPtrV();
-    //		nDstPitchY  = DstPlanes->GetPitch();
-    //		nDstPitchUV  = DstPlanes->GetPitchUV();
-        // planer data packed to interleaved format (same as interleved2planar by kassandro) - v2.0.0.5
-    pDst[0] = dst->GetWritePtr();
-    pDst[1] = pDst[0] + nSuperWidth;
-    pDst[2] = pDst[1] + nSuperWidth / 2; // YUY2
-    nDstPitch[0] = dst->GetPitch();
-    nDstPitch[1] = nDstPitch[2] = nDstPitch[0];
-    planecount = 3;
-  }
-  else
-  {
-    int planes_y[4] = { PLANAR_Y, PLANAR_U, PLANAR_V, PLANAR_A };
-    int planes_r[4] = { PLANAR_G, PLANAR_B, PLANAR_R, PLANAR_A };
-    int *planes = (vi.IsYUV() || vi.IsYUVA()) ? planes_y : planes_r;
-    planecount = ClipFnc::nbr_planes_processed(vi);
-    for (int p = 0; p < planecount; ++p) {
-      const int plane = planes[p];
-      pSrc[p] = src->GetReadPtr(plane);
-      nSrcPitch[p] = src->GetPitch(plane);
-      if (usePelClip)
-      {
-        pSrcPel[p] = srcPel->GetReadPtr(plane);
-        nSrcPelPitch[p] = srcPel->GetPitch(plane);
-      }
-      pDst[p] = dst->GetWritePtr(plane);
-      nDstPitch[p] = dst->GetPitch(plane);
-    }
+    pDst[p] = dst->GetWritePtr(plane);
+    nDstPitch[p] = dst->GetPitch(plane);
   }
   // P.F. 170519 debug: clear super area
   // todo: check how it affects for non-modulo blocksize vs. supersize_padded
@@ -290,16 +215,15 @@ PVideoFrame __stdcall MVSuper::GetFrame(int n, IScriptEnvironment* env)
   }
   */
 
-  PROFILE_STOP(MOTION_PROFILE_YUY2CONVERT);
 
   PROFILE_START(MOTION_PROFILE_INTERPOLATION);
 
   pSrcGOF->Update(YUVPLANES, pDst[0], nDstPitch[0], pDst[1], nDstPitch[1], pDst[2], nDstPitch[2]);
   // constant name is Y U and V but for MVFrame this is good for RGB
-  MVPlaneSet planes[3] = { YPLANE, UPLANE, VPLANE };
+  const MVPlaneSet mvplanes[3] = { YPLANE, UPLANE, VPLANE };
 
   for (int p = 0; p < planecount; ++p) {
-    const MVPlaneSet plane = planes[p];
+    const MVPlaneSet plane = mvplanes[p];
     pSrcGOF->SetPlane(pSrc[p], nSrcPitch[p], plane);
   }
 
@@ -312,7 +236,7 @@ PVideoFrame __stdcall MVSuper::GetFrame(int n, IScriptEnvironment* env)
     MVFrame *srcFrames = pSrcGOF->GetFrame(0);
 
     for (int p = 0; p < planecount; ++p) {
-      const MVPlaneSet plane = planes[p];
+      const MVPlaneSet plane = mvplanes[p];
       MVPlane *srcPlane = srcFrames->GetPlane(plane);
 
       if (nModeYUV & plane) {
@@ -334,16 +258,7 @@ PVideoFrame __stdcall MVSuper::GetFrame(int n, IScriptEnvironment* env)
 
 
   /*
-    PROFILE_START(MOTION_PROFILE_YUY2CONVERT);
 
-    if ( (pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 )
-    {
-      pDstYUY2 = dst->GetWritePtr();
-      nDstPitchYUY2 = dst->GetPitch();
-      YUY2FromPlanes(pDstYUY2, nDstPitchYUY2, nSuperWidth, nSuperHeight,
-        pDstY, nDstPitchY, pDstU, pDstV, nDstPitchUV, isse);
-    }
-    PROFILE_STOP(MOTION_PROFILE_YUY2CONVERT);
   */
 
   PROFILE_CUMULATE();

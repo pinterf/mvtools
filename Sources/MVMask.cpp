@@ -32,7 +32,7 @@
 
 MVMask::MVMask(
   PClip _child, PClip vectors, double ml, double gm, int _kind, double _time100, int Ysc,
-  sad_t nSCD1, int nSCD2, bool _isse, bool _planar, IScriptEnvironment* env
+  sad_t nSCD1, int nSCD2, bool _isse, IScriptEnvironment* env
 )
   : GenericVideoFilter(_child)
   , mvClip(vectors, nSCD1, nSCD2, env, 1, 0)
@@ -71,12 +71,11 @@ MVMask::MVMask(
   if (kind == 5 && !chroma)
     env->ThrowError("MMask: input clip cannot be greyscale for kind=5");
 
-  if (!vi.IsPlanar() && !vi.IsYUY2())
+  if (!vi.IsPlanar() )
     env->ThrowError("MMask: input clip must be planar or YUY2");
 
   nSceneChangeValue = (Ysc < 0) ? 0 : ((Ysc > 255) ? 255 : Ysc); // for 8 bit masks
   nSceneChangeValue16 = nSceneChangeValue == 255 ? ((1 << maskclip_bits_per_pixel) - 1) : nSceneChangeValue << (maskclip_bits_per_pixel - 8); // keep 255 to max_pixel_value, otherwise shift
-  planar = _planar;
 
   smallMask = new unsigned char[nBlkX * nBlkY];
   smallMaskV = new unsigned char[nBlkX * nBlkY];
@@ -126,22 +125,12 @@ MVMask::MVMask(
     upsizerUV = new SimpleResize(nWidthBUV, nHeightBUV, nBlkX, nBlkY, cpuFlags);
 
 
-  if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
-  {
-    DstPlanes = new YUY2Planes(maskclip_nWidth, maskclip_nHeight);
-    SrcPlanes = new YUY2Planes(maskclip_nWidth, maskclip_nHeight);
-  }
 
 }
 
 
 MVMask::~MVMask()
 {
-  if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
-  {
-    delete DstPlanes;
-    delete SrcPlanes;
-  }
   delete[] smallMask;
   delete[] smallMaskV;
   delete upsizer;
@@ -178,96 +167,45 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
   BYTE *pDst[3];
   int nDstPitches[3];
   int nSrcPitches[3];
-  unsigned char *pDstYUY2;
-  const unsigned char *pSrcYUY2;
-  int nDstPitchYUY2;
-  int nSrcPitchYUY2;
 
   const bool isRGB = vi.IsRGB(); // only planar rgb
 
-  if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2)
-  {
-    if (!planar)
-    {
-      if (needSrcFrame) {
-        pSrcYUY2 = src->GetReadPtr();
-        nSrcPitchYUY2 = src->GetPitch();
-        pSrc[0] = SrcPlanes->GetPtr();
-        pSrc[1] = SrcPlanes->GetPtrU();
-        pSrc[2] = SrcPlanes->GetPtrV();
-        nSrcPitches[0] = SrcPlanes->GetPitch();
-        nSrcPitches[1] = SrcPlanes->GetPitchUV();
-        nSrcPitches[2] = SrcPlanes->GetPitchUV();
-        YUY2ToPlanes(pSrcYUY2, nSrcPitchYUY2, maskclip_nWidth, maskclip_nHeight,
-          pSrc[0], nSrcPitches[0], pSrc[1], pSrc[2], nSrcPitches[1], cpuFlags);
-      }
-      pDst[0] = DstPlanes->GetPtr();
-      pDst[1] = DstPlanes->GetPtrU();
-      pDst[2] = DstPlanes->GetPtrV();
-      nDstPitches[0] = DstPlanes->GetPitch();
-      nDstPitches[1] = DstPlanes->GetPitchUV();
-      nDstPitches[2] = DstPlanes->GetPitchUV();
-//			YUY2ToPlanes(pDstYUY2, nDstPitchYUY2, nWidth, nHeight,
-//				pDst[0], nDstPitches[0], pDst[1], pDst[2], nDstPitches[1], isse);
-    }
-    else
-    {
-      // planar data packed to interleaved format (same as interleved2planar by kassandro) - v2.0.0.5
-      if (needSrcFrame) {
-        pSrc[0] = src->GetReadPtr();
-        pSrc[1] = pSrc[0] + maskclip_nWidth;
-        pSrc[2] = pSrc[1] + maskclip_nWidth / 2;
-        nSrcPitches[0] = src->GetPitch();
-        nSrcPitches[1] = nSrcPitches[0];
-        nSrcPitches[2] = nSrcPitches[0];
-      }
-      pDst[0] = dst->GetWritePtr();
-      pDst[1] = pDst[0] + maskclip_nWidth;
-      pDst[2] = pDst[1] + maskclip_nWidth / 2; // YUY2
-      nDstPitches[0] = dst->GetPitch();
-      nDstPitches[1] = nDstPitches[0];
-      nDstPitches[2] = nDstPitches[0];
-    }
-  }
-  else
-  {
-    if (needSrcFrame) {
-      if (isRGB) {
-        pSrc[0] = GRPLAN(src);
-        pSrc[1] = BRPLAN(src);
-        pSrc[2] = RRPLAN(src);
-        nSrcPitches[0] = GPITCH(src);
-        nSrcPitches[1] = BPITCH(src);
-        nSrcPitches[2] = RPITCH(src);
-      }
-      else {
-        pSrc[0] = YRPLAN(src);
-        nSrcPitches[0] = YPITCH(src);
-        if (chroma) {
-          pSrc[1] = URPLAN(src);
-          pSrc[2] = VRPLAN(src);
-          nSrcPitches[1] = UPITCH(src);
-          nSrcPitches[2] = VPITCH(src);
-        }
-      }
-    }
+  if (needSrcFrame) {
     if (isRGB) {
-      pDst[0] = GWPLAN(dst);
-      pDst[1] = BWPLAN(dst);
-      pDst[2] = RWPLAN(dst);
-      nDstPitches[0] = GPITCH(dst);
-      nDstPitches[1] = BPITCH(dst);
-      nDstPitches[2] = RPITCH(dst);
+      pSrc[0] = GRPLAN(src);
+      pSrc[1] = BRPLAN(src);
+      pSrc[2] = RRPLAN(src);
+      nSrcPitches[0] = GPITCH(src);
+      nSrcPitches[1] = BPITCH(src);
+      nSrcPitches[2] = RPITCH(src);
     }
     else {
-      pDst[0] = YWPLAN(dst);
-      nDstPitches[0] = YPITCH(dst);
+      pSrc[0] = YRPLAN(src);
+      nSrcPitches[0] = YPITCH(src);
       if (chroma) {
-        pDst[1] = UWPLAN(dst);
-        pDst[2] = VWPLAN(dst);
-        nDstPitches[1] = UPITCH(dst);
-        nDstPitches[2] = VPITCH(dst);
+        pSrc[1] = URPLAN(src);
+        pSrc[2] = VRPLAN(src);
+        nSrcPitches[1] = UPITCH(src);
+        nSrcPitches[2] = VPITCH(src);
       }
+    }
+  }
+  if (isRGB) {
+    pDst[0] = GWPLAN(dst);
+    pDst[1] = BWPLAN(dst);
+    pDst[2] = RWPLAN(dst);
+    nDstPitches[0] = GPITCH(dst);
+    nDstPitches[1] = BPITCH(dst);
+    nDstPitches[2] = RPITCH(dst);
+  }
+  else {
+    pDst[0] = YWPLAN(dst);
+    nDstPitches[0] = YPITCH(dst);
+    if (chroma) {
+      pDst[1] = UWPLAN(dst);
+      pDst[2] = VWPLAN(dst);
+      nDstPitches[1] = UPITCH(dst);
+      nDstPitches[2] = VPITCH(dst);
     }
   }
 
@@ -418,13 +356,6 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
   }
 
 
-  if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
-  {
-    pDstYUY2 = dst->GetWritePtr();
-    nDstPitchYUY2 = dst->GetPitch();
-    YUY2FromPlanes(pDstYUY2, nDstPitchYUY2, maskclip_nWidth, maskclip_nHeight,
-      pDst[0], nDstPitches[0], pDst[1], pDst[2], nDstPitches[1], cpuFlags);
-  }
   ClipFnc::copy_alpha_from(dst, child, n, vi, env);
   return dst;
 }

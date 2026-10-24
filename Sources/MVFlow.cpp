@@ -26,7 +26,7 @@
 #include "commonfunctions.h"
 
 MVFlow::MVFlow(PClip _child, PClip super, PClip _mvec, int _time256, int _mode, bool _fields,
-  sad_t nSCD1, int nSCD2, bool _isse, bool _planar, PClip _timeclip, IScriptEnvironment* env) :
+  sad_t nSCD1, int nSCD2, bool _isse, PClip _timeclip, IScriptEnvironment* env) :
   GenericVideoFilter(_child),
   MVFilter(_mvec, "MFlow", env, 1, 0),
   mvClip(_mvec, nSCD1, nSCD2, env, 1, 0)
@@ -40,7 +40,6 @@ MVFlow::MVFlow(PClip _child, PClip super, PClip _mvec, int _time256, int _mode, 
 
   cpuFlags = _isse ? env->GetCPUFlags() : 0;
   fields = _fields;
-  planar = _planar;
 
   SuperParams64Bits params;
   memcpy(&params, &super->GetVideoInfo().num_audio_samples, 8);
@@ -73,14 +72,14 @@ MVFlow::MVFlow(PClip _child, PClip super, PClip _mvec, int _time256, int _mode, 
   bits_per_pixel_super = super->GetVideoInfo().BitsPerComponent();
   pixelsize_super_shift = ilog2(pixelsize_super);
 
-  planecount = vi.IsYUY2() ? 3 : ClipFnc::nbr_planes_processed(vi);
+  planecount = ClipFnc::nbr_planes_processed(vi);
 
   xRatioUVs[0] = xRatioUVs[1] = xRatioUVs[2] = 1;
   yRatioUVs[0] = yRatioUVs[1] = yRatioUVs[2] = 1;
 
   if (!ClipFnc::is_grey(vi) && !vi.IsRGB()) {
-    xRatioUVs[1] = xRatioUVs[2] = vi.IsYUY2() ? 2 : (1 << vi.GetPlaneWidthSubsampling(PLANAR_U));
-    yRatioUVs[1] = yRatioUVs[2] = vi.IsYUY2() ? 1 : (1 << vi.GetPlaneHeightSubsampling(PLANAR_U));
+    xRatioUVs[1] = xRatioUVs[2] = (1 << vi.GetPlaneWidthSubsampling(PLANAR_U));
+    yRatioUVs[1] = yRatioUVs[2] = (1 << vi.GetPlaneHeightSubsampling(PLANAR_U));
   }
 
   for (int i = 0; i < planecount; i++) {
@@ -141,18 +140,10 @@ MVFlow::MVFlow(PClip _child, PClip super, PClip _mvec, int _time256, int _mode, 
   if(!isGrey)
     upsizerUV = new SimpleResize(nWidthPUV, nHeightPUV, nBlkXP, nBlkYP, cpuFlags);
 
-  if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
-  {
-    DstPlanes = new YUY2Planes(nWidth, nHeight);
-  }
 }
 
 MVFlow::~MVFlow()
 {
-  if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
-  {
-    delete DstPlanes;
-  }
 
   delete upsizer;
   if(!isGrey)
@@ -283,8 +274,6 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
   BYTE *pDst[3];
   const BYTE *pRef[3];
   int nDstPitches[3], nRefPitches[3];
-  unsigned char *pDstYUY2;
-  int nDstPitchYUY2;
 
   int nref;
 
@@ -315,52 +304,18 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
     ref = finest->GetFrame(nref, env);//  ref for  compensation
     dst = has_at_least_v8 ? env->NewVideoFrameP(vi, &ref) : env->NewVideoFrame(vi); // frame property support
 
-    if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2)
-    {
-      if (!planar)
-      {
-        pDstYUY2 = dst->GetWritePtr();
-        nDstPitchYUY2 = dst->GetPitch();
-        pDst[0] = DstPlanes->GetPtr();
-        pDst[1] = DstPlanes->GetPtrU();
-        pDst[2] = DstPlanes->GetPtrV();
-        nDstPitches[0] = DstPlanes->GetPitch();
-        nDstPitches[1] = DstPlanes->GetPitchUV();
-        nDstPitches[2] = DstPlanes->GetPitchUV();
-      }
-      else
-      {
-        // planar data packed to interleaved format (same as interleved2planar by kassandro) - v2.0.0.5
-        pDst[0] = dst->GetWritePtr();
-        pDst[1] = pDst[0] + dst->GetRowSize() / 2;
-        pDst[2] = pDst[1] + dst->GetRowSize() / 4;
-        nDstPitches[0] = dst->GetPitch();
-        nDstPitches[1] = nDstPitches[0];
-        nDstPitches[2] = nDstPitches[0];
-      }
+    int planes_y[4] = { PLANAR_Y, PLANAR_U, PLANAR_V, PLANAR_A };
+    int planes_r[4] = { PLANAR_G, PLANAR_B, PLANAR_R, PLANAR_A };
+    int *planes = (vi.IsYUV() || vi.IsYUVA()) ? planes_y : planes_r;
+    planecount = ClipFnc::nbr_planes_processed(vi);
+    for (int p = 0; p < planecount; ++p) {
+      const int plane = planes[p];
 
-      pRef[0] = ref->GetReadPtr();
-      pRef[1] = pRef[0] + ref->GetRowSize() / 2;
-      pRef[2] = pRef[1] + ref->GetRowSize() / 4;
-      nRefPitches[0] = ref->GetPitch();
-      nRefPitches[1] = nRefPitches[0];
-      nRefPitches[2] = nRefPitches[0];
-    }
-    else
-    {
-      int planes_y[4] = { PLANAR_Y, PLANAR_U, PLANAR_V, PLANAR_A };
-      int planes_r[4] = { PLANAR_G, PLANAR_B, PLANAR_R, PLANAR_A };
-      int *planes = (vi.IsYUV() || vi.IsYUVA()) ? planes_y : planes_r;
-      planecount = ClipFnc::nbr_planes_processed(vi);
-      for (int p = 0; p < planecount; ++p) {
-        const int plane = planes[p];
+      pRef[p] = ref->GetReadPtr(plane);
+      nRefPitches[p] = ref->GetPitch(plane);
 
-        pRef[p] = ref->GetReadPtr(plane);
-        nRefPitches[p] = ref->GetPitch(plane);
-
-        pDst[p] = dst->GetWritePtr(plane);
-        nDstPitches[p] = dst->GetPitch(plane);
-      }
+      pDst[p] = dst->GetWritePtr(plane);
+      nDstPitches[p] = dst->GetPitch(plane);
     }
 
 
@@ -474,11 +429,6 @@ PVideoFrame __stdcall MVFlow::GetFrame(int n, IScriptEnvironment* env)
     }
 
 
-    if ((pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
-    {
-      YUY2FromPlanes(pDstYUY2, nDstPitchYUY2, nWidth, nHeight,
-        pDst[0], nDstPitches[0], pDst[1], pDst[2], nDstPitches[1], cpuFlags);
-    }
     ClipFnc::copy_alpha_from(dst, child, n, vi, env); // alpha of the current frame
     return dst;
   }

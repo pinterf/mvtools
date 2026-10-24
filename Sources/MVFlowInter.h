@@ -4,7 +4,6 @@
 #include "MVClip.h"
 #include "MVFilter.h"
 #include "SimpleResize.h"
-#include "yuy2planes.h"
 
 class MVFlowInter
   : public GenericVideoFilter
@@ -21,7 +20,6 @@ private:
   double ml;
   PClip finest;
   int cpuFlags;
-  bool planar;
   bool blend;
 
   // fullframe vector mask, common for all planes
@@ -76,7 +74,6 @@ private:
   SimpleResize *upsizer;
   SimpleResize *upsizerUV;
 
-  YUY2Planes * DstPlanes;
 
   bool is444;
   bool isGrey;
@@ -94,7 +91,7 @@ private:
 
 public:
   MVFlowInter(PClip _child, PClip _finest, PClip _mvbw, PClip _mvfw, int _time256, double _ml,
-    bool _blend, sad_t nSCD1, int nSCD2, bool isse, bool _planar, IScriptEnvironment* env);
+    bool _blend, sad_t nSCD1, int nSCD2, bool isse, IScriptEnvironment* env);
   ~MVFlowInter();
   PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env) override;
 

@@ -8,7 +8,6 @@
 #include "MVFilter.h"
 #include "overlap.h"
 #include "SharedPtr.h"
-#include "yuy2planes.h"
 
 #include	<vector>
 
@@ -28,7 +27,7 @@ public:
 
   MVCompensate(
     PClip _child, PClip _super, PClip vectors, bool sc, double _recursionPercent,
-    sad_t thsad, bool _fields, double _time100, sad_t nSCD1, int nSCD2, bool isse2, bool _planar,
+    sad_t thsad, bool _fields, double _time100, sad_t nSCD1, int nSCD2, bool isse2,
     bool mt_flag, int trad, bool center_flag, PClip cclip_sptr, sad_t thsad2,
     IScriptEnvironment* env_ptr
   );
@@ -65,13 +64,11 @@ private:
   PClip super;
   //bool isse_flag;
   int cpuFlags;
-  bool planar;
   int time256;
 
   COPYFunction *BLITLUMA;
   COPYFunction *BLITCHROMA;
 
-  YUY2Planes * DstPlanes;
 
   OverlapWindows *OverWins;
   OverlapWindows *OverWinsUV;

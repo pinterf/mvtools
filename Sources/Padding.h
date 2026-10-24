@@ -20,35 +20,15 @@
 #define __MV_PADDING_H__
 
 #include "avisynth.h"
-#include "yuy2planes.h"
 
 #include <cstdio>
 
+// edge padding of the MSuper planes
 class Padding
-  : public GenericVideoFilter
 {
-
-private:
-  bool has_at_least_v8;
-
-  int horizontalPadding;
-  int verticalPadding;
-  bool planar;
-  int cpuFlags;
-
-  int width;
-  int height;
-  YUY2Planes *DstPlanes;
-  YUY2Planes *SrcPlanes;
-
 public:
-  Padding(PClip _child, int hPad, int vPad, bool _planar, IScriptEnvironment* env);
-  ~Padding();
-  PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
-
   template<typename pixel_t>
   static void PadReferenceFrame(unsigned char *frame, int pitch, int hPad, int vPad, int width, int height);
-
 };
 
 

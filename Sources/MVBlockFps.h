@@ -5,7 +5,6 @@
 #include "MVClip.h"
 #include "MVFilter.h"
 #include "SimpleResize.h"
-#include "yuy2planes.h"
 #include "overlap.h"
 
 class MVGroupOfFrames;
@@ -30,7 +29,6 @@ private:
   PClip super;
 
   int cpuFlags;
-  bool planar;
   bool blend;
 
   int64_t fa, fb;
@@ -58,7 +56,6 @@ private:
   COPYFunction *BLITLUMA;
   COPYFunction *BLITCHROMA;
 
-  YUY2Planes * DstPlanes;
 
   bool is444;
   bool isGrey;
@@ -113,7 +110,7 @@ public:
   MVBlockFps(
     PClip _child, PClip _super, PClip _mvbw, PClip _mvfw,
     unsigned int _num, unsigned int _den, int _mode, double _ml, bool _blend,
-    sad_t nSCD1, int nSCD2, bool isse, bool _planar, bool mt_flag,
+    sad_t nSCD1, int nSCD2, bool isse, bool mt_flag,
     IScriptEnvironment* env
   );
   ~MVBlockFps();

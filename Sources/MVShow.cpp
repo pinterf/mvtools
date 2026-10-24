@@ -34,7 +34,7 @@
 
 
 MVShow::MVShow(PClip _super, PClip vectors, int _scale, int _plane, int _tol, bool _showsad, int _number,
-               sad_t nSCD1, int nSCD2, bool _isse, bool _planar, IScriptEnvironment* env) :
+               sad_t nSCD1, int nSCD2, bool _isse, IScriptEnvironment* env) :
 GenericVideoFilter(_super),
 MVFilter(vectors, "MShow", env, 1, 0),
 mvClip(vectors, nSCD1, nSCD2, env, 1, 0)
@@ -59,7 +59,6 @@ mvClip(vectors, nSCD1, nSCD2, env, 1, 0)
       nTolerance = 0;
 
   showSad = _showsad;
-  planar =_planar;
   number = _number;
 
   // get parameters of prepared super clip - v2.0
@@ -83,18 +82,10 @@ mvClip(vectors, nSCD1, nSCD2, env, 1, 0)
   // multiple of the vertical chroma subsampling, like the super clip
   vi.height = (vi.height + yRatioUV - 1) / yRatioUV * yRatioUV;
 
-  if ( (pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
-   {
-    DstPlanes =  new YUY2Planes(vi.width, vi.height);
-   }
 }
 
 MVShow::~MVShow()
 {
-   if ( (pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2  && !planar)
-   {
-  delete DstPlanes;
-   }
 }
 
 PVideoFrame __stdcall MVShow::GetFrame(int n, IScriptEnvironment* env)
@@ -105,56 +96,23 @@ PVideoFrame __stdcall MVShow::GetFrame(int n, IScriptEnvironment* env)
    BYTE *pDst[3];
      const BYTE *pSrc[3];
     int nDstPitches[3], nSrcPitches[3];
-  unsigned char *pDstYUY2;
-  int nDstPitchYUY2;
 
   PVideoFrame mvn = mvClip.GetFrame(n, env);
    mvClip.Update(mvn, env);
 
-      if ( (pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 )
-    {
-          if (!planar)
-          {
-      pDst[0] = DstPlanes->GetPtr();
-      pDst[1] = DstPlanes->GetPtrU();
-      pDst[2] = DstPlanes->GetPtrV();
-      nDstPitches[0]  = DstPlanes->GetPitch();
-      nDstPitches[1]  = DstPlanes->GetPitchUV();
-      nDstPitches[2]  = DstPlanes->GetPitchUV();
-          }
-          else
-          {
-            // planar data packed to interleaved format (same as interleved2planar by kassandro) - v2.0.0.5
-                pDst[0] = dst->GetWritePtr();
-                pDst[1] = pDst[0] + dst->GetRowSize()/2;
-                pDst[2] = pDst[1] + dst->GetRowSize()/4;
-                nDstPitches[0] = dst->GetPitch();
-                nDstPitches[1] = nDstPitches[0];
-                nDstPitches[2] = nDstPitches[0];
-          }
-            pSrc[0] = src->GetReadPtr();
-            pSrc[1] = pSrc[0] + src->GetRowSize()/2;
-            pSrc[2] = pSrc[1] + src->GetRowSize()/4;
-            nSrcPitches[0] = src->GetPitch();
-            nSrcPitches[1] = nSrcPitches[0];
-            nSrcPitches[2] = nSrcPitches[0];
-    }
-    else
-    {
-         pSrc[0] = YRPLAN(src);
-         pSrc[1] = URPLAN(src);
-         pSrc[2] = VRPLAN(src);
-         nSrcPitches[0] = YPITCH(src);
-         nSrcPitches[1] = UPITCH(src);
-         nSrcPitches[2] = VPITCH(src);
+       pSrc[0] = YRPLAN(src);
+       pSrc[1] = URPLAN(src);
+       pSrc[2] = VRPLAN(src);
+       nSrcPitches[0] = YPITCH(src);
+       nSrcPitches[1] = UPITCH(src);
+       nSrcPitches[2] = VPITCH(src);
 
      pDst[0] = YWPLAN(dst);
-         pDst[1] = UWPLAN(dst);
-         pDst[2] = VWPLAN(dst);
-         nDstPitches[0] = YPITCH(dst);
-         nDstPitches[1] = UPITCH(dst);
-         nDstPitches[2] = VPITCH(dst);
-    }
+       pDst[1] = UWPLAN(dst);
+       pDst[2] = VWPLAN(dst);
+       nDstPitches[0] = YPITCH(dst);
+       nDstPitches[1] = UPITCH(dst);
+       nDstPitches[2] = VPITCH(dst);
 
   // Copy the frame into the created frame
    env->BitBlt(pDst[0], nDstPitches[0], pSrc[0], nSrcPitches[0], vi.width*pixelsize, vi.height);
@@ -168,13 +126,6 @@ PVideoFrame __stdcall MVShow::GetFrame(int n, IScriptEnvironment* env)
       DrawMVs(pDst[0] + nDstPitches[0]*nSuperVPad + nHPadding*pixelsize, nDstPitches[0], pSrc[0] + nSrcPitches[0]*nSuperVPad + nHPadding*pixelsize, nSrcPitches[0]);
 
 
-    if ( (pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
-    {
-      pDstYUY2 = dst->GetWritePtr();
-      nDstPitchYUY2 = dst->GetPitch();
-      YUY2FromPlanes(pDstYUY2, nDstPitchYUY2, vi.width, vi.height,
-                  pDst[0], nDstPitches[0], pDst[1], pDst[2], nDstPitches[1], cpuFlags);
-    }
 
   if ( showSad ) {
     char buf[80];
@@ -193,10 +144,7 @@ PVideoFrame __stdcall MVShow::GetFrame(int n, IScriptEnvironment* env)
             nsc += 1;
     }
     snprintf(buf, sizeof(buf), "%d %d", int(mean / nBlkCount)*8/nBlkSizeX*8/nBlkSizeY, nsc*256/nBlkCount);
-    if ( (pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
-      DrawStringYUY2(dst, 0, 0, buf);
-    else
-      DrawString(dst, vi, 0, 0, buf);
+    DrawString(dst, vi, 0, 0, buf);
   }
 
   if ( number>0 && number <= mvClip.GetBlkCount()) {
@@ -205,10 +153,7 @@ PVideoFrame __stdcall MVShow::GetFrame(int n, IScriptEnvironment* env)
          int x = block.GetX();
          int y = block.GetY();
     snprintf(buf, sizeof(buf), "n=%d x=%d y=%d vx=%d vy=%d sad=%d",number, x, y, block.GetMV().x, block.GetMV().y, block.GetSAD());
-    if ( (pixelType & VideoInfo::CS_YUY2) == VideoInfo::CS_YUY2 && !planar)
-      DrawStringYUY2(dst, 0, 0, buf);
-    else
-      DrawString(dst, vi, 0, 0, buf);
+    DrawString(dst, vi, 0, 0, buf);
     if (pixelsize == 1) {
       BYTE *pDstWork = pDst[0] + x + y*nDstPitches[0] + nDstPitches[0] * nSuperVPad + nHPadding;
       for (int h = 0; h < nBlkSizeX; h++)

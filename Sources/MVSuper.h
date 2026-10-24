@@ -22,7 +22,6 @@
 #define __MV_SUPER__
 
 #include "commonfunctions.h"
-#include "yuy2planes.h"
 #include	"avisynth.h"
 #include "stdint.h"
 
@@ -99,7 +98,6 @@ protected:
   PClip          pelclip; // upsized source clip with doubled frame width and heigth (used for pel=2)
   //bool           isse;   //PF maybe obsolate or debug 160729
   int            cpuFlags;
-  bool           planar; //v2.0.0.7 PF maybe obsolate 160729
 
   int            nWidth;
   int            nHeight;
@@ -111,16 +109,13 @@ protected:
   int bits_per_pixel;
 
   bool           chroma;
-  int            pixelType; //PF maybe obsolate 160729 used in YUY decision along with planar flag
+  int            pixelType;
   bool           usePelClip;
   int            nSuperWidth;
   int            nSuperHeight;
 
   MVPlaneSet     nModeYUV;
 
-  YUY2Planes *   SrcPlanes;  //PF maybe obsolate 160729 YUY
-//	YUY2Planes *   DstPlanes;
-  YUY2Planes *   SrcPelPlanes; //PF maybe obsolate 160729 YUY
 
   MVGroupOfFrames *
     pSrcGOF;
@@ -132,7 +127,7 @@ public:
 
   MVSuper(
     PClip _child, int _hpad, int _vpad, int pel, int _levels, bool _chroma,
-    int _sharp, int _rfilter, PClip _pelclip, bool _isse, bool _planar,
+    int _sharp, int _rfilter, PClip _pelclip, bool _isse,
     bool mt_flag, bool yuy2_source, IScriptEnvironment* env
   );
   ~MVSuper();

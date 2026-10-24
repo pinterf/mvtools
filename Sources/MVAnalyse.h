@@ -24,7 +24,6 @@
 #include "DCTFactory.h"
 #include "GroupOfPlanes.h"
 #include "MVAnalysisData.h"
-#include "yuy2planes.h"
 
 #include "avisynth.h"
 
@@ -101,8 +100,6 @@ protected:
   FILE *outfile;
   short * outfilebuf;
 
-  //	YUY2Planes * SrcPlanes;
-  //	YUY2Planes * RefPlanes;
 
   std::unique_ptr<DCTFactory> _dct_factory_ptr; // Not instantiated if not needed
   conc::ObjPool<DCTClass> _dct_pool;
