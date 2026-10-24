@@ -53,6 +53,8 @@ Change log
     uninitialized memory (non-deterministic output). Vectors of such clips change.
   - Fix: MCompensate cclip was ignored (the parameter was read from the thSAD2 argument). With tr > 0 the center frames
     come from cclip now, as documented.
+  - (internal cosmetics): MDepan: the reserved field of the motion data header was uninitialized (4 random bytes in the
+    data clip; DePan ignores it). Deterministic output now.
 
   Fixes, C path (non-x86 builds, and x86 with SetMaxCPU("none"))
   - Fix: MFlow, MFlowInter, MFlowFps, MFlowBlur, MBlockFps: heap corruption (crash) in the vector upsizer: rows were

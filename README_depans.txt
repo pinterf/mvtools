@@ -71,6 +71,8 @@ Change log (modifications by pinterf: https://github.com/pinterf/):
     Was uninitialized memory outside the data area: harmless for DePan, but the output differed from run to run,
     and DePanScenes copied it into its not marked planes. Deterministic output helps testing (frame hashes,
     comparing the output of different versions).
+  - (internal cosmetics): the reserved field of the motion data header was uninitialized (4 random bytes in the
+    data clip, the output depended on the memory contents). Readers ignore the field.
   Both
   - Build: aarch64 (Linux, CMake) and Windows on ARM64 (build_arm64_mingw.bat: cross-compiled on x64 Windows with
     llvm-mingw, libc++ linked statically). DepanEstimate needs an ARM64 libfftw3f-3.dll on Windows on ARM64,

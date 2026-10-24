@@ -2378,6 +2378,8 @@ Planar2Interleaved() # convert back to normal interleave YUY2
                     uninitialized memory (non-deterministic output). Vectors of such clips change.</li>
                 <li>Fix: MCompensate cclip was ignored (the parameter was read from the thSAD2 argument). With tr &gt; 0 the center frames
                     come from cclip now, as documented.</li>
+                <li>(internal cosmetics): MDepan: the reserved field of the motion data header was uninitialized (4 random bytes in the
+                    data clip; DePan ignores it). Deterministic output now.</li>
             </ul>
         </li>
         <li>
