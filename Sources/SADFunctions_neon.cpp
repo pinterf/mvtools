@@ -24,71 +24,126 @@
 #include <cstring>
 #include <cstdlib>
 
-// partial vector loads: no read beyond the block width
+// partial vector loads: no read beyond the block width, the other lanes are zero (zero absolute difference)
 static MV_FORCEINLINE uint8x8_t load_4x8(const uint8_t *p) {
   uint32_t v;
   memcpy(&v, p, 4);
-  return vreinterpret_u8_u32(vdup_n_u32(v));
+  return vreinterpret_u8_u32(vset_lane_u32(v, vdup_n_u32(0), 0));
+}
+
+// 4 pixels of two rows
+static MV_FORCEINLINE uint8x8_t load_4x8_2rows(const uint8_t *p0, const uint8_t *p1) {
+  uint32_t a, b;
+  memcpy(&a, p0, 4);
+  memcpy(&b, p1, 4);
+  return vreinterpret_u8_u32(vset_lane_u32(b, vdup_n_u32(a), 1));
 }
 
 static MV_FORCEINLINE uint8x8_t load_2x8(const uint8_t *p) {
   uint16_t v;
   memcpy(&v, p, 2);
-  return vreinterpret_u8_u16(vdup_n_u16(v));
+  return vreinterpret_u8_u16(vset_lane_u16(v, vdup_n_u16(0), 0));
 }
 
 // The sum is exact (integer), so the summation order does not matter: identical to Sad_C.
-// 8 bit: one row of 64 pixels adds at most 4*2*255 + 255 to a 16 bit lane, it is widened to 32 bit per row.
+// One accumulator would be a serial chain (latency bound): the vector steps of a row (16 bytes, then the
+// 8/4/2 pixel rest) go round robin into 4 independent accumulators; narrow blocks put G rows into one round.
+// 8 bit: 16 bit lanes, a lane gets at most 64 steps of 2 * 255 (64x64: 4 steps per row, one per accumulator).
 template<int nBlkWidth, int nBlkHeight, typename pixel_t>
 unsigned int Sad_neon(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
 {
-  uint32x4_t acc = vdupq_n_u32(0);
   unsigned int tail = 0;
 
   if constexpr (sizeof(pixel_t) == 1) {
-    constexpr int w16 = nBlkWidth / 16 * 16;
-    constexpr bool has8 = (nBlkWidth % 16) >= 8;
-    constexpr int x4 = w16 + (has8 ? 8 : 0);
-    constexpr bool has4 = (nBlkWidth - x4) >= 4;
-    constexpr int x2 = x4 + (has4 ? 4 : 0);
-    constexpr bool has2 = (nBlkWidth - x2) >= 2;
-    constexpr int x1 = x2 + (has2 ? 2 : 0);
-    for (int y = 0; y < nBlkHeight; y++) {
-      uint16x8_t row = vdupq_n_u16(0);
-      for (int x = 0; x < w16; x += 16)
-        row = vpadalq_u8(row, vabdq_u8(vld1q_u8(pSrc + x), vld1q_u8(pRef + x)));
-      if constexpr (has8)
-        row = vaddw_u8(row, vabd_u8(vld1_u8(pSrc + w16), vld1_u8(pRef + w16)));
-      // the unused (duplicated) lanes are cut by the widening of the low half only
-      if constexpr (has4)
-        row = vaddq_u16(row, vcombine_u16(vget_low_u16(vmovl_u8(vabd_u8(load_4x8(pSrc + x4), load_4x8(pRef + x4)))), vdup_n_u16(0)));
-      if constexpr (has2)
-        row = vaddq_u16(row, vcombine_u16(vget_low_u16(vmovl_u8(vext_u8(vabd_u8(load_2x8(pSrc + x2), load_2x8(pRef + x2)), vdup_n_u8(0), 6))), vdup_n_u16(0)));
-      for (int x = x1; x < nBlkWidth; x++)
-        tail += std::abs((int)pSrc[x] - (int)pRef[x]);
-      acc = vpadalq_u16(acc, row);
-      pSrc += nSrcPitch;
-      pRef += nRefPitch;
+    uint16x8_t acc[4] = { vdupq_n_u16(0), vdupq_n_u16(0), vdupq_n_u16(0), vdupq_n_u16(0) };
+    if constexpr (nBlkWidth == 4) {
+      // two rows in one vector
+      constexpr int nPairs = nBlkHeight / 2;
+      auto pair = [&](int k) {
+        acc[k] = vabal_u8(acc[k], load_4x8_2rows(pSrc, pSrc + nSrcPitch), load_4x8_2rows(pRef, pRef + nRefPitch));
+        pSrc += 2 * nSrcPitch;
+        pRef += 2 * nRefPitch;
+      };
+      for (int p = 0; p < nPairs / 4; p++)
+        for (int k = 0; k < 4; k++)
+          pair(k);
+      for (int k = 0; k < nPairs % 4; k++)
+        pair(k);
+      if constexpr (nBlkHeight & 1)
+        acc[3] = vabal_u8(acc[3], load_4x8(pSrc), load_4x8(pRef));
+    }
+    else {
+      constexpr int w16 = nBlkWidth / 16 * 16;
+      constexpr bool has8 = (nBlkWidth % 16) >= 8;
+      constexpr int x4 = w16 + (has8 ? 8 : 0);
+      constexpr bool has4 = (nBlkWidth - x4) >= 4;
+      constexpr int x2 = x4 + (has4 ? 4 : 0);
+      constexpr bool has2 = (nBlkWidth - x2) >= 2;
+      constexpr int x1 = x2 + (has2 ? 2 : 0);
+      constexpr int nSteps = w16 / 16 + has8 + has4 + has2; // vector steps per row
+      constexpr int G = (nSteps == 0 || nSteps >= 4) ? 1 : 4 / nSteps; // rows per round
+      auto row = [&](int r) { // r: row in the round
+        int k = r * nSteps;
+        for (int x = 0; x < w16; x += 16, k++)
+          acc[k & 3] = vpadalq_u8(acc[k & 3], vabdq_u8(vld1q_u8(pSrc + x), vld1q_u8(pRef + x)));
+        if constexpr (has8) {
+          acc[k & 3] = vabal_u8(acc[k & 3], vld1_u8(pSrc + w16), vld1_u8(pRef + w16));
+          k++;
+        }
+        if constexpr (has4) {
+          acc[k & 3] = vabal_u8(acc[k & 3], load_4x8(pSrc + x4), load_4x8(pRef + x4));
+          k++;
+        }
+        if constexpr (has2)
+          acc[k & 3] = vabal_u8(acc[k & 3], load_2x8(pSrc + x2), load_2x8(pRef + x2));
+        for (int x = x1; x < nBlkWidth; x++)
+          tail += std::abs((int)pSrc[x] - (int)pRef[x]);
+        pSrc += nSrcPitch;
+        pRef += nRefPitch;
+      };
+      for (int y = 0; y < nBlkHeight / G; y++)
+        for (int r = 0; r < G; r++)
+          row(r);
+      for (int r = 0; r < nBlkHeight % G; r++)
+        row(r);
+    }
+    if constexpr (nBlkWidth * nBlkHeight <= 256) // the whole sum fits 16 bits
+      return vaddvq_u16(vaddq_u16(vaddq_u16(acc[0], acc[1]), vaddq_u16(acc[2], acc[3]))) + tail;
+    else {
+      uint32x4_t sum = vpaddlq_u16(acc[0]);
+      sum = vpadalq_u16(sum, acc[1]);
+      sum = vpadalq_u16(sum, acc[2]);
+      sum = vpadalq_u16(sum, acc[3]);
+      return vaddvq_u32(sum) + tail;
     }
   }
   else {
+    uint32x4_t acc[4] = { vdupq_n_u32(0), vdupq_n_u32(0), vdupq_n_u32(0), vdupq_n_u32(0) };
     constexpr int w8 = nBlkWidth / 8 * 8;
     constexpr bool has4 = (nBlkWidth % 8) >= 4;
     constexpr int x1 = w8 + (has4 ? 4 : 0);
-    for (int y = 0; y < nBlkHeight; y++) {
+    constexpr int nSteps = w8 / 8 + has4;
+    constexpr int G = (nSteps == 0 || nSteps >= 4) ? 1 : 4 / nSteps;
+    auto row = [&](int r) {
       const uint16_t *s = reinterpret_cast<const uint16_t *>(pSrc);
-      const uint16_t *r = reinterpret_cast<const uint16_t *>(pRef);
-      for (int x = 0; x < w8; x += 8)
-        acc = vpadalq_u16(acc, vabdq_u16(vld1q_u16(s + x), vld1q_u16(r + x)));
+      const uint16_t *rf = reinterpret_cast<const uint16_t *>(pRef);
+      int k = r * nSteps;
+      for (int x = 0; x < w8; x += 8, k++)
+        acc[k & 3] = vpadalq_u16(acc[k & 3], vabdq_u16(vld1q_u16(s + x), vld1q_u16(rf + x)));
       if constexpr (has4)
-        acc = vaddw_u16(acc, vabd_u16(vld1_u16(s + w8), vld1_u16(r + w8)));
+        acc[k & 3] = vabal_u16(acc[k & 3], vld1_u16(s + w8), vld1_u16(rf + w8));
       for (int x = x1; x < nBlkWidth; x++)
-        tail += std::abs((int)s[x] - (int)r[x]);
+        tail += std::abs((int)s[x] - (int)rf[x]);
       pSrc += nSrcPitch;
       pRef += nRefPitch;
-    }
+    };
+    for (int y = 0; y < nBlkHeight / G; y++)
+      for (int r = 0; r < G; r++)
+        row(r);
+    for (int r = 0; r < nBlkHeight % G; r++)
+      row(r);
+    return vaddvq_u32(vaddq_u32(vaddq_u32(acc[0], acc[1]), vaddq_u32(acc[2], acc[3]))) + tail;
   }
-  return vaddvq_u32(acc) + tail;
 }
 
 #define MAKE_SAD_FN(x, y) \
