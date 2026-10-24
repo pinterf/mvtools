@@ -32,7 +32,7 @@
 #include <stdint.h>
 
 template<int blockWidth, int blockHeight, int out16_type, int level>
-void Degrain1to6_avx2(BYTE* pDst, BYTE* pDstLsb, int WidthHeightForC, int nDstPitch, const BYTE* pSrc, int nSrcPitch,
+void Degrain1to6_avx2(BYTE* pDst, int WidthHeightForC, int nDstPitch, const BYTE* pSrc, int nSrcPitch,
   const BYTE* pRefB[MAX_DEGRAIN], int BPitch[MAX_DEGRAIN], const BYTE* pRefF[MAX_DEGRAIN], int FPitch[MAX_DEGRAIN],
   int WSrc,
   int WRefB[MAX_DEGRAIN], int WRefF[MAX_DEGRAIN]);

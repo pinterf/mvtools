@@ -159,7 +159,6 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
   SATD = SadDummy; //for now disable SATD if default functions are used
 
                      // in overlaps.h
-                     // OverlapsLsbFunction
                      // OverlapsFunction
                      // in M(V)DegrainX: DenoiseXFunction
   arch_t arch;

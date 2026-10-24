@@ -146,7 +146,6 @@ MVBlockFps::MVBlockFps(
   }
 
   // in overlaps.h
-  // OverlapsLsbFunction
   // OverlapsFunction
   // in M(V)DegrainX: DenoiseXFunction
   arch_t arch;

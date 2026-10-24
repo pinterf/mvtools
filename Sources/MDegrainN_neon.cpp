@@ -31,7 +31,7 @@
 // one block row, or two rows (pair: blocks up to 4 pixels wide); a function, not a lambda: GCC does not inline the lambda
 template <int blockWidth, typename pixel_t, int out16_type, bool pair>
 static MV_FORCEINLINE void DegrainN_neon_rows(
-  uint8_t* pDst, uint8_t* pDstLsb, int nDstPitch,
+  uint8_t* pDst, int nDstPitch,
   const uint8_t* pSrc, int nSrcPitch,
   const uint8_t* pRef[], int Pitch[],
   int Wall[], int nRefs, int h)
@@ -43,27 +43,26 @@ static MV_FORCEINLINE void DegrainN_neon_rows(
   constexpr int restMode = pair ? LANES_PAIR : LANES_PART;
   const uint8_t* s = pSrc + (ptrdiff_t)h * nSrcPitch;
   uint8_t* d = pDst + (ptrdiff_t)h * nDstPitch;
-  uint8_t* dl = out16_type == 1 ? pDstLsb + (ptrdiff_t)h * nDstPitch : nullptr;
   if constexpr (sizeof(pixel_t) == 1) {
     uint16x8_t acc[nSteps];
     const uint16_t w0 = (uint16_t)Wall[0];
     for (int c = 0; c < nFull; c++)
-      acc[c] = vmulq_n_u16(vmovl_u8(load_lanes_u8<LANES_FULL, 8>(s + 8 * c, nSrcPitch)), w0);
+      acc[c] = vmulq_n_u16(vmovl_u8((load_lanes_u8<LANES_FULL, 8>(s + 8 * c, nSrcPitch))), w0);
     if constexpr (rest > 0)
-      acc[nFull] = vmulq_n_u16(vmovl_u8(load_lanes_u8<restMode, rest>(s + w8, nSrcPitch)), w0);
+      acc[nFull] = vmulq_n_u16(vmovl_u8((load_lanes_u8<restMode, rest>(s + w8, nSrcPitch))), w0);
     for (int j = 0; j < nRefs; j++) {
       const int pitch = Pitch[j];
       const uint8_t* r = pRef[j] + (ptrdiff_t)h * pitch;
       const uint16_t w = (uint16_t)Wall[j + 1];
       for (int c = 0; c < nFull; c++)
-        acc[c] = vmlaq_n_u16(acc[c], vmovl_u8(load_lanes_u8<LANES_FULL, 8>(r + 8 * c, pitch)), w);
+        acc[c] = vmlaq_n_u16(acc[c], vmovl_u8((load_lanes_u8<LANES_FULL, 8>(r + 8 * c, pitch))), w);
       if constexpr (rest > 0)
-        acc[nFull] = vmlaq_n_u16(acc[nFull], vmovl_u8(load_lanes_u8<restMode, rest>(r + w8, pitch)), w);
+        acc[nFull] = vmlaq_n_u16(acc[nFull], vmovl_u8((load_lanes_u8<restMode, rest>(r + w8, pitch))), w);
     }
     for (int c = 0; c < nFull; c++)
-      store_degrain_u8<out16_type, LANES_FULL, 8>(d, dl, 8 * c, nDstPitch, acc[c]);
+      store_degrain_u8<out16_type, LANES_FULL, 8>(d, 8 * c, nDstPitch, acc[c]);
     if constexpr (rest > 0)
-      store_degrain_u8<out16_type, restMode, rest>(d, dl, w8, nDstPitch, acc[nFull]);
+      store_degrain_u8<out16_type, restMode, rest>(d, w8, nDstPitch, acc[nFull]);
   }
   else {
     uint32x4_t lo[nSteps], hi[nSteps];
@@ -98,7 +97,7 @@ static MV_FORCEINLINE void DegrainN_neon_rows(
 
 template <int blockWidth, typename pixel_t, int out16_type>
 static MV_FORCEINLINE void DegrainN_neon_impl(
-  uint8_t* pDst, uint8_t* pDstLsb, int nDstPitch,
+  uint8_t* pDst, int nDstPitch,
   const uint8_t* pSrc, int nSrcPitch,
   const uint8_t* pRef[], int Pitch[],
   int Wall[], int trad, const int blockHeight)
@@ -108,10 +107,10 @@ static MV_FORCEINLINE void DegrainN_neon_impl(
   int h = 0;
   if constexpr (blockWidth <= 4) {
     for (; h + 2 <= blockHeight; h += 2)
-      DegrainN_neon_rows<blockWidth, pixel_t, out16_type, true>(pDst, pDstLsb, nDstPitch, pSrc, nSrcPitch, pRef, Pitch, Wall, nRefs, h);
+      DegrainN_neon_rows<blockWidth, pixel_t, out16_type, true>(pDst, nDstPitch, pSrc, nSrcPitch, pRef, Pitch, Wall, nRefs, h);
   }
   for (; h < blockHeight; h++)
-    DegrainN_neon_rows<blockWidth, pixel_t, out16_type, false>(pDst, pDstLsb, nDstPitch, pSrc, nSrcPitch, pRef, Pitch, Wall, nRefs, h);
+    DegrainN_neon_rows<blockWidth, pixel_t, out16_type, false>(pDst, nDstPitch, pSrc, nSrcPitch, pRef, Pitch, Wall, nRefs, h);
 }
 
 // float: as GCC contracts DegrainN_C<float> on aarch64 (checked in the disassembly):
@@ -119,7 +118,7 @@ static MV_FORCEINLINE void DegrainN_neon_impl(
 // val = val + fma(A, W1, B * W2), finally * (1/256)
 template <int blockWidth, int blockHeight>
 void DegrainN_float_neon(
-  uint8_t* pDst, uint8_t* pDstLsb, int nDstPitch,
+  uint8_t* pDst, int nDstPitch,
   const uint8_t* pSrc, int nSrcPitch,
   const uint8_t* pRef[], int Pitch[],
   int Wall[], int trad
@@ -160,20 +159,19 @@ void DegrainN_float_neon(
 
 template <typename pixel_t, int blockWidth, int blockHeight, int out16_type>
 void DegrainN_neon(
-  uint8_t* pDst, uint8_t* pDstLsb, int nDstPitch,
+  uint8_t* pDst, int nDstPitch,
   const uint8_t* pSrc, int nSrcPitch,
   const uint8_t* pRef[], int Pitch[],
   int Wall[], int trad
 )
 {
-  DegrainN_neon_impl<blockWidth, pixel_t, out16_type>(pDst, pDstLsb, nDstPitch, pSrc, nSrcPitch, pRef, Pitch, Wall, trad, blockHeight);
+  DegrainN_neon_impl<blockWidth, pixel_t, out16_type>(pDst, nDstPitch, pSrc, nSrcPitch, pRef, Pitch, Wall, trad, blockHeight);
 }
 
 #define MAKE_FN(x, y) \
-template void DegrainN_neon<uint8_t, x, y, 0>(uint8_t*, uint8_t*, int, const uint8_t*, int, const uint8_t*[], int[], int[], int); \
-template void DegrainN_neon<uint8_t, x, y, 1>(uint8_t*, uint8_t*, int, const uint8_t*, int, const uint8_t*[], int[], int[], int); \
-template void DegrainN_neon<uint8_t, x, y, 2>(uint8_t*, uint8_t*, int, const uint8_t*, int, const uint8_t*[], int[], int[], int); \
-template void DegrainN_neon<uint16_t, x, y, 0>(uint8_t*, uint8_t*, int, const uint8_t*, int, const uint8_t*[], int[], int[], int); \
-template void DegrainN_float_neon<x, y>(uint8_t*, uint8_t*, int, const uint8_t*, int, const uint8_t*[], int[], int[], int);
+template void DegrainN_neon<uint8_t, x, y, 0>(uint8_t*, int, const uint8_t*, int, const uint8_t*[], int[], int[], int); \
+template void DegrainN_neon<uint8_t, x, y, 2>(uint8_t*, int, const uint8_t*, int, const uint8_t*[], int[], int[], int); \
+template void DegrainN_neon<uint16_t, x, y, 0>(uint8_t*, int, const uint8_t*, int, const uint8_t*[], int[], int[], int); \
+template void DegrainN_float_neon<x, y>(uint8_t*, int, const uint8_t*, int, const uint8_t*[], int[], int[], int);
 MVTOOLS_BLOCKSIZES(MAKE_FN)
 #undef MAKE_FN

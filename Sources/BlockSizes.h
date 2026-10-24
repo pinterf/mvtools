@@ -1,7 +1,7 @@
 #ifndef __BLOCKSIZES_H__
 #define __BLOCKSIZES_H__
 
-// The block sizes of the C function tables: copy, overlaps (also lsb), SAD, MDegrain1-6, MDegrainN, luma.
+// The block sizes of the C function tables: copy, overlaps, SAD, MDegrain1-6, MDegrainN, luma.
 // One list for all of them, so that no table can miss a size (e.g. luma lacked 12x3 and 6x24: crash in MAnalyse).
 // SIMD versions are registered separately, only for some sizes, with C as fallback.
 // Usage: MVTOOLS_BLOCKSIZES(MAKE_XXX_FN) where MAKE_XXX_FN(x, y) registers one size.

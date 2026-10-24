@@ -50,7 +50,7 @@ private:
   bool has_at_least_v8;
 
   typedef void (DenoiseNFunction)(
-    BYTE *pDst, BYTE *pDstLsb, int nDstPitch,
+    BYTE *pDst, int nDstPitch,
     const BYTE *pSrc, int nSrcPitch,
     // 2*k = ref backwards, 2*k+1 = ref forwards
     const BYTE *pRef[], int Pitch[],
@@ -78,7 +78,6 @@ private:
   {
   public:
     enum { MAX_SIZE = MAX_BLOCK_SIZE };
-    enum { AREA = MAX_SIZE * MAX_SIZE };
     unsigned char  _d[MAX_SIZE * MAX_SIZE * 2]; // * 2 for uint16_t (also out16)
   };
 

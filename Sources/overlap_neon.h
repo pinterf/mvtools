@@ -20,14 +20,11 @@
 
 #include <stdint.h>
 
-// same results as Overlaps_C / Overlaps_float_C / OverlapsLsb_C
+// same results as Overlaps_C / Overlaps_float_C
 template <typename pixel_t, int blockWidth, int blockHeight>
 void Overlaps_neon(uint16_t *pDst0, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
 
 template <int blockWidth, int blockHeight>
 void Overlaps_float_neon(uint16_t *pDst0, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
-
-template <int blockWidth, int blockHeight>
-void OverlapsLsb_neon(int *pDst, int nDstPitch, const unsigned char *pSrc, const unsigned char *pSrcLsb, int nSrcPitch, short *pWin, int nWinPitch);
 
 #endif

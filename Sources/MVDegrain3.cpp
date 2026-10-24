@@ -48,7 +48,6 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
 {
   //---------- DENOISE/DEGRAIN
   const int DEGRAIN_TYPE_8BIT = 1;
-  const int DEGRAIN_TYPE_8BIT_STACKED = 2;
   const int DEGRAIN_TYPE_8BIT_OUT16 = 4;
   const int DEGRAIN_TYPE_10to14BIT = 8;
   const int DEGRAIN_TYPE_16BIT = 16;
@@ -74,10 +73,9 @@ Denoise1to6Function* MVDegrainX::get_denoise123_function(int BlockX, int BlockY,
   else
     return nullptr;
 
-  // level 1-6, 8bit C, 8bit lsb C, 16 bit C (same for all, no blocksize templates)
+  // level 1-6, 8bit C, 16 bit C (same for all, no blocksize templates)
 #define MAKE_FN_LEVEL(x, y, level) \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT, level, NO_SIMD)] = Degrain1to6_C<uint8_t, 0, level>; \
-func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_STACKED, level, NO_SIMD)] = Degrain1to6_C<uint8_t, 1, level>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_OUT16, level, NO_SIMD)] = Degrain1to6_C<uint8_t, 2, level>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_10to14BIT, level, NO_SIMD)] = Degrain1to6_C<uint16_t, 0, level>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_16BIT, level, NO_SIMD)] = Degrain1to6_C<uint16_t, 0, level>; \
@@ -97,7 +95,6 @@ MAKE_FN_LEVEL(x,y,6)
   // integer formats, templated by the block width; float stays C
 #define MAKE_FN_LEVEL(x, y, level) \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT, level, USE_NEON)] = Degrain1to6_neon<x, uint8_t, 0, level>; \
-func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_STACKED, level, USE_NEON)] = Degrain1to6_neon<x, uint8_t, 1, level>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_OUT16, level, USE_NEON)] = Degrain1to6_neon<x, uint8_t, 2, level>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_10to14BIT, level, USE_NEON)] = Degrain1to6_neon<x, uint16_t, 0, level>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_16BIT, level, USE_NEON)] = Degrain1to6_neon<x, uint16_t, 0, level>;
@@ -122,7 +119,6 @@ MAKE_FN_LEVEL(x,y,6)
 #define MAKE_FN_LEVEL(x, y, level, yy) \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT, level, USE_SSE2)] = Degrain1to6_sse2<x, yy, 0, level>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT, level, USE_AVX2)] = Degrain1to6_avx2<x, yy, 0, level>; \
-func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_STACKED, level, USE_SSE2)] = Degrain1to6_sse2<x, yy, 1, level>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_OUT16, level, USE_SSE2)] = Degrain1to6_sse2<x, yy, 2, level>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_10to14BIT, level, USE_SSE41)] = Degrain1to6_16_sse41<x, yy, level, true>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_16BIT, level, USE_SSE41)] = Degrain1to6_16_sse41<x, yy, level, false>;
@@ -778,7 +774,7 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
           NORMWEIGHTS(WSrc, WRefB, WRefF);
 
           // luma
-          DEGRAINLUMA(pDstCur[0] + (xx << pixelsize_output_shift), nullptr,
+          DEGRAINLUMA(pDstCur[0] + (xx << pixelsize_output_shift),
             WidthHeightForC, nDstPitches[0], pSrcCur[0] + (xx << pixelsize_super_shift), nSrcPitches[0],
             pB, npB, pF, npF,
             WSrc, WRefB, WRefF
@@ -868,7 +864,7 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
           }
           NORMWEIGHTS(WSrc, WRefB, WRefF);
           // luma
-          DEGRAINLUMA(tmpBlock, nullptr, WidthHeightForC, tmpPitch << pixelsize_output_shift, pSrcCur[0] + (xx << pixelsize_super_shift), nSrcPitches[0],
+          DEGRAINLUMA(tmpBlock, WidthHeightForC, tmpPitch << pixelsize_output_shift, pSrcCur[0] + (xx << pixelsize_super_shift), nSrcPitches[0],
             pB, npB, pF, npF,
             WSrc,
             WRefB, WRefF
@@ -1063,7 +1059,7 @@ void MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
           }
           NORMWEIGHTS(WSrc, WRefB, WRefF);
           // chroma
-          DEGRAINCHROMA(pDstCur + (xx << pixelsize_output_shift), nullptr,
+          DEGRAINCHROMA(pDstCur + (xx << pixelsize_output_shift),
             WidthHeightForC_UV, nDstPitch, pSrcCur + (xx << pixelsize_super_shift), nSrcPitch,
             pBV, npBV, pFV, npFV,
             WSrc, WRefB, WRefF
@@ -1155,7 +1151,7 @@ void MVDegrainX::process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int n
           }
           NORMWEIGHTS(WSrc, WRefB, WRefF);
           // chroma
-          DEGRAINCHROMA(tmpBlock, nullptr, WidthHeightForC_UV, tmpPitch << pixelsize_output_shift, pSrcCur + (xx << pixelsize_super_shift), nSrcPitch,
+          DEGRAINCHROMA(tmpBlock, WidthHeightForC_UV, tmpPitch << pixelsize_output_shift, pSrcCur + (xx << pixelsize_super_shift), nSrcPitch,
             pBV, npBV, pFV, npFV,
             WSrc, WRefB, WRefF
           );

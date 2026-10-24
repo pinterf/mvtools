@@ -29,11 +29,10 @@
 
 // out16_type: 
 //   0: native 8 or 16
-//   1: 8bit in, lsb
 //   2: 8bit in, native16 out
 template <typename pixel_t, int blockWidth, int blockHeight, int out16_type>
 void DegrainN_C(
-  BYTE* pDst, BYTE* pDstLsb, int nDstPitch,
+  BYTE* pDst, int nDstPitch,
   const BYTE* pSrc, int nSrcPitch,
   const BYTE* pRef[], int Pitch[],
   int Wall[], int trad
@@ -41,10 +40,9 @@ void DegrainN_C(
 {
   // for less template, see solution in Degrain1to6_C
 
-  constexpr bool lsb_flag = (out16_type == 1);
   constexpr bool out16 = (out16_type == 2);
 
-  if constexpr (lsb_flag || out16)
+  if constexpr (out16)
   {
     // 8 bit base only
     for (int h = 0; h < blockHeight; ++h)
@@ -57,18 +55,10 @@ void DegrainN_C(
           val += pRef[k * 2][x] * Wall[k * 2 + 1]
             + pRef[k * 2 + 1][x] * Wall[k * 2 + 2];
         }
-        if constexpr (lsb_flag) {
-          pDst[x] = (uint8_t)(val >> 8);
-          pDstLsb[x] = (uint8_t)(val & 255);
-        }
-        else { // out16
-          reinterpret_cast<uint16_t*>(pDst)[x] = (uint16_t)val;
-        }
+        reinterpret_cast<uint16_t*>(pDst)[x] = (uint16_t)val;
       }
 
       pDst += nDstPitch;
-      if constexpr (lsb_flag)
-        pDstLsb += nDstPitch;
       pSrc += nSrcPitch;
       for (int k = 0; k < trad; ++k)
       {
@@ -118,11 +108,10 @@ void DegrainN_C(
 #ifdef INTEL_INTRINSICS
 // out16_type: 
 //   0: native 8 or 16
-//   1: 8bit in, lsb
 //   2: 8bit in, native16 out
 template <int blockWidth, int blockHeight, int out16_type>
 void DegrainN_sse2(
-  BYTE *pDst, BYTE *pDstLsb, int nDstPitch,
+  BYTE *pDst, int nDstPitch,
   const BYTE *pSrc, int nSrcPitch,
   const BYTE *pRef[], int Pitch[],
   int Wall[], int trad
@@ -131,7 +120,6 @@ void DegrainN_sse2(
   assert(blockWidth % 4 == 0);
   // only mod4 supported
 
-  constexpr bool lsb_flag = (out16_type == 1);
   constexpr bool out16 = (out16_type == 2);
 
   const __m128i z = _mm_setzero_si128();
@@ -139,10 +127,9 @@ void DegrainN_sse2(
   constexpr bool is_mod8 = blockWidth % 8 == 0;
   constexpr int pixels_at_a_time = is_mod8 ? 8 : 4; // 4 for 4 and 12; 8 for all others 8, 16, 24, 32...
 
-  if constexpr(lsb_flag || out16)
+  if constexpr (out16)
   {
     // no rounding
-    const __m128i m = _mm_set1_epi16(255);
 
     for (int h = 0; h < blockHeight; ++h)
     {
@@ -171,28 +158,12 @@ void DegrainN_sse2(
           val = _mm_add_epi16(val, s1);
           val = _mm_add_epi16(val, s2);
         }
-        if constexpr(is_mod8) {
-          if constexpr(lsb_flag) {
-            _mm_storel_epi64((__m128i*)(pDst + x), _mm_packus_epi16(_mm_srli_epi16(val, 8), z));
-            _mm_storel_epi64((__m128i*)(pDstLsb + x), _mm_packus_epi16(_mm_and_si128(val, m), z));
-          }
-          else {
-            _mm_storeu_si128((__m128i*)(pDst + x * 2), val);
-          }
-        }
-        else {
-          if constexpr(lsb_flag) {
-            *(uint32_t*)(pDst + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_srli_epi16(val, 8), z));
-            *(uint32_t*)(pDstLsb + x) = _mm_cvtsi128_si32(_mm_packus_epi16(_mm_and_si128(val, m), z));
-          }
-          else {
-            _mm_storel_epi64((__m128i*)(pDst + x * 2), val);
-          }
-        }
+        if constexpr(is_mod8)
+          _mm_storeu_si128((__m128i*)(pDst + x * 2), val);
+        else
+          _mm_storel_epi64((__m128i*)(pDst + x * 2), val);
       }
       pDst += nDstPitch;
-      if constexpr(lsb_flag)
-        pDstLsb += nDstPitch;
       pSrc += nSrcPitch;
       for (int k = 0; k < trad; ++k)
       {
@@ -257,7 +228,7 @@ void DegrainN_sse2(
 
 template<int blockWidth, int blockHeight, bool lessThan16bits>
 void DegrainN_16_sse41(
-  BYTE* pDst, BYTE* pDstLsb, int nDstPitch,
+  BYTE* pDst, int nDstPitch,
   const BYTE* pSrc, int nSrcPitch,
   const BYTE* pRef[], int Pitch[],
   int Wall[], int trad
@@ -370,7 +341,6 @@ MDegrainN::DenoiseNFunction* MDegrainN::get_denoiseN_function(int BlockX, int Bl
 {
   //---------- DENOISE/DEGRAIN
   const int DEGRAIN_TYPE_8BIT = 1;
-  const int DEGRAIN_TYPE_8BIT_STACKED = 2;
   const int DEGRAIN_TYPE_8BIT_OUT16 = 4;
   const int DEGRAIN_TYPE_10to14BIT = 8;
   const int DEGRAIN_TYPE_16BIT = 16;
@@ -396,10 +366,9 @@ MDegrainN::DenoiseNFunction* MDegrainN::get_denoiseN_function(int BlockX, int Bl
     return nullptr;
 
 
-  // 8bit C, 8bit lsb C, 8bit out16 C, 10-16 bit C, float C (same for all, no blocksize templates)
+  // 8bit C, 8bit out16 C, 10-16 bit C, float C (same for all, no blocksize templates)
 #define MAKE_FN(x, y) \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT, NO_SIMD)] = DegrainN_C<uint8_t, x, y, 0>; \
-func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_STACKED, NO_SIMD)] = DegrainN_C<uint8_t, x, y, 1>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_OUT16, NO_SIMD)] = DegrainN_C<uint8_t, x, y, 2>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_10to14BIT, NO_SIMD)] = DegrainN_C<uint16_t, x, y, 0>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_16BIT, NO_SIMD)] = DegrainN_C<uint16_t, x, y, 0>; \
@@ -411,7 +380,6 @@ func_degrain[make_tuple(x, y, DEGRAIN_TYPE_32BIT, NO_SIMD)] = DegrainN_C<float, 
 #ifdef NEON_INTRINSICS
 #define MAKE_FN(x, y) \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT, USE_NEON)] = DegrainN_neon<uint8_t, x, y, 0>; \
-func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_STACKED, USE_NEON)] = DegrainN_neon<uint8_t, x, y, 1>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_OUT16, USE_NEON)] = DegrainN_neon<uint8_t, x, y, 2>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_10to14BIT, USE_NEON)] = DegrainN_neon<uint16_t, x, y, 0>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_16BIT, USE_NEON)] = DegrainN_neon<uint16_t, x, y, 0>; \
@@ -424,7 +392,6 @@ func_degrain[make_tuple(x, y, DEGRAIN_TYPE_32BIT, USE_NEON)] = DegrainN_float_ne
       // and the SSE2 versions for 8 bit
 #define MAKE_FN(x, y) \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT, USE_SSE2)] = DegrainN_sse2<x, y, 0>; \
-func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_STACKED, USE_SSE2)] = DegrainN_sse2<x, y, 1>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_OUT16, USE_SSE2)] = DegrainN_sse2<x, y, 2>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_10to14BIT, USE_SSE41)] = DegrainN_16_sse41<x, y, true>; \
 func_degrain[make_tuple(x, y, DEGRAIN_TYPE_16BIT, USE_SSE41)] = DegrainN_16_sse41<x, y, false>;
@@ -1383,7 +1350,7 @@ void	MDegrainN::process_luma_normal_slice(Slicer::TaskData &td)
 
       // luma
       _degrainluma_ptr(
-        pDstCur + (xx << pixelsize_output_shift), nullptr, _dst_pitch_arr[0],
+        pDstCur + (xx << pixelsize_output_shift), _dst_pitch_arr[0],
         pSrcCur + (xx << pixelsize_super_shift), _src_pitch_arr[0],
         ref_data_ptr_arr, pitch_arr, weight_arr, _trad
       );
@@ -1536,7 +1503,7 @@ void	MDegrainN::process_luma_overlap_slice(int y_beg, int y_end)
 
       // luma
       _degrainluma_ptr(
-        &tmp_block._d[0], nullptr, tmpPitch << pixelsize_output_shift,
+        &tmp_block._d[0], tmpPitch << pixelsize_output_shift,
         pSrcCur + (xx << pixelsize_super_shift), _src_pitch_arr[0],
         ref_data_ptr_arr, pitch_arr, weight_arr, _trad
       );
@@ -1614,8 +1581,7 @@ void	MDegrainN::process_chroma_normal_slice(Slicer::TaskData &td)
 
       // chroma
       _degrainchroma_ptr(
-        pDstCur + (xx << pixelsize_output_shift),
-        nullptr, _dst_pitch_arr[P],
+        pDstCur + (xx << pixelsize_output_shift), _dst_pitch_arr[P],
         pSrcCur + (xx << pixelsize_super_shift), _src_pitch_arr[P],
         ref_data_ptr_arr, pitch_arr, weight_arr, _trad
       );
@@ -1779,7 +1745,7 @@ void	MDegrainN::process_chroma_overlap_slice(int y_beg, int y_end)
       // here we don't pass pixelsize, because _degrainchroma_ptr points already to the uint16_t version
       // if the clip was 16 bit one
       _degrainchroma_ptr(
-        &tmp_block._d[0], nullptr, tmpPitch << pixelsize_output_shift,
+        &tmp_block._d[0], tmpPitch << pixelsize_output_shift,
         pSrcCur + (xx << pixelsize_super_shift), _src_pitch_arr[P],
         ref_data_ptr_arr, pitch_arr, weight_arr, _trad
       );

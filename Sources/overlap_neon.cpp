@@ -110,35 +110,9 @@ void Overlaps_float_neon(uint16_t *pDst0, int nDstPitch, const unsigned char *pS
   }
 }
 
-// dst(int) += ((msb << 8) + lsb) * win
-template <int blockWidth, int blockHeight>
-void OverlapsLsb_neon(int *pDst, int nDstPitch, const unsigned char *pSrc, const unsigned char *pSrcLsb, int nSrcPitch, short *pWin, int nWinPitch)
-{
-  constexpr int w8 = blockWidth / 8 * 8;
-  for (int j = 0; j < blockHeight; j++) {
-    for (int i = 0; i < w8; i += 8) {
-      const uint16x8_t val = vorrq_u16(vshll_n_u8(vld1_u8(pSrc + i), 8), vmovl_u8(vld1_u8(pSrcLsb + i)));
-      const uint16x8_t win = vreinterpretq_u16_s16(vld1q_s16(pWin + i));
-      uint32x4_t d0 = vreinterpretq_u32_s32(vld1q_s32(pDst + i));
-      uint32x4_t d1 = vreinterpretq_u32_s32(vld1q_s32(pDst + i + 4));
-      d0 = vmlal_u16(d0, vget_low_u16(val), vget_low_u16(win));
-      d1 = vmlal_high_u16(d1, val, win);
-      vst1q_s32(pDst + i, vreinterpretq_s32_u32(d0));
-      vst1q_s32(pDst + i + 4, vreinterpretq_s32_u32(d1));
-    }
-    for (int i = w8; i < blockWidth; i++)
-      pDst[i] += ((pSrc[i] << 8) + pSrcLsb[i]) * pWin[i];
-    pDst += nDstPitch;
-    pSrc += nSrcPitch;
-    pSrcLsb += nSrcPitch;
-    pWin += nWinPitch;
-  }
-}
-
 #define MAKE_OVR_FN(x, y) \
 template void Overlaps_neon<uint8_t, x, y>(uint16_t *pDst0, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch); \
 template void Overlaps_neon<uint16_t, x, y>(uint16_t *pDst0, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch); \
-template void Overlaps_float_neon<x, y>(uint16_t *pDst0, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch); \
-template void OverlapsLsb_neon<x, y>(int *pDst, int nDstPitch, const unsigned char *pSrc, const unsigned char *pSrcLsb, int nSrcPitch, short *pWin, int nWinPitch);
+template void Overlaps_float_neon<x, y>(uint16_t *pDst0, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
 MVTOOLS_BLOCKSIZES(MAKE_OVR_FN)
 #undef MAKE_OVR_FN

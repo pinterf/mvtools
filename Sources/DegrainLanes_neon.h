@@ -102,14 +102,10 @@ static MV_FORCEINLINE void store_lanes_u16(uint8_t *p, int pitch, uint16x8_t v) 
 }
 
 // the weighted 8 bit sum (at most 255 * 256, 16 bit lanes) to the output formats
-//   out16_type 0: (x + 128) >> 8, 1: msb and lsb planes, 2: 16 bit output
+//   out16_type 0: (x + 128) >> 8, 2: 16 bit output
 template<int out16_type, int mode, int n>
-static MV_FORCEINLINE void store_degrain_u8(uint8_t *pDst, uint8_t *pDstLsb, int x, int nDstPitch, uint16x8_t acc) {
-  if constexpr (out16_type == 1) {
-    store_lanes_u8<mode, n>(pDst + x, nDstPitch, vshrn_n_u16(acc, 8));
-    store_lanes_u8<mode, n>(pDstLsb + x, nDstPitch, vmovn_u16(acc));
-  }
-  else if constexpr (out16_type == 2)
+static MV_FORCEINLINE void store_degrain_u8(uint8_t *pDst, int x, int nDstPitch, uint16x8_t acc) {
+  if constexpr (out16_type == 2)
     store_lanes_u16<mode, n>(pDst + 2 * x, nDstPitch, acc);
   else
     store_lanes_u8<mode, n>(pDst + x, nDstPitch, vrshrn_n_u16(acc, 8));

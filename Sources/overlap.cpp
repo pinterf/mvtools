@@ -274,23 +274,6 @@ void Short2Bytes(unsigned char *pDst, int nDstPitch, uint16_t *pDstShort, int ds
   }
 }
 
-void Short2BytesLsb(unsigned char *pDst, unsigned char *pDstLsb, int nDstPitch, int *pDstInt, int dstIntPitch, int nWidth, int nHeight)
-{
-  for (int h = 0; h < nHeight; h++)
-  {
-    for (int i = 0; i < nWidth; i++)
-    {
-      // origin: overlap windows have 11 bits precision
-      const int		a = (pDstInt[i] + (1 << 10)) >> 11; // v2.7.25 round
-      pDst[i] = a >> 8;
-      pDstLsb[i] = (unsigned char)(a);
-    }
-    pDst += nDstPitch;
-    pDstLsb += nDstPitch;
-    pDstInt += dstIntPitch;
-  }
-}
-
 // better name: Int to uint16
 void Short2Bytes_Int32toWord16(uint16_t *pDst, int nDstPitch, int *pDstInt, int dstIntPitch, int nWidth, int nHeight, int bits_per_pixel)
 {
@@ -879,36 +862,6 @@ func_overlaps[make_tuple(x, y, 1, USE_SSE41)] = Overlaps_uint8_t_sse4<x, y>;
     return result;
 }
 
-// lsb: old stacked16 heritage
-OverlapsLsbFunction *get_overlaps_lsb_function(int BlockX, int BlockY, int pixelsize, arch_t arch)
-{
-    // 8 bit only (pixelsize==1)
-    // BlkSizeX, BlkSizeY, pixelsize, arch_t
-    std::map<std::tuple<int, int, int, arch_t>, OverlapsLsbFunction*> func_overlaps_lsb;
-    using std::make_tuple;
-    // define C for 8 bits
-#define MAKE_OVR_FN(x, y) func_overlaps_lsb[make_tuple(x, y, 1, NO_SIMD)] = OverlapsLsb_C<x, y>;
-    MVTOOLS_BLOCKSIZES(MAKE_OVR_FN) // BlockSizes.h: the same list for all C tables
-#undef MAKE_OVR_FN
-#ifdef NEON_INTRINSICS
-#define MAKE_OVR_FN(x, y) func_overlaps_lsb[make_tuple(x, y, 1, USE_NEON)] = OverlapsLsb_neon<x, y>;
-    MVTOOLS_BLOCKSIZES(MAKE_OVR_FN)
-#undef MAKE_OVR_FN
-#endif
-
-    OverlapsLsbFunction *result = nullptr;
-    arch_t archlist[] = { USE_NEON, USE_AVX2, USE_AVX, USE_SSE41, USE_SSE2, NO_SIMD };
-    int index = 0;
-    while (result == nullptr) {
-      arch_t current_arch_try = archlist[index++];
-      if (current_arch_try > arch) continue;
-      result = func_overlaps_lsb[make_tuple(BlockX, BlockY, pixelsize, current_arch_try)];
-      if (result == nullptr && current_arch_try == NO_SIMD)
-        break;
-    }
-
-    return result;
-}
 
 
 

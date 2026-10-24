@@ -62,10 +62,8 @@ public :
 typedef void (OverlapsFunction)(uint16_t *pDst, int nDstPitch,
                             const unsigned char *pSrc, int nSrcPitch,
               short *pWin, int nWinPitch);
-typedef void (OverlapsLsbFunction)(int *pDst, int nDstPitch, const unsigned char *pSrc, const unsigned char *pSrcLsb, int nSrcPitch, short *pWin, int nWinPitch);
 
 OverlapsFunction* get_overlaps_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
-OverlapsLsbFunction* get_overlaps_lsb_function(int BlockX, int BlockY, int pixelsize, arch_t arch);
 
 //=============================================================
 // short
@@ -162,27 +160,6 @@ void Overlaps_float_C(uint16_t *pDst0, int nDstPitch, const unsigned char *pSrc,
 }
 
 
-template <int blockWidth, int blockHeight>
-void OverlapsLsb_C(int *pDst, int nDstPitch, const unsigned char *pSrc, const unsigned char *pSrcLsb, int nSrcPitch, short *pWin, int nWinPitch)
-{
-  // pWin from 0 to 2048: total shift 11
-  for (int j=0; j<blockHeight; j++)
-  {
-    for (int i=0; i<blockWidth; i++)
-    {
-      const int		val = (pSrc [i] << 8) + pSrcLsb [i];
-      short win = pWin[i];
-      // 16 bits data + 11 bits window = 27 bits max (safe)
-      // shift 11 in Short2Bytes_lsb
-      pDst [i] += val * win;
-    }
-    pDst += nDstPitch;
-    pSrc += nSrcPitch;
-    pSrcLsb += nSrcPitch;
-    pWin += nWinPitch;
-  }
-}
-
 
 #ifdef USE_OVERLAPS_ASM
 extern "C" void __cdecl  Overlaps64x64_sse2(uint16_t *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch);
@@ -232,7 +209,6 @@ extern "C" void __cdecl  Overlaps2x2_sse2(uint16_t *pDst, int nDstPitch, const u
 
 void Short2Bytes_sse2(unsigned char *pDst, int nDstPitch, uint16_t *pDstShort, int dstShortPitch, int nWidth, int nHeight);
 void Short2Bytes(unsigned char *pDst, int nDstPitch, uint16_t *pDstShort, int dstShortPitch, int nWidth, int nHeight);
-void Short2BytesLsb(unsigned char *pDst, unsigned char *pDstLsb, int nDstPitch, int *pDstInt, int dstIntPitch, int nWidth, int nHeight);
 void Short2Bytes_Int32toWord16(uint16_t *pDst, int nDstPitch, int *pDstInt, int dstIntPitch, int nWidth, int nHeight, int bits_per_pixel);
 void Short2Bytes_Int32toWord16_sse4(uint16_t *pDst, int nDstPitch, int *pDstInt, int dstIntPitch, int nWidth, int nHeight, int bits_per_pixel);
 void Short2Bytes_FloatInInt32ArrayToFloat(float *pDst, int nDstPitch, float *pDstInt, int dstIntPitch, int nWidth, int nHeight);
