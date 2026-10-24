@@ -17,97 +17,107 @@
 
 #include "MVDegrain3_neon.h"
 #include "MVDegrain3.h"
-#include <arm_neon.h>
+#include "BlockSizes.h"
+#include "DegrainLanes_neon.h"
+#include <type_traits>
 
 // The weights are normalized to a sum of exactly 1 << DEGRAIN_WEIGHT_BITS (256) and are never negative (norm_weights),
 // so an 8 bit weighted sum is at most 255 * 256: it fits the 16 bit lanes, the results are exact.
 // vrshrn_n(x, 8) is exactly (x + 128) >> 8, the rounding of Degrain1to6_C.
-template<typename pixel_t, int out16_type, int level>
+// The block width is a template parameter: rows are 8 pixel steps plus a rest (DegrainLanes_neon.h), blocks
+// up to 4 pixels wide take two rows per step. Pointers, pitches and weights are kept in locals: the caller's
+// arrays could alias the stores, the compiler would reload them for every step.
+template<int blockWidth, typename pixel_t, int out16_type, int level>
 void Degrain1to6_neon(uint8_t *pDst, uint8_t *pDstLsb, int WidthHeightForC, int nDstPitch, const uint8_t *pSrc, int nSrcPitch,
   const uint8_t *pRefB[], int BPitch[], const uint8_t *pRefF[], int FPitch[],
   int WSrc,
   int WRefB[], int WRefF[])
 {
   static_assert(DEGRAIN_WEIGHT_BITS == 8, "the 8 bit path needs the 16 bit range of the weighted sum");
-  const int blockWidth = (WidthHeightForC >> 16);
   const int blockHeight = (WidthHeightForC & 0xFFFF);
-  const int w8 = blockWidth / 8 * 8;
+  constexpr int w8 = blockWidth / 8 * 8;
+  constexpr int rest = blockWidth - w8;
+  constexpr bool pairs = blockWidth <= 4;
 
-  constexpr bool lsb_flag = (out16_type == 1);
-  constexpr bool out16 = (out16_type == 2);
-  constexpr int SHIFTBACK = (lsb_flag || out16) ? (DEGRAIN_WEIGHT_BITS - 8) : DEGRAIN_WEIGHT_BITS;
-  constexpr int rounder = (1 << SHIFTBACK) / 2;
+  const uint8_t *rB[level], *rF[level];
+  int pB[level], pF[level];
+  uint16_t wB[level], wF[level];
+  for (int k = 0; k < level; k++) {
+    rB[k] = pRefB[k]; rF[k] = pRefF[k];
+    pB[k] = BPitch[k]; pF[k] = FPitch[k];
+    wB[k] = (uint16_t)WRefB[k]; wF[k] = (uint16_t)WRefF[k];
+  }
+  const uint16_t wS = (uint16_t)WSrc;
 
-  for (int h = 0; h < blockHeight; h++)
-  {
+  // one 8 lane step at pixel x
+  auto step = [&](auto mode_c, auto n_c, int x) {
+    constexpr int mode = decltype(mode_c)::value;
+    constexpr int n = decltype(n_c)::value;
     if constexpr (sizeof(pixel_t) == 1) {
-      for (int x = 0; x < w8; x += 8) {
-        uint16x8_t acc = vmulq_n_u16(vmovl_u8(vld1_u8(pSrc + x)), (uint16_t)WSrc);
-        for (int k = 0; k < level; k++) {
-          acc = vmlaq_n_u16(acc, vmovl_u8(vld1_u8(pRefF[k] + x)), (uint16_t)WRefF[k]);
-          acc = vmlaq_n_u16(acc, vmovl_u8(vld1_u8(pRefB[k] + x)), (uint16_t)WRefB[k]);
-        }
-        if constexpr (lsb_flag) {
-          vst1_u8(pDst + x, vshrn_n_u16(acc, 8));
-          vst1_u8(pDstLsb + x, vmovn_u16(acc));
-        }
-        else if constexpr (out16)
-          vst1q_u16(reinterpret_cast<uint16_t *>(pDst) + x, acc);
-        else
-          vst1_u8(pDst + x, vrshrn_n_u16(acc, 8));
+      uint16x8_t acc = vmulq_n_u16(vmovl_u8(load_lanes_u8<mode, n>(pSrc + x, nSrcPitch)), wS);
+      for (int k = 0; k < level; k++) {
+        acc = vmlaq_n_u16(acc, vmovl_u8(load_lanes_u8<mode, n>(rF[k] + x, pF[k])), wF[k]);
+        acc = vmlaq_n_u16(acc, vmovl_u8(load_lanes_u8<mode, n>(rB[k] + x, pB[k])), wB[k]);
       }
+      store_degrain_u8<out16_type, mode, n>(pDst, pDstLsb, x, nDstPitch, acc);
     }
     else {
-      for (int x = 0; x < w8; x += 8) {
-        const uint16x8_t s = vld1q_u16(reinterpret_cast<const uint16_t *>(pSrc) + x);
-        uint32x4_t lo = vmull_n_u16(vget_low_u16(s), (uint16_t)WSrc);
-        uint32x4_t hi = vmull_high_n_u16(s, (uint16_t)WSrc);
-        for (int k = 0; k < level; k++) {
-          const uint16x8_t f = vld1q_u16(reinterpret_cast<const uint16_t *>(pRefF[k]) + x);
-          const uint16x8_t b = vld1q_u16(reinterpret_cast<const uint16_t *>(pRefB[k]) + x);
-          lo = vmlal_n_u16(lo, vget_low_u16(f), (uint16_t)WRefF[k]);
-          hi = vmlal_high_n_u16(hi, f, (uint16_t)WRefF[k]);
-          lo = vmlal_n_u16(lo, vget_low_u16(b), (uint16_t)WRefB[k]);
-          hi = vmlal_high_n_u16(hi, b, (uint16_t)WRefB[k]);
-        }
-        vst1q_u16(reinterpret_cast<uint16_t *>(pDst) + x, vcombine_u16(vrshrn_n_u32(lo, 8), vrshrn_n_u32(hi, 8)));
+      const int xb = 2 * x;
+      const uint16x8_t s = load_lanes_u16<mode, n>(pSrc + xb, nSrcPitch);
+      uint32x4_t lo = vmull_n_u16(vget_low_u16(s), wS);
+      uint32x4_t hi = vmull_high_n_u16(s, wS);
+      for (int k = 0; k < level; k++) {
+        const uint16x8_t f = load_lanes_u16<mode, n>(rF[k] + xb, pF[k]);
+        const uint16x8_t b = load_lanes_u16<mode, n>(rB[k] + xb, pB[k]);
+        lo = vmlal_n_u16(lo, vget_low_u16(f), wF[k]);
+        hi = vmlal_high_n_u16(hi, f, wF[k]);
+        lo = vmlal_n_u16(lo, vget_low_u16(b), wB[k]);
+        hi = vmlal_high_n_u16(hi, b, wB[k]);
       }
+      store_lanes_u16<mode, n>(pDst + xb, nDstPitch, vcombine_u16(vrshrn_n_u32(lo, 8), vrshrn_n_u32(hi, 8)));
     }
-    // the rest, as Degrain1to6_C
-    for (int x = w8; x < blockWidth; x++) {
-      int val = reinterpret_cast<const pixel_t *>(pSrc)[x] * WSrc;
-      for (int k = 0; k < level; k++)
-        val += reinterpret_cast<const pixel_t *>(pRefF[k])[x] * WRefF[k] + reinterpret_cast<const pixel_t *>(pRefB[k])[x] * WRefB[k];
-      val = (val + rounder) >> SHIFTBACK;
-      if constexpr (lsb_flag) {
-        pDst[x] = val >> 8;
-        pDstLsb[x] = val & 255;
-      }
-      else if constexpr (out16)
-        reinterpret_cast<uint16_t *>(pDst)[x] = val;
-      else
-        reinterpret_cast<pixel_t *>(pDst)[x] = val;
-    }
-    pDst += nDstPitch;
-    if constexpr (lsb_flag)
-      pDstLsb += nDstPitch;
-    pSrc += nSrcPitch;
+  };
+
+  auto next_rows = [&](int rows) {
+    pDst += rows * nDstPitch;
+    if constexpr (out16_type == 1)
+      pDstLsb += rows * nDstPitch;
+    pSrc += rows * nSrcPitch;
     for (int k = 0; k < level; k++) {
-      pRefB[k] += BPitch[k];
-      pRefF[k] += FPitch[k];
+      rB[k] += rows * pB[k];
+      rF[k] += rows * pF[k];
     }
+  };
+
+  using full_t = std::integral_constant<int, LANES_FULL>;
+  using part_t = std::integral_constant<int, LANES_PART>;
+  using pair_t = std::integral_constant<int, LANES_PAIR>;
+  using n8_t = std::integral_constant<int, 8>;
+  using rest_t = std::integral_constant<int, rest>;
+
+  int h = 0;
+  if constexpr (pairs) {
+    for (; h + 2 <= blockHeight; h += 2) {
+      step(pair_t(), rest_t(), 0);
+      next_rows(2);
+    }
+  }
+  for (; h < blockHeight; h++) {
+    for (int x = 0; x < w8; x += 8)
+      step(full_t(), n8_t(), x);
+    if constexpr (rest > 0)
+      step(part_t(), rest_t(), w8);
+    next_rows(1);
   }
 }
 
-#define MAKE_FN_LEVEL(level) \
-template void Degrain1to6_neon<uint8_t, 0, level>(uint8_t *, uint8_t *, int, int, const uint8_t *, int, const uint8_t *[], int[], const uint8_t *[], int[], int, int[], int[]); \
-template void Degrain1to6_neon<uint8_t, 1, level>(uint8_t *, uint8_t *, int, int, const uint8_t *, int, const uint8_t *[], int[], const uint8_t *[], int[], int, int[], int[]); \
-template void Degrain1to6_neon<uint8_t, 2, level>(uint8_t *, uint8_t *, int, int, const uint8_t *, int, const uint8_t *[], int[], const uint8_t *[], int[], int, int[], int[]); \
-template void Degrain1to6_neon<uint16_t, 0, level>(uint8_t *, uint8_t *, int, int, const uint8_t *, int, const uint8_t *[], int[], const uint8_t *[], int[], int, int[], int[]);
-MAKE_FN_LEVEL(1)
-MAKE_FN_LEVEL(2)
-MAKE_FN_LEVEL(3)
-MAKE_FN_LEVEL(4)
-MAKE_FN_LEVEL(5)
-MAKE_FN_LEVEL(6)
+#define MAKE_FN_LEVEL(w, level) \
+template void Degrain1to6_neon<w, uint8_t, 0, level>(uint8_t *, uint8_t *, int, int, const uint8_t *, int, const uint8_t *[], int[], const uint8_t *[], int[], int, int[], int[]); \
+template void Degrain1to6_neon<w, uint8_t, 1, level>(uint8_t *, uint8_t *, int, int, const uint8_t *, int, const uint8_t *[], int[], const uint8_t *[], int[], int, int[], int[]); \
+template void Degrain1to6_neon<w, uint8_t, 2, level>(uint8_t *, uint8_t *, int, int, const uint8_t *, int, const uint8_t *[], int[], const uint8_t *[], int[], int, int[], int[]); \
+template void Degrain1to6_neon<w, uint16_t, 0, level>(uint8_t *, uint8_t *, int, int, const uint8_t *, int, const uint8_t *[], int[], const uint8_t *[], int[], int, int[], int[]);
+#define MAKE_FN(w) \
+MAKE_FN_LEVEL(w, 1) MAKE_FN_LEVEL(w, 2) MAKE_FN_LEVEL(w, 3) MAKE_FN_LEVEL(w, 4) MAKE_FN_LEVEL(w, 5) MAKE_FN_LEVEL(w, 6)
+MVTOOLS_BLOCKWIDTHS(MAKE_FN)
+#undef MAKE_FN
 #undef MAKE_FN_LEVEL

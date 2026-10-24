@@ -96,13 +96,13 @@ MAKE_FN_LEVEL(x,y,6)
 #undef MAKE_FN_LEVEL
 
 #ifdef NEON_INTRINSICS
-  // integer formats; any block size (runtime width/height as in C), float stays C
+  // integer formats, templated by the block width; float stays C
 #define MAKE_FN_LEVEL(x, y, level) \
-func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT, level, USE_NEON)] = Degrain1to6_neon<uint8_t, 0, level>; \
-func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_STACKED, level, USE_NEON)] = Degrain1to6_neon<uint8_t, 1, level>; \
-func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_OUT16, level, USE_NEON)] = Degrain1to6_neon<uint8_t, 2, level>; \
-func_degrain[make_tuple(x, y, DEGRAIN_TYPE_10to14BIT, level, USE_NEON)] = Degrain1to6_neon<uint16_t, 0, level>; \
-func_degrain[make_tuple(x, y, DEGRAIN_TYPE_16BIT, level, USE_NEON)] = Degrain1to6_neon<uint16_t, 0, level>;
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT, level, USE_NEON)] = Degrain1to6_neon<x, uint8_t, 0, level>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_STACKED, level, USE_NEON)] = Degrain1to6_neon<x, uint8_t, 1, level>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_8BIT_OUT16, level, USE_NEON)] = Degrain1to6_neon<x, uint8_t, 2, level>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_10to14BIT, level, USE_NEON)] = Degrain1to6_neon<x, uint16_t, 0, level>; \
+func_degrain[make_tuple(x, y, DEGRAIN_TYPE_16BIT, level, USE_NEON)] = Degrain1to6_neon<x, uint16_t, 0, level>;
 #define MAKE_FN(x, y) \
 MAKE_FN_LEVEL(x,y,1) \
 MAKE_FN_LEVEL(x,y,2) \

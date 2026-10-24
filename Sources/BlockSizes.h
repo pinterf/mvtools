@@ -25,4 +25,8 @@
   MAKE(2, 32) MAKE(2, 16) MAKE(2, 8) MAKE(2, 4) MAKE(2, 2) MAKE(2, 1) \
   MAKE(1, 8) MAKE(1, 4) MAKE(1, 2) MAKE(1, 1)
 
+// the block widths of the list above, for functions templated by the width only
+#define MVTOOLS_BLOCKWIDTHS(MAKE) \
+  MAKE(64) MAKE(48) MAKE(32) MAKE(24) MAKE(16) MAKE(12) MAKE(8) MAKE(6) MAKE(4) MAKE(3) MAKE(2) MAKE(1)
+
 #endif
