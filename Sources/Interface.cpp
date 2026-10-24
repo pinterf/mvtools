@@ -110,7 +110,7 @@ AVSValue __cdecl Create_MVCompensate(AVSValue args, void* user_data, IScriptEnvi
     args[12].AsBool(true),  // mt
     args[13].AsInt(0),		// tr
     args[14].AsBool(true),	// center
-    args[15].IsClip() ? args[16].AsClip() : 0, // cclip
+    args[15].IsClip() ? args[15].AsClip() : 0, // cclip
     args[16].AsInt(thsad),  // thSAD2  todo sad_t float
     env
   );
