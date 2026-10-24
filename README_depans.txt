@@ -4,7 +4,7 @@ Depan and DepanEstimate
 Motion estimation and compensation plugin for Avisynth+ and Avisynth v2.6 family.
 Supporting YUY2, 4:2:0, 4:2:2, 4:4:4, planar RGB* at native 8-16 bit depths
 Still supporting Windows XP.
-x86 and x64 version
+Windows x86, x64 and ARM64; Linux x86-64 and aarch64
 *in DepanStabilize
 
 Files: depan.dll, depanestimate.dll 
@@ -19,7 +19,7 @@ http://avisynth.org.ru/depan/depan.html
 
 Change log (modifications by pinterf: https://github.com/pinterf/):
 
-- (20261018)
+- (20261024)
   Depan 2.16
   - Support Y with alpha (YA) and YUVA, all subsamplings incl. 4:1:0, 4:1:1, 4:4:0.
     DePanScenes copies the alpha from the source.
@@ -71,6 +71,15 @@ Change log (modifications by pinterf: https://github.com/pinterf/):
     Was uninitialized memory outside the data area: harmless for DePan, but the output differed from run to run,
     and DePanScenes copied it into its not marked planes. Deterministic output helps testing (frame hashes,
     comparing the output of different versions).
+  Both
+  - Build: aarch64 (Linux, CMake) and Windows on ARM64 (build_arm64_mingw.bat: cross-compiled on x64 Windows with
+    llvm-mingw, libc++ linked statically). DepanEstimate needs an ARM64 libfftw3f-3.dll on Windows on ARM64,
+    the fftw library (libfftw3-single3 / fftw) on Linux.
+    Output on aarch64 can differ from x86 by a few float rounding steps in DepanEstimate's motion data (fftw, fused
+    multiply-add), as between different compilers.
+  - The sources compile with MSVC for ARM64 as well.
+  - CMake builds for Windows (MinGW, llvm-mingw) include the version resource. Its copyright sign is the ASCII "(C)"
+    now (was a broken character).
 
 - (20260421)
   Depan 2.15

@@ -21,6 +21,7 @@
         <tr><td class="n"><b>Requirements: </b></td><td class="n">&nbsp;</td><td class="n">YV12, YV16, YV24 or YUY2, Y, YUV420P10-16, YUV422P10-16, YUV444P10-16 for finding vectors;
             since 2.7.48 also YA, YUVA, 4:1:0, 4:1:1, 4:4:0 (8-16 bit)</td></tr>
         <tr><td class="n"><b>              </b></td><td class="n">&nbsp;</td><td class="n">8-32 bit Y(A), YUV(A) 420, 422, 444, 410, 411, 440 and planar RGB(A) for MSuper, MCompensate and MDegrains and MFlowXX family</td></tr>
+        <tr><td class="n"><b>Platforms:    </b></td><td class="n">&nbsp;</td><td class="n">Windows x86, x64 and ARM64 (since 2.7.48); Linux x86-64 and aarch64 (NEON, since 2.7.48)</td></tr>
         <tr><td class="n"><b>License:      </b></td><td class="n">&nbsp;</td><td class="n">GPL</td></tr>
 
     </table>
@@ -260,6 +261,13 @@
         This trick will not be needed in Avisynth v2.6 with native support of planar
         YV16 format.
         This paramenter is ignored for YV12 clips. Note: super clip is always planar.
+    </p>
+    <p>
+        Since 2.7.48 the filters convert a YUY2 source to YV16 internally and the result back to YUY2:
+        with planar=false by ConvertToYV16 and ConvertToYUY2, with planar=true by repacking the planar YUY2 layout.
+        Both kinds of YUY2 work as before and give the same output, but planar=true has no speed benefit any more;
+        use YV16 clips directly if you can. The super clip of a YUY2 source is a YV16 clip.
+        MDepan works on the YUY2 frames directly (its output is a data clip).
     </p>
 
     <h3>MSuper</h3>
@@ -1768,7 +1776,11 @@ padded.MDegrain1(super, backward_vec, forward_vec, thSAD = 400).Crop(0, 0, -padx
         on the top of the least significant byte (LSB) block.
         Hence a twice taller resulting picture.
         You can extract the MSB or the LSB with a simple Crop() call.
-        This mode helps recovering the full bitdepth of temporally dithered data.
+        This mode helps recovering the full bitdepth of temporally dithered data.<br />
+        Since 2.7.48 lsb=true is the out16=true result converted to the stacked format (as ConvertToStacked does):
+        the same output as before, except with <var>limit</var> or <var>limitC</var> below 255, where the 16 bit value
+        is limited now (earlier only the MSB part). Only 8 bit Y8, YV12, YV16, YV24 sources are accepted; YUY2 is not
+        supported any more.
     </p>
     <p class="var">tr</p>
     <p>
@@ -1795,6 +1807,7 @@ padded.MDegrain1(super, backward_vec, forward_vec, thSAD = 400).Crop(0, 0, -padx
         Generates 16-bit data from 8 bit inputs when set to true.
         It is like lsb=true but the output format is native 16bits.
         A bit faster than lsb=true. Cannot be mixed with lsb=true.
+        Y8, YV12, YV16 or YV24 sources only (not YUY2).
     </p>
 
     <h3>MRecalculate</h3>
@@ -2249,7 +2262,9 @@ forward = MAnalyse(superfilt, isb = false, blksize=16)
 forward_re = MRecalculate(super, forward, blksize=8, thSAD=100)
 backward_re = MRecalculate(super, backward, blksize=8, thSAD=100)
 MFlowFps(super, backward_re, forward_re, num=50, den=1)</pre>
-    <p>How to use planar option for faster processing of YUY2 (MDegrain3 example):</p>
+    <p>How to use planar option for faster processing of YUY2 (MDegrain3 example).
+       Since 2.7.48 this has no speed benefit (YUY2 is converted to YV16 inside the filters), the example is kept
+       for the old scripts:</p>
 <pre class="src">LoadPlugin("SSEToolsS.dll") # for conversion functions
 AVISource("c:\test.avi") # or MPEG2Source, DirectShowSource, some previous filter, etc
 Interleaved2Planar() # convert clip to planar
@@ -2292,7 +2307,7 @@ Planar2Interleaved() # convert back to normal interleave YUY2
 
     <h2><a name="revisions"></a>VI) Revisions</h2>
 
-    <p>2.7.48 (20261016)</p>
+    <p>2.7.48 (20261024)</p>
     <ul>
         <li>
             Feature request #68: adding search_coarse from SVP fork: MAnalyse: new parameters search_coarse.
@@ -2355,6 +2370,86 @@ Planar2Interleaved() # convert back to normal interleave YUY2
             What users could see: a faint static grid on bright, smooth areas, following the block overlap layout
             (pixels 0.05% too dark or too bright, larger on brighter areas), mostly after strong grading or contrast boost
             of 12-16 bit material. Degrain strength was not affected, only this small level error in the overlap zones.</li>
+        <li>
+            Fixes, all builds:
+            <ul>
+                <li>Fix: MSuper with an odd chroma width or height (e.g. 854x480 4:2:0): the first coarser level was reduced from
+                    level 0 before level 0 was padded, so the coarser levels, and the vectors of MAnalyse/MRecalculate, depended on
+                    uninitialized memory (non-deterministic output). Vectors of such clips change.</li>
+                <li>Fix: MCompensate cclip was ignored (the parameter was read from the thSAD2 argument). With tr &gt; 0 the center frames
+                    come from cclip now, as documented.</li>
+            </ul>
+        </li>
+        <li>
+            Fixes, C path (non-x86 builds, and x86 with SetMaxCPU("none")):
+            <ul>
+                <li>Fix: MFlow, MFlowInter, MFlowFps, MFlowBlur, MBlockFps: heap corruption (crash) in the vector upsizer: rows were
+                    written past the end of the buffer. Vector limiting is now done per pixel, giving the same vectors as SSE2.</li>
+                <li>Fix: MAnalyse, MRecalculate dct modes, 8 bit: the block luma sum overflowed for bright blocks of 129..256 pixels
+                    (16x16, 12x12, 8x32, ...).</li>
+                <li>Fix: MAnalyse, MRecalculate dct=5..10, 10-16 bit: wrong SATD for most blocks.</li>
+                <li>MAnalyse, MRecalculate dct=1..4: the DCT AC coefficients are rounded to nearest like the SIMD versions (were
+                    truncated, biased towards zero). The C path gives the same vectors as the x86 SIMD path now.</li>
+            </ul>
+        </li>
+        <li>
+            Fixes, Intel SIMD:
+            <ul>
+                <li>Fix: MFlow, MFlowInter, MFlowFps, MFlowBlur: wrong (clamped) values for negative vectors in the last 1-3 columns of
+                    the upsized vector field when its width is not a multiple of 4: MFlowBlur at any width not mod 4; the others when the
+                    padded luma or chroma width is not mod 4 (e.g. blksize 4, 6, 12).</li>
+                <li>Fix: MDegrain1-6 out16=true: crash with block width 12 (luma blksize 12, or 24 with 4:2:0 / 4:2:2 chroma).</li>
+                <li>Fix: 8 bit SAD for block widths 6 and 12, and 24x24, 24x32, 24x48: only a part of the block was compared (the last
+                    4 or 2 columns, or 4 of every 8 rows), MAnalyse gave bad vectors. Builds without the external asm only: Linux and
+                    macOS on x86, MinGW (GCC, llvm-mingw). The MSVC and ClangCL builds were not affected.</li>
+                <li>Fix: YUY2 with planar=true, limit and a width not a multiple of 16: crash in MDegrain1-6, MDegrainN.</li>
+                <li>Fix: x64 MinGW builds: the 64 bit atomic compare-exchange used 32 bit address registers.</li>
+            </ul>
+        </li>
+        <li>
+            Optimizations:
+            <ul>
+                <li>New aarch64 (ARM64) NEON code paths, bit-identical to the C path:
+                    SAD (all block sizes, 8 and 10-16 bit), SATD for dct=5..10 (8 and 10-16 bit);
+                    DCT modes (dct=1..4): pixel &lt;-&gt; float conversion of the fftw DCT, 8 and 10-16 bit;
+                    block luma sums (dct modes), 8 and 10-16 bit;
+                    MSuper: all rfilter reducers, all sharp refines, the pel=4 averaging, 8-16 bit;
+                    overlapped block output (8, 10-16 bit, float);
+                    MDegrain1-6, MDegrainN (8 bit, out16, 10-16 bit; MDegrainN also 32 bit float).</li>
+                <li>MFlow, MFlowBlur, MFlowFps with pel=2 and pel=4: the subpixel plane merge is vectorized by the compilers
+                    (all platforms).</li>
+            </ul>
+        </li>
+        <li>
+            Code simplification (no change in output unless noted):
+            <ul>
+                <li>MDegrain1-6, MDegrainN lsb=true: implemented as the out16=true result converted to the stacked format (MSB rows on
+                    top of the LSB rows, 8 bit clip of double height). All stacked-output kernels and overlap functions are removed.<br />
+                    - Output is identical except with limit/limitC &lt; 255: the stacked path limited the MSB half only, now the
+                    16 bit value is limited (as with out16=true).<br />
+                    - lsb=true with a YUY2 source is an error now (as out16=true).</li>
+                <li>YUY2: converted to YV16 at the filter boundary, the filters work on YV16 only. planar=false (normal YUY2):
+                    ConvertToYV16 before, ConvertToYUY2 after; planar=true (the planar YUY2 layout of Interleaved2Planar): repacked the
+                    same way. The internal YUY2 code of all filters is removed. Output is unchanged.<br />
+                    - The super clip of a YUY2 source is YV16 (was a planar-layout YUY2 clip); MShow converts its output back to YUY2.<br />
+                    - MDepan keeps its own YUY2 handling (its output is a data clip).</li>
+            </ul>
+        </li>
+        <li>
+            Build environment:
+            <ul>
+                <li>CMake: aarch64 targets are detected, NEON is enabled (ENABLE_NEON_SIMD), x86 SIMD flags and files are used on
+                    Intel targets only. A C-only build compiles and runs on any target.</li>
+                <li>Windows on ARM64: build_arm64_mingw.bat, cross-compiled on x64 Windows with llvm-mingw (UCRT), CMake and Ninja;
+                    libc++ is linked statically, the DLLs need only system DLLs. MvTools2, DePan and DePanEstimate.
+                    The DCT modes and DePanEstimate need an ARM64 libfftw3f-3.dll.</li>
+                <li>The sources compile with MSVC for ARM64 as well.</li>
+                <li>CMake builds for Windows (MinGW, llvm-mingw) include the version resources of all three DLLs.</li>
+                <li>Linux aarch64: the DCT modes and DePanEstimate need the fftw library (libfftw3-single3 / fftw), as on x86.</li>
+                <li>Note: aarch64 vs x86 output differs slightly for 32 bit float clips (fused multiply-add) and in the DCT modes
+                    (fftw), as between different compilers.</li>
+            </ul>
+        </li>
     </ul>
 
     <p>2.7.47 (20260424)</p>
