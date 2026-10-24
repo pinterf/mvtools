@@ -32,7 +32,7 @@ public:
   MDegrainN(
     ::PClip child, ::PClip super, ::PClip mvmulti, int trad,
     sad_t thsad, sad_t thsadc, int yuvplanes, float nlimit, float nlimitc,
-    sad_t nscd1, int nscd2, bool isse_flag, bool planar_flag, bool lsb_flag,
+    sad_t nscd1, int nscd2, bool isse_flag, bool planar_flag,
     sad_t thsad2, sad_t thsadc2, bool mt_flag, bool out16_flag, ::IScriptEnvironment* env_ptr
   );
   ~MDegrainN();
@@ -58,7 +58,7 @@ private:
     int Wall[], int trad
     );
 
-  DenoiseNFunction* get_denoiseN_function(int BlockX, int BlockY, int _bits_per_pixel, bool _lsb_flag, bool _out16_flag, arch_t arch);
+  DenoiseNFunction* get_denoiseN_function(int BlockX, int BlockY, int _bits_per_pixel, bool _out16_flag, arch_t arch);
 
   class MvClipInfo
   {
@@ -79,9 +79,7 @@ private:
   public:
     enum { MAX_SIZE = MAX_BLOCK_SIZE };
     enum { AREA = MAX_SIZE * MAX_SIZE };
-    TmpBlock() : _lsb_ptr(&_d[AREA]) {}
-    unsigned char  _d[MAX_SIZE * MAX_SIZE * 2]; // * 2 for 8 bit MSB and LSB parts, or for 1*uint16_t
-    unsigned char* _lsb_ptr;// Not allocated, it's just a reference to a part of the _d area
+    unsigned char  _d[MAX_SIZE * MAX_SIZE * 2]; // * 2 for uint16_t (also out16)
   };
 
   MV_FORCEINLINE int reorder_ref(int index) const;
@@ -122,10 +120,8 @@ private:
   PClip _super;
   int _cpuFlags;
   const bool _planar_flag;
-  const bool _lsb_flag;
   const bool _out16_flag;
   const bool _mt_flag;
-  int _height_lsb_or_out16_mul;
   //int pixelsize, bits_per_pixel; // in MVFilter
   //int xRatioUV, yRatioUV; // in MVFilter
   int pixelsize_super;
@@ -154,8 +150,6 @@ private:
   OverlapsFunction *_overschroma16_ptr;
   OverlapsFunction *_oversluma32_ptr;
   OverlapsFunction *_overschroma32_ptr;
-  OverlapsLsbFunction *_oversluma_lsb_ptr;
-  OverlapsLsbFunction *_overschroma_lsb_ptr;
   DenoiseNFunction *_degrainluma_ptr;
   DenoiseNFunction *_degrainchroma_ptr;
 
@@ -175,7 +169,6 @@ private:
   const BYTE *_src_ptr_arr[3];
   int _dst_pitch_arr[3];
   int _src_pitch_arr[3];
-  int _lsb_offset_arr[3];
   int _covered_width;
   int _covered_height;
 

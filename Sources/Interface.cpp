@@ -38,6 +38,7 @@
 */
 #include "MVDegrain3.h"
 #include "MDegrainN.h"
+#include "Stacked16.h"
 #include "MVBlockFps.h"
 
 // Analysing filter
@@ -345,6 +346,15 @@ AVSValue __cdecl Create_MVFlowBlur(AVSValue args, void*, IScriptEnvironment* env
   );
 }
 
+// lsb=true: the out16=true result in the stacked 16 bit format (Stacked16), the source checks of both
+static void check_lsb_source(const VideoInfo& vi, bool out16, const char* name, IScriptEnvironment* env)
+{
+  if (out16)
+    env->ThrowError("%s : cannot specify both lsb and out16 flag", name);
+  if (!vi.IsY8() && !vi.IsYV12() && !vi.IsYV16() && !vi.IsYV24())
+    env->ThrowError("%s : lsb=true needs an 8 bit Y8, YV12, YV16 or YV24 source (or use out16=true)", name);
+}
+
 AVSValue __cdecl Create_MVDegrainX(AVSValue args, void* user_data, IScriptEnvironment* env)
 {
   int level = (int)(intptr_t)user_data;
@@ -388,7 +398,11 @@ AVSValue __cdecl Create_MVDegrainX(AVSValue args, void* user_data, IScriptEnviro
 
   // change limit. 2.7.25-: use 255 as default for all bit depth. v42: float
   const float limit = args[limit_param_index + param_index_shift].AsFloatf(255.f);
-  return new MVDegrainX(
+  const bool lsb = args[13 + param_index_shift].AsBool(false);
+  const bool out16 = args[15 + param_index_shift].AsBool(false);
+  if (lsb)
+    check_lsb_source(args[0].AsClip()->GetVideoInfo(), out16, "MDegrainX", env);
+  PClip degrain = new MVDegrainX(
     args[0].AsClip(),       // source
     args[1].AsClip(),       // super
     args[2].AsClip(),       // mvbw
@@ -412,12 +426,14 @@ AVSValue __cdecl Create_MVDegrainX(AVSValue args, void* user_data, IScriptEnviro
     args[10 + param_index_shift].AsInt(MV_DEFAULT_SCD2), // thSCD2
     args[11 + param_index_shift].AsBool(true),  // isse
     args[12 + param_index_shift].AsBool(false), // planar
-    args[13 + param_index_shift].AsBool(false), // lsb
     args[14 + param_index_shift].AsBool(true),  // mt
-    args[15 + param_index_shift].AsBool(false),  // out16
+    out16 || lsb,           // out16
     level,
     env
   );
+  if (lsb)
+    return new Stacked16(degrain, env);
+  return degrain;
 }
 
 AVSValue __cdecl Create_MDegrainN(AVSValue args, void*, IScriptEnvironment* env)
@@ -452,6 +468,11 @@ AVSValue __cdecl Create_MDegrainN(AVSValue args, void*, IScriptEnvironment* env)
   const float limit = args[7].AsFloatf(255.f); // change limit. 2.7.25-: use 255 as default for all bit depth v42:float
   const int thSAD2 = args[14].AsInt(thSAD);  // thSAD2
   const int thSADC2 = args[15].AsInt(thSADC); // thSADC2
+  const bool lsb = args[13].AsBool(false);
+  const bool out16 = args[17].AsBool(false);
+  if (lsb)
+    check_lsb_source(args[0].AsClip()->GetVideoInfo(), out16, "MDegrainN", env);
+  PClip degrain;
 
   // Switch to MDegrain1/2/3/4/5/6 when possible (faster)
   if (thSAD2 == thSAD && thSADC == thSADC2)
@@ -459,7 +480,7 @@ AVSValue __cdecl Create_MDegrainN(AVSValue args, void*, IScriptEnvironment* env)
     if (tr <= MAX_DEGRAIN) // up to MDegrain5 160926, MDegrain6 170105
     {
 
-      return new MVDegrainX(
+      degrain = new MVDegrainX(
         args[0].AsClip(),        // source
         args[1].AsClip(),        // super clip
         args[2].AsClip(),        // mvbw
@@ -483,16 +504,16 @@ AVSValue __cdecl Create_MDegrainN(AVSValue args, void*, IScriptEnvironment* env)
         args[10].AsInt(MV_DEFAULT_SCD2), // thSCD2
         args[11].AsBool(true),   // isse
         args[12].AsBool(false),  // planar
-        args[13].AsBool(false),  // lsb
         args[16].AsBool(true),   // mt
-        args[17].AsBool(false),  // out16
+        out16 || lsb,            // out16
         tr, // PF: level
         env
       );
     }
   }
   // Standard MDegrainN
-  return new MDegrainN(
+  if (!degrain)
+    degrain = new MDegrainN(
     args[0].AsClip(),        // source
     args[1].AsClip(),        // super clip
     args[2].AsClip(),        // mvmulti
@@ -506,13 +527,15 @@ AVSValue __cdecl Create_MDegrainN(AVSValue args, void*, IScriptEnvironment* env)
     args[10].AsInt(MV_DEFAULT_SCD2), // thSCD2
     args[11].AsBool(true),   // isse
     args[12].AsBool(false),  // planar
-    args[13].AsBool(false),  // lsb
     thSAD2,                    // thSAD2
     thSADC2,                   // thSADC2
     args[16].AsBool(true),   // mt
-    args[17].AsBool(false),   // out16
+    out16 || lsb,            // out16
     env
   );
+  if (lsb)
+    return new Stacked16(degrain, env);
+  return degrain;
 }
 
 AVSValue __cdecl Create_MVRecalculate(AVSValue args, void*, IScriptEnvironment* env)

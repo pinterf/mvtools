@@ -51,9 +51,7 @@ private:
   //bool isse_flag;
   int cpuFlags;
   bool planar;
-  bool lsb_flag;
-  bool out16_flag; // native 16 bit out instead of fake lsb
-  int height_lsb_or_out16_mul;
+  bool out16_flag; // 8 bit in, native 16 bit out (lsb=true: Stacked16 after it)
   //int pixelsize, bits_per_pixel; // in MVFilter
   //int xRatioUV, yRatioUV; // in MVFilter
   int pixelsize_super; // PF not param, from create
@@ -81,8 +79,6 @@ private:
   OverlapsFunction *OVERSCHROMA16;
   OverlapsFunction *OVERSLUMA32;
   OverlapsFunction *OVERSCHROMA32;
-  OverlapsLsbFunction *OVERSLUMALSB;
-  OverlapsLsbFunction *OVERSCHROMALSB;
   Denoise1to6Function *DEGRAINLUMA;
   Denoise1to6Function *DEGRAINCHROMA;
 
@@ -93,7 +89,6 @@ private:
   MVGroupOfFrames *pRefBGOF[MAX_DEGRAIN], *pRefFGOF[MAX_DEGRAIN];
 
   unsigned char *tmpBlock;
-  unsigned char *tmpBlockLsb;	// Not allocated, it's just a reference to a part of the tmpBlock area (or 0 if no LSB)
   uint16_t * DstShort;
   int dstShortPitch;
   int * DstInt;
@@ -106,7 +101,7 @@ public:
   MVDegrainX(PClip _child, PClip _super, 
     PClip _mvbw, PClip _mvfw, PClip _mvbw2, PClip _mvfw2, PClip _mvbw3, PClip _mvfw3, PClip _mvbw4, PClip _mvfw4, PClip _mvbw5, PClip _mvfw5, PClip _mvbw6, PClip _mvfw6,
     sad_t _thSAD, sad_t _thSADC, int _YUVplanes, float _nLimit, float _nLimitC,
-    sad_t _nSCD1, int _nSCD2, bool _isse2, bool _planar, bool _lsb_flag,
+    sad_t _nSCD1, int _nSCD2, bool _isse2, bool _planar,
     bool _mt_flag, bool _out16_flag,
     int _level, 
     IScriptEnvironment* env_ptr);
@@ -120,11 +115,11 @@ public:
 private:
   inline void process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int nDstPitch, const BYTE *pSrc, const BYTE *pSrcCur, int nSrcPitch,
     bool isUsableB[MAX_DEGRAIN], bool isUsableF[MAX_DEGRAIN], MVPlane *pPlanesB[MAX_DEGRAIN], MVPlane *pPlanesF[MAX_DEGRAIN],
-    int lsb_offset_uv, int nWidth_B, int nHeight_B);
+    int nWidth_B, int nHeight_B);
   // MV_FORCEINLINE void process_chroma(int plane_mask, BYTE *pDst, BYTE *pDstCur, int nDstPitch, const BYTE *pSrc, const BYTE *pSrcCur, int nSrcPitch, bool isUsableB, bool isUsableF, bool isUsableB2, bool isUsableF2, bool isUsableB3, bool isUsableF3, MVPlane *pPlanesB, MVPlane *pPlanesF, MVPlane *pPlanesB2, MVPlane *pPlanesF2, MVPlane *pPlanesB3, MVPlane *pPlanesF3, int lsb_offset_uv, int nWidth_B, int nHeight_B);
   MV_FORCEINLINE void use_block_y(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch);
   MV_FORCEINLINE void use_block_uv(const BYTE * &p, int &np, int &WRef, bool isUsable, const MVClip &mvclip, int i, const MVPlane *pPlane, const BYTE *pSrcCur, int xx, int nSrcPitch);
-  Denoise1to6Function *get_denoise123_function(int BlockX, int BlockY, int _bits_per_pixel, bool _lsb_flag, bool _out16_flag, int _level, arch_t _arch);
+  Denoise1to6Function *get_denoise123_function(int BlockX, int BlockY, int _bits_per_pixel, bool _out16_flag, int _level, arch_t _arch);
 };
 
 #pragma warning( push )
