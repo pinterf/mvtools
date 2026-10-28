@@ -292,6 +292,9 @@ void Short2Bytes_Int32toWord16(uint16_t *pDst, int nDstPitch, int *pDstInt, int 
 }
 
 #ifdef INTEL_INTRINSICS
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
 void Short2Bytes_Int32toWord16_sse4(uint16_t *pDst, int nDstPitch, int *pDstInt, int dstIntPitch, int nWidth, int nHeight, int bits_per_pixel)
 {
   const int max_pixel_value = (1 << bits_per_pixel) - 1;
@@ -469,6 +472,9 @@ template <int blockWidth, int blockHeight>
 // only src_pitch is byte-level
 // dstPitch knows int* or short* 
 // winPitch knows short *
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
 void Overlaps_uint16_t_sse4(uint16_t *pDst0, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, short *pWin, int nWinPitch)
 {
   // pWin from 0 to 2048, 11 bit integer arithmetic
@@ -595,6 +601,9 @@ template <int blockWidth, int blockHeight>
 // only src_pitch is byte-level
 // dstPitch knows int* or short* 
 // winPitch knows short *
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
 void Overlaps_uint8_t_sse4(uint16_t* pDst0, int nDstPitch, const unsigned char* pSrc, int nSrcPitch, short* pWin, int nWinPitch)
 {
   // pWin from 0 to 2048, 11 bit integer arithmetic

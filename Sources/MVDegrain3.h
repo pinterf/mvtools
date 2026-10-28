@@ -505,6 +505,9 @@ void Degrain1to6_sse2(BYTE* pDst, int WidthHeightForC, int nDstPitch, const BYTE
 // for special height==0 -> internally nHeight comes from variable (for C: both width and height is variable)
 // heavily reducing the templates differing only in heights
 template<int blockWidth, int blockHeight, int level, bool lessThan16bits>
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
 void Degrain1to6_16_sse41(BYTE *pDst, int WidthHeightForC, int nDstPitch, const BYTE *pSrc, int nSrcPitch,
   const BYTE *pRefB[MAX_DEGRAIN], int BPitch[MAX_DEGRAIN], const BYTE *pRefF[MAX_DEGRAIN], int FPitch[MAX_DEGRAIN],
   int WSrc,

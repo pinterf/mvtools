@@ -227,6 +227,9 @@ void DegrainN_sse2(
 }
 
 template<int blockWidth, int blockHeight, bool lessThan16bits>
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
 void DegrainN_16_sse41(
   BYTE* pDst, int nDstPitch,
   const BYTE* pSrc, int nSrcPitch,
