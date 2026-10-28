@@ -4,7 +4,6 @@
     <BuildType Name="IntelCpp" />
     <BuildType Name="Release" />
     <BuildType Name="ReleaseWithDebugInfo" />
-    <BuildType Name="Release_v141_xp" />
     <BuildType Name="Rel_Clang" />
     <Platform Name="Win32" />
     <Platform Name="x64" />
