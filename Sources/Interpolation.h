@@ -49,7 +49,7 @@ template<typename pixel_t>
 void HorizontalBilin_sse2(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 template<typename pixel_t>
 void DiagonalBilin(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
-template<typename pixel_t, bool hasSSE41>
+template<typename pixel_t>
 void DiagonalBilin_sse2(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
 template<typename pixel_t>
@@ -90,11 +90,11 @@ done [pinterf] extern "C" void  RB2FilteredHorizontalInplaceLine_SSE(uint8_t *pS
 
 template<typename pixel_t>
 void VerticalWiener(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
-template<typename pixel_t, bool hasSSE41>
+template<typename pixel_t>
 void VerticalWiener_sse2(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 template<typename pixel_t>
 void HorizontalWiener(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
-template<typename pixel_t, bool hasSSE41>
+template<typename pixel_t>
 void HorizontalWiener_sse2(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 #if 0 // not used
 template<typename pixel_t>
@@ -107,12 +107,12 @@ void DiagonalWiener(  unsigned char *pDst, const unsigned char *pSrc, int nDstPi
 
 template<typename pixel_t>
 void VerticalBicubic(  unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
-template<typename pixel_t, bool hasSSE41>
+template<typename pixel_t>
 void VerticalBicubic_sse2(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
 template<typename pixel_t>
 void HorizontalBicubic(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
-template<typename pixel_t, bool hasSSE41>
+template<typename pixel_t>
 void HorizontalBicubic_sse2(unsigned char *pDst, const unsigned char *pSrc, int nDstPitch, int nSrcPitch, int nWidth, int nHeight, int bits_per_pixel);
 
 #if 0 // not used

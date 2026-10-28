@@ -222,7 +222,7 @@ void LimitChanges_float_c(unsigned char *pDst, int nDstPitch, const unsigned cha
 
 typedef void(LimitFunction_t)(unsigned char *pDst8, int nDstPitch, const unsigned char *pSrc8, int nSrcPitch, const int nWidth, int nHeight, float nLimit_f);
 
-template<typename pixel_t, bool hasSSE41>
+template<typename pixel_t>
 void LimitChanges_sse2_new(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, float nLimit_f);
 
 void LimitChanges_src8_target16_c(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, float nLimit_f);

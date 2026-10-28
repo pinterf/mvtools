@@ -373,7 +373,7 @@ MV_FORCEINLINE __m128i _MM_MAX_EPU16(__m128i x, __m128i y)
 }
 
 // MVDegrains-a.asm ported to intrinsics + 16 bit PF 161002
-template<typename pixel_t, bool hasSSE41>
+template<typename pixel_t>
 void LimitChanges_sse2_new(unsigned char *pDst8, int nDstPitch, const unsigned char *pSrc8, int nSrcPitch, const int nWidth, int nHeight, float nLimit_f)
 {
   const int nLimit = (int)(nLimit_f + 0.5f);
@@ -400,10 +400,7 @@ void LimitChanges_sse2_new(unsigned char *pDst8, int nDstPitch, const unsigned c
 
         __m128i src_plus_limit = _mm_adds_epu16(src, limits);   //  max possible
         __m128i src_minus_limit = _mm_subs_epu16(src, limits);   //  min possible
-        if(hasSSE41)
-          res = _mm_min_epu16(_mm_max_epu16(src_minus_limit, dst), src_plus_limit); // SSE4
-        else
-          res = _MM_MIN_EPU16(_MM_MAX_EPU16(src_minus_limit, dst), src_plus_limit); // SSE4
+        res = _MM_MIN_EPU16(_MM_MAX_EPU16(src_minus_limit, dst), src_plus_limit);
       }
       _mm_stream_si128((__m128i *)(pDst8 + x), res);
     }
@@ -460,9 +457,8 @@ void LimitChanges_float_c(unsigned char *pDst, int nDstPitch, const unsigned cha
 template void LimitChanges_c<uint8_t>(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, float nLimit);
 template void LimitChanges_c<uint16_t>(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, float nLimit);
 #ifdef INTEL_INTRINSICS
-template void LimitChanges_sse2_new<uint8_t,0>(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, float nLimit);
-template void LimitChanges_sse2_new<uint16_t,0>(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, float nLimit);
-template void LimitChanges_sse2_new<uint16_t,1>(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, float nLimit);
+template void LimitChanges_sse2_new<uint8_t>(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, float nLimit);
+template void LimitChanges_sse2_new<uint16_t>(unsigned char *pDst, int nDstPitch, const unsigned char *pSrc, int nSrcPitch, int nWidth, int nHeight, float nLimit);
 #endif // INTEL_INTRINSICS
 
 #ifdef INTEL_INTRINSICS

@@ -93,7 +93,6 @@ MV_FORCEINLINE __m128i load_4x16_make_4x32_subtract(const unsigned char *src_p, 
 
 // returns 4* of real value, have to divide it back
 // for compatibility with x264 versions, only >>1 needed
-template<bool hasSSSE3>
 uint32_t compute_satd16_4x4_sse2(const unsigned char *src, int systride, const unsigned char *ref, int rystride) {
   uint32_t satd;
   // 16 bit overflows -> load 8 byte 4*uint16_t -> 4x32-bit
@@ -109,19 +108,10 @@ uint32_t compute_satd16_4x4_sse2(const unsigned char *src, int systride, const u
   butterfly_2x2_32x4(a, b, c, d);
   butterfly_2x2_32x4(a, b, c, d);
   // Find the absolute values
-  if (!hasSSSE3) {
-    a = _MM_ABS_EPI32(a);
-    b = _MM_ABS_EPI32(b);
-    c = _MM_ABS_EPI32(c);
-    d = _MM_ABS_EPI32(d);
-  }
-  else {
-// SSSE3:
-    a = _mm_abs_epi32(a);
-    b = _mm_abs_epi32(b);
-    c = _mm_abs_epi32(c);
-    d = _mm_abs_epi32(d);
-  }
+  a = _MM_ABS_EPI32(a);
+  b = _MM_ABS_EPI32(b);
+  c = _MM_ABS_EPI32(c);
+  d = _MM_ABS_EPI32(d);
   // Take the sum of all the absolute values
   a = _mm_add_epi32(a, b);
   c = _mm_add_epi32(c, d);
@@ -335,12 +325,12 @@ MV_FORCEINLINE int32_t compute_sum_8x8_satd16(int ln,
 }
 #endif
 
-template<int w, int h, bool hasSSSE3>
+template<int w, int h>
 MV_FORCEINLINE int32_t calc_satd16_4x4_blocks(const unsigned char *src, int systride, const unsigned char *ref, int rystride) {
   int32_t satd = 0;
   for (int i = 0; i < h; i += 4) {
     for (int j = 0; j < w; j += 4) {
-      satd += compute_satd16_4x4_sse2<hasSSSE3>(
+      satd += compute_satd16_4x4_sse2(
         src + i*systride + j*sizeof(uint16_t), systride,
         ref + i*rystride + j*sizeof(uint16_t), rystride);
     }
@@ -351,9 +341,8 @@ MV_FORCEINLINE int32_t calc_satd16_4x4_blocks(const unsigned char *src, int syst
 
 // declaring templates for 16 bit satd
 #define MAKE_FN(w,h) \
-template<bool hasSSSE3> \
 static uint32_t satd16_##w##x##h##_sse2(const unsigned char *src, int systride, const unsigned char *ref, int rystride) { \
-  return calc_satd16_4x4_blocks<w, h, hasSSSE3>(src, systride, ref, rystride); \
+  return calc_satd16_4x4_blocks<w, h>(src, systride, ref, rystride); \
 } 
   MAKE_FN(64, 64)
   MAKE_FN(64, 48)
@@ -1326,8 +1315,7 @@ SADFunction* get_satd_function(int BlockX, int BlockY, int pixelsize, arch_t arc
 #endif // USE_SATD_ASM
 #ifdef INTEL_INTRINSICS
 #define MAKE_FN_SSE(w,h) \
-    func_satd[make_tuple(w, h, 2, USE_SSE41)] = satd16_##w##x##h##_sse2<true>; \
-    func_satd[make_tuple(w, h, 2, USE_SSE2)] = satd16_##w##x##h##_sse2<false>;
+    func_satd[make_tuple(w, h, 2, USE_SSE2)] = satd16_##w##x##h##_sse2;
 #else
 #define MAKE_FN_SSE(w,h)
 #endif

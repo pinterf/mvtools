@@ -718,12 +718,9 @@ MDegrainN::MDegrainN(
     if(out16_flag)
       LimitFunction = LimitChanges_src8_target16_c; // todo SSE2
     else if (pixelsize_super == 1)
-      LimitFunction = LimitChanges_sse2_new<uint8_t, 0>;
+      LimitFunction = LimitChanges_sse2_new<uint8_t>;
     else if (pixelsize_super == 2) { // pixelsize_super == 2
-      if ((_cpuFlags & CPUF_SSE4_1) != 0)
-        LimitFunction = LimitChanges_sse2_new<uint16_t, 1>;
-      else
-        LimitFunction = LimitChanges_sse2_new<uint16_t, 0>;
+      LimitFunction = LimitChanges_sse2_new<uint16_t>;
     }
     else {
       LimitFunction = LimitChanges_float_c; // no SSE2

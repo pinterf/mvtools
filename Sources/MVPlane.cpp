@@ -105,26 +105,25 @@ MVPlane::MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, i
   }
 
 #ifdef INTEL_INTRINSICS
-  const bool hasSSE41 = !!(cpuFlags & CPUF_SSE4_1);
   if (cpuFlags & CPUF_SSE2) {
     if (pixelsize == 1) {
       _bilin_hor_ptr = HorizontalBilin_sse2<uint8_t>;
       _bilin_ver_ptr = VerticalBilin_sse2<uint8_t>;
-      _bilin_dia_ptr = DiagonalBilin_sse2<uint8_t, false>;
-      _bicubic_hor_ptr = HorizontalBicubic_sse2<uint8_t, false>;
-      _bicubic_ver_ptr = hasSSE41 ? VerticalBicubic_sse2<uint8_t, true> : VerticalBicubic_sse2<uint8_t, false>;
-      _wiener_hor_ptr = HorizontalWiener_sse2<uint8_t, false>;
-      _wiener_ver_ptr = VerticalWiener_sse2<uint8_t, false>;
+      _bilin_dia_ptr = DiagonalBilin_sse2<uint8_t>;
+      _bicubic_hor_ptr = HorizontalBicubic_sse2<uint8_t>;
+      _bicubic_ver_ptr = VerticalBicubic_sse2<uint8_t>;
+      _wiener_hor_ptr = HorizontalWiener_sse2<uint8_t>;
+      _wiener_ver_ptr = VerticalWiener_sse2<uint8_t>;
       _average_ptr = Average2_sse2<uint8_t>;
     }
     else if (pixelsize == 2) {
       _bilin_hor_ptr = HorizontalBilin_sse2<uint16_t>;
       _bilin_ver_ptr = VerticalBilin_sse2<uint16_t>;
-      _bilin_dia_ptr = hasSSE41 ? DiagonalBilin_sse2<uint16_t, true> : DiagonalBilin_sse2<uint16_t, false>;
-      _bicubic_hor_ptr = hasSSE41 ? HorizontalBicubic_sse2<uint16_t, true> : HorizontalBicubic_sse2<uint16_t, false>;
-      _bicubic_ver_ptr = hasSSE41 ? VerticalBicubic_sse2<uint16_t, true> : VerticalBicubic_sse2<uint16_t, false>;
-      _wiener_hor_ptr = hasSSE41 ? HorizontalWiener_sse2<uint16_t, true> : HorizontalWiener_sse2<uint16_t, false>;
-      _wiener_ver_ptr = hasSSE41 ? VerticalWiener_sse2<uint16_t, 1> : VerticalWiener_sse2<uint16_t, false>;
+      _bilin_dia_ptr = DiagonalBilin_sse2<uint16_t>;
+      _bicubic_hor_ptr = HorizontalBicubic_sse2<uint16_t>;
+      _bicubic_ver_ptr = VerticalBicubic_sse2<uint16_t>;
+      _wiener_hor_ptr = HorizontalWiener_sse2<uint16_t>;
+      _wiener_ver_ptr = VerticalWiener_sse2<uint16_t>;
       _average_ptr = Average2_sse2<uint16_t>;
     }
   }
