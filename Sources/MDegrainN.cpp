@@ -481,8 +481,8 @@ MDegrainN::MDegrainN(
   , _nlimit(nlimit)
   , _nlimitc(nlimitc)
   , _super(super)
-  , _mt_flag(mt_flag)
   , _out16_flag(out16_flag)
+  , _mt_flag(mt_flag)
   , _nsupermodeyuv(-1)
   , _overwins()
   , _overwins_uv()
@@ -533,7 +533,7 @@ MDegrainN::MDegrainN(
 
     static const char *name_0[2] = { "mvbw", "mvfw" };
     char txt_0[127 + 1];
-    sprintf(txt_0, "%s%d", name_0[k & 1], 1 + k / 2);
+    snprintf(txt_0, sizeof(txt_0), "%s%d", name_0[k & 1], 1 + k / 2);
     CheckSimilarity(*(_mv_clip_arr[k]._clip_sptr), txt_0, env_ptr);
   }
 
@@ -917,11 +917,11 @@ static void plane_copy_8_to_16_c(uint8_t *dstp, int dstpitch, const uint8_t *src
 
       if (nOverlapY > 0)
       {
-        memset(
-          &_boundary_cnt_arr[0],
-          0,
-          _boundary_cnt_arr.size() * sizeof(_boundary_cnt_arr[0])
-        );
+        // Do not memset the atomic counters: they are not trivially copyable.
+        for (conc::AtomicInt <int> &cnt : _boundary_cnt_arr)
+        {
+          cnt = 0;
+        }
       }
 
       slicer.start(
@@ -1117,11 +1117,11 @@ void	MDegrainN::process_chroma(int plane_mask)
 
       if (nOverlapY > 0)
       {
-        memset(
-          &_boundary_cnt_arr[0],
-          0,
-          _boundary_cnt_arr.size() * sizeof(_boundary_cnt_arr[0])
-        );
+        // Do not memset the atomic counters: they are not trivially copyable.
+        for (conc::AtomicInt <int> &cnt : _boundary_cnt_arr)
+        {
+          cnt = 0;
+        }
       }
 
       slicer.start(

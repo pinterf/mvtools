@@ -8,9 +8,15 @@
 #include <stdexcept>
 
 #ifdef _WIN32
+#ifndef NOGDI
 #define NOGDI
+#endif
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 typedef HMODULE lib_t;
 typedef FARPROC func_t;

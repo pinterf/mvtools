@@ -33,13 +33,19 @@
 MVDepan::MVDepan(PClip _child, PClip mvs, PClip _mask, bool _zoom, bool _rot, float _pixaspect,
   float _error, bool _info, const char * _logfilename, float _wrong, float _zerow, int _range, sad_t nSCD1, int nSCD2, bool isse, bool _planar, IScriptEnvironment* env) :
   GenericVideoFilter(_child),
-  mvclip(mvs, nSCD1, nSCD2, env, 1, 0),
   MVFilter(mvs, "MDepan", env, 1, 0),
-  mask(_mask),
-  planar(_planar),
+  mvclip(mvs, nSCD1, nSCD2, env, 1, 0),
+  ifZoom(_zoom),
+  ifRot(_rot),
+  pixaspect(_pixaspect),
+  error(_error),
+  info(_info),
+  logfilename(_logfilename),
   wrongDif(_wrong),
-  zeroWeight(_zerow), range(_range),
-  ifZoom(_zoom), ifRot(_rot), pixaspect(_pixaspect), error(_error), info(_info), logfilename(_logfilename)
+  zeroWeight(_zerow),
+  range(_range),
+  mask(_mask),
+  planar(_planar)
 {
   has_at_least_v8 = true;
   try { env->CheckVersion(8); }
@@ -464,8 +470,6 @@ PVideoFrame __stdcall MVDepan::GetFrame(int ndest, IScriptEnvironment* env)
   int src_pitch;
   int dst_pitch;
   const BYTE * maskp;
-  int mask_width;
-  int mask_height;
   int mask_pitch;
 
   if (ClipFnc::is_yuv_any(vi) && !vi.IsYUY2())
@@ -503,8 +507,6 @@ PVideoFrame __stdcall MVDepan::GetFrame(int ndest, IScriptEnvironment* env)
     if (mask)
     {
       maskp = maskf->GetReadPtr(PLANAR_Y);
-      mask_width = maskf->GetRowSize(PLANAR_Y);
-      mask_height = maskf->GetHeight(PLANAR_Y);
       mask_pitch = maskf->GetPitch(PLANAR_Y);
     }
   }
@@ -520,8 +522,6 @@ PVideoFrame __stdcall MVDepan::GetFrame(int ndest, IScriptEnvironment* env)
     if (mask)
     {
       maskp = maskf->GetReadPtr();
-      mask_width = maskf->GetRowSize();
-      mask_height = maskf->GetHeight();
       mask_pitch = maskf->GetPitch();
     }
   }

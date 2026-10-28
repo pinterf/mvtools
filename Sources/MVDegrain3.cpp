@@ -606,8 +606,8 @@ PVideoFrame __stdcall MVDegrainX::GetFrame(int n, IScriptEnvironment* env)
     }
   }
 
-  MVPlane *pPlanesB[3][MAX_DEGRAIN] = { 0 };
-  MVPlane *pPlanesF[3][MAX_DEGRAIN] = { 0 };
+  MVPlane *pPlanesB[3][MAX_DEGRAIN] = { { 0 } };
+  MVPlane *pPlanesF[3][MAX_DEGRAIN] = { { 0 } };
 
   for (int j = level - 1; j >= 0; j--)
   {

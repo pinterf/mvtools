@@ -152,11 +152,11 @@ void	MTFlowGraphSched <T, GR, GD, MAXT>::start (const GR &dep_graph, GD &glob_da
 	_dep_graph_ptr = &dep_graph;
 
 	const int		last_node_index = _dep_graph_ptr->get_last_node ();
-	memset (	// Not very clean but should work correctly.
-		&_in_cnt_arr [0],
-		0,
-		sizeof (_in_cnt_arr [0]) * (last_node_index + 1)
-	);
+	// Do not memset the atomic counters: they are not trivially copyable.
+	for (int i = 0; i <= last_node_index; ++i)
+	{
+		_in_cnt_arr [i] = 0;
+	}
 
 	// Enqueues the root task
 	TaskData &		root = _task_data_arr [0];

@@ -404,11 +404,11 @@ PVideoFrame __stdcall MVCompensate::GetFrame(int n, IScriptEnvironment* env_ptr)
     {
       if (nOverlapY > 0)
       {
-        memset(
-          &_boundary_cnt_arr[0],
-          0,
-          _boundary_cnt_arr.size() * sizeof(_boundary_cnt_arr[0])
-        );
+        // Do not memset the atomic counters: they are not trivially copyable.
+        for (conc::AtomicInt <int> &cnt : _boundary_cnt_arr)
+        {
+          cnt = 0;
+        }
       }
 
       MemZoneSet(reinterpret_cast<unsigned char*>(DstShort), 0, nWidth_B * ovrBufferElementSize, nHeight_B, 0, 0, dstShortPitch * ovrBufferElementSize);

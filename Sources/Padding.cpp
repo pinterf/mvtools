@@ -19,6 +19,7 @@
 #include "Padding.h"
 #include "ClipFnc.h"
 #include <algorithm>
+#include <cstring>
 #include <stdint.h>
 
 

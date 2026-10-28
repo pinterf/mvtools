@@ -22,9 +22,15 @@
 #ifdef MOTION_DEBUG
 
 #ifdef _WIN32
+#ifndef NOGDI
 #define NOGDI
+#endif
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
 #include "windows.h"
 #endif
 
@@ -37,7 +43,7 @@ static inline void DebugPrintf(char *fmt, ...)
    char buf[1024];
 
    va_start(args, fmt);
-   vsprintf(buf, fmt, args);
+   vsnprintf(buf, sizeof(buf), fmt, args);
    OutputDebugString(buf);
 }
 

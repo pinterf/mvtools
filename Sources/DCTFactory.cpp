@@ -38,9 +38,9 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 
 DCTFactory::DCTFactory(int dctmode, bool isse, int blksizex, int blksizey, int pixelsize, int bits_per_pixel, ::IScriptEnvironment &env):
   _dctmode(dctmode)
-  , _isse(isse)
   , _blksizex(blksizex)
   , _blksizey(blksizey)
+  , _isse(isse)
 #ifdef USE_FDCT88INT_ASM
   , _fftw_flag(!(_isse && _blksizex == 8 && _blksizey == 8 && pixelsize == 1)) // only 8x8 is implemented as an int FFT
 #else
@@ -67,7 +67,7 @@ DCTFactory::DCTFactory(int dctmode, bool isse, int blksizex, int blksizey, int p
   int avisynth_if_ver = 6;
   try {
     env.CheckVersion(9); // GetEnvProperty with AEP_INTERFACE_VERSION is only safe since V9
-    avisynth_if_ver = env.GetEnvProperty(AEP_INTERFACE_VERSION);
+    avisynth_if_ver = (int)env.GetEnvProperty(AEP_INTERFACE_VERSION);
   }
   catch (const AvisynthError&) {
     try { env.CheckVersion(8); avisynth_if_ver = 8; }

@@ -28,8 +28,8 @@
 
 MVSCDetection::MVSCDetection(PClip _child, PClip vectors, float Ysc, sad_t nSCD1, int nSCD2, bool isse, IScriptEnvironment* env) :
 GenericVideoFilter(_child),
-mvClip(vectors, nSCD1, nSCD2, env, 1, 0),
-MVFilter(vectors, "MSCDetection", env, 1, 0)
+MVFilter(vectors, "MSCDetection", env, 1, 0),
+mvClip(vectors, nSCD1, nSCD2, env, 1, 0)
 {
   has_at_least_v8 = true;
   try { env->CheckVersion(8); }

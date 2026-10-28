@@ -20,10 +20,6 @@
 #ifndef __MV_RECALCULATE__
 #define __MV_RECALCULATE__
 
-#define	NOGDI
-#define	NOMINMAX
-#define	WIN32_LEAN_AND_MEAN
-
 #include	"conc/ObjPool.h"
 #include "commonfunctions.h"
 #include "DCTFactory.h"

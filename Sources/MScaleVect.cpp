@@ -10,7 +10,7 @@
 
 // Constructor - Copy motion vector information. Scale if required for use on different sized frame
 MScaleVect::MScaleVect( PClip Child, double ScaleX, double ScaleY, ScaleMode Mode, bool Flip, bool AdjustSubpel, int Bits, IScriptEnvironment* Env )
-   : mScaleX(ScaleX), mScaleY(ScaleY), mMode(Mode), mAdjustSubpel(AdjustSubpel), GenericVideoFilter( Child ), mRevert (false), mNewBits(Bits)
+   : GenericVideoFilter( Child ), mMode(Mode), mScaleX(ScaleX), mScaleY(ScaleY), mAdjustSubpel(AdjustSubpel), mRevert (false), mNewBits(Bits)
 {
   has_at_least_v8 = true;
   try { Env->CheckVersion(8); }

@@ -59,6 +59,11 @@
 
 #include <avisynth.h>
 #ifdef _WIN32
+// The Windows SDK's minwindef.h defines STRICT as 1, avs/win.h (external) defines
+// it as empty: drop the previous definition to avoid a redefinition warning.
+#ifdef STRICT
+#undef STRICT
+#endif
 #include "avs/win.h"
 #endif
 #include "def.h"
@@ -148,7 +153,7 @@ DePanEstimate_fftw::DePanEstimate_fftw(PClip _child, int _range, float _trust, i
   int avisynth_if_ver = 6;
   try {
     env->CheckVersion(9); // GetEnvProperty with AEP_INTERFACE_VERSION is only safe since V9
-    avisynth_if_ver = env->GetEnvProperty(AEP_INTERFACE_VERSION);
+    avisynth_if_ver = (int)env->GetEnvProperty(AEP_INTERFACE_VERSION);
   }
   catch (const AvisynthError&) {
     try { env->CheckVersion(8); avisynth_if_ver = 8; }

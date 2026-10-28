@@ -43,12 +43,11 @@ GroupOfPlanes::GroupOfPlanes(
   , nOverlapY(_nOverlapY)
   , xRatioUV(_xRatioUV)
   , yRatioUV(_yRatioUV)
-  , pixelsize(_pixelsize)
-  , divideExtra(_divideExtra)
-  , bits_per_pixel(_bits_per_pixel)
-  , _mt_flag(mt_flag)
   , chromaSADScale(_chromaSADScale)
-  , _dct_pool_ptr(dct_pool_ptr)
+  , pixelsize(_pixelsize)
+  , bits_per_pixel(_bits_per_pixel)
+  , divideExtra(_divideExtra)
+  , _mt_flag(mt_flag)
 {
   planes = new PlaneOfBlocks*[nLevelCount];
 

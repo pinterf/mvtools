@@ -30,6 +30,11 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 #include "types.h"
 
 #ifdef _WIN32
+// The Windows SDK's minwindef.h defines STRICT as 1, avs/win.h (external) defines
+// it as empty: drop the previous definition to avoid a redefinition warning.
+#ifdef STRICT
+#undef STRICT
+#endif
 #include "avs/win.h"
 #endif
 
@@ -60,7 +65,7 @@ http://sam.zoy.org/wtfpl/COPYING for more details.
 // Name is a string containing only alpha+num+underscore, free of double quotes.
 // Requires a ";" at the end.
 #define  CHECK_COMPILE_TIME(name, cond)	\
-  typedef int CHECK_COMPILE_TIME_##name##_##__LINE__ [(cond) ? 1 : -1]
+  static_assert (cond, #name)
 
 const long double	PI  = 3.1415926535897932384626433832795L;
 const long double	LN2 = 0.69314718055994530941723212145818L;

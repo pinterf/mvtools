@@ -317,7 +317,7 @@ DePanStabilize::DePanStabilize(PClip _child, PClip _DePanData, float _cutoff,
 
 #ifdef _DEBUG
     _RPT1(0, "Num of frames= %d \n", DePanData->GetVideoInfo().num_frames);
-    sprintf(debugbuf, "Num of frames= %d \n", DePanData->GetVideoInfo().num_frames);
+    snprintf(debugbuf, sizeof(debugbuf), "Num of frames= %d \n", DePanData->GetVideoInfo().num_frames);
     LogToFile(debugbuf);
 #endif
     //	if (debuglogfile != NULL) { fprintf(debuglogfile, "Num of frames= %d \n", DePanData->GetVideoInfo().num_frames); } // PF debug
@@ -504,14 +504,14 @@ void DePanStabilize::Inertial(int nbase, int ndest, transform * ptrdif)
   // recurrent calculation of smoothed cumulative transforms from base+2 to ndest frames
 #ifdef DEBUG
   _RPT2(0, "  >> Inertial: %d->%d recurrent calculation of smoothed cumulative transforms from base+2 to ndest frames\n", nbase + 2, ndest);
-  sprintf(debugbuf, "  >> Inertial: %d->%d recurrent calculation of smoothed cumulative transforms from base+2 to ndest frames\n", nbase + 2, ndest);
+  snprintf(debugbuf, sizeof(debugbuf), "  >> Inertial: %d->%d recurrent calculation of smoothed cumulative transforms from base+2 to ndest frames\n", nbase + 2, ndest);
   LogToFile(debugbuf);
 #endif
 
   for (n = nbase + 2; n <= ndest; n++) {
 #ifdef DEBUG
     _RPT1(0, "  >>> n=%d\n", n);
-    sprintf(debugbuf, "  >>> n=%d\n", n);
+    snprintf(debugbuf, sizeof(debugbuf), "  >>> n=%d\n", n);
     LogToFile(debugbuf);
 #endif
     float sm1;
@@ -531,7 +531,7 @@ void DePanStabilize::Inertial(int nbase, int ndest, transform * ptrdif)
     nonlin = nonlinfactor.dxc;
 #ifdef _DEBUG
     _RPT3(0, "  >>>> trcumul[n-2].dxc = %f, [n-1].dxc = %f, [n].dxc = %f\n", cu2, cu1, cu0);
-    sprintf(debugbuf, "  >>>> trcumul[n-2].dxc = %f, [n-1].dxc = %f, [n].dxc = %f\n", cu2, cu1, cu0);
+    snprintf(debugbuf, sizeof(debugbuf), "  >>>> trcumul[n-2].dxc = %f, [n-1].dxc = %f, [n].dxc = %f\n", cu2, cu1, cu0);
     LogToFile(debugbuf);
 #endif
     //----------------------------------------
@@ -549,7 +549,7 @@ void DePanStabilize::Inertial(int nbase, int ndest, transform * ptrdif)
       (1 + nonlin*fabsf(sm1 - cu1));
 #ifdef _DEBUG
     _RPT2(0, "  >>>> trsmoothed[n].dxc %f, %f\n", firstpass, secondpass);
-    sprintf(debugbuf, "  >>>> trsmoothed[n].dxc %f, %f\n", firstpass, secondpass);
+    snprintf(debugbuf, sizeof(debugbuf), "  >>>> trsmoothed[n].dxc %f, %f\n", firstpass, secondpass);
     LogToFile(debugbuf);
 #endif
     trsmoothed[n].dxc = secondpass;
@@ -584,7 +584,7 @@ void DePanStabilize::Inertial(int nbase, int ndest, transform * ptrdif)
 
 #ifdef _DEBUG
     _RPT3(0, "  >>>> trcumul[n-2].dyc = %f, [n-1].dyc = %f, [n].dyc = %f\n", cu2, cu1, cu0);
-    sprintf(debugbuf, "  >>>> trcumul[n-2].dyc = %f, [n-1].dyc = %f, [n].dyc = %f\n", cu2, cu1, cu0);
+    snprintf(debugbuf, sizeof(debugbuf), "  >>>> trcumul[n-2].dyc = %f, [n-1].dyc = %f, [n].dyc = %f\n", cu2, cu1, cu0);
     LogToFile(debugbuf);
 #endif
     //----------------------------------------
@@ -602,7 +602,7 @@ void DePanStabilize::Inertial(int nbase, int ndest, transform * ptrdif)
       (1 + nonlin*fabsf(sm1 - cu1));
 #ifdef _DEBUG
     _RPT2(0, "  >>>> trsmoothed[n].dyc %f, %f\n", firstpass, secondpass);
-    sprintf(debugbuf, "  >>>> trsmoothed[n].dyc %f, %f\n", firstpass, secondpass);
+    snprintf(debugbuf, sizeof(debugbuf), "  >>>> trsmoothed[n].dyc %f, %f\n", firstpass, secondpass);
     LogToFile(debugbuf);
 #endif
     trsmoothed[n].dyc = secondpass;
@@ -619,7 +619,7 @@ void DePanStabilize::Inertial(int nbase, int ndest, transform * ptrdif)
       ( 1 + 0.5f*nonlinfactor.dyc/freqnative*0.5f*fabsf(trsmoothed[n].dyc - trsmoothed[n-2].dyc - trcumul[n].dyc + trcumul[n-2].dyc) ) - \
       cquad*freqnative*freqnative*(trsmoothed[n-1].dyc - trcumul[n-1].dyc)* \
       ( 1 + nonlinfactor.dyc*fabsf(trsmoothed[n-1].dyc - trcumul[n-1].dyc) );    // corrector, one iteration must be enough
-    sprintf(debugbuf, "  >>>> trsmoothed[n].dyc %f, %f\n", trsmoothed[n].dyc, secondpass);
+    snprintf(debugbuf, sizeof(debugbuf), "  >>>> trsmoothed[n].dyc %f, %f\n", trsmoothed[n].dyc, secondpass);
     LogToFile(debugbuf);
     */
     /* when nonlinfactor is small (dymax=8 -> 5/8, because nonlinfactor.dyc = 5/fabsf(dymax);// chanded in v1.7
@@ -1083,7 +1083,7 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
 
 #ifdef _DEBUG
   _RPT2(0, "DePanStabilize::GetFrame get motion info START: about frames in interval from begin source to dest in reverse order. nbase=%d->ndest=%d \n", nbase, ndest);
-  sprintf(debugbuf, "DePanStabilize::GetFrame get motion info START: about frames in interval from begin source to dest in reverse order. nbase=%d->ndest=%d \n", nbase, ndest);
+  snprintf(debugbuf, sizeof(debugbuf), "DePanStabilize::GetFrame get motion info START: about frames in interval from begin source to dest in reverse order. nbase=%d->ndest=%d \n", nbase, ndest);
   LogToFile(debugbuf);
 #endif
   //if (debuglogfile != NULL) { fprintf(debuglogfile, "DePanStabilize::GetFrame get motion info about frames in interval from begin source to dest in reverse order. nbase=%d->ndest=%d \n",nbase,ndest); }
@@ -1095,7 +1095,7 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
       // note: if inputlogfile has been read, all motion data is always known
 #ifdef _DEBUG
       _RPT1(0, "  DePanStabilize::GetFrame Request frame n from the DePanData clip. n=%d \n", n);
-      sprintf(debugbuf, "  DePanStabilize::GetFrame Request frame n from the DePanData clip. n=%d \n", n);
+      snprintf(debugbuf, sizeof(debugbuf), "  DePanStabilize::GetFrame Request frame n from the DePanData clip. n=%d \n", n);
       LogToFile(debugbuf);
 #endif
       //if (debuglogfile != NULL) { fprintf(debuglogfile, "DePanStabilize::GetFrame Request frame n from the DePanData clip. n=%d \n", n); } // PF debug
@@ -1112,7 +1112,7 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
       // log first. arrays are vi.num_frames long
 #ifdef _DEBUG
       _RPT5(0, "  DePanStabilize::GetFrame DePanData read. n=%d motionx=%f motiony=%f motionzoom=%f motionrot=%f \n", n, motionx[n], motiony[n], motionzoom[n], motionrot[n]);
-      sprintf(debugbuf, "  DePanStabilize::GetFrame DePanData read. n=%d motionx=%f motiony=%f motionzoom=%f motionrot=%f \n", n, motionx[n], motiony[n], motionzoom[n], motionrot[n]);
+      snprintf(debugbuf, sizeof(debugbuf), "  DePanStabilize::GetFrame DePanData read. n=%d motionx=%f motiony=%f motionzoom=%f motionrot=%f \n", n, motionx[n], motiony[n], motionzoom[n], motionrot[n]);
       LogToFile(debugbuf);
 #endif
 
@@ -1157,7 +1157,7 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
     nbase = n;  // set base frame to new scene start if found
 #ifdef _DEBUG
     _RPT1(0, "DePanStabilize::GetFrame New nbase. n=%d \n", nbase);
-    sprintf(debugbuf, "DePanStabilize::GetFrame New nbase. n=%d \n", nbase);
+    snprintf(debugbuf, sizeof(debugbuf), "DePanStabilize::GetFrame New nbase. n=%d \n", nbase);
     LogToFile(debugbuf);
 #endif
   }
@@ -1166,11 +1166,11 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
   //		OutputDebugString(debugbuf);
 #ifdef _DEBUG
   _RPT3(0, "DePanStabilize: nbase=%d ndest=%d nmax=%d\n", nbase, ndest, nmax);
-  sprintf(debugbuf, "DePanStabilize: nbase=%d ndest=%d nmax=%d\n", nbase, ndest, nmax);
+  snprintf(debugbuf, sizeof(debugbuf), "DePanStabilize: nbase=%d ndest=%d nmax=%d\n", nbase, ndest, nmax);
   LogToFile(debugbuf);
 
   _RPT2(0, "DePanStabilize::GetFrame get motion Part#1 info START: ndest+1=%d -> nmax=%d \n", ndest + 1, nmax);
-  sprintf(debugbuf, "DePanStabilize::GetFrame get motion Part#1 info START: ndest+1=%d -> nmax=%d \n", ndest + 1, nmax);
+  snprintf(debugbuf, sizeof(debugbuf), "DePanStabilize::GetFrame get motion Part#1 info START: ndest+1=%d -> nmax=%d \n", ndest + 1, nmax);
   LogToFile(debugbuf);
 #endif
   for (n = ndest + 1; n <= nmax; n++) {
@@ -1189,7 +1189,7 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
       if (error != 0) env->ThrowError("DePanStabilize: data clip is NOT good DePanEstimate clip !");
 #ifdef _DEBUG
       _RPT5(0, "  DePanStabilize::GetFrame DePanData read. n=%d motionx=%f motiony=%f motionzoom=%f motionrot=%f \n", n, *motionx, *motiony, *motionzoom, *motionrot);
-      sprintf(debugbuf, "  DePanStabilize::GetFrame DePanData read. n=%d motionx=%f motiony=%f motionzoom=%f motionrot=%f \n", n, *motionx, *motiony, *motionzoom, *motionrot);
+      snprintf(debugbuf, sizeof(debugbuf), "  DePanStabilize::GetFrame DePanData read. n=%d motionx=%f motiony=%f motionzoom=%f motionrot=%f \n", n, *motionx, *motiony, *motionzoom, *motionrot);
       LogToFile(debugbuf);
 #endif
     }
@@ -1238,7 +1238,7 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
     if (nbase == 4 && ndest == 6) // !! Specific clip debug!
     {
       _RPT2(0, "DePanStabilize. will be problem nbase=%d ndest=%d\n", nbase, ndest);
-      sprintf(debugbuf, "DePanStabilize. will be problem \n");
+      snprintf(debugbuf, sizeof(debugbuf), "DePanStabilize. will be problem \n");
       LogToFile(debugbuf);
       // if (debuglogfile != NULL) { fprintf(debuglogfile, "DePanStabilize. will be problem \n"); }
     }
@@ -1255,7 +1255,7 @@ PVideoFrame __stdcall DePanStabilize::GetFrame(int ndest, IScriptEnvironment* en
       sumtransform(trcumul[n - 1], trcur, &trcumul[n]);
 #ifdef _DEBUG
       _RPT5(0, "  cumul[%d].dxc,dyc=%f,%f  MotionX,Y=%f,%f\n", n, trcumul[n].dxc, trcumul[n].dyc, mx, my);
-      sprintf(debugbuf, "  cumul[%d].dxc,dyc=%f,%f  MotionX,Y=%f,%f\n", n, trcumul[n].dxc, trcumul[n].dyc, mx, my);
+      snprintf(debugbuf, sizeof(debugbuf), "  cumul[%d].dxc,dyc=%f,%f  MotionX,Y=%f,%f\n", n, trcumul[n].dxc, trcumul[n].dyc, mx, my);
       LogToFile(debugbuf);
 #endif
     }

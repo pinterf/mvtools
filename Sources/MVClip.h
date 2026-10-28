@@ -47,8 +47,6 @@ class MVClip
    /*! \brief Second Scene Change Detection threshold ( compared against the number of block over the first threshold */
    int nSCD2;
 
-   int nHeaderSize; // offset to data
-
   int				_group_len;
   int				_group_ofs;
   bool				_frame_update_flag;

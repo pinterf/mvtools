@@ -3497,11 +3497,11 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
 
 
 PlaneOfBlocks::WorkingArea::WorkingArea(int nBlkSizeX, int nBlkSizeY, int dctpitch, int nLogxRatioUV, int nLogyRatioUV, int _pixelsize, int _bits_per_pixel)
-  : dctSrc(nBlkSizeY*dctpitch) // dctpitch is pixelsize aware
-  , DCT(0)
-  , dctRef(nBlkSizeY* dctpitch)
+  : DCT(0)
   , pixelsize(_pixelsize)
   , bits_per_pixel(_bits_per_pixel)
+  , dctSrc(nBlkSizeY*dctpitch) // dctpitch is pixelsize aware
+  , dctRef(nBlkSizeY* dctpitch)
 {
 #if (ALIGN_SOURCEBLOCK > 1)
   int xPitch = AlignNumber(nBlkSizeX*pixelsize, ALIGN_SOURCEBLOCK);  // for memory allocation pixelsize needed

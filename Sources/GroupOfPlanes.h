@@ -43,8 +43,6 @@ class GroupOfPlanes
   int            divideExtra;
   bool           _mt_flag;
 
-  conc::ObjPool <DCTClass> *
-                 _dct_pool_ptr;
   PlaneOfBlocks **
                  planes;
 

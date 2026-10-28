@@ -49,7 +49,6 @@ private:
   // unsigned char *LUTBilinear;
   unsigned char *smallMask;
   unsigned char *smallMaskV;
-  unsigned char **destinations;
 
   // Upsizer *upsizer; // old slow bugged resizer replaced by fast SimpleResize (Fizick)
   SimpleResize *upsizer;
