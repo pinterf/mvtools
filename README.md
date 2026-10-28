@@ -165,3 +165,14 @@ x86-64 and aarch64 (ARM64) alike; on aarch64 the NEON code paths are enabled aut
 
         cd build
         sudo make install
+
+* Packaging note
+
+  Build with the bundled Avisynth headers (`Sources/include`, `DePan/include`, `DePanEstimate/include`);
+  do not remove them or replace them with the system headers (e.g. `pkg-config --cflags avisynth`).
+  The plugins do not link against an Avisynth+ library, the header only describes the interface, and it
+  works with older hosts as well: features of a newer interface version (e.g. the V12 global lock used
+  around fftw plan creation) are called only when the host reports that version, otherwise a fallback is used.
+  A plugin built with the bundled header runs on older Avisynth+ releases (e.g. 3.7.5) too, while an older
+  system header fails to compile (`'class IScriptEnvironment' has no member named 'AcquireGlobalLock'`).
+
