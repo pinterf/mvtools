@@ -34,6 +34,9 @@ boundaries.
 
 #include "CopyCode.h"
 #include "Interpolation.h"
+#ifdef INTEL_INTRINSICS
+#include "Interpolation_avx2.h"
+#endif
 #ifdef NEON_INTRINSICS
 #include "Interpolation_neon.h"
 #endif
@@ -125,6 +128,20 @@ MVPlane::MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, i
       _wiener_hor_ptr = HorizontalWiener_sse2<uint16_t>;
       _wiener_ver_ptr = VerticalWiener_sse2<uint16_t>;
       _average_ptr = Average2_sse2<uint16_t>;
+    }
+  }
+  if (cpuFlags & CPUF_AVX2) {
+    if (pixelsize == 1) {
+      _bicubic_hor_ptr = HorizontalBicubic_avx2<uint8_t>;
+      _bicubic_ver_ptr = VerticalBicubic_avx2<uint8_t>;
+      _wiener_hor_ptr = HorizontalWiener_avx2<uint8_t>;
+      _wiener_ver_ptr = VerticalWiener_avx2<uint8_t>;
+    }
+    else if (pixelsize == 2) {
+      _bicubic_hor_ptr = HorizontalBicubic_avx2<uint16_t>;
+      _bicubic_ver_ptr = VerticalBicubic_avx2<uint16_t>;
+      _wiener_hor_ptr = HorizontalWiener_avx2<uint16_t>;
+      _wiener_ver_ptr = VerticalWiener_avx2<uint16_t>;
     }
   }
 #endif

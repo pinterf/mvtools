@@ -1971,7 +1971,7 @@ void VerticalWiener_sse2(unsigned char *pDst8, const unsigned char *pSrc8, int n
   auto zeroes = _mm_setzero_si128();
 
   for (int y = 0; y < 2; y++) {
-    for (int x = 0; x < nWidth * (int)sizeof(pixel_t); x += 16 / sizeof(pixel_t)) {
+    for (int x = 0; x < nWidth; x += 16 / sizeof(pixel_t)) {
       __m128i m0 = _mm_loadu_si128((const __m128i *)&pSrc[x]);
       __m128i m1 = _mm_loadu_si128((const __m128i *)&pSrc[x + nSrcPitch]);
 
@@ -2054,7 +2054,7 @@ void VerticalWiener_sse2(unsigned char *pDst8, const unsigned char *pSrc8, int n
   }
 
   for (int y = nHeight - 4; y < nHeight - 1; y++) {
-    for (int x = 0; x < nWidth * (int)sizeof(pixel_t); x += 16 / sizeof(pixel_t)) {
+    for (int x = 0; x < nWidth; x += 16 / sizeof(pixel_t)) {
       __m128i m0 = _mm_loadu_si128((const __m128i *)&pSrc[x]);
       __m128i m1 = _mm_loadu_si128((const __m128i *)&pSrc[x + nSrcPitch]);
 
@@ -2373,7 +2373,7 @@ void VerticalBicubic_sse2(unsigned char* pDst8, const unsigned char* pSrc8, int 
   auto zeroes = _mm_setzero_si128();
 
   for (int y = 0; y < 1; y++) {
-    for (int x = 0; x < nWidth * (int)sizeof(pixel_t); x += 16 / sizeof(pixel_t)) {
+    for (int x = 0; x < nWidth; x += 16 / sizeof(pixel_t)) {
       __m128i m0 = _mm_loadu_si128((const __m128i*) & pSrc[x]);
       __m128i m1 = _mm_loadu_si128((const __m128i*) & pSrc[x + nSrcPitch]);
 
@@ -2437,7 +2437,7 @@ void VerticalBicubic_sse2(unsigned char* pDst8, const unsigned char* pSrc8, int 
   }
 
   for (int y = nHeight - 3; y < nHeight - 1; y++) {
-    for (int x = 0; x < nWidth * (int)sizeof(pixel_t); x += 16 / sizeof(pixel_t)) {
+    for (int x = 0; x < nWidth; x += 16 / sizeof(pixel_t)) {
       __m128i m0 = _mm_loadu_si128((const __m128i*) & pSrc[x]);
       __m128i m1 = _mm_loadu_si128((const __m128i*) & pSrc[x + nSrcPitch]);
 
