@@ -1,0 +1,28 @@
+This package contains DLLs built with different compilers.
+
+Win32\ClangCL, x64\ClangCL
+  LLVM clang-cl (Visual Studio 2026).
+  Requires only SSE2.
+
+Win32\MSVC_XP, x64\MSVC_XP
+  Visual C++ v141_xp toolset, runs on Windows XP as well.
+  Requires only SSE2.
+  Contains the same AVX/AVX2 code as the other builds, but Windows XP does not support AVX
+  (it does not save the AVX registers), so on XP Avisynth reports no AVX/AVX2 and the
+  SSE2..SSE4.1 code is used. On Windows 7 SP1 and newer this build uses AVX2 as well.
+
+ARM64\llvm-mingw
+  Windows on ARM64, built with llvm-mingw, NEON optimized.
+  The C++ runtime is linked statically, no redistributable is needed.
+
+The CPU specific optimizations (up to AVX2 on x86) are chosen at runtime.
+
+mvtools2.dll of the Visual Studio builds requires the Microsoft Visual C++ Redistributable
+https://www.visualstudio.com/downloads/
+
+The DCT modes of MAnalyse/MRecalculate and DePanEstimate need the fftw3 single precision library:
+libfftw3f-3.dll (or fftw3.dll); Windows on ARM64 needs an ARM64 build of it.
+
+Which one to choose?
+
+When in doubt, use ClangCL. On Windows XP use MSVC_XP.
