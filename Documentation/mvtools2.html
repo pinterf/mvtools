@@ -2411,6 +2411,9 @@ Planar2Interleaved() # convert back to normal interleave YUY2
                     macOS on x86, MinGW (GCC, llvm-mingw). The MSVC and ClangCL builds were not affected.</li>
                 <li>Fix: YUY2 with planar=true, limit and a width not a multiple of 16: crash in MDegrain1-6, MDegrainN.</li>
                 <li>Fix: x64 MinGW builds: the 64 bit atomic compare-exchange used 32 bit address registers.</li>
+                <li>Fix: MSuper rfilter=0, 10-16 bit, CPUs without SSE4.1: wrong output (the SSE2 path stored the unpacked result).</li>
+                <li>Fix: MSuper sharp=1 and sharp=2, 10-16 bit, SSE2: the vertical interpolation wrote past the row end in the averaged
+                    edge rows and read up to two rows past the plane. Output was not affected.</li>
             </ul>
         </li>
         <li>
@@ -2425,6 +2428,9 @@ Planar2Interleaved() # convert back to normal interleave YUY2
                     MDegrain1-6, MDegrainN (8 bit, out16, 10-16 bit; MDegrainN also 32 bit float).</li>
                 <li>MFlow, MFlowBlur, MFlowFps with pel=2 and pel=4: the subpixel plane merge is vectorized by the compilers
                     (all platforms).</li>
+                <li>x86 AVX2, same output as SSE2 and C:
+                    MSuper sharp=1 (bicubic) and sharp=2 (Wiener) subpixel interpolation, 8 and 10-16 bit (MSuper pel=2 up to 1.5x faster);
+                    SATD for dct=5..10, 10-16 bit (MAnalyse dct=5 about 1.3x faster).</li>
             </ul>
         </li>
         <li>
@@ -2447,6 +2453,8 @@ Planar2Interleaved() # convert back to normal interleave YUY2
             <ul>
                 <li>CMake: aarch64 targets are detected, NEON is enabled (ENABLE_NEON_SIMD), x86 SIMD flags and files are used on
                     Intel targets only. A C-only build compiles and runs on any target.</li>
+                <li>x86 GCC, Clang, ClangCL builds: SSE2 base (no global -msse4.1), the SSE4.1/AVX/AVX2 code is chosen at runtime.
+                    The Linux and MinGW builds run on SSE2-only CPUs as well.</li>
                 <li>Windows on ARM64: build_arm64_mingw.bat, cross-compiled on x64 Windows with llvm-mingw (UCRT), CMake and Ninja;
                     libc++ is linked statically, the DLLs need only system DLLs. MvTools2, DePan and DePanEstimate.
                     The DCT modes and DePanEstimate need an ARM64 libfftw3f-3.dll.</li>
