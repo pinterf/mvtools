@@ -31,8 +31,8 @@ if (WIN32)
 endif()
 
 if(ENABLE_INTEL_SIMD)
-  #require sse4.1, there are mixed parts in the source
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DINTEL_INTRINSICS -msse4.1")
+  # SSE2 base, the SSE4.1/AVX/AVX2 code is in the *_sse41/_avx/_avx2 files or has target attributes
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DINTEL_INTRINSICS")
 endif()
 
 # Automatically group source files according to directory structure
