@@ -2,7 +2,8 @@ Depan and DepanEstimate
 =======================
 
 Motion estimation and compensation plugin for Avisynth+ and Avisynth v2.6 family.
-Supporting YUY2, 4:2:0, 4:2:2, 4:4:4, planar RGB* at native 8-16 bit depths
+Supporting Y, YUY2, YUV 4:2:0, 4:2:2, 4:4:4 (also 4:1:0, 4:1:1, 4:4:0, with or without alpha),
+planar RGB(A)* at native 8-16 bit depths
 Still supporting Windows XP.
 Windows x86, x64 and ARM64; Linux x86-64 and aarch64
 *in DepanStabilize
@@ -19,7 +20,7 @@ http://avisynth.org.ru/depan/depan.html
 
 Change log (modifications by pinterf: https://github.com/pinterf/):
 
-- (20261024)
+- (20261029)
   Depan 2.16
   - Support Y with alpha (YA) and YUVA, all subsamplings incl. 4:1:0, 4:1:1, 4:4:0.
     DePanScenes copies the alpha from the source.

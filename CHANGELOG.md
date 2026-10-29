@@ -1,5 +1,5 @@
 Change log
-- 2.7.48 (20261024)
+- 2.7.48 (20261029)
   - Feature request #68: adding search_coarse from SVP fork: MAnalyse: new parameters search_coarse.
   - MAnalyse: Add parameter trymanyall, which allows trymany for the finest level as well (default false to not decrease speed)
   - Fix (#69, #51): 32 bit float clips with overlap: garbage (black) output in MDegrain1-6, MDegrainN, MCompensate, MBlockFps.

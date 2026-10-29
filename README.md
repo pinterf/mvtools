@@ -21,10 +21,6 @@ Files: mvtools2.dll, and the DePan plugins depan.dll, depanestimate.dll (see REA
 
 For more information see also documents folder.
 
-Note:
-For a more experimental feature set (new parameters, use hw devices for motion estimation, but Windows only)
-have a look at DTL's fork: https://github.com/DTL2020/mvtools
-
 ## External dependencies: 
 
 - fftw3 single precision library, used only at specific dct parameter values (MAnalyse, MRecalculate) and by DePanEstimate
@@ -34,15 +30,6 @@ have a look at DTL's fork: https://github.com/DTL2020/mvtools
   
 - MSVC builds may require Microsoft Visual C++ Redistributables https://www.visualstudio.com/downloads/
   (the Windows ARM64 llvm-mingw build links its C++ runtime statically, it needs nothing else).
-  
-
-Others
-Modification base:
-
-- mvtools2, 2.6.0.5 64 bit version from
-http://avisynth.nl/index.php/AviSynth%2B#AviSynth.2B_x64_plugins
-
-Source code:
 
 ## Build Instructions
 
@@ -176,3 +163,16 @@ x86-64 and aarch64 (ARM64) alike; on aarch64 the NEON code paths are enabled aut
   A plugin built with the bundled header runs on older Avisynth+ releases (e.g. 3.7.5) too, while an older
   system header fails to compile (`'class IScriptEnvironment' has no member named 'AcquireGlobalLock'`).
 
+## Support
+
+If you find this project useful, you can support the development:
+
+- Buy Me a Coffee: https://www.buymeacoffee.com/pinterf
+- PayPal: https://www.paypal.com/donate/?business=LHUTN4H5N9B86&no_recurring=0&item_name=Avisynth+and+occasional+VapourSynth+developer.+&currency_code=EUR
+
+## History
+
+Modification base:
+
+- mvtools2, 2.6.0.5 64 bit version from
+  http://avisynth.nl/index.php/AviSynth%2B#AviSynth.2B_x64_plugins
