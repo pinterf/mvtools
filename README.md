@@ -65,7 +65,9 @@ NEON intrinsics on aarch64 (Windows ARM64, Linux aarch64). Every SIMD path has a
   from `nasm.targets`:
   - In both `<GetOutOfDateItems>` calls: remove `TrackFileAccess="$(TrackFileAccess)"`
   - In `<ParallelCustomBuild>`: remove `AcceptableNonZeroExitCodes`, `StdOutEncoding`, `StdErrEncoding`, `UseMsbuildResourceManager`
-  - In `<CustomBuild>`: remove `AcceptableNonZeroExitCodes`, `StdOutEncoding`, `StdErrEncoding`
+  - In `<CustomBuild>`: remove `AcceptableNonZeroExitCodes`, `StdOutEncoding`, `StdErrEncoding`.
+    `StdErrEncoding` is the last attribute, keep the closing `>` of the tag:
+    `MinimalRebuildFromTracking  ="false">` (else MSBuild: "Name cannot begin with the '<' character")
 
   Some nasm versions (e.g. the one valid around 2022.Dec.) will throw a lot of warnings on x265 assembler files. Temporarily they are silenced with -w-macro-params-legacy parameter.
 
