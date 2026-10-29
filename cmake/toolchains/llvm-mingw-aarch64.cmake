@@ -19,6 +19,9 @@ set(CMAKE_SYSTEM_PROCESSOR aarch64)
 if(NOT LLVM_MINGW_ROOT AND DEFINED ENV{LLVM_MINGW_ROOT})
   set(LLVM_MINGW_ROOT "$ENV{LLVM_MINGW_ROOT}")
 endif()
+# a Windows path (C:\...) from the command line or the environment: forward slashes, else the
+# backslashes end up as escapes in the generated compiler files
+file(TO_CMAKE_PATH "${LLVM_MINGW_ROOT}" LLVM_MINGW_ROOT)
 set(LLVM_MINGW_ROOT "${LLVM_MINGW_ROOT}" CACHE PATH "Root directory of the llvm-mingw installation")
 
 # the try_compile projects re-read this file without the cache of the outer project

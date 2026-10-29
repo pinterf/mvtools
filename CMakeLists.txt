@@ -6,7 +6,7 @@
 # "Visual Studio 15 2017" optional platform generator Win32 and x64
 # "Visual Studio 16 2019" optional platform generator Win32 and x64
 # "Visual Studio 16 2019" + LLVM 8.0 (clang) optional platform generator Win32 and x64
-CMAKE_MINIMUM_REQUIRED( VERSION 3.8.2 )
+CMAKE_MINIMUM_REQUIRED( VERSION 3.8.2...3.31 )
 
 project("MvTools2" LANGUAGES CXX)
   include(GNUInstallDirs)
