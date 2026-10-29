@@ -40,6 +40,9 @@ Change log
     Was: various missing function errors, or a truncated chroma block.
   - Fix: blksize 6x24 and 12x3: crash (access violation) in MAnalyse, all formats (missing luma function).
   - Fix: blksize 48x48 at 8 bit with the adaptive dct modes: the block luma was taken from the top 48x12 part only.
+  - MAnalyse, MRecalculate dct=5..10 (SATD): error for a block width or height not divisible by 4 (24x6, 16x2, 12x6, 12x3,
+    8x2, 8x1, 6x*, 4x2, 3x*, 2x*). Was: no SATD function for these sizes, the SATD part was silently 0
+    (dct=5: luma ignored in the search).
   - Fix: overlap windows, further fix (after #69 above), MCompensate, MDegrain1-6, MDegrainN, MBlockFps with overlap: the weights of the overlapping
     blocks summed to 2047..2049 instead of 2048, so a flat area changed by up to +-0.05%: at 16 bit up to +-32
     (e.g. flat 30000 became 29985..30015), from 12 bits visible. 8 bit: rarely +-1. Now the sum is exact.

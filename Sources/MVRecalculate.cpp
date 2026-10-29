@@ -190,6 +190,11 @@ MVRecalculate::MVRecalculate(
     env->ThrowError(
       "MRecalculate: Invalid block size: %d x %d", analysisData.nBlkSizeX, analysisData.nBlkSizeY);
   }
+  // SATD sums 4x4 Hadamard transforms
+  if (_dctmode >= 5 && (analysisData.nBlkSizeX % 4 != 0 || analysisData.nBlkSizeY % 4 != 0)) {
+    env->ThrowError(
+      "MRecalculate: dct=%d (SATD) needs a block size divisible by 4, not %d x %d", _dctmode, analysisData.nBlkSizeX, analysisData.nBlkSizeY);
+  }
 
   analysisData.nPel = nSuperPel;
   analysisData.nDeltaFrame = pAnalyseFilter->GetDeltaFrame();
