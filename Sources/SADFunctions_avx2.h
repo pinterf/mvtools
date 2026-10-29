@@ -38,4 +38,8 @@ unsigned int Sad16_avx2(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef,
 template<int nBlkWidth, int nBlkHeight>
 unsigned int Sad10_avx2(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
 
+// 16 bit (10-16 bit) SATD, same result as the SSE2 version (sum of the 4x4 Hadamard SATDs >> 1)
+template<int nBlkWidth, int nBlkHeight>
+unsigned int Satd16_avx2(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+
 #endif

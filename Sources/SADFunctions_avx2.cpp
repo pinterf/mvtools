@@ -367,3 +367,146 @@ MAKE_SAD_FN(8, 2)
 #undef MAKE_SAD_FN
 
 
+
+// 16 bit SATD: two horizontally adjacent 4x4 blocks in the two 128 bit lanes.
+// Same butterflies and transpose as compute_satd16_4x4_sse2, the 4x4 sums are added
+// up in 32 bit lanes and shifted once at the end, as calc_satd16_4x4_blocks does.
+static MV_FORCEINLINE void satd_butterfly_32(__m256i &t0, __m256i &t1, __m256i &t2, __m256i &t3) {
+  __m256i a = _mm256_add_epi32(t0, t1);
+  __m256i c = _mm256_sub_epi32(a, _mm256_add_epi32(t1, t1));
+  __m256i b = _mm256_add_epi32(t2, t3);
+  __m256i d = _mm256_sub_epi32(b, _mm256_add_epi32(t3, t3));
+  t0 = a;
+  t1 = b;
+  t2 = c;
+  t3 = d;
+}
+
+static MV_FORCEINLINE void satd_transpose_32(__m256i &t0, __m256i &t1, __m256i &t2, __m256i &t3) {
+  __m256i a = _mm256_unpacklo_epi32(t0, t1);
+  __m256i b = _mm256_unpacklo_epi32(t2, t3);
+  __m256i c = _mm256_unpackhi_epi32(t0, t1);
+  __m256i d = _mm256_unpackhi_epi32(t2, t3);
+  t0 = _mm256_unpacklo_epi64(a, b);
+  t1 = _mm256_unpackhi_epi64(a, b);
+  t2 = _mm256_unpacklo_epi64(c, d);
+  t3 = _mm256_unpackhi_epi64(c, d);
+}
+
+static MV_FORCEINLINE void satd_butterfly_32(__m128i &t0, __m128i &t1, __m128i &t2, __m128i &t3) {
+  __m128i a = _mm_add_epi32(t0, t1);
+  __m128i c = _mm_sub_epi32(a, _mm_add_epi32(t1, t1));
+  __m128i b = _mm_add_epi32(t2, t3);
+  __m128i d = _mm_sub_epi32(b, _mm_add_epi32(t3, t3));
+  t0 = a;
+  t1 = b;
+  t2 = c;
+  t3 = d;
+}
+
+static MV_FORCEINLINE void satd_transpose_32(__m128i &t0, __m128i &t1, __m128i &t2, __m128i &t3) {
+  __m128i a = _mm_unpacklo_epi32(t0, t1);
+  __m128i b = _mm_unpacklo_epi32(t2, t3);
+  __m128i c = _mm_unpackhi_epi32(t0, t1);
+  __m128i d = _mm_unpackhi_epi32(t2, t3);
+  t0 = _mm_unpacklo_epi64(a, b);
+  t1 = _mm_unpackhi_epi64(a, b);
+  t2 = _mm_unpacklo_epi64(c, d);
+  t3 = _mm_unpackhi_epi64(c, d);
+}
+
+// src - ref of 8 (two blocks x 4) uint16_t pixels as int32
+static MV_FORCEINLINE __m256i satd_diff8(const uint8_t *src, const uint8_t *ref) {
+  return _mm256_sub_epi32(_mm256_cvtepu16_epi32(_mm_loadu_si128((const __m128i *)src)),
+    _mm256_cvtepu16_epi32(_mm_loadu_si128((const __m128i *)ref)));
+}
+
+static MV_FORCEINLINE __m128i satd_diff4(const uint8_t *src, const uint8_t *ref) {
+  return _mm_sub_epi32(_mm_cvtepu16_epi32(_mm_loadl_epi64((const __m128i *)src)),
+    _mm_cvtepu16_epi32(_mm_loadl_epi64((const __m128i *)ref)));
+}
+
+template<int nBlkWidth, int nBlkHeight>
+unsigned int Satd16_avx2(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch)
+{
+  __m256i sum8 = _mm256_setzero_si256();
+  __m128i sum4 = _mm_setzero_si128();
+  for (int y = 0; y < nBlkHeight; y += 4) {
+    const uint8_t *s = pSrc + y * nSrcPitch;
+    const uint8_t *r = pRef + y * nRefPitch;
+    for (int x = 0; x + 8 <= nBlkWidth; x += 8) {
+      const int xb = x * (int)sizeof(uint16_t);
+      __m256i a = satd_diff8(s + xb, r + xb);
+      __m256i b = satd_diff8(s + nSrcPitch + xb, r + nRefPitch + xb);
+      __m256i c = satd_diff8(s + nSrcPitch * 2 + xb, r + nRefPitch * 2 + xb);
+      __m256i d = satd_diff8(s + nSrcPitch * 3 + xb, r + nRefPitch * 3 + xb);
+      satd_butterfly_32(a, b, c, d);
+      satd_butterfly_32(a, b, c, d);
+      satd_transpose_32(a, b, c, d);
+      satd_butterfly_32(a, b, c, d);
+      satd_butterfly_32(a, b, c, d);
+      a = _mm256_add_epi32(_mm256_abs_epi32(a), _mm256_abs_epi32(b));
+      c = _mm256_add_epi32(_mm256_abs_epi32(c), _mm256_abs_epi32(d));
+      sum8 = _mm256_add_epi32(sum8, _mm256_add_epi32(a, c));
+    }
+    if constexpr (nBlkWidth % 8 == 4) {
+      const int xb = (nBlkWidth - 4) * (int)sizeof(uint16_t);
+      __m128i a = satd_diff4(s + xb, r + xb);
+      __m128i b = satd_diff4(s + nSrcPitch + xb, r + nRefPitch + xb);
+      __m128i c = satd_diff4(s + nSrcPitch * 2 + xb, r + nRefPitch * 2 + xb);
+      __m128i d = satd_diff4(s + nSrcPitch * 3 + xb, r + nRefPitch * 3 + xb);
+      satd_butterfly_32(a, b, c, d);
+      satd_butterfly_32(a, b, c, d);
+      satd_transpose_32(a, b, c, d);
+      satd_butterfly_32(a, b, c, d);
+      satd_butterfly_32(a, b, c, d);
+      a = _mm_add_epi32(_mm_abs_epi32(a), _mm_abs_epi32(b));
+      c = _mm_add_epi32(_mm_abs_epi32(c), _mm_abs_epi32(d));
+      sum4 = _mm_add_epi32(sum4, _mm_add_epi32(a, c));
+    }
+  }
+  __m128i sum = _mm_add_epi32(_mm_add_epi32(_mm256_castsi256_si128(sum8), _mm256_extracti128_si256(sum8, 1)), sum4);
+  sum = _mm_add_epi32(sum, _mm_shuffle_epi32(sum, _MM_SHUFFLE(1, 0, 3, 2)));
+  sum = _mm_add_epi32(sum, _mm_shuffle_epi32(sum, _MM_SHUFFLE(2, 3, 0, 1)));
+  const int32_t satd = _mm_cvtsi128_si32(sum);
+  return (uint32_t)(satd >> 1); // as calc_satd16_4x4_blocks: x264 C and asm compatible
+}
+
+#define MAKE_SATD_FN(x, y) template unsigned int Satd16_avx2<x, y>(const uint8_t *pSrc, int nSrcPitch, const uint8_t *pRef, int nRefPitch);
+MAKE_SATD_FN(64, 64)
+MAKE_SATD_FN(64, 48)
+MAKE_SATD_FN(64, 32)
+MAKE_SATD_FN(64, 16)
+MAKE_SATD_FN(48, 64)
+MAKE_SATD_FN(48, 48)
+MAKE_SATD_FN(48, 24)
+MAKE_SATD_FN(48, 12)
+MAKE_SATD_FN(32, 64)
+MAKE_SATD_FN(32, 32)
+MAKE_SATD_FN(32, 24)
+MAKE_SATD_FN(32, 16)
+MAKE_SATD_FN(32, 8)
+MAKE_SATD_FN(32, 4)
+MAKE_SATD_FN(24, 48)
+MAKE_SATD_FN(24, 32)
+MAKE_SATD_FN(24, 24)
+MAKE_SATD_FN(24, 12)
+MAKE_SATD_FN(16, 64)
+MAKE_SATD_FN(16, 32)
+MAKE_SATD_FN(16, 16)
+MAKE_SATD_FN(16, 12)
+MAKE_SATD_FN(16, 8)
+MAKE_SATD_FN(16, 4)
+MAKE_SATD_FN(12, 48)
+MAKE_SATD_FN(12, 24)
+MAKE_SATD_FN(12, 16)
+MAKE_SATD_FN(12, 12)
+MAKE_SATD_FN(8, 32)
+MAKE_SATD_FN(8, 16)
+MAKE_SATD_FN(8, 8)
+MAKE_SATD_FN(8, 4)
+MAKE_SATD_FN(4, 32)
+MAKE_SATD_FN(4, 16)
+MAKE_SATD_FN(4, 8)
+MAKE_SATD_FN(4, 4)
+#undef MAKE_SATD_FN

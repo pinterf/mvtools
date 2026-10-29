@@ -1315,12 +1315,12 @@ SADFunction* get_satd_function(int BlockX, int BlockY, int pixelsize, arch_t arc
 #endif // USE_SATD_ASM
 #ifdef INTEL_INTRINSICS
 #define MAKE_FN_SSE(w,h) \
-    func_satd[make_tuple(w, h, 2, USE_SSE2)] = satd16_##w##x##h##_sse2;
+    func_satd[make_tuple(w, h, 2, USE_SSE2)] = satd16_##w##x##h##_sse2; \
+    func_satd[make_tuple(w, h, 2, USE_AVX2)] = Satd16_avx2<w, h>;
 #else
 #define MAKE_FN_SSE(w,h)
 #endif
-    // 8 and 16 bit C; 16 bit SSE4/SSE2 SADT functions
-    // e.g.. satd16_64x64_sse2<false>;
+    // 8 and 16 bit C; 16 bit SSE2/AVX2 SATD functions
 #ifdef USE_SATD_ASM
 #define MAKE_FN(w,h) \
     func_satd[make_tuple(w, h, 2, NO_SIMD)] = mvtools_satd_##w##x##h##_c<uint16_t>; \
