@@ -33,7 +33,7 @@
 MVDepan::MVDepan(PClip _child, PClip mvs, PClip _mask, bool _zoom, bool _rot, float _pixaspect,
   float _error, bool _info, const char * _logfilename, float _wrong, float _zerow, int _range, sad_t nSCD1, int nSCD2, bool isse, bool _planar, IScriptEnvironment* env) :
   GenericVideoFilter(_child),
-  MVFilter(mvs, "MDepan", env, 1, 0),
+  MVFilter(mvs, "MDepan", env, 1, 0, true), // edge blocks: border blocks, the mask is sampled inside the frame
   mvclip(mvs, nSCD1, nSCD2, env, 1, 0),
   ifZoom(_zoom),
   ifRot(_rot),
@@ -587,8 +587,10 @@ PVideoFrame __stdcall MVDepan::GetFrame(int ndest, IScriptEnvironment* env)
             blockSAD[nb] = mvclip.GetBlock(0, nb).GetSAD();
             blockX[nb] = mvclip.GetBlock(0, nb).GetX() + nBlkSizeX / 2;//i*nBlkSize + nBlkSize/2;// rewritten in v1.2.5
             blockY[nb] = mvclip.GetBlock(0, nb).GetY() + nBlkSizeY / 2;//j*nBlkSize + nBlkSize/2;//
-            if (mask && blockX[nb] < vi.width && blockY[nb] < vi.height)
-              blockWeightMask[nb] = maskp[blockX[nb] * BPP + blockY[nb] * mask_pitch];
+            // the centre of a block beyond the frame edge (MSuper edgepad) can be outside the frame: the mask is
+            // sampled at the nearest frame pixel (blocks inside the frame have their centre inside)
+            if (mask)
+              blockWeightMask[nb] = maskp[std::min(blockX[nb], vi.width - 1) * BPP + std::min(blockY[nb], vi.height - 1) * mask_pitch];
             else
               blockWeightMask[nb] = 1;
             blockWeight[nb] = blockWeightMask[nb];

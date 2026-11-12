@@ -7,6 +7,7 @@
 #include "MScaleVect.h"
 #include "VECTOR.h"
 #include <cmath>
+#include <algorithm>
 
 // Constructor - Copy motion vector information. Scale if required for use on different sized frame
 MScaleVect::MScaleVect( PClip Child, double ScaleX, double ScaleY, ScaleMode Mode, bool Flip, bool AdjustSubpel, int Bits, IScriptEnvironment* Env )
@@ -27,9 +28,6 @@ MScaleVect::MScaleVect( PClip Child, double ScaleX, double ScaleY, ScaleMode Mod
 #endif
   if (mVectorsInfo.nMagicKey != MVAnalysisData::MOTION_MAGIC_KEY || mVectorsInfo.nVersion != MVAnalysisData::VERSION) 
     Env->ThrowError("MScaleVect: Clip does not contain motion vectors");
-  // the scaled block grid would have to be derived again for the scaled frame size
-  if (mVectorsInfo.nFlags & MOTION_EDGE_BLOCKS)
-    Env->ThrowError("MScaleVect: vectors of an MSuper with edgepad (blocks beyond the frame edge) are not supported");
 #if !defined(MV_64BIT)
   vi.nchannels = reinterpret_cast <uintptr_t> (&mVectorsInfo);
 #else
@@ -306,6 +304,11 @@ PVideoFrame __stdcall MScaleVect::GetFrame( int FrameNum, IScriptEnvironment* En
         levelWidth  = (mVectorsInfo.nHPadding >= xRatioUV) ? ((levelWidth /xRatioUV + 1) / 2) * xRatioUV : ((levelWidth /xRatioUV) / 2) * xRatioUV;
         levelHeight = (mVectorsInfo.nVPadding >= yRatioUV) ? ((levelHeight/yRatioUV + 1) / 2) * yRatioUV : ((levelHeight/yRatioUV) / 2) * yRatioUV;
       }
+      // Blocks beyond the frame edge (MOTION_EDGE_BLOCKS, MSuper edgepad): the limits are measured from the end of the
+      // block grid when it reaches beyond the plane, as in MAnalyse (PlaneOfBlocks::search_area_width).
+      // Modes 0 and 1 scale the frame and the blocks alike, the grid keeps reaching beyond the scaled frame.
+      levelWidth  = std::max(levelWidth,  levelNumBlocksX * (blkSizeX - overlapX) + overlapX);
+      levelHeight = std::max(levelHeight, levelNumBlocksY * (blkSizeY - overlapY) + overlapY);
       int extendedWidth  = levelWidth  + 2 * mVectorsInfo.nHPadding; // Including padding
       int extendedHeight = levelHeight + 2 * mVectorsInfo.nVPadding;
 
