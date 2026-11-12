@@ -1246,6 +1246,9 @@ MDegrain1(super, bv, fv, thSAD=400)</pre>
     <p>
         Shows the motion vectors on padded source by super clip opening
         (since v2.0.11).
+        The output is the finest level of the super clip with its padding: (width&nbsp;+&nbsp;2*<var>hpad</var>) x
+        (height&nbsp;+&nbsp;2*<var>vpad</var>), with an <code>MSuper</code> <var>edgepad</var> wider / higher by the edge padding,
+        where the blocks beyond the frame edge are drawn. Vector lines leaving the output are clipped.
     </p>
     <p class="var">scale</p>
     <p>
