@@ -25,6 +25,7 @@
 #include	"SuperParams64Bits.h"
 
 #include <stdlib.h>
+#include <algorithm>
 #include <cstdio>
 #include "types.h"
 #ifdef INTEL_INTRINSICS
@@ -123,7 +124,7 @@ PVideoFrame __stdcall MVShow::GetFrame(int n, IScriptEnvironment* env)
   //   if ( !nPlane )
 
    if ( mvClip.IsUsable() )
-      DrawMVs(pDst[0] + nDstPitches[0]*nSuperVPad + nHPadding*pixelsize, nDstPitches[0], pSrc[0] + nSrcPitches[0]*nSuperVPad + nHPadding*pixelsize, nSrcPitches[0]);
+      DrawMVs(pDst[0], nDstPitches[0], pSrc[0], nSrcPitches[0]);
 
 
 
@@ -147,34 +148,29 @@ PVideoFrame __stdcall MVShow::GetFrame(int n, IScriptEnvironment* env)
     DrawString(dst, vi, 0, 0, buf);
   }
 
-  if ( number>0 && number <= mvClip.GetBlkCount()) {
+  if (number > 0 && number < mvClip.GetBlkCount()) {
     char buf[80];
     FakeBlockData block = mvClip.GetBlock(0, number);
-         int x = block.GetX();
-         int y = block.GetY();
-    snprintf(buf, sizeof(buf), "n=%d x=%d y=%d vx=%d vy=%d sad=%d",number, x, y, block.GetMV().x, block.GetMV().y, block.GetSAD());
+    int x = block.GetX();
+    int y = block.GetY();
+    snprintf(buf, sizeof(buf), "n=%d x=%d y=%d vx=%d vy=%d sad=%d", number, x, y, block.GetMV().x, block.GetMV().y, block.GetSAD());
     DrawString(dst, vi, 0, 0, buf);
+    // the block, clipped to the frame (the vector clip may come from a clip with other padding)
+    const int x0 = std::max(nSuperHPad + x, 0);
+    const int y0 = std::max(nSuperVPad + y, 0);
+    const int x1 = std::min(nSuperHPad + x + nBlkSizeX, vi.width);
+    const int y1 = std::min(nSuperVPad + y + nBlkSizeY, vi.height);
     if (pixelsize == 1) {
-      BYTE *pDstWork = pDst[0] + x + y*nDstPitches[0] + nDstPitches[0] * nSuperVPad + nHPadding;
-      for (int h = 0; h < nBlkSizeX; h++)
-      {
-        for (int w = 0; w < nBlkSizeY; w++)
-          pDstWork[w] = 255;
-        pDstWork += nDstPitches[0];
-      }
+      for (int h = y0; h < y1; h++)
+        for (int w = x0; w < x1; w++)
+          pDst[0][w + h * nDstPitches[0]] = 255;
     }
     else { // pixelsize == 2
-      uint16_t *pDstWork = (uint16_t *)(pDst[0] + x * pixelsize + y*nDstPitches[0] + nDstPitches[0] * nSuperVPad + nHPadding * pixelsize);
-      int pixel_max = (1 << bits_per_pixel) - 1;
-      for (int h = 0; h < nBlkSizeX; h++)
-      {
-        for (int w = 0; w < nBlkSizeY; w++)
-          pDstWork[w] = pixel_max;
-        pDstWork += nDstPitches[0] / pixelsize;
-      }
+      const int pixel_max = (1 << bits_per_pixel) - 1;
+      for (int h = y0; h < y1; h++)
+        for (int w = x0; w < x1; w++)
+          reinterpret_cast<uint16_t*>(pDst[0] + h * nDstPitches[0])[w] = pixel_max;
     }
-
-
   }
   ClipFnc::fill_alpha_opaque(dst, vi); // the super clip has no meaningful alpha
   return dst;
@@ -183,7 +179,9 @@ PVideoFrame __stdcall MVShow::GetFrame(int n, IScriptEnvironment* env)
 template<typename pixel_t>
 MV_FORCEINLINE void MVShow::DrawPixel(unsigned char *pDst, int nDstPitch, int x, int y, int w, int h, int luma)
 {
-//	if (( x >= 0 ) && ( x < w ) && ( y >= 0 ) && ( y < h )) // disababled in v.2 - it is no more needed with super clip
+  // w, h: frame size. The line can leave the frame: scale > 1, or vectors made with larger padding
+  // than the padding of the super clip (e.g. MScaleVect)
+  if (( x >= 0 ) && ( x < w ) && ( y >= 0 ) && ( y < h ))
     reinterpret_cast<pixel_t *>(pDst)[x + y * nDstPitch / sizeof(pixel_t)] = luma;
 }
 
@@ -277,13 +275,17 @@ void MVShow::DrawMVs(unsigned char *pDst, int nDstPitch, const unsigned char *pS
       }
     }
 */
-  for ( int i = 0; i < plane.GetBlockCount(); i++ )
-    if ( plane[i].GetSAD() < nTolerance )
-      // /2: center
-      DrawMV(pDst + plane.GetBlockSizeX() / 2 * effectiveScale * pixelsize + plane.GetBlockSizeY()/ 2 * effectiveScale*nDstPitch, // changed in v1.8, now address is the center of first block
-          nDstPitch, nScale * effectiveScale, plane[i].GetX() * effectiveScale,
-        plane[i].GetY() * effectiveScale, (plane.GetBlockSizeX() - plane.GetOverlapX())* effectiveScale,
-        (plane.GetBlockSizeY() - plane.GetOverlapY())* effectiveScale,
-                plane.GetWidth() * effectiveScale, plane.GetHeight() * effectiveScale,
-                plane[i].GetMV(), plane.GetPel());
+  for (int i = 0; i < plane.GetBlockCount(); i++) {
+    if (plane[i].GetSAD() < nTolerance) {
+      // pDst: top left of the frame, the block positions are relative to the padded area
+      // /2: center of the block
+      DrawMV(pDst, nDstPitch, nScale * effectiveScale,
+        nSuperHPad + plane.GetBlockSizeX() / 2 * effectiveScale + plane[i].GetX() * effectiveScale,
+        nSuperVPad + plane.GetBlockSizeY() / 2 * effectiveScale + plane[i].GetY() * effectiveScale,
+        (plane.GetBlockSizeX() - plane.GetOverlapX()) * effectiveScale,
+        (plane.GetBlockSizeY() - plane.GetOverlapY()) * effectiveScale,
+        vi.width, vi.height,
+        plane[i].GetMV(), plane.GetPel());
+    }
+  }
 }

@@ -5,6 +5,11 @@ Change log
     and run past the frame. Mode 2 stopped with "Internal error": it used the divided (halved) block geometry for
     all levels, now the non-divided levels use the original block size, overlap and block count.
     MScaleVect now checks the level lengths and block counts before writing (error instead of memory overrun).
+  - Fix: MShow wrote outside the frame when the vector lines left it (scale>1, or vectors with larger padding than
+    the super clip, e.g. after MScaleVect). The lines are now clipped to the frame. The horizontal offset now uses
+    the padding of the super clip (was the padding of the vectors, the vertical one was already the super clip's).
+  - Fix: MShow number=(block count) read past the blocks, the number highlight had width and height swapped
+    (non-square blocks), and it is clipped to the frame.
 
 - 2.7.48 (20261029)
   - Feature request #68: adding search_coarse from SVP fork: MAnalyse: new parameters search_coarse.
