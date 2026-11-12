@@ -167,6 +167,14 @@ private:
   int _covered_width;
   int _covered_height;
 
+  // Processing size and block counts, see MVDegrainX (MVDegrain3.h): with blocks beyond the frame edge
+  // (MOTION_EDGE_BLOCKS, MSuper edgepad) and enough edge padding in the super clip the planes are processed on frames
+  // of the block grid size (edge_ext), else only the blocks inside the frame (nBlkXP x nBlkYP).
+  bool edge_ext;
+  int nWidthP, nHeightP;
+  int nBlkXP, nBlkYP;
+  VideoInfo vi_src_ext, vi_dst_ext;
+
   // This array has an nBlkY size. It is used in vertical overlap mode
   // to avoid read/write sync problems when processing is multithreaded.
   // Only elements corresponding to the first row of each sub-plane are

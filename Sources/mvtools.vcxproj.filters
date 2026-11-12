@@ -372,6 +372,7 @@
     <ClInclude Include="MVPlane.h" />
     <ClInclude Include="MVPlaneSet.h" />
     <ClInclude Include="overlap.h" />
+    <ClInclude Include="PlaneExtend.h" />
     <ClInclude Include="Padding.h" />
     <ClInclude Include="PlaneOfBlocks.h" />
     <ClInclude Include="profile.h" />

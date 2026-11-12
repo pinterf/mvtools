@@ -81,6 +81,10 @@ void MVFilter::CheckSimilarity(const MVClip &vector, const char *vectorName, ISc
       env->ThrowError("Error in %s : %s's pel precision is incorrect", name, vectorName);
 //      env->ThrowError("Error in %s : %s's pel precision is incorrect", name.c_str(), vectorName);
 
+   // the same frame and block size give different block counts with and without edge blocks (MSuper edgepad)
+   if ( nBlkX != vector.GetBlkX() || nBlkY != vector.GetBlkY() )
+      env->ThrowError("Error in %s : %s's block count is incorrect (vectors of supers with different edgepad?)", name, vectorName);
+
    if ( nOverlapX != vector.GetOverlapX() ||  nOverlapY != vector.GetOverlapY())
       env->ThrowError("Error in %s : %s's overlap size is incorrect", name, vectorName);
 //      env->ThrowError("Error in %s : %s's overlap size is incorrect", name.c_str(), vectorName);

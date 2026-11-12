@@ -93,6 +93,17 @@ private:
   const int level;
   int framenumber;
 
+  // Processing size and block counts. Normally the frame and the vector block grid. With blocks beyond the frame
+  // edge (MOTION_EDGE_BLOCKS, MSuper edgepad):
+  // - the super clip has enough edge padding (edge_ext): the planes are processed on a frame of the block grid size
+  //   (nWidthP x nHeightP), whose source beyond the frame repeats the edge pixels, then cropped to the frame;
+  // - else: only the blocks inside the frame (nBlkXP x nBlkYP of the nBlkX x nBlkY grid), the rest is copied from
+  //   the source as for a frame not covered by whole blocks.
+  bool edge_ext;
+  int nWidthP, nHeightP;
+  int nBlkXP, nBlkYP;
+  VideoInfo vi_src_ext, vi_dst_ext;
+
 public:
   MVDegrainX(PClip _child, PClip _super, 
     PClip _mvbw, PClip _mvfw, PClip _mvbw2, PClip _mvfw2, PClip _mvbw3, PClip _mvfw3, PClip _mvbw4, PClip _mvfw4, PClip _mvbw5, PClip _mvfw5, PClip _mvbw6, PClip _mvfw6,

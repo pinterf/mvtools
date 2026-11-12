@@ -1689,6 +1689,7 @@
     <ClInclude Include="MVShow.h" />
     <ClInclude Include="MVSuper.h" />
     <ClInclude Include="overlap.h" />
+    <ClInclude Include="PlaneExtend.h" />
     <ClInclude Include="Padding.h" />
     <ClInclude Include="PlaneOfBlocks.h" />
     <ClInclude Include="PlaneOfBlocks_avx2.h" />
