@@ -53,6 +53,15 @@ private:
   int nWidthP, nHeightP, nPitchY, nPitchUV, nHeightPUV, nWidthPUV, nHeightUV, nWidthUV;
   int nBlkXP, nBlkYP;
 
+  // Blocks beyond the frame edge (MOTION_EDGE_BLOCKS, MSuper edgepad). The blocks are read from the super clips. With
+  // enough edge padding (edge_ext) the output is written into a frame of the block grid size (nWidthE x nHeightE,
+  // vi_dst_ext) and cropped back; else only the blocks inside the frame are processed (nBlkXE x nBlkYE of the
+  // nBlkX x nBlkY grid) and the rest is blended from the frames as for a frame not covered by whole blocks.
+  bool edge_ext;
+  int nWidthE, nHeightE;
+  int nBlkXE, nBlkYE;
+  VideoInfo vi_dst_ext;
+
   COPYFunction *BLITLUMA;
   COPYFunction *BLITCHROMA;
 

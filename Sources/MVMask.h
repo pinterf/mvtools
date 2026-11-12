@@ -79,6 +79,9 @@ private:
   int maskclip_nWidth;
   int maskclip_nHeight;
 
+  bool edge_ext; // the block grid reaches beyond the frame (edge blocks, MSuper edgepad): mask on a vi_ext frame
+  VideoInfo vi_ext;
+
 public:
   MVMask(::PClip _child, ::PClip mvs, double _maxlength, double _gamma, int _kind, double _time100,
     int _scvalue, sad_t nSCD1, int nSCD2, bool isse, ::IScriptEnvironment* env);

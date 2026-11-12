@@ -24,6 +24,8 @@
 #include "MVClip.h"
 #include "MVFilter.h"
 #include "MVMask.h"
+#include <algorithm>
+#include "PlaneExtend.h"
 
 #include <cmath>
 //#include <intrin.h>
@@ -35,7 +37,7 @@ MVMask::MVMask(
   sad_t nSCD1, int nSCD2, bool _isse, IScriptEnvironment* env
 )
   : GenericVideoFilter(_child)
-  , MVFilter(vectors, "MMask", env, 1, 0)
+  , MVFilter(vectors, "MMask", env, 1, 0, true) // edge blocks: the mask is upsized to the block grid size and cropped
   , mvClip(vectors, nSCD1, nSCD2, env, 1, 0)
 {
   has_at_least_v8 = true;
@@ -86,10 +88,16 @@ MVMask::MVMask(
   nWidthB = nBlkX*(nBlkSizeX - nOverlapX) + nOverlapX;
   nHeightB = nBlkY*(nBlkSizeY - nOverlapY) + nOverlapY;
 
-  if(maskclip_nWidth < nWidthB)
+  // Edge blocks (MSuper edgepad): the block grid reaches beyond the frame; the mask is upsized onto a frame of the
+  // block grid size (vi_ext) and cropped, so that the blocks keep their position.
+  edge_ext = (mvClip.GetFlags() & MOTION_EDGE_BLOCKS) && (maskclip_nWidth < nWidthB || maskclip_nHeight < nHeightB);
+  if (!edge_ext && maskclip_nWidth < nWidthB)
     env->ThrowError("MMask: input clip width is too small");
-  if (maskclip_nHeight < nHeightB)
+  if (!edge_ext && maskclip_nHeight < nHeightB)
     env->ThrowError("MMask: input clip height is too small");
+  vi_ext = vi;
+  vi_ext.width = std::max(maskclip_nWidth, nWidthB);
+  vi_ext.height = std::max(maskclip_nHeight, nHeightB);
 
   if (chroma) {
     if (vi.IsPlanar() && vi.IsRGB()) {
@@ -163,6 +171,12 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
   if (needSrcFrame)
     src = child->GetFrame(n, env);
   PVideoFrame dst = has_at_least_v8 && needSrcFrame ? env->NewVideoFrameP(vi, &src) : env->NewVideoFrame(vi); // frame property support
+  // edge_ext: the mask is written onto a frame of the block grid size, cropped into dst at the end.
+  // A reference, not a copy: a second PVideoFrame of dst would make it non-writable.
+  PVideoFrame dstExt;
+  if (edge_ext)
+    dstExt = env->NewVideoFrame(vi_ext);
+  const PVideoFrame& target = edge_ext ? dstExt : dst;
   const BYTE *pSrc[3];
   BYTE *pDst[3];
   int nDstPitches[3];
@@ -191,21 +205,21 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
     }
   }
   if (isRGB) {
-    pDst[0] = GWPLAN(dst);
-    pDst[1] = BWPLAN(dst);
-    pDst[2] = RWPLAN(dst);
-    nDstPitches[0] = GPITCH(dst);
-    nDstPitches[1] = BPITCH(dst);
-    nDstPitches[2] = RPITCH(dst);
+    pDst[0] = GWPLAN(target);
+    pDst[1] = BWPLAN(target);
+    pDst[2] = RWPLAN(target);
+    nDstPitches[0] = GPITCH(target);
+    nDstPitches[1] = BPITCH(target);
+    nDstPitches[2] = RPITCH(target);
   }
   else {
-    pDst[0] = YWPLAN(dst);
-    nDstPitches[0] = YPITCH(dst);
+    pDst[0] = YWPLAN(target);
+    nDstPitches[0] = YPITCH(target);
     if (chroma) {
-      pDst[1] = UWPLAN(dst);
-      pDst[2] = VWPLAN(dst);
-      nDstPitches[1] = UPITCH(dst);
-      nDstPitches[2] = VPITCH(dst);
+      pDst[1] = UWPLAN(target);
+      pDst[2] = VWPLAN(target);
+      nDstPitches[1] = UPITCH(target);
+      nDstPitches[2] = VPITCH(target);
     }
   }
 
@@ -355,6 +369,13 @@ PVideoFrame __stdcall MVMask::GetFrame(int n, IScriptEnvironment* env)
     }
   }
 
+
+  if (edge_ext)
+  {
+    const int log_x = (chroma && !isRGB) ? vi.GetPlaneWidthSubsampling(PLANAR_U) : 0;
+    const int log_y = (chroma && !isRGB) ? vi.GetPlaneHeightSubsampling(PLANAR_U) : 0;
+    crop_frame_into(dst, dstExt, maskclip_nWidth, maskclip_nHeight, chroma ? 3 : 1, log_x, log_y, maskclip_pixelsize, env);
+  }
 
   ClipFnc::copy_alpha_from(dst, child, n, vi, env);
   return dst;

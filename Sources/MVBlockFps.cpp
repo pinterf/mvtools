@@ -29,6 +29,8 @@
 #include "Padding.h"
 #include "profile.h"
 #include "SuperParams.h"
+#include "PlaneExtend.h"
+#include <algorithm>
 #include "Time256ProviderCst.h"
 
 //#include <intrin.h>
@@ -41,7 +43,7 @@ MVBlockFps::MVBlockFps(
   IScriptEnvironment* env
 )
   : GenericVideoFilter(_child)
-  , MVFilter(mvbw, "MBlockFps", env, 1, 0)
+  , MVFilter(mvbw, "MBlockFps", env, 1, 0, true) // edge blocks supported
   , mvClipB(mvbw, nSCD1, nSCD2, env, 1, 0)
   , mvClipF(mvfw, nSCD1, nSCD2, env, 1, 0)
   , super(_super)
@@ -143,6 +145,31 @@ MVBlockFps::MVBlockFps(
     env->ThrowError("MBlockFps : wrong source or super frame size");
   }
 
+  // Blocks beyond the frame edge (MOTION_EDGE_BLOCKS): their blocks reach into the edge padding of the super clip;
+  // without enough padding only the blocks inside the frame are processed.
+  {
+    const int grid_w = nBlkX * (nBlkSizeX - nOverlapX) + nOverlapX;
+    const int grid_h = nBlkY * (nBlkSizeY - nOverlapY) + nOverlapY;
+    edge_ext = false;
+    nBlkXE = nBlkX;
+    nBlkYE = nBlkY;
+    if (grid_w > nWidth || grid_h > nHeight)
+    {
+      if (params.nEdgePadX >= grid_w - nWidth && params.nEdgePadY >= grid_h - nHeight)
+        edge_ext = true;
+      else
+      {
+        nBlkXE = std::min(nBlkX, (nWidth - nOverlapX) / (nBlkSizeX - nOverlapX));
+        nBlkYE = std::min(nBlkY, (nHeight - nOverlapY) / (nBlkSizeY - nOverlapY));
+      }
+    }
+    nWidthE = edge_ext ? grid_w : nWidth;
+    nHeightE = edge_ext ? grid_h : nHeight;
+    vi_dst_ext = vi;
+    vi_dst_ext.width = nWidthE;
+    vi_dst_ext.height = nHeightE;
+  }
+
   // in overlaps.h
   // OverlapsFunction
   // in M(V)DegrainX: DenoiseXFunction
@@ -240,8 +267,8 @@ MVBlockFps::MVBlockFps(
 
 
   const int tmpDstAlign = 16;
-  dstShortPitch = AlignNumber(nWidth, tmpDstAlign); // 2.5.11.22
-  dstShortPitchUV = AlignNumber(nWidth / xRatioUVs[1], tmpDstAlign);
+  dstShortPitch = AlignNumber(nWidthE, tmpDstAlign); // 2.5.11.22
+  dstShortPitchUV = AlignNumber(nWidthE / xRatioUVs[1], tmpDstAlign);
 
   DestBufElementSize = 0;
   if (nOverlapX > 0 || nOverlapY > 0)
@@ -253,10 +280,10 @@ MVBlockFps::MVBlockFps(
     // todo: rename to DstTemp and make BYTE *, cast later.
     // DstInt can hold 32 bit floats as well
     DestBufElementSize = pixelsize_super == 1 ? sizeof(short) : pixelsize_super == 2 ? sizeof(int) : sizeof(float);
-    DstShort = (uint16_t *)_aligned_malloc(dstShortPitch*nHeight * DestBufElementSize, tmpDstAlign); // PF aligned
+    DstShort = (uint16_t *)_aligned_malloc(dstShortPitch*nHeightE * DestBufElementSize, tmpDstAlign); // PF aligned
     if (!isGrey) {
-      DstShortU = (uint16_t *)_aligned_malloc(dstShortPitchUV*nHeight * DestBufElementSize, tmpDstAlign);
-      DstShortV = (uint16_t *)_aligned_malloc(dstShortPitchUV*nHeight * DestBufElementSize, tmpDstAlign);
+      DstShortU = (uint16_t *)_aligned_malloc(dstShortPitchUV*nHeightE * DestBufElementSize, tmpDstAlign);
+      DstShortV = (uint16_t *)_aligned_malloc(dstShortPitchUV*nHeightE * DestBufElementSize, tmpDstAlign);
     }
   }
 }
@@ -572,10 +599,11 @@ void MVBlockFps::ResultBlock(BYTE *pDst8, int dst_pitch, const BYTE * pMCB8, int
 
 PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
 {
-  int nWidth_B = nBlkX*(nBlkSizeX - nOverlapX) + nOverlapX;
-  int nHeight_B = nBlkY*(nBlkSizeY - nOverlapY) + nOverlapY;
-  int nHeightUV = nHeight / yRatioUVs[1];
-  int nWidthUV = nWidth / xRatioUVs[1];
+  // processing size and block counts (see edge_ext)
+  int nWidth_B = nBlkXE*(nBlkSizeX - nOverlapX) + nOverlapX;
+  int nHeight_B = nBlkYE*(nBlkSizeY - nOverlapY) + nOverlapY;
+  int nHeightUV = nHeightE / yRatioUVs[1];
+  int nWidthUV = nWidthE / xRatioUVs[1];
 
 #if defined(INTEL_INTRINSICS) && !defined(_M_X64)
   _mm_empty();  // paranoya
@@ -639,6 +667,12 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
     int planes_r[4] = { PLANAR_G, PLANAR_B, PLANAR_R, PLANAR_A };
     int *planes = (vi.IsYUV() || vi.IsYUVA()) ? planes_y : planes_r;
     planecount = ClipFnc::nbr_planes_processed(vi);
+    // edge_ext: the blocks are written into a frame of the block grid size, cropped back into dst below.
+    // A reference, not a copy: a second PVideoFrame of dst would make it non-writable.
+    PVideoFrame dstExt;
+    if (edge_ext)
+      dstExt = env->NewVideoFrame(vi_dst_ext);
+    const PVideoFrame& target = edge_ext ? dstExt : dst;
     for (int p = 0; p < planecount; ++p) {
       const int plane = planes[p];
       pSrc[p] = src->GetReadPtr(plane);
@@ -647,8 +681,8 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
       pRef[p] = ref->GetReadPtr(plane);
       nRefPitches[p] = ref->GetPitch(plane);
 
-      pDst[p] = dst->GetWritePtr(plane);
-      nDstPitches[p] = dst->GetPitch(plane);
+      pDst[p] = target->GetWritePtr(plane);
+      nDstPitches[p] = target->GetPitch(plane);
     }
 
     BYTE *pDstSave[3];
@@ -675,7 +709,6 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
     MemZoneSet(MaskFullYF, 0, nWidthP, nHeightP, 0, 0, nPitchY);
 
     PROFILE_START(MOTION_PROFILE_COMPENSATION);
-    int blocks = mvClipB.GetBlkCount();
 
     // int maxoffset = nPitchY*(nHeightP-nBlkSizeY)-nBlkSizeX; not used
 
@@ -754,8 +787,10 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
     {
 
     // fetch image blocks
-      for (int i = 0; i < blocks; i++)
+      // processed blocks row by row (nBlkXE x nBlkYE); i: index in the vector block grid (row length nBlkX)
+      for (int i0 = 0; i0 < nBlkXE * nBlkYE; i0++)
       {
+        const int i = (i0 / nBlkXE) * nBlkX + (i0 % nBlkXE);
         const FakeBlockData &blockB = mvClipB.GetBlock(0, i);
         const FakeBlockData &blockF = mvClipF.GetBlock(0, i);
 
@@ -842,7 +877,7 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
           pMaskOccUV += nBlkSizeX_UV;
         }
 
-        if (!((i + 1) % nBlkX))
+        if (!((i0 + 1) % nBlkXE)) // end of a row
         {
           for (int p = 0; p < 3; p++)
           {
@@ -851,39 +886,39 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
               if (pixelsize_super == 1)
                 Blend<uint8_t>(pDst[p], pSrc[p], pRef[p],
                   p == 0 ? nBlkSizeY : nBlkSizeY_UV,
-                  p == 0 ? nWidth - nBlkSizeX*nBlkX : nWidthUV - nBlkSizeX_UV*nBlkX,
+                  p == 0 ? nWidthE - nBlkSizeX*nBlkXE : nWidthUV - nBlkSizeX_UV*nBlkXE,
                   nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256, cpuFlags);
               else if (pixelsize_super == 2)
                 Blend<uint16_t>(pDst[p], pSrc[p], pRef[p],
                   p == 0 ? nBlkSizeY : nBlkSizeY_UV,
-                  p == 0 ? nWidth - nBlkSizeX*nBlkX : nWidthUV - nBlkSizeX_UV*nBlkX,
+                  p == 0 ? nWidthE - nBlkSizeX*nBlkXE : nWidthUV - nBlkSizeX_UV*nBlkXE,
                   nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256, cpuFlags);
               else if (pixelsize_super == 4)
                 Blend<float>(pDst[p], pSrc[p], pRef[p],
                   p == 0 ? nBlkSizeY : nBlkSizeY_UV,
-                  p == 0 ? nWidth - nBlkSizeX * nBlkX : nWidthUV - nBlkSizeX_UV * nBlkX,
+                  p == 0 ? nWidthE - nBlkSizeX * nBlkXE : nWidthUV - nBlkSizeX_UV * nBlkXE,
                   nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256, cpuFlags);
             }
           }
 
-          pDst[0] += nBlkSizeY    * nDstPitches[0] - nBlkSizeX   *nBlkX*pixelsize_super;
-          pRef[0] += nBlkSizeY * nRefPitches[0] - nBlkSizeX * nBlkX*pixelsize_super;
-          pSrc[0] += nBlkSizeY * nSrcPitches[0] - nBlkSizeX * nBlkX*pixelsize_super;
+          pDst[0] += nBlkSizeY    * nDstPitches[0] - nBlkSizeX   *nBlkXE*pixelsize_super;
+          pRef[0] += nBlkSizeY * nRefPitches[0] - nBlkSizeX * nBlkXE*pixelsize_super;
+          pSrc[0] += nBlkSizeY * nSrcPitches[0] - nBlkSizeX * nBlkXE*pixelsize_super;
           if (!isGrey) {
-            pDst[1] += nBlkSizeY_UV * nDstPitches[1] - nBlkSizeX_UV * nBlkX*pixelsize_super;
-            pDst[2] += nBlkSizeY_UV * nDstPitches[2] - nBlkSizeX_UV * nBlkX*pixelsize_super;
-            pRef[1] += nBlkSizeY_UV * nRefPitches[1] - nBlkSizeX_UV * nBlkX*pixelsize_super;
-            pRef[2] += nBlkSizeY_UV * nRefPitches[2] - nBlkSizeX_UV * nBlkX*pixelsize_super;
-            pSrc[1] += nBlkSizeY_UV * nSrcPitches[1] - nBlkSizeX_UV * nBlkX*pixelsize_super;
-            pSrc[2] += nBlkSizeY_UV * nSrcPitches[2] - nBlkSizeX_UV * nBlkX*pixelsize_super;
+            pDst[1] += nBlkSizeY_UV * nDstPitches[1] - nBlkSizeX_UV * nBlkXE*pixelsize_super;
+            pDst[2] += nBlkSizeY_UV * nDstPitches[2] - nBlkSizeX_UV * nBlkXE*pixelsize_super;
+            pRef[1] += nBlkSizeY_UV * nRefPitches[1] - nBlkSizeX_UV * nBlkXE*pixelsize_super;
+            pRef[2] += nBlkSizeY_UV * nRefPitches[2] - nBlkSizeX_UV * nBlkXE*pixelsize_super;
+            pSrc[1] += nBlkSizeY_UV * nSrcPitches[1] - nBlkSizeX_UV * nBlkXE*pixelsize_super;
+            pSrc[2] += nBlkSizeY_UV * nSrcPitches[2] - nBlkSizeX_UV * nBlkXE*pixelsize_super;
           }
-          pMaskFullYB  += nBlkSizeY    * nPitchY  - nBlkSizeX    *nBlkX;
-          pMaskFullYF += nBlkSizeY * nPitchY - nBlkSizeX * nBlkX;
-          pMaskOccY += nBlkSizeY * nPitchY - nBlkSizeX * nBlkX;
+          pMaskFullYB  += nBlkSizeY    * nPitchY  - nBlkSizeX    *nBlkXE;
+          pMaskFullYF += nBlkSizeY * nPitchY - nBlkSizeX * nBlkXE;
+          pMaskOccY += nBlkSizeY * nPitchY - nBlkSizeX * nBlkXE;
           if (!isGrey) {
-            pMaskFullUVB += nBlkSizeY_UV * nPitchUV - nBlkSizeX_UV * nBlkX;
-            pMaskFullUVF += nBlkSizeY_UV * nPitchUV - nBlkSizeX_UV * nBlkX;
-            pMaskOccUV += nBlkSizeY_UV * nPitchUV - nBlkSizeX_UV * nBlkX;
+            pMaskFullUVB += nBlkSizeY_UV * nPitchUV - nBlkSizeX_UV * nBlkXE;
+            pMaskFullUVF += nBlkSizeY_UV * nPitchUV - nBlkSizeX_UV * nBlkXE;
+            pMaskOccUV += nBlkSizeY_UV * nPitchUV - nBlkSizeX_UV * nBlkXE;
           }
         }
       }
@@ -893,18 +928,18 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
         if (needProcessPlanes[p]) {
           if (pixelsize_super == 1)
             Blend<uint8_t>(pDst[p], pSrc[p], pRef[p],
-              p == 0 ? nHeight - nBlkSizeY*nBlkY : nHeightUV - nBlkSizeY_UV*nBlkY,
-              p == 0 ? nWidth : nWidthUV,
+              p == 0 ? nHeightE - nBlkSizeY*nBlkYE : nHeightUV - nBlkSizeY_UV*nBlkYE,
+              p == 0 ? nWidthE : nWidthUV,
               nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256, cpuFlags);
           else if (pixelsize_super == 2)
             Blend<uint16_t>(pDst[p], pSrc[p], pRef[p],
-              p == 0 ? nHeight - nBlkSizeY*nBlkY : nHeightUV - nBlkSizeY_UV*nBlkY,
-              p == 0 ? nWidth : nWidthUV,
+              p == 0 ? nHeightE - nBlkSizeY*nBlkYE : nHeightUV - nBlkSizeY_UV*nBlkYE,
+              p == 0 ? nWidthE : nWidthUV,
               nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256, cpuFlags);
           else if (pixelsize_super == 4)
             Blend<float>(pDst[p], pSrc[p], pRef[p],
-              p == 0 ? nHeight - nBlkSizeY * nBlkY : nHeightUV - nBlkSizeY_UV * nBlkY,
-              p == 0 ? nWidth : nWidthUV,
+              p == 0 ? nHeightE - nBlkSizeY * nBlkYE : nHeightUV - nBlkSizeY_UV * nBlkYE,
+              p == 0 ? nWidthE : nWidthUV,
               nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256, cpuFlags);
         }
       }
@@ -926,21 +961,21 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
               pSrc[p] + pixelsize_super *(p == 0 ? nWidth_B : nWidth_B_UV),   // -"-
               pRef[p] + pixelsize_super *(p == 0 ? nWidth_B : nWidth_B_UV),   // -"-
               p == 0 ? nHeight_B : nHeight_B_UV, // P.F. nHeight_B is enough, bottom will take care of buttom right edge
-              p == 0 ? nWidth - nWidth_B : nWidthUV - nWidth_B_UV,
+              p == 0 ? nWidthE - nWidth_B : nWidthUV - nWidth_B_UV,
               nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256, cpuFlags);
           else if (pixelsize_super == 2)
             Blend<uint16_t>(pDst[p] + pixelsize_super *(p == 0 ? nWidth_B : nWidth_B_UV),   // PF 161115 nWidth_B / xRatioUV instead of 0 for UV (2.5.11.22 bug)
               pSrc[p] + pixelsize_super *(p == 0 ? nWidth_B : nWidth_B_UV),   // -"-
               pRef[p] + pixelsize_super *(p == 0 ? nWidth_B : nWidth_B_UV),   // -"-
               p == 0 ? nHeight_B : nHeight_B_UV,
-              p == 0 ? nWidth - nWidth_B : nWidthUV - nWidth_B_UV,
+              p == 0 ? nWidthE - nWidth_B : nWidthUV - nWidth_B_UV,
               nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256, cpuFlags);
           else if (pixelsize_super == 4)
             Blend<float>(pDst[p] + pixelsize_super * (p == 0 ? nWidth_B : nWidth_B_UV),   // PF 161115 nWidth_B / xRatioUV instead of 0 for UV (2.5.11.22 bug)
               pSrc[p] + pixelsize_super * (p == 0 ? nWidth_B : nWidth_B_UV),   // -"-
               pRef[p] + pixelsize_super * (p == 0 ? nWidth_B : nWidth_B_UV),   // -"-
               p == 0 ? nHeight_B : nHeight_B_UV,
-              p == 0 ? nWidth - nWidth_B : nWidthUV - nWidth_B_UV,
+              p == 0 ? nWidthE - nWidth_B : nWidthUV - nWidth_B_UV,
               nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256, cpuFlags);
         }
       }
@@ -951,28 +986,28 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
         if (needProcessPlanes[p]) {
           // blend rest bottom with time weight (full width, right fill was full height minus bottom corner)
           // P.F. 161116 2.5.1.22 bug: pDst[p] + nDstPitches[p]*()
-          // was: (nHeight - nHeight_B), e.g. 720-716 = 4th row not O.K.
+          // was: (nHeightE - nHeight_B), e.g. 720-716 = 4th row not O.K.
           // need: nHeight_B (that is really the bottom) = 716th row O.K.
           if (pixelsize_super == 1)
-            Blend<uint8_t>(pDst[p] + nDstPitches[p] * (p == 0 ? (/*nHeight -*/ nHeight_B) : (/*nHeight -*/ nHeight_B) / yRatioUVs[1]),
+            Blend<uint8_t>(pDst[p] + nDstPitches[p] * (p == 0 ? (/*nHeightE -*/ nHeight_B) : (/*nHeightE -*/ nHeight_B) / yRatioUVs[1]),
               pSrc[p] + nSrcPitches[p] * (p == 0 ? nHeight_B : nHeight_B_UV),
               pRef[p] + nRefPitches[p] * (p == 0 ? nHeight_B : nHeight_B_UV),
-              p == 0 ? nHeight - nHeight_B : nHeightUV - nHeight_B_UV,
-              p == 0 ? nWidth : nWidthUV,
+              p == 0 ? nHeightE - nHeight_B : nHeightUV - nHeight_B_UV,
+              p == 0 ? nWidthE : nWidthUV,
               nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256, cpuFlags);
           else if (pixelsize_super == 2)
             Blend<uint16_t>(pDst[p] + nDstPitches[p] * (p == 0 ? nHeight_B : nHeight_B_UV),
               pSrc[p] + nSrcPitches[p] * (p == 0 ? nHeight_B : nHeight_B_UV),
               pRef[p] + nRefPitches[p] * (p == 0 ? nHeight_B : nHeight_B_UV),
-              p == 0 ? nHeight - nHeight_B : nHeightUV - nHeight_B_UV,
-              p == 0 ? nWidth : nWidthUV,
+              p == 0 ? nHeightE - nHeight_B : nHeightUV - nHeight_B_UV,
+              p == 0 ? nWidthE : nWidthUV,
               nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256, cpuFlags);
           else if (pixelsize_super == 4)
             Blend<float>(pDst[p] + nDstPitches[p] * (p == 0 ? nHeight_B : nHeight_B_UV),
               pSrc[p] + nSrcPitches[p] * (p == 0 ? nHeight_B : nHeight_B_UV),
               pRef[p] + nRefPitches[p] * (p == 0 ? nHeight_B : nHeight_B_UV),
-              p == 0 ? nHeight - nHeight_B : nHeightUV - nHeight_B_UV,
-              p == 0 ? nWidth : nWidthUV,
+              p == 0 ? nHeightE - nHeight_B : nHeightUV - nHeight_B_UV,
+              p == 0 ? nWidthE : nWidthUV,
               nDstPitches[p], nSrcPitches[p], nRefPitches[p], time256, cpuFlags);
         }
       }
@@ -987,7 +1022,7 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
       pDstShortU = DstShortU;
       pDstShortV = DstShortV;
 
-      for (int by = 0; by < nBlkY; by++)
+      for (int by = 0; by < nBlkYE; by++)
       {
         // indexing overlap windows weighting table: top=0 middle=3 bottom=6
         /*
@@ -996,14 +1031,14 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
         6 = Bottom Left 7 = Bottom Middle 8 = Bottom Right
         */
 
-        int wby = (by == 0) ? 0 * 3 : (by == nBlkY - 1) ? 2 * 3 : 1 * 3; // 0 for very first, 2*3 for very last, 1*3 for all others in the middle
+        int wby = (by == 0) ? 0 * 3 : (by == nBlkYE - 1) ? 2 * 3 : 1 * 3; // 0 for very first, 2*3 for very last, 1*3 for all others in the middle
         int xx = 0; // logical offset. Mul by 2 for pixelsize_super==2. Don't mul for indexing int* array
         int xxUV = 0;
-        for (int bx = 0; bx < nBlkX; ++bx)
+        for (int bx = 0; bx < nBlkXE; ++bx)
         {
           // select window
           // indexing overlap windows weighting table: left=+0 middle=+1 rightmost=+2
-          int wbx = (bx == 0) ? 0 : (bx == nBlkX - 1) ? 2 : 1; // 0 for very first, 2 for very last, 1 for all others in the middle
+          int wbx = (bx == 0) ? 0 : (bx == nBlkXE - 1) ? 2 : 1; // 0 for very first, 2 for very last, 1 for all others in the middle
           winOver = OverWins->GetWindow(wby + wbx);
           if (!isGrey)
             winOverUV = OverWinsUV->GetWindow(wby + wbx);
@@ -1152,6 +1187,8 @@ PVideoFrame __stdcall MVBlockFps::GetFrame(int n, IScriptEnvironment* env)
     }
     PROFILE_STOP(MOTION_PROFILE_COMPENSATION);
 
+    if (edge_ext)
+      crop_frame_into(dst, dstExt, nWidth, nHeight, isGrey ? 1 : 3, nLogxRatioUVs[1], nLogyRatioUVs[1], pixelsize_super, env);
 
     ClipFnc::copy_alpha_from(dst, child, time256 < 128 ? nleft : nright, vi, env); // alpha of the nearest frame
     return dst;

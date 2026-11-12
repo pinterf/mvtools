@@ -28,7 +28,7 @@
 MVFlow::MVFlow(PClip _child, PClip super, PClip _mvec, int _time256, int _mode, bool _fields,
   sad_t nSCD1, int nSCD2, bool _isse, PClip _timeclip, IScriptEnvironment* env) :
   GenericVideoFilter(_child),
-  MVFilter(_mvec, "MFlow", env, 1, 0),
+  MVFilter(_mvec, "MFlow", env, 1, 0, true), // edge blocks: the upsized vector field covers the block grid, the vectors are limited to the frame
   mvClip(_mvec, nSCD1, nSCD2, env, 1, 0)
 {
   has_at_least_v8 = true;

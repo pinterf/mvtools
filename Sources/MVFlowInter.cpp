@@ -30,7 +30,7 @@
 MVFlowInter::MVFlowInter(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, int _time256, double _ml,
   bool _blend, sad_t nSCD1, int nSCD2, bool _isse, IScriptEnvironment* env) :
   GenericVideoFilter(_child),
-  MVFilter(_mvfw, "MFlowInter", env, 1, 0),
+  MVFilter(_mvfw, "MFlowInter", env, 1, 0, true), // edge blocks: the upsized vector field covers the block grid, the vectors are limited to the frame
   mvClipB(_mvbw, nSCD1, nSCD2, env, 1, 0),
   mvClipF(_mvfw, nSCD1, nSCD2, env, 1, 0)
 {

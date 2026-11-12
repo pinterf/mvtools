@@ -52,6 +52,7 @@ private:
    int nWidthUV;
    int nHeightUV;
    int VPitchY, VPitchUV;
+   int nWidthU, nHeightU, nWidthUUV, nHeightUUV; // size of the upsized vector fields, see the constructor
 
    int nHPaddingUV;
    int nVPaddingUV;
