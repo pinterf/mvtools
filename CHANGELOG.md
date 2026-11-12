@@ -20,6 +20,12 @@ Change log
   - Mod: MSuper: faster padding of the super planes (the top / bottom border is copied row by row).
   - Internal: the super clip parameters are kept in a process-wide registry, the super clip carries its index
     (vi.sample_type); the legacy 8 bytes in num_audio_samples are still written.
+  - Fix: MDepan with a mask clip: the motion data could differ from run to run. With range > 0 it also depended on
+    the frame request order (seeking, multithreading), and the frames in the range were estimated with the mask of
+    the requested frame. Causes: the neighbour check of the blocks read outside the block arrays for the top and
+    bottom block rows (only with a mask, without it the border blocks are skipped); the mask was fetched for the
+    requested frame only; the sign of the near-zero motion marker (0.011) was random. Now the mask of each estimated
+    frame is used.
 
 - 2.7.48 (20261029)
   - Feature request #68: adding search_coarse from SVP fork: MAnalyse: new parameters search_coarse.

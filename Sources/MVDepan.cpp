@@ -410,13 +410,15 @@ void MVDepan::RejectBadBlocks(transform tr, float blockDx[], float blockDy[], sa
       {
         blockWeight[n] = 0; // disable bad block with big SAD
       }
-      else if (i > 0 && i < (nBlkX - 1) && (fabs((blockDx[n - 1 - nBlkX] + blockDx[n - nBlkX] + blockDx[n + 1 - nBlkX] +
+      // neighbour checks: only blocks with all 8 neighbours (with a mask the border blocks are not disabled above;
+      // the row above / below of a top / bottom row block is outside the arrays)
+      else if (i > 0 && i < (nBlkX - 1) && j > 0 && j < (nBlkY - 1) && (fabs((blockDx[n - 1 - nBlkX] + blockDx[n - nBlkX] + blockDx[n + 1 - nBlkX] +
         blockDx[n - 1] + blockDx[n + 1] +
         blockDx[n - 1 + nBlkX] + blockDx[n + nBlkX] + blockDx[n + 1 + nBlkX]) / 8 - blockDx[n]) > wrongDif))
       {
         blockWeight[n] = 0; // disable blocks very different from neighbours
       }
-      else if (j > 0 && j < (nBlkY - 1) && (fabs((blockDy[n - 1 - nBlkX] + blockDy[n - nBlkX] + blockDy[n + 1 - nBlkX] +
+      else if (i > 0 && i < (nBlkX - 1) && j > 0 && j < (nBlkY - 1) && (fabs((blockDy[n - 1 - nBlkX] + blockDy[n - nBlkX] + blockDy[n + 1 - nBlkX] +
         blockDy[n - 1] + blockDy[n + 1] +
         blockDy[n - 1 + nBlkX] + blockDy[n + nBlkX] + blockDy[n + 1 + nBlkX]) / 8 - blockDy[n]) > wrongDif))
       {
@@ -459,18 +461,14 @@ PVideoFrame __stdcall MVDepan::GetFrame(int ndest, IScriptEnvironment* env)
   PVideoFrame	src = child->GetFrame(ndest, env);
   PVideoFrame	dst = has_at_least_v8 ? env->NewVideoFrameP(vi, &src) : env->NewVideoFrame(vi); // frame property support
 
-  PVideoFrame maskf;
-  if (mask)
-    maskf = mask->GetFrame(ndest, env);
-
   const BYTE * srcp;
   BYTE * dstp;
   int src_width;
   int src_height;
   int src_pitch;
   int dst_pitch;
-  const BYTE * maskp;
-  int mask_pitch;
+  const BYTE * maskp = nullptr;
+  int mask_pitch = 0;
 
   if (ClipFnc::is_yuv_any(vi) && !vi.IsYUY2())
   {
@@ -504,11 +502,6 @@ PVideoFrame __stdcall MVDepan::GetFrame(int ndest, IScriptEnvironment* env)
     dstp = dst->GetWritePtr(PLANAR_Y);
     dst_pitch = dst->GetPitch(PLANAR_Y);
     env->BitBlt(dstp, dst_pitch, srcp, src_pitch, src_width, src_height);
-    if (mask)
-    {
-      maskp = maskf->GetReadPtr(PLANAR_Y);
-      mask_pitch = maskf->GetPitch(PLANAR_Y);
-    }
   }
   else
   { // YUY2
@@ -519,11 +512,6 @@ PVideoFrame __stdcall MVDepan::GetFrame(int ndest, IScriptEnvironment* env)
     dstp = dst->GetWritePtr();
     dst_pitch = dst->GetPitch();
     env->BitBlt(dstp, dst_pitch, srcp, src_pitch, src_width, src_height);
-    if (mask)
-    {
-      maskp = maskf->GetReadPtr();
-      mask_pitch = maskf->GetPitch();
-    }
   }
 
   float dPel = 1.0f / nPel;  // subpixel precision value
@@ -571,6 +559,17 @@ PVideoFrame __stdcall MVDepan::GetFrame(int ndest, IScriptEnvironment* env)
         BPP = 2;
       else
         BPP = 1;
+
+      // the mask of the frame being estimated: the motion of the frames in range is cached, it must not depend on
+      // which requested frame computed it
+      PVideoFrame maskf;
+      if (mask)
+      {
+        maskf = mask->GetFrame(nframe, env);
+        const bool yuy2_interleaved = !(ClipFnc::is_yuv_any(vi) && !vi.IsYUY2());
+        maskp = yuy2_interleaved ? maskf->GetReadPtr() : maskf->GetReadPtr(PLANAR_Y);
+        mask_pitch = yuy2_interleaved ? maskf->GetPitch() : maskf->GetPitch(PLANAR_Y);
+      }
 
       if (nframemv >= 0 && mvclip.IsUsable())
       {
@@ -681,7 +680,7 @@ PVideoFrame __stdcall MVDepan::GetFrame(int ndest, IScriptEnvironment* env)
         }
 
         if (fabs(motionx[nframe]) < 0.01f)  // if it is accidentally very small, reset it to small, but non-zero value ,
-          motionx[nframe] = (2 * rand() - RAND_MAX) > 0 ? 0.011f : -0.011f; // to differ from pure 0, which be interpreted as bad value mark (scene change)
+          motionx[nframe] = motionx[nframe] >= 0 ? 0.011f : -0.011f; // to differ from pure 0, which be interpreted as bad value mark (scene change); the sign of the small value, deterministic
 
       }
     //		char debugbuf[200];
