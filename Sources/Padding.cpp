@@ -24,18 +24,12 @@
 
 
 template<typename pixel_t>
-void PadCorner(pixel_t *p, pixel_t v, int hPad, int vPad, int refPitch)
+static inline void fill_pixels(pixel_t *p, pixel_t v, int n)
 {
-  // refPitch here is pixel_t aware
-  for (int i = 0; i < vPad; i++)
-  {
-    if constexpr(sizeof(pixel_t) == 1)
-      memset(p, v, hPad); // faster than loop
-    else {
-      std::fill_n(p, hPad, v);
-    }
-    p += refPitch;
-  }
+  if constexpr (sizeof(pixel_t) == 1)
+    memset(p, v, n);
+  else
+    std::fill_n(p, n, v);
 }
 
 template<typename pixel_t>
@@ -46,50 +40,24 @@ void Padding::PadReferenceFrame(unsigned char *refFrame8, int refPitch, int hPad
 
   pixel_t *pfoff = refFrame + vPad * refPitch + hPad;
 
-  // Up-Left
-  PadCorner<pixel_t>(refFrame, pfoff[0], hPad, vPad, refPitch); // PF refPitch is already pixelsize aware!
-  // Up-Right
-  PadCorner<pixel_t>(refFrame + hPad + width, pfoff[width - 1], hPadRight, vPad, refPitch);
-  // Down-Left
-  PadCorner<pixel_t>(refFrame + (vPad + height) * refPitch,
-    pfoff[(height - 1) * refPitch], hPad, vPadBottom, refPitch);
-  // Down-Right
-  PadCorner<pixel_t>(refFrame + hPad + width + (vPad + height) * refPitch,
-    pfoff[(height - 1) * refPitch + width - 1], hPadRight, vPadBottom, refPitch);
-
-  // Top and bottom
-  // LDS: would multiple memcpy be faster? The inner loop is very short
-  // and the offset calculations are not trivial.
-  for (int i = 0; i < width; i++)
-  {
-    pixel_t value_t = pfoff[i];
-    pixel_t value_b = pfoff[i + (height - 1) * refPitch];
-    pixel_t *p_t = refFrame + hPad + i;
-    pixel_t *p_b = p_t + (height + vPad) * refPitch;
-    for (int j = 0; j < vPad; j++)
-    {
-      p_t[0] = value_t;
-      p_t += refPitch;
-    }
-    for (int j = 0; j < vPadBottom; j++)
-    {
-      p_b[0] = value_b;
-      p_b += refPitch;
-    }
-  }
-
-  // Left and right
+  // Left and right: repeat the first / last pixel of each row
   for (int i = 0; i < height; i++)
   {
-    pixel_t value_l = pfoff[i * refPitch];
-    pixel_t value_r = pfoff[i * refPitch + width - 1];
-    pixel_t *p_l = refFrame + (vPad + i) * refPitch;
-    pixel_t *p_r = p_l + width + hPad;
-    for (int j = 0; j < hPad; j++)
-      p_l[j] = value_l;
-    for (int j = 0; j < hPadRight; j++)
-      p_r[j] = value_r;
+    pixel_t *p_row = pfoff + i * refPitch;
+    fill_pixels<pixel_t>(p_row - hPad, p_row[0], hPad);
+    fill_pixels<pixel_t>(p_row + width, p_row[width - 1], hPadRight);
   }
+
+  // Top and bottom: copies of the first / last row with its left and right padding, so the corners repeat the
+  // corner pixels. Whole row copies: filling the border column by column would stride over the rows (slow, more
+  // so with the deep bottom border of MSuper edgepad).
+  const int full_width = hPad + width + hPadRight;
+  const pixel_t *p_first = refFrame + vPad * refPitch;
+  const pixel_t *p_last = refFrame + (vPad + height - 1) * refPitch;
+  for (int j = 0; j < vPad; j++)
+    memcpy(refFrame + j * refPitch, p_first, full_width * sizeof(pixel_t));
+  for (int j = 0; j < vPadBottom; j++)
+    memcpy(refFrame + (vPad + height + j) * refPitch, p_last, full_width * sizeof(pixel_t));
 }
 
 template void Padding::PadReferenceFrame<uint8_t>(unsigned char* refFrame8, int refPitch, int hPad, int vPad, int width, int height, int hPadRight, int vPadBottom);

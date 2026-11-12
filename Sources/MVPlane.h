@@ -105,6 +105,8 @@ private:
   void	refine_pel2 (SchedulerRefine::TaskData &td);
   void	pad_layout (int subplane);
   void	extend_refined ();
+  template<typename pixel_t>
+  void	extend_rows (uint8_t* p);
   void	refine_pel4 (SchedulerRefine::TaskData &td);
   void	reduce_slice (SlicerReduce::TaskData &td);
 

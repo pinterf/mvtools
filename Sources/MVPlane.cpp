@@ -44,6 +44,7 @@ boundaries.
 #include "Padding.h"
 #include <stdint.h>
 #include <cstring>
+#include <algorithm>
 #include <commonfunctions.h>
 
 
@@ -333,16 +334,26 @@ void MVPlane::extend_refined()
   for (int i = 1; i < nPel * nPel; i++)
   {
     uint8_t* p = pPlane[i];
-    for (int y = 0; y < nRefineHeight; y++)
-    {
-      uint8_t* row = p + y * nPitch;
-      const uint8_t* last = row + ((nRefineWidth - 1) << pixelsize_shift);
-      for (int x = nRefineWidth; x < nExtendedWidth; x++)
-        memcpy(row + (x << pixelsize_shift), last, pixelsize);
-    }
+    if (pixelsize == 1)
+      extend_rows<uint8_t>(p);
+    else if (pixelsize == 2)
+      extend_rows<uint16_t>(p);
+    else
+      extend_rows<uint32_t>(p); // float: copied as bits
     const uint8_t* lastrow = p + (nRefineHeight - 1) * nPitch;
     for (int y = nRefineHeight; y < nExtendedHeight; y++)
       memcpy(p + y * nPitch, lastrow, nExtendedWidth << pixelsize_shift);
+  }
+}
+
+// extend_refined: the columns from nRefineWidth to nExtendedWidth repeat the last interpolated column, row by row
+template<typename pixel_t>
+void MVPlane::extend_rows(uint8_t* p)
+{
+  for (int y = 0; y < nRefineHeight; y++)
+  {
+    pixel_t* row = reinterpret_cast<pixel_t*>(p + y * nPitch);
+    std::fill(row + nRefineWidth, row + nExtendedWidth, row[nRefineWidth - 1]);
   }
 }
 
