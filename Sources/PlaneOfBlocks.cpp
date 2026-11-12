@@ -261,6 +261,20 @@ PlaneOfBlocks::PlaneOfBlocks(int _nBlkX, int _nBlkY, int _nBlkSizeX, int _nBlkSi
 
 
 
+int PlaneOfBlocks::search_area_width(MVFrame *pFrame) const
+{
+  const int grid_end = nBlkX * (nBlkSizeX - nOverlapX) + nOverlapX;
+  return std::max(pFrame->GetPlane(YPLANE)->GetRealWidth(), grid_end);
+}
+
+int PlaneOfBlocks::search_area_height(MVFrame *pFrame) const
+{
+  const int grid_end = nBlkY * (nBlkSizeY - nOverlapY) + nOverlapY;
+  return std::max(pFrame->GetPlane(YPLANE)->GetRealHeight(), grid_end);
+}
+
+
+
 PlaneOfBlocks::~PlaneOfBlocks()
 {
   // Nothing
@@ -3003,8 +3017,12 @@ void	PlaneOfBlocks::search_mv_slice(Slicer::TaskData &td)
       int nHPaddingScaled = pSrcFrame->GetPlane(YPLANE)->GetHPadding() >> nLogScale;
       int nVPaddingScaled = pSrcFrame->GetPlane(YPLANE)->GetVPadding() >> nLogScale;
       /* computes search boundaries */
-      workarea.nDxMax = nPel * (pSrcFrame->GetPlane(YPLANE)->GetExtendedWidth() - workarea.x[0] - nBlkSizeX - pSrcFrame->GetPlane(YPLANE)->GetHPadding() + nHPaddingScaled);
-      workarea.nDyMax = nPel * (pSrcFrame->GetPlane(YPLANE)->GetExtendedHeight() - workarea.y[0] - nBlkSizeY - pSrcFrame->GetPlane(YPLANE)->GetVPadding() + nVPaddingScaled);
+      // right / bottom: measured from the search area width / height (the real plane area or the end of the block
+      // grid, see search_area_width), not from the whole plane, which may hold an edge padding (MSuper edgepad)
+      const int nSearchExtWidth = search_area_width(pSrcFrame) + 2 * pSrcFrame->GetPlane(YPLANE)->GetHPadding();
+      const int nSearchExtHeight = search_area_height(pSrcFrame) + 2 * pSrcFrame->GetPlane(YPLANE)->GetVPadding();
+      workarea.nDxMax = nPel * (nSearchExtWidth - workarea.x[0] - nBlkSizeX - pSrcFrame->GetPlane(YPLANE)->GetHPadding() + nHPaddingScaled);
+      workarea.nDyMax = nPel * (nSearchExtHeight - workarea.y[0] - nBlkSizeY - pSrcFrame->GetPlane(YPLANE)->GetVPadding() + nVPaddingScaled);
       workarea.nDxMin = -nPel * (workarea.x[0] - pSrcFrame->GetPlane(YPLANE)->GetHPadding() + nHPaddingScaled);
       workarea.nDyMin = -nPel * (workarea.y[0] - pSrcFrame->GetPlane(YPLANE)->GetVPadding() + nVPaddingScaled);
 
@@ -3247,8 +3265,11 @@ void	PlaneOfBlocks::recalculate_mv_slice(Slicer::TaskData &td)
       // may be they must be scaled by nPel ?
 
       /* computes search boundaries */
-      workarea.nDxMax = nPel * (pSrcFrame->GetPlane(YPLANE)->GetExtendedWidth() - workarea.x[0] - nBlkSizeX);
-      workarea.nDyMax = nPel * (pSrcFrame->GetPlane(YPLANE)->GetExtendedHeight() - workarea.y[0] - nBlkSizeY);
+      // right / bottom: see search_area_width
+      const int nSearchExtWidth = search_area_width(pSrcFrame) + 2 * pSrcFrame->GetPlane(YPLANE)->GetHPadding();
+      const int nSearchExtHeight = search_area_height(pSrcFrame) + 2 * pSrcFrame->GetPlane(YPLANE)->GetVPadding();
+      workarea.nDxMax = nPel * (nSearchExtWidth - workarea.x[0] - nBlkSizeX);
+      workarea.nDyMax = nPel * (nSearchExtHeight - workarea.y[0] - nBlkSizeY);
       workarea.nDxMin = -nPel * workarea.x[0];
       workarea.nDyMin = -nPel * workarea.y[0];
 

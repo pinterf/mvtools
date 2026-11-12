@@ -152,4 +152,23 @@ inline SuperParams GetSuperParams(const VideoInfo& vi)
   return sp;
 }
 
+// Number of blocks along one axis (MAnalyse, MRecalculate).
+// Whole blocks inside the frame: (size - overlap) / (blksize - overlap); when that grid ends before the frame
+// edge, the remaining pixels are not covered. With an edge padding in the super clip (MSuper edgepad) one more
+// block is added when it ends inside the edge padding: the grid then covers the whole frame, its last block reaches
+// beyond the frame edge (by at most blksize - overlap - 1 pixels) into the padding, which holds the repeated edge
+// pixels. A frame already covered by whole blocks gets the same grid with or without edge padding.
+inline int BlockCount(int size, int blksize, int overlap, int edge_pad, bool& beyond_edge)
+{
+  const int step = blksize - overlap;
+  int n = (size - overlap) / step;
+  beyond_edge = false;
+  if (n * step + overlap < size && (n + 1) * step + overlap - size <= edge_pad)
+  {
+    n++;
+    beyond_edge = true;
+  }
+  return n;
+}
+
 #endif	// __MV_SuperParams__

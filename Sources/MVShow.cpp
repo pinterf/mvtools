@@ -37,7 +37,7 @@
 MVShow::MVShow(PClip _super, PClip vectors, int _scale, int _plane, int _tol, bool _showsad, int _number,
                sad_t nSCD1, int nSCD2, bool _isse, IScriptEnvironment* env) :
 GenericVideoFilter(_super),
-MVFilter(vectors, "MShow", env, 1, 0),
+MVFilter(vectors, "MShow", env, 1, 0, true), // edge blocks: drawn into the padding area, clipped to the frame
 mvClip(vectors, nSCD1, nSCD2, env, 1, 0)
 {
   has_at_least_v8 = true;

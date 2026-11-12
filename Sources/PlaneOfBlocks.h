@@ -105,6 +105,14 @@ public:
   MV_FORCEINLINE int GetnBlkSizeX() { return nBlkSizeX; }
   MV_FORCEINLINE int GetnBlkSizeY() { return nBlkSizeY; }
 
+  // Width / height of the area the right / bottom vector limits are measured from (plus the padding): the real
+  // plane area, as without edge padding, or the end of the block grid when the grid reaches beyond it into the edge
+  // padding of the super clip (MSuper edgepad, MOTION_EDGE_BLOCKS). Measuring from the whole plane would let the
+  // blocks near the right / bottom edge search further when a super has edge padding, and change their vectors
+  // also for frames covered by whole blocks.
+  int search_area_width(MVFrame *pFrame) const;
+  int search_area_height(MVFrame *pFrame) const;
+
   void RecalculateMVs(MVClip & mvClip, MVFrame *_pSrcFrame, MVFrame *_pRefFrame, SearchType st,
     int stp, int _lambda, sad_t _lSAD, int _pennew,
     int flags, int *out, short * outfilebuf, int fieldShift, sad_t thSAD,

@@ -142,12 +142,14 @@ MVRecalculate::MVRecalculate(
   pSrcGOF = new MVGroupOfFrames(
     nSuperLevels, params.LayoutWidth(), params.LayoutHeight(),
     nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV,
-    cpuFlags, analysisData.xRatioUV, analysisData.yRatioUV, analysisData.pixelsize, analysisData.bits_per_pixel, mt_flag
+    cpuFlags, analysisData.xRatioUV, analysisData.yRatioUV, analysisData.pixelsize, analysisData.bits_per_pixel, mt_flag,
+    params.nWidth, params.nHeight // the real frame size: search limits
   );
   pRefGOF = new MVGroupOfFrames(
     nSuperLevels, params.LayoutWidth(), params.LayoutHeight(),
     nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV,
-    cpuFlags, analysisData.xRatioUV, analysisData.yRatioUV, analysisData.pixelsize, analysisData.bits_per_pixel, mt_flag
+    cpuFlags, analysisData.xRatioUV, analysisData.yRatioUV, analysisData.pixelsize, analysisData.bits_per_pixel, mt_flag,
+    params.nWidth, params.nHeight // the real frame size: search limits
   );
   // params.nWidth / nHeight: the real frame size, without the edgepad extension of the super planes
   if (nHeight != analysisData.nHeight
@@ -238,18 +240,19 @@ MVRecalculate::MVRecalculate(
   analysisData.nOverlapX = _overlapx;
   analysisData.nOverlapY = _overlapy;
 
-  int		nBlkX = (analysisData.nWidth - analysisData.nOverlapX)
-    / (analysisData.nBlkSizeX - analysisData.nOverlapX);
-  int		nBlkY = (analysisData.nHeight - analysisData.nOverlapY)
-    / (analysisData.nBlkSizeY - analysisData.nOverlapY);
+  // block grid; with an edge padding in the super clip (MSuper edgepad) it covers the whole frame (BlockCount)
+  bool beyondX, beyondY;
+  int		nBlkX = BlockCount(analysisData.nWidth, analysisData.nBlkSizeX, analysisData.nOverlapX, params.nEdgePadX, beyondX);
+  int		nBlkY = BlockCount(analysisData.nHeight, analysisData.nBlkSizeY, analysisData.nOverlapY, params.nEdgePadY, beyondY);
 
   // 2.7.36: fallback to no overlap when either nBlk count is less than 2
   if (nBlkX < 2 || nBlkY < 2) {
     analysisData.nOverlapX = 0;
     analysisData.nOverlapY = 0;
-    nBlkX = analysisData.nWidth / analysisData.nBlkSizeX;
-    nBlkY = analysisData.nHeight / analysisData.nBlkSizeY;
+    nBlkX = BlockCount(analysisData.nWidth, analysisData.nBlkSizeX, 0, params.nEdgePadX, beyondX);
+    nBlkY = BlockCount(analysisData.nHeight, analysisData.nBlkSizeY, 0, params.nEdgePadY, beyondY);
   }
+  const bool edge_blocks = beyondX || beyondY;
 
   analysisData.nBlkX = nBlkX;
   analysisData.nBlkY = nBlkY;
@@ -317,6 +320,7 @@ MVRecalculate::MVRecalculate(
   analysisData.nFlags |= (_isse) ? MOTION_USE_ISSE : 0;
   analysisData.nFlags |= (analysisData.isBackward) ? MOTION_IS_BACKWARD : 0;
   analysisData.nFlags |= (chroma) ? MOTION_USE_CHROMA_MOTION : 0;
+  analysisData.nFlags |= edge_blocks ? MOTION_EDGE_BLOCKS : 0;
   analysisData.nFlags |= conv_cpuf_flags_to_cpu(env->GetCPUFlags());
 
   _vectorfields_aptr = std::unique_ptr <GroupOfPlanes>(new GroupOfPlanes(

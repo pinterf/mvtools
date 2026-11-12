@@ -31,6 +31,9 @@ enum AnaFlags
 	MOTION_USE_ISSE            = 0x00000020,
 	MOTION_IS_BACKWARD         = 0x00000040,
 	MOTION_SMALLEST_PLANE      = 0x00000080,
+	// the block grid covers the whole frame, its last column / row of blocks reaches beyond the right / bottom
+	// frame edge into the edge padding of the super clip (MSuper edgepad); nWidth_B > nWidth or nHeight_B > nHeight
+	MOTION_EDGE_BLOCKS         = 0x00000100,
 //	MOTION_COMPENSATE_LUMA     = 0x00000100,
 //	MOTION_COMPENSATE_CHROMA_U = 0x00000200,
 //	MOTION_COMPENSATE_CHROMA_V = 0x00000400,

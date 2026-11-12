@@ -82,6 +82,8 @@ public:
   MV_FORCEINLINE int GetExtendedWidth() const { return nExtendedWidth; }
   MV_FORCEINLINE int GetExtendedHeight() const { return nExtendedHeight; }
   MV_FORCEINLINE int GetHPadding() const { return nHPadding; }
+  MV_FORCEINLINE int GetRealWidth() const { return nRealWidth; }
+  MV_FORCEINLINE int GetRealHeight() const { return nRealHeight; }
   MV_FORCEINLINE int GetVPadding() const { return nVPadding; }
   MV_FORCEINLINE void ResetState() { isRefined = isFilled = isPadded = false; }
 

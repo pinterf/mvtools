@@ -27,6 +27,9 @@ MScaleVect::MScaleVect( PClip Child, double ScaleX, double ScaleY, ScaleMode Mod
 #endif
   if (mVectorsInfo.nMagicKey != MVAnalysisData::MOTION_MAGIC_KEY || mVectorsInfo.nVersion != MVAnalysisData::VERSION) 
     Env->ThrowError("MScaleVect: Clip does not contain motion vectors");
+  // the scaled block grid would have to be derived again for the scaled frame size
+  if (mVectorsInfo.nFlags & MOTION_EDGE_BLOCKS)
+    Env->ThrowError("MScaleVect: vectors of an MSuper with edgepad (blocks beyond the frame edge) are not supported");
 #if !defined(MV_64BIT)
   vi.nchannels = reinterpret_cast <uintptr_t> (&mVectorsInfo);
 #else
