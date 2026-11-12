@@ -588,10 +588,11 @@ MDegrainN::MDegrainN(
   {
     MvClipInfo &c_info = _mv_clip_arr[k];
 
+    // the super planes are built for the layout size: the frame plus the MSuper edgepad extension (SuperParams.h)
     c_info._gof_sptr = SharedPtr <MVGroupOfFrames>(new MVGroupOfFrames(
       nSuperLevels,
-      nWidth,
-      nHeight,
+      params.LayoutWidth(),
+      params.LayoutHeight(),
       nSuperPel,
       nSuperHPad,
       nSuperVPad,
@@ -613,12 +614,12 @@ MDegrainN::MDegrainN(
     c_info._thsadc_sq = double(c_info._thsadc) * double(c_info._thsadc);
   }
 
-  const int nSuperWidth = vi_super.width;
   pixelsize_super_shift = ilog2(pixelsize_super);
 
+  // params.nWidth / nHeight: the real frame size, without the edgepad extension of the super planes
   if (nHeight != nHeightS
     || nHeight != vi.height
-    || nWidth != nSuperWidth - nSuperHPad * 2
+    || nWidth != params.nWidth
     || nWidth != vi.width
     || nPel != nSuperPel)
   {

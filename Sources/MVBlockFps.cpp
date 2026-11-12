@@ -126,17 +126,17 @@ MVBlockFps::MVBlockFps(
   isRGB = vi.IsPlanarRGB() || vi.IsPlanarRGBA(); // planar only
   //needDistinctChroma = !is444 && !isGrey && !isRGB;
 
-  pRefBGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, cpuFlags, xRatioUVs[1], yRatioUVs[1], pixelsize_super, bits_per_pixel_super, mt_flag);
-  pRefFGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, cpuFlags, xRatioUVs[1], yRatioUVs[1], pixelsize_super, bits_per_pixel_super, mt_flag);
-  int nSuperWidth = super->GetVideoInfo().width;
-  int nSuperHeight = super->GetVideoInfo().height;
+  // the super planes are built for the layout size: the frame plus the MSuper edgepad extension (SuperParams.h)
+  pRefBGOF = new MVGroupOfFrames(nSuperLevels, params.LayoutWidth(), params.LayoutHeight(), nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, cpuFlags, xRatioUVs[1], yRatioUVs[1], pixelsize_super, bits_per_pixel_super, mt_flag);
+  pRefFGOF = new MVGroupOfFrames(nSuperLevels, params.LayoutWidth(), params.LayoutHeight(), nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, cpuFlags, xRatioUVs[1], yRatioUVs[1], pixelsize_super, bits_per_pixel_super, mt_flag);
 
   if (!super->GetVideoInfo().IsSameColorspace(child->GetVideoInfo()))
     env->ThrowError("MBlockFPS: input and super clip format is different");
 
+  // params.nWidth / nHeight: the real frame size, without the edgepad extension of the super planes
   if (nHeight != nHeightS
     || nHeight != vi.height
-    || nWidth != nSuperWidth - nSuperHPad * 2
+    || nWidth != params.nWidth
     || nWidth != vi.width
     || nPel != nSuperPel)
   {

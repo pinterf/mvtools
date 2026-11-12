@@ -342,15 +342,15 @@ MVDegrainX::MVDegrainX(
   int nSuperPel = params.nPel;
   nSuperModeYUV = params.nModeYUV;
   int nSuperLevels = params.nLevels;
+  // the super planes are built for the layout size: the frame plus the MSuper edgepad extension (SuperParams.h)
   for (int i = 0; i < level; i++) {
-    pRefBGOF[i] = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, cpuFlags, xRatioUV_super, yRatioUV_super, pixelsize_super, bits_per_pixel_super, _mt_flag);
-    pRefFGOF[i] = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, cpuFlags, xRatioUV_super, yRatioUV_super, pixelsize_super, bits_per_pixel_super, _mt_flag);
+    pRefBGOF[i] = new MVGroupOfFrames(nSuperLevels, params.LayoutWidth(), params.LayoutHeight(), nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, cpuFlags, xRatioUV_super, yRatioUV_super, pixelsize_super, bits_per_pixel_super, _mt_flag);
+    pRefFGOF[i] = new MVGroupOfFrames(nSuperLevels, params.LayoutWidth(), params.LayoutHeight(), nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, cpuFlags, xRatioUV_super, yRatioUV_super, pixelsize_super, bits_per_pixel_super, _mt_flag);
   }
-  int nSuperWidth = vi_super.width;
-
+  // params.nWidth / nHeight: the real frame size, without the edgepad extension of the super planes
   if (nHeight != nHeightS
     || nHeight != vi.height
-    || nWidth != nSuperWidth - nSuperHPad * 2
+    || nWidth != params.nWidth
     || nWidth != vi.width
     || nPel != nSuperPel) // PF180227 why to check this one?
   {

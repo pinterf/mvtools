@@ -56,14 +56,13 @@ MVFlowInter::MVFlowInter(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, in
   int nSuperPel = params.nPel;
   int nSuperModeYUV = params.nModeYUV;
   int nSuperLevels = params.nLevels;
-  int nSuperWidth = super->GetVideoInfo().width; // really super
-  //int nSuperHeight = super->GetVideoInfo().height;
 
   if (!super->GetVideoInfo().IsSameColorspace(child->GetVideoInfo()))
     env->ThrowError("MFlowInter: input and super clip format is different");
 
+  // params.nWidth / nHeight: the real frame size, without the edgepad extension of the super planes
   if (nHeight != nHeightS
-    || nWidth != nSuperWidth - nSuperHPad * 2
+    || nWidth != params.nWidth
     || nPel != nSuperPel)
   {
     env->ThrowError("MFlowInter : wrong super frame clip");

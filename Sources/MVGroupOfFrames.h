@@ -46,7 +46,10 @@ class MVGroupOfFrames
 
 public :
     // xRatioUV PF 160729
-   MVGroupOfFrames(int _nLevelCount, int nWidth, int nHeight, int nPel, int nHPad, int nVPad, int nMode, int cpuFlags, int xRatioUV, int yRatioUV, int _pixelsize, int _bits_per_pixel, bool mt_flag);
+   // nWidth, nHeight: the frame size the super planes are laid out for. nRealWidth, nRealHeight: MSuper with
+   // edgepad, the real frame size (see MVPlane); -1: the same as the layout.
+   MVGroupOfFrames(int _nLevelCount, int nWidth, int nHeight, int nPel, int nHPad, int nVPad, int nMode, int cpuFlags, int xRatioUV, int yRatioUV, int _pixelsize, int _bits_per_pixel, bool mt_flag,
+     int nRealWidth = -1, int nRealHeight = -1);
    ~MVGroupOfFrames();
    void Update(int nModeYUV, uint8_t * pSrcY, int pitchY, uint8_t * pSrcU, int pitchU, uint8_t *pSrcV, int pitchV);
 

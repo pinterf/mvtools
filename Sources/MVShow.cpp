@@ -70,15 +70,15 @@ mvClip(vectors, nSCD1, nSCD2, env, 1, 0)
   //int nSuperPel = params.nPel;
   //int nSuperModeYUV = params.nModeYUV;
   //int nSuperLevels = params.nLevels;
-  int nSuperWidth = vi.width; // really super
-  //int nSuperHeight = vi.height;
 
   nTolerance = nTolerance << (vi.BitsPerComponent() - 8); // scale sad tolerance
 
-  if (nHeight != nHeightS || nWidth != nSuperWidth-nSuperHPad*2)
+  // params.nWidth / nHeight: the real frame size, without the edgepad extension of the super planes
+  if (nHeight != nHeightS || nWidth != params.nWidth)
     env->ThrowError("MShow : wrong super frame clip");
 
-  vi.height = nHeight + nSuperVPad*2; // one level only (may be redesigned to show all levels with vectors at once)
+  // the level 0 plane with its padding, including the edgepad extension
+  vi.height = params.LayoutHeight() + nSuperVPad*2; // one level only (may be redesigned to show all levels with vectors at once)
   // multiple of the vertical chroma subsampling, like the super clip
   vi.height = (vi.height + yRatioUV - 1) / yRatioUV * yRatioUV;
 

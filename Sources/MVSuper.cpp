@@ -44,7 +44,7 @@ int64_t ProfCumulatedResults[MOTION_PROFILE_COUNT * 2];
 MVSuper::MVSuper(
   PClip _child, int _hPad, int _vPad, int _pel, int _levels, bool _chroma,
   int _sharp, int _rfilter, PClip _pelclip, bool _isse,
-  bool mt_flag, bool yuy2_source, IScriptEnvironment* env
+  bool mt_flag, bool yuy2_source, int _edgepad, int _edgepadV, IScriptEnvironment* env
 )
   : GenericVideoFilter(_child)
   , pelclip(_pelclip)
@@ -97,10 +97,31 @@ MVSuper::MVSuper(
   pixelsize = vi.ComponentSize();
   bits_per_pixel = vi.BitsPerComponent();
 
+  // Edge padding (edgepad, edgepadV).
+  // Motion analysis works on whole blocks. When (width - overlap) is not a multiple of (blksize - overlap), the
+  // block grid ends before the right frame edge and the remaining columns (rows) are not processed (#28).
+  // A block grid covering them reaches beyond the frame by at most (blksize - overlap - 1) pixels, and a search
+  // around such a block needs the usual hpad / vpad beyond that. So the super planes get a wider right / bottom
+  // border: the super is laid out for the frame size plus the edge padding (the "layout" size), every level and
+  // sub-pel plane is built from the real frame exactly as without edgepad, and its padding (repeated edge pixels)
+  // then reaches over the edge padding area too (MVPlane). Readers get the real size and the padding from
+  // SuperParams. Inside the hpad / vpad border the super is the same as without edgepad.
+  // 64: the largest blksize, so any blksize / overlap fits. Rounded up to whole chroma pixels.
+  if (_edgepad < 0 || _edgepad > 64 || _edgepadV < 0 || _edgepadV > 64)
+    env->ThrowError("MSuper: edgepad and edgepadV must be between 0 and 64");
+  nEdgePadX = AlignNumber(_edgepad, xRatioUV);
+  nEdgePadY = AlignNumber(_edgepadV, yRatioUV);
+  nRealWidth = nWidth;
+  nRealHeight = nHeight;
+  // from here nWidth / nHeight are the layout size
+  nWidth += nEdgePadX;
+  nHeight += nEdgePadY;
+
   nLevels = _levels;
   int nLevelsMax = 0;
-  while (PlaneHeightLuma(vi.height, nLevelsMax, yRatioUV, nVPad) >= yRatioUV * 2 &&
-    PlaneWidthLuma(vi.width, nLevelsMax, xRatioUV, nHPad) >= xRatioUV * 2) // at last two pixels width and height of chroma
+  // from the real size: the same levels as without edgepad
+  while (PlaneHeightLuma(nRealHeight, nLevelsMax, yRatioUV, nVPad) >= yRatioUV * 2 &&
+    PlaneWidthLuma(nRealWidth, nLevelsMax, xRatioUV, nHPad) >= xRatioUV * 2) // at last two pixels width and height of chroma
   {
     nLevelsMax++;
   }
@@ -125,6 +146,10 @@ MVSuper::MVSuper(
     {
       env->ThrowError("MSuper: pelclip frame size must be Pel of source!");
     }
+    // A padded pelclip is copied with its border as it is, its border cannot be widened. An unpadded pelclip is
+    // copied over the real area and padded like the source.
+    if (isPelClipPadded && (nEdgePadX > 0 || nEdgePadY > 0))
+      env->ThrowError("MSuper: with edgepad, pelclip must not be padded");
   }
 
   nSuperWidth = nWidth + 2 * nHPad;
@@ -139,21 +164,23 @@ MVSuper::MVSuper(
 
   SuperParams params;
 
-  params.nWidth = nWidth;
-  params.nHeight = nHeight;
+  params.nWidth = nRealWidth;
+  params.nHeight = nRealHeight;
   params.nHPad = nHPad;
   params.nVPad = nVPad;
   params.nPel = nPel;
   params.nModeYUV = nModeYUV;
   params.nLevels = nLevels;
   params.param = yuy2_source ? SUPER_PARAM_YUY2_SOURCE : 0;
+  params.nEdgePadX = nEdgePadX;
+  params.nEdgePadY = nEdgePadY;
 
   // parameters to the fake audio properties, kills audio
   SetSuperParams(vi, params, env);
 
   // LDS: why not nModeYUV?
 //	pSrcGOF = new MVGroupOfFrames(nLevels, nWidth, nHeight, nPel, nHPad, nVPad, nModeYUV, isse, yRatioUV, mt_flag);
-  pSrcGOF = new MVGroupOfFrames(nLevels, nWidth, nHeight, nPel, nHPad, nVPad, YUVPLANES, cpuFlags, xRatioUV, yRatioUV, pixelsize, bits_per_pixel, mt_flag);
+  pSrcGOF = new MVGroupOfFrames(nLevels, nWidth, nHeight, nPel, nHPad, nVPad, YUVPLANES, cpuFlags, xRatioUV, yRatioUV, pixelsize, bits_per_pixel, mt_flag, nRealWidth, nRealHeight);
 
   pSrcGOF->set_interp(nModeYUV, rfilter, sharp);
 
@@ -191,6 +218,7 @@ PVideoFrame __stdcall MVSuper::GetFrame(int n, IScriptEnvironment* env)
   int planes_r[4] = { PLANAR_G, PLANAR_B, PLANAR_R, PLANAR_A };
   int *planes = (vi.IsYUV() || vi.IsYUVA()) ? planes_y : planes_r;
   planecount = ClipFnc::nbr_planes_processed(vi);
+
   for (int p = 0; p < planecount; ++p) {
     const int plane = planes[p];
     pSrc[p] = src->GetReadPtr(plane);

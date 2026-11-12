@@ -114,7 +114,8 @@ MVAnalyse::MVAnalyse(
     env->ThrowError("MAnalyse: wrong super clip (pseudoaudio) parameters");
   }
 
-  analysisData.nWidth = vi.width - nSuperHPad * 2;
+  // params.nWidth / nHeight: the real frame size, without the edgepad extension of the super planes
+  analysisData.nWidth = params.nWidth;
   analysisData.nHeight = nHeight;
   analysisData.pixelType = vi.pixel_type;
   if (!ClipFnc::is_grey(vi)) {
@@ -135,13 +136,14 @@ MVAnalyse::MVAnalyse(
 
   analysisData.chromaSADScale = _chromaSADScale;
 
+  // the super planes are built for the layout size: the frame plus the MSuper edgepad extension (SuperParams.h)
   pSrcGOF = new MVGroupOfFrames(
-    nSuperLevels, analysisData.nWidth, analysisData.nHeight,
+    nSuperLevels, params.LayoutWidth(), params.LayoutHeight(),
     nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV,
     _isse, analysisData.xRatioUV, analysisData.yRatioUV, pixelsize, bits_per_pixel, mt_flag
   );
   pRefGOF = new MVGroupOfFrames(
-    nSuperLevels, analysisData.nWidth, analysisData.nHeight,
+    nSuperLevels, params.LayoutWidth(), params.LayoutHeight(),
     nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV,
     _isse, analysisData.xRatioUV, analysisData.yRatioUV, pixelsize, bits_per_pixel, mt_flag
   );

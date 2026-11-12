@@ -48,8 +48,9 @@ GenericVideoFilter(_super)
   nPel = nSuperPel;
   nSuperWidth = _super->GetVideoInfo().width;
   nSuperHeight = _super->GetVideoInfo().height;
-  int nWidth = nSuperWidth - 2*nSuperHPad;
-  int nHeight = nHeightS;
+  // the super planes are built for (the finest frame is made of them) the layout size: the frame plus the MSuper edgepad extension (SuperParams.h)
+  int nWidth = params.LayoutWidth();
+  int nHeight = params.LayoutHeight();
     int xRatioUV;
     int yRatioUV;
     if(!ClipFnc::is_grey(vi) && !vi.IsRGB()) {

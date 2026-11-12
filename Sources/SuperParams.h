@@ -49,8 +49,14 @@ struct SuperParams
   int nModeYUV;
   int nLevels;
   int param;    // SUPER_PARAM_ flags (SuperParams64Bits.h)
+  int nEdgePadX; // MSuper edgepad: frame extended on the right by edge replication, before the hpad border
+  int nEdgePadY; // MSuper edgepadV: the same on the bottom
 
-  auto as_tuple() const { return std::tie(nWidth, nHeight, nHPad, nVPad, nPel, nModeYUV, nLevels, param); }
+  // the frame size the super planes are built for (all levels, pel planes); the hpad/vpad border is around it
+  int LayoutWidth() const { return nWidth + nEdgePadX; }
+  int LayoutHeight() const { return nHeight + nEdgePadY; }
+
+  auto as_tuple() const { return std::tie(nWidth, nHeight, nHPad, nVPad, nPel, nModeYUV, nLevels, param, nEdgePadX, nEdgePadY); }
   bool operator<(const SuperParams& other) const { return as_tuple() < other.as_tuple(); }
 };
 
@@ -102,7 +108,10 @@ public:
 inline void SetSuperParams(VideoInfo& vi, const SuperParams& sp, IScriptEnvironment* env)
 {
   SuperParams64Bits legacy;
-  legacy.nHeight = (uint16_t)sp.nHeight;
+  // The legacy 8 bytes describe the layout (a super of an extended frame): a reader without the registry
+  // (another mvtools build loaded in parallel) derives the width from the clip width, which is the layout width
+  // too. So it sees a consistent, larger frame and rejects it when comparing with the source or vector size.
+  legacy.nHeight = (uint16_t)sp.LayoutHeight();
   legacy.nHPad = (unsigned char)sp.nHPad;
   legacy.nVPad = (unsigned char)sp.nVPad;
   legacy.nPel = (unsigned char)sp.nPel;
@@ -138,6 +147,8 @@ inline SuperParams GetSuperParams(const VideoInfo& vi)
   sp.nLevels = legacy.nLevels;
   sp.param = legacy.param;
   sp.nWidth = vi.width - 2 * sp.nHPad;
+  sp.nEdgePadX = 0;
+  sp.nEdgePadY = 0;
   return sp;
 }
 

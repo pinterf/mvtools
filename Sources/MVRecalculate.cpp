@@ -138,20 +138,20 @@ MVRecalculate::MVRecalculate(
 
   analysisData.chromaSADScale = _chromaSADScale;
 
+  // the super planes are built for the layout size: the frame plus the MSuper edgepad extension (SuperParams.h)
   pSrcGOF = new MVGroupOfFrames(
-    nSuperLevels, analysisData.nWidth, analysisData.nHeight,
+    nSuperLevels, params.LayoutWidth(), params.LayoutHeight(),
     nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV,
     cpuFlags, analysisData.xRatioUV, analysisData.yRatioUV, analysisData.pixelsize, analysisData.bits_per_pixel, mt_flag
   );
   pRefGOF = new MVGroupOfFrames(
-    nSuperLevels, analysisData.nWidth, analysisData.nHeight,
+    nSuperLevels, params.LayoutWidth(), params.LayoutHeight(),
     nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV,
     cpuFlags, analysisData.xRatioUV, analysisData.yRatioUV, analysisData.pixelsize, analysisData.bits_per_pixel, mt_flag
   );
-  const int nSuperWidth = child->GetVideoInfo().width;
-
+  // params.nWidth / nHeight: the real frame size, without the edgepad extension of the super planes
   if (nHeight != analysisData.nHeight
-    || nSuperWidth - 2 * nSuperHPad != analysisData.nWidth)
+    || params.nWidth != analysisData.nWidth)
   {
     env->ThrowError("MRecalculate : wrong frame size");
   }

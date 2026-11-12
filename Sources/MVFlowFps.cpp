@@ -91,25 +91,25 @@ MVFlowFps::MVFlowFps(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, unsign
     env->ThrowError("MFlowFps: inconsistent source and vector frame size");
 
 
-  if (!((nWidth + nHPadding * 2) == super->GetVideoInfo().width && (nHeight + nVPadding * 2) <= super->GetVideoInfo().height))
-    env->ThrowError("MFlowFps: inconsistent clips frame size!");
-
     // get parameters of prepared super clip - v2.0
   const SuperParams params = GetSuperParams(super->GetVideoInfo());
+
+  // the super clip is the layout size (frame + edgepad extension) plus the padding
+  if (!((params.LayoutWidth() + nHPadding * 2) == super->GetVideoInfo().width && (params.LayoutHeight() + nVPadding * 2) <= super->GetVideoInfo().height))
+    env->ThrowError("MFlowFps: inconsistent clips frame size!");
   int nHeightS = params.nHeight;
   int nSuperHPad = params.nHPad;
   //int nSuperVPad = params.nVPad;
   int nSuperPel = params.nPel;
   //int nSuperModeYUV = params.nModeYUV;
   //int nSuperLevels = params.nLevels;
-  int nSuperWidth = super->GetVideoInfo().width; // really super
-  //int nSuperHeight = super->GetVideoInfo().height;
 
   if (!super->GetVideoInfo().IsSameColorspace(child->GetVideoInfo()))
     env->ThrowError("MFlowFPS: input and super clip format is different");
 
+  // params.nWidth / nHeight: the real frame size, without the edgepad extension of the super planes
   if (nHeight != nHeightS
-    || nWidth != nSuperWidth - nSuperHPad * 2
+    || nWidth != params.nWidth
     || nPel != nSuperPel)
   {
     env->ThrowError("MFlowFps : wrong super frame clip");

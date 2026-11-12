@@ -27,8 +27,16 @@
 class Padding
 {
 public:
+  // replicates the edge pixels of the width x height area into a border of hPad (left), vPad (top),
+  // hPadRight (right) and vPadBottom (bottom) pixels; frame points to the top-left corner of the border
   template<typename pixel_t>
-  static void PadReferenceFrame(unsigned char *frame, int pitch, int hPad, int vPad, int width, int height);
+  static void PadReferenceFrame(unsigned char *frame, int pitch, int hPad, int vPad, int width, int height, int hPadRight, int vPadBottom);
+
+  template<typename pixel_t>
+  static void PadReferenceFrame(unsigned char *frame, int pitch, int hPad, int vPad, int width, int height)
+  {
+    PadReferenceFrame<pixel_t>(frame, pitch, hPad, vPad, width, height, hPad, vPad);
+  }
 };
 
 

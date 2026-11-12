@@ -39,7 +39,7 @@ void PadCorner(pixel_t *p, pixel_t v, int hPad, int vPad, int refPitch)
 }
 
 template<typename pixel_t>
-void Padding::PadReferenceFrame(unsigned char *refFrame8, int refPitch, int hPad, int vPad, int width, int height)
+void Padding::PadReferenceFrame(unsigned char *refFrame8, int refPitch, int hPad, int vPad, int width, int height, int hPadRight, int vPadBottom)
 {
   pixel_t *refFrame = reinterpret_cast<pixel_t *>(refFrame8);
   refPitch /= sizeof(pixel_t);
@@ -49,13 +49,13 @@ void Padding::PadReferenceFrame(unsigned char *refFrame8, int refPitch, int hPad
   // Up-Left
   PadCorner<pixel_t>(refFrame, pfoff[0], hPad, vPad, refPitch); // PF refPitch is already pixelsize aware!
   // Up-Right
-  PadCorner<pixel_t>(refFrame + hPad + width, pfoff[width - 1], hPad, vPad, refPitch);
+  PadCorner<pixel_t>(refFrame + hPad + width, pfoff[width - 1], hPadRight, vPad, refPitch);
   // Down-Left
   PadCorner<pixel_t>(refFrame + (vPad + height) * refPitch,
-    pfoff[(height - 1) * refPitch], hPad, vPad, refPitch);
+    pfoff[(height - 1) * refPitch], hPad, vPadBottom, refPitch);
   // Down-Right
   PadCorner<pixel_t>(refFrame + hPad + width + (vPad + height) * refPitch,
-    pfoff[(height - 1) * refPitch + width - 1], hPad, vPad, refPitch);
+    pfoff[(height - 1) * refPitch + width - 1], hPadRight, vPadBottom, refPitch);
 
   // Top and bottom
   // LDS: would multiple memcpy be faster? The inner loop is very short
@@ -69,8 +69,11 @@ void Padding::PadReferenceFrame(unsigned char *refFrame8, int refPitch, int hPad
     for (int j = 0; j < vPad; j++)
     {
       p_t[0] = value_t;
-      p_b[0] = value_b;
       p_t += refPitch;
+    }
+    for (int j = 0; j < vPadBottom; j++)
+    {
+      p_b[0] = value_b;
       p_b += refPitch;
     }
   }
@@ -83,14 +86,13 @@ void Padding::PadReferenceFrame(unsigned char *refFrame8, int refPitch, int hPad
     pixel_t *p_l = refFrame + (vPad + i) * refPitch;
     pixel_t *p_r = p_l + width + hPad;
     for (int j = 0; j < hPad; j++)
-    {
       p_l[j] = value_l;
+    for (int j = 0; j < hPadRight; j++)
       p_r[j] = value_r;
-    }
   }
 }
 
-template void Padding::PadReferenceFrame<uint8_t>(unsigned char* refFrame8, int refPitch, int hPad, int vPad, int width, int height);
-template void Padding::PadReferenceFrame<uint16_t>(unsigned char* refFrame8, int refPitch, int hPad, int vPad, int width, int height);
-template void Padding::PadReferenceFrame<float>(unsigned char* refFrame8, int refPitch, int hPad, int vPad, int width, int height);
+template void Padding::PadReferenceFrame<uint8_t>(unsigned char* refFrame8, int refPitch, int hPad, int vPad, int width, int height, int hPadRight, int vPadBottom);
+template void Padding::PadReferenceFrame<uint16_t>(unsigned char* refFrame8, int refPitch, int hPad, int vPad, int width, int height, int hPadRight, int vPadBottom);
+template void Padding::PadReferenceFrame<float>(unsigned char* refFrame8, int refPitch, int hPad, int vPad, int width, int height, int hPadRight, int vPadBottom);
 

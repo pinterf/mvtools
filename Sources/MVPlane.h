@@ -34,7 +34,10 @@ class MVPlane
 {
 public:
 
-   MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, int _pixelsize, int _bits_per_pixel, int cpuFlags, bool mt_flag);
+   // _nRealWidth, _nRealHeight (MSuper edgepad): the plane is built from a real area of this size, the area up
+   // to _nWidth x _nHeight (the layout size) is part of the right / bottom padding. -1: the same as the layout.
+   MVPlane(int _nWidth, int _nHeight, int _nPel, int _nHPad, int _nVPad, int _pixelsize, int _bits_per_pixel, int cpuFlags, bool mt_flag,
+     int _nRealWidth = -1, int _nRealHeight = -1);
    ~MVPlane();
 
    void set_interp (int rfilter, int sharp);
@@ -98,6 +101,8 @@ private:
   );
 
   void	refine_pel2 (SchedulerRefine::TaskData &td);
+  void	pad_layout (int subplane);
+  void	extend_refined ();
   void	refine_pel4 (SchedulerRefine::TaskData &td);
   void	reduce_slice (SlicerReduce::TaskData &td);
 
@@ -112,6 +117,14 @@ private:
   int nVPaddingPel;
   int nExtendedWidth;
   int nExtendedHeight;
+
+  // MSuper edgepad. Filling, reduction and sub-pel interpolation work on the real area exactly as without edge
+  // padding; the padding then reaches from the real area to the layout size plus hpad / vpad. So the plane is the
+  // plane of an MSuper without edgepad, with a wider right / bottom border.
+  int nRealWidth;
+  int nRealHeight;
+  int nRefineWidth;  // nRealWidth + 2 * nHPadding: the area the sub-pel interpolation covers
+  int nRefineHeight;
 
   int nPel;
   int pixelsize;

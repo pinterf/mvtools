@@ -208,14 +208,16 @@ MVCompensate::MVCompensate(
   if (!vi.IsSameColorspace(_super->GetVideoInfo()))
     env_ptr->ThrowError("MCompensate : source and super clip video format is different!");
 
-  pRefGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, cpuFlags, xRatioUVs[1], yRatioUVs[1], pixelsize_super, bits_per_pixel_super, mt_flag);
-  pSrcGOF = new MVGroupOfFrames(nSuperLevels, nWidth, nHeight, nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, cpuFlags, xRatioUVs[1], yRatioUVs[1], pixelsize_super, bits_per_pixel_super, mt_flag);
+  // the super planes are built for the layout size: the frame plus the MSuper edgepad extension (SuperParams.h)
+  pRefGOF = new MVGroupOfFrames(nSuperLevels, params.LayoutWidth(), params.LayoutHeight(), nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, cpuFlags, xRatioUVs[1], yRatioUVs[1], pixelsize_super, bits_per_pixel_super, mt_flag);
+  pSrcGOF = new MVGroupOfFrames(nSuperLevels, params.LayoutWidth(), params.LayoutHeight(), nSuperPel, nSuperHPad, nSuperVPad, nSuperModeYUV, cpuFlags, xRatioUVs[1], yRatioUVs[1], pixelsize_super, bits_per_pixel_super, mt_flag);
   nSuperWidth = super->GetVideoInfo().width;
   nSuperHeight = super->GetVideoInfo().height;
 
+  // params.nWidth / nHeight: the real frame size, without the edgepad extension of the super planes
   if (nHeight != nHeightS
     || nHeight != vi.height
-    || nWidth != nSuperWidth - nSuperHPad * 2
+    || nWidth != params.nWidth
     || nWidth != vi.width
     || nPel != nSuperPel)
   {

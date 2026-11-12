@@ -60,7 +60,9 @@ class MVFrame
    int bits_per_pixel;
 
 public:
-   MVFrame(int nWidth, int nHeight, int nPel, int nHPad, int nVPad, int _nMode, int _cpuFlags, int _xRatioUV, int _yRatioUV, int _pixelsize, int _bits_per_pixel, bool mt_flag);
+   // nRealWidth, nRealHeight: MSuper edgepad, see MVPlane; -1: the same as nWidth, nHeight
+   MVFrame(int nWidth, int nHeight, int nPel, int nHPad, int nVPad, int _nMode, int _cpuFlags, int _xRatioUV, int _yRatioUV, int _pixelsize, int _bits_per_pixel, bool mt_flag,
+     int nRealWidth = -1, int nRealHeight = -1);
    ~MVFrame();
 
    void Update(int _nMode, uint8_t * pSrcY, int pitchY, uint8_t * pSrcU, int pitchU, uint8_t *pSrcV, int pitchV);
