@@ -88,6 +88,15 @@ private:
 
   int nSuperWidth;
   int nSuperHeight;
+
+  // Blocks beyond the frame edge (MOTION_EDGE_BLOCKS, MSuper edgepad). The current-frame blocks come from the super
+  // clip, so they read its edge padding. With enough edge padding (edge_ext) the output is written into a frame of
+  // the block grid size (vi_dst_ext) and cropped back; else only the blocks inside the frame are processed
+  // (nBlkXP x nBlkYP of the nBlkX x nBlkY grid) and the rest is filled as for a frame not covered by whole blocks.
+  bool edge_ext;
+  int nWidthP, nHeightP;
+  int nBlkXP, nBlkYP;
+  VideoInfo vi_dst_ext;
   int nSuperHPad;
   int nSuperVPad;
   MVGroupOfFrames *pRefGOF;
