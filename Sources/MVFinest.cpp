@@ -25,7 +25,7 @@
 #include "MVGroupOfFrames.h"
 #include "MVPlane.h"
 #include "profile.h"
-#include "SuperParams64Bits.h"
+#include "SuperParams.h"
 
 
 MVFinest::MVFinest(PClip _super, bool _isse, IScriptEnvironment* env) :
@@ -38,8 +38,7 @@ GenericVideoFilter(_super)
   cpuFlags = _isse ? env->GetCPUFlags() : 0;
 
   // get parameters of prepared super clip - v2.0
-  SuperParams64Bits params;
-  memcpy(&params, &child->GetVideoInfo().num_audio_samples, 8);
+  const SuperParams params = GetSuperParams(child->GetVideoInfo());
   int nHeightS = params.nHeight;
   nSuperHPad = params.nHPad;
   nSuperVPad = params.nVPad;

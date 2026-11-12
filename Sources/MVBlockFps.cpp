@@ -28,7 +28,7 @@
 #include "MVPlane.h"
 #include "Padding.h"
 #include "profile.h"
-#include "SuperParams64Bits.h"
+#include "SuperParams.h"
 #include "Time256ProviderCst.h"
 
 //#include <intrin.h>
@@ -93,8 +93,7 @@ MVBlockFps::MVBlockFps(
     env->ThrowError("MBlockFPS: cannot use motion vectors with absolute frame references.");
 
   // get parameters of prepared super clip - v2.0
-  SuperParams64Bits params;
-  memcpy(&params, &super->GetVideoInfo().num_audio_samples, 8);
+  const SuperParams params = GetSuperParams(super->GetVideoInfo());
   int nHeightS = params.nHeight;
   nSuperHPad = params.nHPad;
   nSuperVPad = params.nVPad;

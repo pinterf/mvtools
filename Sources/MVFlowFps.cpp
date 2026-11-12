@@ -23,7 +23,7 @@
 #include "MVFinest.h"
 #include "MVFlowFps.h"
 #include "profile.h"
-#include "SuperParams64Bits.h"
+#include "SuperParams.h"
 #include "info.h"
 
 #include <cstdio>
@@ -95,8 +95,7 @@ MVFlowFps::MVFlowFps(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, unsign
     env->ThrowError("MFlowFps: inconsistent clips frame size!");
 
     // get parameters of prepared super clip - v2.0
-  SuperParams64Bits params;
-  memcpy(&params, &super->GetVideoInfo().num_audio_samples, 8);
+  const SuperParams params = GetSuperParams(super->GetVideoInfo());
   int nHeightS = params.nHeight;
   int nSuperHPad = params.nHPad;
   //int nSuperVPad = params.nVPad;

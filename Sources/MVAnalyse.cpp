@@ -30,7 +30,7 @@
 #include "MVGroupOfFrames.h"
 #include "MVSuper.h"
 #include "profile.h"
-#include "SuperParams64Bits.h"
+#include "SuperParams.h"
 
 #include <cmath>
 #include <cstdio>
@@ -93,8 +93,7 @@ MVAnalyse::MVAnalyse(
     chroma = false; // silent fallback
 
   // get parameters of super clip - v2.0
-  SuperParams64Bits	params;
-  memcpy(&params, &child->GetVideoInfo().num_audio_samples, 8);
+  const SuperParams params = GetSuperParams(child->GetVideoInfo());
   const int		nHeight = params.nHeight;
   const int		nSuperHPad = params.nHPad;
   const int		nSuperVPad = params.nVPad;

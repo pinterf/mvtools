@@ -21,7 +21,7 @@
 #include "MaskFun.h"
 #include "MVFinest.h"
 #include "MVFlowBlur.h"
-#include "SuperParams64Bits.h"
+#include "SuperParams.h"
 #include "commonfunctions.h"
 
 
@@ -46,8 +46,7 @@ MVFlowBlur::MVFlowBlur(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, int 
   if (mvClipB.GetDeltaFrame() <= 0 || mvClipF.GetDeltaFrame() <= 0)
     env->ThrowError("MFlowBlur: cannot use motion vectors with absolute frame references.");
 
-  SuperParams64Bits params;
-  memcpy(&params, &super->GetVideoInfo().num_audio_samples, 8);
+  const SuperParams params = GetSuperParams(super->GetVideoInfo());
   int nHeightS = params.nHeight;
   int nSuperHPad = params.nHPad;
   //int nSuperVPad = params.nVPad;

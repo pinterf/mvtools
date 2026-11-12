@@ -26,7 +26,7 @@
 #include "MVPlane.h"
 #include "Padding.h"
 #include "profile.h"
-#include "SuperParams64Bits.h"
+#include "SuperParams.h"
 #include "CopyCode.h"
 #include "overlap.h"
 #include <stdint.h>
@@ -335,8 +335,7 @@ MVDegrainX::MVDegrainX(
   thSADC_sq = (double)thSADC * thSADC;
 
   // get parameters of prepared super clip - v2.0
-  SuperParams64Bits params;
-  memcpy(&params, &vi_super.num_audio_samples, 8);
+  const SuperParams params = GetSuperParams(vi_super);
   int nHeightS = params.nHeight;
   int nSuperHPad = params.nHPad;
   int nSuperVPad = params.nVPad;

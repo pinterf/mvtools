@@ -26,7 +26,7 @@
 #include	"MVGroupOfFrames.h"
 #include "MVPlane.h"
 #include "profile.h"
-#include "SuperParams64Bits.h"
+#include "SuperParams.h"
 #include "Time256ProviderCst.h"
 
 #include "types.h"
@@ -197,8 +197,7 @@ MVCompensate::MVCompensate(
 
 
   // get parameters of prepared super clip - v2.0
-  SuperParams64Bits params;
-  memcpy(&params, &super->GetVideoInfo().num_audio_samples, 8);
+  const SuperParams params = GetSuperParams(super->GetVideoInfo());
   int nHeightS = params.nHeight;
   nSuperHPad = params.nHPad;
   nSuperVPad = params.nVPad;

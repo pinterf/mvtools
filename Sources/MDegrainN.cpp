@@ -9,7 +9,7 @@
 #include "MVPlane.h"
 #include "MVFilter.h"
 #include "profile.h"
-#include "SuperParams64Bits.h"
+#include "SuperParams.h"
 
 #ifdef INTEL_INTRINSICS
 #include	<emmintrin.h>
@@ -568,8 +568,7 @@ MDegrainN::MDegrainN(
   _cpuFlags = isse_flag ? env_ptr->GetCPUFlags() : 0;
 
 // get parameters of prepared super clip - v2.0
-  SuperParams64Bits params;
-  memcpy(&params, &vi_super.num_audio_samples, 8);
+  const SuperParams params = GetSuperParams(vi_super);
   const int nHeightS = params.nHeight;
   const int nSuperHPad = params.nHPad;
   const int nSuperVPad = params.nVPad;

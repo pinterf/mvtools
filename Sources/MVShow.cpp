@@ -22,7 +22,7 @@
 #include "info.h"
 #include "ClipFnc.h"
 #include "MVShow.h"
-#include	"SuperParams64Bits.h"
+#include	"SuperParams.h"
 
 #include <stdlib.h>
 #include <algorithm>
@@ -63,8 +63,7 @@ mvClip(vectors, nSCD1, nSCD2, env, 1, 0)
   number = _number;
 
   // get parameters of prepared super clip - v2.0
-  SuperParams64Bits params;
-  memcpy(&params, &vi.num_audio_samples, 8);
+  const SuperParams params = GetSuperParams(vi);
   int nHeightS = params.nHeight;
   nSuperHPad = params.nHPad;
   nSuperVPad = params.nVPad;

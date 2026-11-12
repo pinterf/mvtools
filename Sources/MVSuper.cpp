@@ -27,7 +27,7 @@
 #include "MVPlane.h"
 #include "MVSuper.h"
 #include	"profile.h"
-#include "SuperParams64Bits.h"
+#include "SuperParams.h"
 #include <stdint.h>
 #include "CopyCode.h"
 
@@ -137,8 +137,9 @@ MVSuper::MVSuper(
   vi.height = nSuperHeight;
 
 
-  SuperParams64Bits params;
+  SuperParams params;
 
+  params.nWidth = nWidth;
   params.nHeight = nHeight;
   params.nHPad = nHPad;
   params.nVPad = nVPad;
@@ -147,10 +148,8 @@ MVSuper::MVSuper(
   params.nLevels = nLevels;
   params.param = yuy2_source ? SUPER_PARAM_YUY2_SOURCE : 0;
 
-
-  // pack parameters to fake audio properties
-  memcpy(&vi.num_audio_samples, &params, 8); //nHeight + (nHPad<<16) + (nVPad<<24) + ((_int64)(nPel)<<32) + ((_int64)nModeYUV<<40) + ((_int64)nLevels<<48);
-  vi.audio_samples_per_second = 0; // kill audio
+  // parameters to the fake audio properties, kills audio
+  SetSuperParams(vi, params, env);
 
   // LDS: why not nModeYUV?
 //	pSrcGOF = new MVGroupOfFrames(nLevels, nWidth, nHeight, nPel, nHPad, nVPad, nModeYUV, isse, yRatioUV, mt_flag);

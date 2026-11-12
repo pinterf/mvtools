@@ -22,7 +22,7 @@
 #include "MVFlowInter.h"
 #include "MaskFun.h"
 #include "MVFinest.h"
-#include "SuperParams64Bits.h"
+#include "SuperParams.h"
 //#include "Time256ProviderCst.h"
 //#include "Time256ProviderPlane.h"
 #include "commonfunctions.h"
@@ -49,8 +49,7 @@ MVFlowInter::MVFlowInter(PClip _child, PClip super, PClip _mvbw, PClip _mvfw, in
   if (mvClipB.GetDeltaFrame() <= 0 || mvClipB.GetDeltaFrame() <= 0)
     env->ThrowError("MFlowInter: cannot use motion vectors with absolute frame references.");
 
-  SuperParams64Bits params;
-  memcpy(&params, &super->GetVideoInfo().num_audio_samples, 8);
+  const SuperParams params = GetSuperParams(super->GetVideoInfo());
   int nHeightS = params.nHeight;
   int nSuperHPad = params.nHPad;
   int nSuperVPad = params.nVPad;

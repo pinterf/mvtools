@@ -1702,6 +1702,7 @@
     <ClInclude Include="SharedPtr.h" />
     <ClInclude Include="SharedPtr.hpp" />
     <ClInclude Include="SimpleResize.h" />
+    <ClInclude Include="SuperParams.h" />
     <ClInclude Include="SuperParams64Bits.h" />
     <ClInclude Include="Time256ProviderCst.h" />
     <ClInclude Include="Time256ProviderPlane.h" />

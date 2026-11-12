@@ -22,7 +22,7 @@
 #include "MaskFun.h"
 #include "MVFinest.h"
 #include "MVFlow.h"
-#include "SuperParams64Bits.h"
+#include "SuperParams.h"
 #include "commonfunctions.h"
 
 MVFlow::MVFlow(PClip _child, PClip super, PClip _mvec, int _time256, int _mode, bool _fields,
@@ -41,8 +41,7 @@ MVFlow::MVFlow(PClip _child, PClip super, PClip _mvec, int _time256, int _mode, 
   cpuFlags = _isse ? env->GetCPUFlags() : 0;
   fields = _fields;
 
-  SuperParams64Bits params;
-  memcpy(&params, &super->GetVideoInfo().num_audio_samples, 8);
+  const SuperParams params = GetSuperParams(super->GetVideoInfo());
   int nHeightS = params.nHeight;
   int nSuperHPad = params.nHPad;
   //int nSuperVPad = params.nVPad;

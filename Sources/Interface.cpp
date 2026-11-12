@@ -39,7 +39,7 @@
 #include "MVDegrain3.h"
 #include "MDegrainN.h"
 #include "Stacked16.h"
-#include "SuperParams64Bits.h"
+#include "SuperParams.h"
 #include "Yuy2Planar.h"
 #include "MVBlockFps.h"
 
@@ -77,8 +77,7 @@ AVSValue __cdecl Create_MVShow(AVSValue args, void* user_data, IScriptEnvironmen
   int sil = 0;
   int tol = 20000;
   // a super clip made from a YUY2 source is YV16: the result goes back to YUY2 (Yuy2Planar.h)
-  SuperParams64Bits params;
-  memcpy(&params, &args[0].AsClip()->GetVideoInfo().num_audio_samples, 8);
+  const SuperParams params = GetSuperParams(args[0].AsClip()->GetVideoInfo());
   const bool yuy2 = (params.param & SUPER_PARAM_YUY2_SOURCE) != 0;
   const bool planar = args[10].AsBool(false);
   PClip show = new MVShow(
