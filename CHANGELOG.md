@@ -1,4 +1,11 @@
 Change log
+- 2.7.49 (in progress)
+  - Fix: MScaleVect crashed (access violation) on vector clips made with divide>0 (MAnalyse, MRecalculate), modes 0 and 1.
+    The length word 0xFFFFFFFF of the divided sub-block level (since 2.7.14.22) made the level walk step backwards
+    and run past the frame. Mode 2 stopped with "Internal error": it used the divided (halved) block geometry for
+    all levels, now the non-divided levels use the original block size, overlap and block count.
+    MScaleVect now checks the level lengths and block counts before writing (error instead of memory overrun).
+
 - 2.7.48 (20261029)
   - Feature request #68: adding search_coarse from SVP fork: MAnalyse: new parameters search_coarse.
   - MAnalyse: Add parameter trymanyall, which allows trymany for the finest level as well (default false to not decrease speed)

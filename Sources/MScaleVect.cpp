@@ -189,8 +189,21 @@ PVideoFrame __stdcall MScaleVect::GetFrame( int FrameNum, IScriptEnvironment* En
   // Size and validity of all block data
   int* pPlanes = pDst;
   if (pPlanes[1] == 0) return dst; // Marked invalid
+  const int dataSize = (src->GetRowSize() - headerSize) / (int)sizeof(int);
+  if (pPlanes[0] < 2 || pPlanes[0] > dataSize)
+    Env->ThrowError("MScaleVect: invalid vector data");
   int* pEnd = pPlanes + *pPlanes;
   pPlanes += 2;
+
+  // Data of one level: length word (counted in the length) followed by the blocks.
+  // divide>0: GroupOfPlanes::ExtraDivide stores 0xFFFFFFFF as the length of the divided
+  // sub-block level (see FakeGroupOfPlanes::Update); it is the last level, it lasts until pEnd.
+  auto levelLength = [&](const int* p) -> int {
+    const int len = (*p == -1) ? (int)(pEnd - p) : *p;
+    if (len < 1 || len > pEnd - p || (len - 1) % (int)(sizeof(VECTOR) / sizeof(int)) != 0)
+      Env->ThrowError("MScaleVect: invalid vector data");
+    return len;
+  };
 
   // Changing blocksize is straightforward since scaled vectors are guaranteed to be valid with scaled blocksizes
   if (mMode == IncreaseBlockSize || mMode == DecreaseBlockSize)
@@ -201,7 +214,7 @@ PVideoFrame __stdcall MScaleVect::GetFrame( int FrameNum, IScriptEnvironment* En
         while (pPlanes != pEnd)
         {
           // Scale each block's vector & SAD
-          int blocksSize = *pPlanes;
+          int blocksSize = levelLength(pPlanes);
           VECTOR* pBlocks = reinterpret_cast<VECTOR*>(pPlanes + 1);
           pPlanes += blocksSize;
           while (reinterpret_cast<int*>(pBlocks) != pPlanes)
@@ -219,7 +232,7 @@ PVideoFrame __stdcall MScaleVect::GetFrame( int FrameNum, IScriptEnvironment* En
       while (pPlanes != pEnd)
       {
         // Scale each block's vector & SAD
-        int blocksSize = *pPlanes;
+        int blocksSize = levelLength(pPlanes);
         VECTOR* pBlocks = reinterpret_cast<VECTOR*>(pPlanes + 1);
         pPlanes += blocksSize;
         while (reinterpret_cast<int*>(pBlocks) != pPlanes)
@@ -246,26 +259,44 @@ PVideoFrame __stdcall MScaleVect::GetFrame( int FrameNum, IScriptEnvironment* En
   else if (mMode == VectorsOnly)
   {
 
-    // Dimensions of frame covered by blocks (where frame is not exactly divisible by block size there is a small border that will not be motion compensated)
-    int widthCovered  = (mVectorsInfo.nBlkSizeX - mVectorsInfo.nOverlapX) * mVectorsInfo.nBlkX + mVectorsInfo.nOverlapX;
-    int heightCovered = (mVectorsInfo.nBlkSizeY - mVectorsInfo.nOverlapY) * mVectorsInfo.nBlkY + mVectorsInfo.nOverlapY;
+    // divide>0: the finest level holds the divided sub-blocks, with the blocksize, overlap and
+    // block counts of mVectorsInfo (halved / doubled), the coarser levels hold the estimated blocks
+    // with the original blocksize, at pyramid level (level - 1). The ExtraDivide length marker
+    // of the finest level tells it.
+    const int* pFinest = pPlanes;
+    for (int lv = mVectorsInfo.nLvCount - 1; lv >= 1; lv--)
+      pFinest += levelLength(pFinest);
+    const bool divided = (*pFinest == -1);
 
     // Go through blocks at each level
     int level = mVectorsInfo.nLvCount - 1; // Start at coarsest level
     while (level >= 0)
     {
-      int blocksSize = *pPlanes;
+      const int mul = (divided && level > 0) ? 2 : 1; // original (not divided) block geometry
+      const int pyrLevel = (divided && level > 0) ? level - 1 : level; // level in the super clip pyramid
+      const int blkSizeX = mVectorsInfo.nBlkSizeX * mul;
+      const int blkSizeY = mVectorsInfo.nBlkSizeY * mul;
+      const int overlapX = mVectorsInfo.nOverlapX * mul;
+      const int overlapY = mVectorsInfo.nOverlapY * mul;
+
+      // Dimensions of frame covered by blocks (where frame is not exactly divisible by block size there is a small border that will not be motion compensated)
+      const int widthCovered  = (blkSizeX - overlapX) * (mVectorsInfo.nBlkX / mul) + overlapX;
+      const int heightCovered = (blkSizeY - overlapY) * (mVectorsInfo.nBlkY / mul) + overlapY;
+
+      int blocksSize = levelLength(pPlanes);
       VECTOR* pBlocks = reinterpret_cast<VECTOR*>(pPlanes + 1);
       pPlanes += blocksSize;
 
-      // Width and height of this level in blocks...
-      int levelNumBlocksX = ((widthCovered  >> level) - mVectorsInfo.nOverlapX) / (mVectorsInfo.nBlkSizeX - mVectorsInfo.nOverlapX);
-      int levelNumBlocksY = ((heightCovered >> level) - mVectorsInfo.nOverlapY) / (mVectorsInfo.nBlkSizeY - mVectorsInfo.nOverlapY);
+      // Width and height of this level in blocks (as in GroupOfPlanes)...
+      int levelNumBlocksX = ((widthCovered  >> pyrLevel) - overlapX) / (blkSizeX - overlapX);
+      int levelNumBlocksY = ((heightCovered >> pyrLevel) - overlapY) / (blkSizeY - overlapY);
+      if ((int64_t)levelNumBlocksX * levelNumBlocksY * sizeof(VECTOR) != (int64_t)(blocksSize - 1) * sizeof(int))
+        Env->ThrowError("MScaleVect: invalid vector data (block count mismatch)");
 
       // ... and in pixels
       int levelWidth  = mVectorsInfo.nWidth;
       int levelHeight = mVectorsInfo.nHeight;
-      for (int i = 1; i <= level; i++)
+      for (int i = 1; i <= pyrLevel; i++)
       {
         int xRatioUV = mVectorsInfo.xRatioUV;
         int yRatioUV = mVectorsInfo.yRatioUV;
@@ -276,24 +307,24 @@ PVideoFrame __stdcall MScaleVect::GetFrame( int FrameNum, IScriptEnvironment* En
       int extendedHeight = levelHeight + 2 * mVectorsInfo.nVPadding;
 
       // Padding is effectively smaller on coarser levels
-      int paddingXScaled = mVectorsInfo.nHPadding >> level;
-      int paddingYScaled = mVectorsInfo.nVPadding >> level;
+      int paddingXScaled = mVectorsInfo.nHPadding >> pyrLevel;
+      int paddingYScaled = mVectorsInfo.nVPadding >> pyrLevel;
 
       // Loop through block positions (top-left of each block, coordinates relative to top-left of padding)
       int x = mVectorsInfo.nHPadding;
       int y = mVectorsInfo.nVPadding;
-      int xEnd = x + levelNumBlocksX * (mVectorsInfo.nBlkSizeX - mVectorsInfo.nOverlapX);
-      int yEnd = y + levelNumBlocksY * (mVectorsInfo.nBlkSizeY - mVectorsInfo.nOverlapY);
+      int xEnd = x + levelNumBlocksX * (blkSizeX - overlapX);
+      int yEnd = y + levelNumBlocksY * (blkSizeY - overlapY);
       while (y < yEnd)
       {
         // Max/min vector length for this block
         int yMin = -mVectorsInfo.nPel * (y - mVectorsInfo.nVPadding + paddingYScaled);
-        int yMax =  mVectorsInfo.nPel * (extendedHeight - y - mVectorsInfo.nBlkSizeY - mVectorsInfo.nVPadding + paddingYScaled);
+        int yMax =  mVectorsInfo.nPel * (extendedHeight - y - blkSizeY - mVectorsInfo.nVPadding + paddingYScaled);
 
         while (x < xEnd)
         {
           int xMin = -mVectorsInfo.nPel * (x - mVectorsInfo.nHPadding + paddingXScaled);
-          int xMax =  mVectorsInfo.nPel * (extendedWidth - x - mVectorsInfo.nBlkSizeX - mVectorsInfo.nHPadding + paddingXScaled);
+          int xMax =  mVectorsInfo.nPel * (extendedWidth - x - blkSizeX - mVectorsInfo.nHPadding + paddingXScaled);
         
           // Scale each block's vector & SAD
           pBlocks->x = (int)std::lround(pBlocks->x * mScaleX); // 2.7.23: proper rounding for negative vectors!
@@ -302,7 +333,7 @@ PVideoFrame __stdcall MScaleVect::GetFrame( int FrameNum, IScriptEnvironment* En
           {
             // Scaling vector makes motion go out of frame, set 0 vector instead and large SAD
             pBlocks->x = pBlocks->y = 0;
-            pBlocks->sad = mVectorsInfo.nBlkSizeX * mVectorsInfo.nBlkSizeY * big_pixel_sad;
+            pBlocks->sad = blkSizeX * blkSizeY * big_pixel_sad;
           }
           else {
             pBlocks->sad = (int)(pBlocks->sad * mScaleX * mScaleY + 0.5); // Vector is OK, scale SAD for larger blocksize
@@ -316,10 +347,10 @@ PVideoFrame __stdcall MScaleVect::GetFrame( int FrameNum, IScriptEnvironment* En
           pBlocks++;
 
           // Next block position
-          x += mVectorsInfo.nBlkSizeX - mVectorsInfo.nOverlapX;
+          x += blkSizeX - overlapX;
         }
         x =  mVectorsInfo.nHPadding;
-        y += mVectorsInfo.nBlkSizeY - mVectorsInfo.nOverlapY;
+        y += blkSizeY - overlapY;
       }
       if (reinterpret_cast<int*>(pBlocks) != pPlanes) Env->ThrowError("MScaleVect: Internal error"); // Debugging check
       level--;
