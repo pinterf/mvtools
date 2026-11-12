@@ -283,7 +283,9 @@
 	clip pelclip (undefined),
 	bool isse,
 	bool planar,
-	bool mt (true)
+	bool mt (true),
+	int  edgepad (0),
+	int  edgepadV (edgepad)
 )</pre>
     <p>
         Get source clip and prepare special "super" clip with multilevel
@@ -395,6 +397,55 @@
     <p>Other useful example is EEDI2 edge-directed resampler.</p>
     <p class="var">mt</p>
     <p>Enables internal multi-threading (through avstp.dll).</p>
+    <p class="var">edgepad, edgepadV</p>
+    <p>
+        Since 2.7.49. Extra padding on the right (<var>edgepad</var>) and at the bottom (<var>edgepadV</var>),
+        0..64 pixels, rounded up to whole chroma pixels. Default 0: off.
+    </p>
+    <p>
+        <b>Why:</b> motion analysis works on whole blocks. When (<var>width</var>&nbsp;-&nbsp;<var>overlap</var>) is not a
+        multiple of (<var>blksize</var>&nbsp;-&nbsp;<var>overlap</var>) (the height likewise), the last columns (rows) of the
+        frame are not covered by any block, and the filters leave them unprocessed: e.g. MDegrain copies them from the
+        source (at 1920x1080 with <var>blksize</var>=16 the last 8 rows).
+    </p>
+    <p>
+        <b>How:</b> with <var>edgepad</var> the super clip gets a wider right / bottom border (the repeated edge pixels, as
+        in the <var>hpad</var>/<var>vpad</var> padding). <code>MAnalyse</code> and <code>MRecalculate</code> then add one
+        more block column (row) which covers the rest of the frame and reaches into this border; the filters process
+        these edge blocks and output only the part inside the frame. Inside the frame the super clip is the same as
+        without <var>edgepad</var>, so a frame which is already covered by whole blocks gives the same vectors and output.
+    </p>
+    <p>
+        <b>How much:</b> the extra block reaches at most <var>blksize</var>&nbsp;-&nbsp;<var>overlap</var>&nbsp;-&nbsp;1 pixels
+        beyond the frame. <var>edgepad</var>=64 is enough for any block size; smaller values save some memory
+        (e.g. 16 for <var>blksize</var>=16). Cost: the super clip planes are larger by the edge padding.
+    </p>
+    <p>
+        <b>When:</b> give the edge padding to every super clip of the chain: the one for <code>MAnalyse</code> and the one
+        for the compensating filter, if it is a different clip (e.g. <code>MSuper(levels=1)</code> for MDegrain).
+    </p>
+    <table>
+        <tr><td><b>Filter</b></td><td><b>Edge blocks processed when</b></td><td><b>Otherwise</b></td></tr>
+        <tr><td><code>MAnalyse</code>, <code>MRecalculate</code></td>
+            <td>its super clip has enough edge padding (per direction) for the extra block</td>
+            <td>whole blocks inside the frame (as before)</td></tr>
+        <tr><td><code>MDegrain1</code>..<code>6</code>, <code>MDegrainN</code>, <code>MCompensate</code>, <code>MBlockFps</code></td>
+            <td>the vectors have edge blocks and the super clip given to the filter has enough edge padding</td>
+            <td>only the blocks inside the frame, the rest as before (copied or blended)</td></tr>
+        <tr><td><code>MFlow</code>, <code>MFlowInter</code>, <code>MFlowFps</code>, <code>MFlowBlur</code></td>
+            <td>the vectors have edge blocks (no edge padding needed: the vectors are limited to the frame)</td>
+            <td>the edge vectors are extrapolated (as before)</td></tr>
+        <tr><td><code>MMask</code>, <code>MSCDetection</code>, <code>MShow</code>, <code>MDepan</code>, <code>MScaleVect</code></td>
+            <td>the vectors have edge blocks</td>
+            <td>-</td></tr>
+    </table>
+    <p>
+        Vector clips with and without edge blocks cannot be mixed in one filter (error: block count is incorrect).
+    </p>
+<pre class="src">super = MSuper(edgepad=64)
+bv = MAnalyse(super, isb=true, blksize=16, overlap=4)
+fv = MAnalyse(super, isb=false, blksize=16, overlap=4)
+MDegrain1(super, bv, fv, thSAD=400)</pre>
 
     <h3>MAnalyse</h3>
 <pre class="proto">MAnalyse (
@@ -1699,7 +1750,9 @@
         E.g. at 1920x1080 with <var>blksize</var>=16, <var>overlap</var>=0 the last 8 rows,
         with <var>blksize</var>=32 the last 24 rows are not denoised;
         at 1280x720 with <var>blksize</var>=24, <var>overlap</var>=2 the last 2 columns and 14 rows.<br />
-        Workaround: pad the clip to a covered size before <code>MSuper</code>, crop the result:
+        Since 2.7.49 these pixels are denoised when the super clips have an edge padding
+        (<code>MSuper</code> <var>edgepad</var>, <var>edgepadV</var>).
+        Workaround for older versions: pad the clip to a covered size before <code>MSuper</code>, crop the result:
     </p>
     <pre>bs = 16
 ov = 4
@@ -2326,6 +2379,25 @@ Planar2Interleaved() # convert back to normal interleave YUY2
         <li>
             Fix: MShow number=(block count) read past the blocks, the number highlight had width and height swapped
             (non-square blocks), and it is clipped to the frame.
+        </li>
+        <li>
+            New (#28): MSuper edgepad, edgepadV parameters: process the right / bottom pixels not covered by
+            whole blocks. With an edge padding in the super clip MAnalyse and MRecalculate add one block column
+            / row reaching beyond the frame edge into the padding (flagged in the vector clip); MDegrain1-6,
+            MDegrainN, MCompensate, MBlockFps, MFlow, MFlowInter, MFlowFps, MFlowBlur, MMask, MSCDetection,
+            MShow, MDepan and MScaleVect process these vectors. Without edgepad, and for frames covered by whole
+            blocks, the results are unchanged.
+        </li>
+        <li>
+            Mod: vector clips with different block counts are rejected in one filter ("block count is
+            incorrect"), e.g. vectors from super clips with and without edgepad.
+        </li>
+        <li>
+            Mod: MSuper: faster padding of the super planes (the top / bottom border is copied row by row).
+        </li>
+        <li>
+            Internal: the super clip parameters are kept in a process-wide registry, the super clip carries its
+            index (vi.sample_type); the legacy 8 bytes in num_audio_samples are still written.
         </li>
     </ul>
 

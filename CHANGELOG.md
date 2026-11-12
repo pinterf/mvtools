@@ -10,6 +10,16 @@ Change log
     the padding of the super clip (was the padding of the vectors, the vertical one was already the super clip's).
   - Fix: MShow number=(block count) read past the blocks, the number highlight had width and height swapped
     (non-square blocks), and it is clipped to the frame.
+  - New (#28): MSuper edgepad, edgepadV parameters: process the right / bottom pixels not covered by whole blocks.
+    With an edge padding in the super clip MAnalyse and MRecalculate add one block column / row reaching beyond the
+    frame edge into the padding (flagged in the vector clip); MDegrain1-6, MDegrainN, MCompensate, MBlockFps, MFlow,
+    MFlowInter, MFlowFps, MFlowBlur, MMask, MSCDetection, MShow, MDepan and MScaleVect process these vectors.
+    Without edgepad, and for frames covered by whole blocks, the results are unchanged.
+  - Mod: vector clips with different block counts are rejected in one filter ("block count is incorrect"), e.g.
+    vectors from super clips with and without edgepad.
+  - Mod: MSuper: faster padding of the super planes (the top / bottom border is copied row by row).
+  - Internal: the super clip parameters are kept in a process-wide registry, the super clip carries its index
+    (vi.sample_type); the legacy 8 bytes in num_audio_samples are still written.
 
 - 2.7.48 (20261029)
   - Feature request #68: adding search_coarse from SVP fork: MAnalyse: new parameters search_coarse.
