@@ -2425,6 +2425,11 @@ Planar2Interleaved() # convert back to normal interleave YUY2
             vector near the frame edge could read chroma outside the padded area. Not checked with
             chroma=false.
         </li>
+        <li>
+            Fix: MAnalyse temporal=true did not work: on the finest level the temporal predictor was a zero vector.
+            Only a quarter of the previous frame's vector data was kept (the size in ints was used as a byte count,
+            already in 2.6.0.5). The whole vector data is used now; the output with temporal=true changes.
+        </li>
     </ul>
 
     <p>2.7.48 (20261029)</p>

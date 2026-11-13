@@ -35,6 +35,9 @@ Change log
   - Fix: MSuper: hpad, vpad not a multiple of the chroma subsampling (e.g. hpad=1 with 4:2:0 or 4:2:2, hpad=2 with
     4:1:1) are rejected. The chroma padding was rounded down (hpad=1: no chroma padding), and a vector near the
     frame edge could read chroma outside the padded area. Not checked with chroma=false.
+  - Fix: MAnalyse temporal=true did not work: on the finest level the temporal predictor was a zero vector. Only a
+    quarter of the previous frame's vector data was kept (the size in ints was used as a byte count, already in
+    2.6.0.5). The whole vector data is used now; the output with temporal=true changes.
 
 - 2.7.48 (20261029)
   - Feature request #68: adding search_coarse from SVP fork: MAnalyse: new parameters search_coarse.

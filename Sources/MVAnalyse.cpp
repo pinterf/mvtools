@@ -688,10 +688,11 @@ PVideoFrame __stdcall MVAnalyse::GetFrame(int n, IScriptEnvironment* env)
   if (_temporal_flag)
   {
     // store previous vectors for use as predictor in next frame
+    // (GetArraySize is the size in ints: the whole vector data of all levels)
     memcpy(
       &srd._vec_prev[0],
       reinterpret_cast <int *> (pDst),
-      _vectorfields_aptr->GetArraySize()
+      _vectorfields_aptr->GetArraySize() * sizeof(int)
     );
     srd._vec_prev_frame = nsrc;
   }
