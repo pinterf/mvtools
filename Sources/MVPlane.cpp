@@ -346,6 +346,56 @@ void MVPlane::extend_refined()
   }
 }
 
+// pel=4: the quarter-pel planes are averages of two neighbouring full / half-pel samples (refine_pel4). Where the
+// neighbour is one pixel to the right (planes 3, 7, 11, 15) or below (12, 14), refine_pel4 leaves out the last
+// column / row of the refined area, because the neighbour would be outside of it; planes 13 and 15 are averaged
+// from 12 and 14, so their last row is built from those missing rows. Here these are computed with the neighbour
+// clamped to the last refined pixel: the refined area ends in the hpad / vpad border, which repeats the frame
+// edge pixel, so beyond it the plane would continue with the same value - the result is the exact average.
+// Without this the values are whatever the frame buffer held. Without edgepad they are never read (the vector
+// limits keep the blocks inside), with edgepad extend_refined copies them over the edge padding area, which the
+// edge blocks do read.
+// Same arithmetic as Average2: (a + b + 1) >> 1, float: (a + b) * 0.5f.
+template<typename pixel_t>
+void MVPlane::complete_pel4_edges()
+{
+  const int pitch = nPitch / sizeof(pixel_t);
+  const int w = nRefineWidth;
+  const int h = nRefineHeight;
+  auto P = [&](int i) { return reinterpret_cast<pixel_t*>(pPlane[i]); };
+  auto avg = [](pixel_t a, pixel_t b) -> pixel_t {
+    if constexpr (sizeof(pixel_t) <= 2)
+      return (pixel_t)((a + b + 1) >> 1);
+    else
+      return (a + b) * 0.5f;
+  };
+  // last column: dst[x] = avg(right[x + 1], left[x]), right[w] := right[w - 1]
+  auto last_col = [&](int dst, int right, int left) {
+    for (int y = 0; y < h; y++)
+      P(dst)[y * pitch + w - 1] = avg(P(right)[y * pitch + w - 1], P(left)[y * pitch + w - 1]);
+  };
+  // last row: dst[y] = avg(below[y + 1], up[y]), below[h] := below[h - 1]
+  auto last_row = [&](int dst, int below, int up) {
+    const int o = (h - 1) * pitch;
+    for (int x = 0; x < w; x++)
+      P(dst)[o + x] = avg(P(below)[o + x], P(up)[o + x]);
+  };
+  last_col(3, 0, 2);
+  last_col(7, 4, 6);
+  last_col(11, 8, 10);
+  last_row(12, 0, 8);
+  last_row(14, 2, 10);
+  // from the completed 12 and 14
+  {
+    const int o = (h - 1) * pitch;
+    for (int x = 0; x < w; x++)
+      P(13)[o + x] = avg(P(12)[o + x], P(14)[o + x]);
+    for (int x = 0; x < w - 1; x++)
+      P(15)[o + x] = avg(P(12)[o + x + 1], P(14)[o + x]);
+  }
+  last_col(15, 12, 14);
+}
+
 // extend_refined: the columns from nRefineWidth to nExtendedWidth repeat the last interpolated column, row by row
 template<typename pixel_t>
 void MVPlane::extend_rows(uint8_t* p)
@@ -383,6 +433,15 @@ void MVPlane::refine_wait()
     if (nPel > 1)
     {
       _sched_refine.wait();
+      if (nPel == 4)
+      {
+        if (pixelsize == 1)
+          complete_pel4_edges<uint8_t>();
+        else if (pixelsize == 2)
+          complete_pel4_edges<uint16_t>();
+        else
+          complete_pel4_edges<float>();
+      }
       extend_refined();
     }
 
