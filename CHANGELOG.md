@@ -26,6 +26,12 @@ Change log
     bottom block rows (only with a mask, without it the border blocks are skipped); the mask was fetched for the
     requested frame only; the sign of the near-zero motion marker (0.011) was random. Now the mask of each estimated
     frame is used.
+  - Fix: MFlowBlur: when the blocks do not cover the frame (frame size not fitting the block size and overlap), a
+    moving object on a still background got its blur "halo" offset towards the bottom-right instead of on the
+    object: the still background right of / below it was blurred, the object's left / top edge stayed sharp. The
+    offset grew from 0 at the left / top to almost one block step at the right / bottom frame edge. Cause: the
+    vector field of the blocks was stretched over the whole frame. Now the block grid is extended by repeated edge
+    vectors to cover the frame, as MFlow, MFlowInter and MFlowFps do.
 
 - 2.7.48 (20261029)
   - Feature request #68: adding search_coarse from SVP fork: MAnalyse: new parameters search_coarse.
