@@ -459,9 +459,8 @@ MVAnalyse::MVAnalyse(
 
   if (_temporal_flag)
   {
-    _srd_arr[0]._vec_prev.resize(_vectorfields_aptr->GetArraySize()); // array for prev vectors
+    _srd_arr[0]._vec_prev.init(TEMPORAL_CACHE_SLOTS, _vectorfields_aptr->GetArraySize()); // vectors of the previous frames
   }
-  _srd_arr[0]._vec_prev_frame = -2;
 
   // From this point, analysisData and analysisDataDivided references will
   // become invalid, because of the _srd_arr.resize(). Don't use them any more.
@@ -642,17 +641,8 @@ PVideoFrame __stdcall MVAnalyse::GetFrame(int n, IScriptEnvironment* env)
       fwrite(&n, sizeof(int), 1, outfile);	// write frame number
     }
 
-    // temporal predictor dst if prev frame was really prev
-    int *pVecPrevOrNull = nullptr;
-    // FIXME: Why this check is needed: we have exactly one 'previous' data, so a
-    // RequestLinear-like access pattern is heavily expected.
-    // But in multithreading this is rare; even in single-threaded mode it is not guaranteed.
-    // Maybe we would consider using a circular buffer of previous vectors,
-    // to allow more freedom in access pattern and to increase the chance of temporal prediction.
-    if (_temporal_flag && srd._vec_prev_frame == nsrc - 1)
-    {
-      pVecPrevOrNull = &srd._vec_prev[0];
-    }
+    // temporal predictor: the vectors of the previous frame, if it was analysed recently (see PrevVectorCache)
+    int *pVecPrevOrNull = _temporal_flag ? srd._vec_prev.find(nsrc - 1) : nullptr;
 
     _vectorfields_aptr->SearchMVs(
       pSrcGOF, pRefGOF,
@@ -687,14 +677,8 @@ PVideoFrame __stdcall MVAnalyse::GetFrame(int n, IScriptEnvironment* env)
 
   if (_temporal_flag)
   {
-    // store previous vectors for use as predictor in next frame
-    // (GetArraySize is the size in ints: the whole vector data of all levels)
-    memcpy(
-      &srd._vec_prev[0],
-      reinterpret_cast <int *> (pDst),
-      _vectorfields_aptr->GetArraySize() * sizeof(int)
-    );
-    srd._vec_prev_frame = nsrc;
+    // keep the vectors as predictor for the next frame
+    srd._vec_prev.store(nsrc, reinterpret_cast<const int *>(pDst));
   }
 
   _RPT3(0, "MAnalyze GetFrame END, frame_nsrc=%d nref=%d id=%d\n", nsrc, nref, _instance_id);

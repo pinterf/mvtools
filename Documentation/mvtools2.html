@@ -796,9 +796,12 @@ MDegrain1(super, bv, fv, thSAD=400)</pre>
     <p class="var">temporal</p>
     <p>
         Use temporal predictors from previous frame motion vectors.
-        Not compatible with <code>SetMTMode</code> (classic Avisynth) or other than MT_SERIALIZED mode for Avisynth+, and requires a linear access to
-        work correctly.
-        Note: Since 2.7.32 the filter registers itself automatically MT_SERIALIZED instead of MT_MULTI_INSTANCE under Avisynth+ when temporal=true is given.
+        Not compatible with <code>SetMTMode</code> (classic Avisynth) or other than MT_SERIALIZED mode for Avisynth+.
+        Note: Since 2.7.32 the filter registers itself automatically MT_SERIALIZED instead of MT_MULTI_INSTANCE under Avisynth+ when temporal=true is given.<br>
+        Since 2.7.49 the vectors of the last 8 analysed frames are kept, so the previous frame is found also when the
+        frames are not requested in order (Prefetch, several MAnalyse in one MDegrain). A frame analysed before its
+        previous frame (seeking, threads overtaking each other) gets no temporal predictor: with multithreading the
+        output may differ slightly from run to run (MDegrain6, Prefetch(16): about 2% of the analysed frames).
     </p>
     <p class="var">trymany, trymanyall</p>
     <p>
@@ -2429,6 +2432,12 @@ Planar2Interleaved() # convert back to normal interleave YUY2
             Fix: MAnalyse temporal=true did not work: on the finest level the temporal predictor was a zero vector.
             Only a quarter of the previous frame's vector data was kept (the size in ints was used as a byte count,
             already in 2.6.0.5). The whole vector data is used now; the output with temporal=true changes.
+        </li>
+        <li>
+            Mod: MAnalyse temporal=true: the vectors of the last 8 analysed frames are kept, so the temporal predictor
+            is also found when the frames are not requested in order (was: only when frame n-1 was the last analysed
+            frame, i.e. strictly linear access). E.g. MDegrain6 with Prefetch(16): no temporal predictor for 2.1% of
+            the analysed frames instead of 3.6%, with Prefetch(8) 0.5% instead of 1.8%.
         </li>
     </ul>
 

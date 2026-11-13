@@ -27,6 +27,8 @@
 
 #include "avisynth.h"
 
+#include <cstdint>
+#include <cstring>
 #include <memory>
 #include <vector>
 
@@ -43,14 +45,61 @@ protected:
   // One instance per Src/Ref combination
   // Multi mode order (bwd/fwd delta): B1, F1, B2, F2, B3, F3...
   // In single mode, only the first element is used.
+  // temporal=true: the vectors of frame n-1 are a predictor for frame n. MAnalyse is MT_SERIALIZED then, but the
+  // frames still come in the order the threads ask for them (Prefetch, seeking, several MAnalyse instances in an
+  // MDegrain), so frame n-1 is often not the last one analysed. The vectors of the last few analysed frames are kept,
+  // tagged with their frame number, and the one of frame n-1 is looked up (the fft caches of FFT3DFilter, dfttest
+  // work the same way). A frame whose previous frame was not analysed before it still gets no temporal predictor.
+  // 8: measured with MDegrain6 (12 MAnalyse instances) and Prefetch 4..16, more slots gave no fewer misses; one slot
+  // holds the vectors of one frame (about 0.5 MB at 1080p with blksize=8)
+  static constexpr int TEMPORAL_CACHE_SLOTS = 8;
+  class PrevVectorCache
+  {
+    std::vector<std::vector<int>> _data; // vectors of one frame per slot
+    std::vector<int> _frame;             // frame number of the slot, -1: empty
+    std::vector<uint64_t> _used;         // last use, for replacing the least recently used slot
+    uint64_t _clock = 0;
+  public:
+    // nints: size of the vector data of one frame (GroupOfPlanes::GetArraySize, in ints)
+    void init(int nslots, int nints)
+    {
+      _data.assign(nslots, std::vector<int>(nints));
+      _frame.assign(nslots, -1);
+      _used.assign(nslots, 0);
+    }
+    // the vectors of frame n, nullptr if not kept
+    int* find(int n)
+    {
+      for (size_t i = 0; i < _frame.size(); i++)
+        if (_frame[i] == n && n >= 0)
+        {
+          _used[i] = ++_clock;
+          return _data[i].data();
+        }
+      return nullptr;
+    }
+    // keeps the vectors of frame n (replaces its old copy, else the least recently used slot)
+    void store(int n, const int* vectors)
+    {
+      size_t slot = 0;
+      for (size_t i = 0; i < _frame.size(); i++)
+      {
+        if (_frame[i] == n) { slot = i; break; }
+        if (_used[i] < _used[slot]) slot = i;
+      }
+      memcpy(_data[slot].data(), vectors, _data[slot].size() * sizeof(int));
+      _frame[slot] = n;
+      _used[slot] = ++_clock;
+    }
+  };
+
   class SrcRefData
   {
   public:
     MVAnalysisData _analysis_data;
     MVAnalysisData _analysis_data_divided;
 
-    std::vector<int> _vec_prev;
-    int _vec_prev_frame;
+    PrevVectorCache _vec_prev; // temporal=true only
   };
 
   typedef std::vector<SrcRefData> SrcRefArray;

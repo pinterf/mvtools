@@ -38,6 +38,10 @@ Change log
   - Fix: MAnalyse temporal=true did not work: on the finest level the temporal predictor was a zero vector. Only a
     quarter of the previous frame's vector data was kept (the size in ints was used as a byte count, already in
     2.6.0.5). The whole vector data is used now; the output with temporal=true changes.
+  - Mod: MAnalyse temporal=true: the vectors of the last 8 analysed frames are kept, so the temporal predictor is also
+    found when the frames are not requested in order (was: only when frame n-1 was the last analysed frame, i.e.
+    strictly linear access). E.g. MDegrain6 with Prefetch(16): no temporal predictor for 2.1% of the analysed frames
+    instead of 3.6%, with Prefetch(8) 0.5% instead of 1.8%.
 
 - 2.7.48 (20261029)
   - Feature request #68: adding search_coarse from SVP fork: MAnalyse: new parameters search_coarse.
