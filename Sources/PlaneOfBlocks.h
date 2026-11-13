@@ -206,7 +206,6 @@ private:
 //	int nLambdaLen;             // penalty factor (lambda) for vector length
   sad_t badSAD;                 // SAD threshold for more wide search
   int badrange;               // wide search radius
-  std::atomic <int> badcount;      // number of bad blocks refined
   bool temporal;              // use temporal predictor
   bool tryMany;               // try refine around many predictors
 
@@ -253,6 +252,7 @@ private:
 
     bigsad_t planeSAD;          // partial summary SAD of plane
     bigsad_t sumLumaChange;     // partial luma change sum
+    int badcount;               // number of bad blocks refined in this slice (see PseudoEPZSearch)
     int blky_beg;               // First line of blocks to process from this thread
     int blky_end;               // Last line of blocks + 1 to process from this thread
 

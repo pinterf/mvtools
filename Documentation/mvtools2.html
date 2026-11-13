@@ -851,7 +851,11 @@ MDegrain1(super, bv, fv, thSAD=400)</pre>
         Unfortunately - for algorithmical reasons - this speedup results in different output as
         the single-thread case due to the fact that the unit boundaries are handled specially.
         A non-multithreaded approach is processing the whole frame in a single run, in one thread, having
-        only 2 (namely the top and bottom lines) boundary, while the N-thread version has N*2 boundary.
+        only 2 (namely the top and bottom lines) boundary, while the N-thread version has N*2 boundary.<br />
+        The number of slices is the avstp thread count: the number of logical processors, unless set with
+        <code>avstp_set_threads</code>. So with mt=true the result is the same in every run on one machine, but it may
+        differ on a machine with another processor count. (Before 2.7.49 it could also differ from run to run, rarely:
+        when many blocks are above <var>badSAD</var>.)
     </p>
     <p class="var">scaleCSAD</p>
     <p>
@@ -2438,6 +2442,13 @@ Planar2Interleaved() # convert back to normal interleave YUY2
             is also found when the frames are not requested in order (was: only when frame n-1 was the last analysed
             frame, i.e. strictly linear access). E.g. MDegrain6 with Prefetch(16): no temporal predictor for 2.1% of
             the analysed frames instead of 3.6%, with Prefetch(8) 0.5% instead of 1.8%.
+        </li>
+        <li>
+            Fix: MAnalyse mt=true (internal multithreading with avstp.dll): the output could differ from run to run
+            (rarely, when many blocks are above badSAD). The bad block counter, which raises the badSAD threshold of
+            the wide search (badrange), was shared by the parallel slices, so whether a block got the wide search
+            depended on the thread timing. It is counted per slice now: the result is the same in every run (for a
+            given avstp thread count).
         </li>
     </ul>
 

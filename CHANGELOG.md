@@ -42,6 +42,10 @@ Change log
     found when the frames are not requested in order (was: only when frame n-1 was the last analysed frame, i.e.
     strictly linear access). E.g. MDegrain6 with Prefetch(16): no temporal predictor for 2.1% of the analysed frames
     instead of 3.6%, with Prefetch(8) 0.5% instead of 1.8%.
+  - Fix: MAnalyse mt=true (internal multithreading with avstp.dll): the output could differ from run to run (rarely,
+    when many blocks are above badSAD). The bad block counter, which raises the badSAD threshold of the wide search
+    (badrange), was shared by the parallel slices, so whether a block got the wide search depended on the thread
+    timing. It is counted per slice now: the result is the same in every run (for a given avstp thread count).
 
 - 2.7.48 (20261029)
   - Feature request #68: adding search_coarse from SVP fork: MAnalyse: new parameters search_coarse.
