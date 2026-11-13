@@ -32,6 +32,9 @@ Change log
     offset grew from 0 at the left / top to almost one block step at the right / bottom frame edge. Cause: the
     vector field of the blocks was stretched over the whole frame. Now the block grid is extended by repeated edge
     vectors to cover the frame, as MFlow, MFlowInter and MFlowFps do.
+  - Fix: MSuper: hpad, vpad not a multiple of the chroma subsampling (e.g. hpad=1 with 4:2:0 or 4:2:2, hpad=2 with
+    4:1:1) are rejected. The chroma padding was rounded down (hpad=1: no chroma padding), and a vector near the
+    frame edge could read chroma outside the padded area. Not checked with chroma=false.
 
 - 2.7.48 (20261029)
   - Feature request #68: adding search_coarse from SVP fork: MAnalyse: new parameters search_coarse.

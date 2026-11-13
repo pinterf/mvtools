@@ -313,12 +313,12 @@
     <p class="var">vpad</p>
     <p>It is vertical padding added to source frame (both top and bottom).</p>
     <p>
-        Note for subsampled formats: the chroma planes get <var>hpad</var> and <var>vpad</var> divided by the
-        chroma subsampling, rounded down (e.g. 4:2:0 with vpad=3: chroma vpad 1; 4:1:1 with hpad=2: chroma hpad 0).
-        Near the frame edges a vector may then point to a chroma area which is not padded.
-        Recommended: multiples of the subsampling, i.e. 4:2:0: both even, 4:2:2: hpad even,
-        4:1:1: hpad multiple of 4, 4:1:0: both multiples of 4, 4:4:0: vpad even. The default 8 is fine for all formats.
-        With 4:1:1 and 4:1:0 an odd hpad is rejected (width + 2 * hpad must be a multiple of 4).
+        Subsampled formats: the chroma planes get <var>hpad</var> and <var>vpad</var> divided by the chroma
+        subsampling, so they must be multiples of it: 4:2:0: both even, 4:2:2: hpad even,
+        4:1:1: hpad multiple of 4, 4:1:0: both multiples of 4, 4:4:0: vpad even. Other values are rejected
+        (since 2.7.49; before, the chroma padding was rounded down and a vector near the frame edge could point to
+        a chroma area which is not padded). Not checked with <var>chroma</var>=false, except that with 4:1:1 and
+        4:1:0 hpad must be even (width + 2 * hpad must be a multiple of 4). The default 8 is fine for all formats.
     </p>
     <p class="var">pel</p>
     <p>
@@ -2418,6 +2418,12 @@ Planar2Interleaved() # convert back to normal interleave YUY2
             right / bottom frame edge. Cause: the vector field of the blocks was stretched over the whole frame.
             Now the block grid is extended by repeated edge vectors to cover the frame, as MFlow, MFlowInter and
             MFlowFps do.
+        </li>
+        <li>
+            Fix: MSuper: hpad, vpad not a multiple of the chroma subsampling (e.g. hpad=1 with 4:2:0 or 4:2:2,
+            hpad=2 with 4:1:1) are rejected. The chroma padding was rounded down (hpad=1: no chroma padding), and a
+            vector near the frame edge could read chroma outside the padded area. Not checked with
+            chroma=false.
         </li>
     </ul>
 

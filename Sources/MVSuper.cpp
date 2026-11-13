@@ -97,6 +97,13 @@ MVSuper::MVSuper(
   pixelsize = vi.ComponentSize();
   bits_per_pixel = vi.BitsPerComponent();
 
+  // The chroma planes get hpad / xRatioUV and vpad / yRatioUV padding (MVFrame). Not divisible, it would be rounded
+  // down: the luma vectors are limited by the luma padding, a vector reaching +-hpad (+-vpad) scaled to chroma would
+  // then read beyond the chroma padding (neighbour row, or the super frame area outside the plane).
+  if (chroma && (nHPad % xRatioUV != 0 || nVPad % yRatioUV != 0))
+    env->ThrowError("MSuper: hpad and vpad must be multiples of the chroma subsampling (%dx%d), e.g. even hpad for 4:2:0 and 4:2:2, even vpad for 4:2:0",
+      xRatioUV, yRatioUV);
+
   // Edge padding (edgepad, edgepadV).
   // Motion analysis works on whole blocks. When (width - overlap) is not a multiple of (blksize - overlap), the
   // block grid ends before the right frame edge and the remaining columns (rows) are not processed (#28).
