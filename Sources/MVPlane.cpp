@@ -363,12 +363,13 @@ void MVPlane::complete_pel4_edges()
   const int w = nRefineWidth;
   const int h = nRefineHeight;
   auto P = [&](int i) { return reinterpret_cast<pixel_t*>(pPlane[i]); };
-  auto avg = [](pixel_t a, pixel_t b) -> pixel_t {
-    if constexpr (sizeof(pixel_t) <= 2)
-      return (pixel_t)((a + b + 1) >> 1);
-    else
-      return (a + b) * 0.5f;
+  // overloads instead of if constexpr in a lambda: the v141_xp compiler instantiates the discarded branch
+  struct Avg {
+    static uint8_t f(uint8_t a, uint8_t b) { return (uint8_t)((a + b + 1) >> 1); }
+    static uint16_t f(uint16_t a, uint16_t b) { return (uint16_t)((a + b + 1) >> 1); }
+    static float f(float a, float b) { return (a + b) * 0.5f; }
   };
+  auto avg = [](pixel_t a, pixel_t b) -> pixel_t { return Avg::f(a, b); };
   // last column: dst[x] = avg(right[x + 1], left[x]), right[w] := right[w - 1]
   auto last_col = [&](int dst, int right, int left) {
     for (int y = 0; y < h; y++)
