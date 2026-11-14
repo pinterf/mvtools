@@ -45,7 +45,7 @@ rem ============================================================
 rem  DETECTION
 rem ============================================================
 
-rem  Version: the line VALUE "FileVersion", "2.7.48" of mvtools.rc
+rem  Version: the line VALUE "FileVersion", "2.7.49" of mvtools.rc
 if not defined VER (
   for /f tokens^=4^ delims^=^" %%A in ('findstr /c:"FileVersion" "%SRC%\Sources\mvtools.rc"') do set "VER=%%A"
 )

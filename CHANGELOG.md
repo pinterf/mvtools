@@ -1,5 +1,5 @@
 Change log
-- 2.7.49 (in progress)
+- 2.7.49 (20261114)
   - Fix: MScaleVect crashed (access violation) on vector clips made with divide>0 (MAnalyse, MRecalculate), modes 0 and 1.
     The length word 0xFFFFFFFF of the divided sub-block level (since 2.7.14.22) made the level walk step backwards
     and run past the frame. Mode 2 stopped with "Internal error": it used the divided (halved) block geometry for
